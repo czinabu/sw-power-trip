@@ -1,6 +1,6 @@
 # POWER TRIP
 
-A Star Wars-inspired third-person action game built entirely in a single HTML file using [Three.js](https://threejs.org/). No build tools, no frameworks, no asset files — just one self-contained file with procedural meshes, synthesized audio, and adaptive music.
+A Star Wars-inspired third-person action game built entirely in a single HTML file using [Three.js](https://threejs.org/). No build tools, no frameworks, no asset files. Just one self-contained file with procedural meshes, synthesized audio, and adaptive music.
 
 ## Play
 
@@ -72,7 +72,7 @@ Open `sw_power_trip_1.8.html` in any modern browser. No install required.
 - **EffectComposer** + UnrealBloomPass for glow
 - **Web Audio API** for all sound (procedural synthesis — no audio files)
 - Single `<script type="module">` — everything in one file
-
+Built with the assistance of [Claude Code](https://claude.ai/code)
 ## License
 
 Copyright (c) 2026 Caleb Zinabu. All rights reserved. See [LICENSE](LICENSE) for details.
