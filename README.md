@@ -72,7 +72,7 @@ Open `sw_power_trip_1.8.html` in any modern browser. No install required.
 - **EffectComposer** + UnrealBloomPass for glow
 - **Web Audio API** for all sound (procedural synthesis — no audio files)
 - Single `<script type="module">` — everything in one file
-Built with the assistance of [Claude Code](https://claude.ai/code)
+- Built with the assistance of [Claude Code](https://claude.ai/code)
 ## License
 
 Copyright (c) 2026 Caleb Zinabu. All rights reserved. See [LICENSE](LICENSE) for details.
