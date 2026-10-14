@@ -122,7 +122,8 @@ export function startLevel(idx){
   document.getElementById('xpval').textContent = (G.xp || 0);
   checkUnlocks();
   shared.levelPhase = 'between'; shared.phaseT = 2.6;
-  showBanner(L.name, L.sub, 2.6);
+  { const [lvl, place] = L.name.split('—').map(t => t.trim());   // 'LEVEL 1 — TEMPLE STEPS' → tag + headline
+    showBanner(place || lvl, L.sub, 2.6, place ? { kicker: lvl } : null); }
 }
 
 /* ---------- HUD chip sync + AUTOMATIC unlocks (weapons/stances/jetpack) ---------- */
@@ -167,7 +168,7 @@ export function checkUnlocks(bannerDelay){
   }
   announce.forEach((u, i) => {
     setTimeout(() => { if (G.mode !== 'play') return;
-      showBanner('UNLOCKED — ' + u.name, '[ ' + u.hud + ' ]', 3.0);
+      showBanner(u.name, /^HOLD /.test(u.hud) ? '' : 'PRESS', 3.0, { kicker: 'UNLOCKED', key: u.hud });
       sfx(540, 0.5, 'square', 0.1, 280); sfx(300, 0.4, 'triangle', 0.07, 150);
     }, (bannerDelay || 0) + i * 3200);   // stagger 3.2s apart (just past the 3.0s display dur) so each gets its own beat
   });

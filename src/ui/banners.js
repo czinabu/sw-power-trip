@@ -6,10 +6,18 @@
    UI
    ============================================================ */
 let bannerTimeout = null;
-export function showBanner(main, sub, dur){
+// opts.kicker: a small gold tag above the headline (e.g. NEW ABILITY) · opts.key: a key to show as a keycap in the subline
+export function showBanner(main, sub, dur, opts){
   const b = document.getElementById('banner');
   document.getElementById('bannerh').textContent = main;
-  document.getElementById('bannerp').textContent = sub;
+  const p = document.getElementById('bannerp');
+  p.textContent = sub;
+  if (opts && opts.key){
+    const kc = document.createElement('span'); kc.className = 'kc'; kc.textContent = opts.key;
+    p.append(' ', kc);
+  }
+  document.getElementById('bannerk').textContent = (opts && opts.kicker) || '';
+  b.classList.toggle('kick', !!(opts && opts.kicker));
   b.style.opacity = '1';
   if (bannerTimeout) clearTimeout(bannerTimeout);
   if (dur < 100) bannerTimeout = setTimeout(()=>{ b.style.opacity = '0'; }, dur*1000);

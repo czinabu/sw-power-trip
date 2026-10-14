@@ -130,7 +130,6 @@ export function startEndlessWave(){
   const head = milestone ? (n % 10 === 0 ? '◈ CHAMPION ◈' : '◈ ELITE SURGE ◈') : '';
   if (!milestone) showBanner(head, 'WAVE ' + n + (mut ? '  ·  ' + mut.name : ''), 1.6);
   if (mut) floater(V3(playerPos().x, 2.2, playerPos().z), mut.name + ' — ' + mut.tip, mut.col);
-  updateEndlessHud();
 }
 export function endlessWaveCleared(){
   gainXp(120 + G.endlessWave * 34);
@@ -144,9 +143,4 @@ export function endlessWaveCleared(){
   G.mut = null; G.eliteSurge = false;   // the mutator / surge ends with the wave
   shared.levelPhase = 'between'; shared.phaseT = 2.2;
   openSkillTree();
-}
-function updateEndlessHud(){
-  const wi = document.getElementById('waveinfo'); if (!wi) return;
-  const mut = G.mut ? MUTATORS.find(m => m.id === G.mut) : null;
-  wi.innerHTML = 'SURVIVAL · WAVE <b>' + G.endlessWave + '</b>' + (mut ? '  ·  <span style="color:'+mut.col+'">'+mut.name+'</span>' : '');
 }

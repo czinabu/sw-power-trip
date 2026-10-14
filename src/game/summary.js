@@ -5,7 +5,8 @@ import { clamp } from '../utils.js';
 import { G, player } from '../state.js';
 import { BOON_BY_ID } from '../data/boons.js';
 import { showBanner } from '../ui/banners.js';
-import { overlay, survivalUnlocked, refreshSurvivalLock } from '../ui/menus.js';
+import { icon } from '../ui/icons.js';
+import { overlay, survivalUnlocked, refreshSurvivalLock, setOverlayState } from '../ui/menus.js';
 
 /* ---------- END-OF-RUN SUMMARY + SCORE ---------- */
 export function endRun(won){
@@ -35,25 +36,22 @@ function renderRunSummary(){
              stat('BEST STREAK', '×' + st.bestStreak) + stat('DEFENSE', st.parries + st.deflects);
   if (s.acc >= 0) grid += stat('ACCURACY', Math.round(s.acc * 100) + '%');
   grid += stat('DMG TAKEN', Math.round(st.dmgTaken));
-  const title = s.endless ? 'SURVIVAL ENDED' : (s.won ? 'VICTORY' : 'YOU FELL');
+  const title = s.endless ? 'SURVIVAL ENDED' : (s.won ? 'VICTORY' : 'YOU HAVE FALLEN');
   let boonHtml = '';
   if (player.boons && Object.keys(player.boons).length){
     let items = '';
     for (const id in player.boons){ const b = BOON_BY_ID[id]; if (!b) continue;
-      const col = b.r==='legendary'?'#ffd24a':b.r==='rare'?'#7fd4ff':'#cfe6ff';
-      items += '<span style="color:'+col+';margin:0 7px;white-space:nowrap">'+b.ico+' '+b.nm+(player.boons[id]>1?' ×'+player.boons[id]:'')+'</span>';
+      items += '<span class="' + b.r + '">' + icon(b.ico) + b.nm + (player.boons[id] > 1 ? ' ×' + player.boons[id] : '') + '</span>';
     }
-    boonHtml = '<div class="rs-boons" style="margin-top:12px;font-size:10px;letter-spacing:1px;line-height:1.9;max-width:580px;text-align:center">YOUR BUILD &nbsp; '+items+'</div>';
+    boonHtml = '<div class="rs-boons"><div class="rs-bl">YOUR BUILD</div>' + items + '</div>';
   }
   el.innerHTML =
     '<div class="rs-title">' + title + '</div>' +
-    '<div class="rs-grid">' + grid + '</div>' +
     '<div class="rs-score">SCORE <b>' + s.score.toLocaleString() + '</b>' +
       (s.newBest ? '<span class="rs-best new">★ NEW BEST</span>' : '<span class="rs-best">BEST ' + s.best.toLocaleString() + '</span>') + '</div>' +
+    '<div class="rs-grid c' + (s.acc >= 0 ? 4 : 3) + '">' + grid + '</div>' +
     boonHtml;
   el.style.display = 'block';
-  const ctl = document.getElementById('ctl'); if (ctl) ctl.style.display = 'none';   // summary replaces the control list
-  const ctg = document.getElementById('ctltoggle'); if (ctg) ctg.style.display = 'none';
 }
 
 export function victory(){
@@ -71,8 +69,7 @@ export function victory(){
     document.exitPointerLock();
     // always raise the win screen (not just in the embedded fallback)
     overlay.style.display = 'flex';
-    document.getElementById('ovsub').textContent = newlyUnlocked ? '★ SURVIVAL MODE UNLOCKED — a new trial awaits' : 'THE HERALD OF THE VOID IS NO MORE';
-    document.getElementById('goText').textContent = 'YOU WIN — CLICK TO PLAY AGAIN';
-    document.getElementById('restartBtn').style.display = 'block';
+    setOverlayState('victory');
+    document.getElementById('ovsub').textContent = newlyUnlocked ? '★ SURVIVAL MODE UNLOCKED ★' : 'THE HERALD OF THE VOID IS NO MORE';
   }, 1400);
 }

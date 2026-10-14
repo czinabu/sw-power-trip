@@ -11,6 +11,7 @@ import { trailMesh } from '../../fx/trail.js';
 import { playerPos, stance } from '../helpers.js';
 
 /* ---------- stance switching: 1/2/3 or mouse wheel ---------- */
+let _synT = 0;
 export function setStanceHud(){
   const st = stance();
   for (const id of STANCE_ORDER){
@@ -18,7 +19,10 @@ export function setStanceHud(){
     chip.classList.toggle('active', id === G.stance);
     chip.classList.toggle('locked', !stanceUnlocked(id));   // dim the forms you haven't earned yet
   }
-  document.getElementById('stancesyn').textContent = st.syn;
+  // the form's strengths read for a few seconds after a change, then fade so they don't crowd the action
+  const syn = document.getElementById('stancesyn');
+  syn.textContent = st.syn; syn.classList.add('show');
+  clearTimeout(_synT); _synT = setTimeout(() => syn.classList.remove('show'), 4000);
 }
 export function switchStance(id, silent){
   if (!STANCES[id] || (G.stanceCd > 0 && !silent) || G.stance === id) return;

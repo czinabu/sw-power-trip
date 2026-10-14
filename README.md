@@ -36,7 +36,7 @@ src/
   boss/              boss lightning FX and the boss itself
   world/             textures, collision, hazards, arena builder, arenas/ (temple, foundry, plains)
   game/              level/wave flow, survival mode, progression, boons, end-of-run summary
-  ui/                banners, threat markers, HUD, store overlay, menus
+  ui/                banners, threat markers, HUD, store overlay, menus, controls (How to Play data)
 ```
 
 Each file starts with a one-line description. Balance changes usually only touch `src/data/`.
@@ -45,7 +45,7 @@ Each file starts with a one-line description. Balance changes usually only touch
 
 **Load order.** Module top-level code runs once at startup in the order `src/main.js` imports it, which matches the order of the original single file. Keep new top-level code to declarations where possible and do setup in functions.
 
-**Adding an ability:** add its function (under `player/jedi/` or `player/mando/`), a HUD chip (`#ab-*` in `index.html`), a keybind (`engine/input.js`), a store/auto-unlock entry (`data/store.js`), and a HUD cooldown row (`ui/hud.js`).
+**Adding an ability:** add its function (under `player/jedi/` or `player/mando/`), a HUD slot (`#ab-*` in `index.html`; powers go in `#abilities`, basic moves in `#basics`), a keybind (`engine/input.js`), a How to Play row (`ui/controls.js`), a store/auto-unlock entry (`data/store.js`), and a HUD cooldown row (`ui/hud.js`).
 
 **Live tweaking:** `window.GAME` in the browser console exposes the config tables and most game functions.
 

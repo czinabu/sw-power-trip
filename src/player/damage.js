@@ -15,7 +15,7 @@ import { spawnHitSpark, spawnParryFlash, spawnGroundShock } from '../fx/vfx.js';
 import { updateBoonStrip } from '../game/boons.js';
 import { endRun } from '../game/summary.js';
 import { showBanner } from '../ui/banners.js';
-import { overlay } from '../ui/menus.js';
+import { overlay, setOverlayState } from '../ui/menus.js';
 import { diffDmgMul } from '../data/difficulty.js';
 
 const MELEE_REACH_UP = 1.7;   // a melee foe can't strike you if you're perched higher than this above their feet
@@ -133,14 +133,13 @@ export function hurtPlayer(dmg, fromPos, silent, melee){
     G.mode = 'dead';
     G.slowmo = 0.2;
     endRun(false);
-    showBanner('THE FORCE FALLS SILENT', 'Click to rise again', 999);
+    showBanner(G.hero === 'mando' ? 'THE HUNT IS OVER' : 'THE FORCE FALLS SILENT', '', 999);
     setTimeout(()=>{
       if (G.mode !== 'dead') return;
       document.exitPointerLock();
       if (shared.lockFallback){
         overlay.style.display = 'flex';
-        document.getElementById('restartBtn').style.display = 'block';
-        document.getElementById('goText').textContent = 'YOU HAVE FALLEN — CLICK TO RETRY';
+        setOverlayState('dead');
       }
     }, 1200);
   }

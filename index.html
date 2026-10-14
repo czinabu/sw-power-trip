@@ -13,111 +13,208 @@
 <head>
 <meta charset="utf-8">
 <title>JEDI: POWER TRIP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@500;600;700&display=swap">
 <link rel="stylesheet" href="/styles/base.css">
 <link rel="stylesheet" href="/styles/hud.css">
 <link rel="stylesheet" href="/styles/menus.css">
 <link rel="stylesheet" href="/styles/store.css">
 </head>
-<body>
+<body class="in-menu">
 <div id="hud">
-  <div id="waveinfo"></div>
+  <!-- top-left: where you are in the run -->
+  <div id="objective">
+    <div id="waveinfo"></div>
+    <div id="xphud"><span class="xpk">XP</span><span id="xpval">0</span></div>
+  </div>
   <div id="streak"></div>
-  <div id="xphud"><span class="xpk">XP</span> <span id="xpval">0</span></div>
-  <div class="barlabel" id="hplabel">VITALITY</div>
-  <div class="barlabel" id="fclabel">FOCUS</div>
-  <div class="barwrap" id="fcwrap"><div class="bar" id="fcbar"></div></div>
-  <div class="barwrap" id="hpwrap"><div class="bar" id="hpbar"></div></div>
-  <div class="barwrap" id="fpwrap"><div class="bar" id="fpbar"></div></div>
-  <div class="barwrap" id="smwrap"><div class="bar" id="smbar"></div></div>
-  <div id="stances">
-    <div class="stance" id="st-fast" style="--c:#35c8ff"><span class="num">1</span>FAST<br>SHII-CHO</div>
-    <div class="stance" id="st-medium" style="--c:#3aff8c"><span class="num">2</span>BALANCED<br>NIMAN</div>
-    <div class="stance" id="st-strong" style="--c:#b24bff"><span class="num">3</span>STRONG<br>DJEM SO</div>
+
+  <!-- bottom-left: your vitals -->
+  <div id="status">
+    <div class="meter" id="fcmeter">
+      <div class="mrow"><span class="barlabel" id="fclabel">FOCUS</span></div>
+      <div class="barwrap" id="fcwrap"><div class="bar" id="fcbar"></div></div>
+    </div>
+    <div class="meter" id="hpmeter">
+      <div class="mrow"><span class="barlabel" id="hplabel">VITALITY</span><span class="mval" id="hpval"></span></div>
+      <div class="barwrap" id="hpwrap"><div class="bar" id="hpbar"></div></div>
+    </div>
+    <div class="meter" id="fpmeter">
+      <div class="mrow"><span class="barlabel" id="fplabel">FORCE</span><span class="mval" id="fpval"></span></div>
+      <div class="barwrap" id="fpwrap"><div class="bar" id="fpbar"></div></div>
+    </div>
+    <div class="barwrap" id="smwrap"><div class="bar" id="smbar"></div></div>
   </div>
-  <div id="stancesyn"></div>
-  <div id="abilities">
-    <div class="ab j-ab" id="ab-atk"><span class="key">LMB</span>SABER</div>
-    <div class="ab j-ab" id="ab-block"><span class="key">RMB</span>BLOCK</div>
-    <div class="ab j-ab" id="ab-push"><span class="key">F</span>PUSH</div>
-    <div class="ab j-ab" id="ab-dash"><span class="key">SHIFT</span>DASH</div>
-    <div class="ab j-ab" id="ab-kick"><span class="key">E</span>KICK</div>
-    <div class="ab j-ab" id="ab-slam" style="display:none"><span class="key">X</span>SLAM</div>
-    <div class="ab j-ab" id="ab-throw" style="display:none"><span class="key">R+L</span>THROW</div>
-    <div class="ab j-ab" id="ab-pull" style="display:none"><span class="key">C</span>PULL</div>
-    <div class="ab j-ab" id="ab-judge" style="display:none"><span class="key">R</span>JUDGE</div>
-    <div class="ab j-ab" id="ab-repulse" style="display:none"><span class="key">R</span>REPULSE</div>
-    <div class="ab j-ab" id="ab-barrier" style="display:none"><span class="key">V</span>BARRIER</div>
-    <div class="ab j-ab" id="ab-mend" style="display:none"><span class="key">X</span>MEND</div>
-    <div class="ab m-ab wide" id="ab-blaster"><span class="key">LMB</span><span id="wpnLabel">BLASTER</span><span class="ammo" id="ammoLabel">100%</span></div>
-    <div class="ab m-ab" id="ab-reload"><span class="key">R</span>VENT</div>
-    <div class="ab m-ab" id="ab-brace"><span class="key">RMB</span>BRACE</div>
-    <div class="ab m-ab" id="ab-jet"><span class="key">SPC</span>JET</div>
-    <div class="ab m-ab" id="ab-boost"><span class="key">SHFT</span>BOOST</div>
-    <div class="ab m-ab" id="ab-melee"><span class="key">E</span>PUNCH</div>
-    <div class="ab m-ab" id="ab-mslam" style="display:none"><span class="key">X</span>SLAM</div>
-    <div class="ab m-ab" id="ab-flame" style="display:none"><span class="key">F</span>FLAME</div>
-    <div class="ab m-ab" id="ab-rocket" style="display:none"><span class="key">Q</span>ROCKET</div>
-    <div class="ab m-ab" id="ab-deto" style="display:none"><span class="key">V</span>DETONATOR</div>
-    <div class="ab m-ab" id="ab-birds" style="display:none"><span class="key">V</span>BIRDS</div>
-    <div class="ab m-ab" id="ab-grapple" style="display:none"><span class="key">X</span>GRAPPLE</div>
-    <div class="ab m-ab" id="ab-dark" style="display:none"><span class="key">LMB</span>SABER</div>
-    <div class="ab m-ab" id="ab-missile" style="display:none"><span class="key">Z</span>MISSILE</div>
-    <div class="ab m-ab" id="ab-bacta" style="display:none"><span class="key">H</span>BACTA</div>
+
+  <!-- bottom-right: everything you can press -->
+  <div id="actionbar">
+    <div id="stancebox">
+      <div id="stancesyn"></div>
+      <div id="stances">
+        <div class="stance" id="st-fast" style="--c:#35c8ff"><span class="num">1</span><span class="snm">SHII-CHO</span><span class="sty">FAST</span></div>
+        <div class="stance" id="st-medium" style="--c:#3aff8c"><span class="num">2</span><span class="snm">NIMAN</span><span class="sty">BALANCED</span></div>
+        <div class="stance" id="st-strong" style="--c:#b24bff"><span class="num">3</span><span class="snm">DJEM SO</span><span class="sty">STRONG</span></div>
+      </div>
+    </div>
+    <div id="ab-blaster" class="m-ab weaponbox">
+      <div class="wslots" id="wslots"></div>
+      <div class="wrow"><span id="wpnLabel">BLASTER</span><span class="ammo" id="ammoLabel">100%</span></div>
+    </div>
+    <div id="basics">
+      <div class="ab hint j-ab" id="ab-atk"><span class="key">LMB</span><span class="an">SABER</span></div>
+      <div class="ab hint j-ab" id="ab-block"><span class="key">RMB</span><span class="an">BLOCK</span></div>
+      <div class="ab hint j-ab" id="ab-kick"><span class="key">E</span><span class="an">KICK</span></div>
+      <div class="ab hint m-ab" id="ab-dark" style="display:none"><span class="key">LMB</span><span class="an">SLASH</span></div>
+      <div class="ab hint m-ab" id="ab-brace"><span class="key">RMB</span><span class="an">BRACE</span></div>
+      <div class="ab hint m-ab" id="ab-reload"><span class="key">R</span><span class="an">VENT</span></div>
+      <div class="ab hint m-ab" id="ab-melee"><span class="key">E</span><span class="an">PUNCH</span></div>
+      <div class="ab hint m-ab" id="ab-jet"><span class="key">SPACE</span><span class="an">JETPACK</span></div>
+      <div class="ab hint m-ab" id="ab-boost"><span class="key">SHIFT</span><span class="an">BOOST</span></div>
+    </div>
+    <div id="abilities">
+      <div class="ab slot j-ab" id="ab-dash"><span class="key">SHIFT</span><span class="an">DASH</span><span class="cdt"></span></div>
+      <div class="ab slot j-ab" id="ab-push"><span class="key">F</span><span class="an">PUSH</span><span class="cdt"></span></div>
+      <div class="ab slot j-ab" id="ab-pull" style="display:none"><span class="key">C</span><span class="an">PULL</span><span class="cdt"></span></div>
+      <div class="ab slot j-ab" id="ab-slam" style="display:none"><span class="key">X</span><span class="an">SLAM</span><span class="cdt"></span></div>
+      <div class="ab slot j-ab" id="ab-mend" style="display:none"><span class="key">X</span><span class="an">MEND</span><span class="cdt"></span></div>
+      <div class="ab slot j-ab" id="ab-barrier" style="display:none"><span class="key">V</span><span class="an">BARRIER</span><span class="cdt"></span></div>
+      <div class="ab slot j-ab" id="ab-throw" style="display:none"><span class="key">RMB+LMB</span><span class="an">THROW</span><span class="cdt"></span></div>
+      <div class="ab slot j-ab" id="ab-judge" style="display:none"><span class="key">R</span><span class="an">JUDGE</span><span class="cdt"></span></div>
+      <div class="ab slot j-ab" id="ab-repulse" style="display:none"><span class="key">R</span><span class="an">REPULSE</span><span class="cdt"></span></div>
+      <div class="ab slot m-ab" id="ab-flame" style="display:none"><span class="key">F</span><span class="an">FLAME</span><span class="cdt"></span></div>
+      <div class="ab slot m-ab" id="ab-rocket" style="display:none"><span class="key">Q</span><span class="an">ROCKET</span><span class="cdt"></span></div>
+      <div class="ab slot m-ab" id="ab-grapple" style="display:none"><span class="key">X</span><span class="an">GRAPPLE</span><span class="cdt"></span></div>
+      <div class="ab slot m-ab" id="ab-mslam" style="display:none"><span class="key">X</span><span class="an">SLAM</span><span class="cdt"></span></div>
+      <div class="ab slot m-ab" id="ab-deto" style="display:none"><span class="key">V</span><span class="an">DETONATOR</span><span class="cdt"></span></div>
+      <div class="ab slot m-ab" id="ab-birds" style="display:none"><span class="key">V</span><span class="an">BIRDS</span><span class="cdt"></span></div>
+      <div class="ab slot m-ab" id="ab-missile" style="display:none"><span class="key">Z</span><span class="an">MISSILE</span><span class="cdt"></span></div>
+      <div class="ab slot m-ab" id="ab-bacta" style="display:none"><span class="key">H</span><span class="an">BACTA</span><span class="cdt"></span></div>
+    </div>
   </div>
+
   <div id="bosswrap"><div id="bossname"></div><div id="bossbarbg"><div id="bossbar"></div></div></div>
-  <div id="banner"><h1 id="bannerh"></h1><p id="bannerp"></p></div>
+  <div id="banner"><div id="bannerk"></div><h1 id="bannerh"></h1><p id="bannerp"></p></div>
   <div id="xh"></div>
   <div id="reticle"><span class="ring"></span><span class="rl t"></span><span class="rl r"></span><span class="rl b"></span><span class="rl l"></span><span class="dot"></span></div>
   <div id="energymeter"><div id="energyfill"></div></div>
-  <div id="xpmeter"><div id="xpmeterfill"></div><div id="xpmetertxt"></div></div>
+  <div id="xpmeter"><div id="xpmetertxt"></div><div id="xpmeterbar"><div id="xpmeterfill"></div></div></div>
   <div id="vig"></div>
   <div id="stamvig"></div>
   <div id="flash"></div>
   <div id="exhaust"></div>
 </div>
-<div id="overlay">
-  <h1>POWER TRIP</h1>
-  <h2 id="ovsub">CHOOSE YOUR LEGEND</h2>
-  <div id="modeselect">
-    <div class="modeopt sel" id="mode-campaign"><span class="mt">CAMPAIGN</span><span class="md">3 levels · a boss · a story</span></div>
-    <div class="modeopt" id="mode-endless"><span class="mt">SURVIVAL</span><span class="md">endless escalating waves · chase a high score</span></div>
+
+<div id="overlay" class="st-menu">
+  <div class="ov-inner">
+    <header class="ov-head">
+      <h1>POWER TRIP</h1>
+      <h2 id="ovsub">CHOOSE YOUR LEGEND</h2>
+    </header>
+    <div id="runsummary"></div>
+    <section id="setup">
+      <div class="sec-label">HERO</div>
+      <div id="heroselect">
+        <div class="herocard brk sel" id="hero-jedi">
+          <svg class="hi" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="gj" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#7fe3ff"/><stop offset="1" stop-color="#e9fbff"/></linearGradient></defs>
+            <line x1="14" y1="50" x2="52" y2="12" stroke="#35c8ff" stroke-width="7" stroke-linecap="round" opacity=".35"/>
+            <line x1="16" y1="48" x2="52" y2="12" stroke="url(#gj)" stroke-width="3" stroke-linecap="round"/>
+            <rect x="6" y="47" width="14" height="6" rx="1.5" transform="rotate(-45 13 50)" fill="#b9c6d2"/><rect x="11" y="45" width="2" height="9" transform="rotate(-45 13 50)" fill="#4a5866"/></svg>
+          <div class="htext">
+            <div class="hn">JEDI</div>
+            <div class="hrole">Melee duelist</div>
+            <ul class="hd">
+              <li>Three saber forms for crowds, all-round or brutes</li>
+              <li>Time your block to parry blows and deflect bolts</li>
+              <li>Force powers: push, pull and more as you grow</li>
+            </ul>
+          </div>
+        </div>
+        <div class="herocard brk" id="hero-mando">
+          <svg class="hi" viewBox="0 0 64 64" aria-hidden="true"><path d="M14 30c0-12 8-20 18-20s18 8 18 20v18c0 3-2 5-5 5H19c-3 0-5-2-5-5z" fill="#b8c4cf"/><path d="M14 30c0-12 8-20 18-20s18 8 18 20" fill="none" stroke="#e6eef5" stroke-width="1.5" opacity=".7"/>
+            <path d="M20 26h24v6H35v16h-6V32h-9z" fill="#0b1118"/><circle cx="18" cy="40" r="1.6" fill="#7d8b97"/></svg>
+          <div class="htext">
+            <div class="hn">MANDALORIAN</div>
+            <div class="hrole">Ranged hunter</div>
+            <ul class="hd">
+              <li>Blasters: aim for the head, mind the heat</li>
+              <li>Jetpack flight, boosts and diving strikes</li>
+              <li>Gadgets: flame, rockets and more as you grow</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="setup-row">
+        <div class="setup-col">
+          <div class="sec-label">MODE</div>
+          <div id="modeselect">
+            <div class="modeopt brk sel" id="mode-campaign"><span class="mt">CAMPAIGN</span><span class="md">3 levels and a boss finale</span></div>
+            <div class="modeopt brk" id="mode-endless"><span class="mt">SURVIVAL</span><span class="md">endless waves, chase a high score</span></div>
+          </div>
+        </div>
+        <div class="setup-col">
+          <div class="sec-label">DIFFICULTY</div>
+          <div id="diffselect">
+            <div class="modeopt brk" id="diff-padawan"><span class="mt">PADAWAN</span><span class="md">forgiving</span></div>
+            <div class="modeopt brk sel" id="diff-knight"><span class="mt">KNIGHT</span><span class="md">intended</span></div>
+            <div class="modeopt brk" id="diff-master"><span class="mt">MASTER</span><span class="md">brutal</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <div class="ov-actions">
+      <div class="btn primary go" id="goText">BEGIN</div>
+      <div class="btn" id="restartBtn">↻ RESTART RUN</div>
+      <div class="btn" id="ctltoggle">HOW TO PLAY</div>
+    </div>
+    <div id="settingsrow">
+      <div class="setpill" id="gfxctl">GRAPHICS<span class="setval" id="gfxval">HIGH</span><span class="gfxhint">P</span></div>
+      <div class="setpill" id="swingctl" title="Mirror which way your directional saber cuts sweep">SWING<span class="setval" id="swingval">NORMAL</span></div>
+      <label class="setpill">SENSITIVITY<input type="range" id="senssl" min="0.4" max="2.2" step="0.05" value="1"><span class="setval" id="sensval">1.0×</span></label>
+      <label class="setpill">VOLUME<input type="range" id="volsl" min="0" max="1" step="0.05" value="1"><span class="setval" id="volval">100%</span></label>
+    </div>
+    <div class="ov-foot">Press <kbd>Esc</kbd> to pause · <kbd>M</kbd> music on/off · <kbd>P</kbd> graphics quality</div>
   </div>
-  <div id="diffselect">
-    <div class="modeopt" id="diff-padawan"><span class="mt">PADAWAN</span><span class="md">forgiving · for learning the blade</span></div>
-    <div class="modeopt sel" id="diff-knight"><span class="mt">KNIGHT</span><span class="md">the intended challenge</span></div>
-    <div class="modeopt" id="diff-master"><span class="mt">MASTER</span><span class="md">unforgiving · enemies hit harder &amp; endure</span></div>
+  <div id="howto">
+    <div class="howto-panel">
+      <div class="howto-head"><div class="howto-title">HOW TO PLAY</div><div class="howto-hero" id="howtohero"></div><div class="howto-x" id="howtoclose">✕</div></div>
+      <div class="ctl" id="ctl"></div>
+    </div>
   </div>
-  <div id="heroselect">
-    <div class="herocard sel" id="hero-jedi"><div class="hi">⚔</div><div class="hn">JEDI</div><div class="hd">Lightsaber forms · Force powers · deflect &amp; parry</div></div>
-    <div class="herocard" id="hero-mando"><div class="hi">⏶</div><div class="hn">MANDALORIAN</div><div class="hd">Jetpack · dual blasters · beskar brace &amp; rockets</div></div>
-  </div>
-  <div id="ctltoggle">CONTROLS ▾</div>
-  <div class="ctl" id="ctl"></div>
-  <div id="runsummary"></div>
-  <div class="go" id="goText">CLICK TO IGNITE</div>
-  <div id="gfxctl">GRAPHICS<span id="gfxval">HIGH</span><span class="gfxhint">(P)</span></div>
-  <div id="swingctl">SWING<span id="swingval">NORMAL</span></div>
-  <div id="settingsrow">
-    <label class="setpill">SENS<input type="range" id="senssl" min="0.4" max="2.2" step="0.05" value="1"><span class="setval" id="sensval">1.0×</span></label>
-    <label class="setpill">VOL<input type="range" id="volsl" min="0" max="1" step="0.05" value="1"><span class="setval" id="volval">100%</span></label>
-  </div>
-  <div id="restartBtn">↻ RESTART RUN</div>
 </div>
 <div id="boonstrip"></div>
 <div id="threats"><div id="dmgind"><i></i></div></div>
 <div id="hitmark"><i></i><i></i><i></i><i></i></div>
 <div id="skilltree">
-  <h1>WAVE CLEARED</h1>
-  <div class="sub">CHANNEL THE FORCE — CHOOSE ONE PATH</div>
-  <div id="xpbalance">XP AVAILABLE: <b id="xpbalval">0</b></div>
-  <div class="storehdr" id="boonhdr">CHOOSE A BOON — one free pick</div>
-  <div id="booncards"></div>
-  <div class="storehdr" id="storehdr">ARSENAL — SPEND XP TO UNLOCK</div>
-  <div id="storecards"></div>
-  <div class="storehdr" id="freehdr">FREE UPGRADE — CHOOSE ONE</div>
-  <div id="skillcards"></div>
-  <div id="skillgoals"></div>
-  <div id="continueBtn">CONTINUE →</div>
+  <div class="st-scroll">
+    <header class="st-head">
+      <div class="st-kicker" id="stkicker"></div>
+      <h1>WAVE CLEARED</h1>
+      <div class="sub">CHANNEL THE FORCE</div>
+      <div class="st-wallet">
+        <div class="coin xp" id="xpbalance"><span class="cl">XP</span><b id="xpbalval">0</b></div>
+        <div class="coin sp"><span class="cl">SKILL POINTS</span><b id="spbalval">0</b></div>
+      </div>
+    </header>
+    <section class="st-sec" id="boonsec">
+      <div class="storehdr" id="boonhdr"><span class="sh-t">BOON</span><span class="sh-h">Pick one, free</span></div>
+      <div id="booncards" class="cardrow"></div>
+    </section>
+    <section class="st-sec">
+      <div class="storehdr"><span class="sh-t" id="storehdr">ABILITIES</span><span class="sh-h">Spend XP · paired cards are a choice, the other locks for this run</span></div>
+      <div id="storecards" class="cardrow"></div>
+    </section>
+    <section class="st-sec">
+      <div class="storehdr"><span class="sh-t" id="freehdr">TRAINING</span><span class="sh-h" id="freehelp">Spend skill points · you earn one each wave</span></div>
+      <div id="skillcards" class="cardrow"></div>
+    </section>
+    <div id="skillgoals"></div>
+  </div>
+  <footer class="st-foot">
+    <span class="st-hint" id="sthint">Unspent XP and skill points carry over</span>
+    <div class="btn primary" id="continueBtn">CONTINUE</div>
+  </footer>
 </div>
 <div id="cine"></div>
 <div id="grain"></div>
