@@ -1,10 +1,53 @@
 # POWER TRIP
 
-A Star Wars-inspired third-person action game built entirely in a single HTML file using [Three.js](https://threejs.org/). No build tools, no frameworks, no asset files. Just one self-contained file with procedural meshes, synthesized audio, and adaptive music.
+A Star Wars-inspired third-person action game built with [Three.js](https://threejs.org/). No frameworks, no asset files: procedural meshes, synthesized audio, and adaptive music. The source is split into small modules by system, and the build still produces one self-contained HTML file.
 
 ## Play
 
-Open `sw_power_trip_2.9.html` in any modern browser. No install required.
+Needs [Node.js](https://nodejs.org/) 22 or newer.
+
+```sh
+npm install        # once
+npm run dev        # play at the printed localhost URL; reloads instantly as you edit
+npm run build      # writes dist/index.html, one self-contained file you can double-click or share
+```
+
+Opening `index.html` directly does not work (browsers block module imports from `file://`); use `npm run dev`, or open the built `dist/index.html`.
+
+The old single-file versions (0.1 to 2.9) are kept in `archive/` for reference and still open with a double-click.
+
+## Project layout
+
+```
+index.html           HUD and menu markup; loads styles/ and src/main.js
+styles/              base.css, hud.css, menus.css, store.css
+src/
+  main.js            imports every module in load order, runs the main loop, exposes window.GAME
+  state.js           G (run state), player, entity arrays, keys, and `shared` (values that get reassigned)
+  utils.js           math helpers
+  data/              tuning tables: config, stances, enemies, levels, bosses, mando, skills, store, boons, mutators, difficulty
+  engine/            renderer + post-processing, graphics quality, input, camera
+  audio/             sound effects, adaptive music
+  fx/                particles, floating text, VFX lights, saber trail, one-shot VFX, ambient embers
+  player/            rig (mesh.js), hero swap, movement, damage, updatePlayer (update.js)
+    jedi/            stances, focus, saber combat, Force powers, Judgement FX
+    mando/           weapons, gadgets, darksaber
+  enemies/           meshes, elites, special moves, spawning, damage, AI, blaster bolts
+  boss/              boss lightning FX and the boss itself
+  world/             textures, collision, hazards, arena builder, arenas/ (temple, foundry, plains)
+  game/              level/wave flow, survival mode, progression, boons, end-of-run summary
+  ui/                banners, threat markers, HUD, store overlay, menus
+```
+
+Each file starts with a one-line description. Balance changes usually only touch `src/data/`.
+
+**Shared state.** Objects like `G`, `player`, `CFG` and the entity arrays are exported and mutated in place from any file. A few values get *reassigned* during play (`boss`, `saberProj`, `levelPhase`, `phaseT`, `arenaGroup`, `arenaHalf`, the audio context, …). ES module imports are read-only, so those live on the `shared` object in `src/state.js` and are used as `shared.boss`, `shared.levelPhase`, and so on. (The name `shared` was picked because `state` is already used as a local variable inside the music code.) A new variable that other files need to reassign belongs there too.
+
+**Load order.** Module top-level code runs once at startup in the order `src/main.js` imports it, which matches the order of the original single file. Keep new top-level code to declarations where possible and do setup in functions.
+
+**Adding an ability:** add its function (under `player/jedi/` or `player/mando/`), a HUD chip (`#ab-*` in `index.html`), a keybind (`engine/input.js`), a store/auto-unlock entry (`data/store.js`), and a HUD cooldown row (`ui/hud.js`).
+
+**Live tweaking:** `window.GAME` in the browser console exposes the config tables and most game functions.
 
 ## Features
 
@@ -68,10 +111,10 @@ Open `sw_power_trip_2.9.html` in any modern browser. No install required.
 
 ## Tech
 
-- **Three.js** (r160) via CDN importmap
+- **Three.js** (r160, pinned) from npm
 - **EffectComposer** + UnrealBloomPass for glow
 - **Web Audio API** for all sound (procedural synthesis — no audio files)
-- Single `<script type="module">` — everything in one file
+- **Vite** for the dev server and build, with `vite-plugin-singlefile` to inline everything into one HTML file
 - Built with the assistance of [Claude Code](https://claude.ai/code)
 ## License
 

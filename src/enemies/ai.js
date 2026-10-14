@@ -1,0 +1,409 @@
+// POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
+// updateEnemies(): per-frame enemy AI.
+
+import { CFG } from '../data/config.js';
+import { scene, camera } from '../engine/renderer.js';
+import { sfx } from '../audio/sfx.js';
+import { V3, rand, clamp, TMP, dampToward } from '../utils.js';
+import { burst } from '../fx/particles.js';
+import { G, enemies, solids } from '../state.js';
+import { MELEE_WINDUP_GAP } from '../data/mando.js';
+import { playerPos } from '../player/helpers.js';
+import { bomberExplode, updateAimLine, warbringerSlam } from './specials.js';
+import { damageEnemy, hostileTargetFor, easeWeaponHome, telegraphWindup, staggerEnemy } from './damage.js';
+import { fireBolt } from './bolts.js';
+import { damageBoss } from '../boss/boss.js';
+import { spawnGroundShock } from '../fx/vfx.js';
+import { segBlockedBySolids, clampToArena, collideSolids } from '../world/collision.js';
+import { hurtPlayer } from '../player/damage.js';
+import { enemyDmgScale } from '../game/survival.js';
+
+export function updateEnemies(dt){
+  const pp = playerPos();
+  for (let i = enemies.length-1; i >= 0; i--){
+    const e = enemies[i], g = e.group, t = e.t;
+    e.st -= dt;
+    if (g.userData.eliteRing) g.userData.eliteRing.rotation.z += dt * 2.5;   // elite halo spins
+    if (e.converted && !e.dead){
+      e.convT -= dt;
+      if (e.convT <= 0) damageEnemy(e, 9999, V3(0,0,1), 4);   // their service ends
+    }
+    if (e.flash > 0){
+      e.flash -= dt;
+      g.userData.bodyMat.emissive.setHex(0x66aaff);
+      g.userData.bodyMat.emissiveIntensity = 2;
+    } else if (e.state === 'stasis'){
+      g.userData.bodyMat.emissive.setHex(0x2288ff);
+      g.userData.bodyMat.emissiveIntensity = 0.9 + Math.sin(G.gt*10)*0.3;
+    } else if (e.state !== 'windup') g.userData.bodyMat.emissiveIntensity = 0;
+    if (e.hitCd > 0) e.hitCd -= dt;
+    if (e.aimLine && e.state !== 'windup') e.aimLine.visible = false;   // the marksman's beam only shows while charging
+
+    // pick a target: the player, or — for mind-tricked units — their old allies
+    let tgtPos = pp, tgtEnemy = null, tgtBoss = false;
+    if (e.converted){
+      const tt = hostileTargetFor(e);
+      if (tt){ tgtPos = tt.pos; tgtEnemy = tt.enemy; tgtBoss = tt.boss; }
+      else tgtPos = null;
+    }
+    let tx = 0, tz = 0, dist = 999;
+    if (tgtPos){
+      TMP.subVectors(tgtPos, g.position); TMP.y = 0;
+      dist = TMP.length();
+      if (dist > 0.001){ TMP.normalize(); tx = TMP.x; tz = TMP.z; }
+    }
+
+    switch (e.state){
+      case 'spawn':
+        g.position.y = Math.min(0, -e.st * 6);
+        if (e.st <= 0){ g.position.y = 0; e.state = 'chase'; }
+        break;
+      case 'chase': {
+        if (tgtPos) g.rotation.y = Math.atan2(tx, tz);
+        // WARBRINGER mid-boss — periodically LEAPS and quakes the ground where you stand (dash/jump it)
+        if (e.warbringer && !e.converted && dist > 4.5 && dist < 17 && (e.leapCd = (e.leapCd || 3) - dt) <= 0){
+          e.state = 'leapwind'; e.st = 0.55;
+          e.leapTarget = { x: pp.x, z: pp.z }; e.leapFrom = { x: g.position.x, z: g.position.z };
+          spawnGroundShock(V3(pp.x, 0.1, pp.z), 0xff5a3a, 5, 0.55, 0.5);   // a warning ring marks the landing zone
+          sfx(90, 0.3, 'sawtooth', 0.12, 50);
+          break;
+        }
+        let mx = tx, mz = tz;
+        // separation from other enemies
+        for (const o of enemies){
+          if (o === e || o.dead) continue;
+          const dx = g.position.x - o.group.position.x, dz = g.position.z - o.group.position.z;
+          const d2 = dx*dx + dz*dz;
+          if (d2 < 2.6 && d2 > 0.001){ const inv = 0.9/Math.sqrt(d2); mx += dx*inv; mz += dz*inv; }
+        }
+        const keepR = t.sniper ? 12 : t.range * 0.7;                   // snipers hold a fixed standoff, not full 32u
+        // COVER — ranged ground troops (not flyers, who stay airborne by design; not converted allies) check LOS to
+        // their target each frame. No clear shot → steer toward the near side of whatever's in the way and hold
+        // there (peek) instead of standing exposed in the open. ANTI-TURTLE: after 3s with no shot, give up hiding
+        // and just engage as before — guarantees they can't camp forever if the geometry boxes them in.
+        let exposed = true;
+        if (t.ranged && !t.fly && !e.converted){
+          exposed = !segBlockedBySolids(g.position.x, g.position.z, tgtPos.x, tgtPos.z);
+          e.hideT = exposed ? 0 : (e.hideT || 0) + dt;
+        }
+        const forceExposed = (e.hideT || 0) > 3.0;
+        if (t.ranged && !t.fly && !e.converted && !exposed && !forceExposed){
+          const cv = segBlockedBySolids(g.position.x, g.position.z, tgtPos.x, tgtPos.z);
+          const cr = cv.box ? Math.hypot(cv.hx, cv.hz) : cv.r;
+          const awayX = cv.x - tgtPos.x, awayZ = cv.z - tgtPos.z, awayL = Math.hypot(awayX, awayZ) || 1;
+          const coverX = cv.x + (awayX/awayL)*(cr + 1.0), coverZ = cv.z + (awayZ/awayL)*(cr + 1.0);
+          const toX = coverX - g.position.x, toZ = coverZ - g.position.z, toL = Math.hypot(toX, toZ) || 1;
+          mx = toL > 0.6 ? toX/toL : 0; mz = toL > 0.6 ? toZ/toL : 0;
+        } else if (t.ranged && dist < keepR){ mx = -tx; mz = -tz; }   // exposed (or flyer) & too close — keep distance
+        // OBSTACLE AVOIDANCE — arc around pillars & crates instead of grinding into them.
+        // Steer around only the SINGLE most-threatening solid and LOCK the turn direction while we're
+        // engaged with it (hysteresis). The old per-solid steering flip-flopped frame to frame, which
+        // is what pinned foes against cover; committing to one side lets them flow around it.
+        {
+          let hx = mx, hz = mz; const hl = Math.hypot(hx, hz) || 1; hx /= hl; hz /= hl;
+          const er = 0.7 * (t.scale || 1);
+          let threat = null, threatStr = 0, threatPerp = 0, threatOd = 0, threatRad = 0;
+          for (const c of solids){
+            if (c.climbable) continue;   // shallow steps (the temple dais) are walked OVER, not steered around
+            const ox = c.x - g.position.x, oz = c.z - g.position.z;
+            const od = Math.hypot(ox, oz) || 1;
+            const orad = (c.box ? Math.hypot(c.hx, c.hz) : c.r) + er + 0.5;
+            const look = orad + 5;
+            if (od > look) continue;
+            const ahead = (ox/od)*hx + (oz/od)*hz;       // is the solid in front of us?
+            if (ahead <= 0.15) continue;                 // beside/behind — not in the way
+            const perp = -ox*hz + oz*hx;                 // signed lateral offset from our heading
+            if (Math.abs(perp) > orad) continue;         // our path already clears it
+            const str = (1 - od/look) * ahead;
+            if (str > threatStr){ threatStr = str; threat = c; threatPerp = perp; threatOd = od; threatRad = orad; }
+          }
+          if (threat){
+            // commit to a side: keep steering the same way until this obstacle is behind us
+            if (e.avoid !== threat){ e.avoid = threat; e.avoidSide = threatPerp >= 0 ? 1 : -1; }
+            const s = e.avoidSide, strength = threatStr * 4.5;
+            mx += s * hz * strength; mz += s * -hx * strength;
+            // head-on & close → BRAKE (don't ram) so the turn has room to bite
+            if (Math.abs(threatPerp) < threatRad * 0.5 && threatOd < threatRad + 1.6){ mx -= hx * 0.7; mz -= hz * 0.7; }
+          } else e.avoid = null;
+        }
+        // JET TROOPER ORBIT — strafe perpendicular to the player so it's a moving aerial threat, not a turret
+        if (t.fly){
+          if (e.orbit === undefined) e.orbit = Math.random() < 0.5 ? 1 : -1;
+          if ((e.orbitT = (e.orbitT || 0) - dt) <= 0){ e.orbit *= -1; e.orbitT = rand(2.2, 4.0); }   // occasionally reverse
+          const pl = Math.hypot(tx, tz) || 1;
+          mx += (-tz/pl) * e.orbit * 0.85; mz += (tx/pl) * e.orbit * 0.85;
+        }
+        const ml = Math.hypot(mx, mz) || 1;
+        const esp = e.spd * (G.mut === 'berserk' ? 1.3 : 1);   // BERSERK mutator: enemies surge in faster
+        g.position.x += (mx/ml) * esp * dt;
+        g.position.z += (mz/ml) * esp * dt;
+        // (grounded y comes from the surface height set after collision — so foes can WALK UP the dais; flyers hover)
+        if (dist < t.range){
+          if (t.bomber){ e.state = 'fuse'; e.st = t.fuse; sfx(880, 0.08, 'square', 0.05, 880); }   // light the fuse
+          // COVER GATE: a hidden ranged ground trooper won't commit to a windup it can't land — it just keeps
+          // peeking (cover-seeking movement above) until exposed or the anti-turtle valve kicks in.
+          else if (t.ranged && !t.fly && !e.converted && !exposed && !forceExposed){ /* no clear shot — hold */ }
+          // MELEE WINDUP STAGGER: hostile (non-converted) melee foes share a cooldown so a crowd doesn't all coil &
+          // swing at once — ranged/converted foes are unaffected (already standoff/ally-targeted, not a swarm problem).
+          else if (t.ranged || e.converted || G.gt - (G.lastMeleeWindupT ?? -9) >= MELEE_WINDUP_GAP){
+            e.state = 'windup'; e.st = t.windup; telegraphWindup(e);
+            if (!t.ranged && !e.converted) G.lastMeleeWindupT = G.gt;
+          }
+          // else: another melee foe just committed to a swing — hold in chase this frame and retry next frame
+        }
+        break;
+      }
+      case 'fuse': {
+        // SABOTEUR — still rushing, but now armed: blink/whine faster as the fuse burns, then DETONATE.
+        if (tgtPos) g.rotation.y = Math.atan2(tx, tz);
+        const burn = 1 - Math.max(e.st, 0) / t.fuse;     // 0→1
+        g.position.x += tx * e.spd * 1.05 * dt; g.position.z += tz * e.spd * 1.05 * dt;   // lunges the last step in
+        const blink = (Math.sin(G.gt * (10 + burn*40)) * 0.5 + 0.5);
+        if (g.userData.bombCore){ g.userData.bombCore.scale.setScalar(1 + burn*0.8 + blink*0.4); g.userData.bombCore.material.color.setHex(blink > 0.5 ? 0xffffff : t.eye); }
+        g.userData.bodyMat.emissive.setHex(0xff7a1a); g.userData.bodyMat.emissiveIntensity = burn * 1.8 * blink;
+        if ((e.fuseBeep = (e.fuseBeep || 0) - dt) <= 0){ sfx(700 + burn*900, 0.05, 'square', 0.04, 700); e.fuseBeep = 0.22 - burn*0.14; }
+        if (e.st <= 0 && !e.dead){ bomberExplode(e); e.hp = 0; damageEnemy(e, 9999, V3(tx,0,tz), 2); }   // consumed by its own blast
+        break;
+      }
+      case 'windup': {
+        g.rotation.y = Math.atan2(tx, tz);
+        const heavy = !!t.heavy;
+        g.userData.bodyMat.emissive.setHex(e.converted ? 0x33cc55 : 0xff2a18);
+        const wk = 1 - Math.max(e.st,0)/t.windup;
+        // anticipation: COIL hard and fast, then hold at the apex (a readable pause before the blow)
+        const coil = Math.pow(wk, 0.5);
+        g.userData.bodyMat.emissiveIntensity = (0.4 + coil * coil * 2.4) + Math.sin(G.gt*30)*0.25*coil;   // pulsing charge
+        // the whole body COILS away from the strike — leans back & loads down onto the rear foot
+        g.rotation.x = -coil * (heavy ? 0.55 : 0.4);
+        // (vertical position is owned by the surface-height step after collision — keep the coil/lean tell only)
+        // eyes flare wide as the strike charges
+        if (g.userData.eye){ const s = 1 + coil*(heavy?1.4:0.9); g.userData.eye.scale.set(g.userData.eyeBase.x*s, g.userData.eyeBase.y*(1+coil*1.6), g.userData.eyeBase.z); }
+        // the weapon REARS BACK & HIGH — a huge, unmistakable tell
+        if (g.userData.staff){
+          g.userData.staff.rotation.z = 0.5 - coil * 2.9;
+          g.userData.staff.rotation.x = 0.3 + coil * 0.9;
+        } else if (g.userData.weaponArm){
+          g.userData.weaponArm.rotation.x = -0.35 - coil * (heavy ? 2.7 : 2.1);   // brute hauls the maul way overhead
+          g.userData.weaponArm.rotation.z = coil * (heavy ? 0.9 : 0.6);
+        }
+        // charging embers stream off the weapon near the apex
+        if (coil > 0.6 && Math.random() < (heavy ? 0.5 : 0.32))
+          burst(V3(g.position.x + tx*0.3, g.position.y + (heavy?3.0:2.3), g.position.z + tz*0.3), heavy ? 0xff5522 : t.eye, 1, 3, 4, 0.7);
+        // MARKSMAN — paint a laser sight on the player that brightens to white as the shot charges (the dodge tell)
+        if (t.sniper && tgtPos)
+          updateAimLine(e, V3(g.position.x, g.position.y+1.4, g.position.z), V3(tgtPos.x, tgtPos.y+1.4, tgtPos.z), wk);
+        if (e.st <= 0){
+          if (t.ranged){
+            if (tgtPos){
+              // aim at the target's TORSO including height — so a foe on a ledge gets shot AT, and bolts
+              // arc up to reach you (rather than skimming the ground and hitting you on top by accident)
+              const muzzle = V3(g.position.x, g.position.y+1.5, g.position.z);
+              const aimDir = V3(tgtPos.x, tgtPos.y + 1.4, tgtPos.z).sub(muzzle).normalize();
+              fireBolt(muzzle, aimDir, t.boltSpeed * (G.mut === 'marksmen' ? 1.4 : 1), (e.converted ? t.dmg * CFG.convertDmgMult : t.dmg) * enemyDmgScale(), e.converted);
+            }
+            if (!e.dead){ e.state = 'recover'; e.st = t.recover; }
+            g.userData.bodyMat.emissiveIntensity = 0;
+          } else {
+            // melee: commit to a visible swing the player can time a parry against
+            e.state = 'strike'; e.st = t.swing || 0.16; e.struck = false;
+            sfx(heavy ? 130 : 300, 0.1, 'sawtooth', 0.05, heavy ? 60 : 140);   // the whoosh of the swing starting
+          }
+        }
+        break;
+      }
+      case 'strike': {
+        g.rotation.y = Math.atan2(tx, tz);
+        const heavy = !!t.heavy;
+        const sw = t.swing || 0.16;
+        const k = clamp(1 - Math.max(e.st,0)/sw, 0, 1);   // 0→1 through the chop
+        const chop = k*k;   // the down-swing ACCELERATES — explosive release
+        g.userData.bodyMat.emissive.setHex(e.converted ? 0x33cc55 : 0xff6633);
+        g.userData.bodyMat.emissiveIntensity = (1 - k) * 1.6;
+        // body whips from the coiled lean-back through to a committed forward pitch
+        g.rotation.x = -0.4*(1-chop) + (heavy ? 0.32 : 0.22)*chop;
+        if (g.userData.eye) g.userData.eye.scale.copy(g.userData.eyeBase);
+        if (g.userData.staff){
+          g.userData.staff.rotation.z = -2.4 + chop * 3.4;   // whip the staff down across the body
+          g.userData.staff.rotation.x = 0.9;
+        } else if (g.userData.weaponArm){
+          g.userData.weaponArm.rotation.x = (-0.35 - (heavy?2.7:2.1)) + chop * (heavy ? 4.0 : 3.4);   // chop forward & down, fast
+          g.userData.weaponArm.rotation.z = (1 - chop) * (heavy ? 0.9 : 0.6);
+        }
+        // the blow lands at the apex of the swing — parry by clicking RMB right here
+        if (!e.struck && k >= 0.5){
+          e.struck = true;
+          if (dist < t.range + 1.7){
+            const lunge = heavy ? 0.9 : 0.5;
+            g.position.x += tx*lunge; g.position.z += tz*lunge;   // lunge into the strike
+            if (heavy){ G.shake = Math.max(G.shake, 0.3); burst(V3(g.position.x+tx, 0.3, g.position.z+tz), 0xbbbbbb, 6, 6, 3); }
+            if (e.converted){
+              if (tgtEnemy) damageEnemy(tgtEnemy, t.dmg * CFG.convertDmgMult, V3(tx,0,tz), 10);
+              else if (tgtBoss) damageBoss(t.dmg * CFG.convertDmgMult);
+            } else {
+              const res = hurtPlayer(t.dmg * enemyDmgScale(), g.position, false, true);   // melee — blocked by high ground
+              if (res === 'parried'){
+                // perfectly parried — the weapon is knocked wide and the foe STUMBLES, wide open
+                staggerEnemy(e, -tx, -tz);
+                break;
+              } else if (res === 'hit'){
+                burst(V3(pp.x, 1.5, pp.z), 0xff5533, 6, 5, 3);
+              }
+            }
+          }
+        }
+        if (e.st <= 0 && e.state === 'strike'){
+          if (!e.dead){ e.state = 'recover'; e.st = t.recover; }
+          g.userData.bodyMat.emissiveIntensity = 0;
+        }
+        break;
+      }
+      case 'recover':
+        easeWeaponHome(g, dt);
+        g.rotation.x = dampToward(g.rotation.x, 0, dt, 10);
+        if (g.userData.eye) g.userData.eye.scale.copy(g.userData.eyeBase);
+        if (e.st <= 0){ e.state = 'chase'; g.rotation.x = 0; }
+        break;
+      case 'leapwind': {   // WARBRINGER — coil down hard, weapon hauled overhead, before the pounce
+        g.rotation.y = Math.atan2(tx, tz);
+        const k = 1 - Math.max(e.st, 0)/0.55;
+        g.userData.bodyMat.emissive.setHex(0xff3a1a); g.userData.bodyMat.emissiveIntensity = k*2.2;
+        g.rotation.x = -0.4*k;
+        if (g.userData.weaponArm){ g.userData.weaponArm.rotation.x = -0.35 - k*2.6; g.userData.weaponArm.rotation.z = k*0.6; }
+        if (k > 0.5 && Math.random() < 0.4) burst(V3(g.position.x, g.position.y+3.2, g.position.z), 0xff5a3a, 1, 4, 4, 0.7);
+        if (e.st <= 0){ e.state = 'leap'; e.st = 0.5; sfx(120, 0.2, 'square', 0.08, 200); }
+        break;
+      }
+      case 'leap': {   // WARBRINGER — a tall arc onto the marked landing spot, then a quaking SLAM
+        const k = clamp(1 - Math.max(e.st, 0)/0.5, 0, 1);
+        g.position.x = e.leapFrom.x + (e.leapTarget.x - e.leapFrom.x) * k;
+        g.position.z = e.leapFrom.z + (e.leapTarget.z - e.leapFrom.z) * k;
+        g.position.y = Math.sin(k * Math.PI) * 4.8;
+        g.rotation.x = 0.25 * Math.sin(k * Math.PI);
+        if (g.userData.weaponArm) g.userData.weaponArm.rotation.x = -2.9 + k*3.4;   // chop the maul down through the arc
+        if (k >= 1 && e.state === 'leap'){
+          g.position.y = 0; g.rotation.x = 0;
+          warbringerSlam(e, g.position.clone());
+          e.state = 'recover'; e.st = 0.6; e.leapCd = rand(4.5, 7);
+          easeWeaponHome(g, 0.5);
+        }
+        break;
+      }
+      case 'stagger': {
+        // a parried foe reels — leans back, weapon flung up, fully exposed
+        g.userData.bodyMat.emissive.setHex(0xffcc44);
+        g.userData.bodyMat.emissiveIntensity = Math.max(0, e.st) * 0.9;
+        if (g.userData.weaponArm) g.userData.weaponArm.rotation.x = dampToward(g.userData.weaponArm.rotation.x, 0.9, dt, 9);
+        if (g.userData.staff){ g.userData.staff.rotation.z = dampToward(g.userData.staff.rotation.z, 1.7, dt, 9); }
+        g.rotation.x = -0.34 * Math.min(1, Math.max(e.st,0) * 2.2);   // recoil back, then recover upright
+        if (e.stumble > 0){ e.stumble -= dt; g.position.x += tx * -3.4 * dt; g.position.z += tz * -3.4 * dt; }
+        if (e.st <= 0){ e.state = 'recover'; e.st = 0.4; g.rotation.x = 0; g.userData.bodyMat.emissiveIntensity = 0; }
+        break;
+      }
+      case 'stasis':
+        if (e.st <= 0){
+          e.state = 'chase';
+          g.rotation.x = 0; g.rotation.z = 0;
+          if (!e.dead) g.position.y = 0;
+          g.userData.bodyMat.emissiveIntensity = 0;
+        }
+        break;
+      case 'ragdoll': {
+        e.vel.y -= 22 * dt;
+        g.position.addScaledVector(e.vel, dt);
+        g.rotation.x += dt * 7; g.rotation.z += dt * 5;
+        if (g.position.y < 0){
+          g.position.y = 0;
+          if (Math.abs(e.vel.y) > 3){ e.vel.y *= -0.35; e.vel.x *= 0.6; e.vel.z *= 0.6; burst(g.position, 0x888888, 3, 3, 2); }
+          else {
+            e.vel.set(0,0,0);
+            if (e.dead){ e.state = 'fade'; e.st = 0.8; }
+            else { e.state = 'chase'; g.rotation.x = 0; g.rotation.z = 0; }
+          }
+        }
+        // flying bodies hit other enemies
+        if (e.vel.length() > 10){
+          for (const o of enemies){
+            if (o === e || o.dead || o.state === 'ragdoll') continue;
+            if (g.position.distanceTo(o.group.position) < 1.6){
+              damageEnemy(o, 25, e.vel.clone().setY(0).normalize(), 18);
+            }
+          }
+        }
+        break;
+      }
+      // LIVE KNOCKDOWN — a CONTROLLED floor: the body tips onto its back (capped, never upside-down or on its
+      // side), arcs to the ground, lies stunned (no moving/attacking), then GETS UP. Y is clamped so it can't
+      // sink through the floor.
+      case 'knockdown': {
+        e.vel.y -= 22 * dt;
+        g.position.addScaledVector(e.vel, dt);
+        g.rotation.x = dampToward(g.rotation.x, -1.15, dt, 7);   // tip onto the back, capped
+        g.rotation.z = dampToward(g.rotation.z, 0, dt, 9);       // never roll onto the side
+        if (g.position.y <= 0){
+          g.position.y = 0;
+          if (e.vel.y < -4){ e.vel.y *= -0.3; e.vel.x *= 0.55; e.vel.z *= 0.55; burst(g.position, 0x888888, 3, 3, 2); }   // one small bounce
+          else { e.vel.set(0,0,0); if (e.st <= 0){ e.state = 'getup'; e.st = 0.5; } }
+        }
+        if (g.position.y < 0) g.position.y = 0;
+        break;
+      }
+      case 'getup': {   // rise back to a clean upright stance, then resume the fight
+        e.vel.set(0,0,0); g.position.y = 0;
+        g.rotation.x = dampToward(g.rotation.x, 0, dt, 9);
+        g.rotation.z = dampToward(g.rotation.z, 0, dt, 9);
+        if (g.userData.bodyMat) g.userData.bodyMat.emissiveIntensity = 0;
+        if (e.st <= 0){ e.state = 'chase'; g.rotation.set(0, g.rotation.y, 0); }
+        break;
+      }
+      case 'fade':
+        g.scale.multiplyScalar(Math.max(0.01, 1 - dt*2.2));
+        g.position.y -= dt * 0.6;
+        if (e.st <= 0){ if (e.aimLine){ scene.remove(e.aimLine); e.aimLine = null; } if (e.hpBar){ scene.remove(e.hpBar); e.hpBar = null; } scene.remove(g); enemies.splice(i,1); }
+        break;
+    }
+    // ranged-hit recoil — a quick backward flinch that reads as "I felt that"
+    if (e.flinch > 0){
+      e.flinch -= dt;
+      if (!e.dead && (e.state === 'chase' || e.state === 'recover')){
+        const k = Math.max(0, e.flinch) / 0.15;
+        g.rotation.x = -0.3 * k;
+        g.userData.bodyMat.emissiveIntensity = Math.max(g.userData.bodyMat.emissiveIntensity, k);
+      }
+    }
+    // JET TROOPER hover — drive altitude to ~1.5 above the player (so flying up never escapes it) with a gentle bob.
+    // Death (ragdoll) is exempt so a slain flyer tumbles out of the sky under gravity.
+    if (e.t.fly && !e.dead && e.state !== 'ragdoll' && e.state !== 'fade' && e.state !== 'spawn'){
+      const flyH = clamp(playerPos().y + 1.5, 2.4, 9) + Math.sin(G.gt*2 + i) * 0.22;
+      g.position.y = dampToward(g.position.y, flyH, dt, 4);
+      if (g.userData.thrusters){ const fl = 0.7 + Math.abs(Math.sin(G.gt*18 + i)) * 0.5; for (const th of g.userData.thrusters) th.material.opacity = fl; }
+    }
+    // grounded, living foes can't walk through solid pillars/crates — they path around (skip while airborne-knocked /
+    // flying). climb=true lets them MOUNT shallow steps (the temple dais) so they pursue you up it; the support
+    // height is then applied so they STAND on the surface underfoot (flat floor = 0). Tall sheer crates still block.
+    if (!e.dead && !e.t.fly && e.state !== 'ragdoll' && e.state !== 'knockdown' && e.state !== 'fade' && e.state !== 'spawn' && e.state !== 'leap'){
+      const sup = collideSolids(g.position, 0.7 * (e.t.scale || 1), true);
+      g.position.y = sup + Math.abs(Math.sin(G.gt*8 + i)) * 0.05;
+    }
+    // MID-BOSS health bar — float it overhead, billboard to the camera, scale the fill left-anchored
+    if (e.hpBar){
+      e.hpBar.visible = !e.dead && e.state !== 'fade';
+      if (e.hpBar.visible){
+        e.hpBar.position.set(g.position.x, g.position.y + 2.7 * e.group.scale.x, g.position.z);
+        e.hpBar.quaternion.copy(camera.quaternion);
+        const frac = clamp(e.hp / (e.maxHp || e.hp), 0, 1);
+        e.hpBarFill.scale.x = Math.max(0.001, frac);
+        e.hpBarFill.position.x = -(1 - frac) * 1.13;
+        e.hpBarFill.material.color.setHex(frac > 0.5 ? 0xff3b3b : frac > 0.22 ? 0xff8a2a : 0xffd24a);
+      }
+    }
+    clampToArena(g.position, (e.state === 'ragdoll' || e.state === 'knockdown') ? e.vel : null, e);
+    // SAFETY — a LIVING foe must never be stuck under the floor or pitched into a broken (side/upside-down) angle.
+    if (!e.dead){
+      if (g.position.y < 0) g.position.y = 0;
+      if (e.state !== 'knockdown' && e.state !== 'getup' && e.state !== 'ragdoll'){
+        if (g.rotation.x > 1.7 || g.rotation.x < -1.7) g.rotation.x = 0;   // not a pose any normal state uses
+        if (g.rotation.z > 1.0 || g.rotation.z < -1.0) g.rotation.z = 0;
+      }
+    }
+  }
+}
