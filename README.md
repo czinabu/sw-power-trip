@@ -4,7 +4,7 @@ A Star Wars-inspired third-person action game built entirely in a single HTML fi
 
 ## Play
 
-Open `sw_power_trip_1.8.html` in any modern browser. No install required.
+Open `sw_power_trip_2.9.html` in any modern browser. No install required.
 
 ## Features
 
