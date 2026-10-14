@@ -58,7 +58,7 @@ export function openSkillTree(){
 function card(opts){
   const c = document.createElement('div');
   c.className = 'card' + (opts.cls || '') + (opts.afford ? '' : ' cant');
-  c.innerHTML = '<div class="c-tag">' + opts.tag + '</div><div class="c-ico">' + opts.ico + '</div>' +
+  c.innerHTML = '<div class="c-tag">' + opts.tag + '</div><div class="c-ico">' + icon(opts.ico) + '</div>' +
     '<div class="c-nm">' + opts.nm + '</div><div class="c-ds">' + opts.ds + '</div>' + (opts.extra || '') +
     (opts.cost ? '<div class="' + (opts.costCls || 'c-cost') + '">' + opts.cost + '</div>' : '') +
     (!opts.afford && opts.why ? '<div class="c-why">' + opts.why + '</div>' : '');
@@ -74,7 +74,7 @@ export function renderProgress(){
   // ---- header: where you are + what you have to spend ----
   if (G.endless){
     document.getElementById('stkicker').textContent = 'SURVIVAL';
-    tree.querySelector('h1').textContent = 'WAVE ' + (G.endlessWave || 0) + ' SURVIVED';
+    tree.querySelector('h1').textContent = 'WAVE ' + Math.max(1, G.endlessWave || 0) + ' SURVIVED';
   } else {
     const L = LEVELS[G.levelIdx], place = (L.name.split('—')[1] || L.name).trim();
     document.getElementById('stkicker').textContent = 'LEVEL ' + (G.levelIdx + 1) + ' · ' + place;
