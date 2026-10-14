@@ -14,6 +14,7 @@ import { damageEnemy } from '../../enemies/damage.js';
 import { fireBolt } from '../../enemies/bolts.js';
 import { damageBoss } from '../../boss/boss.js';
 import { tryAttack } from '../jedi/combat.js';
+import { updateDark } from './darksaber.js';
 import { spawnHitSpark } from '../../fx/vfx.js';
 
 /* ============================================================
@@ -279,4 +280,36 @@ export function updateFlame(dt){
     TMP.subVectors(shared.boss.group.position, pp); TMP.y = 0;
     if (TMP.length() < range && TMP.normalize().dot(f) > cosLim) damageBoss(dmg, true);
   }
+}
+
+// Mando per-frame weapon upkeep: timers, free-aim drift + sway, reload, held auto-fire, flamethrower, darksaber.
+export function updateMandoCombat(dt, f, r){
+  if (player.fireCd > 0) player.fireCd -= dt;
+  if (player.stabT > 0) player.stabT -= dt;
+  if (player.meleeT > 0) player.meleeT -= dt;   // gauntlet-punch recovery
+  if (player.aiming > 0) player.aiming -= dt;
+  if (player.zoom) player.aiming = 0.3;                 // holding the scope keeps you squared up
+  player.recoilKick = Math.max(0, player.recoilKick - dt*3.5);
+  if (player.rifleProngGlow && player.rifleProngGlow.material.opacity > 0) player.rifleProngGlow.material.opacity = Math.max(0, player.rifleProngGlow.material.opacity - dt*3);
+  // FREE-AIM DRIFT — a SMALL float toward your movement (kept subtle). The bolt always fires straight THROUGH
+  // the reticle (see mandoAimPoint), so wherever it drifts, that's where you hit.
+  { const vx = player.moveVel.x + player.vel.x, vz = player.moveVel.z + player.vel.z;
+    const vR = vx*r.x + vz*r.z, vF = vx*f.x + vz*f.z, k = player.zoom ? 0.12 : 1;
+    // AIM SWAY — the reticle WANDERS (and bolts fire exactly through it), so the crosshair stays HONEST but is
+    // harder to hold on target the faster you move. BRACING/scoping while standing or HOVERING steadies it hard;
+    // BOOSTING (jetpack) is never steady — flying fast and shooting is deliberately the least accurate.
+    const hsp = Math.hypot(vx, vz);
+    const spd01 = clamp(hsp / (MANDO.airSpeedMax || 22), 0, 1);
+    const steady = (player.blockHeld || player.zoom) && !player.boosting;
+    const swayAmp = steady ? 1.0 : (4 + spd01 * 9 + (player.boosting ? 6 : 0));   // ramps with speed; biggest while BOOSTING (SHIFT)
+    player.aimSway = swayAmp;   // shared with the reticle bloom in updateHud
+    const sx = (Math.sin(G.gt*2.3) + Math.sin(G.gt*1.07)*0.6) * swayAmp;
+    const sy = (Math.cos(G.gt*1.9) + Math.sin(G.gt*0.73)*0.5) * swayAmp * 0.7;
+    const tox = clamp(vR * 1.1 * k + sx, -30, 30), toy = clamp(-vF * 0.7 * k + sy, -24, 24);
+    player.aimOff.x += (tox - player.aimOff.x) * Math.min(1, dt*5);
+    player.aimOff.y += (toy - player.aimOff.y) * Math.min(1, dt*5); }
+  updateReload(dt);
+  if (player.firing && player.darkT <= 0) firePistols();   // auto weapons spray while held
+  updateFlame(dt);
+  updateDark(dt);
 }
