@@ -1,0 +1,136 @@
+// POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
+// Shock vents and explosive barrels.
+
+import * as THREE from 'three';
+import { scene } from '../engine/renderer.js';
+import { S } from '../audio/sfx.js';
+import { V3, rand } from '../utils.js';
+import { burst } from '../fx/particles.js';
+import { shared, G, enemies, barrels, vents, hazardZones, player } from '../state.js';
+import { flashLight } from '../fx/lights.js';
+import { playerPos } from '../player/helpers.js';
+import { damageEnemy } from '../enemies/damage.js';
+import { damageBoss } from '../boss/boss.js';
+import { hurtPlayer } from '../player/damage.js';
+
+/* ============================================================
+   HAZARDS — shock vents & explosive barrels (level config)
+   ============================================================ */
+export function spawnVent(pos){
+  const g = new THREE.Group();
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(2.6, 2.8, 0.18, 18),
+    new THREE.MeshStandardMaterial({ color: 0x2a3340, roughness: 0.5, metalness: 0.6 }));
+  base.position.y = 0.09; base.receiveShadow = true; g.add(base);
+  const core = new THREE.Mesh(new THREE.CylinderGeometry(2.1, 2.1, 0.1, 18),
+    new THREE.MeshBasicMaterial({ color: 0x113355 }));
+  core.position.y = 0.2; g.add(core);
+  g.position.copy(pos);
+  scene.add(g);
+  vents.push({ group: g, core, cycle: rand(0, 3) });
+}
+export function updateVents(dt){
+  for (const v of vents){
+    v.cycle = (v.cycle + dt) % 3.0;
+    const active = v.cycle > 2.0;          // 1s active per 3s cycle
+    const warn = v.cycle > 1.5 && !active;
+    v.core.material.color.setHex(active ? 0x55ddff : warn ? 0xddaa22 : 0x113355);
+    if (active){
+      if (Math.random() < 0.4) burst(V3(v.group.position.x + rand(-1.5,1.5), 0.3, v.group.position.z + rand(-1.5,1.5)), 0x55ddff, 1, 2, 9, 0.8);
+      const pp = playerPos();
+      if (pp.distanceTo(v.group.position) < 2.4 && pp.y < 1) hurtPlayer(12*dt + 0.001, v.group.position, true);
+      for (const e of enemies){
+        if (e.dead) continue;
+        if (e.group.position.distanceTo(v.group.position) < 2.4 && e.hitCd <= 0){
+          e.hitCd = 0.4;
+          damageEnemy(e, 18, V3(rand(-1,1),0,rand(-1,1)).normalize(), 6);
+        }
+      }
+    }
+  }
+}
+export function spawnBarrel(pos){
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 1.2, 10),
+    new THREE.MeshStandardMaterial({ color: 0xa33820, roughness: 0.5, metalness: 0.3, emissive: 0x441100, emissiveIntensity: 0.6 }));
+  m.position.copy(pos); m.position.y = 0.6;
+  m.castShadow = true;
+  scene.add(m);
+  barrels.push({ mesh: m, vel: V3(0,0,0), flying: false, fuse: -1 });
+}
+function explodeBarrel(b, idx){
+  const p = b.mesh.position;
+  burst(p, 0xff7722, 22, 11, 8);
+  burst(p, 0xffdd55, 12, 8, 6);
+  G.shake = Math.max(G.shake, 0.8); G.hitstop = Math.max(G.hitstop, 0.05);
+  S.boom();
+  for (const e of enemies){
+    if (e.dead) continue;
+    if (e.group.position.distanceTo(p) < 6)
+      damageEnemy(e, 85, e.group.position.clone().sub(p).setY(0).normalize(), 24);
+  }
+  if (shared.boss && shared.boss.hp > 0 && shared.boss.group.position.distanceTo(p) < 6) damageBoss(50);
+  const pp = playerPos();
+  if (pp.distanceTo(p) < 5 && player.dashT <= 0) hurtPlayer(18, p);
+  for (const ob of barrels){ if (ob !== b && ob.fuse < 0 && ob.mesh.position.distanceTo(p) < 5) ob.fuse = rand(0.15, 0.4); }
+  scene.remove(b.mesh);
+  barrels.splice(idx, 1);
+}
+export function updateBarrels(dt){
+  for (let i = barrels.length-1; i >= 0; i--){
+    const b = barrels[i];
+    if (b.fuse >= 0){
+      b.fuse -= dt;
+      b.mesh.material.emissiveIntensity = 2 + Math.sin(G.gt*40)*1.5;
+      if (b.fuse <= 0){ explodeBarrel(b, i); continue; }
+    }
+    if (b.flying){
+      b.vel.y -= 20*dt;
+      b.mesh.position.addScaledVector(b.vel, dt);
+      b.mesh.rotation.x += dt*8;
+      let hit = b.mesh.position.y < 0.3;
+      if (!hit) for (const e of enemies){
+        if (e.dead) continue;
+        if (b.mesh.position.distanceTo(e.group.position.clone().setY(b.mesh.position.y)) < 1.4){ hit = true; break; }
+      }
+      if (!hit && shared.boss && shared.boss.hp > 0 && b.mesh.position.distanceTo(shared.boss.group.position.clone().setY(b.mesh.position.y)) < 2) hit = true;
+      if (hit){ explodeBarrel(b, i); continue; }
+    }
+  }
+}
+/* ---------- DYNAMIC GROUND HAZARDS — molten channels (foundry) / brazier eruption (temple) / void-rift pulse
+   (plains). Each arena builder pushes a zone (line or point) into `hazardZones`; a per-zone telegraph→active cycle
+   (staggered phase so they don't all fire in sync) drives sparks + a damage tick to WHOEVER is standing in it —
+   player or enemy. Turns the levels' set-dressing into a real tactical element: shove a foe in with a push/kick,
+   bait one to camp it, or get punished yourself for not watching your footing. Same tick/cooldown convention as
+   the existing vents (silent hurtPlayer tick + e.hitCd-gated damageEnemy, no hitstop spam). */
+export function hazardContains(hz, x, z){
+  if (hz.kind === 'point') return Math.hypot(x - hz.cx, z - hz.cz) < hz.r;
+  const dx = x - hz.cx, dz = z - hz.cz;
+  const t = Math.max(-hz.halfLen, Math.min(hz.halfLen, dx*hz.dirX + dz*hz.dirZ));
+  return Math.hypot(x - (hz.cx + hz.dirX*t), z - (hz.cz + hz.dirZ*t)) < hz.halfW;
+}
+export function updateHazardZones(dt){
+  const pp = playerPos();
+  for (const hz of hazardZones){
+    hz.t += dt;
+    const cyc = hz.t % hz.period;
+    const active = cyc >= hz.period - hz.activeDur;
+    const warn = !active && cyc >= hz.period - hz.activeDur - hz.warnDur;
+    if (active && !hz._wasActive && hz.flash) flashLight(hz.color, 2.2, 9, V3(hz.cx, 0.5, hz.cz), 0.5);
+    hz._wasActive = active;
+    const spread = hz.halfLen || 0.5;
+    if (active){
+      if (Math.random() < dt*7) burst(V3(hz.cx + rand(-1,1)*spread, 0.3, hz.cz + rand(-1,1)*spread), hz.color, 1, 2.5, 8, 0.7);
+    } else if (warn && Math.random() < dt*2.5){
+      burst(V3(hz.cx + rand(-1,1)*spread*0.7, 0.15, hz.cz + rand(-1,1)*spread*0.7), 0xddaa22, 1, 1.2, 4, 0.4);
+    }
+    if (!active) continue;
+    if (hazardContains(hz, pp.x, pp.z) && pp.y < 1.6) hurtPlayer(hz.dmg*dt + 0.001, V3(hz.cx, 0, hz.cz), true);
+    for (const e of enemies){
+      if (e.dead) continue;
+      if (hazardContains(hz, e.group.position.x, e.group.position.z) && e.hitCd <= 0){
+        e.hitCd = 0.4;
+        damageEnemy(e, hz.dmg*1.4, V3(rand(-1,1),0,rand(-1,1)).normalize(), 7);
+      }
+    }
+  }
+}

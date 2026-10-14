@@ -1,0 +1,159 @@
+// POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
+// hurtPlayer() and kill streaks.
+
+import { CFG } from '../data/config.js';
+import { sfx, S } from '../audio/sfx.js';
+import { V3, rand, clamp, TMP } from '../utils.js';
+import { burst } from '../fx/particles.js';
+import { floater, screenFlash } from '../fx/floaters.js';
+import { shared, G, enemies, player } from '../state.js';
+import { MANDO } from '../data/mando.js';
+import { fwd, playerPos, stance, maxHp } from './helpers.js';
+import { flinchEnemy } from '../enemies/damage.js';
+import { FOCUS, addFocus } from './jedi/focus.js';
+import { spawnHitSpark, spawnParryFlash, spawnGroundShock } from '../fx/vfx.js';
+import { updateBoonStrip } from '../game/boons.js';
+import { endRun } from '../game/summary.js';
+import { showBanner } from '../ui/banners.js';
+import { overlay } from '../ui/menus.js';
+import { diffDmgMul } from '../data/difficulty.js';
+
+const MELEE_REACH_UP = 1.7;   // a melee foe can't strike you if you're perched higher than this above their feet
+export function hurtPlayer(dmg, fromPos, silent, melee){
+  if (G.mode !== 'play') return 'none';
+  if (player.dashT > 0) return 'none';
+  // perched on high ground — a grounded melee attacker simply can't reach up to you
+  if (melee && fromPos && playerPos().y - fromPos.y > MELEE_REACH_UP){
+    if (!silent) floater(playerPos(), 'OUT OF REACH', '#bfe8ff');
+    return 'none';
+  }
+  // MANDO — beskar brace: hold RMB to soak frontal damage (no parry). DEFENSE IS A SINGLE-BLASTER PRIVILEGE: only
+  // the SINGLE blaster raises the beskar SHIELD (player.isShielding). DUAL bracing is purely offensive — an
+  // aggressive gunslinger stance with NO damage reduction. The DARKSABER skips this and uses the full lightsaber
+  // block/parry path below instead (it guards & parries just like the Jedi medium stance).
+  if (G.hero === 'mando' && player.weapon !== 'darksaber'){
+    if (!silent && player.blockHeld && player.weapon === 'single' && fromPos){
+      TMP.subVectors(fromPos, playerPos()); TMP.y = 0;
+      if (TMP.lengthSq() < 0.001 || TMP.normalize().dot(fwd()) > -0.25){
+        const pp = playerPos(), cpp = V3(pp.x + fwd().x*0.55, 1.5, pp.z + fwd().z*0.55);
+        // STAMINA-GATED, like the bolt-catch path right above (same 5-per-hit cost) and like the Jedi's block —
+        // this melee soak used to be entirely free regardless of stamina, the one hole in an otherwise-costed
+        // defense economy. Runs dry → the beskar can't soak this swing, full damage bleeds through.
+        if (player.stam > 0){
+          const dr = MANDO.braceDR + (player.up.braceDR || 0);   // skill can push the soak higher
+          dmg *= (1 - Math.min(0.88, dr));
+          player.stam = Math.max(0, player.stam - 5 * player.up.blockStam);
+          player.stamDelay = CFG.player.stamDelay;
+          // ENERGY SHIELD soak — a blue ripple across the disc + a metallic beskar ring underneath
+          burst(cpp, 0x6fd0ff, 8, 9, 4, 0.8); burst(cpp, 0xcfe0ec, 5, 5, 3);
+          spawnHitSpark(cpp, 0x9fe6ff, 0.9);
+          G.shake = Math.max(G.shake, 0.18); G.hitstop = Math.max(G.hitstop, 0.03);
+          player.braceFlash = 0.12;   // chest plate glints (drawn in updatePlayer)
+          player.shieldFlash = 0.18;  // the gauntlet disc ripples on the hit
+          sfx(1100, 0.06, 'square', 0.05, 700); sfx(240, 0.08, 'triangle', 0.05, 90);
+        } else {
+          spawnHitSpark(cpp, 0x556070, 0.6);   // GUARD CRUSHED — dim spark, no soak, no flares
+          sfx(180, 0.08, 'square', 0.05, 90);
+        }
+      }
+    }
+  }
+  // defense: hold RMB to BLOCK (absorb only); a freshly-timed RMB CLICK opens the parry window
+  else if (!silent && (player.blockHeld || player.parryT > 0) && fromPos){
+    TMP.subVectors(fromPos, playerPos()); TMP.y = 0;
+    if (TMP.lengthSq() > 0.001 && TMP.normalize().dot(fwd()) > 0.1){
+      const pp = playerPos();
+      if (player.parryT > 0){
+        player.parryT = 0;   // a parry consumes the window
+        player.riposteT = CFG.player.riposteTime;
+        player.cancelRiposte = (G.gt - (player.cancelT || -9)) < 0.45;   // parried straight out of a swing-cancel → a stronger answer
+        player.force = clamp(player.force + 12 + player.up.parryForce + (stance().parryRefund || 0), 0, CFG.player.maxForce);   // skillful defense feeds the Force (NIMAN refunds extra)
+        G.hitstop = Math.max(G.hitstop, 0.24);
+        G.shake = Math.max(G.shake, 1.0);
+        G.slowmo = Math.min(G.slowmo, 0.18); G.slowmoT = Math.max(G.slowmoT, 0.36);   // a dramatic beat of clarity on a perfect parry
+        const fp = V3(pp.x + fwd().x, 1.6, pp.z + fwd().z);
+        burst(fp, 0xffe9a8, 38, 13, 7); burst(fp, 0xffffff, 22, 16, 5);
+        for (let n = 0; n < 10; n++) burst(V3(fp.x+rand(-0.4,0.4), fp.y+rand(-0.3,0.4), fp.z+rand(-0.4,0.4)), 0xffd24a, 1, 11, 4, 0.9);
+        spawnParryFlash(fp, 0xffd24a);
+        spawnHitSpark(fp, 0xffffff, 2.2);
+        screenFlash('radial-gradient(ellipse at center, rgba(255,240,180,.7), rgba(255,200,80,.18) 50%, transparent 72%)', 1.0, 0.45);
+        floater(pp, (player.cancelRiposte ? 'PARRY! ⟲ CRUSHING RIPOSTE' : 'PARRY! ⟲ RIPOSTE READY'), '#ffe27a');
+        S.parry(); sfx(180, 0.22, 'sine', 0.18, 40); sfx(1700, 0.1, 'square', 0.07, 600); sfx(2500, 0.08, 'triangle', 0.05, 700);   // a bright ringing clash
+        if (G.stats) G.stats.parries++;
+        addFocus(FOCUS.gainParry);   // a perfect parry is the biggest FOCUS spike
+        return 'parried';
+      }
+      if (player.blockHeld && player.stam > 0){
+        player.stam = Math.max(0, player.stam - CFG.player.blockStamCost * player.up.blockStam * (stance().blockStamMul || 1));
+        player.stamDelay = CFG.player.stamDelay;
+        burst(V3(pp.x + fwd().x, 1.5, pp.z + fwd().z), stance().blade, 5, 4, 3);
+        G.shake = Math.max(G.shake, 0.15);
+        sfx(900, 0.07, 'square', 0.05, 500);
+        return 'blocked';
+      }
+      if (player.blockHeld) dmg *= 0.5;   // guard crushed (out of stamina) — half damage bleeds through
+    }
+  }
+  dmg *= (1 - (player.up.dr || 0));   // UNSTOPPABLE damage reduction
+  if (player.boon && player.boon.adrenal && player.hp < maxHp()*0.35) dmg *= 0.75;   // ADRENALINE boon — tougher when cornered
+  if (player.atkT > 0 && G.hero !== 'mando' && stance().atkDR) dmg *= (1 - stance().atkDR);   // DJEM SO: armored commitment mid-swing
+  if (player.cancelDR > 0) dmg *= 0.55;   // DJEM SO heavy cancel — soaks the blow during its committed recovery
+  if (player.barrierT > 0){            // FORCE BARRIER soaks most of what gets through
+    dmg *= (1 - CFG.abilities.barrier.dr);
+    if (!silent){ burst(V3(playerPos().x, 1.5, playerPos().z), 0x6fd0ff, 5, 5, 3); sfx(900, 0.08, 'sine', 0.05, 1400); }
+  }
+  dmg *= diffDmgMul();   // DIFFICULTY scales all incoming damage (enemies, boss, blasts)
+  player.hp -= dmg;
+  if (G.stats) G.stats.dmgTaken += dmg;
+  player.lastHurt = G.gt;
+  if (G.hero !== 'mando') player.focus = (player.focus || 0) * FOCUS.hitLoss;   // FORCE FOCUS — a clean trade is broken when you're hit
+  if (fromPos){ player.hitFrom = V3(fromPos.x, 1.4, fromPos.z); player.dmgIndT = 1.0; }   // THREAT — point the damage arc at the source
+  if (!silent){
+    G.shake = Math.max(G.shake, 0.45);
+    S.hurt();
+    const v = document.getElementById('vig');
+    v.style.opacity = '1';
+    setTimeout(()=>{ v.style.opacity = '0'; }, 120);
+  }
+  if (player.hp <= 0 && G.mode === 'play'){
+    // PHOENIX boon — cheat death once per run: revive at half vitality and blow the field back
+    if (player.phoenixReady){
+      player.phoenixReady = false; player.hp = maxHp()*0.5;
+      G.hitstop = Math.max(G.hitstop, 0.2); G.slowmo = 0.3; G.slowmoT = 0.8; G.shake = 1.4;
+      const pp0 = playerPos();
+      burst(V3(pp0.x,1.4,pp0.z), 0xffd24a, 40, 14, 8); burst(V3(pp0.x,1.4,pp0.z), 0xffffff, 24, 16, 6);
+      spawnGroundShock(V3(pp0.x,0.1,pp0.z), 0xffd24a, 7, 0.7, 0.6);
+      screenFlash('radial-gradient(ellipse at center, rgba(255,230,150,.8), rgba(255,200,80,.2) 50%, transparent 72%)', 1.0, 0.6);
+      floater(pp0, 'PHOENIX — RISE AGAIN!', '#ffd24a'); S.stun(); sfx(300,0.3,'sine',0.18,1200); sfx(700,0.2,'triangle',0.1,1600);
+      for (const e of enemies){ if (e.dead) continue; const d = e.group.position.clone().sub(pp0).setY(0); if (d.length() < 7) flinchEnemy(e, d, 1.2); }
+      updateBoonStrip();
+      return 'phoenix';
+    }
+    player.hp = 0;
+    G.mode = 'dead';
+    G.slowmo = 0.2;
+    endRun(false);
+    showBanner('THE FORCE FALLS SILENT', 'Click to rise again', 999);
+    setTimeout(()=>{
+      if (G.mode !== 'dead') return;
+      document.exitPointerLock();
+      if (shared.lockFallback){
+        overlay.style.display = 'flex';
+        document.getElementById('restartBtn').style.display = 'block';
+        document.getElementById('goText').textContent = 'YOU HAVE FALLEN — CLICK TO RETRY';
+      }
+    }, 1200);
+  }
+  return 'hit';
+}
+
+export function addStreak(n){
+  G.streak += n; G.streakT = CFG.killStreakTimeout;
+  if (G.stats && G.streak > G.stats.bestStreak) G.stats.bestStreak = G.streak;
+  const el = document.getElementById('streak');
+  if (G.streak >= 3){
+    const label = G.streak >= 20 ? 'LEGENDARY' : G.streak >= 12 ? 'UNSTOPPABLE' : G.streak >= 6 ? 'RAMPAGE' : 'FLOW STATE';
+    el.textContent = '×' + G.streak + '  ' + label;
+    el.style.opacity = '1';
+  }
+}

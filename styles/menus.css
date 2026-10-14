@@ -1,0 +1,92 @@
+/* overlay menu */
+#overlay{position:fixed;inset:0;background:radial-gradient(ellipse at center,rgba(2,12,26,.9),rgba(0,0,0,.97));display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--ink);cursor:pointer;text-align:center}
+#overlay h1{font-size:56px;letter-spacing:14px;margin:0;font-weight:800;text-shadow:0 0 34px #2aa9ff}
+#overlay h2{font-size:14px;letter-spacing:5px;color:var(--ink-dim);font-weight:500;margin:10px 0 30px}
+#overlay .ctl{font-size:13px;line-height:2;letter-spacing:.5px;color:var(--ink-soft);background:var(--panel-solid);
+  border:1px solid var(--edge);border-radius:14px;padding:18px 30px;backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);box-shadow:var(--shadow)}
+#overlay .go{margin-top:32px;font-size:18px;letter-spacing:7px;font-weight:700;color:#aef;animation:pulse 1.4s infinite}
+/* RUN SUMMARY — end-of-run stat card (shown on death / victory in place of the control list) */
+#runsummary{display:none;margin:6px 0 4px;max-width:560px}
+#runsummary .rs-title{font-size:24px;letter-spacing:8px;font-weight:800;color:var(--gold);text-shadow:0 0 18px #a06000;margin-bottom:16px}
+#runsummary .rs-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+#runsummary .rs-stat{background:var(--panel-solid);border:1px solid var(--edge);border-radius:11px;padding:11px 6px;
+  backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur)}
+#runsummary .rs-v{font-size:20px;font-weight:800;color:var(--ink)}
+#runsummary .rs-l{font-size:9px;letter-spacing:2px;color:var(--ink-dim);margin-top:3px}
+#runsummary .rs-score{margin-top:18px;font-size:15px;letter-spacing:3px;color:var(--ink-soft)}
+#runsummary .rs-score b{font-size:30px;font-weight:800;color:#7fe0a8;margin:0 4px 0 8px;vertical-align:-2px;text-shadow:0 0 16px rgba(40,200,120,.5)}
+#runsummary .rs-best{font-size:11px;letter-spacing:2px;color:var(--ink-dim);margin-left:10px}
+#runsummary .rs-best.new{color:var(--gold);text-shadow:0 0 12px #a06000;animation:pulse 1s infinite}
+/* RESTART button — shown on the pause / fallen / victory overlay (not the first-run menu) */
+#restartBtn{display:none;margin-top:20px;font-size:12px;letter-spacing:4px;font-weight:700;color:#ffd2a8;
+  background:var(--panel-solid);border:1px solid rgba(200,120,60,.5);border-radius:12px;padding:11px 24px;
+  pointer-events:auto;cursor:pointer;backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  transition:transform .15s,border-color .15s,box-shadow .15s}
+#restartBtn:hover{transform:translateY(-2px);border-color:#ffb060;box-shadow:0 0 20px -4px rgba(255,150,60,.7)}
+/* GRAPHICS selector — lives on the overlay (menu + pause); click to cycle quality. 'P' still works in-game. */
+#gfxctl{margin-top:14px;font-size:11px;letter-spacing:3px;font-weight:700;color:var(--ink-soft);
+  background:var(--panel);border:1px solid var(--edge);border-radius:11px;padding:9px 20px;
+  pointer-events:auto;cursor:pointer;backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  transition:transform .15s,border-color .15s,box-shadow .15s}
+#gfxctl:hover{transform:translateY(-2px);border-color:var(--edge-lit);box-shadow:0 0 18px -4px rgba(92,198,255,.6)}
+#gfxctl #gfxval{color:var(--accent);margin-left:8px}
+#gfxctl .gfxhint{color:var(--ink-dim);font-size:9px;margin-left:8px;letter-spacing:2px}
+/* SWING HANDEDNESS toggle — flips which way the directional cut sweeps (strafe-L/R), for players who find it
+   more natural mirrored. Same pill styling/placement pattern as GRAPHICS. */
+#swingctl{margin-top:10px;font-size:11px;letter-spacing:3px;font-weight:700;color:var(--ink-soft);
+  background:var(--panel);border:1px solid var(--edge);border-radius:11px;padding:9px 20px;
+  pointer-events:auto;cursor:pointer;backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  transition:transform .15s,border-color .15s,box-shadow .15s}
+#swingctl:hover{transform:translateY(-2px);border-color:var(--edge-lit);box-shadow:0 0 18px -4px rgba(92,198,255,.6)}
+#swingctl #swingval{color:var(--accent);margin-left:8px}
+/* SETTINGS sliders — mouse sensitivity + master volume. Same pill family as GRAPHICS/SWING but a row of two
+   since a slider needs width; lives on the overlay (menu + pause), persists like everything else there. */
+#settingsrow{display:flex;gap:8px;margin-top:10px}
+.setpill{font-size:11px;letter-spacing:2px;font-weight:700;color:var(--ink-soft);
+  background:var(--panel);border:1px solid var(--edge);border-radius:11px;padding:9px 16px;
+  pointer-events:auto;backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  display:flex;align-items:center;gap:9px;transition:border-color .15s,box-shadow .15s}
+.setpill:hover{border-color:var(--edge-lit);box-shadow:0 0 18px -4px rgba(92,198,255,.6)}
+.setpill input[type=range]{-webkit-appearance:none;appearance:none;width:88px;height:3px;border-radius:2px;
+  background:var(--edge);cursor:pointer;outline:none}
+.setpill input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:13px;height:13px;
+  border-radius:50%;background:var(--accent);box-shadow:0 0 6px rgba(92,198,255,.8);cursor:pointer}
+.setpill input[type=range]::-moz-range-thumb{width:13px;height:13px;border:none;border-radius:50%;
+  background:var(--accent);box-shadow:0 0 6px rgba(92,198,255,.8);cursor:pointer}
+.setpill .setval{color:var(--accent);min-width:34px;text-align:right}
+/* mode select (campaign vs survival) */
+#modeselect{display:flex;gap:12px;margin-bottom:10px}
+.modeopt{padding:9px 18px;border:1px solid var(--edge);border-radius:11px;background:var(--panel);cursor:pointer;
+  pointer-events:auto;text-align:center;opacity:.5;backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  transition:opacity .15s,border-color .15s,box-shadow .15s,transform .15s}
+.modeopt:hover{opacity:.8;transform:translateY(-1px)}
+.modeopt.sel{opacity:1;border-color:var(--gold);box-shadow:0 0 0 1px var(--gold),0 6px 18px -6px rgba(255,200,70,.5)}
+.modeopt.locked{opacity:.32;cursor:not-allowed;filter:grayscale(.6)}
+.modeopt.locked:hover{opacity:.42;transform:none}
+.modeopt.shake{animation:shake .4s}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+.modeopt .mt{display:block;font-size:13px;font-weight:800;letter-spacing:3px;color:var(--ink)}
+.modeopt .md{display:block;font-size:9.5px;letter-spacing:1px;color:var(--ink-dim);margin-top:3px}
+/* DIFFICULTY — a secondary sub-choice under the mode: smaller, dimmer, tighter so it doesn't read as a second mode row */
+#diffselect{display:flex;gap:8px;margin-bottom:22px}
+#diffselect .modeopt{padding:5px 13px;opacity:.4}
+#diffselect .modeopt.sel{opacity:1}
+#diffselect .mt{font-size:10.5px;letter-spacing:2px}
+#diffselect .md{font-size:8px;margin-top:1px}
+/* CONTROLS toggle — keeps the help text collapsed by default so the menu stays clean */
+#ctltoggle{cursor:pointer;pointer-events:auto;font-size:10px;letter-spacing:3px;font-weight:700;color:var(--ink-dim);
+  border:1px solid var(--edge);border-radius:999px;padding:6px 16px;margin-top:8px;user-select:none;
+  transition:color .15s,border-color .15s}
+#ctltoggle:hover{color:var(--ink);border-color:var(--edge-lit)}
+/* hero select */
+#heroselect{display:flex;gap:18px;margin-bottom:26px}
+.herocard{width:240px;padding:18px 20px;border:1px solid var(--edge);border-radius:14px;
+  background:var(--panel-solid);cursor:pointer;text-align:center;pointer-events:auto;
+  backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);box-shadow:var(--shadow);
+  transition:transform .15s,border-color .15s,box-shadow .15s;opacity:.6}
+.herocard:hover{transform:translateY(-3px);opacity:.85}
+.herocard.sel{opacity:1;border-color:var(--edge-lit);box-shadow:0 0 0 1px var(--edge-lit),0 10px 30px -8px rgba(60,180,255,.55)}
+.herocard .hi{font-size:34px;line-height:1;margin-bottom:8px}
+.herocard .hn{font-size:17px;font-weight:800;letter-spacing:3px;padding-left:3px;color:var(--ink)}
+.herocard .hd{font-size:11px;line-height:1.5;letter-spacing:.5px;color:var(--ink-soft);margin-top:6px}
+#hero-mando.sel{border-color:#9fb0bf;box-shadow:0 0 0 1px #9fb0bf,0 10px 30px -8px rgba(160,180,200,.5)}
