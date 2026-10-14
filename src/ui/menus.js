@@ -72,7 +72,7 @@ export function refreshSurvivalLock(){
   const un = survivalUnlocked(), md = el.querySelector('.md');
   el.classList.toggle('locked', !un);
   if (md){
-    if (un) md.textContent = 'endless waves, chase a high score';
+    if (un){ md.textContent = 'endless waves, chase a high score'; el.title = ''; }
     else { const j = localStorage.getItem('sw_camp_jedi') === '1', m = localStorage.getItem('sw_camp_mando') === '1';
       const mark = (ok) => ok ? '<span class="ok">✓</span>' : '<span class="no">✗</span>';
       md.innerHTML = '🔒 win as Jedi ' + mark(j) + ' &amp; Mando ' + mark(m);
