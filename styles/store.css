@@ -6,13 +6,13 @@
   background:radial-gradient(ellipse 85% 70% at 50% 30%,rgba(8,20,38,.94),rgba(1,3,8,.985))}
 .st-scroll{flex:1;overflow-y:auto;padding:28px 24px 12px;display:flex;flex-direction:column;align-items:center;gap:20px}
 .st-head{animation:rise .3s var(--ease)}
-.st-kicker{font-size:12px;letter-spacing:4px;color:var(--ink-dim)}
-#skilltree h1{margin:6px 0 0;font:800 30px/1 var(--font-display);letter-spacing:9px;padding-left:9px;color:var(--ink);text-shadow:0 0 26px rgba(42,169,255,.7)}
-#skilltree .sub{font-size:12px;letter-spacing:5px;color:var(--accent);margin-top:8px}
+.st-kicker{font-size:12px;letter-spacing:2.4px;color:var(--ink-dim)}
+#skilltree h1{margin:6px 0 0;font:700 44px/1 var(--font-display);letter-spacing:4px;padding-left:4px;color:var(--ink);text-shadow:0 0 26px rgba(42,169,255,.7)}
+#skilltree .sub{font-size:12px;letter-spacing:3px;color:var(--accent);margin-top:8px}
 .st-wallet{display:flex;gap:10px;justify-content:center;margin-top:14px}
-.coin{display:flex;align-items:center;gap:9px;padding:6px 14px 6px 12px;border-radius:999px;border:1px solid}
+.coin{display:flex;align-items:center;gap:9px;padding:6px 14px 6px 12px;border-radius:var(--r-chip);border:1px solid}
 .coin .cl{font-size:11px;letter-spacing:2.5px}
-.coin b{font:800 18px/1 var(--font-ui);font-variant-numeric:tabular-nums}
+.coin b{font:700 18px/1 var(--font-ui);font-variant-numeric:tabular-nums}
 .coin.xp{border-color:rgba(60,200,120,.45);background:rgba(10,36,24,.55);color:#5fae84}
 .coin.xp b{color:var(--xp);text-shadow:0 0 10px var(--xp-glow)}
 .coin.sp{border-color:rgba(255,210,90,.45);background:rgba(40,30,8,.5);color:#c9a656}
@@ -23,32 +23,32 @@
 .st-sec{width:min(1000px,100%);animation:rise .35s var(--ease) both}
 .st-sec:nth-of-type(2){animation-delay:.05s} .st-sec:nth-of-type(3){animation-delay:.1s}
 .storehdr{display:flex;align-items:baseline;gap:14px;margin:0 0 10px;padding-bottom:7px;border-bottom:1px solid var(--edge);text-align:left}
-.storehdr .sh-t{font:800 13px/1 var(--font-display);letter-spacing:4px;color:var(--ink)}
-.storehdr .sh-h{font-size:13px;font-weight:500;letter-spacing:.5px;color:var(--ink-dim)}
+.storehdr .sh-t{font:700 18px/1 var(--font-display);letter-spacing:2.4px;color:var(--ink)}
+.storehdr .sh-h{font-size:13px;font-weight:500;letter-spacing:0.5px;color:var(--ink-dim)}
 #boonhdr .sh-t{color:var(--gold)}
 .cardrow{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
 /* a fork: two cards joined by an OR, so the either/or reads at a glance */
-.forkgroup{display:flex;align-items:stretch;gap:0;padding:4px;border-radius:16px;border:1px dashed rgba(220,170,70,.45);background:rgba(40,30,8,.18)}
-.forkgroup .or{align-self:center;width:30px;flex:none;font:800 11px/1 var(--font-display);letter-spacing:1px;color:#d9b45c}
+.forkgroup{display:flex;align-items:stretch;gap:0;padding:4px;border-radius:var(--r-lg);border:1px dashed rgba(220,170,70,.45);background:rgba(40,30,8,.18)}
+.forkgroup .or{align-self:center;width:30px;flex:none;font:700 11px/1 var(--font-display);letter-spacing:1px;color:#d9b45c}
 /* ---------- the card ---------- */
-.card{position:relative;width:186px;box-sizing:border-box;padding:12px 12px 11px;border-radius:12px;cursor:pointer;pointer-events:auto;
+.card{position:relative;width:186px;box-sizing:border-box;padding:12px 12px 11px;border-radius:var(--r-lg);cursor:pointer;pointer-events:auto;
   display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;
   background:linear-gradient(180deg,rgba(14,32,56,.94),rgba(6,15,29,.95));border:1px solid var(--edge);
   box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.05);
   transition:transform .16s var(--ease),border-color .16s,box-shadow .16s}
-.card:hover{transform:translateY(-4px);border-color:var(--edge-lit);box-shadow:0 14px 30px -8px rgba(60,180,255,.45),inset 0 1px 0 rgba(255,255,255,.08)}
-.card .c-tag{font-size:10px;letter-spacing:2.5px;color:var(--ink-dim);padding:2px 9px;border-radius:999px;border:1px solid var(--edge)}
-.card .c-ico{font-size:22px;line-height:1;width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:50%;
+.card:hover{transform:translateY(-2px);border-color:var(--edge-lit);box-shadow:0 14px 30px -8px rgba(60,180,255,.45),inset 0 1px 0 rgba(255,255,255,.08)}
+.card .c-tag{font-size:10px;letter-spacing:2.5px;color:var(--ink-dim);padding:2px 9px;border-radius:var(--r-chip);border:1px solid var(--edge)}
+.card .c-ico{font-size:24px;line-height:1;width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:var(--r);transform:rotate(45deg);
   color:#bfe8ff;border:1px solid var(--edge);background:radial-gradient(circle at 50% 38%,rgba(120,200,255,.18),rgba(120,200,255,.02))}
 .card .c-nm{font-size:15px;font-weight:700;letter-spacing:1.5px;color:var(--ink);line-height:1.15}
 .card .c-nm .rk{font-size:11px;color:var(--gold);letter-spacing:1px;margin-left:3px;vertical-align:2px}
-.card .c-ds{flex:1;font-size:13.5px;font-weight:500;line-height:1.35;color:var(--ink-soft)}
-.card .c-fl{font-size:12px;font-weight:500;font-style:italic;line-height:1.35;color:var(--ink-faint)}
+.card .c-ds{flex:1;font:500 13.5px/1.35 var(--font-body);line-height:1.35;color:var(--ink-soft)}
+.card .c-fl{font:italic 500 12px/1.35 var(--font-body);line-height:1.35;color:var(--ink-faint)}
 .card .pips{display:flex;gap:4px}
 .card .pips i{width:7px;height:7px;border-radius:50%;border:1px solid var(--accent)}
 .card .pips i.on{background:var(--accent);box-shadow:0 0 6px var(--accent)}
 .card .c-cost{margin-top:2px;font-size:14px;font-weight:700;letter-spacing:1.5px;color:var(--xp);
-  border:1px solid rgba(60,200,120,.45);border-radius:999px;padding:4px 14px;background:rgba(20,50,34,.55)}
+  border:1px solid rgba(60,200,120,.45);border-radius:var(--r-chip);padding:4px 14px;background:rgba(20,50,34,.55)}
 .card:hover .c-cost{background:rgba(40,110,70,.6);color:#d8ffe8}
 .card .c-why{font-size:11.5px;letter-spacing:1px;color:#ff9f80}
 /* can't take it right now: dimmed, with the reason on the card */
@@ -76,7 +76,9 @@
 .card.boon.legendary .c-ico{color:var(--gold);border-color:rgba(255,210,90,.7);background:radial-gradient(circle at 50% 38%,rgba(255,210,90,.25),transparent)}
 /* training cards: tier accents, higher tiers glow hotter */
 .card.skill{width:210px}
-.card.skill .c-ico{width:50px;height:50px;font-size:24px}
+.card.skill .c-ico{width:46px;height:46px;font-size:26px}
+.card .c-ico{margin:9px 0 8px;flex:none}
+.card .c-ico .ic{transform:rotate(-45deg)}
 .card.t1 .c-tag{color:#6fd0e0;border-color:rgba(80,180,200,.45)}
 .card.t2{border-color:rgba(150,110,200,.45);background:linear-gradient(180deg,rgba(32,20,54,.94),rgba(14,8,28,.95))}
 .card.t2 .c-tag{color:var(--violet);border-color:rgba(170,130,230,.5)}
@@ -91,20 +93,20 @@
 .card.t3 .pips i{border-color:var(--gold)} .card.t3 .pips i.on{background:var(--gold);box-shadow:0 0 6px var(--gold)}
 .card .lockmsg{font-size:11.5px;letter-spacing:1px;color:#ff9a66}
 .card.skill .c-pick{margin-top:2px;font-size:12px;font-weight:700;letter-spacing:2px;color:var(--gold);
-  border:1px solid rgba(255,210,90,.45);border-radius:999px;padding:4px 14px;background:rgba(50,40,12,.5)}
+  border:1px solid rgba(255,210,90,.45);border-radius:var(--r-chip);padding:4px 14px;background:rgba(50,40,12,.5)}
 .card.skill.cant .c-pick{color:var(--ink-dim);border-color:var(--edge);background:transparent}
 .cardrow .empty{font-size:14px;font-weight:500;color:var(--ink-dim);padding:10px}
 #skillgoals{display:none}
 /* sticky footer */
 .st-foot{flex:none;display:flex;align-items:center;justify-content:center;gap:20px;padding:14px 24px 18px;
   background:linear-gradient(0deg,rgba(1,3,8,.98) 40%,rgba(1,3,8,0));border-top:1px solid rgba(108,168,214,.12)}
-.st-hint{font-size:13px;font-weight:500;letter-spacing:.5px;color:var(--ink-dim)}
+.st-hint{font-size:13px;font-weight:500;letter-spacing:0.5px;color:var(--ink-dim)}
 #continueBtn{min-width:220px}
 @media (max-height:760px){
   .st-scroll{padding-top:18px;gap:14px}
-  #skilltree h1{font-size:24px}
+  #skilltree h1{font-size:34px}
   .card{width:172px;padding:10px}
-  .card .c-ico{width:36px;height:36px;font-size:18px}
+  .card .c-ico{width:34px;height:34px;font-size:19px;margin:6px 0}
   .card.skill{width:196px}
   .card .c-fl{display:none}
 }

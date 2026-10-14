@@ -5,6 +5,7 @@ import { clamp } from '../utils.js';
 import { G, player } from '../state.js';
 import { BOON_BY_ID } from '../data/boons.js';
 import { showBanner } from '../ui/banners.js';
+import { icon } from '../ui/icons.js';
 import { overlay, survivalUnlocked, refreshSurvivalLock, setOverlayState } from '../ui/menus.js';
 
 /* ---------- END-OF-RUN SUMMARY + SCORE ---------- */
@@ -40,7 +41,7 @@ function renderRunSummary(){
   if (player.boons && Object.keys(player.boons).length){
     let items = '';
     for (const id in player.boons){ const b = BOON_BY_ID[id]; if (!b) continue;
-      items += '<span class="' + b.r + '">' + b.ico + ' ' + b.nm + (player.boons[id] > 1 ? ' ×' + player.boons[id] : '') + '</span>';
+      items += '<span class="' + b.r + '">' + icon(b.ico) + b.nm + (player.boons[id] > 1 ? ' ×' + player.boons[id] : '') + '</span>';
     }
     boonHtml = '<div class="rs-boons"><div class="rs-bl">YOUR BUILD</div>' + items + '</div>';
   }

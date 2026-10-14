@@ -15,6 +15,7 @@ import {
 } from '../game/progression.js';
 import { ENDLESS_POWERS } from '../data/store.js';
 import { LEVELS } from '../data/levels.js';
+import { icon } from './icons.js';
 import { BOON_BY_ID } from '../data/boons.js';
 import { rollBoons, pickBoon } from '../game/boons.js';
 

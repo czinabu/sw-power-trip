@@ -4,28 +4,29 @@
            bottom-centre = XP toward the next ability · top-centre = boss
    ============================================================ */
 /* the HUD sits out the main menu (it would only show stale bars behind the overlay) */
-body.in-menu #hud,body.in-menu #boonstrip{visibility:hidden}
+#hud{transition:opacity .6s ease .15s}
+body.in-menu #hud,body.in-menu #boonstrip{opacity:0;transition:none}
 
 /* ---------- top-left: run progress ---------- */
 #objective{position:fixed;top:18px;left:20px;display:flex;align-items:stretch;gap:10px}
 #waveinfo{padding:7px 14px 8px 12px;border-left:2px solid var(--accent);
   background:linear-gradient(90deg,rgba(6,16,30,.7),rgba(6,16,30,0));text-shadow:0 1px 8px rgba(0,10,20,.9)}
-#waveinfo .wi-l{display:block;font-size:11px;letter-spacing:3px;color:var(--ink-dim)}
-#waveinfo .wi-w{display:block;font:700 21px/1.1 var(--font-ui);letter-spacing:3px;color:var(--ink);margin-top:2px}
+#waveinfo .wi-l{display:block;font-size:11px;letter-spacing:1.8px;color:var(--ink-dim)}
+#waveinfo .wi-w{display:block;font:700 21px/1.1 var(--font-ui);letter-spacing:1.8px;color:var(--ink);margin-top:2px}
 #waveinfo .wi-w b{color:var(--ink);font-weight:800}
 #waveinfo .wi-h{display:block;font-size:12px;letter-spacing:1.5px;color:var(--ink-soft);margin-top:3px}
 #waveinfo .wi-h em{font-style:normal;color:#ff9a8a}
-#waveinfo .wi-mut{display:inline-block;margin-left:2px;padding:0 7px;border-radius:999px;border:1px solid currentColor;font-size:10px;letter-spacing:1.5px}
-#xphud{align-self:flex-start;margin-top:4px;padding:5px 11px;border-radius:999px;border:1px solid rgba(60,200,120,.35);
+#waveinfo .wi-mut{display:inline-block;margin-left:2px;padding:0 7px;border-radius:var(--r-chip);border:1px solid currentColor;font-size:10px;letter-spacing:1.5px}
+#xphud{align-self:flex-start;margin-top:4px;padding:5px 11px;border-radius:var(--r-chip);border:1px solid rgba(60,200,120,.35);
   background:rgba(8,26,18,.55);font:700 15px/1 var(--font-ui);color:var(--xp);text-shadow:0 0 10px var(--xp-glow);letter-spacing:1px}
 #xphud .xpk{font-size:10px;letter-spacing:2.5px;color:#5fae84;margin-right:6px;vertical-align:1px}
-#streak{position:fixed;top:96px;left:20px;font:800 20px/1 var(--font-display);letter-spacing:2px;color:var(--gold);
+#streak{position:fixed;top:96px;left:20px;font:700 26px/1 var(--font-display);letter-spacing:2px;color:var(--gold);
   text-shadow:0 0 14px #a06000;opacity:0;transition:opacity .2s}
 /* active boons (survival) */
 #boonstrip{position:fixed;left:20px;top:130px;display:flex;flex-direction:column;gap:5px;z-index:12;pointer-events:none;max-height:44vh;overflow:hidden}
-#boonstrip .bn{display:flex;align-items:center;gap:7px;font-size:12px;letter-spacing:.8px;color:var(--ink-soft);
-  background:rgba(8,16,28,.6);border:1px solid var(--edge);border-radius:999px;padding:2px 11px 2px 4px;backdrop-filter:blur(4px)}
-#boonstrip .bn b{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;font-size:12px;color:var(--ink)}
+#boonstrip .bn{display:flex;align-items:center;gap:7px;font-size:12px;letter-spacing:0.8px;color:var(--ink-soft);
+  background:rgba(8,16,28,.6);border:1px solid var(--edge);border-radius:var(--r-chip);padding:2px 11px 2px 4px;backdrop-filter:blur(4px)}
+#boonstrip .bn .ic{font-size:14px;color:var(--ink)}
 #boonstrip .bn.rare{color:#bfe6ff;border-color:rgba(110,200,255,.5)}
 #boonstrip .bn.legendary{color:#ffe9a8;border-color:rgba(255,210,90,.6)}
 
@@ -68,10 +69,10 @@ body.mando #fpbar{background:linear-gradient(90deg,#d98a2b,#ffd9a0)}
 .stance.active .num{color:var(--c);border-color:var(--c)}
 .stance.active .sty{color:var(--c)}
 .stance.locked{opacity:.22;filter:grayscale(1)}
-.stance.locked .sty::before{content:'🔒 '}
+
 .stance.locked.active{opacity:.5}
 /* the form's strengths: shown for a few seconds after you switch, then gets out of the way */
-#stancesyn{max-width:330px;font-size:12px;line-height:1.35;letter-spacing:.5px;color:var(--ink-soft);text-align:right;
+#stancesyn{max-width:330px;font-family:var(--font-body);font-weight:500;font-size:12px;line-height:1.35;letter-spacing:0.5px;color:var(--ink-soft);text-align:right;
   text-shadow:0 1px 6px rgba(0,0,0,.95);opacity:0;transform:translateY(4px);transition:opacity .35s,transform .35s}
 #stancesyn.show{opacity:1;transform:none}
 /* mandalorian weapon readout */
@@ -85,39 +86,41 @@ body.mando #fpbar{background:linear-gradient(90deg,#d98a2b,#ffd9a0)}
 .wslot.lock{opacity:.35}
 .wrow{display:flex;align-items:baseline;gap:8px;padding-right:6px}
 #wpnLabel{display:none}
-.weaponbox .ammo{font:800 14px/1 var(--font-ui);letter-spacing:.5px;color:var(--gold);min-width:46px;text-align:right;font-variant-numeric:tabular-nums}
+.weaponbox .ammo{font:700 14px/1 var(--font-ui);letter-spacing:0.5px;color:var(--gold);min-width:46px;text-align:right;font-variant-numeric:tabular-nums}
 .weaponbox.reloading .ammo{color:var(--danger);animation:pulse .5s infinite}
 .weaponbox.nofp{border-color:rgba(255,120,90,.6)}
 /* basic moves: light-weight key hints, no chrome */
 #basics{display:flex;gap:12px;justify-content:flex-end;flex-wrap:wrap;max-width:520px}
 .ab.hint{display:flex;align-items:center;gap:5px;font-size:11px;letter-spacing:1.5px;color:var(--ink-soft);
   text-shadow:0 1px 5px rgba(0,0,0,.95);transition:opacity .15s,color .15s}
-.ab.hint .key{font:700 10px/1 var(--font-ui);letter-spacing:.5px;color:var(--ink);padding:3px 5px;border-radius:4px;
+.ab.hint .key{font:700 10px/1 var(--font-ui);letter-spacing:0.5px;color:var(--ink);padding:3px 5px;border-radius:4px;
   border:1px solid var(--edge-mid);background:rgba(10,22,38,.7)}
 .ab.hint.cool{opacity:.4}
 .ab.hint.nofp{color:var(--danger-soft)}
 .ab.hint.nofp .key{border-color:rgba(255,120,90,.7);color:var(--danger-soft)}
 /* powers: square slots with a cooldown sweep */
 #abilities{display:flex;gap:6px;justify-content:flex-end}
-.ab.slot{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
-  width:56px;height:52px;box-sizing:border-box;padding:5px 3px;overflow:hidden;
-  background:var(--panel);border:1px solid var(--edge);border-radius:9px;
-  backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);box-shadow:var(--shadow);
-  transition:opacity .15s,border-color .15s}
-.ab.slot .key{font:700 15px/1 var(--font-ui);letter-spacing:.5px;color:var(--accent)}
-.ab.slot .an{font-size:9.5px;letter-spacing:1px;color:var(--ink-soft);line-height:1}
-#ab-throw .key,#ab-dash .key{font-size:11px;letter-spacing:0}
+.ab.slot{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;
+  width:56px;height:56px;box-sizing:border-box;padding:6px 3px 5px;overflow:hidden;
+  background:rgba(6,14,26,.72);border:1px solid var(--edge);border-radius:var(--r);
+  box-shadow:var(--shadow);transition:opacity .15s,border-color .15s}
+.ab.slot .key{position:absolute;left:3px;top:3px;font:700 11px/1 var(--font-ui);letter-spacing:.3px;color:var(--ink);
+  padding:2px 4px;border-radius:2px;background:rgba(92,198,255,.18);border:1px solid rgba(92,198,255,.35)}
+.ab.slot .ic{font-size:21px;color:var(--accent);margin-bottom:1px}
+.ab.slot .an{font:600 10px/1 var(--font-ui);letter-spacing:.8px;color:var(--ink-soft)}
+#ab-throw .key{font-size:9px;letter-spacing:0}
 /* cooldown: a shade that drains away from the top, plus the seconds left */
 .ab.slot::after{content:'';position:absolute;left:0;right:0;top:0;height:calc(var(--cd,0) * 100%);
   background:rgba(2,6,12,.72);pointer-events:none}
 .ab.slot .cdt{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:1;
-  font:800 17px/1 var(--font-ui);color:var(--ink);text-shadow:0 0 6px #000}
+  font:700 17px/1 var(--font-ui);color:var(--ink);text-shadow:0 0 6px #000}
 .ab.slot .cdt:empty{display:none}
 .ab.slot.cool{border-color:var(--edge)}
-.ab.slot.cool .key,.ab.slot.cool .an{opacity:.45}
+.ab.slot.cool .key,.ab.slot.cool .an,.ab.slot.cool .ic{opacity:.45}
 /* ready but you lack the Force / power to cast it */
 .ab.slot.nofp{border-color:rgba(255,110,90,.55)}
-.ab.slot.nofp .key{color:var(--danger-soft)}
+.ab.slot.nofp .ic{color:var(--danger-soft)}
+.ab.slot.nofp .key{border-color:rgba(255,120,90,.5);background:rgba(255,100,80,.15)}
 .ab.slot.nofp .an{color:#d98c80}
 /* freshly ready: a brief glow */
 .ab.slot.ready{animation:ready .45s ease-out}
@@ -133,18 +136,18 @@ body.mando #stancebox,body.mando #xh,body.mando #fcmeter{display:none!important}
 
 /* ---------- centre banners ---------- */
 #banner{position:fixed;top:20%;left:0;right:0;text-align:center;opacity:0;transition:opacity .4s}
-#bannerk{display:none;margin:0 auto 10px;width:max-content;padding:4px 14px;border-radius:999px;border:1px solid var(--gold);
-  font-size:12px;letter-spacing:4px;color:var(--gold);background:rgba(40,30,8,.55);text-shadow:0 0 10px #6a4a00}
+#bannerk{display:none;margin:0 auto 10px;width:max-content;padding:4px 14px;border-radius:var(--r-chip);border:1px solid var(--gold);
+  font-size:12px;letter-spacing:2.4px;color:var(--gold);background:rgba(40,30,8,.55);text-shadow:0 0 10px #6a4a00}
 #banner.kick #bannerk{display:block}
-#banner h1{margin:0;font:800 40px/1.1 var(--font-display);letter-spacing:8px;color:var(--ink);text-shadow:0 0 28px #2aa9ff,0 2px 4px rgba(0,0,0,.8)}
+#banner h1{margin:0;font:700 60px/1 var(--font-display);letter-spacing:6px;color:#f2f8ff;text-transform:uppercase;text-shadow:0 2px 0 rgba(0,0,0,.45),0 0 30px rgba(42,169,255,.35)}
 #banner h1:empty{display:none}
-#banner p{margin:10px 0 0;font-size:17px;letter-spacing:4px;color:var(--ink-soft);text-shadow:0 1px 8px rgba(0,0,0,.9)}
-#banner h1:empty + p{font:700 21px/1.3 var(--font-ui);letter-spacing:4px;color:var(--ink);max-width:min(900px,90vw);margin:0 auto}
+#banner p{margin:10px 0 0;font:500 18px/1.35 var(--font-body);letter-spacing:.5px;color:var(--ink-soft);text-shadow:0 1px 8px rgba(0,0,0,.9)}
+#banner h1:empty + p{font:700 21px/1.3 var(--font-ui);letter-spacing:2.4px;color:var(--ink);max-width:min(900px,90vw);margin:0 auto}
 #banner p .kc{font-size:15px;margin:0 3px;color:var(--gold);border-color:rgba(255,210,90,.6)}
 
 /* ---------- boss bar ---------- */
 #bosswrap{position:fixed;top:22px;left:50%;transform:translateX(-50%);width:min(560px,60vw);display:none;text-align:center}
-#bossname{font:800 14px/1 var(--font-display);letter-spacing:6px;color:#ffaaa0;text-shadow:0 0 12px #5c0000;margin-bottom:7px}
+#bossname{font:700 20px/1 var(--font-display);letter-spacing:4px;color:#ffaaa0;text-shadow:0 0 12px #5c0000;margin-bottom:7px}
 #bossbarbg{height:12px;background:rgba(24,2,2,.75);border:1px solid rgba(190,70,70,.6);border-radius:6px;overflow:hidden;box-shadow:var(--shadow)}
 #bossbar{height:100%;width:100%;background:linear-gradient(90deg,#c2182b,#ff7a5c);box-shadow:inset 0 1px 0 rgba(255,255,255,.2);transition:width .15s ease-out}
 
@@ -160,7 +163,7 @@ body.mando #stancebox,body.mando #xh,body.mando #fcmeter{display:none!important}
 /* ---------- crosshair, reticle, gauges ---------- */
 #xh{position:fixed;top:50%;left:50%;width:6px;height:6px;margin:-3px;border-radius:50%;background:rgba(210,242,255,.92);box-shadow:0 0 8px var(--accent)}
 /* floaters */
-.fl{position:fixed;font:800 16px/1 var(--font-ui);letter-spacing:.5px;text-shadow:0 0 6px #000,0 1px 2px #000;transform:translate(-50%,-50%);transition:all .7s ease-out;pointer-events:none}
+.fl{position:fixed;font:700 16px/1 var(--font-ui);letter-spacing:0.5px;text-shadow:0 0 6px #000,0 1px 2px #000;transform:translate(-50%,-50%);transition:all .7s ease-out;pointer-events:none}
 /* mando aiming reticle: DYNAMIC line gap, colour & ring driven by --gap / --col / --ringScale / --ringOp */
 #reticle{position:fixed;top:50%;left:50%;width:60px;height:60px;margin:-30px;display:none;pointer-events:none;z-index:7;
   --gap:6px; --col:120,210,255; --ringScale:1; --ringOp:.28; --dotOp:.95}
@@ -212,10 +215,10 @@ body.mando #stancebox,body.mando #xh,body.mando #fcmeter{display:none!important}
 /* small screens: tighten everything so the corners never reach the centre of play */
 @media (max-width:1100px),(max-height:700px){
   #status{width:240px}
-  .ab.slot{width:50px;height:46px}
-  .ab.slot .key{font-size:13px}
-  .ab.slot .an{font-size:8.5px}
+  .ab.slot{width:50px;height:50px}
+  .ab.slot .ic{font-size:18px}
+  .ab.slot .an{font-size:9px}
   #basics{gap:9px;max-width:420px}
   .stance{min-width:72px;padding:4px 8px 5px 6px}
-  #banner h1{font-size:30px;letter-spacing:6px}
+  #banner h1{font-size:30px;letter-spacing:3.6px}
 }

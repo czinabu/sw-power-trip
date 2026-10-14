@@ -11,6 +11,7 @@ import { startEndless } from '../game/survival.js';
 import { closeProgress } from './store-ui.js';
 import { DIFFS } from '../data/difficulty.js';
 import { renderControls } from './controls.js';
+import { svgIcon } from './icons.js';
 
 /* ============================================================
    INPUT
@@ -32,7 +33,7 @@ export function setOverlayState(state){
     go.textContent = G.modeSel === 'endless' ? 'BEGIN SURVIVAL' : 'BEGIN CAMPAIGN';
     sub.textContent = G.modeSel === 'endless' ? 'HOW LONG CAN YOU LAST?' : 'CHOOSE YOUR LEGEND';
   } else if (state === 'pause'){
-    go.textContent = '▶ RESUME'; sub.textContent = 'PAUSED';
+    go.textContent = 'RESUME'; sub.textContent = 'PAUSED';
   } else if (state === 'dead'){
     go.textContent = G.endless ? 'NEW SURVIVAL RUN' : 'RETRY THIS LEVEL';
     sub.textContent = '';   // the run summary's own title carries the moment
@@ -75,7 +76,7 @@ export function refreshSurvivalLock(){
     if (un){ md.textContent = 'endless waves, chase a high score'; el.title = ''; }
     else { const j = localStorage.getItem('sw_camp_jedi') === '1', m = localStorage.getItem('sw_camp_mando') === '1';
       const mark = (ok) => ok ? '<span class="ok">✓</span>' : '<span class="no">✗</span>';
-      md.innerHTML = '🔒 win as Jedi ' + mark(j) + ' &amp; Mando ' + mark(m);
+      md.innerHTML = svgIcon('lock', 'lk') + 'win as Jedi ' + mark(j) + ' &amp; Mando ' + mark(m);
       el.title = 'Survival unlocks once you have beaten the campaign with both heroes'; }
   }
 }
@@ -141,6 +142,21 @@ howto.addEventListener('click', (e) => {
 });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && howto.classList.contains('open')) setHowTo(false); });
 setOverlayState('menu');
+
+// UI SOUND — a soft tick when the pointer lands on something you can pick, a firmer blip when you pick it
+const UI_PICK = '.herocard, .modeopt, .btn, .setpill, .card, .howto-hero span, .howto-x';
+let _hoverEl = null;
+document.addEventListener('pointerover', (e) => {
+  const el = e.target.closest(UI_PICK);
+  if (el === _hoverEl) return;
+  _hoverEl = el;
+  if (el && !el.classList.contains('cant') && !el.classList.contains('locked')) sfx(1500, 0.035, 'sine', 0.018, 1900);
+});
+document.addEventListener('click', (e) => {
+  const el = e.target.closest(UI_PICK); if (!el) return;
+  if (el.classList.contains('cant')) sfx(160, 0.09, 'square', 0.03, 110);   // can't take it
+  else sfx(880, 0.07, 'triangle', 0.05, 1320);
+}, true);
 overlay.addEventListener('click', (e) => {
   // only the primary button or empty backdrop launches/resumes: a stray click on a label or setting shouldn't
   if (e.target.closest('#settingsrow, #runsummary, #setup, .ov-foot')) return;

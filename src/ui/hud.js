@@ -13,6 +13,10 @@ import { MUTATORS } from '../data/mutators.js';
 import { nextStoreGoal } from '../game/progression.js';
 import { updateBoonStrip } from '../game/boons.js';
 import { renderThreats } from './threats.js';
+import { svgIcon, SLOT_ICON } from './icons.js';
+
+// give every power slot its icon once (key badge top-left, icon centre, name below)
+for (const id in SLOT_ICON){ const el = document.getElementById(id); if (el) el.querySelector('.key').insertAdjacentHTML('afterend', svgIcon(SLOT_ICON[id])); }
 
 // write text/HTML only when it changed — the HUD refreshes every frame
 function setText(el, v){ if (el._t !== v){ el._t = v; el.textContent = v; } }

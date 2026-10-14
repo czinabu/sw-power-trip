@@ -8,6 +8,7 @@ import { G, player } from '../state.js';
 import { playerPos } from '../player/helpers.js';
 import { renderProgress } from '../ui/store-ui.js';
 import { BOONS, BOON_BY_ID, RARITY_W } from '../data/boons.js';
+import { icon } from '../ui/icons.js';
 
 function boonEligible(b){
   if (b.hero && b.hero !== G.hero) return false;
@@ -44,6 +45,6 @@ export function updateBoonStrip(){
   el._k = key;
   let html = '';
   for (const id in player.boons){ const b = BOON_BY_ID[id], n = player.boons[id]; if (!b) continue;
-    html += '<div class="bn '+b.r+'"><b>'+b.ico+'</b>'+b.nm+(n>1?' ×'+n:'')+'</div>'; }
+    html += '<div class="bn '+b.r+'">'+icon(b.ico)+b.nm+(n>1?' ×'+n:'')+'</div>'; }
   el.innerHTML = html;
 }
