@@ -5,7 +5,7 @@ import { CFG } from '../data/config.js';
 import { LEVELS } from '../data/levels.js';
 import { clamp } from '../utils.js';
 import { shared, G, enemies, player } from '../state.js';
-import { MANDO } from '../data/mando.js';
+import { MANDO, MANDO_WEAPONS, weaponUnlocked } from '../data/mando.js';
 import { maxHp } from '../player/helpers.js';
 import { FOCUS, focusTier } from '../player/jedi/focus.js';
 import { mandoWeapon } from '../player/mando/weapons.js';
@@ -14,9 +14,49 @@ import { nextStoreGoal } from '../game/progression.js';
 import { updateBoonStrip } from '../game/boons.js';
 import { renderThreats } from './threats.js';
 
+// write text/HTML only when it changed — the HUD refreshes every frame
+function setText(el, v){ if (el._t !== v){ el._t = v; el.textContent = v; } }
+function setHtml(el, v){ if (el._h !== v){ el._h = v; el.innerHTML = v; } }
+const $ = (id) => document.getElementById(id);
+
+/* ABILITY COOLDOWNS — the slot shades over and counts down while a power recharges. The full length is learned from
+   the moment the timer jumps up (so stance / upgrade cooldown multipliers are reflected without duplicating them). */
+const _cdPrev = {}, _cdMax = {};
+function cdSlot(id, key, cost){
+  const el = $(id); if (!el || el.style.display === 'none') return;
+  const left = player.cds[key] || 0, prev = _cdPrev[key] || 0;
+  if (left > prev + 0.05) _cdMax[key] = left;
+  _cdPrev[key] = left;
+  const frac = left > 0 && _cdMax[key] ? clamp(left / _cdMax[key], 0, 1) : 0;
+  el.style.setProperty('--cd', frac.toFixed(3));
+  if (!el._cdt) el._cdt = el.querySelector('.cdt');
+  if (el._cdt) setText(el._cdt, left >= 1 ? String(Math.ceil(left)) : '');
+  if (prev > 0 && left <= 0 && (_cdMax[key] || 0) >= 2){ el.classList.remove('ready'); void el.offsetWidth; el.classList.add('ready'); }   // just came off cooldown
+  el.classList.toggle('cool', left > 0);
+  if (cost != null) el.classList.toggle('nofp', left <= 0 && player.force < cost);
+}
+
+// MANDO weapon slots: 1 blaster · 2 dual · 3 the signature weapon (Disruptor or Darksaber, whichever you took)
+function renderWeaponSlots(){
+  const sig = player.up.darksaber ? 'darksaber' : 'disruptor';
+  const slots = [['1','single'],['2','dual'],['3',sig]];
+  let key = player.weapon;
+  for (const [, w] of slots) key += weaponUnlocked(w) ? '1' : '0';
+  const wrap = $('wslots'); if (wrap._k === key + sig) return;
+  wrap._k = key + sig;
+  wrap.innerHTML = slots.map(([k, w]) => {
+    const own = weaponUnlocked(w), nm = own ? MANDO_WEAPONS[w].name : 'LOCKED';
+    return '<span class="wslot' + (player.weapon === w ? ' on' : '') + (own ? '' : ' lock') + '"><span class="kc">' + k + '</span>' + nm + '</span>';
+  }).join('');
+}
+
 export function updateHud(){
-  document.getElementById('hpbar').style.width = (player.hp / maxHp() * 100) + '%';
-  document.getElementById('fpbar').style.width = (player.force / CFG.player.maxForce * 100) + '%';
+  const mh = maxHp();
+  $('hpbar').style.width = (player.hp / mh * 100) + '%';
+  setText($('hpval'), Math.max(0, Math.ceil(player.hp)) + ' / ' + Math.round(mh));
+  $('hpmeter').classList.toggle('low', player.hp > 0 && player.hp / mh < 0.3);
+  $('fpbar').style.width = (player.force / CFG.player.maxForce * 100) + '%';
+  setText($('fpval'), String(Math.max(0, Math.floor(player.force))));
   updateBoonStrip();   // active-boon strip (no-op unless the set changed)
   renderThreats();     // directional damage arc + off-screen danger markers
   // HIT MARKER — pop an X at the crosshair when a shot lands (white hit · gold headshot · red kill)
@@ -26,14 +66,11 @@ export function updateHud(){
       hm.style.color = player.hitMarkKind === 'kill' ? '#ff4a4a' : player.hitMarkKind === 'head' ? '#ffd24a' : '#ffffff';
       hm.style.transform = 'translate(-50%,-50%) scale(' + (1 + t*0.4 + (player.hitMarkKind === 'kill' ? 0.25 : 0)).toFixed(2) + ')';
     } else hm.style.opacity = '0'; }
-  // FORCE FOCUS meter — Jedi only
-  const fcw = document.getElementById('fcwrap'), fcl = document.getElementById('fclabel');
-  if (G.hero === 'mando'){ fcw.style.display = 'none'; fcl.style.display = 'none'; }
-  else {
-    fcw.style.display = ''; fcl.style.display = '';
-    document.getElementById('fcbar').style.width = (player.focus || 0) + '%';
-    const t = focusTier();
-    fcl.textContent = t > 0 ? ('FOCUS · ' + FOCUS.names[t]) : 'FOCUS';
+  // FORCE FOCUS meter — Jedi only (hidden for the Mando by CSS)
+  if (G.hero !== 'mando'){
+    const fcw = $('fcwrap'), t = focusTier();
+    $('fcbar').style.width = (player.focus || 0) + '%';
+    setText($('fclabel'), t > 0 ? ('FOCUS · ' + FOCUS.names[t]) : 'FOCUS');
     fcw.classList.toggle('t3', t >= 3);
   }
   // JET FUEL now reads on the JETPACK itself (diegetic LED gauge); JEDI stamina lives by the crosshair — bar unused
@@ -63,28 +100,33 @@ export function updateHud(){
     xm.style.display = showX ? 'block' : 'none';
     if (showX){
       if (goal){ const frac = clamp((G.xp || 0) / goal.cost, 0, 1);
-        document.getElementById('xpmeterfill').style.width = (frac*100) + '%';
+        $('xpmeterfill').style.width = (frac*100) + '%';
         xm.classList.toggle('ready', frac >= 1);
-        document.getElementById('xpmetertxt').textContent = (frac >= 1 ? 'READY: ' : 'XP ' + (G.xp||0) + ' / ' + goal.cost + ' → ') + goal.nm;
-      } else { document.getElementById('xpmeterfill').style.width = '100%'; xm.classList.remove('ready');
-        document.getElementById('xpmetertxt').textContent = 'XP ' + (G.xp || 0); } } }
+        setHtml($('xpmetertxt'), frac >= 1 ? 'READY TO UNLOCK · ' + goal.nm
+          : '<span class="nx">NEXT</span> ' + goal.nm + ' <span class="nx">· ' + (G.xp||0) + ' / ' + goal.cost + ' XP</span>');
+      } else { $('xpmeterfill').style.width = '100%'; xm.classList.remove('ready');
+        setText($('xpmetertxt'), 'XP ' + (G.xp || 0)); } } }
   const L = LEVELS[G.levelIdx];
   let alive = 0;
   for (const e of enemies) if (!e.dead && !e.converted) alive++;
   const total = alive + G.spawnQueue.length;
+  // run progress: where you are · which wave · what's left
+  const hostiles = total > 0 ? '<span class="wi-h">' + total + ' HOSTILE' + (total === 1 ? '' : 'S') + ' REMAIN</span>' : '';
   if (G.endless){
     const mut = G.mut ? MUTATORS.find(m => m.id === G.mut) : null;
-    document.getElementById('waveinfo').innerHTML = 'SURVIVAL · WAVE <b>' + G.endlessWave + '</b>' +
-      (total > 0 ? '  ·  HOSTILES: ' + total : '') + (mut ? '  ·  <span style="color:'+mut.col+'">'+mut.name+'</span>' : '');
+    setHtml($('waveinfo'), '<span class="wi-l">SURVIVAL</span><span class="wi-w">WAVE ' + G.endlessWave + '</span>' + hostiles +
+      (mut ? '<span class="wi-h"><span class="wi-mut" style="color:' + mut.col + '">' + mut.name + '</span></span>' : ''));
   } else {
-    document.getElementById('waveinfo').textContent =
-      L.name.split('—')[0].trim() + '  ·  WAVE ' + Math.min(G.wave+1, L.waves.length) + '/' + L.waves.length +
-      (total > 0 ? '  ·  HOSTILES: ' + total : '') + (shared.boss ? '  ·  SITH LORD ENGAGED' : '');
+    const place = (L.name.split('—')[1] || L.name).trim();
+    const wave = shared.boss ? 'BOSS FIGHT'
+                             : 'WAVE ' + Math.min(G.wave+1, L.waves.length) + ' / ' + L.waves.length;
+    setHtml($('waveinfo'), '<span class="wi-l">LEVEL ' + (G.levelIdx + 1) + ' · ' + place + '</span><span class="wi-w">' + wave + '</span>' +
+      (shared.boss ? '' : hostiles));
   }
   if (G.hero === 'mando'){
     // weapon + ammo readout
     const W = mandoWeapon();
-    document.getElementById('wpnLabel').textContent = W.name;
+    renderWeaponSlots();
     const ammoEl = document.getElementById('ammoLabel');
     ammoEl.textContent = W.melee ? '— —' : (W.fire === 'rifle' && !player.zoom) ? 'SPEAR' : (player.overheat ? 'OVERHEAT' : Math.round((1 - player.heat) * 100) + '%');
     document.getElementById('ab-blaster').classList.toggle('reloading', player.overheat);
@@ -95,18 +137,14 @@ export function updateHud(){
     // offensive brace; the Darksaber GUARDS; the Disruptor SCOPES. Flag the shield when it's out of stamina to deflect.
     const braceEl = document.getElementById('ab-brace');
     if (braceEl){
-      braceEl.lastChild.textContent = W.melee ? 'GUARD' : W.twoHand ? 'SCOPE' : player.weapon === 'single' ? 'SHIELD' : 'BRACE';
+      setText(braceEl.querySelector('.an'), W.melee ? 'GUARD' : W.twoHand ? 'SCOPE' : player.weapon === 'single' ? 'SHIELD' : 'BRACE');
       braceEl.classList.toggle('nofp', player.weapon === 'single' && player.blockHeld && player.stam <= 0);
     }
     // cooldown / fuel-gated abilities
     const cdab = [['ab-rocket','rocket',MANDO.rocket.cost],['ab-deto','deto',MANDO.deto.cost],
                   ['ab-birds','birds',MANDO.birds.cost],['ab-grapple','grapple',MANDO.grapple.cost],
                   ['ab-missile','missile',MANDO.jetMissile.cost],['ab-bacta','bacta',MANDO.bacta.cost]];
-    for (const [id, key, cost] of cdab){
-      const el = document.getElementById(id); if (!el) continue;
-      el.classList.toggle('cool', player.cds[key] > 0);
-      el.classList.toggle('nofp', player.cds[key] <= 0 && player.force < cost);
-    }
+    for (const [id, key, cost] of cdab) cdSlot(id, key, cost);
     document.getElementById('ab-flame').classList.toggle('nofp', player.force < 5);
     document.getElementById('ab-flame').classList.toggle('cool', !!player.flaming);
     document.getElementById('ab-jet').classList.toggle('nofp', player.jet < 12);    // jet FUEL low
@@ -146,9 +184,5 @@ export function updateHud(){
                 ['ab-pull','pull',CFG.abilities.pull.cost],['ab-judge','judge',CFG.abilities.judge.cost],
                 ['ab-repulse','repulse',CFG.abilities.repulse.cost],['ab-barrier','barrier',CFG.abilities.barrier.cost],
                 ['ab-mend','mend',CFG.abilities.mend.cost]];
-  for (const [id, key, cost] of abil){
-    const el = document.getElementById(id);
-    el.classList.toggle('cool', player.cds[key] > 0);
-    el.classList.toggle('nofp', player.cds[key] <= 0 && player.force < cost);
-  }
+  for (const [id, key, cost] of abil) cdSlot(id, key, cost);
 }

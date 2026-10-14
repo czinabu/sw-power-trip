@@ -10,19 +10,45 @@ import { startLevel } from '../game/flow.js';
 import { startEndless } from '../game/survival.js';
 import { closeProgress } from './store-ui.js';
 import { DIFFS } from '../data/difficulty.js';
+import { renderControls } from './controls.js';
 
 /* ============================================================
    INPUT
    ============================================================ */
 export const overlay = document.getElementById('overlay');
 
+/* OVERLAY STATE — one screen, four faces: 'menu' (first run), 'pause', 'dead', 'victory'. Each sets the headline,
+   the primary button's label and which blocks show (hero/mode setup only where picking makes sense). */
+let _ovState = 'menu';
+export function setOverlayState(state){
+  _ovState = state;
+  overlay.classList.remove('st-menu', 'st-pause', 'st-dead', 'st-victory');
+  overlay.classList.add('st-' + state);
+  document.body.classList.toggle('in-menu', state === 'menu');
+  document.getElementById('banner').style.opacity = '0';   // the overlay carries the message; don't let a banner ghost through it
+  document.getElementById('restartBtn').style.display = state === 'menu' ? 'none' : 'inline-flex';
+  const go = document.getElementById('goText'), sub = document.getElementById('ovsub');
+  if (state === 'menu'){
+    go.textContent = G.modeSel === 'endless' ? 'BEGIN SURVIVAL' : 'BEGIN CAMPAIGN';
+    sub.textContent = G.modeSel === 'endless' ? 'HOW LONG CAN YOU LAST?' : 'CHOOSE YOUR LEGEND';
+  } else if (state === 'pause'){
+    go.textContent = '▶ RESUME'; sub.textContent = 'PAUSED';
+  } else if (state === 'dead'){
+    go.textContent = G.endless ? 'NEW SURVIVAL RUN' : 'RETRY THIS LEVEL';
+    sub.textContent = '';   // the run summary's own title carries the moment
+  } else if (state === 'victory'){
+    go.textContent = 'PLAY AGAIN';
+  }
+}
+
 function beginPlay(){
   overlay.style.display = 'none';
   document.getElementById('banner').style.opacity = '0';
-  // leaving the end screen → re-arm the summary for the next run and restore the control list
+  // leaving the end screen → re-arm the summary for the next run
   if (G.stats){ G.stats._ended = false; G.stats.summary = null; }
   document.getElementById('runsummary').style.display = 'none';
-  applyCtl();   // restore the (collapsed-by-default) controls reference + its toggle
+  document.body.classList.remove('in-menu');
+  setHowTo(false);
   if (G.modeSel === 'endless' && !survivalUnlocked()) G.modeSel = 'campaign';   // safety — never launch a locked mode
   if (G.mode === 'menu' || G.mode === 'victory'){
     G.mode = 'play'; G.slowmo = 1;
@@ -46,9 +72,11 @@ export function refreshSurvivalLock(){
   const un = survivalUnlocked(), md = el.querySelector('.md');
   el.classList.toggle('locked', !un);
   if (md){
-    if (un) md.textContent = 'endless escalating waves · chase a high score';
+    if (un) md.textContent = 'endless waves, chase a high score';
     else { const j = localStorage.getItem('sw_camp_jedi') === '1', m = localStorage.getItem('sw_camp_mando') === '1';
-      md.innerHTML = '🔒 clear the campaign as both — Jedi ' + (j?'✓':'✗') + ' · Mando ' + (m?'✓':'✗'); }
+      const mark = (ok) => ok ? '<span class="ok">✓</span>' : '<span class="no">✗</span>';
+      md.innerHTML = '🔒 win as Jedi ' + mark(j) + ' &amp; Mando ' + mark(m);
+      el.title = 'Survival unlocks once you have beaten the campaign with both heroes'; }
   }
 }
 function setModeSel(m){
@@ -60,8 +88,7 @@ function setModeSel(m){
   G.modeSel = m;
   document.getElementById('mode-campaign').classList.toggle('sel', m === 'campaign');
   document.getElementById('mode-endless').classList.toggle('sel', m === 'endless');
-  const sub = document.getElementById('ovsub');
-  if (G.mode === 'menu') sub.textContent = m === 'endless' ? 'SURVIVAL — HOW LONG CAN YOU LAST?' : 'CHOOSE YOUR LEGEND';
+  if (_ovState === 'menu') setOverlayState('menu');   // headline + button follow the mode
 }
 document.getElementById('mode-campaign').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setModeSel('campaign'); });
 document.getElementById('mode-endless').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setModeSel('endless'); });
@@ -98,16 +125,25 @@ volsl.addEventListener('pointerdown', (e) => e.stopPropagation());
 volsl.addEventListener('click', (e) => e.stopPropagation());
 volsl.addEventListener('input', (e) => { audioInit(); setMasterVol(parseFloat(e.target.value)); });
 document.addEventListener('pointerdown', audioInit);   // first gesture anywhere lights up the audio ctx + menu score (autoplay policy)
-// CONTROLS reference — collapsed by default to keep the menu uncluttered; click the pill to expand/hide it
-let _ctlOpen = false;
-function applyCtl(){
-  const c = document.getElementById('ctl'), t = document.getElementById('ctltoggle');
-  if (c) c.style.display = _ctlOpen ? 'block' : 'none';
-  if (t){ t.style.display = ''; t.textContent = 'CONTROLS ' + (_ctlOpen ? '▴' : '▾'); }
+// HOW TO PLAY — a panel over the menu; opens on the current hero, with tabs to read the other one's controls
+const howto = document.getElementById('howto');
+function setHowTo(open){
+  howto.classList.toggle('open', open);
+  if (open) renderControls(G.hero);
 }
-document.getElementById('ctltoggle').addEventListener('click', (e) => { e.stopPropagation(); _ctlOpen = !_ctlOpen; applyCtl(); });
-applyCtl();
-overlay.addEventListener('click', () => {
+document.getElementById('ctltoggle').addEventListener('click', (e) => { e.stopPropagation(); setHowTo(true); });
+document.getElementById('howtoclose').addEventListener('click', (e) => { e.stopPropagation(); setHowTo(false); });
+howto.addEventListener('click', (e) => {
+  e.stopPropagation();   // reading the help must never launch or resume the game
+  const tab = e.target.closest('[data-h]');
+  if (tab) renderControls(tab.dataset.h);
+  else if (e.target === howto) setHowTo(false);   // click the backdrop to close
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && howto.classList.contains('open')) setHowTo(false); });
+setOverlayState('menu');
+overlay.addEventListener('click', (e) => {
+  // only the primary button or empty backdrop launches/resumes: a stray click on a label or setting shouldn't
+  if (e.target.closest('#settingsrow, #runsummary, #setup, .ov-foot')) return;
   audioInit();
   try { renderer.domElement.requestPointerLock(); } catch(e){}
   setTimeout(() => {
@@ -125,16 +161,12 @@ document.addEventListener('pointerlockchange', () => {
     beginPlay();
   } else if (!shared.lockFallback){
     overlay.style.display = 'flex';
-    // a RESTART button rides the overlay whenever a run is in progress or over (not the first-run menu)
-    document.getElementById('restartBtn').style.display = (G.mode === 'menu') ? 'none' : 'block';
     if (G.mode === 'play'){
       G.paused = true;   // ESC released the cursor — freeze the game behind the overlay
-      document.getElementById('goText').textContent = 'PAUSED — CLICK TO RESUME';
+      setOverlayState('pause');
     }
-    else if (G.mode === 'dead')
-      document.getElementById('goText').textContent = 'YOU HAVE FALLEN — CLICK TO RETRY';
-    else if (G.mode === 'victory')
-      document.getElementById('goText').textContent = 'VICTORY — CLICK TO PLAY AGAIN';
+    else if (G.mode === 'dead' || G.mode === 'victory') setOverlayState(G.mode);
+    else setOverlayState('menu');
   }
 });
 // RESTART RUN — wipe progress and drop back into level 1 from scratch
@@ -145,7 +177,8 @@ function restartRun(){
   document.getElementById('skilltree').style.display = 'none';
   G.skillSelect = false;
   G.mode = 'play'; G.slowmo = 1; G.paused = false;
-  startLevel(0);
+  document.body.classList.remove('in-menu'); setHowTo(false);
+  if (G.endless) startEndless(); else startLevel(0);   // a survival run restarts as survival, not the campaign
   if (!shared.lockFallback){ try { renderer.domElement.requestPointerLock(); } catch(e){} }
 }
 document.getElementById('restartBtn').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); restartRun(); });

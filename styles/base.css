@@ -1,31 +1,51 @@
-/* ---------- design tokens — one source of truth for the whole UI ---------- */
+/* ---------- design tokens: one source of truth for the whole UI ---------- */
 :root{
-  --ink:#e6f3ff; --ink-soft:#9cc0dc; --ink-dim:#6f93ac;
-  --accent:#5cc6ff; --gold:#ffd24a; --violet:#c79bff; --danger:#ff6a4a;
-  --panel:rgba(7,17,31,.58); --panel-solid:rgba(9,21,38,.9);
-  --edge:rgba(108,168,214,.28); --edge-lit:rgba(124,212,255,.9);
-  --r:11px; --blur:saturate(1.1) blur(8px);
-  --shadow:0 6px 22px rgba(0,0,0,.45);
+  --font-ui:'Rajdhani','Segoe UI',system-ui,Arial,sans-serif;
+  --font-display:'Orbitron','Rajdhani','Segoe UI',system-ui,sans-serif;
+  --ink:#e8f4ff; --ink-soft:#a9c6dd; --ink-dim:#7393ab; --ink-faint:#4d6578;
+  --accent:#5cc6ff; --accent-glow:rgba(92,198,255,.55);
+  --gold:#ffd24a; --gold-glow:rgba(255,200,70,.5);
+  --xp:#7fe0a8; --xp-glow:rgba(40,200,120,.45);
+  --violet:#c79bff; --danger:#ff6a4a; --danger-soft:#ff9a8a;
+  --panel:rgba(6,14,26,.62); --panel-solid:rgba(8,18,33,.92); --panel-hi:rgba(14,30,52,.9);
+  --edge:rgba(108,168,214,.24); --edge-mid:rgba(124,190,235,.45); --edge-lit:rgba(124,212,255,.9);
+  --r:10px; --r-lg:14px; --blur:saturate(1.15) blur(10px);
+  --shadow:0 8px 26px rgba(0,0,0,.5);
+  --ease:cubic-bezier(.2,.8,.2,1);
 }
 html,body{margin:0;padding:0;overflow:hidden;background:#000;
-  font-family:'Segoe UI',system-ui,Arial,sans-serif;font-weight:500;user-select:none;
-  -webkit-font-smoothing:antialiased}
+  font-family:var(--font-ui);font-weight:600;user-select:none;-webkit-user-select:none;
+  -webkit-font-smoothing:antialiased;color:var(--ink)}
 canvas{display:block}
 #hud{position:fixed;inset:0;pointer-events:none;color:var(--ink)}
-/* a shared glassy-panel look */
-.barwrap,.stance,.ab{backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);box-shadow:var(--shadow)}
+b{color:var(--accent);font-weight:700}
+kbd,.kc{display:inline-flex;align-items:center;justify-content:center;min-width:1.7em;height:1.7em;padding:0 .45em;box-sizing:border-box;
+  font:700 .78em/1 var(--font-ui);letter-spacing:.5px;color:var(--ink);background:linear-gradient(180deg,rgba(40,64,90,.9),rgba(20,36,56,.95));
+  border:1px solid var(--edge-mid);border-bottom-width:2px;border-radius:5px;vertical-align:.08em;white-space:nowrap}
+/* shared button look (menu actions, continue) */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;pointer-events:auto;cursor:pointer;
+  font:700 13px/1 var(--font-ui);letter-spacing:3.5px;color:var(--ink-soft);text-transform:uppercase;
+  padding:12px 22px;border-radius:var(--r);border:1px solid var(--edge-mid);background:var(--panel-solid);
+  backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  transition:transform .15s var(--ease),border-color .15s,box-shadow .15s,color .15s,background .15s}
+.btn:hover{color:var(--ink);border-color:var(--edge-lit);transform:translateY(-2px);box-shadow:0 0 22px -6px var(--accent-glow)}
+.btn:active{transform:translateY(0)}
+.btn.primary{font-size:16px;letter-spacing:5px;color:#04121f;padding:15px 40px;border-color:transparent;
+  background:linear-gradient(180deg,#8fdcff,#3fb3f0);box-shadow:0 0 0 1px rgba(160,225,255,.6),0 10px 30px -8px var(--accent-glow)}
+.btn.primary:hover{color:#021019;background:linear-gradient(180deg,#b5e9ff,#58c3fa);box-shadow:0 0 0 1px #d6f3ff,0 12px 36px -6px rgba(92,198,255,.8)}
 /* vignette on damage */
 #vig{position:fixed;inset:0;box-shadow:inset 0 0 180px 60px rgba(255,0,0,.55);opacity:0;transition:opacity .35s}
 /* full-screen clash flash for parries / ripostes */
 #flash{position:fixed;inset:0;pointer-events:none;z-index:8;opacity:0;mix-blend-mode:screen}
-/* low-stamina danger vignette — pulses at the edges when your guard is failing */
+/* low-stamina danger vignette: pulses at the edges when your guard is failing */
 #stamvig{position:fixed;inset:0;pointer-events:none;z-index:4;opacity:0;box-shadow:inset 0 0 170px 64px rgba(255,60,10,.5);transition:opacity .25s}
 /* GUARD BROKEN / exhausted banner flash */
 #exhaust{position:fixed;top:60%;left:0;right:0;text-align:center;pointer-events:none;z-index:9;opacity:0;
-  font-size:26px;font-weight:800;letter-spacing:8px;color:var(--danger);text-shadow:0 0 18px #5c1400;transition:opacity .2s}
+  font:800 22px/1 var(--font-display);letter-spacing:8px;color:var(--danger);text-shadow:0 0 18px #5c1400;transition:opacity .2s}
 /* permanent cinematic vignette + faint film grain for atmosphere */
 #cine{position:fixed;inset:0;pointer-events:none;z-index:5;box-shadow:inset 0 0 220px 50px rgba(0,0,0,.6);background:radial-gradient(ellipse at center,transparent 52%,rgba(2,6,12,.42) 100%)}
 #grain{position:fixed;inset:-50%;pointer-events:none;z-index:6;opacity:.045;mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");animation:grain 0.6s steps(2) infinite}
 @keyframes grain{0%{transform:translate(0,0)}50%{transform:translate(-3%,2%)}100%{transform:translate(2%,-2%)}}
 @keyframes pulse{50%{opacity:.35}}
-b{color:var(--accent);font-weight:700}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){#grain{animation:none}*{scroll-behavior:auto}}

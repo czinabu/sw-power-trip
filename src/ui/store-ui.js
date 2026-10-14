@@ -14,6 +14,7 @@ import {
   buyPower
 } from '../game/progression.js';
 import { ENDLESS_POWERS } from '../data/store.js';
+import { LEVELS } from '../data/levels.js';
 import { BOON_BY_ID } from '../data/boons.js';
 import { rollBoons, pickBoon } from '../game/boons.js';
 
@@ -48,53 +49,77 @@ export function openSkillTree(){
   rollFreeCards();
   renderProgress();
   document.getElementById('skilltree').style.display = 'flex';
+  document.getElementById('banner').style.opacity = '0';
   document.exitPointerLock();      // free the cursor so the cards are clickable
   if (shared.humGain) shared.humGain.gain.value = 0;
 }
-// build one store card element
-function storeCard(opts){
+// build one upgrade card. opts: cls, tag, ico, nm, ds, cost, afford, why (shown when it can't be taken), onClick, extra
+function card(opts){
   const c = document.createElement('div');
-  c.className = 'storecard' + (opts.cls || '') + (opts.afford ? '' : ' cant');
-  c.innerHTML = '<div class="storehdr" style="margin:0;font-size:8px">'+opts.tag+'</div>'+
-    '<div class="ico">'+opts.ico+'</div><div class="nm">'+opts.nm+'</div><div class="ds">'+opts.ds+'</div>'+
-    '<div class="cost">'+opts.cost+'</div>';
+  c.className = 'card' + (opts.cls || '') + (opts.afford ? '' : ' cant');
+  c.innerHTML = '<div class="c-tag">' + opts.tag + '</div><div class="c-ico">' + opts.ico + '</div>' +
+    '<div class="c-nm">' + opts.nm + '</div><div class="c-ds">' + opts.ds + '</div>' + (opts.extra || '') +
+    (opts.cost ? '<div class="' + (opts.costCls || 'c-cost') + '">' + opts.cost + '</div>' : '') +
+    (!opts.afford && opts.why ? '<div class="c-why">' + opts.why + '</div>' : '');
   if (opts.afford && opts.onClick) c.addEventListener('click', opts.onClick);
   return c;
 }
+const needXp = (cost) => 'NEED ' + (cost - (G.xp || 0)) + ' MORE XP';
+function bump(id){ const el = document.getElementById(id).parentElement; el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
+let _lastXp = 0, _lastSp = 0;
 export function renderProgress(){
   const tree = document.getElementById('skilltree');
-  tree.querySelector('h1').textContent = 'WAVE CLEARED';
+  const xp = G.xp || 0, sp = G.skillPoints || 0;
+  // ---- header: where you are + what you have to spend ----
+  if (G.endless){
+    document.getElementById('stkicker').textContent = 'SURVIVAL';
+    tree.querySelector('h1').textContent = 'WAVE ' + (G.endlessWave || 0) + ' SURVIVED';
+  } else {
+    const L = LEVELS[G.levelIdx], place = (L.name.split('—')[1] || L.name).trim();
+    document.getElementById('stkicker').textContent = 'LEVEL ' + (G.levelIdx + 1) + ' · ' + place;
+    tree.querySelector('h1').textContent = 'WAVE ' + Math.max(1, G.wave) + ' OF ' + L.waves.length + ' CLEARED';
+  }
   tree.querySelector('.sub').textContent = G.hero === 'mando' ? 'HONE THE HUNTER' : 'CHANNEL THE FORCE';
-  document.getElementById('xpbalval').textContent = (G.xp || 0);
-  // ---- BOON CHOICE (free, one pick per wave clear) — the run's build layer, shown above the XP store ----
-  const booncards = document.getElementById('booncards'), boonhdr = document.getElementById('boonhdr');
+  document.getElementById('xpbalval').textContent = xp;
+  document.getElementById('spbalval').textContent = sp;
+  if (xp !== _lastXp) bump('xpbalval');
+  if (sp !== _lastSp) bump('spbalval');
+  _lastXp = xp; _lastSp = sp;
+  // ---- BOON CHOICE (survival: free, one pick per wave clear) — the run's build layer ----
+  const booncards = document.getElementById('booncards'), boonsec = document.getElementById('boonsec');
   booncards.innerHTML = '';
   if (!G.boonPicked && G.boonOffer && G.boonOffer.length){
-    boonhdr.style.display = ''; booncards.style.display = '';
+    boonsec.style.display = '';
     for (const id of G.boonOffer){ const b = BOON_BY_ID[id]; if (!b) continue;
-      booncards.appendChild(storeCard({ cls:' boon '+b.r, tag: b.r==='legendary'?'LEGENDARY':b.r==='rare'?'RARE':'BOON',
-        ico:b.ico, nm:b.nm, ds:b.ds, cost:'CLAIM', afford:true, onClick:()=>pickBoon(id) })); }
-  } else { boonhdr.style.display = 'none'; booncards.style.display = 'none'; }
-  // ---- ABILITIES (spend XP) — fork choices + the expensive final ----
+      booncards.appendChild(card({ cls:' boon '+b.r, tag: b.r==='legendary'?'LEGENDARY':b.r==='rare'?'RARE':'COMMON',
+        ico:b.ico, nm:b.nm, ds:b.ds, cost:'CLAIM FREE', afford:true, onClick:()=>pickBoon(id) })); }
+  } else boonsec.style.display = 'none';
+  // ---- ABILITIES (spend XP) — fork pairs sit side by side joined by an OR; the final glows red ----
   const store = document.getElementById('storecards');
   store.innerHTML = '';
+  let group = null, groupFork = null;
   for (const n of storeSet()){
     if (!storeAvail(n)) continue;
-    const free = n.cost <= 0;
-    store.appendChild(storeCard({
+    const free = n.cost <= 0, afford = free || xp >= n.cost;
+    const el = card({
       cls: (n.fork ? ' fork' : '') + (n.final ? ' final' : ''),
-      tag: n.final ? 'FINAL' : n.fork ? (n.cost > 0 ? 'CHOOSE ONE' : 'CLAIM ONE') : 'ABILITY',
+      tag: n.final ? 'FINAL UPGRADE' : n.fork ? (free ? 'CLAIM ONE' : 'CHOOSE ONE') : 'ABILITY',
       ico: n.ico, nm: n.nm, ds: n.ds,
-      cost: free ? 'FREE' : n.cost + ' XP',
-      afford: free || (G.xp || 0) >= n.cost,
+      cost: free ? 'CLAIM FREE' : n.cost + ' XP',
+      afford, why: needXp(n.cost),
       onClick: () => buyStore(n),
-    }));
+    });
+    if (n.fork && n.fork === groupFork){ const or = document.createElement('div'); or.className = 'or'; or.textContent = 'OR'; group.append(or, el); continue; }
+    if (n.fork){ group = document.createElement('div'); group.className = 'forkgroup'; group.appendChild(el); store.appendChild(group); groupFork = n.fork; }
+    else { store.appendChild(el); group = null; groupFork = null; }
   }
-  // EXTRA SKILL POINT — the third XP sink (powers up the weapon-upgrade track)
+  // unwrap a "group" of one (its sibling isn't on offer this visit) so it doesn't carry an empty OR frame
+  for (const g of [...store.querySelectorAll('.forkgroup')]) if (g.children.length === 1) g.replaceWith(g.firstChild);
+  // EXTRA SKILL POINT — the third XP sink (powers up the training track)
   { const cost = skillPointCost();
-    store.appendChild(storeCard({
-      tag: 'UPGRADE PTS', ico: '✚', nm: 'EXTRA SKILL POINT', ds: 'Banks +1 skill point for a weapon upgrade',
-      cost: cost + ' XP', afford: (G.xp || 0) >= cost,
+    store.appendChild(card({
+      cls: ' sp', tag: 'SKILL POINT', ico: '✚', nm: 'EXTRA SKILL POINT', ds: 'Bank +1 skill point to spend on training below',
+      cost: cost + ' XP', afford: xp >= cost, why: needXp(cost),
       onClick: () => { G.xp -= cost; G.skillBought = (G.skillBought||0)+1; G.skillPoints = (G.skillPoints||0)+1;
         sfx(560,0.12,'sine',0.1,900); document.getElementById('xpval').textContent = G.xp; renderProgress(); },
     }));
@@ -103,34 +128,38 @@ export function renderProgress(){
   if (G.endless){
     for (const p of ENDLESS_POWERS){
       const lv = powerLv(p.id), pc = powerCost(p);
-      store.appendChild(storeCard({ cls:' fork', tag: lv > 0 ? 'POWER · LV ' + lv : 'POWER', ico:p.ico, nm:p.nm, ds:p.ds,
-        cost: pc + ' XP', afford: (G.xp||0) >= pc, onClick: () => buyPower(p) }));
+      store.appendChild(card({ cls:' power', tag: lv > 0 ? 'POWER · LEVEL ' + lv : 'POWER', ico:p.ico, nm:p.nm, ds:p.ds,
+        cost: pc + ' XP', afford: xp >= pc, why: needXp(pc), onClick: () => buyPower(p) }));
     }
   }
-  document.getElementById('storehdr').textContent = G.endless ? 'SPEND XP — ABILITIES & SURVIVAL POWERS'
-    : (G.hero === 'mando' ? 'SPEND XP — ABILITIES & SKILL POINTS' : 'SPEND XP — FORCE POWERS & SKILL POINTS');
-  // ---- WEAPON UPGRADES (spend SKILL POINTS) — a separate track, never gated by ability choice ----
+  document.getElementById('storehdr').textContent = G.endless ? 'ABILITIES & POWERS' : (G.hero === 'mando' ? 'GADGETS & WEAPONS' : 'FORCE POWERS');
+  // ---- TRAINING (spend SKILL POINTS) — a separate track, never gated by ability choice ----
   const wrap = document.getElementById('skillcards');
   wrap.innerHTML = '';
-  const sp = G.skillPoints || 0;
-  document.getElementById('freehdr').textContent =
-    (G.hero === 'mando' ? 'WEAPON UPGRADES' : 'TRAINING') + ' — ' + sp + ' SKILL POINT' + (sp === 1 ? '' : 'S') + (sp > 0 ? ' (choose)' : ' (earn or buy more)');
+  document.getElementById('freehdr').textContent = G.hero === 'mando' ? 'WEAPON UPGRADES' : 'TRAINING';
+  document.getElementById('freehelp').textContent = sp > 0
+    ? 'Spend skill points · ' + sp + ' to spend'
+    : 'Spend skill points · you earn one each wave, or buy one with XP above';
   for (const s of progFreeCards){
-    const c = document.createElement('div');
-    const spent = skillRank(s.id) >= s.max;
-    const lockedOut = !spent && s.avail && !s.avail();   // a rival pick (e.g. the heal path) closed this off
-    c.className = 'skillcard t' + s.tier + ((sp <= 0 || spent || lockedOut) ? ' cant' : '');
     const r = skillRank(s.id);
-    const pips = s.max > 1 ? '<div class="pips">' + '●'.repeat(r) + '○'.repeat(s.max - r) + '</div>' : '';
-    const rankTag = r > 0 ? ' <span class="rk">'+['','II','III'][r]+'</span>' : '';
-    const tag = s.tier === 3 ? ' · CAPSTONE' : '';
-    c.innerHTML = '<div class="tier">'+tierName(s.tier)+tag+'</div><div class="ico">'+s.ico+'</div>'+
-      '<div class="nm">'+s.nm+rankTag+'</div><div class="ds">'+s.ds+'</div>'+
-      (lockedOut ? '<div class="lockmsg">LOCKED — you chose the heal path</div>' : '<div class="fl">“'+s.fl+'”</div>')+pips;
-    if (sp > 0 && !spent && !lockedOut) c.addEventListener('click', () => chooseUpgrade(s));
-    wrap.appendChild(c);
+    const spent = r >= s.max;
+    const lockedOut = !spent && s.avail && !s.avail();   // a rival pick (e.g. the heal path) closed this off
+    const pips = s.max > 1 ? '<div class="pips">' + '<i class="on"></i>'.repeat(r) + '<i></i>'.repeat(s.max - r) + '</div>' : '';
+    const rankTag = r > 0 ? '<span class="rk">' + ['','II','III'][r] + '</span>' : '';
+    const why = lockedOut ? 'LOCKED · you chose the other heal path' : spent ? 'FULLY TRAINED' : 'NO SKILL POINTS';
+    wrap.appendChild(card({
+      cls: ' skill t' + s.tier, tag: tierName(s.tier) + (s.tier === 3 ? ' · CAPSTONE' : ''),
+      ico: s.ico, nm: s.nm + rankTag, ds: s.ds,
+      extra: (lockedOut ? '' : '<div class="c-fl">“' + s.fl + '”</div>') + pips,
+      cost: '1 SKILL POINT', costCls: 'c-pick',
+      afford: sp > 0 && !spent && !lockedOut, why,
+      onClick: () => chooseUpgrade(s),
+    }));
   }
-  document.getElementById('skillgoals').style.display = 'none';
+  if (!progFreeCards.length) wrap.innerHTML = '<div class="empty">Nothing left to train. You have mastered every discipline on offer.</div>';
+  document.getElementById('sthint').textContent = sp > 0
+    ? 'Unspent XP and skill points carry over to the next wave'
+    : 'Unspent XP carries over to the next wave';
 }
 function buyStore(n){
   if (!G.skillSelect || !storeAvail(n) || (G.xp||0) < n.cost) return;

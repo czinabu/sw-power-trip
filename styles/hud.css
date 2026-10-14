@@ -1,61 +1,167 @@
-/* bars */
-.barwrap{position:fixed;left:24px;width:320px;height:15px;background:var(--panel);
-  border:1px solid var(--edge);border-radius:8px;overflow:hidden}
-#hpwrap{bottom:54px}
-#fpwrap{bottom:28px;height:10px;width:260px}
-.bar{height:100%;width:100%;transition:width .12s ease-out;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.25),inset 0 -3px 6px rgba(0,0,0,.25)}
+/* ============================================================
+   IN-GAME HUD
+   Layout: top-left = run progress · bottom-left = vitals · bottom-right = everything you can press
+           bottom-centre = XP toward the next ability · top-centre = boss
+   ============================================================ */
+/* the HUD sits out the main menu (it would only show stale bars behind the overlay) */
+body.in-menu #hud,body.in-menu #boonstrip{visibility:hidden}
+
+/* ---------- top-left: run progress ---------- */
+#objective{position:fixed;top:18px;left:20px;display:flex;align-items:stretch;gap:10px}
+#waveinfo{padding:7px 14px 8px 12px;border-left:2px solid var(--accent);
+  background:linear-gradient(90deg,rgba(6,16,30,.7),rgba(6,16,30,0));text-shadow:0 1px 8px rgba(0,10,20,.9)}
+#waveinfo .wi-l{display:block;font-size:11px;letter-spacing:3px;color:var(--ink-dim)}
+#waveinfo .wi-w{display:block;font:700 21px/1.1 var(--font-ui);letter-spacing:3px;color:var(--ink);margin-top:2px}
+#waveinfo .wi-w b{color:var(--ink);font-weight:800}
+#waveinfo .wi-h{display:block;font-size:12px;letter-spacing:1.5px;color:var(--ink-soft);margin-top:3px}
+#waveinfo .wi-h em{font-style:normal;color:#ff9a8a}
+#waveinfo .wi-mut{display:inline-block;margin-left:2px;padding:0 7px;border-radius:999px;border:1px solid currentColor;font-size:10px;letter-spacing:1.5px}
+#xphud{align-self:flex-start;margin-top:4px;padding:5px 11px;border-radius:999px;border:1px solid rgba(60,200,120,.35);
+  background:rgba(8,26,18,.55);font:700 15px/1 var(--font-ui);color:var(--xp);text-shadow:0 0 10px var(--xp-glow);letter-spacing:1px}
+#xphud .xpk{font-size:10px;letter-spacing:2.5px;color:#5fae84;margin-right:6px;vertical-align:1px}
+#streak{position:fixed;top:96px;left:20px;font:800 20px/1 var(--font-display);letter-spacing:2px;color:var(--gold);
+  text-shadow:0 0 14px #a06000;opacity:0;transition:opacity .2s}
+/* active boons (survival) */
+#boonstrip{position:fixed;left:20px;top:130px;display:flex;flex-direction:column;gap:5px;z-index:12;pointer-events:none;max-height:44vh;overflow:hidden}
+#boonstrip .bn{display:flex;align-items:center;gap:7px;font-size:12px;letter-spacing:.8px;color:var(--ink-soft);
+  background:rgba(8,16,28,.6);border:1px solid var(--edge);border-radius:999px;padding:2px 11px 2px 4px;backdrop-filter:blur(4px)}
+#boonstrip .bn b{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;font-size:12px;color:var(--ink)}
+#boonstrip .bn.rare{color:#bfe6ff;border-color:rgba(110,200,255,.5)}
+#boonstrip .bn.legendary{color:#ffe9a8;border-color:rgba(255,210,90,.6)}
+
+/* ---------- bottom-left: vitals ---------- */
+#status{position:fixed;left:20px;bottom:20px;width:300px;display:flex;flex-direction:column;gap:7px}
+.meter{display:flex;flex-direction:column;gap:3px}
+.mrow{display:flex;justify-content:space-between;align-items:baseline;text-shadow:0 1px 6px rgba(0,0,0,.9)}
+.barlabel{font-size:11px;letter-spacing:2.5px;font-weight:700;color:var(--ink-soft)}
+.mval{font-size:12px;letter-spacing:1px;color:var(--ink);font-variant-numeric:tabular-nums}
+.barwrap{position:relative;height:9px;background:rgba(4,10,20,.72);border:1px solid var(--edge);border-radius:6px;overflow:hidden;
+  box-shadow:0 2px 10px rgba(0,0,0,.45)}
+.bar{height:100%;width:100%;transition:width .12s ease-out;box-shadow:inset 0 1px 0 rgba(255,255,255,.28),inset 0 -3px 6px rgba(0,0,0,.22)}
+#hpwrap{height:13px}
 #hpbar{background:linear-gradient(90deg,#16c25a,#7bffae)}
+#hpmeter.low #hpbar{background:linear-gradient(90deg,#c22a16,#ff8a6e)}
+#hpmeter.low #hplabel,#hpmeter.low .mval{color:#ff9a8a}
 #fpbar{background:linear-gradient(90deg,#2aa9ff,#bfe8ff)}
-.barlabel{position:fixed;left:24px;font-size:10px;letter-spacing:2.5px;font-weight:600;color:var(--ink-soft);opacity:.85}
-#hplabel{bottom:72px}
-#smwrap{bottom:14px;height:6px;width:220px}
-#smbar{background:linear-gradient(90deg,#e8a23a,#ffe2a8)}
-/* FORCE FOCUS meter (Jedi) — sits above the vitality bar */
-#fcwrap{bottom:96px;height:8px;width:200px}
+body.mando #fpbar{background:linear-gradient(90deg,#d98a2b,#ffd9a0)}
+#fcwrap{height:6px;width:70%}
 #fcbar{background:linear-gradient(90deg,#caa23a,#ffe27a);transition:width .1s ease-out}
-#fclabel{bottom:110px;color:#ffe27a}
-#fcwrap.t3{box-shadow:0 0 16px rgba(255,210,90,.65),inset 0 1px 0 rgba(255,255,255,.25);border-color:rgba(255,210,90,.7)}
-/* stances */
-#stances{position:fixed;right:24px;bottom:110px;display:flex;gap:7px}
-.stance{width:88px;padding:6px 4px;text-align:center;border:1px solid var(--edge);border-radius:var(--r);
-  background:var(--panel);font-size:9px;letter-spacing:1.5px;color:var(--ink-soft);opacity:.5;
-  transition:opacity .15s,border-color .15s,box-shadow .15s,transform .15s}
-.stance .num{font-weight:800;font-size:13px;display:block;color:var(--ink)}
-.stance.active{opacity:1;border-color:var(--c);color:var(--ink);
-  box-shadow:0 0 0 1px var(--c),0 0 16px -2px var(--c),var(--shadow);transform:translateY(-2px)}
-/* a form you haven't unlocked yet — greyed out and clearly inert */
-.stance.locked{opacity:.16;filter:grayscale(1)}
+#fclabel{color:#e8cf7a}
+#fcwrap.t3{box-shadow:0 0 14px rgba(255,210,90,.65);border-color:rgba(255,210,90,.7)}
+#smwrap{display:none}
+#smbar{background:linear-gradient(90deg,#e8a23a,#ffe2a8)}
+
+/* ---------- bottom-right: actions ---------- */
+#actionbar{position:fixed;right:20px;bottom:20px;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+/* jedi forms: one segmented control */
+#stancebox{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+#stances{display:flex;padding:3px;gap:3px;border-radius:var(--r);background:var(--panel);border:1px solid var(--edge);
+  backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);box-shadow:var(--shadow)}
+.stance{position:relative;display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:7px;align-items:center;
+  min-width:84px;padding:5px 10px 6px 7px;border-radius:7px;opacity:.55;transition:opacity .15s,background .15s}
+.stance .num{grid-row:1/3;font:700 12px/1 var(--font-ui);color:var(--ink-dim);border:1px solid var(--edge-mid);border-radius:4px;padding:3px 5px}
+.stance .snm{font-size:12px;letter-spacing:1.5px;color:var(--ink);line-height:1.1}
+.stance .sty{font-size:9.5px;letter-spacing:2px;color:var(--ink-dim);line-height:1.1}
+.stance::after{content:'';position:absolute;left:8px;right:8px;bottom:1px;height:2px;border-radius:2px;background:var(--c);opacity:0;transition:opacity .15s}
+.stance.active{opacity:1;background:rgba(255,255,255,.06)}
+.stance.active::after{opacity:1;box-shadow:0 0 10px var(--c)}
+.stance.active .num{color:var(--c);border-color:var(--c)}
+.stance.active .sty{color:var(--c)}
+.stance.locked{opacity:.22;filter:grayscale(1)}
+.stance.locked .sty::before{content:'🔒 '}
 .stance.locked.active{opacity:.5}
-/* sits clearly BELOW the stance chips with room for two lines so the long synergy text can't overlap them */
-#stancesyn{position:fixed;right:12px;bottom:70px;width:344px;font-size:10px;line-height:1.4;color:var(--ink-dim);text-align:center;letter-spacing:1px;opacity:.9}
-/* abilities */
-#abilities{position:fixed;right:24px;bottom:24px;display:flex;gap:8px}
-/* letter-spacing adds a trailing gap to each line; the matching indent keeps the caps optically centered */
-.ab{width:62px;padding:7px 4px 6px;text-align:center;background:var(--panel);border:1px solid var(--edge);
-  border-radius:var(--r);font-size:9px;letter-spacing:1.5px;color:var(--ink-soft);
+/* the form's strengths: shown for a few seconds after you switch, then gets out of the way */
+#stancesyn{max-width:330px;font-size:12px;line-height:1.35;letter-spacing:.5px;color:var(--ink-soft);text-align:right;
+  text-shadow:0 1px 6px rgba(0,0,0,.95);opacity:0;transform:translateY(4px);transition:opacity .35s,transform .35s}
+#stancesyn.show{opacity:1;transform:none}
+/* mandalorian weapon readout */
+.weaponbox{display:none;align-items:center;gap:10px;padding:5px 6px 5px 5px;border-radius:var(--r);background:var(--panel);
+  border:1px solid var(--edge);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);box-shadow:var(--shadow)}
+.wslots{display:flex;gap:3px}
+.wslot{display:flex;align-items:center;gap:5px;padding:4px 8px;border-radius:6px;font-size:10.5px;letter-spacing:1.5px;color:var(--ink-dim)}
+.wslot .kc{font-size:10px}
+.wslot.on{background:rgba(255,255,255,.08);color:var(--ink)}
+.wslot.on .kc{border-color:var(--accent);color:var(--accent)}
+.wslot.lock{opacity:.35}
+.wrow{display:flex;align-items:baseline;gap:8px;padding-right:6px}
+#wpnLabel{display:none}
+.weaponbox .ammo{font:800 14px/1 var(--font-ui);letter-spacing:.5px;color:var(--gold);min-width:46px;text-align:right;font-variant-numeric:tabular-nums}
+.weaponbox.reloading .ammo{color:var(--danger);animation:pulse .5s infinite}
+.weaponbox.nofp{border-color:rgba(255,120,90,.6)}
+/* basic moves: light-weight key hints, no chrome */
+#basics{display:flex;gap:12px;justify-content:flex-end;flex-wrap:wrap;max-width:520px}
+.ab.hint{display:flex;align-items:center;gap:5px;font-size:11px;letter-spacing:1.5px;color:var(--ink-soft);
+  text-shadow:0 1px 5px rgba(0,0,0,.95);transition:opacity .15s,color .15s}
+.ab.hint .key{font:700 10px/1 var(--font-ui);letter-spacing:.5px;color:var(--ink);padding:3px 5px;border-radius:4px;
+  border:1px solid var(--edge-mid);background:rgba(10,22,38,.7)}
+.ab.hint.cool{opacity:.4}
+.ab.hint.nofp{color:var(--danger-soft)}
+.ab.hint.nofp .key{border-color:rgba(255,120,90,.7);color:var(--danger-soft)}
+/* powers: square slots with a cooldown sweep */
+#abilities{display:flex;gap:6px;justify-content:flex-end}
+.ab.slot{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  width:56px;height:52px;box-sizing:border-box;padding:5px 3px;overflow:hidden;
+  background:var(--panel);border:1px solid var(--edge);border-radius:9px;
+  backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);box-shadow:var(--shadow);
   transition:opacity .15s,border-color .15s}
-.ab .key{display:block;font-size:14px;font-weight:800;letter-spacing:.5px;color:var(--accent);margin-bottom:2px}
-.ab.cool{opacity:.32}
-.ab.nofp{border-color:rgba(255,120,90,.55);color:#ff9a9a}
-.ab.nofp .key{color:#ff9a9a}
-/* top info */
-#waveinfo{position:fixed;top:18px;left:24px;font-size:13px;letter-spacing:3px;font-weight:600;color:var(--ink-soft);text-shadow:0 1px 10px #002033}
-#streak{position:fixed;top:44px;left:24px;font-size:21px;font-weight:800;color:var(--gold);text-shadow:0 0 14px #a06000;opacity:0;transition:opacity .2s}
-/* banner */
-#banner{position:fixed;top:18%;left:0;right:0;text-align:center;opacity:0;transition:opacity .4s}
-#banner h1{margin:0;font-size:44px;letter-spacing:9px;font-weight:800;color:var(--ink);text-shadow:0 0 28px #2aa9ff}
-#banner p{margin:8px 0 0;font-size:15px;letter-spacing:4px;color:var(--ink-soft)}
-/* boss bar */
-#bosswrap{position:fixed;top:24px;left:50%;transform:translateX(-50%);width:560px;display:none;text-align:center}
-#bossname{font-size:13px;letter-spacing:7px;font-weight:700;color:#ff9a9a;text-shadow:0 0 12px #5c0000;margin-bottom:5px}
-#bossbarbg{height:13px;background:rgba(24,2,2,.72);border:1px solid rgba(160,60,60,.6);border-radius:7px;overflow:hidden;box-shadow:var(--shadow)}
-#bossbar{height:100%;width:100%;background:linear-gradient(90deg,#c2182b,#ff7a5c);box-shadow:inset 0 1px 0 rgba(255,255,255,.2)}
-/* crosshair */
+.ab.slot .key{font:700 15px/1 var(--font-ui);letter-spacing:.5px;color:var(--accent)}
+.ab.slot .an{font-size:9.5px;letter-spacing:1px;color:var(--ink-soft);line-height:1}
+#ab-throw .key,#ab-dash .key{font-size:11px;letter-spacing:0}
+/* cooldown: a shade that drains away from the top, plus the seconds left */
+.ab.slot::after{content:'';position:absolute;left:0;right:0;top:0;height:calc(var(--cd,0) * 100%);
+  background:rgba(2,6,12,.72);pointer-events:none}
+.ab.slot .cdt{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:1;
+  font:800 17px/1 var(--font-ui);color:var(--ink);text-shadow:0 0 6px #000}
+.ab.slot .cdt:empty{display:none}
+.ab.slot.cool{border-color:var(--edge)}
+.ab.slot.cool .key,.ab.slot.cool .an{opacity:.45}
+/* ready but you lack the Force / power to cast it */
+.ab.slot.nofp{border-color:rgba(255,110,90,.55)}
+.ab.slot.nofp .key{color:var(--danger-soft)}
+.ab.slot.nofp .an{color:#d98c80}
+/* freshly ready: a brief glow */
+.ab.slot.ready{animation:ready .45s ease-out}
+@keyframes ready{0%{box-shadow:0 0 0 1px var(--accent),0 0 18px var(--accent-glow)}100%{box-shadow:var(--shadow)}}
+
+/* hero-conditional HUD: stances are Jedi-only; ability rows swap with the hero */
+.ab.m-ab{display:none}
+body.mando .j-ab{display:none!important}
+body.mando .ab.hint.m-ab{display:flex}
+body.mando .ab.slot.m-ab{display:flex}
+body.mando .weaponbox{display:flex}
+body.mando #stancebox,body.mando #xh,body.mando #fcmeter{display:none!important}
+
+/* ---------- centre banners ---------- */
+#banner{position:fixed;top:20%;left:0;right:0;text-align:center;opacity:0;transition:opacity .4s}
+#bannerk{display:none;margin:0 auto 10px;width:max-content;padding:4px 14px;border-radius:999px;border:1px solid var(--gold);
+  font-size:12px;letter-spacing:4px;color:var(--gold);background:rgba(40,30,8,.55);text-shadow:0 0 10px #6a4a00}
+#banner.kick #bannerk{display:block}
+#banner h1{margin:0;font:800 40px/1.1 var(--font-display);letter-spacing:8px;color:var(--ink);text-shadow:0 0 28px #2aa9ff,0 2px 4px rgba(0,0,0,.8)}
+#banner h1:empty{display:none}
+#banner p{margin:10px 0 0;font-size:17px;letter-spacing:4px;color:var(--ink-soft);text-shadow:0 1px 8px rgba(0,0,0,.9)}
+#banner h1:empty + p{font:700 21px/1.3 var(--font-ui);letter-spacing:4px;color:var(--ink);max-width:min(900px,90vw);margin:0 auto}
+#banner p .kc{font-size:15px;margin:0 3px;color:var(--gold);border-color:rgba(255,210,90,.6)}
+
+/* ---------- boss bar ---------- */
+#bosswrap{position:fixed;top:22px;left:50%;transform:translateX(-50%);width:min(560px,60vw);display:none;text-align:center}
+#bossname{font:800 14px/1 var(--font-display);letter-spacing:6px;color:#ffaaa0;text-shadow:0 0 12px #5c0000;margin-bottom:7px}
+#bossbarbg{height:12px;background:rgba(24,2,2,.75);border:1px solid rgba(190,70,70,.6);border-radius:6px;overflow:hidden;box-shadow:var(--shadow)}
+#bossbar{height:100%;width:100%;background:linear-gradient(90deg,#c2182b,#ff7a5c);box-shadow:inset 0 1px 0 rgba(255,255,255,.2);transition:width .15s ease-out}
+
+/* ---------- bottom-centre XP meter ---------- */
+#xpmeter{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);width:min(380px,30vw);display:flex;flex-direction:column;gap:4px}
+#xpmetertxt{text-align:center;font-size:11.5px;letter-spacing:2px;color:#cfeede;text-shadow:0 1px 5px #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#xpmetertxt .nx{color:var(--ink-dim)}
+#xpmeterbar{height:6px;background:rgba(6,18,14,.7);border:1px solid rgba(60,150,100,.4);border-radius:4px;overflow:hidden}
+#xpmeterfill{height:100%;width:0;background:linear-gradient(90deg,#1f9e5a,#7fe0a8);box-shadow:inset 0 1px 0 rgba(255,255,255,.25);transition:width .25s ease-out}
+#xpmeter.ready #xpmeterfill{background:linear-gradient(90deg,#ffd24a,#fff0b0)}
+#xpmeter.ready #xpmetertxt{color:var(--gold)}
+
+/* ---------- crosshair, reticle, gauges ---------- */
 #xh{position:fixed;top:50%;left:50%;width:6px;height:6px;margin:-3px;border-radius:50%;background:rgba(210,242,255,.92);box-shadow:0 0 8px var(--accent)}
 /* floaters */
-.fl{position:fixed;font-weight:800;font-size:16px;text-shadow:0 0 6px #000;transform:translate(-50%,-50%);transition:all .7s ease-out;pointer-events:none}
-/* mando aiming reticle — DYNAMIC: line gap, colour & ring driven by --gap / --col / --ringScale / --ringOp */
+.fl{position:fixed;font:800 16px/1 var(--font-ui);letter-spacing:.5px;text-shadow:0 0 6px #000,0 1px 2px #000;transform:translate(-50%,-50%);transition:all .7s ease-out;pointer-events:none}
+/* mando aiming reticle: DYNAMIC line gap, colour & ring driven by --gap / --col / --ringScale / --ringOp */
 #reticle{position:fixed;top:50%;left:50%;width:60px;height:60px;margin:-30px;display:none;pointer-events:none;z-index:7;
   --gap:6px; --col:120,210,255; --ringScale:1; --ringOp:.28; --dotOp:.95}
 #reticle .rl{position:absolute;left:50%;top:50%;background:rgba(var(--col),.95);box-shadow:0 0 6px rgba(var(--col),.75)}
@@ -66,8 +172,7 @@
 #reticle .dot{position:absolute;left:50%;top:50%;width:3px;height:3px;margin:-1.5px;border-radius:50%;background:rgba(var(--col),var(--dotOp));box-shadow:0 0 5px rgba(var(--col),.9)}
 #reticle .ring{position:absolute;left:50%;top:50%;width:34px;height:34px;margin:-17px;border:1px solid rgba(var(--col),var(--ringOp));border-radius:50%;transform:scale(var(--ringScale))}
 #reticle.reload .ring{border-color:rgba(255,120,60,.8);border-style:dashed;animation:spin .9s linear infinite}
-/* ADS / BRACING — the cross collapses into a tight 4-point STAR (Helldivers-style): four tapered spikes pointing
-   inward to a bright pip, ring hidden. Drives off the same --gap, so bracing snaps it tight. */
+/* ADS / BRACING: the cross collapses into a tight 4-point star, ring hidden */
 #reticle.ads .ring{opacity:0}
 #reticle.ads .rl{filter:drop-shadow(0 0 3px rgba(var(--col),.85))}
 #reticle.ads .t{width:9px;height:15px;clip-path:polygon(50% 100%,0 0,100% 0);transform:translate(-50%,calc(-1 * var(--gap) - 15px))}
@@ -76,24 +181,7 @@
 #reticle.ads .r{width:15px;height:9px;clip-path:polygon(0 50%,100% 0,100% 100%);transform:translate(var(--gap),-50%)}
 #reticle.ads .dot{width:4px;height:4px;margin:-2px}
 @keyframes spin{to{transform:scale(var(--ringScale)) rotate(360deg)}}
-/* hero-conditional HUD: stances are Jedi-only; ability rows swap with the hero */
-.m-ab{display:none}
-body.mando .j-ab{display:none!important}
-body.mando .m-ab{display:inline-block}
-body.mando #stances,body.mando #stancesyn,body.mando #xh{display:none!important}
-/* the Mando carries a bigger kit — let the ability bar wrap to two rows, right-aligned */
-body.mando #abilities{flex-wrap:wrap;justify-content:flex-end;max-width:600px;gap:6px}
-body.mando .ab{width:58px;font-size:8.5px}
-body.mando .ab .key{font-size:12px}
-.ab.wide{width:74px!important}
-.ab .ammo{display:block;font-size:11px;font-weight:800;letter-spacing:0;color:var(--gold);margin-top:1px}
-.ab.reloading .ammo{color:var(--danger);animation:pulse .5s infinite}
-#ab-blaster #wpnLabel{display:block;font-size:8px;letter-spacing:1px}
-/* ---- XP HUD readout (top-left, under the streak) ---- */
-#xphud{position:fixed;top:72px;left:24px;font-size:14px;font-weight:800;color:#7fe0a8;
-  text-shadow:0 0 12px rgba(40,200,120,.5);letter-spacing:1px}
-#xphud .xpk{font-size:9px;letter-spacing:3px;color:#5fae84;font-weight:700;vertical-align:1px}
-/* blaster ENERGY meter — a slim vertical gauge well clear of the dynamic crosshair (mando only) */
+/* stamina (saber) / heat (blaster) gauge beside the crosshair */
 #energymeter{position:fixed;top:50%;left:50%;margin:-26px 0 0 46px;width:5px;height:52px;display:none;
   background:rgba(8,18,30,.6);border:1px solid rgba(120,180,220,.5);border-radius:3px;overflow:hidden;
   box-shadow:0 0 8px rgba(0,0,0,.5)}
@@ -101,21 +189,11 @@ body.mando .ab .key{font-size:12px}
   background:linear-gradient(0deg,#2aa9ff,#bfe8ff);transition:height .08s linear,background .15s}
 #energymeter.over #energyfill{background:linear-gradient(0deg,#ff3a1a,#ffd2a8)}
 #energymeter.over{border-color:rgba(255,90,50,.9);animation:pulse .4s infinite}
-/* DARKSABER mode — the same crosshair gauge becomes a violet STAMINA bar (swing fuel), distinct from blaster heat */
 #energymeter.saberbar{border-color:rgba(180,140,255,.7)}
 #energymeter.saberbar #energyfill{background:linear-gradient(0deg,#9a5cff,#e0ccff)}
 #energymeter.saberbar.over #energyfill{background:linear-gradient(0deg,#ff3a1a,#ffd2a8)}
-/* bottom XP meter — a thin progress bar toward the next ability */
-#xpmeter{position:fixed;left:50%;bottom:6px;transform:translateX(-50%);width:340px;height:7px;
-  background:rgba(8,20,16,.6);border:1px solid rgba(60,150,100,.4);border-radius:5px;overflow:hidden;
-  box-shadow:0 0 10px rgba(0,0,0,.4)}
-#xpmeterfill{height:100%;width:0;background:linear-gradient(90deg,#1f9e5a,#7fe0a8);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.25);transition:width .25s ease-out}
-#xpmeter.ready #xpmeterfill{background:linear-gradient(90deg,#ffd24a,#fff0b0)}
-#xpmetertxt{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-  font-size:8px;letter-spacing:2px;font-weight:700;color:#cfeede;text-shadow:0 1px 2px #000}
-/* active-boon strip on the HUD */
-/* THREAT AWARENESS — directional damage arc + off-screen danger markers */
+
+/* ---------- threat awareness: damage arc + off-screen danger markers ---------- */
 #threats{position:fixed;inset:0;pointer-events:none;z-index:8;overflow:hidden}
 #dmgind{position:absolute;left:50%;top:50%;width:0;height:0;opacity:0}
 #dmgind i{position:absolute;left:-70px;top:-220px;width:140px;height:120px;border-radius:50%;
@@ -123,16 +201,21 @@ body.mando .ab .key{font-size:12px}
 .threatmark{position:absolute;width:0;height:0;opacity:0;transition:opacity .15s}
 .threatmark i{position:absolute;left:-9px;top:-26px;width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;
   border-bottom:16px solid currentColor;filter:drop-shadow(0 0 5px currentColor)}
-/* HIT MARKER — the classic X-flash at the crosshair confirming a bolt connected */
+/* hit marker: the X-flash at the crosshair confirming a bolt connected */
 #hitmark{position:fixed;left:50%;top:50%;opacity:0;z-index:9;pointer-events:none;color:#fff;transform:translate(-50%,-50%)}
 #hitmark i{position:absolute;width:2.5px;height:10px;left:-1px;top:-5px;background:currentColor;border-radius:1px;box-shadow:0 0 5px currentColor}
 #hitmark i:nth-child(1){transform:translate(-12px,-12px) rotate(45deg)}
 #hitmark i:nth-child(2){transform:translate(12px,-12px) rotate(-45deg)}
 #hitmark i:nth-child(3){transform:translate(-12px,12px) rotate(-45deg)}
 #hitmark i:nth-child(4){transform:translate(12px,12px) rotate(45deg)}
-#boonstrip{position:fixed;left:12px;top:128px;display:flex;flex-direction:column;gap:5px;z-index:30;pointer-events:none}
-#boonstrip .bn{display:flex;align-items:center;gap:6px;font-size:10px;letter-spacing:.5px;color:var(--ink-soft);
-  background:rgba(8,16,28,.55);border:1px solid var(--edge);border-radius:999px;padding:2px 9px 2px 6px;backdrop-filter:blur(4px)}
-#boonstrip .bn b{font-size:13px}
-#boonstrip .bn.rare{color:#bfe6ff;border-color:rgba(110,200,255,.5)}
-#boonstrip .bn.legendary{color:#ffe9a8;border-color:rgba(255,210,90,.6)}
+
+/* small screens: tighten everything so the corners never reach the centre of play */
+@media (max-width:1100px),(max-height:700px){
+  #status{width:240px}
+  .ab.slot{width:50px;height:46px}
+  .ab.slot .key{font-size:13px}
+  .ab.slot .an{font-size:8.5px}
+  #basics{gap:9px;max-width:420px}
+  .stance{min-width:72px;padding:4px 8px 5px 6px}
+  #banner h1{font-size:30px;letter-spacing:6px}
+}

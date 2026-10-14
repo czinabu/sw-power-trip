@@ -69,7 +69,7 @@ import { endRun } from './game/summary.js';
 import './ui/banners.js';
 import './ui/threats.js';
 import { updateHud } from './ui/hud.js';
-import './ui/menus.js';
+import { setOverlayState } from './ui/menus.js';
 import './data/difficulty.js';
 import './engine/input.js';
 import { updateCamera } from './engine/camera.js';
@@ -134,5 +134,5 @@ window.GAME = { CFG, ENEMY_TYPES, LEVELS, BOSS_CFG, BOSS_MANDO, STANCES, SKILLS,
   BOONS, BOON_BY_ID, rollBoons, pickBoon, hurtPlayer,
   FOCUS, focusTier, focusDmgMul, focusRegenMul, addFocus, updateFocus, enemyDmgScale, applySwingDamage,
   hitMarker, spawnBlasterBolt, mandoWeapon, updateBolts, updateHud,
-  hazardZones, updateHazardZones, hazardContains,
+  hazardZones, updateHazardZones, hazardContains, setOverlayState,
   get boss(){ return shared.boss; }, get saberProj(){ return shared.saberProj; } };
