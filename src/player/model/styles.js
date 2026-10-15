@@ -1,6 +1,6 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
 // Render styles for the hero models. The geometry kit is shared; a style decides how the chiseled planes are
-// shaded (flat facets, cel bands + ink outline, or creased hard-surface with reflections and glowing seams).
+// shaded (flat facets, cel bands + ink outline, or creased hard-surface with reflections).
 
 import * as THREE from 'three';
 import { mergeVertices, toCreasedNormals } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -9,15 +9,16 @@ import { renderer } from '../../engine/renderer.js';
 
 export const STYLE_DEFS = {
   // SHARD — every plane is its own flat facet; a soft top-to-bottom value ramp keeps it from reading as raw low-poly
-  shard:  { label: 'Shard',  flat: true,  gradient: [0.68, 1.06], jitter: 0.14, crease: 0,    env: 0,    outline: 0,     toon: false, seams: false },
-  // INK — cel-shaded bands with a dark ink outline: comic-book silhouettes that stay readable in a crowd
-  ink:    { label: 'Ink',    flat: false, gradient: null,          crease: 0.55, env: 0,    outline: 0.014, toon: true,  seams: false },
-  // FORGED — crisp creased hard-surface, real reflections on metal, and emissive seam lines VFX can drive later
-  forged: { label: 'Forged', flat: false, gradient: [0.8, 1.04],   crease: 0.55, env: 1,    outline: 0,     toon: false, seams: true },
+  shard:  { label: 'Shard',  flat: true,  gradient: [0.68, 1.06], jitter: 0.14, crease: 0,    env: 0,    outline: 0,     toon: false },
+  // INK (the game's look) — cel-shaded bands with a dark ink outline: comic-book silhouettes that read in a crowd
+  ink:    { label: 'Ink',    flat: false, gradient: null,          crease: 0.55, env: 0,    outline: 0.014, toon: true },
+  // FORGED — crisp creased hard-surface with real reflections on metal
+  forged: { label: 'Forged', flat: false, gradient: [0.8, 1.04],   crease: 0.55, env: 1,    outline: 0,     toon: false },
 };
 
-/* the one palette both heroes draw from: c colour, r roughness, m metalness, e emissive */
-export const PALETTE = {
+/* surface properties per material name: c default colour, r roughness, m metalness, e emissive.
+   The look's palette (appearance.js) overrides c, so recolouring never touches this table. */
+export const MATERIALS = {
   // Jedi (Mace Windu)
   robe:    { c: 0x3b2a1e, r: 0.9 },
   tunic:   { c: 0x9c7d58, r: 0.85 },
@@ -71,7 +72,7 @@ function bakeGradient(g, [lo, hi]){
   g.setAttribute('color', new THREE.BufferAttribute(col, 3));
 }
 
-export function makeStyle(name = 'forged'){
+export function makeStyle(name = 'ink', colors = {}){
   const cfg = STYLE_DEFS[name] || STYLE_DEFS.forged;
   const mats = new Map();
   let outlineMat = null;
@@ -79,7 +80,8 @@ export function makeStyle(name = 'forged'){
   function mat(key, over = {}){
     const id = key + JSON.stringify(over);
     if (mats.has(id)) return mats.get(id);
-    const d = { ...PALETTE[key], ...over };
+    const d = { ...MATERIALS[key], ...(colors[key] != null ? { c: colors[key] } : {}), ...over };
+    if (d.shade) d.c = new THREE.Color(d.c).multiplyScalar(d.shade).getHex();
     let m;
     if (cfg.toon){
       // cel bands flatten metal; lift metals a touch so beskar still reads bright against the suit
@@ -157,10 +159,9 @@ export function makeStyle(name = 'forged'){
     return m;
   }
 
-  // glowing seam line (FORGED only) — a thin emissive strip VFX can pulse later; no-op for the other styles
+  // glowing seam line — a thin unlit strip VFX can pulse later (the look decides whether a hero has them)
   const seamMats = new Map();
   function seam(geo, color, parent, p, r, o = {}){
-    if (!cfg.seams) return null;
     if (!seamMats.has(color)) seamMats.set(color, new THREE.MeshBasicMaterial({ color, toneMapped: false }));
     const m = new THREE.Mesh(geo, seamMats.get(color));
     m.position.set(...p); if (r) m.rotation.set(...r);

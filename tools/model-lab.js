@@ -1,15 +1,19 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
 // Model lab (dev only: `npm run dev`, then open /tools/model-lab.html).
 // Lines up both heroes in a few key poses under the game's own lights, so model and style changes can be judged
-// side by side without playing. URL params: ?style=shard|ink|forged  &view=front|back  &orbit=1 (slow turntable).
+// side by side without playing. URL params: ?style=shard|ink|forged  &look=<SAMPLE_LOOKS name>  &hero=jedi|mando
+// &view=front|back  &orbit=1 (slow turntable).
 
 import * as THREE from 'three';
 import { scene, camera, composer, renderer } from '../src/engine/renderer.js';
 import { buildHeroModel } from '../src/player/model/index.js';
 import { STYLE_DEFS } from '../src/player/model/styles.js';
+import { SAMPLE_LOOKS } from '../src/player/model/appearance.js';
 
 const q = new URLSearchParams(location.search);
-const STYLE = q.get('style') || 'forged';
+const STYLE = q.get('style') || 'ink';
+const LOOK_NAME = q.get('look') || '';
+const LOOK = { ...(SAMPLE_LOOKS[LOOK_NAME] || {}), style: STYLE };
 const VIEW = q.get('view') || 'front';
 
 scene.background = new THREE.Color(0x0d1016);
@@ -58,7 +62,7 @@ const POSES = {
 function figure(poseName){
   const P = POSES[poseName];
   const t = { group: new THREE.Group() };
-  t.group.add(buildHeroModel(t, STYLE));
+  t.group.add(buildHeroModel(t, LOOK));
   const R = t.rig, mando = P.hero === 'mando';
   for (const m of t.mandoParts) m.visible = mando;
   for (const m of t.headBare) m.visible = !mando;
@@ -106,8 +110,9 @@ function placeLabels(){
   });
 }
 document.getElementById('bar').innerHTML = Object.entries(STYLE_DEFS).map(([k, d]) =>
-  `<button class="${k === STYLE ? 'on' : ''}" onclick="location.search='?style=${k}&view=${VIEW}&hero=${HERO || ''}'">${d.label}</button>`).join('')
-  + `<button onclick="location.search='?style=${STYLE}&hero=${HERO || ''}&view=${VIEW === 'back' ? 'front' : 'back'}'">${VIEW === 'back' ? 'Front' : 'Back'} view</button>`;
+  `<button class="${k === STYLE ? 'on' : ''}" onclick="location.search='?style=${k}&view=${VIEW}&hero=${HERO || ''}&look=${LOOK_NAME}'">${d.label}</button>`).join('')
+  + ['', ...Object.keys(SAMPLE_LOOKS)].map(n => `<button class="${n === LOOK_NAME ? 'on' : ''}" onclick="location.search='?style=${STYLE}&hero=${HERO || ''}&view=${VIEW}&look=${n}'">${n || 'default'} look</button>`).join('')
+  + `<button onclick="location.search='?style=${STYLE}&look=${LOOK_NAME}&hero=${HERO || ''}&view=${VIEW === 'back' ? 'front' : 'back'}'">${VIEW === 'back' ? 'Front' : 'Back'} view</button>`;
 
 const orbit = q.get('orbit') === '1';
 renderer.setAnimationLoop(t => {

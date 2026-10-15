@@ -5,10 +5,11 @@
 //               ├─ skirt (Jedi robe panels hang here; flapF/flapB/flapL/flapR swing for cloth follow-through)
 //               └─ torso ─ chest ─┬─ head
 //                                 ├─ armL/armR.sh ─ el ─ wr
-//                                 └─ back (jetpack / cape mount)
+//                                 ├─ back (jetpack mount)
+//                                 └─ cape (cape pivot)
 //
 // Joint positions match the original rig exactly, so the existing poses in animation.js land the same.
-// chest, wr, ank and the skirt flaps are new joints that rest at zero (nothing drives them yet).
+// chest, wr, ank, the skirt flaps and the cape are new joints that rest at zero (nothing drives them yet).
 
 import * as THREE from 'three';
 
@@ -38,6 +39,7 @@ export function buildRig(){
   const chest = G(); chest.position.y = DIM.chestY; torso.add(chest);
   const head = G(); head.position.y = DIM.headY; chest.add(head);
   const back = G(); back.position.set(0, 0.16, -0.14); chest.add(back);
+  const cape = G(); chest.add(cape);   // cape pivot: the cape variant sets where it hangs from
 
   const arm = side => {
     const sh = G(); sh.position.set(DIM.shX * side, DIM.shY, 0); chest.add(sh);
@@ -48,5 +50,10 @@ export function buildRig(){
   const armL = arm(-1), armR = arm(1);
   armL.sh.rotation.z = 0.12; armR.sh.rotation.z = -0.12;
 
-  return { vis, hips, torso, chest, head, back, skirt, flaps, legL, legR, armL, armR };
+  // SOCKETS — named mount points for weapons and gear (see weapons.js). Hands are the wrists; the hip and back
+  // sockets are where a holstered or sheathed weapon will sit once weapons can be stowed.
+  const hipSocket = L => { const s = G(); s.position.set(0.07 * L.side, -0.12, 0.02); L.hip.add(s); return s; };
+  const sockets = { handR: armR.wr, handL: armL.wr, back, hipL: hipSocket(legL), hipR: hipSocket(legR) };
+
+  return { vis, hips, torso, chest, head, back, cape, skirt, flaps, legL, legR, armL, armR, sockets };
 }

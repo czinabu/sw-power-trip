@@ -6,13 +6,15 @@ import { CFG } from '../data/config.js';
 import { scene } from '../engine/renderer.js';
 import { player } from '../state.js';
 import { buildHeroModel } from './model/index.js';
+import { SAMPLE_LOOKS } from './model/appearance.js';
 
-// render style for the hero models (prototype switch: ?style=shard|ink|forged)
-const STYLE = new URLSearchParams(location.search).get('style') || 'forged';
+// the hero look (appearance.js). Dev overrides: ?style=shard|ink|forged  ?look=<a SAMPLE_LOOKS name>
+const params = new URLSearchParams(location.search);
+const LOOK = { ...(SAMPLE_LOOKS[params.get('look')] || {}), ...(params.get('style') ? { style: params.get('style') } : {}) };
 
 function buildPlayer(){
   const g = player.group;
-  g.add(buildHeroModel(player, STYLE));   // everything visual lives in player.vis so flips/leans don't move the root
+  g.add(buildHeroModel(player, LOOK));   // everything visual lives in player.vis so flips/leans don't move the root
 
   // swing arc flash — centred on the FORWARD direction (thetaStart shifted by -90°), not the player's left
   const arc = new THREE.Mesh(new THREE.RingGeometry(0.9, CFG.player.hitRadius, 26, 1, -Math.PI/2 - 1.2, 2.4),
