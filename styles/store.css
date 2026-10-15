@@ -62,8 +62,11 @@
 .card.final .c-ico{color:#ffb08a;border-color:rgba(220,90,60,.55);background:radial-gradient(circle at 50% 38%,rgba(255,120,80,.22),transparent)}
 .card.final:hover{border-color:#ff8a5a;box-shadow:0 14px 34px -8px rgba(255,110,60,.55)}
 .card.power .c-tag{color:var(--gold);border-color:rgba(255,210,90,.45)}
-.card.sp .c-tag{color:var(--gold);border-color:rgba(255,210,90,.45)}
-.card.sp .c-ico{color:var(--gold);border-color:rgba(255,210,90,.4);background:radial-gradient(circle at 50% 38%,rgba(255,210,90,.2),transparent)}
+/* POWER MASTERY — gold tag + icon; the rank pips sit above the price */
+.card.mastery .c-tag{color:var(--gold);border-color:rgba(255,210,90,.45)}
+.card.mastery .c-ico{color:var(--gold);border-color:rgba(255,210,90,.4);background:radial-gradient(circle at 50% 38%,rgba(255,210,90,.2),transparent)}
+.card.mastery .pips i{border-color:var(--gold)} .card.mastery .pips i.on{background:var(--gold);box-shadow:0 0 6px var(--gold)}
+.card.mastery.last:not(.cant){border-color:rgba(255,210,90,.5)}
 /* boons: rarity colours */
 .card.boon .c-cost{color:var(--gold);border-color:rgba(255,210,90,.45);background:rgba(50,40,12,.55)}
 .card.boon:hover .c-cost{background:rgba(110,85,20,.6);color:#fff3cf}

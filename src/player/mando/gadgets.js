@@ -17,11 +17,12 @@ import { spawnHitSpark, spawnGroundShock } from '../../fx/vfx.js';
 import { collideSolids } from '../../world/collision.js';
 import { explosion, inkSprite, sparks, puff, motes, muzzleFlash, screenAngle, dustRing } from '../../fx/ink.js';
 import { mandoAimPoint, aCost } from './weapons.js';
+import { abil } from '../../data/mastery.js';
 
 // BACTA STIM (H) — the Mando's mirror of Force Mend: a quick injector channel that restores the same big chunk of
 // vitality (reuses the mendT channel + mendComplete). Steep Force + long cooldown; locked against HUNTER'S CREED.
 export function bactaStim(){
-  const A = MANDO.bacta;
+  const A = abil('bacta');
   if (!G.unlocked.bacta || player.cds.bacta > 0 || player.mendT > 0 || player.force < aCost(A.cost) || G.mode !== 'play') return;
   if (player.hp >= maxHp()){ floater(playerPos(), 'UNHURT', '#7bffae'); return; }
   player.force -= aCost(A.cost); player.cds.bacta = A.cd;
@@ -33,7 +34,7 @@ export function bactaStim(){
   floater(V3(pp.x, 1.0, pp.z), 'BACTA STIM…', '#9fffd0');
 }
 export function mandoRocket(){
-  const A = MANDO.rocket;
+  const A = abil('rocket');
   if (!G.unlocked.rocket || player.cds.rocket > 0 || player.force < aCost(A.cost)) return;
   player.force -= aCost(A.cost); player.cds.rocket = A.cd; player.aiming = 0.6;
   const pp = playerPos();
@@ -56,7 +57,7 @@ export function mandoRocket(){
   floater(pp, 'ROCKET', '#ffd24a');
 }
 function rocketExplode(pos, big){
-  const A = big ? MANDO.jetMissile : MANDO.rocket;
+  const A = big ? abil('jetmissile') : abil('rocket');
   const dmgMul = player.up.dmg * (player.up.rocketDmg || 1), radius = A.radius * (player.up.rocketR || 1);
   const scale = big ? 1.9 : 1;
   S.boom(pos, big ? 1.8 : 1.1);
@@ -80,7 +81,7 @@ function rocketExplode(pos, big){
 }
 /* ===== JETPACK MISSILE (Z) — Boba Fett back-launcher: a slow heavy missile with a HUGE blast ===== */
 export function mandoJetMissile(){
-  const A = MANDO.jetMissile;
+  const A = abil('jetmissile');
   if (!G.unlocked.jetmissile || player.cds.missile > 0 || player.force < aCost(A.cost)) return;
   player.force -= aCost(A.cost); player.cds.missile = A.cd; player.aiming = 0.8;
   const pp = playerPos(), f = fwd();
@@ -124,7 +125,7 @@ export function updateRockets(dt){
 
 /* ===== WHISTLING BIRDS — a swarm of homing micro-missiles (V) ===== */
 export function whistlingBirds(){
-  const A = MANDO.birds;
+  const A = abil('birds');
   if (!G.unlocked.birds || player.cds.birds > 0 || player.force < aCost(A.cost)) return;
   player.force -= aCost(A.cost); player.cds.birds = A.cd; player.aiming = 0.6;
   const pp = playerPos();
@@ -157,7 +158,7 @@ export function updateBirds(dt){
       if (bd.tgt){
         const tp = bd.tgt.group.position;
         TMP.set(tp.x - bd.mesh.position.x, (tp.y + 1.2) - bd.mesh.position.y, tp.z - bd.mesh.position.z).normalize();
-        bd.vel.lerp(TMP.multiplyScalar(MANDO.birds.speed), Math.min(1, dt*6));
+        bd.vel.lerp(TMP.multiplyScalar(abil('birds').speed), Math.min(1, dt*6));
       }
     }
     bd.mesh.position.addScaledVector(bd.vel, dt);
@@ -171,8 +172,8 @@ export function updateBirds(dt){
     if (!hit) for (const e of enemies){ if (e.dead || e.converted) continue; if (bd.mesh.position.distanceTo(e.group.position.clone().setY(bd.mesh.position.y)) < 1.0){ hit = true; victim = e; break; } }
     if (!hit && shared.boss && shared.boss.hp > 0 && bd.mesh.position.distanceTo(shared.boss.group.position.clone().setY(bd.mesh.position.y)) < 1.7){ hit = true; victim = shared.boss; }
     if (hit){
-      const A = MANDO.birds, p = bd.mesh.position.clone();
-      explosion(p, MANDO.birds.radius * 0.55, false); spawnHitSpark(p, 0xdff1ff, 0.8);
+      const A = abil('birds'), p = bd.mesh.position.clone();
+      explosion(p, abil('birds').radius * 0.55, false); spawnHitSpark(p, 0xdff1ff, 0.8);
       sfx(rand(1600,2200), 0.06, 'sine', 0.04, 700); S.boom(p, 0.25);
       const bdmg = A.dmg * player.up.dmg * (player.up.rocketDmg || 1);
       for (const e of enemies){ if (e.dead || e.converted || e.state === 'spawn') continue; const d = e.group.position.distanceTo(p); if (d < A.radius){ const kd = TMP.subVectors(e.group.position, p).setY(0).normalize().clone(); damageEnemy(e, bdmg, kd, A.knock); flinchEnemy(e, kd, 0.3); } }
@@ -184,7 +185,7 @@ export function updateBirds(dt){
 
 /* ===== THERMAL DETONATOR — a sticky grenade that arms, then blows (G) ===== */
 export function thermalDetonator(){
-  const A = MANDO.deto;
+  const A = abil('deto');
   if (!G.unlocked.deto || player.cds.deto > 0 || player.force < aCost(A.cost)) return;
   player.force -= aCost(A.cost); player.cds.deto = A.cd; player.aiming = 0.6;
   const pp = playerPos(), f = fwd();
@@ -215,7 +216,7 @@ export function updateDetos(dt){
     const blink = Math.sin(G.gt * (10 + (1.15 - g.fuse)*30)) > 0;
     g.band.material.color.setHex(blink ? 0xffd24a : 0xff3a1a);
     if (g.fuse <= 0){
-      const A = MANDO.deto, p = g.mesh.position.clone();
+      const A = abil('deto'), p = g.mesh.position.clone();
       S.boom(p, 1.3); G.shake = Math.max(G.shake, 0.9); G.hitstop = Math.max(G.hitstop, 0.05);
       explosion(p, A.radius, false);
       burst(p, 0x6a6a6a, 8, 8, 8, 1.1);
@@ -231,7 +232,7 @@ export function updateDetos(dt){
 
 /* ===== GRAPPLING HOOK — reel toward cover/big foes, or yank a light foe to you (C) ===== */
 export function grappleHook(){
-  const A = MANDO.grapple;
+  const A = abil('grapple');
   if (!G.unlocked.grapple || player.cds.grapple > 0 || player.force < aCost(A.cost) || player.grappleActive) return;
   const pp = playerPos(), aim = mandoAimPoint();
   const dir = V3(aim.x - pp.x, aim.y - (pp.y+1.4), aim.z - pp.z).normalize();
@@ -277,13 +278,13 @@ export function updateGrapple(dt){
     // pull the foe toward the player
     TMP.set(pp.x - G2.tgt.group.position.x, 0, pp.z - G2.tgt.group.position.z); const d = TMP.length();
     if (d < 2.2 || G2.t > 0.6){ G2.tgt.state = 'stagger'; G2.tgt.st = 0.7; G2.tgt.stumble = 0.2; player.grappleActive = null; return; }
-    TMP.normalize(); G2.tgt.group.position.addScaledVector(TMP, MANDO.grapple.pullSpeed * 0.6 * dt);
+    TMP.normalize(); G2.tgt.group.position.addScaledVector(TMP, abil('grapple').pullSpeed * 0.6 * dt);
     if (Math.random() < 0.5) burst(G2.tgt.group.position.clone().setY(1.4), 0x9fd6ff, 1, 3, 2, 0.5);
   } else {
     // reel the player toward the anchor
     TMP.set(anchor.x - pp.x, 0, anchor.z - pp.z); const d = TMP.length();
     if (d < 2.2 || G2.t > 0.7){ player.grappleActive = null; player.vel.multiplyScalar(0.4); return; }
-    TMP.normalize(); player.vel.addScaledVector(TMP, MANDO.grapple.pullSpeed * dt * 4);
+    TMP.normalize(); player.vel.addScaledVector(TMP, abil('grapple').pullSpeed * dt * 4);
     player.vy = Math.max(player.vy, 3.5);   // a little lift so you clear ledges
     if (Math.random() < 0.5) burst(V3(pp.x, pp.y+1.2, pp.z), 0x9fd6ff, 1, 3, 2, 0.5);
   }
@@ -291,14 +292,14 @@ export function updateGrapple(dt){
 
 /* ===== JETPACK SLAM — dive from the air for a ground shockwave (X) ===== */
 export function jetSlam(){
-  if (G.mode !== 'play' || !G.unlocked.slam || player.grounded || player.slamming || player.jet < MANDO.slam.cost) return;
-  player.jet -= MANDO.slam.cost;
+  if (G.mode !== 'play' || !G.unlocked.slam || player.grounded || player.slamming || player.jet < abil('mslam').cost) return;
+  player.jet -= abil('mslam').cost;
   player.aiming = 0.5;
-  player.slamming = true; player.flip = null; player.vel.set(0,0,0); player.vy = -MANDO.slam.diveVel;
+  player.slamming = true; player.flip = null; player.vel.set(0,0,0); player.vy = -abil('mslam').diveVel;
   S.dash(); sparks(playerPos().clone().setY(playerPos().y + 0.6), 0x88ddff, 8, 9, { dir: V3(0,1,0), cone: 0.5, life: 0.25, grav: 0 });
 }
 export function mandoSlamImpact(){
-  const A = MANDO.slam, pp = playerPos();
+  const A = abil('mslam'), pp = playerPos();
   S.slam(pp); S.boom(pp, 0.8);
   G.shake = Math.max(G.shake, 1.3); G.hitstop = Math.max(G.hitstop, 0.1);
   spawnGroundShock(pp, 0x9ad8ff, A.radius + 2, 0.4, 0.55);

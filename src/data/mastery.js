@@ -1,0 +1,86 @@
+// POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
+// POWER MASTERY: XP-bought ranks that upgrade the abilities you own, plus abil(), the tuned-parameter lookup.
+
+import { CFG } from './config.js';
+import { MANDO } from './mando.js';
+import { G } from '../state.js';
+
+/* ============================================================
+   POWER MASTERY — every ability you own can be mastered twice with XP. Rank I and rank II each change the
+   ability's tuning (`mul` multiplies a field of its CFG/MANDO entry, `add` adds to it). Ranks stack, and the
+   ability code reads its numbers through abil(id) so a rank takes effect everywhere at once.
+   `cost` is the XP price of [rank I, rank II]. Prices climb with how late the ability arrives: a typical campaign
+   pays out enough to buy every fork and roughly three quarters of the mastery ranks, so you still pick what to
+   push first and what to leave (/tools/progression-lab.html shows the numbers). Ids match the store ids where they
+   differ from the cooldown key (jslam / mslam) so the two slams stay separate.
+   ============================================================ */
+export const MASTERY_JEDI = [
+  { id:'push', nm:'FORCE PUSH', ico:'➤', cost:[250, 500], base:()=>CFG.abilities.push, owned:()=>!!G.unlocked.push,
+    ranks:[ { ds:'+40% knockback · wider cone', mul:{ knock:1.4, angle:1.2 } },
+            { ds:'−35% cooldown · +25% reach', mul:{ cd:0.65, range:1.25 } } ] },
+  { id:'pull', nm:'FORCE PULL', ico:'⟲', cost:[300, 550], base:()=>CFG.abilities.pull, owned:()=>!!G.unlocked.pull,
+    ranks:[ { ds:'+30% reach · wider grasp', mul:{ range:1.3, angle:1.2 } },
+            { ds:'−40% cooldown · −30% Force cost', mul:{ cd:0.6, cost:0.7 } } ] },
+  { id:'throw', nm:'SABER THROW', ico:'✦', cost:[350, 650], base:()=>CFG.abilities.throw, owned:()=>!!G.unlocked.throw,
+    ranks:[ { ds:'+60% blade damage', mul:{ dmg:1.6 } },
+            { ds:'Flies 30% further &amp; faster · −35% cooldown', mul:{ range:1.3, speed:1.25, cd:0.65 } } ] },
+  { id:'barrier', nm:'FORCE BARRIER', ico:'⛨', cost:[350, 650], base:()=>CFG.abilities.barrier, owned:()=>!!G.unlocked.barrier,
+    ranks:[ { ds:'Lasts +1.5s · harder cast shove', add:{ dur:1.5 }, mul:{ castKnock:1.4 } },
+            { ds:'Blocks 80% damage · −35% cooldown · wider shoves', add:{ dr:0.1 }, mul:{ cd:0.65, knockR:1.25 } } ] },
+  { id:'jslam', nm:'FORCE SLAM', ico:'▼', cost:[450, 800], base:()=>CFG.abilities.slam, owned:()=>!!G.unlocked.slam,
+    ranks:[ { ds:'Double damage · +25% radius', mul:{ dmg:2, radius:1.25 } },
+            { ds:'−40% cooldown · −20% Force cost · +30% knockback', mul:{ cd:0.6, cost:0.8, knock:1.3 } } ] },
+  { id:'mend', nm:'FORCE MEND', ico:'✚', cost:[450, 800], base:()=>CFG.abilities.mend, owned:()=>!!G.unlocked.mend,
+    ranks:[ { ds:'Heals 42% vitality (was 30%)', add:{ heal:0.12 } },
+            { ds:'−35% cooldown · −25% Force cost', mul:{ cd:0.65, cost:0.75 } } ] },
+  { id:'judge', nm:'FORCE JUDGEMENT', ico:'⚡', cost:[600, 1000], base:()=>CFG.abilities.judge, owned:()=>!!G.unlocked.judge,
+    ranks:[ { ds:'+40% damage · channels 30% longer', mul:{ dmg:1.4, time:1.3 } },
+            { ds:'−35% cooldown · +20% reach', mul:{ cd:0.65, range:1.2 } } ] },
+  { id:'repulse', nm:'FORCE REPULSE', ico:'❂', cost:[600, 1000], base:()=>CFG.abilities.repulse, owned:()=>!!G.unlocked.repulse,
+    ranks:[ { ds:'+40% damage · +15% radius', mul:{ dmg:1.4, radius:1.15 } },
+            { ds:'−35% cooldown · −20% Force cost', mul:{ cd:0.65, cost:0.8 } } ] },
+];
+export const MASTERY_MANDO = [
+  { id:'rocket', nm:'WRIST ROCKET', ico:'⏶', cost:[250, 500], base:()=>MANDO.rocket, owned:()=>!!G.unlocked.rocket,
+    ranks:[ { ds:'+25% blast radius &amp; knockback · double damage', mul:{ radius:1.25, knock:1.25, dmg:2 } },
+            { ds:'−40% cooldown · −25% Force cost', mul:{ cd:0.6, cost:0.75 } } ] },
+  { id:'flame', nm:'FLAMETHROWER', ico:'✦', cost:[250, 500], base:()=>MANDO.flame, owned:()=>!!G.unlocked.flame,
+    ranks:[ { ds:'+30% damage · +20% reach', mul:{ dmg:1.3, range:1.2 } },
+            { ds:'Burns 30% less Force · wider spray', mul:{ fuel:0.7, angle:1.2 } } ] },
+  { id:'grapple', nm:'GRAPPLING HOOK', ico:'⌒', cost:[300, 550], base:()=>MANDO.grapple, owned:()=>!!G.unlocked.grapple,
+    ranks:[ { ds:'+30% reach · reels 25% faster', mul:{ range:1.3, pullSpeed:1.25 } },
+            { ds:'Half the cooldown · −40% Force cost', mul:{ cd:0.5, cost:0.6 } } ] },
+  { id:'mslam', nm:'JETPACK SLAM', ico:'▼', cost:[300, 550], base:()=>MANDO.slam, owned:()=>!!G.unlocked.slam,
+    ranks:[ { ds:'+60% damage · +25% radius', mul:{ dmg:1.6, radius:1.25 } },
+            { ds:'Burns 35% less jet fuel · +30% knockback', mul:{ cost:0.65, knock:1.3 } } ] },
+  { id:'bacta', nm:'BACTA STIM', ico:'✚', cost:[400, 700], base:()=>Object.assign({ heal: CFG.abilities.mend.heal }, MANDO.bacta), owned:()=>!!G.unlocked.bacta,
+    ranks:[ { ds:'Heals 42% vitality (was 30%)', add:{ heal:0.12 } },
+            { ds:'−35% cooldown · injects 40% faster', mul:{ cd:0.65, channel:0.6 } } ] },
+  { id:'birds', nm:'WHISTLING BIRDS', ico:'✺', cost:[500, 850], base:()=>MANDO.birds, owned:()=>!!G.unlocked.birds,
+    ranks:[ { ds:'+3 birds per volley', add:{ count:3 } },
+            { ds:'+50% damage · −30% cooldown', mul:{ dmg:1.5, cd:0.7 } } ] },
+  { id:'deto', nm:'THERMAL DETONATOR', ico:'◉', cost:[500, 850], base:()=>MANDO.deto, owned:()=>!!G.unlocked.deto,
+    ranks:[ { ds:'+30% blast radius &amp; damage', mul:{ radius:1.3, dmg:1.3 } },
+            { ds:'−40% cooldown · 30% shorter fuse', mul:{ cd:0.6, fuse:0.7 } } ] },
+  { id:'jetmissile', nm:'JETPACK MISSILE', ico:'☄', cost:[650, 1000], base:()=>MANDO.jetMissile, owned:()=>!!G.unlocked.jetmissile,
+    ranks:[ { ds:'+40% damage · +20% blast radius', mul:{ dmg:1.4, radius:1.2 } },
+            { ds:'−35% cooldown · −20% Force cost', mul:{ cd:0.65, cost:0.8 } } ] },
+];
+const BY_ID = Object.fromEntries([...MASTERY_JEDI, ...MASTERY_MANDO].map(m => [m.id, m]));
+export function masterySet(){ return G.hero === 'mando' ? MASTERY_MANDO : MASTERY_JEDI; }
+export function masteryRank(id){ return (G.mastery && G.mastery[id]) || 0; }
+
+// the ability's tuning with its mastery ranks applied. Built fresh on each call (a small copy), so live edits to
+// CFG / MANDO from the console still take effect.
+export function abil(id){
+  const m = BY_ID[id], r = masteryRank(id);
+  const v = Object.assign({}, m.base());
+  for (let i = 0; i < r; i++){
+    const rk = m.ranks[i];
+    for (const k in rk.mul || {}) v[k] *= rk.mul[k];
+    for (const k in rk.add || {}) v[k] += rk.add[k];
+  }
+  return v;
+}
+// the heal fraction mendComplete() restores — Force Mend for the Jedi, Bacta Stim for the Mando
+export function healFrac(){ return abil(G.hero === 'mando' ? 'bacta' : 'mend').heal; }

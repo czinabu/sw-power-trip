@@ -2,6 +2,7 @@
 // hurtPlayer() and kill streaks.
 
 import { CFG } from '../data/config.js';
+import { abil } from '../data/mastery.js';
 import { sfx, S } from '../audio/sfx.js';
 import { V3, rand, clamp, TMP } from '../utils.js';
 import { burst } from '../fx/particles.js';
@@ -101,7 +102,7 @@ export function hurtPlayer(dmg, fromPos, silent, melee){
   if (player.atkT > 0 && G.hero !== 'mando' && stance().atkDR) dmg *= (1 - stance().atkDR);   // DJEM SO: armored commitment mid-swing
   if (player.cancelDR > 0) dmg *= 0.55;   // DJEM SO heavy cancel — soaks the blow during its committed recovery
   if (player.barrierT > 0){            // FORCE BARRIER soaks most of what gets through
-    dmg *= (1 - CFG.abilities.barrier.dr);
+    dmg *= (1 - abil('barrier').dr);
     if (!silent){ burst(V3(playerPos().x, 1.5, playerPos().z), 0x6fd0ff, 5, 5, 3); sfx(900, 0.08, 'sine', 0.05, 1400); }
   }
   dmg *= diffDmgMul();   // DIFFICULTY scales all incoming damage (enemies, boss, blasts)

@@ -106,7 +106,7 @@ export function startLevel(idx){
     G.unlocked = G.hero === 'jedi' ? { push: true, dash: true } : { flame: true, rocket: true };
     G.stanceUnlocked = {};   // NIMAN is always available; ATARU/DJEM SO auto-unlock
     G.waveTotal = -1; G.mandoChoiceShown = false;
-    G.xp = 0; G.xpEarned = 0; G.skillBought = 0; G.skillPoints = 0; G.powerLv = {}; G.seenTypes = {};
+    G.xp = 0; G.xpEarned = 0; G.skillPoints = 0; G.powerLv = {}; G.mastery = {}; G.seenTypes = {};
     G.boonOffer = null; G.boonPicked = false;
     player.up = { dmg: 1, forceRegen: 1, move: 1, knock: 1, parry: 0, lifesteal: 0, hpMax: 0, dashCdMult: 1, stamRegen: 1,
                   atkSpeed: 1, dr: 0, blockStam: 1, riposte: 1, parryForce: 0, tempest: false,
@@ -214,6 +214,9 @@ export function updateFlow(dt){
   const L = LEVELS[G.levelIdx];
   if (shared.levelPhase === 'between' && shared.phaseT <= 0){
     if (G.endless) startEndlessWave(); else startWave();
+  } else if (shared.levelPhase === 'travel' && shared.phaseT <= 0){
+    shared.levelPhase = 'idle';
+    startLevel(G.levelIdx + 1);
   } else if (shared.levelPhase === 'fighting'){
     let hostiles = 0;
     for (const e of enemies) if (!e.converted) hostiles++;
@@ -243,9 +246,11 @@ export function updateFlow(dt){
         showBanner('', '...something approaches.', 2.4);
         setTimeout(()=>{ if (G.mode === 'play' && !shared.boss) spawnBoss(); }, 2400);
       } else {
-        shared.levelPhase = 'idle';
-        showBanner('AREA CLEARED', 'The Force flows onward.', 2.2);
-        setTimeout(()=>{ if (G.mode === 'play') startLevel(G.levelIdx + 1); }, 2400);
+        // LEVEL CLEARED — the upgrade screen still opens (this wave's skill point + a chance to shop), then the
+        // 'travel' beat runs out on sim time (frozen while the overlay is up) and the next world loads.
+        shared.levelPhase = 'travel'; shared.phaseT = 1.6;
+        showBanner('AREA CLEARED', 'The Force flows onward.', 1.6);
+        openSkillTree();
       }
     }
   }

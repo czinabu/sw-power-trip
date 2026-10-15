@@ -25,7 +25,7 @@ src/
   main.js            imports every module in load order, runs the main loop, exposes window.GAME
   state.js           G (run state), player, entity arrays, keys, and `shared` (values that get reassigned)
   utils.js           math helpers
-  data/              tuning tables: config, stances, enemies, levels, bosses, mando, skills, store, boons, mutators, difficulty, worlds (arena looks)
+  data/              tuning tables: config, stances, enemies, levels, bosses, mando, skills, store, mastery, boons, mutators, difficulty, worlds (arena looks)
   engine/            renderer + post-processing, graphics quality, input, camera
   audio/             mixer + voice builder (engine.js), sound bank (sfx.js), adaptive per-world score (music.js), loops + ambience (director.js)
   fx/                particles, floating text, VFX lights, saber trail, one-shot VFX, ambient embers
@@ -52,6 +52,8 @@ Each file starts with a one-line description. Balance changes usually only touch
 
 **Changing sounds:** every sound is synthesized. One-shots are recipes in the `S` bank in `src/audio/sfx.js` (a few layered tones and noise bursts each); most take a world position so they pan and fade with distance. Continuous sounds (saber hums, jetpack, flamethrower, each world's ambience) live in `src/audio/director.js`, and each world's score (key, tempo, chords, melody, drum kit) is a palette in `src/audio/music.js`. Audition all of it with `npm run dev` and `/tools/sound-lab.html`.
 
+**Changing progression:** between waves there are two currencies with one job each. XP buys abilities (`data/store.js`: auto-unlocks, fork pairs, finals) and mastery ranks that upgrade abilities you own (`data/mastery.js`); in survival it also buys the repeatable powers. Skill points, one per wave cleared, buy training (`data/skills.js`). Ability code reads its tuning through `abil(id)`, so a mastery rank is just a multiplier or bonus on a field of the ability's `CFG.abilities` / `MANDO` entry. To check prices against what a campaign pays out, run `npm run dev` and open `/tools/progression-lab.html`.
+
 **Live tweaking:** `window.GAME` in the browser console exposes the config tables and most game functions.
 
 ## Features
@@ -72,7 +74,7 @@ Each file starts with a one-line description. Balance changes usually only touch
 - Per-stance Force synergy (fast = snappy casts, medium = efficient guard, strong = powerful but costly)
 - Bolt deflection and aimed reflection
 - Headshot system for blasters
-- Kill streaks, XP economy, and a between-wave upgrade store
+- Kill streaks, XP economy, and a between-wave upgrade screen: ability forks, two mastery ranks per ability, and tiered training
 
 **Polish:**
 - Procedural adaptive score with its own key, tempo and instruments per world (Jedha, Mustafar, Exegol), building from a pad to full percussion and boss brass with the fight, plus stings for waves, clears, unlocks and bosses

@@ -6,6 +6,7 @@ import { LEVELS } from '../data/levels.js';
 import { clamp } from '../utils.js';
 import { shared, G, enemies, player } from '../state.js';
 import { MANDO, MANDO_WEAPONS, weaponUnlocked } from '../data/mando.js';
+import { abil } from '../data/mastery.js';
 import { maxHp } from '../player/helpers.js';
 import { FOCUS, focusTier } from '../player/jedi/focus.js';
 import { mandoWeapon } from '../player/mando/weapons.js';
@@ -145,16 +146,16 @@ export function updateHud(){
       braceEl.classList.toggle('nofp', player.weapon === 'single' && player.blockHeld && player.stam <= 0);
     }
     // cooldown / fuel-gated abilities
-    const cdab = [['ab-rocket','rocket',MANDO.rocket.cost],['ab-deto','deto',MANDO.deto.cost],
-                  ['ab-birds','birds',MANDO.birds.cost],['ab-grapple','grapple',MANDO.grapple.cost],
-                  ['ab-missile','missile',MANDO.jetMissile.cost],['ab-bacta','bacta',MANDO.bacta.cost]];
+    const cdab = [['ab-rocket','rocket',abil('rocket').cost],['ab-deto','deto',abil('deto').cost],
+                  ['ab-birds','birds',abil('birds').cost],['ab-grapple','grapple',abil('grapple').cost],
+                  ['ab-missile','missile',abil('jetmissile').cost],['ab-bacta','bacta',abil('bacta').cost]];
     for (const [id, key, cost] of cdab) cdSlot(id, key, cost);
     document.getElementById('ab-flame').classList.toggle('nofp', player.force < 5);
     document.getElementById('ab-flame').classList.toggle('cool', !!player.flaming);
     document.getElementById('ab-jet').classList.toggle('nofp', player.jet < 12);    // jet FUEL low
     document.getElementById('ab-jet').classList.toggle('cool', !!player.jetActive);
     document.getElementById('ab-boost').classList.toggle('cool', player.cds.dash > 0 || player.jet < MANDO.boostDash.fuel);
-    document.getElementById('ab-mslam').classList.toggle('nofp', player.grounded || player.jet < MANDO.slam.cost);   // air-only, jet fuel
+    document.getElementById('ab-mslam').classList.toggle('nofp', player.grounded || player.jet < abil('mslam').cost);   // air-only, jet fuel
     // DYNAMIC CROSSHAIR — line gap / colour / ring react to the situation
     const rt = document.getElementById('reticle');
     if (rt){
@@ -183,10 +184,10 @@ export function updateHud(){
     return;
   }
   document.getElementById('ab-block').classList.toggle('nofp', player.stam < CFG.player.blockStamCost);
-  const abil = [['ab-push','push',CFG.abilities.push.cost],['ab-slam','slam',CFG.abilities.slam.cost],
-                ['ab-throw','throw',CFG.abilities.throw.cost],['ab-dash','dash',0],
-                ['ab-pull','pull',CFG.abilities.pull.cost],['ab-judge','judge',CFG.abilities.judge.cost],
-                ['ab-repulse','repulse',CFG.abilities.repulse.cost],['ab-barrier','barrier',CFG.abilities.barrier.cost],
-                ['ab-mend','mend',CFG.abilities.mend.cost]];
-  for (const [id, key, cost] of abil) cdSlot(id, key, cost);
+  const jediSlots = [['ab-push','push',abil('push').cost],['ab-slam','slam',abil('jslam').cost],
+                ['ab-throw','throw',abil('throw').cost],['ab-dash','dash',0],
+                ['ab-pull','pull',abil('pull').cost],['ab-judge','judge',abil('judge').cost],
+                ['ab-repulse','repulse',abil('repulse').cost],['ab-barrier','barrier',abil('barrier').cost],
+                ['ab-mend','mend',abil('mend').cost]];
+  for (const [id, key, cost] of jediSlots) cdSlot(id, key, cost);
 }

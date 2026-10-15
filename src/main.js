@@ -61,7 +61,8 @@ import {
 } from './game/survival.js';
 import { MUTATORS } from './data/mutators.js';
 import { SKILLS } from './data/skills.js';
-import { nextStoreGoal, buyPower } from './game/progression.js';
+import { nextStoreGoal, buyPower, masteryOffers, buyMastery } from './game/progression.js';
+import { abil, MASTERY_JEDI, MASTERY_MANDO } from './data/mastery.js';
 import { ENDLESS_POWERS } from './data/store.js';
 import { openSkillTree } from './ui/store-ui.js';
 import { BOONS, BOON_BY_ID } from './data/boons.js';
@@ -133,7 +134,7 @@ window.GAME = { CFG, ENEMY_TYPES, LEVELS, BOSS_CFG, BOSS_MANDO, STANCES, SKILLS,
   openSkillTree, damageEnemy, damageBoss, updateHud, nextStoreGoal, enemyHpScale, eliteChance, ELITES, cycleQuality, forceBarrier, forceMend, updatePlayer, updateEnemies, updateBolts, endRun, updateFlow, startEndless, startEndlessWave, genEndlessWave, MUTATORS, ENDLESS_POWERS, buyPower, keys, camera,
   tryAttack, castGesture, forcePush, forceSlam, forceRepulse, stance, applySwingDamage, spawnChampion, startWave, bomberExplode, MUSIC, audioInit,
   spawnBoss, updateBoss, bossStagger, BOSS_CFG, BOSS_MANDO, rings,
-  BOONS, BOON_BY_ID, rollBoons, pickBoon, hurtPlayer,
+  BOONS, BOON_BY_ID, rollBoons, pickBoon, hurtPlayer, abil, MASTERY_JEDI, MASTERY_MANDO, masteryOffers, buyMastery,
   FOCUS, focusTier, focusDmgMul, focusRegenMul, addFocus, updateFocus, enemyDmgScale, applySwingDamage,
   hitMarker, spawnBlasterBolt, mandoWeapon, updateBolts, updateHud,
   hazardZones, updateHazardZones, hazardContains, setOverlayState,

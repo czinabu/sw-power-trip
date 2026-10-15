@@ -9,6 +9,7 @@ import { acquireParticle, burst } from '../../fx/particles.js';
 import { floater, screenFlash } from '../../fx/floaters.js';
 import { shared, G, enemies, bolts, vfx, keys, player } from '../../state.js';
 import { MANDO, MANDO_WEAPONS, weaponUnlocked } from '../../data/mando.js';
+import { abil } from '../../data/mastery.js';
 import { fwd, rightV, playerPos } from '../helpers.js';
 import { damageEnemy } from '../../enemies/damage.js';
 import { fireBolt } from '../../enemies/bolts.js';
@@ -264,7 +265,7 @@ export function mandoFlame(){   // keydown cue only — the stream itself is HEL
 }
 const FLAME = [[0, 0xfff1b8], [0.14, 0xffd34a], [0.36, 0xff8a2a], [0.6, 0xc8461e], [0.78, 0x4a3c36]];
 export function updateFlame(dt){
-  const A = MANDO.flame;
+  const A = abil('flame');
   const active = G.hero === 'mando' && G.unlocked.flame && !!keys['f'] && player.force > 4 && G.mode === 'play' && player.darkT <= 0;
   player.flaming = active;
   if (!player.flameLight){ player.flameLight = new THREE.PointLight(0xff7a2a, 0, 11); player.flameLight.visible = false; scene.add(player.flameLight); }
