@@ -40,24 +40,51 @@ function pistolArm(R, arm, gun, aimDir, k, recoil, pole){
   aimHeld(R.chest, arm.wr, gun, Z, _d, 0.3, Y, Y);
 }
 
-/* SINGLE or DUAL blasters. firing/aiming → draw; idle → back to the hip. */
-export function pistolPose(dt, R, player, worldAim, dual){
-  const hot = player.firing || player.aiming > 0 || player.zoom;
+/* SINGLE or DUAL blasters. firing/aiming → draw; idle → back to the hip.
+   mode.braced (RMB, aimed fire): both guns stay drawn down the aim line; the single blaster's off arm comes up as
+   the gauntlet-shield arm. mode.backRun (running away from the reticle): only the gun hand draws, the chest twists
+   the gun shoulder back toward the target and the head turns to it, while the legs keep running the other way. */
+export function pistolPose(dt, R, player, worldAim, dual, mode = {}){
+  const { braced, backRun } = mode;
+  const hot = braced || player.firing || player.aiming > 0 || player.zoom;
+  const twoGuns = dual && !backRun;
   const tgt = hot ? 1 : 0;
   draw.R += (tgt - draw.R) * Math.min(1, dt * (tgt > draw.R ? 22 : 4));   // quick draw, unhurried re-holster
-  draw.L += ((dual && hot ? 1 : 0) - draw.L) * Math.min(1, dt * (hot ? 18 : 4));
+  draw.L += ((twoGuns && hot ? 1 : 0) - draw.L) * Math.min(1, dt * (twoGuns && hot ? 18 : 4));
   // gunslinger blade-on: the gun shoulder turns toward the target when one-handed
-  R.chest.rotation.y += ((dual ? 0 : -0.32 * draw.R) - R.chest.rotation.y) * Math.min(1, dt * 12);
+  const twist = backRun ? backTwist(R, worldAim) * draw.R : (twoGuns ? 0 : -0.32 * draw.R);
+  R.chest.rotation.y += (twist - R.chest.rotation.y) * Math.min(1, dt * 12);
+  if (backRun) lookAtAim(dt, R, worldAim, draw.R);
   const rec = player.recoil || 0;
   const side = player.firePistol || 1;   // dual: the gun that just fired kicks
-  pistolArm(R, R.armR, player.pistols.R, aimFrom(R.chest, R.armR.sh.position, worldAim, _aim), draw.R, dual ? (side < 0 ? rec : rec * 0.3) : rec, POLE_R);
+  pistolArm(R, R.armR, player.pistols.R, aimFrom(R.chest, R.armR.sh.position, worldAim, _aim), draw.R, twoGuns ? (side < 0 ? rec : rec * 0.3) : rec, POLE_R);
   if (dual){
-    pistolArm(R, R.armL, player.pistols.L, aimFrom(R.chest, R.armL.sh.position, worldAim, _aim), draw.L, side > 0 ? rec : rec * 0.3, POLE_L);
+    pistolArm(R, R.armL, player.pistols.L, aimFrom(R.chest, R.armL.sh.position, worldAim, _aim), draw.L, backRun ? 0 : side > 0 ? rec : rec * 0.3, POLE_L);
+  } else if (braced){
+    // shield arm: forearm up across the chest, fist forward, behind the gauntlet's energy disc
+    solveArm(R.armL, _h.set(-0.14, 0.08, 0.42), POLE_L);
+    R.armL.wr.quaternion.identity();
   } else {
     // free hand: relaxed by the belt, a little out from the body
     solveArm(R.armL, _h.set(-0.3, -0.44, 0.08 + draw.R * 0.06), POLE_L);
     R.armL.wr.quaternion.identity();
   }
+}
+
+/* Running away while shooting: how far the chest turns (rig y) so the gun shoulder faces the target behind. A real
+   torso only twists so far; the straight gun arm and the head make up the rest. */
+function backTwist(R, worldAim){
+  R.torso.updateWorldMatrix(true, false);
+  _p.copy(worldAim).applyMatrix4(_m.copy(R.torso.matrixWorld).invert());
+  const a = Math.atan2(_p.x, _p.z);              // the target's bearing in the hips' frame (π = straight behind)
+  return THREE.MathUtils.clamp(a - Math.PI / 2, -0.35, 0.95);
+}
+/* ...and the helmet turns to the reticle, over the gun shoulder (k fades it in with the draw). */
+function lookAtAim(dt, R, worldAim, k){
+  R.chest.updateWorldMatrix(true, false);
+  _p.copy(worldAim).applyMatrix4(_m.copy(R.chest.matrixWorld).invert()).sub(R.head.position);
+  const yaw = THREE.MathUtils.clamp(Math.atan2(_p.x, _p.z), -1.4, 1.4) * k;
+  R.head.rotation.y += (yaw - R.head.rotation.y) * Math.min(1, dt * 14);
 }
 
 /* DISRUPTOR shouldered: gun hand by the weapon-side collarbone, rifle down the aim line, off hand on the foregrip. */

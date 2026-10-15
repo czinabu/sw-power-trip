@@ -84,15 +84,25 @@ export const MANDO_PARTS = {
   },
 
   cape: {
-    // half-cape off the left shoulder, on the rig's cape pivot so it can trail later
+    // Both capes are worn UNDER the jetpack, as Boba and Din wear theirs: the top panel hangs in the gap between the
+    // back plate and the pack, and a hinged hem hangs free below the pack (R.cape.userData.hem). animation.js only
+    // lets the top panel sway sideways in that gap; the hem takes the trail and flutter, so it never swings through
+    // the pack. (The pack's front face sits at chest z ≈ -0.26, the back plate at ≈ -0.14.)
+    // half cape off the left shoulder (Boba): a strip shows beside the left tank, the ragged hem below the pack
     half(R, k){
-      R.cape.position.set(-0.22, 0.38, -0.1); R.cape.rotation.set(0.12, 0.55, 0.12);
-      k.add(plate([[-0.16,0.0],[0.14,0.0],[0.19,-0.62],[0.02,-0.7],[-0.2,-0.6]], 0.012, 0.004), 'cloth', R.cape, [0, 0, 0], [0, 0, 0], { outline: false });
+      R.cape.position.set(-0.2, 0.36, -0.2); R.cape.rotation.set(0, 0, 0);
+      k.add(plate([[-0.18,0.0],[0.13,0.0],[0.15,-0.74],[-0.2,-0.74]], 0.012, 0.004), 'cloth', R.cape, [0, 0, 0], [0, 0, 0], { outline: false });
+      const hem = k.group(R.cape, [0, -0.74, 0]);
+      k.add(plate([[-0.2,0.01],[0.15,0.01],[0.12,-0.24],[0.0,-0.32],[-0.22,-0.4]], 0.012, 0.004), 'cloth', hem, [0, 0, 0], [0, 0, 0], { outline: false });
+      R.cape.userData.hem = hem;
     },
-    // full cape across both shoulders (hangs behind the jetpack)
+    // full cape across both shoulders, down to the knees below the pack
     full(R, k){
-      R.cape.position.set(0, 0.38, -0.36); R.cape.rotation.set(0.1, 0, 0);
-      k.add(plate([[-0.26,0.0],[0.26,0.0],[0.32,-0.9],[0.1,-0.98],[-0.1,-0.98],[-0.32,-0.9]], 0.012, 0.004), 'cloth', R.cape, [0, 0, 0], [0, 0, 0], { outline: false });
+      R.cape.position.set(0, 0.36, -0.2); R.cape.rotation.set(0, 0, 0);
+      k.add(plate([[-0.26,0.0],[0.26,0.0],[0.29,-0.74],[-0.29,-0.74]], 0.012, 0.004), 'cloth', R.cape, [0, 0, 0], [0, 0, 0], { outline: false });
+      const hem = k.group(R.cape, [0, -0.74, 0]);
+      k.add(plate([[-0.29,0.01],[0.29,0.01],[0.33,-0.5],[0.1,-0.56],[-0.1,-0.56],[-0.33,-0.5]], 0.012, 0.004), 'cloth', hem, [0, 0, 0], [0, 0, 0], { outline: false });
+      R.cape.userData.hem = hem;
     },
     none(){},
   },

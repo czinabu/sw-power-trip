@@ -44,12 +44,15 @@ function poseBody(dt, dr, vis, planted, POSE, moving){
   // The MANDO is a third-person SHOOTER: he ALWAYS squares to the camera/crosshair and strafes around it, so
   // walking + tapping fire never snaps his body between "facing movement" and "facing aim". The JEDI instead
   // turns to face his movement direction when roaming free (and squares up only in combat).
+  // The one exception: running AWAY from the reticle he turns and runs like the Jedi does (backRun), shooting back
+  // over his shoulder one-handed (anim/guns.js) instead of backpedalling square to the camera.
   const mandoAimLock = G.hero === 'mando' && (player.aiming > 0 || player.zoom || player.firing);
   const inCombatPose = player.atkT > 0 || player.dashT > 0 || player.blockHeld || player.judgeT > 0 || player.castT > 0 || mandoAimLock;
+  player.backRun = mandoBackRun();
   let face = G.yaw;
-  if (G.hero !== 'mando' && !inCombatPose && moving)
+  if ((G.hero !== 'mando' && !inCombatPose && moving) || player.backRun)
     face = Math.atan2(player.moveVel.x, player.moveVel.z);
-  player.faceYaw = dampAngle(player.faceYaw, face, (inCombatPose || G.hero === 'mando') ? 26 : 11, dt);
+  player.faceYaw = dampAngle(player.faceYaw, face, player.backRun ? 13 : (inCombatPose || G.hero === 'mando') ? 26 : 11, dt);
   player.group.rotation.y = player.faceYaw;
 
   if (player.slamming){
@@ -101,6 +104,18 @@ function poseBody(dt, dr, vis, planted, POSE, moving){
     vis.position.y = dr(vis.position.y, 0, 10);
   }
 
+}
+
+// Is the Mando running away from the reticle? Only on foot with nothing else claiming the body (RMB aim, scope, a
+// swing, dash, stab, punch, flame); it kicks in past ~120° off the aim line and lets go near a pure strafe, so
+// circling the reticle doesn't flicker between the two.
+function mandoBackRun(){
+  if (G.hero !== 'mando' || !player.grounded || player.flip || player.slamming) return false;
+  if (player.blockHeld || player.zoom || player.atkT > 0 || player.dashT > 0 || player.stabT > 0 || player.meleeT > 0 || player.darkT > 0 || player.flaming) return false;
+  const vx = player.moveVel.x, vz = player.moveVel.z, sp = Math.hypot(vx, vz);
+  if (sp < 1) return false;
+  const along = (vx * Math.sin(G.yaw) + vz * Math.cos(G.yaw)) / sp;   // +1 toward the reticle, -1 straight away
+  return player.backRun ? along < -0.15 : (sp > 2 && along < -0.5);
 }
 
 // Legs (stride, air tuck, stance splay, front kick), hips/robe, breathing and head look.
@@ -191,7 +206,7 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
   R.torso.rotation.y = dr(R.torso.rotation.y, 0, 11);
   // the master's gaze tracks the camera even when the body doesn't
   const lookDiff = ((G.yaw - player.faceYaw + Math.PI*3) % (Math.PI*2)) - Math.PI;
-  R.head.rotation.y = dr(R.head.rotation.y, clamp(lookDiff, -0.7, 0.7) * MIRROR, 10);
+  if (!player.backRun) R.head.rotation.y = dr(R.head.rotation.y, clamp(lookDiff, -0.7, 0.7) * MIRROR, 10);   // (running away: anim/guns.js turns it to the target)
   if (G.hero !== 'mando') R.head.rotation.x = dr(R.head.rotation.x, 0, 9);   // JEDI level head; the Mando pose drives its own head pitch (don't fight it)
   return { ph, inten, gait };
 }
@@ -317,7 +332,8 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
   // FREE FLIGHT (the superman lay-out) is for a hard BOOST only — Boba Fett, not Superman: cruising and hovering
   // stay upright with the weapon still held (see the flight pose below).
   const flyingFree = !player.grounded && !player.slamming && !player.flip && !_aiming && player.boosting && _spd > 1.2 && w !== 'darksaber';
-  const gunsIK = !flyingFree && !player.isShielding && player.meleeT <= 0 && player.darkT <= 0 && !(player.blockHeld && player.grounded);
+  // (aimed fire — RMB — stays on the IK aim too: the old joint-angle brace left the muzzles pointing at the sky)
+  const gunsIK = !flyingFree && player.meleeT <= 0 && player.darkT <= 0;
   if (!flyingFree){
   if (w === 'darksaber'){
     // DARKSABER: animateArms (anim/saber.js) owns both arms — heavy two-handed guards and swings
@@ -350,7 +366,7 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
     // GUNSLINGER — blasters at the hip until he shoots, then up one-handed down the aim line; the disruptor shouldered
     const aimPt = mandoAimPoint();   // also refreshes the reticle lock state (player.lockOn)
     if (twoH) riflePose(dt, R, player, aimPt);
-    else pistolPose(dt, R, player, aimPt, w === 'dual');
+    else pistolPose(dt, R, player, aimPt, w === 'dual', { braced: player.blockHeld, backRun: player.backRun });
   } else {
     mandoAimPoint();
   }
@@ -442,38 +458,13 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
         vis.rotation.z = dr(vis.rotation.z, 0.0, 20);
         R.head.rotation.z = dr(R.head.rotation.z, 0.0, 20);
 
-        // === SINGLE vs DUAL BRACING POSE ===
-        const isDual = player.weapon === 'dual';
-
-        if (isDual) {
-          // DUAL — aggressive gunslinger brace
-          R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -0.85, 14);
-          R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, 0.75, 14);
-          R.armR.sh.rotation.z = dr(R.armR.sh.rotation.z, -0.35, 14);
-          R.armR.el.rotation.x = dr(R.armR.el.rotation.x, -0.75, 14);
-
-          R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -0.85, 14);
-          R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, -0.75, 14);
-          R.armL.sh.rotation.z = dr(R.armL.sh.rotation.z, 0.35, 14);
-          R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -0.75, 14);
-        } else {
-          // SINGLE — shield brace
-          R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -1.25, 14);
-          R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, 0.25, 14);
-          R.armR.sh.rotation.z = dr(R.armR.sh.rotation.z, -0.1, 14);
-          R.armR.el.rotation.x = dr(R.armR.el.rotation.x, -1.15, 14);
-
-          R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -1.65, 14);
-          R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, -0.85, 14);
-          R.armL.sh.rotation.z = dr(R.armL.sh.rotation.z, 0.55, 14);
-          R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -0.35, 14);
-        }
+        // (the arms are on the IK aim: pistolPose in anim/guns.js, braced)
       } else if (player.grounded) {
         // (slam landing is reset at the touchdown site above, so the body is already square here)
         const vx = player.moveVel.x + player.vel.x, vz = player.moveVel.z + player.vel.z;
         const latV = vx*r.x + vz*r.z;
-        const strafeLean = clamp(latV * 0.035, -0.5, 0.5);
-        vis.rotation.x = dr(vis.rotation.x, 0, 9);
+        const strafeLean = player.backRun ? 0 : clamp(latV * 0.035, -0.5, 0.5);   // running away: a straight run, no bank
+        vis.rotation.x = dr(vis.rotation.x, player.backRun ? 0.06 : 0, 9);
         vis.rotation.z = dr(vis.rotation.z, strafeLean, 10);
         R.head.rotation.z = dr(R.head.rotation.z, -strafeLean * 0.65 * MIRROR, 10);
       }
@@ -568,7 +559,19 @@ function secondaryMotion(dt, vis, R){
     const climb = player.grounded ? 0 : Math.max(0, player.vy) * 0.03;
     const sp = Math.hypot(vf, vr);
     const flutter = Math.sin(G.gt * 11) * Math.min(0.08, sp * 0.006);
-    R.cape.rotation.x = base.x + spring(R.cape, 'cx', clamp(Math.max(0, vf) * 0.05 + climb + lift * 0.8, 0, 1.1) + flutter, dt, 60, 7);
-    R.cape.rotation.z = base.z + spring(R.cape, 'cz', clamp(-vr * 0.03 - spinR * 0.04, -0.5, 0.5), dt, 60, 7);
+    const trail = clamp(Math.max(0, vf) * 0.05 + climb + lift * 0.8, 0, 1.1) + flutter;
+    const sway = clamp(-vr * 0.03 - spinR * 0.04, -0.5, 0.5);
+    const hem = R.cape.userData.hem;
+    if (hem){
+      // worn under the jetpack (model/mando.js): the top panel may only sway sideways in the gap, since any swing
+      // back would put it through the pack; the hem below the pack takes the trail, never forward into the legs
+      R.cape.rotation.x = base.x + clamp(spring(R.cape, 'cx', trail * 0.04, dt, 60, 7), 0, 0.04);
+      R.cape.rotation.z = base.z + spring(R.cape, 'cz', sway * 0.3, dt, 60, 7);
+      hem.rotation.x = clamp(spring(hem, 'hx', 0.06 + trail, dt, 60, 7), 0, 1.2);
+      hem.rotation.z = spring(hem, 'hz', sway, dt, 60, 7);
+    } else {
+      R.cape.rotation.x = base.x + spring(R.cape, 'cx', trail, dt, 60, 7);
+      R.cape.rotation.z = base.z + spring(R.cape, 'cz', sway, dt, 60, 7);
+    }
   }
 }

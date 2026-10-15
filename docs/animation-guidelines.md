@@ -39,6 +39,9 @@ The grip is a player preference (`GRIP` in the menu settings, saved like the oth
 ## Mandalorian
 
 - **Blasters:** gunslinger stances (Din Djarin). Quick draw, one-handed hip shots with the pistol, and a two-handed brace for the rifle.
+- **Aimed fire (RMB):** the same IK aim as hip fire, held drawn: both pistols down the crosshair line for dual, and for the single blaster the off arm comes up behind the gauntlet shield. No joint-angle brace (it pointed the muzzles at the sky).
+- **Running away:** past ~120° off the aim line on foot he turns and runs like the Jedi instead of backpedalling. Shooting while he runs fires only the gun hand: the chest twists the gun shoulder back, the arm and blaster stay on the crosshair and the helmet turns to it, while the legs keep running.
+- **Cape:** worn under the jetpack (Boba, Din). The top panel hangs in the gap between back plate and pack and only sways sideways; a hinged hem below the pack takes the trail and flutter, so it never swings through the pack.
 - **Jetpack:** upright hover with small corrections. Lean into travel at speed, and land with a knee-bend absorb. Boba Fett, not Superman, unless boosting.
 - **Darksaber:** heavy and effortful, as in Mandalorian season 2–3. It "fights back" against an unsure wielder: wide, weighty swings, often two-handed, with recovery after each blow. Bo-Katan, who wields it confidently, is the cleaner reference for a mastered version.
 
