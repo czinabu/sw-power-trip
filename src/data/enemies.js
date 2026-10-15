@@ -43,3 +43,29 @@ export const ELITES = {
   vital:    { tint: 0x53ff8c, label: 'VITAL',    spd: 0.95, scale: 1.16, hp: 1.9 },
   volatile: { tint: 0xff7a2a, label: 'VOLATILE', spd: 1.1,  scale: 1.0,  hp: 1.0 },
 };
+
+/* ---------- ENGAGEMENT — how many foes press the attack at once ----------
+   Melee foes take turns: only `meleeSlots` of them hold an ATTACK TOKEN and close in to swing. The rest stalk a
+   ring just outside reach, circling and feinting, until a token frees up (a holder swings, is staggered, floored,
+   or dies). This keeps a crowd dangerous but readable, so parries and combos have room to land.
+   Ranged foes share `rangedSlots` so a firing line staggers its shots instead of one wall of bolts. */
+export const ENGAGE = {
+  meleeSlots: 2,            // melee attackers at once (early run)
+  meleeSlotsLate: 3,        // ...from `lateAt` cumulative waves on (campaign: Exegol)
+  lateAt: 8,
+  survivalSlotEvery: 10,    // survival adds one more melee slot every N waves (up to `maxSlots`)
+  maxSlots: 5,
+  diffSlots: { padawan: -1, knight: 0, master: 1 },
+  rangedSlots: 2,           // blaster / jet trooper wind-ups at once
+  rangedSlotsLate: 3,       // ...from `lateAt` on
+  sniperSlots: 1,           // marksmen charging a shot at once (one laser sight to read and dodge)
+  sniperSlotsLate: 2,
+  tokenHold: 3.2,           // a holder that hasn't swung by now gives the token back (stuck behind cover, kited)
+  tokenRest: [0.6, 1.2],    // after swinging, a foe waits this long (s) before it can take a token again
+  ringPad: 2.4,             // stalkers hold this far beyond their weapon reach
+  stalkSpeed: 0.55,         // fraction of run speed while circling
+  rearWindup: 1.35,         // a swing wound up BEHIND the camera takes this much longer (off-screen fairness)
+  strafe: 0.7,              // ranged ground troopers sidestep this hard between shots
+  hitStun: 0.2,             // a saber hit on a light foe that isn't swinging checks its advance this long (s)
+  poise: 1.4,               // a saber hit knocks a light foe out of its wind-up at most once per this many seconds
+};
