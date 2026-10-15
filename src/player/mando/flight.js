@@ -3,7 +3,7 @@
 
 import { camera } from '../../engine/renderer.js';
 import { sfx, S } from '../../audio/sfx.js';
-import { V3, rand, clamp, dampToward } from '../../utils.js';
+import { V3, clamp, dampToward } from '../../utils.js';
 import { burst } from '../../fx/particles.js';
 import { floater } from '../../fx/floaters.js';
 import { G, keys, player } from '../../state.js';
@@ -22,7 +22,7 @@ export function updateMandoFlight(dt, pp, f, r){
   const wantHover = !player.grounded && !player.jetActive && (player.blockHeld || player.zoom) && player.jet > 0 && G.mode === 'play' && player.darkT <= 0;
   player.hovering = false;
   if (player.jetActive){
-    if (!wasJet){ S.dash(); jetIgnite(pp); G.shake = Math.max(G.shake, 0.12); }   // ignition pop
+    if (!wasJet){ S.jetIgnite(); jetIgnite(pp); G.shake = Math.max(G.shake, 0.12); }   // ignition pop
     player.grounded = false; player.doubleJumped = false;
     const jetPow = player.up.jetPow || 0.62;                              // booster-tier power (weak until upgraded)
     // SPACE = pure VERTICAL thrust: a controlled hover/climb. Looking up climbs a little more; no diving here
@@ -34,8 +34,7 @@ export function updateMandoFlight(dt, pp, f, r){
     const meleeEff = (player.weapon === 'darksaber' && player.atkT > 0) ? 0.45 : 1;
     player.jet = Math.max(0, player.jet - MANDO.jetDrain * fuelMul * meleeEff * dt);
     thrust(dt, 1);
-    player.jetSfx = (player.jetSfx || 0) - dt;
-    if (player.jetSfx <= 0){ player.jetSfx = 0.09; sfx(rand(190,250), 0.11, 'triangle', 0.035, 120); }
+    // the roar is a continuous loop in audio/director.js, steered by jetActive / boosting / hovering
   } else if (wantHover){
     // HOVER — hold RMB (aim/brace) mid-air to LOCK altitude and strafe. Burns fuel with NO regen, so it
     // runs dry and drops you when the tank empties (limiting early, efficient once upgraded).
@@ -62,8 +61,6 @@ export function updateMandoFlight(dt, pp, f, r){
     if (_look.y < -0.1) player.vy += _look.y * MANDO.boostDiveAccel * dt;    // looking down while boosting → DIVE, building speed
     player.jet = Math.max(0, player.jet - MANDO.boostDrain * fuelMul * dt);
     thrust(dt, 1.4, _lh);
-    player.jetSfx = (player.jetSfx || 0) - dt;
-    if (player.jetSfx <= 0){ player.jetSfx = 0.07; sfx(rand(150,210), 0.12, 'sawtooth', 0.04, 100); }
   }
   const flying = player.jetActive || player.boosting;
   const descCap = flying ? MANDO.diveCap : MANDO.fallCap;   // DIVING (boost + look down) lets you fall much faster

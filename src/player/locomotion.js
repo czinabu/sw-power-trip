@@ -128,13 +128,13 @@ export function updateGravityAndLanding(dt, pp){
       const lp = pp.clone().setY(support + 0.15);
       burst(lp, 0xb9c2cc, Math.round(4 + dustAmt*16), 4 + dustAmt*8, 2, 0.85);
       if (G.hero === 'mando') burst(lp, 0x9ad8ff, Math.round(2 + dustAmt*5), 3 + dustAmt*4, -2, 0.7);   // jetpack exhaust wash
-      sfx(80 - dustAmt*34, 0.1 + dustAmt*0.1, 'sine', 0.045 + dustAmt*0.1, 30);   // a low thud, deeper the harder you land
+      S.land(dustAmt);   // a low thud, deeper the harder you land
       if (impact > 13){
         const hard = clamp((impact - 13) / 16, 0, 1);
         spawnGroundShock(lp, G.hero === 'mando' ? 0x9ad8ff : 0xbfe8ff, 2.6 + hard*4, 0.34, 0.45 + hard*0.4);
         G.shake = Math.max(G.shake, 0.25 + hard*0.45);
         player.landDip = 0.16 + hard*0.34;        // the view drops on the impact, then recovers
-        sfx(150, 0.1, 'square', 0.05, 60);        // an extra crunch on a heavy drop
+        S.heavy();                                 // an extra crunch on a heavy drop
       }
     }
     player.grounded = true; player.airLeft = CFG.player.airJumps;

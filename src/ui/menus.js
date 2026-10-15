@@ -3,7 +3,8 @@
 
 import { renderer } from '../engine/renderer.js';
 import { cycleQuality } from '../engine/quality.js';
-import { audioInit, setMasterVol, sfx } from '../audio/sfx.js';
+import { audioInit, setMasterVol, setMusicVol, setSfxVol, S } from '../audio/sfx.js';
+import { AE } from '../audio/engine.js';
 import { shared, G, player } from '../state.js';
 import { applySaberGrip } from '../player/model/weapons.js';
 import { setHero } from '../player/hero.js';
@@ -83,7 +84,7 @@ export function refreshSurvivalLock(){
 }
 function setModeSel(m){
   if (m === 'endless' && !survivalUnlocked()){   // can't pick a locked mode
-    sfx(120, 0.1, 'square', 0.05, 70);
+    S.uiDeny();
     const el = document.getElementById('mode-endless'); el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake');
     return;
   }
@@ -127,7 +128,8 @@ function setMouseSens(v){
   const sl = document.getElementById('senssl'); if (sl && +sl.value !== G.mouseSens) sl.value = G.mouseSens;
 }
 setMouseSens(parseFloat(localStorage.getItem('sw_sens')) || 1);
-setMasterVol(shared.masterVol);   // sync the slider/label to the value already loaded from localStorage
+setMasterVol(shared.masterVol);   // sync the sliders/labels to the values already loaded from localStorage
+setMusicVol(AE.vol.music); setSfxVol(AE.vol.sfx);
 const senssl = document.getElementById('senssl'), volsl = document.getElementById('volsl');
 senssl.addEventListener('pointerdown', (e) => e.stopPropagation());
 senssl.addEventListener('click', (e) => e.stopPropagation());
@@ -135,6 +137,13 @@ senssl.addEventListener('input', (e) => setMouseSens(parseFloat(e.target.value))
 volsl.addEventListener('pointerdown', (e) => e.stopPropagation());
 volsl.addEventListener('click', (e) => e.stopPropagation());
 volsl.addEventListener('input', (e) => { audioInit(); setMasterVol(parseFloat(e.target.value)); });
+for (const [id, set] of [['mussl', setMusicVol], ['fxsl', setSfxVol]]){
+  const sl = document.getElementById(id); if (!sl) continue;
+  sl.addEventListener('pointerdown', (e) => e.stopPropagation());
+  sl.addEventListener('click', (e) => e.stopPropagation());
+  sl.addEventListener('input', (e) => { audioInit(); set(parseFloat(e.target.value)); });
+  sl.addEventListener('change', () => S.uiClick());   // a blip at the new level when you let go
+}
 document.addEventListener('pointerdown', audioInit);   // first gesture anywhere lights up the audio ctx + menu score (autoplay policy)
 // HOW TO PLAY — a panel over the menu; opens on the current hero, with tabs to read the other one's controls
 const howto = document.getElementById('howto');
@@ -160,12 +169,12 @@ document.addEventListener('pointerover', (e) => {
   const el = e.target.closest(UI_PICK);
   if (el === _hoverEl) return;
   _hoverEl = el;
-  if (el && !el.classList.contains('cant') && !el.classList.contains('locked')) sfx(1500, 0.035, 'sine', 0.018, 1900);
+  if (el && !el.classList.contains('cant') && !el.classList.contains('locked')) S.uiHover();
 });
 document.addEventListener('click', (e) => {
   const el = e.target.closest(UI_PICK); if (!el) return;
-  if (el.classList.contains('cant')) sfx(160, 0.09, 'square', 0.03, 110);   // can't take it
-  else sfx(880, 0.07, 'triangle', 0.05, 1320);
+  if (el.classList.contains('cant') || el.classList.contains('locked')) S.uiDeny();   // can't take it
+  else S.uiClick();
 }, true);
 overlay.addEventListener('click', (e) => {
   // only the primary button or empty backdrop launches/resumes: a stray click on a label or setting shouldn't

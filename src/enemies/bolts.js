@@ -30,14 +30,14 @@ const boltCoreGeo = new THREE.CapsuleGeometry(0.034, 0.66, 3, 6);
 const boltInkGeo = new THREE.CapsuleGeometry(0.1, 0.76, 3, 6);
 const boltCoreMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(2.4, 2.4, 2.4), toneMapped: false });   // over 1.0 → blooms
 const boltInkMat = new THREE.MeshBasicMaterial({ color: 0x07060a, side: THREE.BackSide, transparent: true, opacity: 0.85, depthWrite: false });
-export function fireBolt(pos, dir, speed, dmg, friendly){
+export function fireBolt(pos, dir, speed, dmg, friendly, quiet){
   const m = new THREE.Mesh(boltGeo, new THREE.MeshBasicMaterial({ color: friendly ? 0x66ccff : 0xff3322, toneMapped: false }));
   m.add(new THREE.Mesh(boltCoreGeo, boltCoreMat), new THREE.Mesh(boltInkGeo, boltInkMat));
   m.position.copy(pos);
   m.quaternion.setFromUnitVectors(V3(0,1,0), dir.clone().normalize());
   scene.add(m);
   bolts.push({ mesh: m, dir: dir.clone().normalize(), speed, dmg, friendly, life: 4 });
-  S.bolt();
+  if (!quiet) S.enemyShot(pos, dmg > 20);   // the player's own shots play their gun's sound instead
 }
 export function updateBolts(dt){
   const pp = playerPos();
@@ -58,7 +58,7 @@ export function updateBolts(dt){
         if (hit && by < c.h){
           kill = true;
           spawnHitSpark(V3(bx, by, bz), b.friendly ? 0x6fd0ff : 0xff5a3a, 0.8);
-          sfx(180, 0.05, 'square', 0.04, 260);
+          S.boltImpact(V3(bx, by, bz));
           break;
         }
       }
@@ -89,7 +89,7 @@ export function updateBolts(dt){
         else b.dir.negate();
         b.mesh.material.color.setHex(0x6fd0ff);
         spawnHitSpark(b.mesh.position.clone(), 0x6fd0ff, 0.7);
-        sfx(1400, 0.08, 'square', 0.05, 1800);
+        S.deflect(b.mesh.position);
       } else if (d < 2.6 && deflecting){
         deflectAnim(b.mesh.position);   // the blade moves to meet it (skipped mid-swing: the cut is already there)
         if (parried) player.parryT = 0;
@@ -105,8 +105,8 @@ export function updateBolts(dt){
           G.slowmo = Math.min(G.slowmo, 0.4); G.slowmoT = Math.max(G.slowmoT, 0.12);
           spawnParryFlash(V3(b.mesh.position.x, b.mesh.position.y, b.mesh.position.z), 0xffd24a);
           screenFlash('radial-gradient(ellipse at center, rgba(255,230,150,.4), transparent 65%)', 0.7, 0.28);
-          S.parry(); floater(pp, 'PARRY!', '#ffe27a'); if (G.stats) G.stats.parries++;
-        } else { clashFlash(b.mesh.position.clone(), stance().blade, false); S.deflect(); floater(pp, 'DEFLECT', '#7fd4ff'); if (G.stats) G.stats.deflects++; }
+          S.parry(b.mesh.position); floater(pp, 'PARRY!', '#ffe27a'); if (G.stats) G.stats.parries++;
+        } else { clashFlash(b.mesh.position.clone(), stance().blade, false); S.deflect(b.mesh.position); floater(pp, 'DEFLECT', '#7fd4ff'); if (G.stats) G.stats.deflects++; }
         addFocus(parried ? FOCUS.gainParry : FOCUS.gainDeflect);   // deflecting fire feeds the flow
       } else if (d < 2.5 && shielding){
         // GAUNTLET SHIELD — catch the bolt on the disc and HURL it back at the nearest threat. Costs stamina per catch.
@@ -120,7 +120,7 @@ export function updateBolts(dt){
         player.shieldFlash = 0.22;   // the disc flares on the catch (drawn in updatePlayer)
         clashFlash(b.mesh.position.clone(), 0x6fd0ff, false);
         G.shake = Math.max(G.shake, 0.12); G.hitstop = Math.max(G.hitstop, 0.02);
-        S.deflect(); floater(pp, 'DEFLECT', '#7fd4ff'); if (G.stats) G.stats.deflects++;
+        S.shieldHit(b.mesh.position); S.deflect(b.mesh.position); floater(pp, 'DEFLECT', '#7fd4ff'); if (G.stats) G.stats.deflects++;
       } else if (d < 2.2 && blocking){
         // absorbed on the guard — costs stamina, no reflection
         deflectAnim(b.mesh.position);
@@ -128,12 +128,14 @@ export function updateBolts(dt){
         player.stamDelay = CFG.player.stamDelay;
         spawnHitSpark(b.mesh.position.clone(), stance().blade, 0.8);
         G.shake = Math.max(G.shake, 0.12);
-        sfx(820, 0.07, 'square', 0.05, 460); floater(pp, 'BLOCK', '#9cc8e8');
+        S.block(b.mesh.position); floater(pp, 'BLOCK', '#9cc8e8');
         kill = true;
       } else if (d < 1.2 && dy < 1.2){
         hurtPlayer(b.dmg, b.mesh.position); kill = true;
         boltImpact(b.mesh.position, b.mesh.material.color.getHex(), b.dir);
       }
+      // a near miss tears past your ear
+      if (!kill && !b.friendly && !b.whiz && d < 3.2 && near){ b.whiz = true; S.whiz(b.mesh.position); }
     } else if (!kill && b.friendly){
       for (const e of enemies){
         if (e.dead || e.converted) continue;
@@ -152,7 +154,7 @@ export function updateBolts(dt){
             const headY = ex.y + headCenter;
             spawnHitSpark(V3(ex.x, headY + 0.1, ex.z), 0xffd24a, 1.5);
             floater(V3(ex.x, headY + 0.45, ex.z), 'HEADSHOT', '#ffd24a');
-            sfx(1900, 0.08, 'square', 0.06, 420); G.hitstop = Math.max(G.hitstop, 0.04); G.shake = Math.max(G.shake, 0.18);
+            sfx(1900, 0.08, 'square', 0.05, 420); S.blastHit(b.mesh.position, 1.4); G.hitstop = Math.max(G.hitstop, 0.04); G.shake = Math.max(G.shake, 0.18);
           }
           damageEnemy(e, dmg, b.dir, 6); flinchEnemy(e, b.dir, 0.4); kill = true;
           if (!isHead) boltImpact(b.mesh.position, b.mesh.material.color.getHex(), b.dir);

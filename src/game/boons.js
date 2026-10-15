@@ -1,7 +1,7 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
 // Rolling and picking boons.
 
-import { sfx } from '../audio/sfx.js';
+import { S } from '../audio/sfx.js';
 import { burst } from '../fx/particles.js';
 import { floater } from '../fx/floaters.js';
 import { G, player } from '../state.js';
@@ -34,7 +34,7 @@ export function pickBoon(id){
   const col = b.r==='legendary' ? '#ffd24a' : b.r==='rare' ? '#7fd4ff' : '#cfe6ff';
   floater(playerPos(), b.nm + '!', col);
   burst(playerPos().clone().setY(1.7), b.r==='legendary'?0xffd24a:b.r==='rare'?0x7fd4ff:0xcfe6ff, 18, 8, 6);
-  sfx(b.r==='legendary'?700:560, 0.22, 'sine', 0.13, 1100); sfx(160, 0.18, 'sawtooth', 0.05, 70);
+  S.reward(b.r==='legendary' ? 2 : 1);
   updateBoonStrip(); renderProgress();
 }
 export function updateBoonStrip(){

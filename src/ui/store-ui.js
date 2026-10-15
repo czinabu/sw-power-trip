@@ -2,7 +2,7 @@
 // Between-wave skill tree / store / boon overlay.
 
 import { renderer } from '../engine/renderer.js';
-import { sfx } from '../audio/sfx.js';
+import { sfx, S } from '../audio/sfx.js';
 import { V3 } from '../utils.js';
 import { burst } from '../fx/particles.js';
 import { floater } from '../fx/floaters.js';
@@ -52,7 +52,6 @@ export function openSkillTree(){
   document.getElementById('skilltree').style.display = 'flex';
   document.getElementById('banner').style.opacity = '0';
   document.exitPointerLock();      // free the cursor so the cards are clickable
-  if (shared.humGain) shared.humGain.gain.value = 0;
 }
 // build one upgrade card. opts: cls, tag, ico, nm, ds, cost, afford, why (shown when it can't be taken), onClick, extra
 function card(opts){
@@ -122,7 +121,7 @@ export function renderProgress(){
       cls: ' sp', tag: 'SKILL POINT', ico: '✚', nm: 'EXTRA SKILL POINT', ds: 'Bank +1 skill point to spend on training below',
       cost: cost + ' XP', afford: xp >= cost, why: needXp(cost),
       onClick: () => { G.xp -= cost; G.skillBought = (G.skillBought||0)+1; G.skillPoints = (G.skillPoints||0)+1;
-        sfx(560,0.12,'sine',0.1,900); document.getElementById('xpval').textContent = G.xp; renderProgress(); },
+        S.reward(0); document.getElementById('xpval').textContent = G.xp; renderProgress(); },
     }));
   }
   // SURVIVAL POWER-UPS — repeatable stat upgrades (endless only): an XP sink that never runs out
@@ -170,7 +169,7 @@ function buyStore(n){
   document.getElementById('xpval').textContent = G.xp;
   floater(playerPos(), n.nm + '!', n.final ? '#ff9a6a' : '#7fe0a8');
   burst(playerPos().clone().setY(1.6), n.final ? 0xff7a4a : 0x7fe0a8, 14, 6, 5);
-  sfx(n.final ? 660 : 520, 0.2, 'sine', 0.12, 1100); sfx(90, 0.16, 'sawtooth', 0.05, 60);
+  S.reward(n.final ? 2 : 1);
   renderProgress();
 }
 function chooseUpgrade(s){
@@ -181,7 +180,7 @@ function chooseUpgrade(s){
   s.apply();
   floater(playerPos(), s.nm + '!', s.tier === 3 ? '#ffd24a' : '#ffe27a');
   burst(playerPos().clone().setY(1.6), s.tier === 3 ? 0xffd24a : 0x7fd4ff, s.tier*6, 5, 4);
-  sfx(s.tier === 3 ? 660 : 520, 0.22, 'sine', 0.12, 1200); sfx(90, 0.16, 'sawtooth', 0.05, 60);
+  S.reward(s.tier === 3 ? 2 : 1);
   renderProgress();
 }
 export function closeProgress(){

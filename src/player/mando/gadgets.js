@@ -52,14 +52,14 @@ export function mandoRocket(){
   player.vel.addScaledVector(f, -3.5);   // the launch shoves you back a touch
   player.recoil = 0.3;
   G.shake = Math.max(G.shake, 0.3);
-  S.bolt(); sfx(70, 0.4, 'sawtooth', 0.12, 48); sfx(150, 0.15, 'square', 0.07, 70);
+  S.rocket(); sfx(70, 0.3, 'sawtooth', 0.08, 48);
   floater(pp, 'ROCKET', '#ffd24a');
 }
 function rocketExplode(pos, big){
   const A = big ? MANDO.jetMissile : MANDO.rocket;
   const dmgMul = player.up.dmg * (player.up.rocketDmg || 1), radius = A.radius * (player.up.rocketR || 1);
   const scale = big ? 1.9 : 1;
-  S.boom(); sfx(big ? 38 : 48, big ? 0.7 : 0.5, 'sine', big ? 0.32 : 0.26, big ? 12 : 16);
+  S.boom(pos, big ? 1.8 : 1.1);
   G.shake = Math.max(G.shake, big ? 1.7 : 1.0); G.hitstop = Math.max(G.hitstop, big ? 0.1 : 0.05);
   explosion(pos, radius, big);
   if (big) spawnGroundShock(pos.clone().setY(0.1), 0xff7a3a, radius + 9, 0.8, 0.3);
@@ -98,7 +98,7 @@ export function mandoJetMissile(){
   for (let n = 0; n < 4; n++) puff(origin.clone().addScaledVector(dir, 0.6 + n*0.4), 0x8a8580, 0.6, 0.4, V3(rand(-1.5,1.5), rand(0.5,2), rand(-1.5,1.5)), { delay: n*0.03, op: 0.8 });
   player.vel.addScaledVector(f, -5);   // a serious kick
   player.recoil = 0.45; G.shake = Math.max(G.shake, 0.5);
-  S.bolt(); sfx(56, 0.5, 'sawtooth', 0.14, 40); sfx(120, 0.2, 'square', 0.08, 60);
+  S.rocket(); S.jetIgnite(); sfx(56, 0.4, 'sawtooth', 0.1, 40);
   floater(pp, 'JETPACK MISSILE', '#ff9a4a');
 }
 export function updateRockets(dt){
@@ -173,7 +173,7 @@ export function updateBirds(dt){
     if (hit){
       const A = MANDO.birds, p = bd.mesh.position.clone();
       explosion(p, MANDO.birds.radius * 0.55, false); spawnHitSpark(p, 0xdff1ff, 0.8);
-      sfx(rand(1600,2200), 0.06, 'sine', 0.04, 700);
+      sfx(rand(1600,2200), 0.06, 'sine', 0.04, 700); S.boom(p, 0.25);
       const bdmg = A.dmg * player.up.dmg * (player.up.rocketDmg || 1);
       for (const e of enemies){ if (e.dead || e.converted || e.state === 'spawn') continue; const d = e.group.position.distanceTo(p); if (d < A.radius){ const kd = TMP.subVectors(e.group.position, p).setY(0).normalize().clone(); damageEnemy(e, bdmg, kd, A.knock); flinchEnemy(e, kd, 0.3); } }
       if (shared.boss && shared.boss.hp > 0 && shared.boss.group.position.distanceTo(p) < A.radius) damageBoss(bdmg);
@@ -193,7 +193,7 @@ export function thermalDetonator(){
   band.rotation.x = Math.PI/2; m.add(band);
   m.position.set(pp.x + f.x*0.6, 1.5, pp.z + f.z*0.6); scene.add(m);
   detos.push({ mesh: m, band, vel: V3(f.x*16, 7, f.z*16), fuse: A.fuse, stuck: null, stuckOff: null });
-  S.bolt(); sfx(300, 0.1, 'square', 0.05, 160);
+  S.jump(); sfx(300, 0.1, 'square', 0.04, 160);
   floater(pp, 'DETONATOR', '#ff8a3a');
 }
 export function updateDetos(dt){
@@ -216,7 +216,7 @@ export function updateDetos(dt){
     g.band.material.color.setHex(blink ? 0xffd24a : 0xff3a1a);
     if (g.fuse <= 0){
       const A = MANDO.deto, p = g.mesh.position.clone();
-      S.boom(); sfx(50, 0.45, 'sine', 0.24, 18); G.shake = Math.max(G.shake, 0.9); G.hitstop = Math.max(G.hitstop, 0.05);
+      S.boom(p, 1.3); G.shake = Math.max(G.shake, 0.9); G.hitstop = Math.max(G.hitstop, 0.05);
       explosion(p, A.radius, false);
       burst(p, 0x6a6a6a, 8, 8, 8, 1.1);
       flashLight(0xffa040, 9, A.radius*2.6, p, 0.3);
@@ -299,7 +299,7 @@ export function jetSlam(){
 }
 export function mandoSlamImpact(){
   const A = MANDO.slam, pp = playerPos();
-  S.slam(); S.boom(); sfx(50, 0.5, 'sine', 0.26, 16);
+  S.slam(pp); S.boom(pp, 0.8);
   G.shake = Math.max(G.shake, 1.3); G.hitstop = Math.max(G.hitstop, 0.1);
   spawnGroundShock(pp, 0x9ad8ff, A.radius + 2, 0.4, 0.55);
   spawnGroundShock(pp, 0x66c6ff, A.radius + 7, 0.7, 0.3);
@@ -373,8 +373,8 @@ export function gauntletPunch(){
       floater(V3(pp.x, 1.9, pp.z), 'VIBROBLADE', '#c9a6ff');
       sfx(1800, 0.09, 'square', 0.05, 720); sfx(2400, 0.07, 'triangle', 0.04, 900);
     }
-    S.heavy();
+    S.punch(ip, heavy ? 1.5 : 1); if (heavy) S.heavy(ip);
   } else { puff(ip, 0xcfe0ec, 0.55, 0.22, f.clone().multiplyScalar(4), { grow0: 0.4 }); }
-  sfx(heavy ? 140 : 230, 0.1, 'square', 0.06, 60); sfx(90, 0.08, 'sawtooth', 0.05, 40);
+  S.jump(); sfx(heavy ? 140 : 230, 0.08, 'square', 0.04, 60);   // the swing's whoosh
 }
 

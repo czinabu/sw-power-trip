@@ -3,7 +3,7 @@
 
 import * as THREE from 'three';
 import { scene } from '../engine/renderer.js';
-import { sfx, S } from '../audio/sfx.js';
+import { S } from '../audio/sfx.js';
 import { V3, TMP } from '../utils.js';
 import { burst } from '../fx/particles.js';
 import { screenFlash } from '../fx/floaters.js';
@@ -25,7 +25,7 @@ export function bomberExplode(e){
   spawnGroundShock(V3(pos.x, 0.1, pos.z), 0xffae2a, A.blastR + 1, 0.5, 0.7);
   flashLight(0xffae2a, 6, A.blastR*2, V3(pos.x, 1.2, pos.z), 0.3);
   screenFlash('radial-gradient(ellipse at center, rgba(255,170,60,.38), transparent 60%)', 0.55, 0.28);
-  G.shake = Math.max(G.shake, 0.8); G.hitstop = Math.max(G.hitstop, 0.05); S.boom(); sfx(70, 0.34, 'sawtooth', 0.18, 26);
+  G.shake = Math.max(G.shake, 0.8); G.hitstop = Math.max(G.hitstop, 0.05); S.boom(pos, 1.3);
   for (const o of enemies){
     if (o === e || o.dead) continue;
     if (o.group.position.distanceTo(pos) < A.blastR) damageEnemy(o, 40, o.group.position.clone().sub(pos).setY(0).normalize(), 16);
@@ -62,7 +62,7 @@ export function warbringerSlam(e, pos){
   spawnGroundShock(V3(pos.x, 0.1, pos.z), 0xff6a3a, R + 2, 0.5, 0.7);
   spawnGroundShock(V3(pos.x, 0.1, pos.z), 0xffd24a, R + 7, 0.75, 0.4);
   flashLight(0xff6a3a, 7, R*2, V3(pos.x, 1, pos.z), 0.32);
-  G.shake = Math.max(G.shake, 1.1); G.hitstop = Math.max(G.hitstop, 0.06); S.boom(); sfx(58, 0.44, 'sine', 0.2, 22);
+  G.shake = Math.max(G.shake, 1.1); G.hitstop = Math.max(G.hitstop, 0.06); S.boom(pos, 1.6);
   for (const o of enemies){ if (o === e || o.dead) continue; if (o.group.position.distanceTo(pos) < R) flinchEnemy(o, o.group.position.clone().sub(pos), 0.6); }
   const pp = playerPos();
   if (pp.distanceTo(pos) < R && player.dashT <= 0){

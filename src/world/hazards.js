@@ -94,7 +94,7 @@ function explodeBarrel(b, idx){
   burst(p, 0xff7722, 22, 11, 8);
   burst(p, 0xffdd55, 12, 8, 6);
   G.shake = Math.max(G.shake, 0.8); G.hitstop = Math.max(G.hitstop, 0.05);
-  S.boom();
+  S.boom(p, 1.2);
   for (const e of enemies){
     if (e.dead) continue;
     if (e.group.position.distanceTo(p) < 6)

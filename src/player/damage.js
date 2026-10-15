@@ -80,7 +80,7 @@ export function hurtPlayer(dmg, fromPos, silent, melee){
         spawnHitSpark(fp, 0xffffff, 2.2);
         screenFlash('radial-gradient(ellipse at center, rgba(255,240,180,.7), rgba(255,200,80,.18) 50%, transparent 72%)', 1.0, 0.45);
         floater(pp, (player.cancelRiposte ? 'PARRY! ⟲ CRUSHING RIPOSTE' : 'PARRY! ⟲ RIPOSTE READY'), '#ffe27a');
-        S.parry(); sfx(180, 0.22, 'sine', 0.18, 40); sfx(1700, 0.1, 'square', 0.07, 600); sfx(2500, 0.08, 'triangle', 0.05, 700);   // a bright ringing clash
+        S.parry(fp);   // a bright ringing clash
         if (G.stats) G.stats.parries++;
         addFocus(FOCUS.gainParry);   // a perfect parry is the biggest FOCUS spike
         return 'parried';

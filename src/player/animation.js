@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { CFG } from '../data/config.js';
 import { clamp, dampAngle, V3 } from '../utils.js';
 import { burst } from '../fx/particles.js';
-import { shared, G, player } from '../state.js';
+import { G, player } from '../state.js';
 import { MANDO } from '../data/mando.js';
 import { stance } from './helpers.js';
 import { tryAttack, applySwingDamage, FLOW } from './jedi/combat.js';
@@ -37,8 +37,7 @@ export function animatePlayer(dt, pp, st, f, r, moving){
   secondaryMotion(dt, vis, R);
   player.arcMesh.material.opacity = Math.max(0, player.arcMesh.material.opacity - dt*4);
 
-  // saber hum swells with the action
-  if (shared.humGain) shared.humGain.gain.value = (G.mode === 'play' && G.hero === 'jedi') ? 0.025 + (player.atkT > 0 ? 0.05 : 0) + (player.blockHeld ? 0.02 : 0) : 0;
+  // (the saber hum is driven from audio/director.js)
 }
 
 // Body facing, plus the whole-body moves: slam dive, flips/twirls, and the Jedi's lean into velocity.

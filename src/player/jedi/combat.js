@@ -96,9 +96,8 @@ export function tryAttack(flow = false){
   } else {
     player.vel.addScaledVector(fwd(), 7 * lunge);   // step into the strike
   }
-  S.swing();
+  S.swing(G.hero === 'mando' ? 'dark' : G.stance);   // the blade's whoosh, voiced by form
   if (flow && G.hero !== 'mando') sfx(1250, 0.06, 'sine', 0.022, 1900);   // a faint ring: the link landed in rhythm
-  if (G.stance === 'strong') sfx(220, 0.25, 'sawtooth', 0.05, 70);   // heavier whoosh
 }
 // Bail out of a saber swing at ANY point — into a guard/parry, a Force power, or a dash. The unspent cut is
 // forfeit (that's the price of going defensive/Force mid-stroke). PARTIAL cost: an EARLY feint (first ~30%) is
@@ -127,7 +126,7 @@ export function applySwingDamage(step){
   const finisher = step === 2;
   let knock = (finisher ? 15 : 6) * st.knock * player.up.knock;
   // a ringing BESKAR CLANG on every heavy darksaber blow (the finisher, or any hit while a foe is in range)
-  const beskarClang = () => { sfx(1500, 0.1, 'square', 0.06, 760); sfx(2300, 0.09, 'triangle', 0.05, 520); sfx(420, 0.08, 'sawtooth', 0.05, 90); };
+  const beskarClang = () => S.clash(V3(playerPos().x + fwd().x*1.4, 1.4, playerPos().z + fwd().z*1.4), false);
   // DARKSABER — MAUL-STYLE OVERHEAD: the 3rd combo hit is a big downward smash (extra knockback + a quake)
   if (isDark && finisher){
     knock *= 1.6;
@@ -135,7 +134,7 @@ export function applySwingDamage(step){
     G.shake = Math.max(G.shake, 1.1); G.hitstop = Math.max(G.hitstop, 0.1);
     spawnGroundShock(V3(pp0.x + fwd().x*1.6, 0.1, pp0.z + fwd().z*1.6), 0xc9a6ff, 6, 0.4, 0.7);
     burst(V3(pp0.x + fwd().x*1.6, 0.6, pp0.z + fwd().z*1.6), 0xc9a6ff, 16, 9, 5, 1.0);
-    S.slam(); sfx(70, 0.26, 'sine', 0.16, 30); beskarClang();
+    S.slam(); beskarClang();
   }
   const riposte = player.riposteT > 0;
   if (riposte){   // parry reward: the answer lands twice as hard (more with Riposte Master)
@@ -221,7 +220,7 @@ export function applySwingDamage(step){
       burst(ip, 0x9a9a9a, 8, 9, 6, 1.1);   // chips of stone
       spawnHitSpark(ip, 0xffffff, 2.0);
       screenFlash('radial-gradient(ellipse at center, rgba(180,90,255,.4), transparent 62%)', 0.7, 0.3);
-      sfx(50, 0.34, 'sine', 0.2, 20); sfx(150, 0.12, 'square', 0.09, 50); sfx(90, 0.2, 'sawtooth', 0.08, 36);
+      S.slam(ip); S.clash(ip, true);
     } else { player.arcMesh.scale.setScalar(1); }
   }
   // TEMPEST capstone — finishers erupt in a small Force shockwave: a SEPARATION tool (low dmg, strong knock,
@@ -281,7 +280,7 @@ export function forceKick(){
     G.hitstop = Math.max(G.hitstop, 0.05); G.shake = Math.max(G.shake, 0.3);
     burst(ip, 0xbfe8ff, 7, 8, 4, 0.8); spawnHitSpark(ip, 0xcfe0ec, 1.0);
   } else burst(ip, 0xcfe0ec, 3, 5, 3);
-  S.dash(); sfx(170, 0.1, 'square', 0.06, 70); sfx(90, 0.08, 'sawtooth', 0.05, 40);
+  S.jump(); if (hit) S.punch(ip, 1.2);
 }
 
 /* DEFLECT ANIMATION — start a blade catch toward something arriving at `from` (a bolt, or a blocked blow). The

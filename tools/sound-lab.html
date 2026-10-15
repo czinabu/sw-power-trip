@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>POWER TRIP sound lab</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  html, body { margin: 0; background: #0d1016; font: 13px/1.4 system-ui, sans-serif; color: #cfd6e0; }
+  main { max-width: 980px; margin: 0 auto; padding: 18px 16px 40px; }
+  h1 { font-size: 16px; letter-spacing: .12em; margin: 0 0 4px; }
+  p.hint { color: #7d8898; margin: 0 0 14px; }
+  h2 { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: #9aa6b6; margin: 18px 0 6px; }
+  .row { display: flex; gap: 6px; flex-wrap: wrap; }
+  button { background: #1b212b; color: inherit; border: 1px solid #2c3442; padding: 5px 10px; cursor: pointer; font: inherit; }
+  button:hover { border-color: #3d4a5e; }
+  button.on { border-color: #5fd8ff; color: #fff; }
+  label { display: inline-flex; gap: 8px; align-items: center; margin-right: 16px; }
+  #state { position: fixed; right: 12px; bottom: 10px; color: #7d8898; font-size: 12px; white-space: pre; }
+</style>
+</head>
+<body>
+<main>
+  <h1>SOUND LAB</h1>
+  <p class="hint">Every sound and each world's score, played through the game's own audio code. Click anything to start audio.</p>
+  <div id="ui"></div>
+</main>
+<div id="state"></div>
+<script type="module" src="./sound-lab.js"></script>
+</body>
+</html>

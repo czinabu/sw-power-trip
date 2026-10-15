@@ -11,6 +11,7 @@ import { camera, composer } from './engine/renderer.js';
 import { cycleQuality } from './engine/quality.js';
 import { audioInit } from './audio/sfx.js';
 import { MUSIC } from './audio/music.js';
+import { updateAudio } from './audio/director.js';
 import './utils.js';
 import { updateParticles } from './fx/particles.js';
 import './fx/floaters.js';
@@ -121,6 +122,7 @@ function tick(){
   updateVFX(dt);
   updateCamera(dt);
   MUSIC.updateState();   // adaptive score follows the fight (menu → combat → boss surge → victory/death)
+  updateAudio(rawDt);    // saber hum, jetpack, flamethrower, ambience, muffle
   composer.render();
 }
 tick();

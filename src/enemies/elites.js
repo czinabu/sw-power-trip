@@ -50,7 +50,7 @@ export function volatileBlast(pos, source){
   burst(pos, 0xff7722, 18, 10, 7); burst(pos, 0xffd755, 10, 7, 5);
   spawnGroundShock(pos.clone(), 0xff8a3a, 5, 0.5, 0.6);
   G.shake = Math.max(G.shake, 0.6); G.hitstop = Math.max(G.hitstop, 0.04);
-  S.boom();
+  S.boom(pos, 0.9);
   for (const o of enemies){
     if (o === source || o.dead) continue;
     if (o.group.position.distanceTo(pos) < 5)

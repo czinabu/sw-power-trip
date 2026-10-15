@@ -1,7 +1,7 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
 // XP, skill and store helpers, survival power-up purchases.
 
-import { sfx } from '../audio/sfx.js';
+import { S } from '../audio/sfx.js';
 import { clamp } from '../utils.js';
 import { burst } from '../fx/particles.js';
 import { floater } from '../fx/floaters.js';
@@ -68,5 +68,5 @@ export function buyPower(p){
   if (!G.powerLv) G.powerLv = {};
   G.xp -= cost; G.powerLv[p.id] = powerLv(p.id) + 1; p.apply();
   floater(playerPos(), p.nm + ' ×' + G.powerLv[p.id] + '!', '#ffd24a'); burst(playerPos().clone().setY(1.6), 0xffd24a, 12, 6, 5);
-  sfx(620, 0.18, 'sine', 0.12, 1100); document.getElementById('xpval').textContent = G.xp; renderProgress();
+  S.reward(1); document.getElementById('xpval').textContent = G.xp; renderProgress();
 }

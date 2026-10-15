@@ -5,7 +5,8 @@ import * as THREE from 'three';
 import { CFG } from '../data/config.js';
 import { LEVELS } from '../data/levels.js';
 import { scene } from '../engine/renderer.js';
-import { sfx } from '../audio/sfx.js';
+import { S } from '../audio/sfx.js';
+import { MUSIC } from '../audio/music.js';
 import { V3, rand } from '../utils.js';
 import { burst } from '../fx/particles.js';
 import { floater } from '../fx/floaters.js';
@@ -89,7 +90,7 @@ export function spawnChampion(){
   makeBossBar(e);
   G.shake = Math.max(G.shake, 0.9);
   showBanner('', 'A WARBRINGER RISES', 2.2);
-  sfx(70, 0.7, 'sawtooth', 0.2, 30); sfx(140, 0.5, 'square', 0.1, 60);
+  S.roar(e.group.position); S.slam(e.group.position);
 }
 
 export function startEndless(){
@@ -128,6 +129,7 @@ export function startEndlessWave(){
   const mut = G.mut ? MUTATORS.find(m => m.id === G.mut) : null;
   const head = milestone ? (n % 10 === 0 ? '◈ CHAMPION ◈' : '◈ ELITE SURGE ◈') : '';
   if (!milestone) showBanner(head, 'WAVE ' + n + (mut ? '  ·  ' + mut.name : ''), 1.6);
+  MUSIC.waveSting();
   if (mut) floater(V3(playerPos().x, 2.2, playerPos().z), mut.name + ' — ' + mut.tip, mut.col);
 }
 export function endlessWaveCleared(){

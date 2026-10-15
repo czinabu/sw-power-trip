@@ -24,7 +24,7 @@ function darksaberSlash(){
   player.darkT = DARK_DUR; player.darkApplied = false; player.aiming = 0.6;
   if (player.darksaberMesh) player.darksaberMesh.visible = true;
   player.vel.addScaledVector(fwd(), 6.5);   // lunge into the cut
-  S.swing(); sfx(150, 0.2, 'sawtooth', 0.09, 60); sfx(70, 0.22, 'sine', 0.1, 38);
+  S.swing('dark'); sfx(70, 0.22, 'sine', 0.1, 38);
 }
 export function updateDark(dt){
   if (player.darkLight) player.darkLight.intensity = player.darkT > 0 ? 6 : 0;
@@ -40,7 +40,7 @@ export function updateDark(dt){
     if (b.friendly) continue;
     if (b.mesh.position.distanceTo(V3(pp.x, b.mesh.position.y, pp.z)) < 2.8){
       b.friendly = true; b.dir.set(f.x, 0, f.z).normalize(); b.dmg = 34; b.speed *= 1.3; b.mesh.material.color.setHex(0xb98cff);
-      clashFlash(b.mesh.position.clone(), 0xc9a6ff, false); S.deflect();
+      clashFlash(b.mesh.position.clone(), 0xc9a6ff, false); S.deflect(b.mesh.position);
     }
   }
   // the cut lands just past the apex
