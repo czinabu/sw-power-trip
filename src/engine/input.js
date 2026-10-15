@@ -25,7 +25,7 @@ import {
 import { mandoWeapon, switchWeapon, startReload, fireTrigger, mandoFlame } from '../player/mando/weapons.js';
 import { startLevel } from '../game/flow.js';
 import { showBanner } from '../ui/banners.js';
-import { overlay } from '../ui/menus.js';
+import { overlay, setSaberGrip } from '../ui/menus.js';
 
 const inputActive = () => document.pointerLockElement === renderer.domElement || (shared.lockFallback && G.mode === 'play');
 document.addEventListener('mousemove', (e) => {
@@ -141,6 +141,11 @@ document.addEventListener('keydown', (e) => {
     // ADAPTIVE FORK KEYS — each either/or pair shares ONE bind (you only ever own one of the pair).
     if (k === 'x'){ if (G.unlocked.slam) forceSlam(); else if (G.unlocked.mend) forceMend(); }                         // UTIL: force SLAM or MEND
     if (k === 'r' && G.mode === 'play'){ if (G.unlocked.judge) forceJudgement(); else if (G.unlocked.repulse) forceRepulse(); }   // ULT: JUDGEMENT or REPULSE ('R' still restarts when dead/victory below)
+    if (k === 'g' && !e.repeat && G.mode === 'play'){   // GRIP — flip between a regular and a reverse (Shien) saber grip mid-fight
+      setSaberGrip(G.saberGrip === 'reverse' ? 'regular' : 'reverse');
+      showBanner('', G.saberGrip === 'reverse' ? 'REVERSE GRIP' : 'REGULAR GRIP', 0.8);
+      sfx(520, 0.06, 'triangle', 0.04, 760);
+    }
     if (k === '1') switchStance('fast');
     if (k === '2') switchStance('medium');
     if (k === '3') switchStance('strong');
@@ -151,7 +156,7 @@ document.addEventListener('keydown', (e) => {
     overlay.style.display = 'none';
     document.getElementById('banner').style.opacity = '0';
     startLevel(again ? 0 : G.levelIdx);
-    renderer.domElement.requestPointerLock();
+    try { const p = renderer.domElement.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch(e){}
   }
 });
 document.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });

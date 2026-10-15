@@ -187,7 +187,7 @@ export function closeProgress(){
   if (!G.skillSelect) return;
   G.skillSelect = false;
   document.getElementById('skilltree').style.display = 'none';
-  if (!shared.lockFallback){ try { renderer.domElement.requestPointerLock(); } catch(e){} }
+  if (!shared.lockFallback){ try { const p = renderer.domElement.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch(e){} }
   // a clear "you're patched up" beat as you drop back in — green motes + a RECOVERED floater
   const pp0 = playerPos();
   burst(V3(pp0.x, 1.3, pp0.z), 0x7bffae, 18, 6, 5, 1.0); burst(V3(pp0.x, 1.1, pp0.z), 0xc8ffd8, 10, 4, 4);

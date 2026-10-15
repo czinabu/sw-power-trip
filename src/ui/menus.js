@@ -111,7 +111,7 @@ function setSwingMirror(on){
 setSwingMirror(localStorage.getItem('sw_swingmirror') === '1');
 document.getElementById('swingctl').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setSwingMirror(!G.swingMirror); });
 // SABER GRIP — regular or reverse (Shien) lightsaber grip; a look preference, swings hit the same either way
-function setSaberGrip(grip){
+export function setSaberGrip(grip){
   G.saberGrip = grip === 'reverse' ? 'reverse' : 'regular';
   try { localStorage.setItem('sw_sabergrip', G.saberGrip); } catch(e){}
   applySaberGrip(player, G.saberGrip);
@@ -180,19 +180,40 @@ overlay.addEventListener('click', (e) => {
   // only the primary button or empty backdrop launches/resumes: a stray click on a label or setting shouldn't
   if (e.target.closest('#settingsrow, #runsummary, #setup, #homeconfirm, .ov-foot')) return;
   audioInit();
-  try { renderer.domElement.requestPointerLock(); } catch(e){}
+  requestLock();
   setTimeout(() => {
-    if (document.pointerLockElement !== renderer.domElement){
-      shared.lockFallback = true;
-      beginPlay();
+    if (document.pointerLockElement === renderer.domElement) return;
+    if (shared.lockWorked){
+      // the lock works here but this request was refused — usually the browser's ~1s cooldown after Esc. Stay on the
+      // overlay and ask for another click rather than dropping into the unlocked fallback with a loose cursor.
+      document.getElementById('ovsub').textContent = 'CLICK AGAIN TO LOCK THE CURSOR';
+      return;
     }
+    shared.lockFallback = true;   // pointer lock never worked on this page (e.g. an embedded preview) — play unlocked
+    beginPlay();
   }, 350);
 });
+// POINTER LOCK — newer browsers return a promise that rejects on refusal; swallow it (the overlay handles the outcome)
+function requestLock(){
+  try { const p = renderer.domElement.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch(e){}
+}
+// a refused lock while a fight is running (restart / R / closing the upgrade screen too soon after Esc) would leave the
+// game live with a free cursor and dead mouse-look — pause instead, so one click on RESUME takes the lock again
+document.addEventListener('pointerlockerror', () => {
+  if (document.pointerLockElement || shared.lockFallback || G.skillSelect || G.mode !== 'play' || overlay.style.display === 'flex') return;
+  overlay.style.display = 'flex';
+  G.paused = true;
+  setOverlayState('pause');
+  if (shared.lockWorked) document.getElementById('ovsub').textContent = 'CLICK RESUME TO LOCK THE CURSOR';
+});
+// in the unlocked fallback, keep offering the real lock: a click on the game takes it if the browser now allows it
+renderer.domElement.addEventListener('mousedown', () => { if (shared.lockFallback && G.mode === 'play') requestLock(); });
 document.addEventListener('pointerlockchange', () => {
   const locked = document.pointerLockElement === renderer.domElement;
   if (G.skillSelect && !locked) return;   // skill tree owns the cursor — don't show the pause overlay
   if (locked){
     shared.lockFallback = false;
+    shared.lockWorked = true;
     beginPlay();
   } else if (!shared.lockFallback){
     overlay.style.display = 'flex';
@@ -214,7 +235,7 @@ function restartRun(){
   G.mode = 'play'; G.slowmo = 1; G.paused = false;
   document.body.classList.remove('in-menu'); setHowTo(false);
   if (G.endless) startEndless(); else startLevel(0);   // a survival run restarts as survival, not the campaign
-  if (!shared.lockFallback){ try { renderer.domElement.requestPointerLock(); } catch(e){} }
+  if (!shared.lockFallback) requestLock();
 }
 document.getElementById('restartBtn').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); restartRun(); });
 // MAIN MENU — abandon the run and go back to the title screen. From pause it asks first (a run is easy to lose
