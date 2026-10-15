@@ -15,6 +15,7 @@ import { fwd, playerPos } from '../player/helpers.js';
 import { bossTelegraph } from '../enemies/damage.js';
 import { fireBolt } from '../enemies/bolts.js';
 import { updateBossLightFX } from './light.js';
+import { buildBoss } from './mesh.js';
 import { spawnGroundShock } from '../fx/vfx.js';
 import { clampToArena } from '../world/collision.js';
 import { hurtPlayer } from '../player/damage.js';
@@ -27,111 +28,6 @@ import { diffHpMul } from '../data/difficulty.js';
 /* ============================================================
    BOSS — DARTH VEXIS
    ============================================================ */
-function buildBoss(kind){
-  const mando = kind === 'mando';
-  const g = new THREE.Group();
-  const mat = new THREE.MeshStandardMaterial({ color: mando ? 0x9aa0ab : 0x14090e, roughness: mando ? 0.38 : 0.85, metalness: mando ? 0.75 : 0 });
-  // BODYGLOVE/JOINT material for the segments between armor plates — same two-material convention buildEnemyMesh
-  // uses, so the boss reads as a bigger, more ornate version of the same armored-trooper silhouette, not a separate
-  // species of "smooth pill." A single CapsuleGeometry used to BE the entire torso+legs (no limbs at all); now it's
-  // a real stacked rig: boots → shins → knees → thighs → pelvis → waist → chest → collar, plus both arms.
-  const joint = new THREE.MeshStandardMaterial({ color: mando ? 0x40454d : 0x05030a, roughness: mando ? 0.5 : 0.9, metalness: mando ? 0.7 : 0.1 });
-  function bossLeg(side){
-    const boot = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.18, 0.55), joint);
-    boot.position.set(0.3*side, 0.1, 0.08); boot.castShadow = true; g.add(boot);
-    const shin = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.17, 0.55, 8), mat);
-    shin.position.set(0.3*side, 0.42, 0.02); shin.castShadow = true; g.add(shin);
-    const knee = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.13, 0.32), joint);
-    knee.position.set(0.3*side, 0.72, 0.02); knee.castShadow = true; g.add(knee);
-    const thigh = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.2, 0.5, 8), joint);
-    thigh.position.set(0.3*side, 1.0, 0); thigh.castShadow = true; g.add(thigh);
-  }
-  bossLeg(-1); bossLeg(1);
-  const pelvis = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.4, 0.5), joint);
-  pelvis.position.y = 1.3; pelvis.castShadow = true; g.add(pelvis);
-  const waist = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.58, 0.5, 10), joint);
-  waist.position.y = 1.65; g.add(waist);
-  const chest = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.85, 0.62), mat);
-  chest.position.y = 2.15; chest.castShadow = true; g.add(chest);
-  const collar = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.22, 0.5), joint);
-  collar.position.y = 2.62; g.add(collar);
-  // off-hand arm — hangs at the side, static (the weapon arm gets its own articulated rig below)
-  function bossOffArm(){
-    const upper = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.14, 0.55, 8), mat);
-    upper.position.set(-0.78, 2.2, 0); upper.rotation.z = 0.12; upper.castShadow = true; g.add(upper);
-    const elbow = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.16, 0.2), joint);
-    elbow.position.set(-0.84, 1.86, 0.04); elbow.castShadow = true; g.add(elbow);
-    const fore = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.1, 0.5, 8), joint);
-    fore.position.set(-0.87, 1.54, 0.08); fore.castShadow = true; g.add(fore);
-    const fist = new THREE.Mesh(new THREE.SphereGeometry(0.14, 7, 6), joint);
-    fist.position.set(-0.89, 1.24, 0.13); g.add(fist);
-  }
-  bossOffArm();
-  if (mando){
-    // a bronze battle-tabard + a back-slung JETPACK instead of the Sith cape
-    const tab = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.5, 0.1),
-      new THREE.MeshStandardMaterial({ color: 0x7a5a32, roughness: 0.75, metalness: 0.35 }));
-    tab.position.set(0, 1.25, -0.42); g.add(tab);
-    const jet = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.05, 0.42),
-      new THREE.MeshStandardMaterial({ color: 0x40454d, roughness: 0.5, metalness: 0.8 }));
-    jet.position.set(0, 2.05, -0.5); jet.castShadow = true; g.add(jet);
-    for (const sx of [-0.22, 0.22]){
-      const th = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.13, 0.32, 8),
-        new THREE.MeshBasicMaterial({ color: 0x66ccff, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false }));
-      th.position.set(sx, 1.45, -0.62); g.add(th);
-    }
-    // shoulder pauldrons for a heavier silhouette
-    for (const sx of [-1, 1]){
-      const pd = new THREE.Mesh(new THREE.SphereGeometry(0.3, 10, 8), mat);
-      pd.scale.set(1, 0.7, 1); pd.position.set(0.62*sx, 2.45, 0); pd.castShadow = true; g.add(pd);
-    }
-  } else {
-    const cape = new THREE.Mesh(new THREE.BoxGeometry(1.5, 2.4, 0.12),
-      new THREE.MeshStandardMaterial({ color: 0x0a0508, roughness: 1 }));
-    cape.position.set(0, 1.6, -0.5); g.add(cape);
-    // spiked dark-plate shoulder armor — the sith side had no shoulder silhouette at all before
-    for (const sx of [-1, 1]){
-      const pd = new THREE.Mesh(new THREE.SphereGeometry(0.28, 9, 7), mat);
-      pd.scale.set(1, 0.7, 1); pd.position.set(0.58*sx, 2.45, 0); pd.castShadow = true; g.add(pd);
-      const spike = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.32, 6), joint);
-      spike.position.set(0.58*sx, 2.66, 0); spike.castShadow = true; g.add(spike);
-    }
-  }
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.34, 12, 10),
-    new THREE.MeshStandardMaterial({ color: mando ? 0xb6bcc6 : 0x1a0d12, roughness: 0.4, metalness: mando ? 0.85 : 0.5 }));
-  head.position.y = 3.0; head.castShadow = true; g.add(head);
-  // a T-visor (mando) or burning eyes (sith)
-  const eyeCol = mando ? 0xffc23a : 0xff2222;
-  const eyes = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.07, 0.06), new THREE.MeshBasicMaterial({ color: eyeCol }));
-  eyes.position.set(0, 3.02, 0.3); g.add(eyes);
-  if (mando){   // vertical bar of the T-visor
-    const vbar = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.22, 0.06), new THREE.MeshBasicMaterial({ color: eyeCol }));
-    vbar.position.set(0, 2.94, 0.31); g.add(vbar);
-  }
-  // weapon — a red saber (sith) or a glowing beskar war-spear (mando)
-  const wpnCol = mando ? 0xffaa33 : 0xff2222;
-  const pivot = new THREE.Group(); pivot.position.set(0.75, 2.1, 0.1);
-  const blade = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.035, 2.1, 8),
-    new THREE.MeshBasicMaterial({ color: 0xffffff }));
-  blade.position.y = 1.25;
-  const glow = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.1, 2.15, 8),
-    new THREE.MeshBasicMaterial({ color: wpnCol, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false }));
-  glow.position.y = 1.25;
-  const sl = new THREE.PointLight(wpnCol, 9, 10); sl.position.y = 1.2;
-  // weapon-arm — a short shoulder-to-grip bridge so the blade reads as HELD, not bolted onto a bare shoulder.
-  // Sits as a sibling of `hand` (not nested inside it) so it doesn't inherit the hand's swing rotation.
-  const armUpper = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.13, 0.48, 8), mat);
-  armUpper.position.set(0, 0.05, -0.08); armUpper.rotation.z = -0.25; armUpper.castShadow = true; pivot.add(armUpper);
-  const armElbow = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.16, 0.2), joint);
-  armElbow.position.set(-0.1, -0.2, -0.1); armElbow.castShadow = true; pivot.add(armElbow);
-  const hand = new THREE.Group(); hand.add(blade, glow, sl); hand.rotation.z = -0.6;
-  pivot.add(hand); g.add(pivot);
-  const aura = new THREE.PointLight(mando ? 0xff8a3a : 0x8822cc, 6, 14); aura.position.y = 2; g.add(aura);
-  g.scale.setScalar(1.35);
-  g.userData = { bodyMat: mat, hand, pivot, eyes };
-  return g;
-}
-
 export function spawnBoss(){
   const half = LEVELS[G.levelIdx].arena/2;
   const mando = G.hero === 'mando';
