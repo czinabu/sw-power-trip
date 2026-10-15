@@ -19,9 +19,23 @@ import { hurtPlayer } from '../player/damage.js';
 import { enemyDmgScale } from '../game/survival.js';
 import { ENGAGE } from '../data/enemies.js';
 import { updateDirector, usesToken, dropToken, rangedSlotFree, behindCamera } from './director.js';
+import { updateNav, navSteer, navClass, navClearance } from './nav.js';
+
+const NAV_EVERY = 0.1;      // seconds between a foe's route checks (the field itself refreshes in nav.js)
+const STUCK_AFTER = 0.5;    // window (s) over which a chasing foe must make headway, or it sidesteps to work itself free
+const steer = { x: 0, z: 0 };
+
+/* is there real cover between a melee foe and its target, tall enough that a swing can't reach over it? A solid the
+   target is standing ON doesn't count (the high-ground rule in hurtPlayer handles that) */
+function wallBetween(ax, az, b){
+  const c = segBlockedBySolids(ax, az, b.x, b.z);
+  if (!c || c.h < 1.3) return false;   // low walls you can still be struck over
+  return b.y < c.h - 0.5;
+}
 
 export function updateEnemies(dt){
   const pp = playerPos();
+  updateNav(dt, pp);    // refresh the flow field toward the player (nav.js)
   updateDirector(dt);   // hand out attack tokens before anyone decides to swing
   for (let i = enemies.length-1; i >= 0; i--){
     const e = enemies[i], g = e.group, t = e.t;
@@ -73,7 +87,20 @@ export function updateEnemies(dt){
           S.windup(g.position, true);
           break;
         }
-        let mx = tx, mz = tz;
+        // PATHING — a grounded foe hunting the player checks its route a few times a second: straight in when the way
+        // is open, otherwise along the flow field around cover and live hazards (nav.js). While it's routing, the
+        // stalking ring, cover-hugging and local avoidance below stand aside so nothing pulls it back into the wall.
+        const er = 0.7 * (t.scale || 1);
+        let pathing = false, wx = tx, wz = tz;
+        if (tgtPos && !t.fly && !e.converted){
+          if ((e.navT = (e.navT || 0) - dt) <= 0){
+            e.navT = NAV_EVERY * rand(0.8, 1.2);
+            e.navDirect = navSteer(g.position.x, g.position.z, tgtPos.x, tgtPos.z, navClass(er), steer);
+            e.navX = steer.x; e.navZ = steer.z;
+          }
+          if (!e.navDirect){ pathing = true; wx = e.navX; wz = e.navZ; }
+        }
+        let mx = wx, mz = wz;
         // separation from other enemies
         for (const o of enemies){
           if (o === e || o.dead) continue;
@@ -85,7 +112,7 @@ export function updateEnemies(dt){
         // so a crowd takes turns instead of piling into one wall of swings (see ENGAGE / director.js)
         const stalking = !!tgtPos && usesToken(e) && !e.token;
         let paceMul = 1;
-        if (stalking){
+        if (stalking && !pathing){
           const ring = t.range + ENGAGE.ringPad;
           if (e.circle === undefined) e.circle = Math.random() < 0.5 ? 1 : -1;
           if ((e.circleT = (e.circleT || 0) - dt) <= 0){ e.circle *= -1; e.circleT = rand(1.4, 3.2); }
@@ -100,14 +127,21 @@ export function updateEnemies(dt){
         // COVER — ranged ground troops (not flyers, who stay airborne by design; not converted allies) check LOS to
         // their target each frame. No clear shot → steer toward the near side of whatever's in the way and hold
         // there (peek) instead of standing exposed in the open. ANTI-TURTLE: after 3s with no shot, give up hiding
-        // and just engage as before — guarantees they can't camp forever if the geometry boxes them in.
+        // and path around the cover for a clear shot, so they can't camp forever behind it.
         let exposed = true;
         if (t.ranged && !t.fly && !e.converted){
           exposed = !segBlockedBySolids(g.position.x, g.position.z, tgtPos.x, tgtPos.z);
           e.hideT = exposed ? 0 : (e.hideT || 0) + dt;
         }
-        const forceExposed = (e.hideT || 0) > 3.0;
-        if (t.ranged && !t.fly && !e.converted && !exposed && !forceExposed){
+        // out of firing range there's nothing to hide from yet: advance. Once a trooper gives up hiding it commits to
+        // flanking for a few seconds instead of ducking back behind the first wall it passes
+        if ((e.hideT || 0) > 3.0){ e.flankT = 4; e.hideT = 0; }
+        if (e.flankT > 0) e.flankT -= dt;
+        const forceExposed = e.flankT > 0 || (tgtPos && dist > t.range);
+        if (t.ranged && !t.fly && !e.converted && !exposed && forceExposed){
+          // ANTI-TURTLE: done hiding, and firing into the wall is pointless — work around to a clear shot instead
+          mx = wx; mz = wz;
+        } else if (t.ranged && !t.fly && !e.converted && !exposed){
           const cv = segBlockedBySolids(g.position.x, g.position.z, tgtPos.x, tgtPos.z);
           const cr = cv.box ? Math.hypot(cv.hx, cv.hz) : cv.r;
           const awayX = cv.x - tgtPos.x, awayZ = cv.z - tgtPos.z, awayL = Math.hypot(awayX, awayZ) || 1;
@@ -115,20 +149,19 @@ export function updateEnemies(dt){
           const toX = coverX - g.position.x, toZ = coverZ - g.position.z, toL = Math.hypot(toX, toZ) || 1;
           mx = toL > 0.6 ? toX/toL : 0; mz = toL > 0.6 ? toZ/toL : 0;
         } else if (t.ranged && dist < keepR){ mx = -tx; mz = -tz; }   // exposed (or flyer) & too close — keep distance
-        else if (t.ranged && !t.fly && !e.converted && dist < t.range * 1.1){
+        else if (t.ranged && !t.fly && !e.converted && dist < t.range){
           // in firing range, waiting on a shot — SIDESTEP instead of standing still as a turret
           if (e.circle === undefined) e.circle = Math.random() < 0.5 ? 1 : -1;
           if ((e.circleT = (e.circleT || 0) - dt) <= 0){ e.circle *= -1; e.circleT = rand(1.0, 2.4); }
-          mx = (mx - tx) + tx*0.2 - tz*e.circle*ENGAGE.strafe; mz = (mz - tz) + tz*0.2 + tx*e.circle*ENGAGE.strafe;
+          mx = (mx - wx) + tx*0.2 - tz*e.circle*ENGAGE.strafe; mz = (mz - wz) + tz*0.2 + tx*e.circle*ENGAGE.strafe;
           paceMul = 0.6;
         }
         // OBSTACLE AVOIDANCE — arc around pillars & crates instead of grinding into them.
         // Steer around only the SINGLE most-threatening solid and LOCK the turn direction while we're
         // engaged with it (hysteresis). The old per-solid steering flip-flopped frame to frame, which
         // is what pinned foes against cover; committing to one side lets them flow around it.
-        {
+        if (!pathing){
           let hx = mx, hz = mz; const hl = Math.hypot(hx, hz) || 1; hx /= hl; hz /= hl;
-          const er = 0.7 * (t.scale || 1);
           let threat = null, threatStr = 0, threatPerp = 0, threatOd = 0, threatRad = 0;
           for (const c of solids){
             if (c.climbable) continue;   // shallow steps (the temple dais) are walked OVER, not steered around
@@ -160,16 +193,28 @@ export function updateEnemies(dt){
           const pl = Math.hypot(tx, tz) || 1;
           mx += (-tz/pl) * e.orbit * 0.85; mz += (tx/pl) * e.orbit * 0.85;
         }
+        // UNSTICK — pinned for a beat (a corner, a crowd at a gap): sidestep toward the open side, then re-route
+        if (e.unstickT > 0){
+          e.unstickT -= dt;
+          const hl = Math.hypot(mx, mz) || 1, ux = mx/hl, uz = mz/hl;
+          mx = ux - uz * e.unstickSide * 1.4; mz = uz + ux * e.unstickSide * 1.4;
+        }
         const ml = Math.hypot(mx, mz) || 1;
         const esp = e.spd * paceMul * (G.mut === 'berserk' ? 1.3 : 1);   // BERSERK mutator: enemies surge in faster
         g.position.x += (mx/ml) * esp * dt;
         g.position.z += (mz/ml) * esp * dt;
+        // remember where this step started, to check after collision whether it went anywhere (out of the scrum only:
+        // stalkers circling at the ring are meant to hold their ground)
+        e.stepX = g.position.x - (mx/ml) * esp * dt; e.stepZ = g.position.z - (mz/ml) * esp * dt;
+        e.stepWant = (!t.fly && dist > t.range + ENGAGE.ringPad + 1.5) ? esp * dt : 0;
         // (grounded y comes from the surface height set after collision — so foes can WALK UP the dais; flyers hover)
         if (dist < t.range && !stalking){
           if (t.bomber){ e.state = 'fuse'; e.st = t.fuse; sfx(880, 0.08, 'square', 0.05, 880); }   // light the fuse
           // COVER GATE: a hidden ranged ground trooper won't commit to a windup it can't land — it just keeps
           // peeking (cover-seeking movement above) until exposed or the anti-turtle valve kicks in.
-          else if (t.ranged && !t.fly && !e.converted && !exposed && !forceExposed){ /* no clear shot — hold */ }
+          else if (t.ranged && !t.fly && !e.converted && !exposed){ /* no clear shot — keep peeking, or flank for one */ }
+          // a melee foe on the far side of tall cover doesn't swing at the wall — it keeps routing around
+          else if (!t.ranged && !e.converted && wallBetween(g.position.x, g.position.z, tgtPos)){ /* go around */ }
           // RANGED SLOTS: only a few troopers aim at once, so a firing line staggers its shots
           else if (t.ranged && !e.converted && !rangedSlotFree(t.sniper)){ /* hold — sidestep and wait */ }
           // MELEE WINDUP STAGGER: hostile (non-converted) melee foes share a cooldown so a crowd doesn't all coil &
@@ -188,7 +233,8 @@ export function updateEnemies(dt){
         // SABOTEUR — still rushing, but now armed: blink/whine faster as the fuse burns, then DETONATE.
         if (tgtPos) g.rotation.y = Math.atan2(tx, tz);
         const burn = 1 - Math.max(e.st, 0) / t.fuse;     // 0→1
-        g.position.x += tx * e.spd * 1.05 * dt; g.position.z += tz * e.spd * 1.05 * dt;   // lunges the last step in
+        const fx = e.navDirect === false ? e.navX : tx, fz = e.navDirect === false ? e.navZ : tz;   // around cover, not into it
+        g.position.x += fx * e.spd * 1.05 * dt; g.position.z += fz * e.spd * 1.05 * dt;   // lunges the last step in
         const blink = (Math.sin(G.gt * (10 + burn*40)) * 0.5 + 0.5);
         if (g.userData.bombCore){ g.userData.bombCore.scale.setScalar(1 + burn*0.8 + blink*0.4); g.userData.bombCore.material.color.setHex(blink > 0.5 ? 0xffffff : t.eye); }
         g.userData.bodyMat.emissive.setHex(0xff7a1a); g.userData.bodyMat.emissiveIntensity = burn * 1.8 * blink;
@@ -416,6 +462,22 @@ export function updateEnemies(dt){
       const sup = collideSolids(g.position, 0.7 * (e.t.scale || 1), true);
       g.position.y = sup + Math.abs(Math.sin(G.gt*8 + i)) * 0.05;
     }
+    // STUCK CHECK — over a short window, a chasing foe that covered under a third of the ground it tried to (pinned in
+    // a corner, or jittering back and forth against one) picks the more open side, sidesteps there and re-routes
+    if (e.stepWant > 0 && e.state === 'chase'){
+      if (!(e.progT > 0)){ e.progX = e.stepX; e.progZ = e.stepZ; e.progWant = 0; e.progT = 0; }
+      e.progT += dt; e.progWant += e.stepWant;
+      if (e.progT >= STUCK_AFTER){
+        const moved = Math.hypot(g.position.x - e.progX, g.position.z - e.progZ);
+        if (moved < e.progWant * 0.3 && !(e.unstickT > 0)){
+          const l = navClearance(g.position.x - tz*1.6, g.position.z + tx*1.6), r = navClearance(g.position.x + tz*1.6, g.position.z - tx*1.6);
+          e.unstickSide = l >= r ? 1 : -1;   // the side of the line to the target with more room
+          e.unstickT = 0.6; e.navT = 0;
+        }
+        e.progT = 0;
+      }
+    } else e.progT = 0;
+    e.stepWant = 0;
     // MID-BOSS health bar — float it overhead, billboard to the camera, scale the fill left-anchored
     if (e.hpBar){
       e.hpBar.visible = !e.dead && e.state !== 'fade';
