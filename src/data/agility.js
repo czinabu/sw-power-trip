@@ -111,14 +111,14 @@ export const AIR_GUARDS = {
       tuck:   { hand: [0.2, -0.04, 0.24], blade: [0.35, 0.65, -0.65], twist: 0, off: { hand: [-0.2, -0.04, 0.24], pole: OFF } },
       layout: { hand: [0.46, 0.08, 0.06], blade: [0.75, 0.62, -0.25], twist: 0, off: { hand: [-0.48, 0.1, 0.08], pole: OFF } },
       palm:   { hand: [0.38, -0.06, -0.06], blade: [0.5, 0.62, -0.6], twist: 0.08, off: { hand: [-0.16, -0.4, 0.44], pole: OFF } },
-      run:    { hand: [0.32, -0.14, 0.1], blade: [0.12, 0.72, -0.68], twist: 0.04, off: { hand: [-0.28, -0.1, 0.2], pole: OFF } },
+      run:    { hand: [0.32, -0.12, 0.22], blade: [0.2, 0.9, -0.38], twist: 0.04, off: { hand: [-0.28, -0.1, 0.2], pole: OFF } },   // carried upright out front, clear of the shoulder
     },
     djemso: {
       hang:   { hand: [0.16, 0.78, 0.3], blade: [0.35, 0.25, -0.9], twist: 0, off: { hand: [-0.18, 0.78, 0.3], pole: [-0.6, -0.3, -0.5] } },   // hands up on the ledge lip
       tuck:   { hand: [0.14, 0.12, 0.24], blade: [0.25, 0.65, -0.7], two: true, twist: 0.1, pole: [0.7, -0.6, -0.2] },
       hammer: { hand: [0.08, 0.5, 0.12], blade: [0.05, 0.62, -0.78], two: true, twist: 0.06, pole: [0.7, -0.3, -0.4] },
       smash:  { hand: [0.06, -0.24, 0.5], blade: [0.0, -0.6, 0.8], two: true, twist: 0.0, lean: 0.12, pole: [0.6, -0.8, 0] },
-      run:    { hand: [0.2, 0.1, 0.16], blade: [0.32, 0.55, -0.77], two: true, twist: 0.12, pole: [0.7, -0.6, -0.2] },
+      run:    { hand: [0.26, 0.08, 0.32], blade: [0.5, 0.78, -0.36], two: true, twist: 0.12, pole: [0.7, -0.6, -0.2] },   // hilt out front, blade up and out clear of the shoulder
     },
   },
   reverse: {
@@ -130,6 +130,8 @@ export const AIR_GUARDS = {
               run:    { hand: [0.3, -0.22, -0.1], blade: [0.12, 0.3, -0.95], twist: 0, pole: [0.8, -0.3, -0.5], off: { hand: [-0.28, -0.1, 0.22], pole: OFF } },
               palm:   { hand: [0.36, -0.12, -0.08], blade: [0.2, 0.3, -0.93], twist: 0.08, pole: [0.8, -0.3, -0.5], off: { hand: [-0.16, -0.4, 0.44], pole: OFF } } },
     djemso: { smash:  { hand: [0.12, -0.28, 0.46], blade: [0.05, -0.95, 0.3], twist: 0.0, lean: 0.12, pole: [0.8, -0.3, -0.5] },
-              hang:   { hand: [0.16, 0.78, 0.3], blade: [0.2, -0.4, -0.9], twist: 0, pole: [0.8, -0.3, -0.5], off: { hand: [-0.18, 0.78, 0.3], pole: [-0.6, -0.3, -0.5] } } },
+              hang:   { hand: [0.16, 0.78, 0.3], blade: [0.2, -0.4, -0.9], twist: 0, pole: [0.8, -0.3, -0.5], off: { hand: [-0.18, 0.78, 0.3], pole: [-0.6, -0.3, -0.5] } },
+              // the high Shien guard hangs the blade down his back: running, the fist drops to the hip and the blade sweeps back outside the leg
+              run:    { hand: [0.36, -0.12, 0.06], blade: [0.36, -0.2, -0.91], twist: -0.1, pole: [0.8, -0.3, -0.5], off: { hand: [-0.28, -0.1, 0.22], pole: OFF } } },
   },
 };
