@@ -18,7 +18,7 @@ export const WEAPON_MODELS = {
   saber: {
     hold: 'saber-1h', socket: 'handR', grip: { pos: [0, GRIP_Y, 0], rot: [0.25, 0, -0.4] },
     build(S){
-      const g = new THREE.Group(), root = new THREE.Group(); g.add(root);   // root flips for a reverse grip
+      const g = new THREE.Group(), root = new THREE.Group(); g.add(root);   // root flips for the regular grip (see applySaberGrip)
       S.add(loft([
         { y:-0.13, w:0.06, d:0.06 }, { y:-0.11, w:0.078, d:0.078 }, { y:-0.08, w:0.066, d:0.066 },
         { y:0.06, w:0.066, d:0.066 }, { y:0.08, w:0.086, d:0.086 }, { y:0.12, w:0.08, d:0.08 }, { y:0.13, w:0.06, d:0.06 },
@@ -87,12 +87,14 @@ export const WEAPON_MODELS = {
 
 /* SABER GRIP — a player preference: 'regular' (blade out of the thumb side) or 'reverse' (Shien reverse grip, blade
    out of the pinky side along the forearm). Visual only: swing reach and damage don't depend on the blade mesh.
-   The animated node (player.saberHand) is untouched; only the hilt+blade root inside it flips. */
+   The animated node (player.saberHand) is untouched; only the hilt+blade root inside it flips. The saber's built
+   orientation (root unrotated) runs the blade back up the forearm, i.e. it IS the reverse grip, so 'regular' is
+   the flipped one. Checked in game: regular points the blade away from the elbow, reverse back toward it. */
 let saberGrip = 'regular';
 export function applySaberGrip(player, grip){
   saberGrip = grip === 'reverse' ? 'reverse' : 'regular';
   const root = player.saberBladeRoot;
-  if (root) root.rotation.x = saberGrip === 'reverse' ? Math.PI : 0;
+  if (root) root.rotation.x = saberGrip === 'reverse' ? 0 : Math.PI;
 }
 
 export function mountWeapon(R, S, id, socket){
