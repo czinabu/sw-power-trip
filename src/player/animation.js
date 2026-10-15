@@ -51,11 +51,15 @@ function poseBody(dt, dr, vis, planted, POSE, moving){
   // over his shoulder one-handed (anim/guns.js) instead of backpedalling square to the camera.
   const mandoAimLock = G.hero === 'mando' && (player.aiming > 0 || player.zoom || player.firing);
   const inCombatPose = player.atkT > 0 || player.dashT > 0 || player.blockHeld || player.judgeT > 0 || player.castT > 0 || mandoAimLock;
+  const wasBackRun = player.backRun;
   player.backRun = mandoBackRun();
+  if (wasBackRun && !player.backRun) player._unwindT = 0.35;   // turning back to the reticle: ease round, don't whip
+  if (player._unwindT > 0) player._unwindT -= dt;
   let face = G.yaw;
   if ((G.hero !== 'mando' && !inCombatPose && moving) || player.backRun)
     face = Math.atan2(player.moveVel.x, player.moveVel.z);
-  player.faceYaw = dampAngle(player.faceYaw, face, player.backRun ? 13 : (inCombatPose || G.hero === 'mando') ? 26 : 11, dt);
+  if (G.hero === 'mando') player.faceYaw = mandoTurn(face, player.backRun ? 11 : player._unwindT > 0 ? 12 : 26, dt);
+  else player.faceYaw = dampAngle(player.faceYaw, face, inCombatPose ? 26 : 11, dt);
   player.group.rotation.y = player.faceYaw;
 
   if (player.slamming){
@@ -88,10 +92,21 @@ function poseBody(dt, dr, vis, planted, POSE, moving){
 function mandoBackRun(){
   if (G.hero !== 'mando' || !player.grounded || player.flip || player.slamming) return false;
   if (player.blockHeld || player.zoom || player.atkT > 0 || player.dashT > 0 || player.stabT > 0 || player.meleeT > 0 || player.darkT > 0 || player.flaming) return false;
+  if (player.weapon === 'disruptor' && player.aiming > 0) return false;   // a shouldered rifle can't point back over the shoulder: he squares up to fire it
   const vx = player.moveVel.x, vz = player.moveVel.z, sp = Math.hypot(vx, vz);
   if (sp < 1) return false;
   const along = (vx * Math.sin(G.yaw) + vz * Math.cos(G.yaw)) / sp;   // +1 toward the reticle, -1 straight away
   return player.backRun ? along < -0.15 : (sp > 2 && along < -0.5);
+}
+
+// The Mando's body yaw, eased toward `face`. Measured from the reticle and wrapped on the off-hand side, so the big
+// turns into and out of a back-run always swing the same way: he pivots over his off-hand shoulder, the gun side
+// stays toward the target the whole way round, and turning back retraces the same path (no spinning the other way
+// when the turn is near 180° and the shortest way round flips).
+function mandoTurn(face, lambda, dt){
+  const fromAim = a => { let d = ((a - G.yaw + Math.PI*3) % (Math.PI*2)) - Math.PI; if (d < -Math.PI/2) d += Math.PI*2; return d; };
+  const cur = fromAim(player.faceYaw), tgt = fromAim(face);
+  return G.yaw + cur + (tgt - cur) * (1 - Math.exp(-lambda*dt));
 }
 
 // Legs (stride, air tuck, stance splay, front kick), hips/robe, breathing and head look.
@@ -99,6 +114,7 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
   /* ================= rig animation ================= */
   const hSpeed = Math.hypot(player.moveVel.x + player.vel.x, player.moveVel.z + player.vel.z);
   player.runPhase += hSpeed * dt * 1.7;
+  if (G.hero === 'mando') player._strideQ = (player._strideQ || 0) + hSpeed * dt * 1.7 * (strideBack() ? -1 : 1);
   const ph = player.runPhase;
   const inten = clamp(hSpeed / CFG.player.speed, 0, 1.2);
   // PER-STANCE GAIT — same skeleton, different run: FAST is light & high-kneed, STRONG is long & planted (mando = neutral)
@@ -126,8 +142,10 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
     const lead = planted ? POSE.lead : 0;   // bladed/staggered footing when planted, neutral when moving
     // a swing steps into the cut: the off-side foot drives forward, the back leg loads
     const step = (player._swingDrop || 0) * 2.2;
-    // the JEDI's stride runs backwards when he moves away from where he faces (backing off in his guard)
-    const q = ph * (G.hero !== 'mando' && strideBack() ? -1 : 1);
+    // the stride runs backwards when he moves away from where he faces (the Jedi backing off in his guard, the Mando
+    // backpedalling while he braces or turns), instead of running forward on the spot while the body slides back
+    // (the Mando's stride clock runs backwards rather than mirroring, so the legs reverse without a pop as he turns)
+    const q = G.hero === 'mando' ? player._strideQ : ph * (strideBack() ? -1 : 1);
     R.legL.hip.rotation.x  = dr(R.legL.hip.rotation.x,  Math.sin(q) * 0.55 * inten * gait.amp - lead - step - land*0.5, 14);
     R.legR.hip.rotation.x  = dr(R.legR.hip.rotation.x, -Math.sin(q) * 0.55 * inten * gait.amp + lead + step*0.6 - land*0.35, 14);
     R.legL.knee.rotation.x = dr(R.legL.knee.rotation.x, Math.max(0, -Math.sin(q - 0.4)) * 0.9 * inten * gait.lift + step*0.8 + land*0.95, 14);
