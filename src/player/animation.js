@@ -207,8 +207,9 @@ function animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait){
     player.atkT -= dt;
     const sw = player.swing;
     sw.t += dt;
-    const cue = swingPose(R, held, grip, form, sw);
-    applySaberPose(R, held, player.castT <= 0);
+    // (no blade in hand — e.g. the weapon was swapped mid-swing — just run the swing's clock out)
+    const cue = held ? swingPose(R, held, grip, form, sw) : { k: Math.min(1, sw.t / sw.dur), env: 0, cut: 0, spin: 0, hop: 0, drop: 0 };
+    if (held) applySaberPose(R, held, player.castT <= 0);
     // the body turns with the blade; a finisher spins all the way round (Ataru leaps into it)
     const turn = Math.sign(sw.pat.yT - sw.pat.yF);
     if (!player.flip){
