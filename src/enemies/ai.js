@@ -3,7 +3,7 @@
 
 import { CFG } from '../data/config.js';
 import { scene, camera } from '../engine/renderer.js';
-import { sfx } from '../audio/sfx.js';
+import { sfx, S } from '../audio/sfx.js';
 import { V3, rand, clamp, TMP, dampToward } from '../utils.js';
 import { burst } from '../fx/particles.js';
 import { G, enemies, solids } from '../state.js';
@@ -70,7 +70,7 @@ export function updateEnemies(dt){
           e.state = 'leapwind'; e.st = 0.55;
           e.leapTarget = { x: pp.x, z: pp.z }; e.leapFrom = { x: g.position.x, z: g.position.z };
           spawnGroundShock(V3(pp.x, 0.1, pp.z), 0xff5a3a, 5, 0.55, 0.5);   // a warning ring marks the landing zone
-          sfx(90, 0.3, 'sawtooth', 0.12, 50);
+          S.windup(g.position, true);
           break;
         }
         let mx = tx, mz = tz;
@@ -237,7 +237,7 @@ export function updateEnemies(dt){
           } else {
             // melee: commit to a visible swing the player can time a parry against
             e.state = 'strike'; e.st = t.swing || 0.16; e.struck = false;
-            sfx(heavy ? 130 : 300, 0.1, 'sawtooth', 0.05, heavy ? 60 : 140);   // the whoosh of the swing starting
+            S.whoosh(g.position, heavy);   // the whoosh of the swing starting
           }
         }
         break;

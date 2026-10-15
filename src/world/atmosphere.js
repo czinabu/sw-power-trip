@@ -8,6 +8,7 @@ import { renderer, scene, hemi, sun, rim } from '../engine/renderer.js';
 import { rand, clamp } from '../utils.js';
 import { shared, G } from '../state.js';
 import { LEVELS } from '../data/levels.js';
+import { thunder } from '../audio/director.js';
 
 const A = { T: null, sky: null, base: null, p: 0, flash: 0, nextBolt: 0, bolt: 0, strike: null, half: 20 };
 
@@ -85,6 +86,7 @@ export function updateAtmosphere(dt){
     if (A.nextBolt <= 0){
       A.bolt = 0.38; A.nextBolt = rand(T.storm.every[0], T.storm.every[1]);
       if (A.strike) placeStrike(A.strike, A.half);
+      thunder();
     }
     if (A.strike) A.strike.visible = A.bolt > 0.1;
     if (A.bolt > 0){

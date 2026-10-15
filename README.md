@@ -27,7 +27,7 @@ src/
   utils.js           math helpers
   data/              tuning tables: config, stances, enemies, levels, bosses, mando, skills, store, boons, mutators, difficulty, worlds (arena looks)
   engine/            renderer + post-processing, graphics quality, input, camera
-  audio/             sound effects, adaptive music
+  audio/             mixer + voice builder (engine.js), sound bank (sfx.js), adaptive per-world score (music.js), loops + ambience (director.js)
   fx/                particles, floating text, VFX lights, saber trail, one-shot VFX, ambient embers
   player/            hero swap, movement, damage, updatePlayer (update.js), animation
     model/           hero models: rig + sockets, outfit slots (jedi.js, mando.js), weapons, render styles, looks
@@ -49,6 +49,8 @@ Each file starts with a one-line description. Balance changes usually only touch
 **Adding an ability:** add its function (under `player/jedi/` or `player/mando/`), a HUD slot (`#ab-*` in `index.html`; powers go in `#abilities`, basic moves in `#basics`), a keybind (`engine/input.js`), a How to Play row (`ui/controls.js`), a store/auto-unlock entry (`data/store.js`), and a HUD cooldown row (`ui/hud.js`).
 
 **Changing the heroes' look:** everything a character creator would change lives in `src/player/model/appearance.js` as plain data: outfit variant per slot, colours, build (bulk, shoulders, head) and the Mando's glowing seams. New outfit pieces are a function under a slot in `jedi.js` / `mando.js`; new weapons are an entry in `weapons.js` (its `grip` decides how it's held). Preview with `npm run dev` and open `/tools/model-lab.html`, which lines both heroes up in key poses (`?look=hooded` shows a sample alternate look; `?style=shard|forged` shows the other render styles).
+
+**Changing sounds:** every sound is synthesized. One-shots are recipes in the `S` bank in `src/audio/sfx.js` (a few layered tones and noise bursts each); most take a world position so they pan and fade with distance. Continuous sounds (saber hums, jetpack, flamethrower, each world's ambience) live in `src/audio/director.js`, and each world's score (key, tempo, chords, melody, drum kit) is a palette in `src/audio/music.js`. Audition all of it with `npm run dev` and `/tools/sound-lab.html`.
 
 **Live tweaking:** `window.GAME` in the browser console exposes the config tables and most game functions.
 
@@ -73,7 +75,8 @@ Each file starts with a one-line description. Balance changes usually only touch
 - Kill streaks, XP economy, and a between-wave upgrade store
 
 **Polish:**
-- Procedural adaptive music (builds from ambient pad to full percussion based on combat intensity)
+- Procedural adaptive score with its own key, tempo and instruments per world (Jedha, Mustafar, Exegol), building from a pad to full percussion and boss brass with the fight, plus stings for waves, clears, unlocks and bosses
+- Synthesized, positional sound design: lightsaber hums per form, blaster fire, saber burns and clashes, explosions, per-world ambience and reverb, with separate music and effects volume
 - Difficulty selector (Padawan / Knight / Master)
 - Directional damage indicators and off-screen threat markers
 - Diegetic jetpack fuel gauge (LED strips on the pack)

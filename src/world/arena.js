@@ -29,6 +29,7 @@ export function buildArena(L){
   shared.arenaGroup = new THREE.Group();
   scene.add(shared.arenaGroup);
   shared.arenaHalf = L.arena / 2;
+  shared.arenaLayout = L.layout || 'temple';
   shared.ambient = null;
   shared.templeBrazier = null;   // cleared each rebuild; the temple layout re-assigns it (so we never flicker a stale mesh)
 

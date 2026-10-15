@@ -4,7 +4,8 @@
 import { CFG } from '../data/config.js';
 import { LEVELS } from '../data/levels.js';
 import { scene } from '../engine/renderer.js';
-import { sfx } from '../audio/sfx.js';
+import { S } from '../audio/sfx.js';
+import { MUSIC } from '../audio/music.js';
 import { V3 } from '../utils.js';
 import { burst } from '../fx/particles.js';
 import { floater } from '../fx/floaters.js';
@@ -169,7 +170,7 @@ export function checkUnlocks(bannerDelay){
   announce.forEach((u, i) => {
     setTimeout(() => { if (G.mode !== 'play') return;
       showBanner(u.name, /^HOLD /.test(u.hud) ? '' : 'PRESS', 3.0, { kicker: 'UNLOCKED', key: u.hud });
-      sfx(540, 0.5, 'square', 0.1, 280); sfx(300, 0.4, 'triangle', 0.07, 150);
+      MUSIC.unlockSting(); S.reward(1);
     }, (bannerDelay || 0) + i * 3200);   // stagger 3.2s apart (just past the 3.0s display dur) so each gets its own beat
   });
 }
@@ -192,6 +193,7 @@ export function startWave(){
   shared.levelPhase = 'fighting';
   G.waveTotal++;   // cumulative wave count drives Mando ability unlocks
   showBanner('', 'WAVE ' + (G.wave+1) + ' / ' + L.waves.length, 1.5);
+  MUSIC.waveSting();
   checkUnlocks(1600);
 }
 
@@ -220,6 +222,7 @@ export function updateFlow(dt){
       if (enemies.length > 0) return;
       if (G.endless){ endlessWaveCleared(); return; }   // survival has its own clear/escalation path
       G.wave++;
+      MUSIC.clearSting();
       gainXp(140 + (G.waveTotal + 1) * 28);   // WAVE CLEAR — the main XP source, scales as the run deepens
       // a real second wind on each wave clear — a meaningful patch-up + a Force / jetpack top-off
       if (player.hp > 0 && player.hp < maxHp()){

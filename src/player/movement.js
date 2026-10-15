@@ -42,7 +42,7 @@ export function doJump(){
   if (G.mode !== 'play' || player.slamming) return;
   if (G.hero === 'mando'){
     // a ground hop to kick off the ground; sustained flight is HOLD SPACE (jetpack in updatePlayer)
-    if (player.grounded){ player.vy = CFG.player.jumpVel * 0.9; player.grounded = false; S.dash(); }
+    if (player.grounded){ player.vy = CFG.player.jumpVel * 0.9; player.grounded = false; S.jump(); }
     return;
   }
   if (player.blockHeld && player.grounded){

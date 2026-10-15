@@ -9,7 +9,6 @@ import { V3 } from './utils.js';
    so every file reads and writes them as shared.<name>. */
 export const shared = {
   AC: null,
-  humGain: null,
   masterGain: null,
   // MASTER VOLUME — a single gain node every sound (sfx/hum/music) routes through, so one slider controls all of it.
   masterVol: (() => { const v = parseFloat(localStorage.getItem('sw_vol')); return isNaN(v) ? 1 : Math.max(0, Math.min(1, v)); })(),
@@ -20,6 +19,7 @@ export const shared = {
   _grappleLine: null,
   arenaGroup: new THREE.Group(),
   arenaHalf: 20,
+  arenaLayout: 'temple',   // which authored layout is up (temple | foundry | plains) — picks the ambience, reverb and music palette
   ambient: null,   // drifting embers / ash / dust
   templeBrazier: null,
   levelPhase: 'idle',   // idle | between | fighting | bossfight

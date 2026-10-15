@@ -108,7 +108,7 @@ export function spawnBlasterBolt(origin, dir, dmg, color, scale, W, opts){
   const spr = opts.spread != null ? opts.spread : (W.hipSpread != null ? W.hipSpread : MANDO.spread);
   dir = dir.clone();
   dir.x += rand(-1,1)*spr; dir.y += rand(-1,1)*spr*0.6; dir.z += rand(-1,1)*spr; dir.normalize();
-  fireBolt(origin, dir, MANDO.boltSpeed, dmg, true);
+  fireBolt(origin, dir, MANDO.boltSpeed, dmg, true, true);
   const b = bolts[bolts.length-1];
   if (b){ b.mesh.material.color.setHex(color); b.mesh.scale.set(scale, scale*1.3, scale);
     b.origin = origin.clone(); b.foStart = W.foStart; b.foEnd = W.foEnd;
@@ -208,7 +208,7 @@ function fireBlaster(W){
   const kick = (W.dual ? 0.18 : 0.3) * (steadyAim ? 0.55 : 1) * (1 + inacc * 1.3);   // recoil grows with speed & boost
   player.recoil = kick; player.recoilKick = kick;
   G.shake = Math.max(G.shake, W.dual ? 0.06 : 0.15);
-  if (W.dual) sfx(900, 0.07, 'square', 0.05, 500); else { sfx(560, 0.1, 'square', 0.07, 420); sfx(140, 0.09, 'sawtooth', 0.05, 60); }
+  if (W.dual) S.blasterDual(); else S.blaster();
   player.fireCd = W.fireCd / (player.up.fireRate || 1);
   addHeat(W);   // energy cap — overheats if you don't pace your fire
 }
@@ -221,7 +221,7 @@ function fireRifle(W){
   player.recoil = 0.5; player.recoilKick = 0.5;
   G.shake = Math.max(G.shake, 0.4); G.hitstop = Math.max(G.hitstop, 0.05);
   screenFlash('radial-gradient(ellipse at center, rgba(120,210,255,.2), transparent 60%)', 0.35, 0.2);
-  sfx(110, 0.1, 'sawtooth', 0.06, 46); sfx(60, 0.16, 'sine', 0.08, 28);
+  S.disruptor();
   player.fireCd = W.fireCd / (player.up.fireRate || 1);
   addHeat(W);   // a heavy charge — overheats after a couple of shots
 }
@@ -241,7 +241,7 @@ function spearStab(W){
   if (player.rifleProngGlow) player.rifleProngGlow.material.opacity = 1;
   const f = fwd(), pp = playerPos();
   player.vel.addScaledVector(f, 9);   // a committed spear LUNGE — drives you onto the target
-  S.swing(); sfx(220, 0.12, 'sawtooth', 0.06, 90); sfx(1300, 0.1, 'sawtooth', 0.05, 200);
+  S.swing('fast'); S.zap(); sfx(1300, 0.1, 'sawtooth', 0.04, 200);
   let best = null, bd = W.stabRange;
   for (const e of enemies){ if (e.dead || e.converted || e.state === 'spawn') continue; TMP.subVectors(e.group.position, pp); TMP.y = 0; const d = TMP.length(); if (d < bd && TMP.normalize().dot(f) > 0.4){ bd = d; best = e; } }
   if (best){
@@ -260,7 +260,7 @@ function spearStab(W){
 }
 export function mandoFlame(){   // keydown cue only — the stream itself is HELD (handled in updateFlame)
   if (player.force < 5){ if (G.gt - player.lastWinded > 0.5){ player.lastWinded = G.gt; floater(playerPos(), 'NO FUEL', '#ff6a3a'); } return; }
-  sfx(150, 0.22, 'sawtooth', 0.06, 60);
+  S.jetIgnite();   // the pilot catches — the roar itself is a loop in audio/director.js
 }
 const FLAME = [[0, 0xfff1b8], [0.14, 0xffd34a], [0.36, 0xff8a2a], [0.6, 0xc8461e], [0.78, 0x4a3c36]];
 export function updateFlame(dt){
@@ -291,9 +291,7 @@ export function updateFlame(dt){
          V3(dx*spd, rand(0.6,2.2), dz*spd), { ramp: FLAME, drag: 2.2, grav: -3, grow0: 0.25, shade: 0.3, inkW: 0.12 });
   }
   if (Math.random() < 0.5) sparks(V3(pp.x + f.x*1.2, fy, pp.z + f.z*1.2), 0xffd06a, 1, range * 2.2, { dir: f, cone: A.angle, life: 0.3, grav: -2, size: 0.4 });
-  // a low continuous roar, throttled so it doesn't machine-gun
-  player.flameSfx = (player.flameSfx || 0) - dt;
-  if (player.flameSfx <= 0){ player.flameSfx = 0.11; sfx(rand(64,104), 0.16, 'sawtooth', 0.05, 46); }
+  // the roar is a continuous loop driven by player.flaming (audio/director.js)
   G.shake = Math.max(G.shake, 0.06);   // a steady rumble, no jitter
   // light tick damage + a steady gentle push (NO per-hit hitstop/sfx — that was the "spazz")
   const dmg = A.dmg * (player.up.flameDmg || 1) * dt;

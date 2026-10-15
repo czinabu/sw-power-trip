@@ -52,7 +52,7 @@ export function spawnBoss(){
     ? 'A beskar warlord — his armor laughs off chip fire. BRACE (RMB) his barrage, break his line of sight, and punish his wind-up.'
     : 'The dark side made flesh. Catch his lightning on your guard, or PUSH it back.';
   showBanner(introMain, introTip, 4);
-  S.stun();
+  S.stun(); if (shared.boss) S.roar(shared.boss.group.position);
 }
 
 export function damageBoss(dmg, tick){
@@ -81,7 +81,7 @@ export function damageBoss(dmg, tick){
   }
   floater(shared.boss.group.position, Math.round(real), vulnerable ? '#ffd24a' : '#cc8888');
   burst(V3(shared.boss.group.position.x, 2.4, shared.boss.group.position.z), vulnerable ? 0xffd24a : 0x884444, 6, 6, 4);
-  S.hit();
+  S.impact(V3(shared.boss.group.position.x, 2.4, shared.boss.group.position.z), vulnerable ? 1.2 : 0.7);
   if (shared.boss.hp <= 0) killBoss();
 }
 export function bossStun(){
@@ -138,7 +138,7 @@ function killBoss(){
   showBanner(shared.boss.kind === 'mando' ? 'THE MAGISTRATE FALLS' : 'THE VOID RECLAIMS ITS HERALD', '', 3);
   burst(shared.boss.group.position.clone().setY(2), shared.boss.kind === 'mando' ? 0xffaa33 : 0xff4444, 40, 14, 10);
   burst(shared.boss.group.position.clone().setY(2), shared.boss.kind === 'mando' ? 0x66ccff : 0xbb44ff, 30, 10, 8);
-  S.boom();
+  S.roar(shared.boss.group.position); S.boom(shared.boss.group.position, 2);
 }
 
 // his signature channel: Vexis's Force lightning, or the Magistrate's blaster barrage (same state, boss.kind decides)
@@ -243,7 +243,7 @@ export function updateBoss(dt){
         g.userData.eyes.scale.set(1,1,1);
         burst(V3(g.position.x + tx*2, 1.8, g.position.z + tz*2), 0xff3333, 10, 8, 3);
         G.shake = Math.max(G.shake, 0.35);
-        S.swing();
+        S.swing('strong'); S.whoosh(g.position, true);
         if (dist < BOSS_CFG.combo.range && player.dashT <= 0){
           const res = hurtPlayer(BOSS_CFG.combo.dmg, g.position, false, true);   // melee — high ground denies it
           if (res === 'parried'){
@@ -300,7 +300,6 @@ export function updateBoss(dt){
           fireBolt(muzzle, dir, B.boltSpeed, B.dmg, false);
           const bb = bolts[bolts.length-1]; if (bb){ bb.mesh.material.color.setHex(0xffaa33); bb.mesh.scale.set(1.3,1.6,1.3); }
           burst(muzzle, 0xffd28a, 2, 6, 1, 0.5);
-          sfx(560, 0.05, 'square', 0.05, 420);
         }
         shared.boss.lightT -= dt;
         if (shared.boss.lightT <= 0){ g.userData.bodyMat.emissiveIntensity = 0; shared.boss.state = 'think'; g.userData.hand.rotation.z = -0.6; }
@@ -357,7 +356,7 @@ export function updateBoss(dt){
         const rcfg = ((shared.boss.kind === 'mando' ? BOSS_MANDO.pulse : BOSS_CFG.pulse).rings) || [1];
         const n = rcfg[shared.boss.phase-1] || 1;
         for (let i = 0; i < n; i++) spawnRing(g.position.clone(), 1 - i*6);
-        G.shake = 0.9; S.slam();
+        G.shake = 0.9; S.slam(g.position);
       }
       if (shared.boss.st <= 0){ shared.boss.state = 'think'; g.position.y = 0; }
       break;
@@ -381,7 +380,7 @@ export function updateBoss(dt){
         burst(V3(g.position.x, 1.8, g.position.z), 0x8a3aff, 16, 9, 6); spawnGroundShock(g.position.clone(), 0x8a3aff, 3, 0.4, 0.5);
         g.position.x = pp.x - tx * BOSS_CFG.blink.dist; g.position.z = pp.z - tz * BOSS_CFG.blink.dist;   // reappear right on top of you
         burst(V3(g.position.x, 1.8, g.position.z), 0x8a3aff, 18, 10, 6);
-        G.shake = Math.max(G.shake, 0.6); sfx(170, 0.22, 'sawtooth', 0.1, 720);
+        G.shake = Math.max(G.shake, 0.6); S.pull(); S.zap(g.position);
       }
       if (shared.boss.st <= 0){
         g.userData.bodyMat.emissiveIntensity = 0;
@@ -416,7 +415,7 @@ export function updateBoss(dt){
         const lead = V3(pp.x + player.vel.x*V.lead, pp.y + 1.4, pp.z + player.vel.z*V.lead).sub(muzzle).normalize();
         fireBolt(muzzle, lead, V.boltSpeed, V.dmg, false);
         const bb = bolts[bolts.length-1]; if (bb){ bb.mesh.material.color.setHex(0xff7a2a); bb.mesh.scale.set(1.5,1.9,1.5); }
-        burst(muzzle, 0xffae5a, 3, 7, 1, 0.5); sfx(440, 0.06, 'square', 0.06, 320);
+        burst(muzzle, 0xffae5a, 3, 7, 1, 0.5);
       }
       if (shared.boss.volleyLeft <= 0 && shared.boss.st <= 0){ g.userData.bodyMat.emissiveIntensity = 0; shared.boss.state = 'think'; g.userData.hand.rotation.z = -0.6; }
       break;

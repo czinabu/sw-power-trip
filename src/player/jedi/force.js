@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { CFG } from '../../data/config.js';
 import { scene } from '../../engine/renderer.js';
 import { sfx, S } from '../../audio/sfx.js';
-import { V3, rand, clamp, TMP } from '../../utils.js';
+import { V3, clamp, TMP } from '../../utils.js';
 import { burst } from '../../fx/particles.js';
 import { floater, screenFlash } from '../../fx/floaters.js';
 import { shared, G, enemies, bolts, barrels, vfx, player } from '../../state.js';
@@ -224,7 +224,7 @@ export function forcePull(){
   faceAbilityAim(A.range);     // face the crowd you're about to yank
   castGesture('pull', 0.36);   // reach out, then claw the hand back
   const f = fwd(), pp = playerPos();
-  sfx(60, 0.45, 'sine', 0.2, 220);
+  S.pull();
   G.shake = Math.max(G.shake, 0.3);
   const cosLim = Math.cos(A.angle);
   let n = 0;
@@ -279,7 +279,7 @@ export function forceRepulse(){
   dustRing(pp, radius * 0.8);
   screenFlash('radial-gradient(ellipse at center, rgba(150,210,255,'+(up?0.55:0.4)+'), transparent 60%)', up ? 0.9 : 0.6, 0.32);
   G.shake = Math.max(G.shake, up ? 1.5 : 1.1); G.hitstop = Math.max(G.hitstop, 0.1);
-  S.slam(); S.boom(); sfx(70, 0.4, 'sine', 0.2, 24);
+  S.slam(); S.boom(null, up ? 1.4 : 1); S.push();
   for (const e of enemies){
     if (e.dead || e.converted || e.state === 'spawn') continue;
     TMP.subVectors(e.group.position, pp);
@@ -334,7 +334,7 @@ export function forceBarrier(){
   screenFlash('radial-gradient(ellipse at center, rgba(120,210,255,.35), transparent 60%)', 0.5, 0.3);
   G.shake = Math.max(G.shake, 0.4);
   barrierShove(0.7, A.castKnock);   // CAST — a firm shove clears space around you as the bubble snaps up
-  S.push(); sfx(420, 0.3, 'sine', 0.12, 1200); sfx(120, 0.25, 'sine', 0.1, 60);
+  S.push(); S.barrier();
   floater(pp, 'FORCE BARRIER', '#bfe8ff');
 }
 
@@ -420,5 +420,5 @@ export function updateJudgement(dt){
     }
   }
   player.judgeTargets = tpos;
-  if (tpos.length) sfx(rand(1400, 2100), 0.06, 'sawtooth', 0.035, 300);
+  if (tpos.length) S.arc(tpos[0]);
 }

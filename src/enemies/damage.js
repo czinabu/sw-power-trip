@@ -1,7 +1,7 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
 // damageEnemy(), flinch/stagger, targeting helpers, wind-up telegraphs.
 
-import { sfx, S } from '../audio/sfx.js';
+import { S } from '../audio/sfx.js';
 import { V3, rand, clamp, TMP, dampToward } from '../utils.js';
 import { burst } from '../fx/particles.js';
 import { floater } from '../fx/floaters.js';
@@ -31,7 +31,7 @@ export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick){
       const guardBreak = !!isFinisher || (G.hero !== 'mando' && G.stance === 'strong') || !!(player.swing && player.swing.riposte);
       e.shieldHp -= dmg * (guardBreak ? 2.4 : 1.0);
       const sp = V3(e.group.position.x + efx*0.55, 1.45, e.group.position.z + efz*0.55);
-      spawnHitSpark(sp, e.t.eye, 0.8); sfx(1200, 0.06, 'square', 0.05, 700);
+      spawnHitSpark(sp, e.t.eye, 0.8); S.shieldHit(sp);
       if (e.shieldHp <= 0){
         e.shieldBroken = true;
         if (e.group.userData.shield) e.group.userData.shield.visible = false;
@@ -73,10 +73,9 @@ export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick){
         G.hitstop = Math.max(G.hitstop, 0.02 + power*0.028);   // a micro-freeze on impact — the core of "punch"
         G.shake   = Math.max(G.shake,   0.12 + power*0.13);
       }
-      sfx(160 + power*140, 0.07, 'square', 0.06, 60);          // a meaty thunk layered under the zing
     }
     floater(p, Math.round(dmg), e.hp <= 0 ? '#ffd24a' : '#bfe8ff');
-    S.hit();
+    S.impact(cp, power);   // voiced by what landed it: saber burn, blaster pop, or a thump
   }
   if (e.hp <= 0){
     e.dead = true; e.state = 'ragdoll'; e.st = 0;
@@ -90,7 +89,7 @@ export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick){
     if (!e.converted){ gainXp(e.t.score * 4 * killBonus() * (e.elite ? 1.6 : 1)); if (G.stats) G.stats.kills++; }   // small per-kill bounty, ×1–3 on a kill streak, elites pay more
     if (e.elite === 'volatile' && !e.converted){ if (e.group.userData.eliteRing) e.group.userData.eliteRing.visible = false; volatileBlast(p.clone(), e); }
     else if (G.mut === 'volatile' && !e.converted) volatileBlast(p.clone(), e);   // VOLATILE mutator: every corpse erupts
-    S.kill();
+    S.kill(cp, !!e.t.heavy);
     if (player.up.lifesteal) player.hp = clamp(player.hp + player.up.lifesteal, 0, maxHp());   // skill: lifesteal
     if (player.boon){
       if (player.boon.blood) player.hp = clamp(player.hp + maxHp()*0.04, 0, maxHp());                          // BLOODTHIRST boon
@@ -155,7 +154,7 @@ export function interruptEnemy(e, dir, heavyBlow){
   if (dir){ const d = dir.clone().setY(0); if (d.lengthSq() > 0.0001) e.group.position.addScaledVector(d.normalize(), 0.35); }
   if (e.token) dropToken(e, true);
   floater(V3(e.group.position.x, e.group.position.y + 1.2, e.group.position.z), 'INTERRUPT', '#9fe6ff');
-  sfx(520, 0.06, 'square', 0.04, 260);
+  S.clash(V3(e.group.position.x, 1.5, e.group.position.z), false);
   return true;
 }
 
@@ -207,14 +206,14 @@ export function telegraphWindup(e){
   burst(top, heavy ? 0xff5522 : e.t.eye, heavy ? 7 : 5, 4, 3, 0.8);
   // a warning ring flares at the foe's feet — reads even in a crowd
   spawnGroundShock(g.position, heavy ? 0xff5522 : e.t.eye, heavy ? 3.2 : 2.2, 0.4, heavy ? 0.6 : 0.45);
-  sfx(heavy ? 90 : 200, heavy ? 0.22 : 0.12, heavy ? 'sawtooth' : 'square', heavy ? 0.07 : 0.045, heavy ? 50 : 360);
+  S.windup(top, heavy);
 }
 
 // the Sith Lord telegraphs his combo — a roaring charge so the player can ready a parry
 export function bossTelegraph(g, tx, tz){
   burst(V3(g.position.x + tx*0.5, 3.0, g.position.z + tz*0.5), 0xff2a40, 10, 5, 4, 0.9);
   spawnGroundShock(g.position, 0xff2a40, 4.2, 0.5, 0.65);
-  sfx(92, 0.28, 'sawtooth', 0.1, 44); sfx(300, 0.12, 'square', 0.05, 720);
+  S.roar(g.position);
 }
 
 // a parried foe stumbles: knocked off balance, weapon flung wide, open to a free hit
@@ -230,5 +229,5 @@ export function staggerEnemy(e, awayX, awayZ){
   G.hitstop = Math.max(G.hitstop, 0.08);
   G.shake = Math.max(G.shake, 0.4);
   floater(g.position, e.t.heavy ? 'STAGGERED!' : 'PARRIED!', '#ffe27a');
-  S.parry();
+  S.parry(cp);
 }
