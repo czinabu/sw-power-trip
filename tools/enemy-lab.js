@@ -1,0 +1,99 @@
+// POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
+// Enemy lab (dev only: `npm run dev`, then open /tools/enemy-lab.html).
+// Lines up every enemy type (or both bosses) under the game's own lights, so enemy model changes can be judged
+// without playing. URL params: ?set=troops|bosses  &pose=idle|windup  &elite=swift|vital|volatile  &view=front|back
+// &orbit=1 (slow turntable). The stats corner shows draw calls per frame.
+
+import * as THREE from 'three';
+import { scene, camera, composer, renderer } from '../src/engine/renderer.js';
+import { ENEMY_TYPES } from '../src/data/enemies.js';
+import { buildEnemyMesh } from '../src/enemies/mesh.js';
+import { buildBoss } from '../src/boss/mesh.js';
+import { ELITES } from '../src/data/enemies.js';
+
+const q = new URLSearchParams(location.search);
+const SET = q.get('set') || 'troops';
+const POSE = q.get('pose') || 'idle';
+const ELITE = q.get('elite') || '';
+const VIEW = q.get('view') || 'front';
+
+scene.background = new THREE.Color(0x0d1016);
+scene.fog = new THREE.Fog(0x0d1016, 18, 40);
+const floor = new THREE.Mesh(new THREE.CircleGeometry(20, 48), new THREE.MeshStandardMaterial({ color: 0x2a2620, roughness: 0.95 }));
+floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
+
+// the windup pose is the one players read most: weapons hauled back (values from ai.js at coil = 1)
+function pose(g, heavy){
+  const u = g.userData;
+  if (POSE !== 'windup') return;
+  if (u.weaponArm){ u.weaponArm.rotation.x = -0.35 - (heavy ? 2.7 : 2.1); u.weaponArm.rotation.z = heavy ? 0.9 : 0.6; }
+  if (u.staff){ u.staff.rotation.z = 0.5 - 2.9; u.staff.rotation.x = 1.2; }
+  if (u.bodyMat){ u.bodyMat.emissive.setHex(0xff2a18); u.bodyMat.emissiveIntensity = 0.25; }
+  if (u.hand) u.hand.rotation.z = -3.3;
+}
+
+const figs = [];
+if (SET === 'bosses'){
+  for (const kind of ['sith', 'mando']){
+    const g = buildBoss(kind);
+    if (POSE !== 'windup' && g.userData.hand) g.userData.hand.rotation.z = -0.6;
+    pose(g, true);
+    figs.push({ g, label: kind === 'sith' ? 'Darth Vexis' : 'Iron Magistrate', w: 4.2 });
+  }
+} else {
+  const ONLY = q.get('only');   // &only=grunt,brute — a subset, for close-ups
+  for (const [name, t] of Object.entries(ENEMY_TYPES)){
+    if (ONLY && !ONLY.split(',').includes(name)) continue;
+    const g = buildEnemyMesh(t);
+    if (ELITE && ELITES[ELITE]){
+      const m = ELITES[ELITE];
+      g.scale.multiplyScalar(m.scale);
+      g.userData.bodyMat.color.lerp(new THREE.Color(m.tint), 0.5);
+    }
+    if (t.fly) g.position.y = 0.6;
+    pose(g, !!t.heavy);
+    figs.push({ g, label: name, w: 1.15 + t.scale * 0.95 });
+  }
+}
+const total = figs.reduce((s, f) => s + f.w, 0);
+let x = -total / 2;
+for (const f of figs){
+  f.g.position.x = x + f.w / 2; x += f.w;
+  f.g.rotation.y = VIEW === 'back' ? Math.PI + 0.4 : -0.4;
+  scene.add(f.g);
+}
+
+camera.fov = 30;
+if (SET === 'bosses'){ camera.position.set(0, 3.0, 12.5); camera.lookAt(0, 2.4, 0); }
+else { const z = Math.max(5, total * 0.95); camera.position.set(0, 1.4 + z * 0.08, z); camera.lookAt(0, 1.45, 0); }
+camera.updateProjectionMatrix();
+const fill = new THREE.DirectionalLight(0xdfe8ff, 0.55); fill.position.set(-4, 5, 12); scene.add(fill);
+
+const cap = document.getElementById('cap');
+cap.innerHTML = figs.map(f => `<span>${f.label}</span>`).join('');
+const labels = [...cap.children];
+function placeLabels(){
+  const v = new THREE.Vector3();
+  figs.forEach((f, i) => {
+    v.set(f.g.position.x, 0, 0).project(camera);
+    labels[i].style.cssText = `position:fixed;left:${(v.x * 0.5 + 0.5) * innerWidth}px;transform:translateX(-50%);bottom:18px`;
+  });
+}
+const btn = (on, label, params) => `<button class="${on ? 'on' : ''}" onclick="location.search='${new URLSearchParams({ set: SET, pose: POSE, elite: ELITE, view: VIEW, ...params })}'">${label}</button>`;
+document.getElementById('bar').innerHTML =
+  btn(SET === 'troops', 'Troops', { set: 'troops' }) + btn(SET === 'bosses', 'Bosses', { set: 'bosses' })
+  + btn(POSE === 'idle', 'Idle', { pose: 'idle' }) + btn(POSE === 'windup', 'Windup', { pose: 'windup' })
+  + ['', ...Object.keys(ELITES)].map(n => btn(n === ELITE, n || 'no elite', { elite: n })).join('')
+  + btn(false, VIEW === 'back' ? 'Front view' : 'Back view', { view: VIEW === 'back' ? 'front' : 'back' });
+
+const stats = document.getElementById('stats');
+const orbit = q.get('orbit') === '1';
+renderer.info.autoReset = false;
+renderer.setAnimationLoop(t => {
+  if (orbit) for (const f of figs) f.g.rotation.y = t * 0.0004;
+  placeLabels();
+  renderer.info.reset();
+  composer.render();
+  stats.textContent = `${renderer.info.render.calls} draw calls`;
+});
+window.LAB = { figs, scene, camera, renderer };

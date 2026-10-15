@@ -12,6 +12,9 @@ import { damageBoss } from '../boss/boss.js';
 import { spawnGroundShock } from '../fx/vfx.js';
 import { hurtPlayer } from '../player/damage.js';
 import { diffHpMul } from '../data/difficulty.js';
+import { ELITES } from '../data/enemies.js';
+
+export { ELITES };
 
 // Enemies HARDEN as the run deepens so the army keeps pace with the player's
 // compounding damage/lifesteal/streak power. Scales with cumulative waves cleared;
@@ -24,15 +27,6 @@ export function enemyHpScale(){
   return s * (G.mut === 'ironhide' ? 1.4 : 1) * diffHpMul();   // DIFFICULTY scales enemy durability
 }
 
-/* ---------- ELITE MODIFIERS — variety on top of the base types ----------
-   A rolled-in trait that re-skins an ordinary foe into a threat worth noticing:
-   SWIFT close fast, VITAL soak punishment, VOLATILE detonate on death. Frequency
-   ramps with run depth so early waves stay clean and late ones get spicy. */
-export const ELITES = {
-  swift:    { tint: 0x35e0ff, label: 'SWIFT',    spd: 1.5,  scale: 0.92, hp: 1.0 },
-  vital:    { tint: 0x53ff8c, label: 'VITAL',    spd: 0.95, scale: 1.16, hp: 1.9 },
-  volatile: { tint: 0xff7a2a, label: 'VOLATILE', spd: 1.1,  scale: 1.0,  hp: 1.0 },
-};
 const ELITE_KEYS = Object.keys(ELITES);
 export function eliteChance(){ return clamp(((G.waveTotal || 0) - 2) * (G.endless ? 0.05 : 0.04), 0, G.endless ? 0.55 : 0.3); }   // survival floods with elites late
 const _eliteCol = new THREE.Color();
