@@ -179,3 +179,67 @@ export const SWING_STYLE = {
   darksaber: { tc: 0.34, ts: 0.46, tf: 0.72, reach: 1.2, two: true, spinHop: 0, drop: 0.16, offFlare: 0, overshoot: 0.35,
                twist: 0.8, finisher: { pattern: 'forward', spin: 0, hop: 0.1 } },
 };
+
+/* ---------------- DEFLECTS: where the blade goes to catch a blaster bolt ----------------
+   Zones are where the bolt arrives, seen from the hero: high / mid / low, on the weapon side (R, +x) or across the body
+   (L, −x). Each zone has two or three catches, picked in turn (never the same one twice running), so a volley reads
+   like the films: Obi-Wan's overhead cover, the hanging guard with the tip down, the vertical wall turned out, the
+   cross-body pick-off. The blade meets the bolt, then FLICKS on (flick: how far the hand and tip carry the bolt away).
+   Regular grip blocks with the blade standing up from the fist; reverse grip catches on the blade laid along the
+   forearm, so its blocks hang the tip down and lead with the elbow. Two-handed forms (Djem So) close the off hand on
+   the hilt; one-handed forms keep their free hand out (data from the form's block guard). */
+export const SABER_DEFLECTS = {
+  regular: {
+    highR: [
+      { hand: [0.3, 0.5, 0.32],   blade: [-0.86, 0.42, 0.28], twist: 0.1,   flick: [0.08, 0.06, 0.04] },   // overhead cover, tip across
+      { hand: [0.36, 0.42, 0.3],  blade: [0.1, 0.92, 0.38],   twist: 0.2,   flick: [0.1, 0.02, -0.04] },   // tall wall turned out
+    ],
+    highL: [
+      { hand: [-0.06, 0.5, 0.36], blade: [0.7, 0.62, 0.3],    twist: -0.3,  flick: [-0.08, 0.06, 0.02], pole: [0.7, 0.1, -0.6] },
+      { hand: [0.02, 0.56, 0.32], blade: [-0.62, 0.7, 0.32],  twist: -0.2,  flick: [-0.1, 0.04, 0.04], pole: [0.8, -0.1, -0.5] },
+    ],
+    midR: [
+      { hand: [0.36, 0.06, 0.36], blade: [0.18, 0.95, 0.24],  twist: 0.22,  flick: [0.1, 0, 0.04] },        // vertical, weapon side
+      { hand: [0.32, 0.12, 0.42], blade: [0.62, 0.6, 0.5],    twist: 0.28,  flick: [0.08, 0.04, 0.06] },   // angled out, tip forward
+      { hand: [0.3, -0.04, 0.4],  blade: [0.4, 0.88, -0.1],   twist: 0.3,   flick: [0.1, -0.02, 0] },      // turned-over wrist, tip back
+    ],
+    midL: [
+      { hand: [-0.12, 0.04, 0.4], blade: [-0.2, 0.95, 0.22],  twist: -0.35, flick: [-0.1, 0, 0.04], pole: [0.7, -0.4, -0.5] },
+      { hand: [-0.06, 0.12, 0.44], blade: [-0.66, 0.58, 0.45], twist: -0.3, flick: [-0.1, 0.04, 0.06], pole: [0.7, -0.3, -0.5] },
+    ],
+    lowR: [
+      { hand: [0.32, 0.2, 0.36],  blade: [0.22, -0.95, 0.24], twist: 0.2,   flick: [0.1, 0, 0.04], pole: [0.9, -0.1, -0.3] },   // hanging guard
+      { hand: [0.3, -0.18, 0.42], blade: [0.55, -0.5, 0.66],  twist: 0.25,  flick: [0.1, -0.04, 0.04] },   // low sweep, tip out front
+    ],
+    lowL: [
+      { hand: [-0.06, 0.18, 0.4], blade: [-0.3, -0.92, 0.24], twist: -0.35, flick: [-0.1, 0, 0.04], pole: [0.9, 0.1, -0.4] },
+      { hand: [-0.08, -0.16, 0.44], blade: [-0.58, -0.48, 0.66], twist: -0.3, flick: [-0.1, -0.04, 0.04], pole: [0.7, -0.4, -0.5] },
+    ],
+  },
+  reverse: {
+    highR: [
+      { hand: [0.3, 0.5, 0.34],   blade: [-0.78, -0.5, 0.3],  twist: 0.1,   flick: [0.08, 0.06, 0.02], pole: [0.9, -0.1, -0.3] },   // forearm shield over the brow
+      { hand: [0.38, 0.4, 0.3],   blade: [0.3, -0.9, 0.3],    twist: 0.2,   flick: [0.1, 0.04, 0], pole: [0.9, 0.1, -0.3] },
+    ],
+    highL: [
+      { hand: [-0.06, 0.5, 0.38], blade: [0.72, -0.58, 0.3],  twist: -0.3,  flick: [-0.1, 0.06, 0.02], pole: [0.8, 0.2, -0.5] },
+      { hand: [0.04, 0.54, 0.34], blade: [-0.3, -0.9, 0.3],   twist: -0.25, flick: [-0.08, 0.04, 0.04], pole: [0.9, 0.1, -0.4] },
+    ],
+    midR: [
+      { hand: [0.38, 0.14, 0.36], blade: [0.2, -0.95, 0.22],  twist: 0.22,  flick: [0.1, 0, 0.04], pole: [0.9, -0.2, -0.3] },   // blade hung down the weapon side
+      { hand: [0.34, 0.06, 0.42], blade: [0.82, -0.3, 0.48],  twist: 0.3,   flick: [0.1, 0, 0.06], pole: [0.8, -0.4, -0.3] },   // elbow out, blade swept forward
+    ],
+    midL: [
+      { hand: [-0.1, 0.16, 0.42], blade: [-0.2, -0.95, 0.24], twist: -0.35, flick: [-0.1, 0, 0.04], pole: [0.9, -0.1, -0.4] },
+      { hand: [-0.04, 0.1, 0.46], blade: [-0.85, -0.25, 0.45], twist: -0.3, flick: [-0.1, 0, 0.06], pole: [0.8, -0.3, -0.4] },
+    ],
+    lowR: [
+      { hand: [0.34, -0.06, 0.38], blade: [0.4, -0.8, 0.45], twist: 0.2,   flick: [0.1, -0.04, 0.04], pole: [0.8, -0.4, -0.3] },
+      { hand: [0.3, 0.04, 0.44],  blade: [0.1, -0.7, 0.7],    twist: 0.15,  flick: [0.08, -0.04, 0.06], pole: [0.9, -0.3, -0.3] },
+    ],
+    lowL: [
+      { hand: [-0.06, -0.02, 0.42], blade: [-0.45, -0.78, 0.45], twist: -0.3, flick: [-0.1, -0.04, 0.04], pole: [0.8, -0.2, -0.4] },
+      { hand: [0.0, 0.06, 0.46],  blade: [-0.12, -0.72, 0.68], twist: -0.25, flick: [-0.08, -0.04, 0.06], pole: [0.9, -0.2, -0.4] },
+    ],
+  },
+};

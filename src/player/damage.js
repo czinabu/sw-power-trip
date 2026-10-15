@@ -11,6 +11,7 @@ import { MANDO } from '../data/mando.js';
 import { fwd, playerPos, stance, maxHp } from './helpers.js';
 import { flinchEnemy } from '../enemies/damage.js';
 import { FOCUS, addFocus } from './jedi/focus.js';
+import { deflectAnim } from './jedi/combat.js';
 import { spawnHitSpark, spawnParryFlash, spawnGroundShock } from '../fx/vfx.js';
 import { updateBoonStrip } from '../game/boons.js';
 import { endRun } from '../game/summary.js';
@@ -63,6 +64,7 @@ export function hurtPlayer(dmg, fromPos, silent, melee){
     TMP.subVectors(fromPos, playerPos()); TMP.y = 0;
     if (TMP.lengthSq() > 0.001 && TMP.normalize().dot(fwd()) > 0.1){
       const pp = playerPos();
+      if (player.parryT > 0 || (player.blockHeld && player.stam > 0)) deflectAnim(V3(fromPos.x, pp.y + 1.4, fromPos.z));
       if (player.parryT > 0){
         player.parryT = 0;   // a parry consumes the window
         player.riposteT = CFG.player.riposteTime;

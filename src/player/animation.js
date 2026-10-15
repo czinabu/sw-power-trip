@@ -8,13 +8,13 @@ import { burst } from '../fx/particles.js';
 import { shared, G, player } from '../state.js';
 import { MANDO } from '../data/mando.js';
 import { stance } from './helpers.js';
-import { tryAttack, applySwingDamage } from './jedi/combat.js';
+import { tryAttack, applySwingDamage, FLOW } from './jedi/combat.js';
 import { mandoAimPoint, mandoWeapon, mandoShielding } from './mando/weapons.js';
 import { DARK_DUR } from './mando/darksaber.js';
 import { FORM_OF, FOOTWORK } from '../data/poses.js';
 import { pistolPose, riflePose, rifleLowered, restGun } from './anim/guns.js';
 import { MIRROR } from './model/rig.js';
-import { saberPose, guardPose, swingPose, applySaberPose, releaseSaberPose, airGuard } from './anim/saber.js';
+import { saberPose, guardPose, swingPose, deflectPose, applySaberPose, releaseSaberPose, airGuard } from './anim/saber.js';
 import { jediAirLegs, jediAgilityArms, jediAgilityPost, mandoAgilityPost, landingStyle, slamPitch } from './anim/agility.js';
 
 export function animatePlayer(dt, pp, st, f, r, moving){
@@ -206,6 +206,8 @@ function animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait){
   const held = heldBlade();
   const form = FORM_OF[G.hero === 'mando' ? 'darksaber' : G.stance] || 'niman';
   const grip = form === 'darksaber' ? 'regular' : (G.saberGrip === 'reverse' ? 'reverse' : 'regular');
+  const dfl = player.deflectAnim;
+  if (dfl){ dfl.t += dt; if (dfl.t >= dfl.dur || !held) player.deflectAnim = null; }
   if (player.atkT > 0){
     // saber swing: the keyframed cut for this form, grip and direction
     player.atkT -= dt;
@@ -216,17 +218,30 @@ function animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait){
     if (held) applySaberPose(R, held, player.castT <= 0);
     // the body turns with the blade; a finisher spins all the way round (Ataru leaps into it)
     const turn = Math.sign(sw.pat.yT - sw.pat.yF);
+    // a cut that flows out of the last one starts from that one's body turn, hop and drop and eases out of them by
+    // its chamber, so a linked string never snaps back to square between strokes
+    if (!sw.body) sw.body = { ry: Math.atan2(Math.sin(vis.rotation.y), Math.cos(vis.rotation.y)), py: vis.position.y, drop: player._swingDrop || 0 };
+    const tc = (sw.anim && sw.anim.tc) || 0.25, inB = cue.k < tc ? 1 - easeInOut(cue.k / tc) : 0;
     if (!player.flip){
       if (cue.spin) vis.rotation.y = easeInOut(cue.cut) * Math.PI * 2 * cue.spin * (turn || 1);
       else vis.rotation.y = cue.env * st.twist * turn * 0.55;
       if (cue.hop) vis.position.y = Math.sin(Math.PI * cue.k) * cue.hop;
+      vis.rotation.y += sw.body.ry * inB;
+      vis.position.y += sw.body.py * inB;
     }
     // drive in on the strike: the weapon shoulder reaches, the hips sink for the power forms
     R.torso.position.z = dr(R.torso.position.z, cue.env * 0.12 * (sw.riposte ? 1.6 : 1), 14);
     R.torso.rotation.y = dr(R.torso.rotation.y, 0, 12);
     vis.rotation.x = dr(vis.rotation.x, saberPose.lean, 14);
-    player._swingDrop = cue.drop * cue.env;
+    player._swingDrop = cue.drop * cue.env + sw.body.drop * inB;
     if (!sw.applied && cue.k > 0.35){ sw.applied = true; applySwingDamage(sw.step); }
+    // IN-RHYTHM LINK (Jedi): one well-timed press this swing → the next cut leaves from the follow-through
+    if (player.queuedAtk && !sw.rushed && G.hero !== 'mando' && sw.applied && cue.k >= FLOW.at){
+      player.atkT = 0; player.queuedAtk = false; player.lastAtkEnd = G.gt;
+      tryAttack(true);
+      if (player.atkT <= 0){ vis.rotation.y = 0; player._swingDrop = 0; }   // the link failed (winded…): settle as normal
+      return;
+    }
     if (player.atkT <= 0){
       player.lastAtkEnd = G.gt;
       vis.rotation.y = 0;
@@ -269,7 +284,10 @@ function animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait){
     const ag = G.hero !== 'mando' ? jediAgilityArms(running) : null;
     const over = ag && airGuard(grip, form, ag.key);
     if (running && over){ sway.z = -Math.sin(ph) * 0.05 * inten; sway.off = Math.sin(ph) * 0.17 * inten * ((stance().gait && stance().gait.amp) || 1); }
-    const body = guardPose(dt, R, held, grip, form, blocking, sway, over, ag ? ag.rate : 1);
+    // a bolt (or blow) just met the blade: the catch for where it arrived, then back into the guard
+    const body = player.deflectAnim && G.hero !== 'mando'
+      ? deflectPose(dt, R, held, grip, form, player.deflectAnim)
+      : guardPose(dt, R, held, grip, form, blocking, sway, over, ag ? ag.rate : 1);
     // a free off hand swings with the stride when running (two-handed guards keep it on the hilt)
     applySaberPose(R, held, player.castT <= 0);
     R.torso.rotation.y = dr(R.torso.rotation.y, planted ? body.torso : 0, 9);

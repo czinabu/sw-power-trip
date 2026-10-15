@@ -3,7 +3,7 @@
 // Poses come from data/poses.js as hand positions + blade directions in chest space; this solves them onto the rig.
 
 import * as THREE from 'three';
-import { SABER_GUARDS, SABER_SWINGS, SWING_STYLE } from '../../data/poses.js';
+import { SABER_GUARDS, SABER_SWINGS, SWING_STYLE, SABER_DEFLECTS } from '../../data/poses.js';
 import { AIR_GUARDS } from '../../data/agility.js';
 import { solveArm, aimHeld, pointInChest, wristInChest, axisInChest, slerpDir, arcLerp } from './ik.js';
 
@@ -26,6 +26,12 @@ export function airGuard(grip, form, key){
   return (AIR[grip] && AIR[grip][form] && AIR[grip][form][key]) || null;
 }
 for (const g in SABER_SWINGS){ SWINGS[g] = {}; for (const p in SABER_SWINGS[g]) SWINGS[g][p] = SABER_SWINGS[g][p].map(vecPose); }
+const DEFLECTS = {};
+for (const g in SABER_DEFLECTS){ DEFLECTS[g] = {}; for (const z in SABER_DEFLECTS[g]) DEFLECTS[g][z] = SABER_DEFLECTS[g][z].map(p => ({ ...vecPose(p), flick: V(p.flick || [0, 0, 0]) })); }
+/* the over-the-top wrap a blade takes when the next cut chambers on the far side from where the last one finished:
+   the hand rises past the head and the blade rolls up and back (regular) or lies back along the forearm (reverse) */
+const WRAP_LIFT = new THREE.Vector3(0, 0.24, -0.1);
+const WRAP_BLADE = { regular: new THREE.Vector3(0, 0.78, -0.62).normalize(), reverse: new THREE.Vector3(0, -0.55, -0.83).normalize() };
 
 const easeOut = t => 1 - (1 - t) * (1 - t);
 const easeIn = t => t * t * t;   // a cut accelerates into contact
@@ -93,6 +99,14 @@ export function swingPose(R, held, grip, form, sw){
       tc: style.tc * (sw.riposte ? 0.45 : 1), ts: style.ts, tf: style.tf,
       start: { hand: saberPose.hand.clone(), blade: saberPose.blade.clone(), twist: saberPose.twist },
     };
+    // FLOW: the blade carries on from wherever the last cut left it. Finishing on the far side from this cut's
+    // chamber, it wraps over the top to get there (the films' twirl between strokes) instead of dragging back
+    // across the front like a second, backwards cut.
+    const st0 = sw.anim.start.hand, c0 = scaled[0].hand;
+    sw.anim.wrap = st0.x * c0.x < 0 && Math.abs(st0.x - c0.x) > 0.3;
+    // the follow-through settles a little toward the form's guard instead of freezing (the recovery)
+    const G0 = (GUARDS[grip] && GUARDS[grip][form]) || GUARDS.regular.niman;
+    sw.anim.rest = G0.ready;
   }
   const A = sw.anim, [C, S, F] = A.keys;
   const k = Math.min(1, sw.t / sw.dur);
@@ -100,9 +114,15 @@ export function swingPose(R, held, grip, form, sw){
   if (k < A.tc){ a = A.start; b = C; t = easeOut(k / A.tc); ta = A.start.twist; tb = C.twist; }
   else if (k < A.ts){ a = C; b = S; t = easeIn((k - A.tc) / (A.ts - A.tc)); ta = C.twist; tb = S.twist; }
   else if (k < A.tf){ a = S; b = F; t = easeOut((k - A.ts) / (A.tf - A.ts)); ta = S.twist; tb = F.twist; }
-  else { a = F; b = F; t = 0; ta = tb = F.twist; }
+  else { a = F; b = A.rest; t = 0.3 * easeOut((k - A.tf) / (1 - A.tf)); ta = tb = F.twist; }
   arcLerp(a.hand, b.hand, t, PIVOT, saberPose.hand);
-  slerpDir(a.blade, b.blade, t, saberPose.blade);
+  if (k < A.tc && A.wrap){
+    // wind-up wrap: lift the hand past the head and roll the blade up and back through the middle of it
+    const wb = WRAP_BLADE[grip] || WRAP_BLADE.regular;
+    saberPose.hand.addScaledVector(WRAP_LIFT, Math.sin(Math.PI * t));
+    if (t < 0.5) slerpDir(a.blade, wb, t * 2, saberPose.blade);
+    else slerpDir(wb, b.blade, t * 2 - 1, saberPose.blade);
+  } else slerpDir(a.blade, b.blade, t, saberPose.blade);
   // a heavy blade drags PAST the follow-through, then gets hauled back (overshoot), with a wobble
   if (style.overshoot && k > A.ts){
     const o = Math.sin(Math.min(1, (k - A.ts) / (1 - A.ts)) * Math.PI) * style.overshoot;
@@ -125,6 +145,61 @@ export function swingPose(R, held, grip, form, sw){
   // progress through the actual cut (chamber → follow), for spins
   const cut = THREE.MathUtils.clamp((k - A.tc) / (A.tf - A.tc), 0, 1);
   return { k, env: Math.sin(Math.PI * k), cut, spin: A.spin, hop: A.hop, drop: style.drop || 0, fin: A.fin, strike: k > A.tc && k < A.tf };
+}
+
+/* DEFLECT — the blade snaps to catch a bolt and flicks it away. Which catch is picked from where the bolt arrives
+   (d.side: + weapon side; d.h: height against the chest) and from the last few catches, so a volley moves the blade
+   between covers like the films instead of repeating one block. Returns the same body cue as guardPose. */
+const ZONE_CYCLE = ['mid', 'high', 'mid', 'low'];
+const _pick = { side: 1, cyc: 0, last: {} };
+function pickDeflect(grip, d){
+  const set = DEFLECTS[grip] || DEFLECTS.regular;
+  // a bolt clearly off to one side is caught on that side; a bolt down the middle alternates forehand / cross-body
+  const side = Math.abs(d.side) > 0.25 ? Math.sign(d.side) : -_pick.side;
+  _pick.side = side;
+  const h = d.h > 0.35 ? 'high' : d.h < -0.35 ? 'low' : ZONE_CYCLE[_pick.cyc++ % ZONE_CYCLE.length];
+  const zone = h + (side > 0 ? 'R' : 'L'), list = set[zone], key = grip + zone;
+  // never the same catch twice running in a zone
+  const last = _pick.last[key] ?? -1;
+  const i = (last + 1 + (list.length > 2 && Math.random() < 0.5 ? 1 : 0)) % list.length;
+  _pick.last[key] = i;
+  return list[i];
+}
+export function deflectPose(dt, R, held, grip, form, d){
+  if (!saberPose.live) seed(R, held);
+  const G0 = (GUARDS[grip] && GUARDS[grip][form]) || GUARDS.regular.niman;
+  const bg = G0.block;
+  if (!d.pose){
+    const p = pickDeflect(grip, d);
+    const j = () => (Math.random() - 0.5) * 0.06;
+    const hand = p.hand.clone().add(_t.set(j(), j(), j()));
+    const blade = p.blade.clone().add(_t.set(j() * 2, j() * 2, j() * 2)).normalize();
+    d.pose = {
+      hand, blade, pole: p.pole, twist: p.twist || 0,
+      // the flick carries the hand on and turns the tip further the same way, sending the bolt back out
+      flickHand: hand.clone().add(p.flick), flickBlade: blade.clone().addScaledVector(p.flick, 2.4).normalize(),
+      from: { hand: saberPose.hand.clone(), blade: saberPose.blade.clone(), twist: saberPose.twist },
+    };
+  }
+  const P = d.pose, k = Math.min(1, d.t / d.dur);
+  if (k < 0.3){
+    const t = easeOut(k / 0.3);
+    arcLerp(P.from.hand, P.hand, t, PIVOT, saberPose.hand);
+    slerpDir(P.from.blade, P.blade, t, saberPose.blade);
+    saberPose.twist = P.from.twist + (P.twist - P.from.twist) * t;
+  } else {
+    const t = easeOut(Math.min(1, (k - 0.3) / 0.3));
+    saberPose.hand.copy(P.hand).lerp(P.flickHand, t);
+    slerpDir(P.blade, P.flickBlade, t, saberPose.blade);
+    saberPose.twist = P.twist;
+  }
+  saberPose.pole.lerp(P.pole, Math.min(1, dt * 30)).normalize();
+  // the form's block decides the hands: Djem So closes both on the hilt, Ataru and Niman keep the free hand out
+  saberPose.two += ((bg.two ? 1 : 0) - saberPose.two) * Math.min(1, dt * 14);
+  const off = bg.off || G0.ready.off;
+  if (off){ saberPose.off.lerp(off.hand, Math.min(1, dt * 12)); saberPose.offPole.lerp(off.pole, Math.min(1, dt * 12)).normalize(); }
+  saberPose.lean += ((bg.lean || 0) - saberPose.lean) * Math.min(1, dt * 12);
+  return { torso: 0 };
 }
 
 /* Solve the live pose onto the rig: weapon arm by IK, blade aimed, off hand on the hilt (two-handed) or free. */

@@ -36,6 +36,23 @@ The stance ids in code stay `fast` / `medium` / `strong` (saves and unlocks key 
 
 The grip is a player preference (`GRIP` in the menu settings, saved like the others). It is visual only: hit arcs don't use the blade mesh. Each grip has its own guards and cuts in `src/data/poses.js`: the reverse set keeps the blade back along the arm, drives slashes with the elbow and a hard body turn (the fist leads, the blade trails), and turns the back cut into a stab driven past the hip.
 
+## Combos and deflects
+
+- **Combo rhythm** (`FLOW` in `src/player/jedi/combat.js`): a press before 50% of a swing is ignored and marks that
+  swing as rushed. One press from 50% on queues the next cut. If the swing wasn't rushed the link is *in rhythm*: the
+  next cut leaves at 80% (just after the follow-through) with a faint ring, instead of waiting out the recovery to
+  100%. Mashing still chains, just on the slower beat. Damage, hit arcs, stamina and swing lengths are unchanged.
+- **Flow between cuts:** every cut starts from where the blade actually is. When the last cut ended on the far side
+  from the next chamber, the wind-up wraps over the top (hand past the head, blade rolled up and back; laid along the
+  forearm in reverse grip) instead of dragging back across the front. A linked cut eases out of the last one's body
+  turn, hop and hip drop, and the follow-through settles a little toward the guard rather than freezing.
+- **Deflects:** catching a bolt (block or parry) moves the blade to one of the catches in `SABER_DEFLECTS`
+  (`src/data/poses.js`): high, mid or low, on the weapon side or across the body, two or three per zone and per grip.
+  The side comes from where the bolt arrives; bolts down the middle alternate forehand and cross-body, and the height
+  rotates mid/high/mid/low so a volley never repeats one block. Each catch snaps in, flicks the bolt away, and hands
+  back to the guard. The form's block decides the hands (Djem So two-handed, Ataru and Niman one-handed). Blocked
+  melee blows use the same catches. A swing in flight keeps the blade (the cut already deflects).
+
 ## Mandalorian
 
 - **Blasters:** gunslinger stances (Din Djarin). Quick draw, one-handed hip shots with the pistol, and a two-handed brace for the rifle.

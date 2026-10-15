@@ -17,6 +17,7 @@ import { spawnHitSpark, spawnParryFlash } from '../fx/vfx.js';
 import { boltImpact, clashFlash } from '../fx/ink.js';
 import { mandoWeapon, boltDamage, hitMarker } from '../player/mando/weapons.js';
 import { hurtPlayer } from '../player/damage.js';
+import { deflectAnim } from '../player/jedi/combat.js';
 
 /* ============================================================
    PROJECTILES — blaster bolts & boss orbs
@@ -90,6 +91,7 @@ export function updateBolts(dt){
         spawnHitSpark(b.mesh.position.clone(), 0x6fd0ff, 0.7);
         sfx(1400, 0.08, 'square', 0.05, 1800);
       } else if (d < 2.6 && deflecting){
+        deflectAnim(b.mesh.position);   // the blade moves to meet it (skipped mid-swing: the cut is already there)
         if (parried) player.parryT = 0;
         b.friendly = true; b.speed *= 1.4; b.dmg = parried ? 42 : 22;
         const tgt = nearestEnemyInCone(40, -1);
@@ -121,6 +123,7 @@ export function updateBolts(dt){
         S.deflect(); floater(pp, 'DEFLECT', '#7fd4ff'); if (G.stats) G.stats.deflects++;
       } else if (d < 2.2 && blocking){
         // absorbed on the guard — costs stamina, no reflection
+        deflectAnim(b.mesh.position);
         player.stam = Math.max(0, player.stam - 7 * player.up.blockStam * (stance().blockStamMul || 1));
         player.stamDelay = CFG.player.stamDelay;
         spawnHitSpark(b.mesh.position.clone(), stance().blade, 0.8);

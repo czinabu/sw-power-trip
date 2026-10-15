@@ -15,7 +15,11 @@ import { FOCUS, focusTier, focusDmgMul, addFocus } from './focus.js';
 import { spawnHitSpark, spawnGroundShock } from '../../fx/vfx.js';
 import { inkSprite, sparks, clashFlash } from '../../fx/ink.js';
 
-export function tryAttack(){
+/* COMBO RHYTHM — fractions of a swing. A press before `open` is too early (and costs this link its flow); a single
+   press from `open` on links in rhythm, and the next cut leaves at `at` (just after the follow-through). */
+export const FLOW = { open: 0.5, at: 0.8 };
+
+export function tryAttack(flow = false){
   // the blade is MID-FLIGHT (thrown) — no saber strikes until it returns to your hand. Force powers still work.
   if (shared.saberProj){
     if (G.gt - (player.lastWinded || -9) > 0.5){ player.lastWinded = G.gt; floater(playerPos(), 'NO BLADE', '#bfe8ff'); sfx(220, 0.06, 'sine', 0.04, 160); }
@@ -23,8 +27,17 @@ export function tryAttack(){
   }
   if (G.mode !== 'play' || player.blockHeld || player.judgeT > 0 || player.mendT > 0 || player.swingLock > 0) return;
   // input buffering, but ONLY in the back half of the current swing — early mashing is ignored so
-  // the combo flows on rhythm instead of spraying three swings off one frantic burst of clicks
-  if (player.atkT > 0){ if (player.swing && player.swing.t > player.swing.dur * 0.5) player.queuedAtk = true; return; }
+  // the combo flows on rhythm instead of spraying three swings off one frantic burst of clicks.
+  // A press in the back half queues the next cut. If that was the ONLY press this swing (no early click), the
+  // link is IN RHYTHM: the next cut flows straight out of this one's follow-through (animation.js launches it at
+  // FLOW.at) instead of waiting out the recovery. Mashing still chains, just without the flow.
+  if (player.atkT > 0){
+    const sw = player.swing;
+    if (!sw) return;
+    if (sw.t > sw.dur * FLOW.open) player.queuedAtk = true;
+    else sw.rushed = true;
+    return;
+  }
   const st = stance();
   const step = (G.gt - player.lastAtkEnd < 0.9 * (st.comboGap || 1)) ? (player.comboStep + 1) % 3 : 0;
   // both the Jedi saber and the Mando DARKSABER spend stamina per swing (medium-high for the heavy darksaber)
@@ -66,7 +79,8 @@ export function tryAttack(){
   // BACK STRIKE — attacking while retreating (S) whirls the blade behind you to punish
   // anything closing on your back, knocking it away. No aim-assist turn: you stay facing forward.
   const backStrike = dirKey === 'back' && !ripNow;
-  player.swing = { t: 0, applied: false, step, dur, pat, dir: dirKey, back: backStrike, riposte: ripNow };
+  player.swing = { t: 0, applied: false, step, dur, pat, dir: dirKey, back: backStrike, riposte: ripNow, flow };
+  player.deflectAnim = null;   // a cut takes the blade over from any catch in progress
   // cinematic lunge toward nearest target in view — STRONG's finisher lunges harder; a RIPOSTE drives in hardest
   const lunge = ripNow ? 2.0 : ((step === 2 && st.finisherLunge) ? st.finisherLunge : st.lunge);
   const tgt = backStrike ? nearestEnemyInCone(CFG.player.comboRange, -0.35, true)
@@ -83,6 +97,7 @@ export function tryAttack(){
     player.vel.addScaledVector(fwd(), 7 * lunge);   // step into the strike
   }
   S.swing();
+  if (flow && G.hero !== 'mando') sfx(1250, 0.06, 'sine', 0.022, 1900);   // a faint ring: the link landed in rhythm
   if (G.stance === 'strong') sfx(220, 0.25, 'sawtooth', 0.05, 70);   // heavier whoosh
 }
 // Bail out of a saber swing at ANY point — into a guard/parry, a Force power, or a dash. The unspent cut is
@@ -266,4 +281,17 @@ export function forceKick(){
     burst(ip, 0xbfe8ff, 7, 8, 4, 0.8); spawnHitSpark(ip, 0xcfe0ec, 1.0);
   } else burst(ip, 0xcfe0ec, 3, 5, 3);
   S.dash(); sfx(170, 0.1, 'square', 0.06, 70); sfx(90, 0.08, 'sawtooth', 0.05, 40);
+}
+
+/* DEFLECT ANIMATION — start a blade catch toward something arriving at `from` (a bolt, or a blocked blow). The
+   catch itself (which cover, which side) is picked in anim/saber.js. A swing already in flight keeps the blade. */
+export function deflectAnim(from){
+  if (G.hero === 'mando' || player.atkT > 0 || !from) return;
+  const pp = playerPos(), fy = player.faceYaw;
+  const dx = from.x - pp.x, dz = from.z - pp.z, d = Math.hypot(dx, dz) || 1;
+  player.deflectAnim = {
+    t: 0, dur: 0.3, pose: null,
+    side: (dx * -Math.cos(fy) + dz * Math.sin(fy)) / d,   // + = the weapon (right) side
+    h: from.y - (pp.y + 1.4),                              // against the chest
+  };
 }
