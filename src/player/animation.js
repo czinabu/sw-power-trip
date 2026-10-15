@@ -119,7 +119,7 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
   if (player.landT > 0) player.landT -= dt;
   const land = player.landT > 0 ? Math.sin((1 - player.landT / (player.landDur || LAND_T)) * Math.PI) * player.landAmt : 0;
   player._land = land;
-  // legs: stride + knee lift; the Jedi's air, flip and dive legs come from anim/agility.js
+  // legs: stride + knee lift (+ knee = the shin folds back, a real knee bend); the Jedi's air, flip and dive legs come from anim/agility.js
   if (G.hero !== 'mando' && jediAirLegs(dt, dr, R)){
     // posed: jump phases, Force leap and glide, flip tuck/pike/layout, slam dive
   } else if (player.grounded && !player.flip){
@@ -130,8 +130,8 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
     const q = ph * (G.hero !== 'mando' && strideBack() ? -1 : 1);
     R.legL.hip.rotation.x  = dr(R.legL.hip.rotation.x,  Math.sin(q) * 0.55 * inten * gait.amp - lead - step - land*0.5, 14);
     R.legR.hip.rotation.x  = dr(R.legR.hip.rotation.x, -Math.sin(q) * 0.55 * inten * gait.amp + lead + step*0.6 - land*0.35, 14);
-    R.legL.knee.rotation.x = dr(R.legL.knee.rotation.x, -Math.max(0, -Math.sin(q - 0.4)) * 0.9 * inten * gait.lift - step*0.8 - land*0.95, 14);
-    R.legR.knee.rotation.x = dr(R.legR.knee.rotation.x, -Math.max(0,  Math.sin(q - 0.4)) * 0.9 * inten * gait.lift - step*1.1 - land*0.8, 14);
+    R.legL.knee.rotation.x = dr(R.legL.knee.rotation.x, Math.max(0, -Math.sin(q - 0.4)) * 0.9 * inten * gait.lift + step*0.8 + land*0.95, 14);
+    R.legR.knee.rotation.x = dr(R.legR.knee.rotation.x, Math.max(0,  Math.sin(q - 0.4)) * 0.9 * inten * gait.lift + step*1.1 + land*0.8, 14);
   } else if (player.airDive){
     // PRONE flight — legs DEAD STRAIGHT and in line with the torso so the whole body reads as one long flat plank.
     // Forward superman: legs trail straight back (hip ~0). Reclined back-fall: feet kick out front.
@@ -140,20 +140,20 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
     R.legR.hip.rotation.x  = dr(R.legR.hip.rotation.x,  backFall ? -0.5 : 0.0, 10);
     R.legL.hip.rotation.z  = dr(R.legL.hip.rotation.z,  0.04, 10);   // a hair of splay so the legs read as two, not one
     R.legR.hip.rotation.z  = dr(R.legR.hip.rotation.z, -0.04, 10);
-    R.legL.knee.rotation.x = dr(R.legL.knee.rotation.x, -0.04, 10);
-    R.legR.knee.rotation.x = dr(R.legR.knee.rotation.x, -0.04, 10);
+    R.legL.knee.rotation.x = dr(R.legL.knee.rotation.x, 0.04, 10);
+    R.legR.knee.rotation.x = dr(R.legR.knee.rotation.x, 0.04, 10);
   } else if (G.hero === 'mando' && !player.grounded){
     // UPRIGHT JETPACK — legs hang loose under the pack, one a touch ahead of the other, trailing as you lean
     const trail = (player._airLean || 0) * 0.6;
     R.legL.hip.rotation.x  = dr(R.legL.hip.rotation.x,  -0.06 + trail + Math.sin(G.gt * 1.3) * 0.04, 6);
     R.legR.hip.rotation.x  = dr(R.legR.hip.rotation.x,   0.14 + trail, 6);
-    R.legL.knee.rotation.x = dr(R.legL.knee.rotation.x, -0.22 - trail * 0.5, 6);
-    R.legR.knee.rotation.x = dr(R.legR.knee.rotation.x, -0.42 - trail * 0.6, 6);
+    R.legL.knee.rotation.x = dr(R.legL.knee.rotation.x, 0.22 + trail * 0.5, 6);
+    R.legR.knee.rotation.x = dr(R.legR.knee.rotation.x, 0.42 + trail * 0.6, 6);
   } else {
     R.legL.hip.rotation.x  = dr(R.legL.hip.rotation.x,  -0.5, 8);
     R.legR.hip.rotation.x  = dr(R.legR.hip.rotation.x,  -0.35, 8);
-    R.legL.knee.rotation.x = dr(R.legL.knee.rotation.x, -1.0, 8);
-    R.legR.knee.rotation.x = dr(R.legR.knee.rotation.x, -0.9, 8);
+    R.legL.knee.rotation.x = dr(R.legL.knee.rotation.x, 1.0, 8);
+    R.legR.knee.rotation.x = dr(R.legR.knee.rotation.x, 0.9, 8);
   }
   // stance width — feet splay out for the wide STRONG guard, stay close for FAST
   if (player.grounded && !player.flip){
@@ -174,8 +174,8 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
   if (G.hero !== 'mando' && player.kickT > 0){
     const ext = Math.sin((1 - clamp(player.kickT / (player.kickMax || 0.4), 0, 1)) * Math.PI);
     R.legR.hip.rotation.x  = -1.55 * ext;
-    R.legR.knee.rotation.x = -0.1 - (1 - ext) * 0.7;
-    R.legL.knee.rotation.x = -0.28 * ext;
+    R.legR.knee.rotation.x = 0.1 + (1 - ext) * 0.7;
+    R.legL.knee.rotation.x = 0.28 * ext;
     R.torso.rotation.x = -0.22 * ext;
   }
   // hips bob + robe flare with speed; crouch lowers the center of gravity per stance

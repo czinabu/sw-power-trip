@@ -47,18 +47,18 @@ export function flipBody(dt, vis, fl){
 }
 
 /* ---------------- legs ---------------- */
-// leg shapes: [L hip, L knee, R hip, R knee, splay]. − hip = thigh forward, − knee = bend.
+// leg shapes: [L hip, L knee, R hip, R knee, splay]. − hip = thigh forward, + knee = the shin folds back (a bend).
 const LEGS = {
-  tuck:   [-1.75, -2.2, -1.6, -2.25, 0.08],
-  pike:   [-1.55, -0.08, -1.5, -0.08, 0.04],
-  layout: [0.12, -0.12, 0.18, -0.2, 0.02],
-  split:  [-1.15, -0.25, 0.65, -0.35, 0.3],
-  stride: [-0.7, -1.0, 0.4, -0.55, 0.1],
-  slide:  [-0.95, -0.9, 0.62, -0.18, 0.28],
-  float:  [-0.35, -0.65, -0.12, -0.4, 0.06],
-  hurdle: [-1.45, -1.35, 0.5, -0.95, 0.04],
-  reach:  [-0.42, -0.5, -0.12, -0.28, 0.08],
-  kneel:  [-1.25, -1.45, 0.25, -2.25, 0.18],   // the R (back) knee goes down: a superhero landing
+  tuck:   [-1.75, 2.2, -1.6, 2.25, 0.08],
+  pike:   [-1.55, 0.08, -1.5, 0.08, 0.04],
+  layout: [0.12, 0.12, 0.18, 0.2, 0.02],
+  split:  [-1.15, 0.25, 0.65, 0.35, 0.3],
+  stride: [-0.7, 1.0, 0.4, 0.55, 0.1],
+  slide:  [-0.95, 0.9, 0.62, 0.18, 0.28],
+  float:  [-0.35, 0.65, -0.12, 0.4, 0.06],
+  hurdle: [-1.45, 1.35, 0.5, 0.95, 0.04],
+  reach:  [-0.42, 0.5, -0.12, 0.28, 0.08],
+  kneel:  [-1.25, 1.45, 0.25, 2.25, 0.18],   // the R (back) knee goes down: a superhero landing
 };
 function poseLegs(R, dr, shape, w, rate){
   const [lh, lk, rh, rk, sp] = shape;
@@ -175,7 +175,7 @@ export function mandoAgilityPost(dt, dr, vis, R, f, r){
     const vF = (vx*f.x + vz*f.z) / sp, vR = (vx*r.x + vz*r.z) / sp;
     const w = clamp(sp / 12, 0, 1);
     const side = Math.abs(vR) > Math.abs(vF);
-    poseLegs(R, dr, side ? [-0.5, -0.95, 0.35, -0.3, 0.42] : (vF >= 0 ? LEGS.slide : [0.35, -0.3, -0.85, -1.0, 0.2]), w, 22);
+    poseLegs(R, dr, side ? [-0.5, 0.95, 0.35, 0.3, 0.42] : (vF >= 0 ? LEGS.slide : [0.35, 0.3, -0.85, 1.0, 0.2]), w, 22);
     player._agiDrop = Math.max(player._agiDrop || 0, M.dodge.drop * w);
   }
   // a hop is an airborne stint that started without the jets; lighting them ends it
@@ -189,6 +189,6 @@ export function mandoAgilityPost(dt, dr, vis, R, f, r){
   } else if (player.jetActive && !player.boosting){
     // IGNITION / CLIMB — legs straight and together under the pack, toes pointed (Boba Fett on the rise)
     const climb = clamp(player.vy / 8, 0, 1);
-    poseLegs(R, dr, mixLegs([-0.06, -0.22, 0.14, -0.42, 0.02], [0.02, -0.05, 0.08, -0.12, 0.0], climb), 1, 9);
+    poseLegs(R, dr, mixLegs([-0.06, 0.22, 0.14, 0.42, 0.02], [0.02, 0.05, 0.08, 0.12, 0.0], climb), 1, 9);
   }
 }

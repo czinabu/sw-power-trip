@@ -45,6 +45,30 @@ The grip is a player preference (`GRIP` in the menu settings, saved like the oth
 - **Jetpack:** upright hover with small corrections. Lean into travel at speed, and land with a knee-bend absorb. Boba Fett, not Superman, unless boosting.
 - **Darksaber:** heavy and effortful, as in Mandalorian season 2–3. It "fights back" against an unsure wielder: wide, weighty swings, often two-handed, with recovery after each blow. Bo-Katan, who wields it confidently, is the cleaner reference for a mastered version.
 
+## Agility
+
+Dashes, jumps, flips, the Force leap and glide, slam dives, landings and the run move like the form (or the Mando)
+too. Speeds, durations, i-frames and hitboxes stay in `data/config.js`, `data/mando.js` and `player/movement.js`; the
+body move for each lives in `src/data/agility.js` and is posed by `src/player/anim/agility.js`.
+
+| Move | IV · Ataru | VI · Niman | V · Djem So |
+|---|---|---|---|
+| Dash (Shift) | butterfly twist to the side, tuck flips forward/back | a smooth spin dodge, arms open | no spin: a low, driven slide, hips sunk |
+| Tap jump | tucks and turns a full twist | knee drive, tuck, reach | a short, heavy hop |
+| Double jump | front flip with a full twist | clean layout front flip | flipless Force leap, blade cocked overhead |
+| Guard + jump evade | back layout full, twisting handspring, no-hands aerial | single back/front/side flips, open arms | tight, heavy tucks, blade held high |
+| Force leap / glide | hurdler's leap, cat crouch, blade trailing | upright float, off palm steadying | blade up overhead, ready to bring it down |
+| Slam (X) | blade-first plunge, lands kneeling on it | palm-first Force landing | overhead hammer smashed into the ground |
+| Landing | deep but springs straight back up | even | sinks deep and wide, rises slowly |
+| Run | blade trailing low, light and leaning | blade at the side, off hand pumping | two-handed high carry, heavy |
+
+Knees bend with **+x** on the knee joint (the shin folds back); −x hyperextends. Hips are −x for thigh forward.
+Flips turn about the centre of mass, not the feet. A flip is described by turns about the body's axes (somer, twist,
+roll, spin) plus a leg shape (tuck, pike, layout, split, slide) and an air guard for the saber hand(s).
+
+The Mando keeps to beskar and jets: the ground dodge is a thruster-shoved slide, a hop tucks the knees, ignition
+snaps the legs together under the pack, and a jet slam drops into a three-point landing.
+
 ## Rig features to use
 
 - **New joints** (`src/player/model/rig.js`): chest (upper-body twist separate from the hips), wrists (snap and weapon angle), ankles (foot plant), four robe flaps and the cape pivot (follow-through and secondary motion).
