@@ -2,6 +2,7 @@
 // updatePlayer(): the per-frame player update, run as meters → movement → Mando weapons/flight → Force jump → gravity/landing → animation.
 
 import { CFG } from '../data/config.js';
+import { abil } from '../data/mastery.js';
 import { sfx } from '../audio/sfx.js';
 import { V3, rand, clamp } from '../utils.js';
 import { burst } from '../fx/particles.js';
@@ -54,7 +55,7 @@ function updatePlayerMeters(dt, pp, st){
   if (player.barrierT > 0){
     const wasUp = player.barrierT;
     player.barrierT -= dt;
-    if (player.barrierT <= 0 && wasUp > 0) barrierShove(0.45, CFG.abilities.barrier.expireKnock);   // EXPIRY — a small parting shove
+    if (player.barrierT <= 0 && wasUp > 0) barrierShove(0.45, abil('barrier').expireKnock);   // EXPIRY — a small parting shove
     if (shared._barrierMesh){
       shared._barrierMesh.visible = true;
       shared._barrierMesh.position.set(pp.x, pp.y + 1.4, pp.z);

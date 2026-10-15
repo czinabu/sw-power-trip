@@ -12,7 +12,8 @@ import { applyJetTier } from '../game/progression.js';
    PROGRESSION CONFIG  (edit here to add/retune progression)
    - AUTO: weapons / forms / jetpack tiers + CORE abilities — granted automatically by stage, no XP.
    - STORE: ABILITY FORKS (choose 1 of 2, the other locks forever) + a single expensive FINAL, bought with XP.
-   - Weapon-UPGRADES are a separate track: the skill-tree cards, paid with SKILL POINTS (1 free/wave, buy more with XP).
+   - MASTERY (data/mastery.js): XP-bought ranks that upgrade each ability you own.
+   - Weapon-UPGRADES are a separate track: the skill-tree cards, paid with SKILL POINTS (one per wave cleared).
    Mando weapon fork (disruptor/darksaber) is the one FREE store choice. STORE_TIER_STAGE gates each tier by waveTotal.
    ============================================================ */
 export const MANDO_AUTO = [
@@ -101,10 +102,11 @@ export const JEDI_STORE = [
     owned:()=>!!player.up.repulseUp, buy(){ player.up.repulseUp = true; } },
 ];
 // SURVIVAL POWER-UPS — repeatable, escalating XP sink so you keep scaling against the endless curve.
+// Named apart from the VITALITY boon and the Jedi BULWARK training card, which can sit on the same screen.
 export const ENDLESS_POWERS = [
   { id:'might',    ico:'⚔', nm:'MIGHT',      ds:'+10% weapon &amp; power damage', apply(){ player.up.dmg *= 1.10; player.up.rocketDmg = (player.up.rocketDmg||1)*1.10; player.up.flameDmg = (player.up.flameDmg||1)*1.10; } },
-  { id:'vitality', ico:'✚', nm:'VITALITY',   ds:'+22 max vitality · full heal',  apply(){ player.up.hpMax += 22; player.hp = maxHp(); } },
+  { id:'vitality', ico:'✚', nm:'FORTITUDE',   ds:'+22 max vitality · full heal',  apply(){ player.up.hpMax += 22; player.hp = maxHp(); } },
   { id:'alacrity', ico:'✦', nm:'ALACRITY',   ds:'+8% attack &amp; fire speed',    apply(){ player.up.atkSpeed *= 1.08; player.up.fireRate = (player.up.fireRate||1)*1.08; } },
   { id:'attune',   ico:'❂', nm:'ATTUNEMENT', ds:'+15% Force regen · −5% cost',    apply(){ player.up.forceRegen *= 1.15; player.up.abilityCostMul *= 0.95; } },
-  { id:'bulwark',  ico:'⛨', nm:'BULWARK',    ds:'take 6% less damage',            apply(){ player.up.dr = 1 - (1-(player.up.dr||0))*0.94; } },
+  { id:'bulwark',  ico:'⛨', nm:'RESOLVE',    ds:'take 6% less damage',            apply(){ player.up.dr = 1 - (1-(player.up.dr||0))*0.94; } },
 ];

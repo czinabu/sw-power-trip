@@ -2,7 +2,7 @@
 // Force powers: push, slam, saber throw, pull, repulse, barrier, mend, judgement.
 
 import * as THREE from 'three';
-import { CFG } from '../../data/config.js';
+import { abil, healFrac } from '../../data/mastery.js';
 import { scene } from '../../engine/renderer.js';
 import { sfx, S } from '../../audio/sfx.js';
 import { V3, clamp, TMP } from '../../utils.js';
@@ -27,7 +27,7 @@ function faceAbilityAim(range){
 }
 
 export function forcePush(){
-  const A = CFG.abilities.push;
+  const A = abil('push');
   const st = stance();
   const cost = A.cost * ((st.costMult && st.costMult.push) || 1) * (st.powerCostMul || 1);
   if (!G.unlocked.push || player.cds.push > 0 || player.force < cost || G.mode !== 'play') return;
@@ -91,7 +91,7 @@ export function forcePush(){
 
 let slamHintT = 0;
 export function forceSlam(){
-  const A = CFG.abilities.slam;
+  const A = abil('jslam');
   const st = stance();
   const slamCost = A.cost * (st.powerCostMul || 1);
   if (!G.unlocked.slam || player.cds.slam > 0 || player.force < slamCost || G.mode !== 'play' || player.slamming) return;
@@ -111,7 +111,7 @@ export function forceSlam(){
   sparks(V3(sp.x, sp.y + 1.2, sp.z), stance().blade, 8, 10, { dir: V3(0, 1, 0), cone: 0.5, life: 0.25, grav: 0 });   // the air tears as you drop
 }
 export function slamImpact(){
-  const A = CFG.abilities.slam, st = stance();
+  const A = abil('jslam'), st = stance();
   const pp = playerPos();
   const col = st.blade;
   S.slam(); S.boom();
@@ -150,7 +150,7 @@ function throwLight(){
   return _throwLight;
 }
 export function saberThrow(){
-  const A = CFG.abilities.throw;
+  const A = abil('throw');
   if (!G.unlocked.throw || player.cds.throw > 0 || player.force < A.cost || shared.saberProj || G.mode !== 'play') return;
   player.force -= A.cost; player.cds.throw = A.cd * (stance().cdMult || 1);
   faceAbilityAim(A.range);   // line the throw up on the nearest target
@@ -174,7 +174,7 @@ export function saberThrow(){
 }
 export function updateSaberThrow(dt){
   if (!shared.saberProj) return;
-  const A = CFG.abilities.throw, sp = shared.saberProj;
+  const A = abil('throw'), sp = shared.saberProj;
   const pp = playerPos();
   if (!sp.returning){
     sp.mesh.position.addScaledVector(sp.dir, A.speed * dt);
@@ -215,7 +215,7 @@ export function updateSaberThrow(dt){
 
 /* FORCE PULL — yank the crowd toward your blade */
 export function forcePull(){
-  const A = CFG.abilities.pull;
+  const A = abil('pull');
   const st = stance();
   const cost = A.cost * ((st.costMult && st.costMult.pull) || 1);
   if (!G.unlocked.pull || player.cds.pull > 0 || player.force < cost || G.mode !== 'play') return;
@@ -260,7 +260,7 @@ export function forcePull(){
 
 /* FORCE REPULSE — a 360° concussive blast that hurls everything around you away (high-tier) */
 export function forceRepulse(){
-  const A = CFG.abilities.repulse, st = stance();
+  const A = abil('repulse'), st = stance();
   const cost = A.cost * (st.powerCostMul || 1);            // DJEM SO casts cost more...
   if (!G.unlocked.repulse || player.cds.repulse > 0 || player.force < cost || G.mode !== 'play') return;
   const up = !!player.up.repulseUp;                        // the FINAL upgrade supercharges it
@@ -310,7 +310,7 @@ function ensureBarrierMesh(){
 }
 // a ring of CONTROL knockback from the barrier (low/no damage) — shoves the swarm off you
 export function barrierShove(power, knock){
-  const A = CFG.abilities.barrier, pp = playerPos();
+  const A = abil('barrier'), pp = playerPos();
   spawnGroundShock(pp.clone().setY(0.1), 0x6fd0ff, A.knockR, 0.4, power);
   for (const e of enemies){
     if (e.dead || e.converted || e.state === 'spawn') continue;
@@ -321,7 +321,7 @@ export function barrierShove(power, knock){
   }
 }
 export function forceBarrier(){
-  const A = CFG.abilities.barrier;
+  const A = abil('barrier');
   if (!G.unlocked.barrier || player.cds.barrier > 0 || player.force < A.cost || G.mode !== 'play') return;
   player.force -= A.cost; player.cds.barrier = A.cd * (stance().cdMult || 1);
   player.barrierT = A.dur;
@@ -343,7 +343,7 @@ export function forceBarrier(){
    Steep cost + long cooldown: deliberate, never a spammable regen. */
 const MEND_CHANNEL = 0.7;
 export function forceMend(){
-  const A = CFG.abilities.mend;
+  const A = abil('mend');
   if (!G.unlocked.mend || player.cds.mend > 0 || player.mendT > 0 || player.force < A.cost || G.mode !== 'play') return;
   if (player.hp >= maxHp()){ floater(playerPos(), 'UNHURT', '#7bffae'); return; }   // don't waste it at full health
   player.force -= A.cost; player.cds.mend = A.cd * (stance().cdMult || 1);
@@ -355,8 +355,8 @@ export function forceMend(){
 }
 // the channel succeeded — knit the wound and erupt in green light
 export function mendComplete(){
-  const A = CFG.abilities.mend, pp = playerPos();
-  const healed = Math.min(maxHp() - player.hp, Math.round(maxHp() * A.heal));
+  const pp = playerPos();
+  const healed = Math.min(maxHp() - player.hp, Math.round(maxHp() * healFrac()));
   player.hp += healed;
   player.lastHurt = G.gt;   // mending resets the passive-regen delay window
   spawnGroundShock(pp.clone().setY(0.1), 0x53ff8c, 3.0, 0.5, 0.55);
@@ -370,7 +370,7 @@ export function mendComplete(){
 
 /* FORCE JUDGEMENT — channel chain lightning through the front cone */
 export function forceJudgement(){
-  const A = CFG.abilities.judge;
+  const A = abil('judge');
   if (!G.unlocked.judge || player.cds.judge > 0 || player.force < A.cost || G.mode !== 'play' || player.judgeT > 0) return;
   player.force -= A.cost;
   faceAbilityAim(A.range);   // aim the storm at the nearest foe
@@ -384,7 +384,7 @@ export function forceJudgement(){
 }
 export function updateJudgement(dt){
   if (player.judgeT <= 0) return;
-  const A = CFG.abilities.judge;
+  const A = abil('judge');
   player.judgeT -= dt;
   player.judgeTick -= dt;
   if (player.judgeTick > 0) return;

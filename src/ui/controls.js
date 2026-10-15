@@ -62,7 +62,7 @@ const TIPS = {
     '<b>Focus</b> builds with clean hits and parries and boosts your damage. Taking a hit breaks it.',
     '<b>Forms:</b> Ataru for crowds, Niman for all-round play, Djem So for brutes and bosses.',
     'Any swing can be cancelled into a block, a Force power or a dash.',
-    'After each wave, spend <b>XP</b> on new abilities and <b>skill points</b> on training.',
+    'After each wave, spend <b>XP</b> on new abilities and on mastering the ones you have, and <b>skill points</b> on training.',
   ],
   mando: [
     '<b>Heat</b> is the gauge beside your reticle. Fill it and you overheat; press <b>R</b> to vent early.',
@@ -70,7 +70,7 @@ const TIPS = {
     '<b>Gadget power</b> (bottom-left bar) fuels flame, rockets and other gadgets.',
     'The reticle turns <b>gold</b> when a target is under it.',
     'Hold RMB with the single blaster to raise a shield that deflects bolts.',
-    'After each wave, spend <b>XP</b> on new gadgets and <b>skill points</b> on weapon upgrades.',
+    'After each wave, spend <b>XP</b> on new gadgets and on mastering the ones you have, and <b>skill points</b> on weapon upgrades.',
   ],
 };
 

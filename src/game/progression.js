@@ -9,6 +9,7 @@ import { G, player } from '../state.js';
 import { playerPos } from '../player/helpers.js';
 import { TIER_REQ, TIER_NAME, SKILLS, TIER_NAME_MANDO, MANDO_SKILLS } from '../data/skills.js';
 import { MANDO_STORE, JEDI_STORE } from '../data/store.js';
+import { masterySet, masteryRank } from '../data/mastery.js';
 import { renderProgress } from '../ui/store-ui.js';
 
 export function skillSet(){ return G.hero === 'mando' ? MANDO_SKILLS : SKILLS; }
@@ -34,7 +35,6 @@ export function killBonus(){ return 1 + clamp((G.streak || 0) * 0.12, 0, 2); }
 // abilities open by TIER, gated by how deep into the run you are (waveTotal) — so power arrives in waves
 const STORE_TIER_STAGE = { 1: 0, 2: 1, 3: 3, 4: 6, 5: 8 };   // waveTotal each tier opens — earlier = snappier pacing
 function storeTierOpen(tier){ return (G.waveTotal || 0) >= (STORE_TIER_STAGE[tier] || 0); }
-export function skillPointCost(){ return 120 + (G.skillBought || 0) * 90; }   // each bought point costs more
 
 // JETPACK PROGRESSION — starts WEAK & short (very limiting early); boosters add real lift & a bigger tank
 export function applyJetTier(){
@@ -51,13 +51,36 @@ export function storeSet(){ return G.hero === 'mando' ? MANDO_STORE : JEDI_STORE
 // a node opens at its own `stage` (cumulative waves) if set, else by its tier's stage. lets each fork land at a precise wave.
 function storeStageOpen(n){ const s = (n.stage != null) ? n.stage : (STORE_TIER_STAGE[n.tier] || 0); return (G.waveTotal || 0) >= s; }
 export function storeAvail(n){ return !n.owned() && storeStageOpen(n) && (!n.avail || n.avail()) && !forkTaken(n, storeSet()); }
-// the cheapest ABILITY you can still buy & afford-toward — drives the bottom XP meter
+// is any ability still to come this run (not owned, not locked out by a fork pick)? — even if its wave hasn't arrived yet
+export function storeRemaining(){ const set = storeSet(); return set.some(n => !n.owned() && (!n.avail || n.avail()) && !forkTaken(n, set)); }
+// POWER MASTERY — the next rank of every ability you own, as { m, rank, cost } (rank is 0 for rank I)
+export function masteryOffers(){
+  const out = [];
+  for (const m of masterySet()){
+    const r = masteryRank(m.id);
+    if (m.owned() && r < m.ranks.length) out.push({ m, rank: r, cost: m.cost[r] });
+  }
+  return out;
+}
+export function buyMastery(o){
+  if (!G.skillSelect || (G.xp||0) < o.cost || masteryRank(o.m.id) !== o.rank || !o.m.owned()) return;
+  if (!G.mastery) G.mastery = {};
+  G.xp -= o.cost; G.mastery[o.m.id] = o.rank + 1;
+  floater(playerPos(), o.m.nm + ' ' + RANK_NUM[o.rank + 1] + '!', '#ffd24a');
+  burst(playerPos().clone().setY(1.6), 0xffd24a, 14, 6, 5);
+  S.reward(o.rank + 1 >= o.m.ranks.length ? 2 : 1);
+  document.getElementById('xpval').textContent = G.xp; renderProgress();
+}
+export const RANK_NUM = ['', 'I', 'II', 'III'];
+// the cheapest thing XP can still buy (an ability or a mastery rank) — drives the bottom XP meter. { nm, cost }
 export function nextStoreGoal(){
   let best = null;
   for (const n of storeSet()){
     if (n.cost <= 0 || !storeAvail(n)) continue;
-    if (!best || n.cost < best.cost) best = n;
+    if (!best || n.cost < best.cost) best = { nm: n.nm, cost: n.cost };
   }
+  for (const o of masteryOffers())
+    if (!best || o.cost < best.cost) best = { nm: o.m.nm + ' ' + RANK_NUM[o.rank + 1], cost: o.cost };
   return best;
 }
 export function powerLv(id){ return (G.powerLv && G.powerLv[id]) || 0; }

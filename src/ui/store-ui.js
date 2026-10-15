@@ -10,9 +10,10 @@ import { shared, G, player } from '../state.js';
 import { playerPos } from '../player/helpers.js';
 import { syncMandoChips, syncJediChips } from '../game/flow.js';
 import {
-  skillSet, tierName, skillRank, skillEligible, skillPointCost, storeSet, storeAvail, powerLv, powerCost,
-  buyPower
+  skillSet, tierName, skillRank, skillEligible, storeSet, storeAvail, storeRemaining, powerLv, powerCost,
+  buyPower, masteryOffers, buyMastery, RANK_NUM
 } from '../game/progression.js';
+import { TIER_REQ } from '../data/skills.js';
 import { ENDLESS_POWERS } from '../data/store.js';
 import { LEVELS } from '../data/levels.js';
 import { icon } from './icons.js';
@@ -33,12 +34,16 @@ function rollFreeCards(){
   const sustainId = G.hero === 'mando' ? 'creed' : 'vamp';
   const sustainIdx = pool.findIndex(s => s.id === sustainId);
   if (sustainIdx >= 0){ pick.push(pool[sustainIdx]); pool.splice(sustainIdx, 1); }
-  while (pick.length < 3 && pool.length){
-    pool.sort(() => Math.random() - 0.5);
-    let best = pool[0];
-    for (const s of pool) if (s.tier > best.tier && Math.random() < 0.6) best = s;
-    pick.push(best); pool.splice(pool.indexOf(best), 1);
+  // NEWEST TIER GUARANTEED — one card always comes from the highest tier you've opened, so a fresh KNIGHT or
+  // MASTER tier shows up the visit it unlocks instead of hiding behind random Padawan draws.
+  pool.sort(() => Math.random() - 0.5);
+  const top = Math.max(0, ...pool.map(s => s.tier));
+  if (pick.length < 3 && !pick.some(s => s.tier === top)){
+    const i = pool.findIndex(s => s.tier === top);
+    if (i >= 0){ pick.push(pool[i]); pool.splice(i, 1); }
   }
+  while (pick.length < 3 && pool.length) pick.push(pool.shift());
+  pick.sort((a, b) => a.tier - b.tier);
   progFreeCards = pick;
 }
 export function openSkillTree(){
@@ -77,7 +82,8 @@ export function renderProgress(){
   } else {
     const L = LEVELS[G.levelIdx], place = (L.name.split('—')[1] || L.name).trim();
     document.getElementById('stkicker').textContent = 'LEVEL ' + (G.levelIdx + 1) + ' · ' + place;
-    tree.querySelector('h1').textContent = 'WAVE ' + Math.max(1, G.wave) + ' OF ' + L.waves.length + ' CLEARED';
+    tree.querySelector('h1').textContent = G.wave >= L.waves.length ? place + ' CLEARED'
+      : 'WAVE ' + Math.max(1, G.wave) + ' OF ' + L.waves.length + ' CLEARED';
   }
   tree.querySelector('.sub').textContent = G.hero === 'mando' ? 'HONE THE HUNTER' : 'CHANNEL THE FORCE';
   document.getElementById('xpbalval').textContent = xp;
@@ -115,31 +121,41 @@ export function renderProgress(){
   }
   // unwrap a "group" of one (its sibling isn't on offer this visit) so it doesn't carry an empty OR frame
   for (const g of [...store.querySelectorAll('.forkgroup')]) if (g.children.length === 1) g.replaceWith(g.firstChild);
-  // EXTRA SKILL POINT — the third XP sink (powers up the training track)
-  { const cost = skillPointCost();
-    store.appendChild(card({
-      cls: ' sp', tag: 'SKILL POINT', ico: '✚', nm: 'EXTRA SKILL POINT', ds: 'Bank +1 skill point to spend on training below',
-      cost: cost + ' XP', afford: xp >= cost, why: needXp(cost),
-      onClick: () => { G.xp -= cost; G.skillBought = (G.skillBought||0)+1; G.skillPoints = (G.skillPoints||0)+1;
-        S.reward(0); document.getElementById('xpval').textContent = G.xp; renderProgress(); },
-    }));
+  // ---- POWER MASTERY (spend XP) — the next rank of each ability you own ----
+  const mast = document.getElementById('masterycards'), offers = masteryOffers();
+  if (!store.children.length) store.innerHTML = '<div class="empty">' +
+    (storeRemaining() ? 'More powers open as the fight goes on.' : 'Every power is yours.') +
+    (offers.length || G.endless ? ' Master the ones you have below.' : ' Nothing left to master either.') + '</div>';
+  mast.innerHTML = '';
+  for (const o of offers){
+    const n = o.m.ranks.length, last = o.rank + 1 >= n;
+    const pips = '<div class="pips">' + '<i class="on"></i>'.repeat(o.rank) + '<i></i>'.repeat(n - o.rank) + '</div>';
+    mast.appendChild(card({ cls: ' mastery' + (last ? ' last' : ''), tag: 'MASTERY · RANK ' + RANK_NUM[o.rank + 1],
+      ico: o.m.ico, nm: o.m.nm, ds: o.m.ranks[o.rank].ds, extra: pips,
+      cost: o.cost + ' XP', afford: xp >= o.cost, why: needXp(o.cost), onClick: () => buyMastery(o) }));
   }
-  // SURVIVAL POWER-UPS — repeatable stat upgrades (endless only): an XP sink that never runs out
+  // SURVIVAL POWER-UPS — repeatable stat upgrades (endless only): an XP sink that never runs out. They sit after the
+  // mastery ranks so the one-off upgrades to your kit stay up top.
   if (G.endless){
     for (const p of ENDLESS_POWERS){
       const lv = powerLv(p.id), pc = powerCost(p);
-      store.appendChild(card({ cls:' power', tag: lv > 0 ? 'POWER · LEVEL ' + lv : 'POWER', ico:p.ico, nm:p.nm, ds:p.ds,
+      mast.appendChild(card({ cls:' power', tag: lv > 0 ? 'POWER · LEVEL ' + lv : 'POWER', ico:p.ico, nm:p.nm, ds:p.ds,
         cost: pc + ' XP', afford: xp >= pc, why: needXp(pc), onClick: () => buyPower(p) }));
     }
   }
-  document.getElementById('storehdr').textContent = G.endless ? 'ABILITIES & POWERS' : (G.hero === 'mando' ? 'GADGETS & WEAPONS' : 'FORCE POWERS');
+  document.getElementById('mastsec').style.display = mast.children.length ? '' : 'none';
+  document.getElementById('masthdr').textContent = G.endless ? 'MASTERY & POWERS' : 'MASTERY';
+  document.getElementById('storehdr').textContent = G.endless ? 'ABILITIES' : (G.hero === 'mando' ? 'GADGETS & WEAPONS' : 'FORCE POWERS');
   // ---- TRAINING (spend SKILL POINTS) — a separate track, never gated by ability choice ----
   const wrap = document.getElementById('skillcards');
   wrap.innerHTML = '';
   document.getElementById('freehdr').textContent = G.hero === 'mando' ? 'WEAPON UPGRADES' : 'TRAINING';
-  document.getElementById('freehelp').textContent = sp > 0
+  // what training opens next — "KNIGHT opens after 1 more" — so the tier gate reads as a goal, not a mystery
+  const spent = G.skillSpent || 0, nextT = [2, 3].find(t => spent < TIER_REQ[t]);
+  const gate = nextT ? ' · ' + tierName(nextT) + ' opens after ' + (TIER_REQ[nextT] - spent) + ' more' : '';
+  document.getElementById('freehelp').textContent = (sp > 0
     ? 'Spend skill points · ' + sp + ' to spend'
-    : 'Spend skill points · you earn one each wave, or buy one with XP above';
+    : 'Spend skill points · you earn one each wave') + gate;
   for (const s of progFreeCards){
     const r = skillRank(s.id);
     const spent = r >= s.max;

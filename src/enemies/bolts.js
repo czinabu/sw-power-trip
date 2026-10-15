@@ -3,6 +3,7 @@
 
 import * as THREE from 'three';
 import { CFG } from '../data/config.js';
+import { abil } from '../data/mastery.js';
 import { scene } from '../engine/renderer.js';
 import { sfx, S } from '../audio/sfx.js';
 import { V3, clamp, TMP } from '../utils.js';
@@ -81,7 +82,7 @@ export function updateBolts(dt){
       // bolt-ABSORB (no reflect) is the other defensive guard — Jedi (any stance) or the Mando DARKSABER. DUAL/DISRUPTOR
       // bracing is offensive-only and lets bolts straight through.
       const blocking = near && facing && player.blockHeld && player.stam > 0 && (G.hero !== 'mando' || player.weapon === 'darksaber');
-      if (d < CFG.abilities.barrier.radius && near && player.barrierT > 0){
+      if (d < abil('barrier').radius && near && player.barrierT > 0){
         // FORCE BARRIER auto-deflects bolts from any angle back into the crowd — no aim, no timing
         b.friendly = true; b.speed *= 1.3; b.dmg = 20;
         const tgt = nearestEnemyInCone(40, -1);
