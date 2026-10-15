@@ -12,7 +12,7 @@ import { themeFor } from '../data/worlds.js';
 import { paintSky, paintFloor } from './paint.js';
 import { buildBackdrop } from './backdrop.js';
 import { bakeArena, toon } from './ink.js';
-import { applyAtmosphere } from './atmosphere.js';
+import { applyAtmosphere, clearAtmosphere } from './atmosphere.js';
 import { buildTempleArena } from './arenas/temple.js';
 import { buildFoundryArena } from './arenas/foundry.js';
 import { buildPlainsArena } from './arenas/plains.js';
@@ -25,6 +25,7 @@ scene.add(shared.arenaGroup);
 
 export function buildArena(L){
   scene.remove(shared.arenaGroup);
+  disposeArena(shared.arenaGroup);
   shared.arenaGroup = new THREE.Group();
   scene.add(shared.arenaGroup);
   shared.arenaHalf = L.arena / 2;
@@ -35,6 +36,7 @@ export function buildArena(L){
   setHazardStyle(T && (T.hazards || {}));
   if (T) buildWorld(L, T);
   else {
+  clearAtmosphere();
   scene.fog = new THREE.Fog(L.fog, L.arena*(L.fogStart || 0.5), L.arena*1.9);
   renderer.setClearColor(L.sky);
   sun.color.setHex(L.sun || 0xfff2dd);
@@ -162,17 +164,27 @@ export function buildArena(L){
   if (T) shared.arenaBake = bakeArena(shared.arenaGroup, T.ink ?? 0.045);
 }
 
+// painted textures are drawn once per theme and reused on every rebuild (survival rotates arenas mid-run)
+const paintCache = new WeakMap();
+function painted(T, make){ if (!paintCache.has(T)) paintCache.set(T, make()); return paintCache.get(T); }
+
+/* free the previous arena's GPU geometry (materials and painted textures are shared caches, so they stay) */
+function disposeArena(g){
+  g.traverse(o => { if (o.geometry && !o.userData.keepGeo) o.geometry.dispose(); });
+}
+
 /* a themed world: painted sky, lights + fog (atmosphere.js), painted floor, an outer ground that runs out to the
    horizon, and the backdrop landmarks (baked here with a thicker outline so they read at distance) */
 function buildWorld(L, T){
   const lt = T.light, sunSpec = T.sky.sun && { ...T.sky.sun, az: T.sky.sun.az ?? Math.atan2(lt.dir[2], lt.dir[0]) };
+  const tx = painted(T, () => ({ sky: paintSky({ ...T.sky, sun: sunSpec }), floor: paintFloor(T.floor) }));
   const sky = new THREE.Mesh(new THREE.SphereGeometry(L.arena*1.7, 32, 16),
-    new THREE.MeshBasicMaterial({ map: paintSky({ ...T.sky, sun: sunSpec }), side: THREE.BackSide, fog: false }));
+    new THREE.MeshBasicMaterial({ map: tx.sky, side: THREE.BackSide, fog: false }));
   sky.userData.noBake = true;
   shared.arenaGroup.add(sky);
   applyAtmosphere(T, L, sky);
 
-  const floorTex = paintFloor(T.floor);
+  const floorTex = tx.floor;
   floorTex.repeat.set(L.arena/9, L.arena/9);
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(L.arena, L.arena, 8, 8), toon(0xffffff, { map: floorTex }));
   floor.rotation.x = -Math.PI/2; floor.receiveShadow = true; floor.userData.noBake = true;

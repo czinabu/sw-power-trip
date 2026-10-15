@@ -64,7 +64,7 @@ export const WORLD_DIRECTIONS = {
         { kind: 'destroyer', az: 2.6, r: 1.6, y: 44, scale: 0.7, color: 0x4a4650, color2: 0x3a3640, glow: 0xff7a5a },
       ],
       ambient: { kind: 'ash', color: 0xb8a8a8, count: 200, size: 0.26, opacity: 0.6 },
-      storm: { every: [4, 9], fill: 0.9, sky: 0.5, ramp: 2 },   // turbolaser flashes from the fleet overhead
+      storm: { every: [4, 9], fill: 0.9, sky: 0.5, ramp: 2, color: 0xff9a6a },   // turbolaser flashes from the fleet overhead
       beats: { fog: 0x6a1a1a, fill: 1.05, tint: 0xff5a40 },
     },
   },
@@ -86,7 +86,10 @@ export const WORLD_DIRECTIONS = {
         { kind: 'statue', az: -2.4, r: 1.75, scale: 1.3, color: 0xa88a66, color2: 0x8e7052, dark: 0x4a3828, metal: 0x7a7266 },
         { kind: 'mesas', count: 9, r: [2.2, 2.7], h: [20, 36], w: [18, 34], color: 0xae7a52, color2: 0x986a48, skip: [[-2.4, 0.45]] },
         { kind: 'dunes', count: 10, r: [1.35, 1.6], h: 4, color: 0xbc9064 },
+        // the Empire is already here: a Star Destroyer hangs over the holy city (the threat the campaign walks toward)
+        { kind: 'destroyer', az: -1.8, r: 2.3, y: 22, scale: 1.2, color: 0x8a8c96, color2: 0x767884, glow: 0x9ad8ff },
       ],
+      hazards: { vent: 0x5a4430, ventIdle: 0x2a1e12, barrel: 0xa33820 },
       ambient: { kind: 'dust', color: 0xffe2b0, count: 130, size: 0.3 },
       beats: { fog: 0xc0784a, fill: 1.06, tint: 0xff9a68 },
     },
@@ -103,24 +106,29 @@ export const WORLD_DIRECTIONS = {
         { kind: 'volcano', az: 2.4, r: 2.6, scale: 0.75, color: 0x2a1a18, lava: 0xff6a1a },
         { kind: 'spires', count: 14, r: [1.35, 2.2], h: [10, 24], color: 0x241816, color2: 0x30201c, glow: 0xff5a14, skip: [[2.4, 0.4]] },
         { kind: 'stacks', count: 4, r: [1.2, 1.35], h: [18, 26], color: 0x2e2a2c, band: 0xd9a43a, glow: 0xff8a2a, smoke: 0x5a4440, skip: [[2.4, 0.5]] },
+        { kind: 'lavaflows', count: 7, lava: 0xff6a1a, crust: 0x1a0c08, w: 1.4, reach: 3.0 },
       ],
+      // vents are lava geysers here: dark crust → amber warning → a molten burst
+      hazards: { vent: 0x2e2626, ventIdle: 0x2a0e06, ventActive: 0xff8a2a, barrel: 0x8a3020 },
       ambient: { kind: 'embers', color: 0xff7733, count: 220 },
       beats: { fog: 0x7a2210, fill: 1.12, tint: 0xff6a40 },
     },
     plains: {   // EXEGOL — the Sith wastes under a lightning storm
       sky: { top: 0x06060c, horizon: 0x3c3e5c, below: 0x16141c, bands: 6, stars: 0,
-        clouds: { color: 0x34344a, under: 0x16161f, count: 30, lo: 0.25, hi: 0.95 },
+        clouds: { color: 0x44445e, under: 0x1a1a26, count: 30, lo: 0.25, hi: 0.95 },
         ridges: [{ color: 0x14121a, h: 0.12, rough: 0.12, spiky: 1.2, seed: 21 }] },
       fog: 0x2c2a3c, fogStart: 0.72, fogEnd: 2.9,
       light: { sun: 0xc8d0ff, sunI: 1.9, dir: [14, 50, 40], hemiSky: 0xa0a0d4, hemiGround: 0x3a2a36, fill: 1.1, rim: 0xb060ff, rimI: 0.8 },
-      floor: { kind: 'ash', base: 0x56505a, seed: 13 },
-      outer: 0x26222c,
-      pal: { stone: 0x544a58, stoneD: 0x362e3a, dark: 0x16121c, voidGlow: 0x9a3bff, beacon: 0x9a3bff },
+      floor: { kind: 'ash', base: 0x6a6472, seed: 13 },
+      outer: 0x2c2834,
+      pal: { stone: 0x6a6070, stoneD: 0x463c4c, dark: 0x1a1620, voidGlow: 0x9a3bff, beacon: 0x9a3bff },
       backdrop: [
         { kind: 'pyramid', az: -Math.PI/2, r: 2.2, scale: 1.0, color: 0x1a1620, color2: 0x241e2a, glow: 0xb050ff },
         { kind: 'spires', count: 14, r: [1.4, 2.3], h: [14, 34], color: 0x221e2a, color2: 0x2c2634, skip: [[-Math.PI/2, 0.45]] },
         { kind: 'cliffs', count: 12, r: [1.8, 2.5], h: [10, 18], w: 0.35, color: 0x24202c, color2: 0x1c1822, skip: [[-Math.PI/2, 0.5]] },
       ],
+      // vents are Sith vents: violet when they fire
+      hazards: { vent: 0x2a2632, ventIdle: 0x140c22, ventActive: 0xb070ff, barrel: 0x8a2a30 },
       ambient: { kind: 'ash', color: 0xa8a4c0, count: 200, size: 0.24, opacity: 0.55 },
       storm: { every: [3, 7], fill: 1.3, sky: 1.1, ramp: 2 },
       beats: { fog: 0x3c1426, fill: 1.08, tint: 0xff4060 },

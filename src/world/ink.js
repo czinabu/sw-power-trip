@@ -103,7 +103,7 @@ export function bakeArena(group, width = 0.045){
   for (const o of baked){
     for (const ch of [...o.children]) if (!bakedSet.has(ch)) group.attach(ch);
   }
-  for (const o of baked) if (o.parent) o.parent.remove(o);
+  for (const o of baked){ if (o.parent) o.parent.remove(o); o.geometry.dispose(); }
   let calls = 0;
   for (const b of buckets.values()){
     const merged = mergeGeometries(b.geos, false);

@@ -25,7 +25,7 @@ src/
   main.js            imports every module in load order, runs the main loop, exposes window.GAME
   state.js           G (run state), player, entity arrays, keys, and `shared` (values that get reassigned)
   utils.js           math helpers
-  data/              tuning tables: config, stances, enemies, levels, bosses, mando, skills, store, boons, mutators, difficulty
+  data/              tuning tables: config, stances, enemies, levels, bosses, mando, skills, store, boons, mutators, difficulty, worlds (arena looks)
   engine/            renderer + post-processing, graphics quality, input, camera
   audio/             sound effects, adaptive music
   fx/                particles, floating text, VFX lights, saber trail, one-shot VFX, ambient embers
@@ -35,7 +35,7 @@ src/
     mando/           weapons, gadgets, darksaber
   enemies/           meshes, elites, special moves, spawning, damage, AI, blaster bolts
   boss/              boss lightning FX and the boss itself
-  world/             textures, collision, hazards, arena builder, arenas/ (temple, foundry, plains)
+  world/             arena builder, arenas/ (temple, foundry, plains layouts), Ink bake, painted skies/floors, backdrops, atmosphere, collision, hazards (see docs/world-guidelines.md)
   game/              level/wave flow, survival mode, progression, boons, end-of-run summary
   ui/                banners, threat markers, HUD, store overlay, menus, controls (How to Play data)
 ```
@@ -58,7 +58,7 @@ Each file starts with a one-line description. Balance changes usually only touch
 - **Jedi** — three lightsaber stances (Ataru / Niman / Djem So), parry & riposte combat, Force powers (Push, Pull, Slam, Repulse, Judgement, Barrier, Saber Throw, Mend), a Force Focus flow meter that rewards aggressive play
 - **Mandalorian** — jetpack flight with momentum/boost/dive/hover, dual blasters + disruptor rifle + darksaber, flamethrower, wrist rockets, whistling birds, grappling hook, jetpack missile, gauntlet shield
 
-**Campaign** — 3 authored arenas (Temple Steps, Foundry Assault, The Scarred Plain), 4 waves each escalating to an end-boss (Darth Vexis for the Jedi, The Iron Magistrate for the Mando)
+**Campaign** — 3 authored arenas on the road to the Sith (Holy City of Jedha, Mustafar Forge, Throne of Exegol), 4 waves each escalating to an end-boss (Darth Vexis for the Jedi, The Iron Magistrate for the Mando)
 
 **Survival mode** — unlocked after beating the campaign as both heroes. Endless escalating waves, 8 wave mutators, Warbringer mid-boss every 10 waves, arena rotation, repeatable power-ups, roguelite boon picks each wave
 

@@ -210,6 +210,30 @@ const BUILD = {
     put(g, new THREE.BoxGeometry(12*s, 1.4*s, 2*s), m2, 0, 6*s, -22*s);                                      // bridge
     if (o.glow) for (const ex of [-4, 0, 4]) put(g, new THREE.CylinderGeometry(1.4*s, 1.4*s, 0.6*s, 10), glowMat(o.glow), ex*s, 0.8*s, -30.2*s, PI/2);
   },
+  /* LAVA RIVERS crossing the ground outside the arena: meandering glowing ribbons with a dark crust edge */
+  lavaflows(grp, o, half, R){
+    for (const a0 of angles(o.count, R, o.skip)){
+      const pts = [];
+      let a = a0, r = half * 1.04;
+      while (r < half * (o.reach || 2.6)){ pts.push([Math.cos(a)*r, Math.sin(a)*r]); r += half*0.12; a += (R() - 0.5) * 0.12; }
+      const w = (o.w || 1.6) * (0.7 + R()*0.6);
+      for (const [col, ww, y] of [[o.crust || 0x1a0c08, w*1.9, -0.03], [o.lava, w, -0.02]]){
+        const pos = [], idx = [];
+        pts.forEach(([x, z], i) => {
+          const [nx, nz] = pts[Math.min(i+1, pts.length-1)], [px, pz] = pts[Math.max(i-1, 0)];
+          let dx = nx - px, dz = nz - pz; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
+          const k = ww * (1 + 0.6*i/pts.length);   // widens as it runs out toward the lava lake
+          pos.push(x - dz*k, y, z + dx*k, x + dz*k, y, z - dx*k);
+          if (i) idx.push(i*2-2, i*2-1, i*2, i*2-1, i*2+1, i*2);
+        });
+        const g = new THREE.BufferGeometry();
+        g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx);
+        const m = new THREE.Mesh(g, col === o.lava ? glowMat(o.lava) : new THREE.MeshBasicMaterial({ color: col, side: THREE.DoubleSide }));
+        m.material.side = THREE.DoubleSide;
+        grp.add(m);
+      }
+    }
+  },
   /* low DUNES / snow drifts just outside the edge so the floor doesn't end in a hard line */
   dunes(grp, o, half, R){
     for (const a of angles(o.count, R, o.skip)){

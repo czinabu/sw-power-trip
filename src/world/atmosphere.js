@@ -9,7 +9,33 @@ import { rand, clamp } from '../utils.js';
 import { shared, G } from '../state.js';
 import { LEVELS } from '../data/levels.js';
 
-const A = { T: null, sky: null, base: null, p: 0, flash: 0, nextBolt: 0, bolt: 0 };
+const A = { T: null, sky: null, base: null, p: 0, flash: 0, nextBolt: 0, bolt: 0, strike: null, half: 20 };
+
+/* the visible lightning strike: one jagged ribbon, rebuilt in place on every flash (no allocation) */
+const SEG = 14;
+function makeStrike(color){
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array((SEG + 1) * 2 * 3), 3));
+  const idx = [];
+  for (let i = 0; i < SEG; i++){ const a = i*2; idx.push(a, a+1, a+2, a+1, a+3, a+2); }
+  geo.setIndex(idx);
+  const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color, toneMapped: false, fog: false, side: THREE.DoubleSide }));
+  m.frustumCulled = false; m.visible = false; m.userData.noBake = true;
+  return m;
+}
+function placeStrike(m, half){
+  const az = Math.random() * Math.PI * 2, r = half * rand(2.0, 2.8);
+  const cx = Math.cos(az) * r, cz = Math.sin(az) * r, tx = -Math.sin(az), tz = Math.cos(az);   // ribbon width runs along the tangent
+  const p = m.geometry.attributes.position, top = half * 2.2;
+  let off = 0;
+  for (let i = 0; i <= SEG; i++){
+    const t = i / SEG, y = top * (1 - t), w = 0.5 + (1 - t) * 0.5;
+    if (i) off += rand(-1, 1) * half * 0.09;
+    p.setXYZ(i*2,   cx + tx * (off - w), y, cz + tz * (off - w));
+    p.setXYZ(i*2+1, cx + tx * (off + w), y, cz + tz * (off + w));
+  }
+  p.needsUpdate = true;
+}
 const _c = new THREE.Color(), _d = new THREE.Color();
 
 /* set lights, fog and clear colour for a theme. sky: the dome mesh (its material colour is used as a tint) */
@@ -22,10 +48,15 @@ export function applyAtmosphere(T, L, sky){
   sun.position.set(d[0], d[1], d[2]);
   hemi.color.setHex(lt.hemiSky); hemi.groundColor.setHex(lt.hemiGround); hemi.intensity = lt.fill;
   rim.color.setHex(lt.rim ?? 0x5a7fd8); rim.intensity = lt.rimI ?? 0.5;
-  A.T = T; A.sky = sky; A.p = 0; A.flash = 0; A.bolt = 0;
+  A.T = T; A.sky = sky; A.p = 0; A.flash = 0; A.bolt = 0; A.half = L.arena / 2;
+  A.strike = null;
+  if (T.storm){ A.strike = makeStrike(T.storm.color ?? 0xeae4ff); shared.arenaGroup.add(A.strike); }
   A.nextBolt = T.storm ? rand(T.storm.every[0], T.storm.every[1]) : 0;
   A.base = { fog: new THREE.Color(T.fog), fill: lt.fill, sunI: lt.sunI };
 }
+
+/* an unthemed arena: stop driving the lights */
+export function clearAtmosphere(){ A.T = null; A.sky = null; A.strike = null; }
 
 /* how far into this level's fight we are, 0 (first wave) → 1 (final wave / boss) */
 function progress(){
@@ -51,7 +82,11 @@ export function updateAtmosphere(dt){
   // lightning: a double flicker that lights the whole field, more often as the fight climbs
   if (T.storm){
     A.nextBolt -= dt * (1 + A.p * (T.storm.ramp ?? 1.5));
-    if (A.nextBolt <= 0){ A.bolt = 0.38; A.nextBolt = rand(T.storm.every[0], T.storm.every[1]); }
+    if (A.nextBolt <= 0){
+      A.bolt = 0.38; A.nextBolt = rand(T.storm.every[0], T.storm.every[1]);
+      if (A.strike) placeStrike(A.strike, A.half);
+    }
+    if (A.strike) A.strike.visible = A.bolt > 0.1;
     if (A.bolt > 0){
       A.bolt -= dt;
       const k = (A.bolt > 0.26 || (A.bolt < 0.16 && A.bolt > 0.08)) ? 1 : 0.15;
