@@ -14,7 +14,8 @@ import { DARK_DUR } from './mando/darksaber.js';
 import { FORM_OF, FOOTWORK } from '../data/poses.js';
 import { pistolPose, riflePose, rifleLowered, restGun } from './anim/guns.js';
 import { MIRROR } from './model/rig.js';
-import { saberPose, guardPose, swingPose, applySaberPose, releaseSaberPose } from './anim/saber.js';
+import { saberPose, guardPose, swingPose, applySaberPose, releaseSaberPose, airGuard } from './anim/saber.js';
+import { jediAirLegs, jediAgilityArms, jediAgilityPost, mandoAgilityPost, landingStyle, slamPitch } from './anim/agility.js';
 
 export function animatePlayer(dt, pp, st, f, r, moving){
   const dr = (cur, tgt, l) => cur + (tgt - cur) * Math.min(1, l*dt);
@@ -30,7 +31,9 @@ export function animatePlayer(dt, pp, st, f, r, moving){
   const { ph, inten, gait } = animateLegsAndTorso(dt, dr, R, planted, POSE);
   animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait);
   animateForceCast(dt, dr, R);
-  if (G.hero === 'mando') animateMandoPose(dt, dr, vis, R, pp, f, r);
+  // agility (anim/agility.js) poses flips, dives and landings after the arms, so the guard's damping can't blunt them
+  if (G.hero !== 'mando') jediAgilityPost(dt, dr, vis, R, { ph, inten, planted });
+  if (G.hero === 'mando'){ animateMandoPose(dt, dr, vis, R, pp, f, r); mandoAgilityPost(dt, dr, vis, R, f, r); }
   secondaryMotion(dt, vis, R);
   player.arcMesh.material.opacity = Math.max(0, player.arcMesh.material.opacity - dt*4);
 
@@ -58,39 +61,12 @@ function poseBody(dt, dr, vis, planted, POSE, moving){
   if (player.slamming){
     // --- aerial slam DIVE: a committed forward tuck plunging straight down. NO spin (vis.rotation.y stays put) so
     // it can't leave the body twisted off-axis on landing — it must come down clean & square.
-    vis.rotation.x = dr(vis.rotation.x, 0.5, 12);
+    vis.rotation.x = dr(vis.rotation.x, slamPitch(), 12);   // each form drops its own way (data/agility.js)
     vis.rotation.y = dr(vis.rotation.y, 0, 14);
     vis.rotation.z = dr(vis.rotation.z, 0, 14);
     vis.position.y = dr(vis.position.y, 0, 10);
   } else if (player.flip){
-    // --- acrobatic spins/twirls (Y), spinning flip, or legacy somersaults ---
-    const fl = player.flip;
-    fl.t += dt;
-    const p = clamp(fl.t / fl.dur, 0, 1);
-    const ease = p < 0.5 ? 2*p*p : 1 - Math.pow(-2*p + 2, 2) / 2;
-    const turns = fl.turns || 1;
-    const arc = Math.sin(p * Math.PI);
-    if (fl.axis === 'y'){                 // dash twirl
-      vis.rotation.y = fl.sign * ease * Math.PI * 2 * turns;
-      vis.rotation.z = arc * (fl.lean || 0) * fl.sign;
-      vis.rotation.x = arc * (fl.pitch || 0);
-      vis.position.y = arc * 0.55;
-    } else if (fl.axis === 'spin'){       // double-jump spinning force flip
-      vis.rotation.x = fl.sign * ease * Math.PI * 2 * turns;
-      vis.rotation.y = ease * Math.PI * 2 * turns;
-      vis.position.y = arc * 0.7;
-    } else if (fl.axis === 'backflip'){   // backward somersault (block + jump)
-      vis.rotation.x = -ease * Math.PI * 2 * turns;   // tip over backwards
-      vis.position.y = arc * 1.15;                    // a tall, clean arc
-    } else if (fl.axis === 'x'){          // forward handspring
-      vis.rotation.x = fl.sign * ease * Math.PI * 2 * turns;
-      vis.position.y = arc * 1.0;
-    } else {                              // side flip (cartwheel)
-      vis.rotation.z = fl.sign * ease * Math.PI * 2 * turns;
-      vis.rotation.x = arc * 0.12;        // a touch of pitch keeps the cartwheel from reading flat
-      vis.position.y = arc * 1.0;
-    }
-    if (p >= 1){ vis.rotation.set(0, 0, 0); vis.position.y = 0; player.flip = null; }
+    // acrobatic flips, twirls and slides: posed per form in anim/agility.js (flipBody), after the arms
   } else if (G.hero !== 'mando') {
     // --- lean into velocity (relative to body facing) --- JEDI ONLY.
     // (The Mando's body rotation is fully driven by the flight/ground pose block below; running this too would
@@ -130,7 +106,9 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
 
   // TOUCHDOWN — the knees soak a landing (harder falls sink deeper), then spring back up
   if (player.grounded && player._wasGrounded === false){
-    player.landT = LAND_T; player.landAmt = clamp(0.3 + (player.landDip || 0) * 1.6, 0.3, 1);
+    const LS = landingStyle();   // Djem So sinks deep and rises slow; Ataru lands soft and springs straight back up
+    player.landDur = LAND_T / (LS.spring || 1);
+    player.landT = player.landDur; player.landAmt = clamp(0.3 + (player.landDip || 0) * 1.6, 0.3, 1) * (LS.depth || 1);
     if (player.landAmt > 0.45 && !player.slamming){   // a real drop kicks up a ring of dust at the feet
       const pp = player.group.position;
       for (let i = 0; i < 8; i++){ const a = i / 8 * Math.PI * 2;
@@ -139,17 +117,21 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
   }
   player._wasGrounded = player.grounded;
   if (player.landT > 0) player.landT -= dt;
-  const land = player.landT > 0 ? Math.sin((1 - player.landT / LAND_T) * Math.PI) * player.landAmt : 0;
+  const land = player.landT > 0 ? Math.sin((1 - player.landT / (player.landDur || LAND_T)) * Math.PI) * player.landAmt : 0;
   player._land = land;
-  // legs: stride + knee lift, tuck in the air or during flips
-  if (player.grounded && !player.flip){
+  // legs: stride + knee lift; the Jedi's air, flip and dive legs come from anim/agility.js
+  if (G.hero !== 'mando' && jediAirLegs(dt, dr, R)){
+    // posed: jump phases, Force leap and glide, flip tuck/pike/layout, slam dive
+  } else if (player.grounded && !player.flip){
     const lead = planted ? POSE.lead : 0;   // bladed/staggered footing when planted, neutral when moving
     // a swing steps into the cut: the off-side foot drives forward, the back leg loads
     const step = (player._swingDrop || 0) * 2.2;
-    R.legL.hip.rotation.x  = dr(R.legL.hip.rotation.x,  Math.sin(ph) * 0.55 * inten * gait.amp - lead - step - land*0.5, 14);
-    R.legR.hip.rotation.x  = dr(R.legR.hip.rotation.x, -Math.sin(ph) * 0.55 * inten * gait.amp + lead + step*0.6 - land*0.35, 14);
-    R.legL.knee.rotation.x = dr(R.legL.knee.rotation.x, -Math.max(0, -Math.sin(ph - 0.4)) * 0.9 * inten * gait.lift - step*0.8 - land*0.95, 14);
-    R.legR.knee.rotation.x = dr(R.legR.knee.rotation.x, -Math.max(0,  Math.sin(ph - 0.4)) * 0.9 * inten * gait.lift - step*1.1 - land*0.8, 14);
+    // the JEDI's stride runs backwards when he moves away from where he faces (backing off in his guard)
+    const q = ph * (G.hero !== 'mando' && strideBack() ? -1 : 1);
+    R.legL.hip.rotation.x  = dr(R.legL.hip.rotation.x,  Math.sin(q) * 0.55 * inten * gait.amp - lead - step - land*0.5, 14);
+    R.legR.hip.rotation.x  = dr(R.legR.hip.rotation.x, -Math.sin(q) * 0.55 * inten * gait.amp + lead + step*0.6 - land*0.35, 14);
+    R.legL.knee.rotation.x = dr(R.legL.knee.rotation.x, -Math.max(0, -Math.sin(q - 0.4)) * 0.9 * inten * gait.lift - step*0.8 - land*0.95, 14);
+    R.legR.knee.rotation.x = dr(R.legR.knee.rotation.x, -Math.max(0,  Math.sin(q - 0.4)) * 0.9 * inten * gait.lift - step*1.1 - land*0.8, 14);
   } else if (player.airDive){
     // PRONE flight — legs DEAD STRAIGHT and in line with the torso so the whole body reads as one long flat plank.
     // Forward superman: legs trail straight back (hip ~0). Reclined back-fall: feet kick out front.
@@ -174,8 +156,14 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
     R.legR.knee.rotation.x = dr(R.legR.knee.rotation.x, -0.9, 8);
   }
   // stance width — feet splay out for the wide STRONG guard, stay close for FAST
-  R.legL.hip.rotation.z = dr(R.legL.hip.rotation.z, planted ? -POSE.splay : 0, 9);
-  R.legR.hip.rotation.z = dr(R.legR.hip.rotation.z, planted ?  POSE.splay : 0, 9);
+  if (player.grounded && !player.flip){
+    const lsp = land * (landingStyle().splay || 0);   // a heavy landing spreads the feet
+    R.legL.hip.rotation.z = dr(R.legL.hip.rotation.z, (planted ? -POSE.splay : 0) - lsp, 9);
+    R.legR.hip.rotation.z = dr(R.legR.hip.rotation.z, (planted ?  POSE.splay : 0) + lsp, 9);
+  } else if (G.hero === 'mando' && !player.airDive){
+    R.legL.hip.rotation.z = dr(R.legL.hip.rotation.z, 0, 9);
+    R.legR.hip.rotation.z = dr(R.legR.hip.rotation.z, 0, 9);
+  }
   // ANKLES — feet stay planted flat on the ground under the leg angles; in the air the toes point
   for (const L of [R.legL, R.legR]){
     const flat = -(L.hip.rotation.x + L.knee.rotation.x) * 0.9;
@@ -192,7 +180,7 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
   }
   // hips bob + robe flare with speed; crouch lowers the center of gravity per stance
   player._crouch = dr(player._crouch || 0, planted ? POSE.crouch : 0, 8);
-  R.hips.position.y = 1.04 + player._crouch - (player._swingDrop || 0) - land*0.2 + (player.grounded ? Math.abs(Math.sin(ph)) * 0.05 * inten : 0.05);
+  R.hips.position.y = 1.04 + player._crouch - (player._swingDrop || 0) - land*0.2 - (player._agiDrop || 0) + (player.grounded ? Math.abs(Math.sin(ph)) * 0.05 * inten : 0.05);
   R.skirt.rotation.x = dr(R.skirt.rotation.x, 0.13 * inten, 8);   // Jedi-only robe (hidden for the Mando)
   R.skirt.rotation.z = dr(R.skirt.rotation.z, Math.sin(ph) * 0.05 * inten, 8);
   // robe FLARE reads the stance silhouette: wide for DJEM SO, slim for ATARU (relaxes toward neutral while running)
@@ -274,8 +262,14 @@ function animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait){
     const blocking = player.blockHeld;
     // a moving hero isn't a statue — the guard rides the stride a little (the shape still reads)
     const sway = { y: moving && !blocking ? Math.sin(ph * 2) * 0.025 * inten : Math.sin(G.gt * 1.9) * 0.01,
-                   z: moving && !blocking ? Math.sin(ph) * 0.04 * inten * gait.amp : 0 };
-    const body = guardPose(dt, R, held, grip, form, blocking, sway);
+                   z: moving && !blocking ? Math.sin(ph) * 0.04 * inten * gait.amp : 0, off: 0 };
+    // AGILITY guards: flips hug the hilt in or open the arms, the dive cocks or plunges the blade, the run carries it
+    // the form's way with the free hand pumping against the stride (data/agility.js AIR_GUARDS)
+    const running = G.hero !== 'mando' && moving && !planted && player.grounded && inten > 0.5;
+    const ag = G.hero !== 'mando' ? jediAgilityArms(running) : null;
+    const over = ag && airGuard(grip, form, ag.key);
+    if (running && over){ sway.z = -Math.sin(ph) * 0.05 * inten; sway.off = Math.sin(ph) * 0.17 * inten * ((stance().gait && stance().gait.amp) || 1); }
+    const body = guardPose(dt, R, held, grip, form, blocking, sway, over, ag ? ag.rate : 1);
     // a free off hand swings with the stride when running (two-handed guards keep it on the hilt)
     applySaberPose(R, held, player.castT <= 0);
     R.torso.rotation.y = dr(R.torso.rotation.y, planted ? body.torso : 0, 9);
@@ -291,6 +285,11 @@ function heldBlade(){
   if (G.hero !== 'mando') return player.saberHand ? { node: player.saberHand, root: player.saberBladeRoot } : null;
   if (player.weapon === 'darksaber' && player.darksaberMesh) return { node: player.darksaberMesh, root: null };
   return null;
+}
+// moving away from the way the body faces (more than sideways)?
+function strideBack(){
+  const ffx = Math.sin(player.faceYaw), ffz = Math.cos(player.faceYaw);
+  return player.moveVel.x*ffx + player.moveVel.z*ffz < -0.6 * Math.hypot(player.moveVel.x, player.moveVel.z) - 0.3;
 }
 export function footwork(){
   return FOOTWORK[(G.hero === 'mando' && player.weapon === 'darksaber') ? 'darksaber' : (FORM_OF[G.stance] || 'niman')];
