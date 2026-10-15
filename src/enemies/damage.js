@@ -14,6 +14,8 @@ import { spawnHitSpark, spawnGroundShock } from '../fx/vfx.js';
 import { sparks } from '../fx/ink.js';
 import { addStreak } from '../player/damage.js';
 import { gainXp, killBonus } from '../game/progression.js';
+import { ENGAGE } from '../data/enemies.js';
+import { dropToken } from './director.js';
 
 export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick){
   if (e.dead) return;
@@ -115,7 +117,8 @@ export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick){
       e.vel.y = 4.5;
     } else {
       e.group.position.addScaledVector(knockDir, 0.8);  // otherwise brutes only stagger
-      e.state = 'recover'; e.st = 0.5;
+      // ...and a light blow does NOT break a brute's wind-up or swing: parry it, floor it, or get clear
+      if (e.state !== 'windup' && e.state !== 'strike'){ e.state = 'recover'; e.st = 0.5; }
     }
   }
   // ECHO STRIKE boon — the blow rings out a second time for 40% (only if the first didn't kill; guarded vs recursion)
@@ -133,6 +136,29 @@ export function flinchEnemy(e, dir, push){
   // hammering a lightly-armored foe mid-wind-up can stagger the swing right out of them
   if (!heavy && (e.state === 'windup' || e.state === 'strike') && Math.random() < 0.5){ e.state = 'recover'; e.st = 0.3; easeWeaponHome(e.group, 0.016); }
 }
+// a clean saber hit knocks a light foe out of its wind-up, so striking first wins the exchange instead of trading.
+// POISE: each foe yields at most once per ENGAGE.poise seconds, so poking buys time but can't stun-lock a crowd.
+// Brutes never flinch; staff duelists and an intact sentinel guard only yield to a heavy blow (finisher, Djem So,
+// darksaber) since they are built to be parried or flanked. A foe that isn't swinging just loses a beat (hit-stun).
+export function interruptEnemy(e, dir, heavyBlow){
+  if (e.dead || e.converted || e.t.heavy || e.t.bomber || e.warbringer) return false;
+  // not swinging yet: a short HIT-STUN instead, so a connecting blade checks a light foe's advance for a beat
+  if (e.state === 'chase' && !e.t.fly){ e.stunT = ENGAGE.hitStun; e.flinch = Math.max(e.flinch || 0, 0.15); return false; }
+  if (!(e.state === 'windup' || (e.state === 'strike' && !e.struck))) return false;
+  if ((e.t.staff || (e.t.shield && !e.shieldBroken)) && !heavyBlow) return false;
+  if (G.gt < (e.poiseT || 0)) return false;
+  e.poiseT = G.gt + ENGAGE.poise;
+  e.state = 'recover'; e.st = 0.5; e.flinch = 0.15;
+  e.group.userData.bodyMat.emissiveIntensity = 0;
+  if (e.aimLine) e.aimLine.visible = false;
+  easeWeaponHome(e.group, 0.016);
+  if (dir){ const d = dir.clone().setY(0); if (d.lengthSq() > 0.0001) e.group.position.addScaledVector(d.normalize(), 0.35); }
+  if (e.token) dropToken(e, true);
+  floater(V3(e.group.position.x, e.group.position.y + 1.2, e.group.position.z), 'INTERRUPT', '#9fe6ff');
+  sfx(520, 0.06, 'square', 0.04, 260);
+  return true;
+}
+
 export function nearestEnemyInCone(range, cosLimit, rear){
   let best = null, bestD = range;
   const f = fwd(), pp = playerPos();

@@ -17,9 +17,12 @@ import { spawnGroundShock } from '../fx/vfx.js';
 import { segBlockedBySolids, clampToArena, collideSolids } from '../world/collision.js';
 import { hurtPlayer } from '../player/damage.js';
 import { enemyDmgScale } from '../game/survival.js';
+import { ENGAGE } from '../data/enemies.js';
+import { updateDirector, usesToken, dropToken, rangedSlotFree, behindCamera } from './director.js';
 
 export function updateEnemies(dt){
   const pp = playerPos();
+  updateDirector(dt);   // hand out attack tokens before anyone decides to swing
   for (let i = enemies.length-1; i >= 0; i--){
     const e = enemies[i], g = e.group, t = e.t;
     e.st -= dt;
@@ -37,6 +40,7 @@ export function updateEnemies(dt){
       g.userData.bodyMat.emissiveIntensity = 0.9 + Math.sin(G.gt*10)*0.3;
     } else if (e.state !== 'windup') g.userData.bodyMat.emissiveIntensity = 0;
     if (e.hitCd > 0) e.hitCd -= dt;
+    if (e.stunT > 0) e.stunT -= dt;
     if (e.aimLine && e.state !== 'windup') e.aimLine.visible = false;   // the marksman's beam only shows while charging
 
     // pick a target: the player, or — for mind-tricked units — their old allies
@@ -60,6 +64,7 @@ export function updateEnemies(dt){
         break;
       case 'chase': {
         if (tgtPos) g.rotation.y = Math.atan2(tx, tz);
+        if (e.stunT > 0) break;   // reeling from a saber hit — no step, no swing this beat
         // WARBRINGER mid-boss — periodically LEAPS and quakes the ground where you stand (dash/jump it)
         if (e.warbringer && !e.converted && dist > 4.5 && dist < 17 && (e.leapCd = (e.leapCd || 3) - dt) <= 0){
           e.state = 'leapwind'; e.st = 0.55;
@@ -75,6 +80,21 @@ export function updateEnemies(dt){
           const dx = g.position.x - o.group.position.x, dz = g.position.z - o.group.position.z;
           const d2 = dx*dx + dz*dz;
           if (d2 < 2.6 && d2 > 0.001){ const inv = 0.9/Math.sqrt(d2); mx += dx*inv; mz += dz*inv; }
+        }
+        // STALKING — a melee foe without an attack token holds a ring just outside its reach and circles,
+        // so a crowd takes turns instead of piling into one wall of swings (see ENGAGE / director.js)
+        const stalking = !!tgtPos && usesToken(e) && !e.token;
+        let paceMul = 1;
+        if (stalking){
+          const ring = t.range + ENGAGE.ringPad;
+          if (e.circle === undefined) e.circle = Math.random() < 0.5 ? 1 : -1;
+          if ((e.circleT = (e.circleT || 0) - dt) <= 0){ e.circle *= -1; e.circleT = rand(1.4, 3.2); }
+          const radial = clamp((dist - ring) / 1.5, -1, 1);   // >0 too far: close in · <0 too close: give ground
+          const sepX = mx - tx, sepZ = mz - tz;
+          const side = 0.85 * (1 - Math.abs(radial) * 0.5);
+          mx = tx*radial - tz*e.circle*side + sepX;
+          mz = tz*radial + tx*e.circle*side + sepZ;
+          if (dist < ring + 3) paceMul = ENGAGE.stalkSpeed;   // a wary prowl near the fight, a run to rejoin it
         }
         const keepR = t.sniper ? 12 : t.range * 0.7;                   // snipers hold a fixed standoff, not full 32u
         // COVER — ranged ground troops (not flyers, who stay airborne by design; not converted allies) check LOS to
@@ -95,6 +115,13 @@ export function updateEnemies(dt){
           const toX = coverX - g.position.x, toZ = coverZ - g.position.z, toL = Math.hypot(toX, toZ) || 1;
           mx = toL > 0.6 ? toX/toL : 0; mz = toL > 0.6 ? toZ/toL : 0;
         } else if (t.ranged && dist < keepR){ mx = -tx; mz = -tz; }   // exposed (or flyer) & too close — keep distance
+        else if (t.ranged && !t.fly && !e.converted && dist < t.range * 1.1){
+          // in firing range, waiting on a shot — SIDESTEP instead of standing still as a turret
+          if (e.circle === undefined) e.circle = Math.random() < 0.5 ? 1 : -1;
+          if ((e.circleT = (e.circleT || 0) - dt) <= 0){ e.circle *= -1; e.circleT = rand(1.0, 2.4); }
+          mx = (mx - tx) + tx*0.2 - tz*e.circle*ENGAGE.strafe; mz = (mz - tz) + tz*0.2 + tx*e.circle*ENGAGE.strafe;
+          paceMul = 0.6;
+        }
         // OBSTACLE AVOIDANCE — arc around pillars & crates instead of grinding into them.
         // Steer around only the SINGLE most-threatening solid and LOCK the turn direction while we're
         // engaged with it (hysteresis). The old per-solid steering flip-flopped frame to frame, which
@@ -134,19 +161,23 @@ export function updateEnemies(dt){
           mx += (-tz/pl) * e.orbit * 0.85; mz += (tx/pl) * e.orbit * 0.85;
         }
         const ml = Math.hypot(mx, mz) || 1;
-        const esp = e.spd * (G.mut === 'berserk' ? 1.3 : 1);   // BERSERK mutator: enemies surge in faster
+        const esp = e.spd * paceMul * (G.mut === 'berserk' ? 1.3 : 1);   // BERSERK mutator: enemies surge in faster
         g.position.x += (mx/ml) * esp * dt;
         g.position.z += (mz/ml) * esp * dt;
         // (grounded y comes from the surface height set after collision — so foes can WALK UP the dais; flyers hover)
-        if (dist < t.range){
+        if (dist < t.range && !stalking){
           if (t.bomber){ e.state = 'fuse'; e.st = t.fuse; sfx(880, 0.08, 'square', 0.05, 880); }   // light the fuse
           // COVER GATE: a hidden ranged ground trooper won't commit to a windup it can't land — it just keeps
           // peeking (cover-seeking movement above) until exposed or the anti-turtle valve kicks in.
           else if (t.ranged && !t.fly && !e.converted && !exposed && !forceExposed){ /* no clear shot — hold */ }
+          // RANGED SLOTS: only a few troopers aim at once, so a firing line staggers its shots
+          else if (t.ranged && !e.converted && !rangedSlotFree(t.sniper)){ /* hold — sidestep and wait */ }
           // MELEE WINDUP STAGGER: hostile (non-converted) melee foes share a cooldown so a crowd doesn't all coil &
           // swing at once — ranged/converted foes are unaffected (already standoff/ally-targeted, not a swarm problem).
           else if (t.ranged || e.converted || G.gt - (G.lastMeleeWindupT ?? -9) >= MELEE_WINDUP_GAP){
-            e.state = 'windup'; e.st = t.windup; telegraphWindup(e);
+            // a swing coiled BEHIND the camera gets a longer tell, so off-screen hits stay fair
+            e.wu = t.windup * (!t.ranged && !e.converted && behindCamera(g.position) ? ENGAGE.rearWindup : 1);
+            e.state = 'windup'; e.st = e.wu; telegraphWindup(e);
             if (!t.ranged && !e.converted) G.lastMeleeWindupT = G.gt;
           }
           // else: another melee foe just committed to a swing — hold in chase this frame and retry next frame
@@ -169,7 +200,7 @@ export function updateEnemies(dt){
         g.rotation.y = Math.atan2(tx, tz);
         const heavy = !!t.heavy;
         g.userData.bodyMat.emissive.setHex(e.converted ? 0x33cc55 : 0xff2a18);
-        const wk = 1 - Math.max(e.st,0)/t.windup;
+        const wk = 1 - Math.max(e.st,0)/(e.wu || t.windup);
         // anticipation: COIL hard and fast, then hold at the apex (a readable pause before the blow)
         const coil = Math.pow(wk, 0.5);
         g.userData.bodyMat.emissiveIntensity = (0.4 + coil * coil * 2.4) + Math.sin(G.gt*30)*0.25*coil;   // pulsing charge
@@ -253,6 +284,7 @@ export function updateEnemies(dt){
         }
         if (e.st <= 0 && e.state === 'strike'){
           if (!e.dead){ e.state = 'recover'; e.st = t.recover; }
+          if (e.token) dropToken(e, true);   // swung — step back into the ring and let the next foe in
           g.userData.bodyMat.emissiveIntensity = 0;
         }
         break;

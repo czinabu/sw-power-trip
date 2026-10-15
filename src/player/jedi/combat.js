@@ -9,7 +9,7 @@ import { burst } from '../../fx/particles.js';
 import { floater, screenFlash } from '../../fx/floaters.js';
 import { shared, G, enemies, barrels, keys, player } from '../../state.js';
 import { fwd, playerPos, stance } from '../helpers.js';
-import { damageEnemy, flinchEnemy, nearestEnemyInCone, staggerEnemy } from '../../enemies/damage.js';
+import { damageEnemy, flinchEnemy, nearestEnemyInCone, staggerEnemy, interruptEnemy } from '../../enemies/damage.js';
 import { damageBoss } from '../../boss/boss.js';
 import { FOCUS, focusTier, focusDmgMul, addFocus } from './focus.js';
 import { spawnHitSpark, spawnGroundShock } from '../../fx/vfx.js';
@@ -175,6 +175,7 @@ export function applySwingDamage(step){
     if (e.dead || e.converted || e.state === 'spawn') continue;
     tryHit(e.group.position, () => {
       damageEnemy(e, dmg * (e.t.heavy ? st.heavyDmg : 1), f.clone(), knock, finisher);
+      if (!riposte && !e.dead) interruptEnemy(e, f, finisher || st.form === 'djemso' || isDark);   // striking first beats a wind-up
       if (riposte && !e.dead) staggerEnemy(e, f.x, f.z);   // a RIPOSTE floors what it answers — a true counter, wide open after
       // BESKAR EDGE — a heavy darksaber hit can DISARM/stagger a staff-wielding duelist
       if (isDark && (finisher || e.t.staff) && e.t.staff && !e.dead && Math.random() < (finisher ? 0.5 : 0.18)){

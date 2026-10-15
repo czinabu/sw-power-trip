@@ -33,7 +33,7 @@ src/
     model/           hero models: rig + sockets, outfit slots (jedi.js, mando.js), weapons, render styles, looks
     jedi/            stances, focus, saber combat, Force powers, Judgement FX
     mando/           weapons, gadgets, darksaber
-  enemies/           meshes, elites, special moves, spawning, damage, AI, blaster bolts
+  enemies/           meshes, elites, special moves, spawning, damage, AI, attack turns (director.js), blaster bolts
   boss/              boss lightning FX and the boss itself
   world/             arena builder, arenas/ (temple, foundry, plains layouts), Ink bake, painted skies/floors, backdrops, atmosphere, collision, hazards (see docs/world-guidelines.md)
   game/              level/wave flow, survival mode, progression, boons, end-of-run summary
