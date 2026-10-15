@@ -4,6 +4,7 @@
 
 import * as THREE from 'three';
 import { SABER_GUARDS, SABER_SWINGS, SWING_STYLE } from '../../data/poses.js';
+import { AIR_GUARDS } from '../../data/agility.js';
 import { solveArm, aimHeld, pointInChest, wristInChest, axisInChest, slerpDir, arcLerp } from './ik.js';
 
 const V = (a) => new THREE.Vector3(a[0], a[1], a[2]);
@@ -17,6 +18,13 @@ const vecPose = p => p && ({ ...p, hand: V(p.hand), blade: V(p.blade).normalize(
   off: p.off && { hand: V(p.off.hand), pole: V(p.off.pole || [-0.55, -0.8, -0.25]).normalize() } });
 const GUARDS = {}, SWINGS = {};
 for (const g in SABER_GUARDS){ GUARDS[g] = {}; for (const f in SABER_GUARDS[g]) GUARDS[g][f] = { ready: vecPose(SABER_GUARDS[g][f].ready), block: vecPose(SABER_GUARDS[g][f].block) }; }
+const AIR = {};
+for (const g in AIR_GUARDS){ AIR[g] = {}; for (const f in AIR_GUARDS[g]){ AIR[g][f] = {}; for (const k in AIR_GUARDS[g][f]) AIR[g][f][k] = vecPose(AIR_GUARDS[g][f][k]); } }
+/* an agility guard (data/agility.js AIR_GUARDS) for this grip and form, or null to keep the form's ready guard */
+export function airGuard(grip, form, key){
+  if (!key) return null;
+  return (AIR[grip] && AIR[grip][form] && AIR[grip][form][key]) || null;
+}
 for (const g in SABER_SWINGS){ SWINGS[g] = {}; for (const p in SABER_SWINGS[g]) SWINGS[g][p] = SABER_SWINGS[g][p].map(vecPose); }
 
 const easeOut = t => 1 - (1 - t) * (1 - t);
@@ -46,20 +54,25 @@ function seed(R, held){
   saberPose.live = true;
 }
 
-/* GUARD — damp the live pose toward the form's ready or block guard. `sway` adds stride carriage while moving. */
-export function guardPose(dt, R, held, grip, form, blocking, sway){
+/* GUARD — damp the live pose toward the form's ready or block guard. `sway` adds stride carriage while moving
+   (sway.off swings a free off hand with the stride). `over` swaps in an agility guard (airGuard) for flips, dives,
+   landings and the run; `rate` scales how fast the pose gets there. */
+export function guardPose(dt, R, held, grip, form, blocking, sway, over = null, rate = 1){
   if (!saberPose.live) seed(R, held);
   const G0 = (GUARDS[grip] && GUARDS[grip][form]) || GUARDS.regular.niman;
-  const g = blocking ? G0.block : G0.ready;
-  const k = Math.min(1, dt * (blocking ? 18 : 9));
+  const g = (!blocking && over) || (blocking ? G0.block : G0.ready);
+  const k = Math.min(1, dt * (blocking ? 18 : 9) * rate);
   _t.copy(g.hand); _t.y += sway.y; _t.z += sway.z;
   saberPose.hand.lerp(_t, k);
   slerpDir(saberPose.blade, g.blade, k, saberPose.blade);
   saberPose.pole.lerp(g.pole, k).normalize();
   saberPose.two += ((g.two ? 1 : 0) - saberPose.two) * Math.min(1, dt * 14);
-  if (g.off){ saberPose.off.lerp(g.off.hand, Math.min(1, dt * 8)); saberPose.offPole.lerp(g.off.pole, k).normalize(); }
-  saberPose.twist += ((g.twist || 0) - saberPose.twist) * Math.min(1, dt * 9);
-  saberPose.lean += ((g.lean || 0) - saberPose.lean) * Math.min(1, dt * 10);
+  if (g.off){
+    _p.copy(g.off.hand); if (sway.off){ _p.z += sway.off; _p.y += Math.abs(sway.off) * 0.3; }
+    saberPose.off.lerp(_p, Math.min(1, dt * 8 * rate)); saberPose.offPole.lerp(g.off.pole, k).normalize();
+  }
+  saberPose.twist += ((g.twist || 0) - saberPose.twist) * Math.min(1, dt * 9 * rate);
+  saberPose.lean += ((g.lean || 0) - saberPose.lean) * Math.min(1, dt * 10 * rate);
   return { torso: g.torso || 0 };
 }
 

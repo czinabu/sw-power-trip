@@ -11,6 +11,7 @@ import { DJUMP_FORCE, WALLKICK_FORCE } from '../data/mando.js';
 import { fwd, rightV, playerPos, stance } from './helpers.js';
 import { cancelSwing } from './jedi/combat.js';
 import { STEP_UP } from '../world/collision.js';
+import { flipStyle } from './anim/agility.js';
 
 export function forceDash(){
   const A = CFG.abilities.dash;
@@ -27,16 +28,12 @@ export function forceDash(){
   if (dir.lengthSq() < 0.01) dir.copy(fwd());
   dir.normalize();
   player.vel.addScaledVector(dir, A.speed);
-  // dash is now an acrobatic spinning evade — a twirl around the vertical axis
+  // the dash's body move is the form's (data/agility.js): Ataru's butterfly twist and tuck flips, Niman's spin
+  // dodge, Djem So's driven slide. The flip only poses the body; the impulse and i-frames above do the work.
   const df = dir.dot(fwd()), drr = dir.dot(rightV());
   const sideDash = Math.abs(drr) >= Math.abs(df);
-  const sign = sideDash ? (drr >= 0 ? 1 : -1) : (df >= 0 ? -1 : 1);
-  player.flip = {
-    axis: 'y', sign, t: 0, dur: 0.44,
-    turns: sideDash ? 1 : 1.25,        // forward/back twirls carry a little more rotation
-    lean: sideDash ? 0.5 : 0.25,       // banked flourish into the spin
-    pitch: sideDash ? 0.1 : 0.35,      // forward/back tuck slightly
-  };
+  player.flip = { ...flipStyle('dash', sideDash ? 'side' : (df >= 0 ? 'fwd' : 'back')), t: 0, dur: 0.44,
+                  side: sideDash ? (drr >= 0 ? 1 : -1) : 1 };
   burst(playerPos().clone().setY(1), 0x88ddff, 8, 5, 2);
   S.dash();
 }
@@ -55,12 +52,12 @@ export function doJump(){
     player.grounded = false;
     const dur = 0.72;                                 // slower, more cinematic — the spin hangs with the arc
     player.dashT = Math.max(player.dashT, dur);        // i-frames for the full flip — a real dodge
-    let axis = 'backflip', sign = 1;
-    if (keys['w']){ axis = 'x'; sign = 1; player.vel.addScaledVector(fwd(), 22); }            // FRONT handspring, far forward
-    else if (keys['a']){ axis = 'z'; sign = -1; player.vel.addScaledVector(rightV(), -21); }  // SIDE flip, left
-    else if (keys['d']){ axis = 'z'; sign = 1; player.vel.addScaledVector(rightV(), 21); }     // SIDE flip, right
-    else player.vel.addScaledVector(fwd(), -20);                                               // BACK flip, away
-    player.flip = { axis, sign, t: 0, dur, turns: 1 };
+    let dir = 'back', side = 1;
+    if (keys['w']){ dir = 'fwd'; player.vel.addScaledVector(fwd(), 22); }                      // FRONT handspring, far forward
+    else if (keys['a']){ dir = 'side'; side = -1; player.vel.addScaledVector(rightV(), -21); }  // SIDE flip, left
+    else if (keys['d']){ dir = 'side'; side = 1; player.vel.addScaledVector(rightV(), 21); }    // SIDE flip, right
+    else player.vel.addScaledVector(fwd(), -20);                                                // BACK flip, away
+    player.flip = { ...flipStyle('evade', dir), t: 0, dur, side };                             // the form's flip (data/agility.js)
     burst(playerPos().clone().setY(0.8), stance().blade, 10, 6, 2);
     sfx(360, 0.12, 'sine', 0.05, 600); S.dash();
     return;
@@ -86,9 +83,8 @@ export function doJump(){
     // FLIP off the wall — kick into a backward somersault facing the way you're looking (push-off direction)
     const spin = (wn.x * fwd().z - wn.z * fwd().x) >= 0 ? 1 : -1;
     const facingWall = (-wn.x) * fwd().x + (-wn.z) * fwd().z;   // >0 = looking INTO the wall → backflip away
-    player.flip = facingWall > 0
-      ? { axis: 'backflip', sign: 1, t: 0, dur: 0.66, turns: 1 }            // looking at the wall → flip backward off it
-      : { axis: 'x', sign: 1, t: 0, dur: 0.66, turns: 1 };                   // looking away → forward handspring off it
+    // looking at the wall → flip backward off it; looking away → forward handspring off it
+    player.flip = { ...flipStyle('wall', facingWall > 0 ? 'back' : 'fwd'), t: 0, dur: 0.66, side: spin };
     const pp = playerPos();
     burst(V3(pp.x - wn.x*0.6, pp.y + 0.6, pp.z - wn.z*0.6), stance().blade, 9, 6, 3);
     floater(pp, 'WALL KICK', '#bfe8ff');
@@ -101,8 +97,9 @@ export function doJump(){
     player.force = Math.max(0, player.force - DJUMP_FORCE);   // the double jump spends Force
     player.doubleJumped = true;        // arms the aerial Force Slam
     player.vy = CFG.player.jumpVel * 1.35;   // a big, epic Force-leap on the second jump
-    // a clean FORWARD front-flip (jedi flips face the way you're looking; block flips are the directional exception)
-    player.flip = { axis: 'x', sign: 1, t: 0, dur: 0.82, turns: 1 };   // slowed to hang with the big Force-leap arc
+    // the form's second-jump move, facing the way you're looking: Ataru's twisting front flip, Niman's layout,
+    // Djem So's flipless Force leap (data/agility.js); slowed to hang with the big Force-leap arc
+    player.flip = { ...flipStyle('double'), t: 0, dur: 0.82 };
     player.vel.addScaledVector(fwd(), 5);    // slight forward carry
     burst(playerPos().clone().setY(playerPos().y + 0.4), 0x88ddff, 6, 4, 2);
     S.dash();
