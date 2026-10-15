@@ -90,9 +90,11 @@ export function bossStun(){
   G.shake = Math.max(G.shake, 1); G.hitstop = Math.max(G.hitstop, 0.1);
   showBanner('REFLECTED!', 'He is staggered — STRIKE NOW!', 2);
   S.stun();
-  shared.boss.hp -= BOSS_CFG.lightning.reflectDmg;
+  const pr = BOSS_CFG.phaseResist[(shared.boss.phase || 1) - 1] ?? 1;   // later phases blunt the reflected storm too
+  const dmg = Math.round(BOSS_CFG.lightning.reflectDmg * pr);
+  shared.boss.hp -= dmg;
   shared.boss.flash = 0.2;
-  floater(shared.boss.group.position, BOSS_CFG.lightning.reflectDmg, '#ffd24a');
+  floater(shared.boss.group.position, dmg, '#ffd24a');
   if (shared.boss.hp <= 0) killBoss();
 }
 // an ABILITY stagger — a rocket/Force-power to the wind-up opens him up. Now with DIMINISHING RETURNS + a brief
@@ -139,6 +141,16 @@ function killBoss(){
   S.boom();
 }
 
+// his signature channel: Vexis's Force lightning, or the Magistrate's blaster barrage (same state, boss.kind decides)
+function startLightning(){
+  const b = shared.boss;
+  b.state = 'lightning';
+  b.lightT = b.phase === 3 ? BOSS_CFG.lightning.durP3 : BOSS_CFG.lightning.dur;
+  b.lightCatch = 0; b.lightTick = 0;
+  b.lightningCd = BOSS_CFG.lightning.cd;
+  showBanner('', b.kind === 'mando' ? 'BLASTER BARRAGE — BRACE (RMB) to soak it or break his line of sight!' : 'FORCE LIGHTNING — raise guard (RMB) to catch it, or PUSH it back!', 1.8);
+}
+
 export function updateBoss(dt){
   if (!shared.boss) return;
   const g = shared.boss.group, pp = playerPos();
@@ -183,12 +195,11 @@ export function updateBoss(dt){
       break;
     case 'think': {
       const md = shared.boss.kind === 'mando';
-      if (shared.boss.lightningCd <= 0 && dist > 6){
-        shared.boss.state = 'lightning';
-        shared.boss.lightT = shared.boss.phase === 3 ? BOSS_CFG.lightning.durP3 : BOSS_CFG.lightning.dur;
-        shared.boss.lightCatch = 0; shared.boss.lightTick = 0;
-        shared.boss.lightningCd = BOSS_CFG.lightning.cd;
-        showBanner('', md ? 'BLASTER BARRAGE — BRACE (RMB) to soak it or break his line of sight!' : 'FORCE LIGHTNING — raise guard (RMB) to catch it, or PUSH it back!', 1.8);
+      if (shared.boss.lightningCd <= 0 && dist <= 6){
+        // hugging him no longer dodges his signature: he breaks away first (a dark slide / a jet hop back)
+        shared.boss.state = 'retreat'; shared.boss.st = BOSS_CFG.retreat.time; shared.boss.retreated = false;
+      } else if (shared.boss.lightningCd <= 0 && dist > 6){
+        startLightning();
       } else if (md && shared.boss.phase >= 2 && shared.boss.volleyCd <= 0 && dist > 7){
         const V = BOSS_MANDO.volley;
         shared.boss.state = 'volley'; shared.boss.st = V.rounds*V.gap + 0.3; shared.boss.volleyLeft = V.rounds; shared.boss.lightTick = 0.12; shared.boss.volleyCd = V.cd;
@@ -235,12 +246,24 @@ export function updateBoss(dt){
         S.swing();
         if (dist < BOSS_CFG.combo.range && player.dashT <= 0){
           const res = hurtPlayer(BOSS_CFG.combo.dmg, g.position, false, true);   // melee — high ground denies it
-          if (res === 'parried'){   // a perfect parry staggers even a Sith Lord — a big opening
-            shared.boss.state = 'vulnerable'; shared.boss.st = 1.6;
+          if (res === 'parried'){
+            if (shared.boss.swingsLeft > 1){
+              // POSTURE — an early swing parried is only DEFLECTED: he reels a beat, then presses the chain on.
+              // Deflect the whole chain and the last one breaks him wide open.
+              shared.boss.swingsLeft--;
+              shared.boss.state = 'windup'; shared.boss.st = BOSS_CFG.combo.windup * BOSS_CFG.combo.deflectGap;
+              g.position.x -= tx * 0.8; g.position.z -= tz * 0.8;   // knocked back a step
+              G.shake = Math.max(G.shake, 0.45); G.hitstop = Math.max(G.hitstop, 0.06);
+              burst(V3(g.position.x, 2.4, g.position.z), 0xffd24a, 8, 7, 4);
+              floater(g.position, 'DEFLECTED · ' + shared.boss.swingsLeft + ' MORE', '#ffe9a8');
+              break;
+            }
+            // the chain's last blow parried: a full posture break, the biggest melee opening in the fight
+            shared.boss.state = 'vulnerable'; shared.boss.st = BOSS_CFG.combo.breakTime;
             shared.boss.swingsLeft = 0;
-            G.shake = Math.max(G.shake, 0.7); G.hitstop = Math.max(G.hitstop, 0.12);
-            burst(V3(g.position.x, 2.4, g.position.z), 0xffd24a, 18, 9, 5);
-            floater(g.position, 'STAGGERED!', '#ffd24a');
+            G.shake = Math.max(G.shake, 0.8); G.hitstop = Math.max(G.hitstop, 0.14);
+            burst(V3(g.position.x, 2.4, g.position.z), 0xffd24a, 22, 10, 6);
+            floater(g.position, 'POSTURE BROKEN!', '#ffd24a');
             break;
           }
         }
@@ -250,7 +273,7 @@ export function updateBoss(dt){
           g.position.x += tx * Math.max(0, Math.min(dist - 2, 2.5));   // step in
           g.position.z += tz * Math.max(0, Math.min(dist - 2, 2.5));
         } else {
-          shared.boss.state = 'vulnerable'; shared.boss.st = BOSS_CFG.combo.vulnTime;
+          shared.boss.state = 'vulnerable'; shared.boss.st = BOSS_CFG.combo.whiffTime;   // a short breather — parrying pays more
           floater(g.position, 'OPENING!', '#ffd24a');
         }
       }
@@ -301,8 +324,8 @@ export function updateBoss(dt){
           if (shared.boss.lightCatch >= L.catchTime){
             shared.bossLight.visible = false; shared.boss.lightT = 0;
             floater(pp, 'REFLECTED!', '#ffd24a');
-            bossStun();
-            shared.boss.state = 'think'; g.userData.hand.rotation.z = -0.6;
+            bossStun();   // leaves him STUNNED (this used to be overwritten with 'think' right after, so the stun never happened)
+            g.userData.hand.rotation.z = -0.6;
             break;
           }
         }
@@ -366,6 +389,21 @@ export function updateBoss(dt){
       }
       break;
     }
+    case 'retreat': {   // a quick backward slide out of saber reach, then straight into lightning / the barrage
+      const md = shared.boss.kind === 'mando';
+      g.userData.bodyMat.emissive.setHex(md ? 0x335a88 : 0x7a1aff);
+      g.userData.bodyMat.emissiveIntensity = 1.2;
+      if (!shared.boss.retreated && shared.boss.st <= BOSS_CFG.retreat.time * 0.5){
+        shared.boss.retreated = true;
+        burst(V3(g.position.x, 1.8, g.position.z), md ? 0x66ccff : 0x8a3aff, 12, 8, 5);
+        g.position.x -= tx * BOSS_CFG.retreat.dist; g.position.z -= tz * BOSS_CFG.retreat.dist;
+        clampToArena(g.position, null, null);
+        burst(V3(g.position.x, 1.8, g.position.z), md ? 0x66ccff : 0x8a3aff, 12, 8, 5);
+        sfx(md ? 260 : 170, 0.18, 'sawtooth', 0.08, md ? 120 : 600);
+      }
+      if (shared.boss.st <= 0){ g.userData.bodyMat.emissiveIntensity = 0; startLightning(); }   // even if a wall stopped the slide
+      break;
+    }
     case 'volley': {
       // THE MAGISTRATE — a quick AIMED burst that LEADS your strafe (punishes predictable kiting; weave it)
       const V = BOSS_MANDO.volley;
@@ -403,7 +441,9 @@ export function updateBoss(dt){
       break;
   }
   const cdRate = shared.boss.enraged ? 1.6 : 1;   // ENRAGE — abilities come off cooldown faster in phase III
-  shared.boss.lightningCd -= dt*cdRate; shared.boss.pulseCd -= dt*cdRate; shared.boss.blinkCd -= dt*cdRate; shared.boss.volleyCd -= dt*cdRate;
+  // the signature's cooldown only runs once the channel is over, so even enraged he fights between casts
+  if (shared.boss.state !== 'lightning' && shared.boss.state !== 'retreat') shared.boss.lightningCd -= dt*cdRate;
+  shared.boss.pulseCd -= dt*cdRate; shared.boss.blinkCd -= dt*cdRate; shared.boss.volleyCd -= dt*cdRate;
   shared.boss.staggerImmuneT -= dt; shared.boss.summonCd -= dt;
   // PHASE III reinforcements — a steady trickle so you can't just turtle and out-DPS him in the open
   if (shared.boss.phase === 3 && shared.boss.state !== 'dying' && shared.boss.summonCd <= 0){
