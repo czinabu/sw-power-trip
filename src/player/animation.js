@@ -314,6 +314,7 @@ export function footwork(){
 }
 const _IDQ = new THREE.Quaternion();
 const LAND_T = 0.34;
+const SHIELD_SIZE = 0.6;   // gauntlet shield disc scale (visual only; what it blocks is decided in player/damage.js)
 const easeInOut = t => t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t + 2, 2) / 2;
 
 function animateForceCast(dt, dr, R){
@@ -528,7 +529,7 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
     }
     const sg = player.shieldMesh;
     const flare = player.shieldFlash, shimmer = 0.05 * Math.sin(G.gt * 9);
-    sg.scale.setScalar(1 + flare * 1.5);
+    sg.scale.setScalar(SHIELD_SIZE * (1 + flare * 1.5));
     const lowStam = player.stam < CFG.player.maxStam * 0.18;   // shield failing — out of juice to deflect
     player.shieldDisc.material.color.setHex(lowStam ? 0xff8a4a : 0x4bd2ff);
     player.shieldRim.material.color.setHex(lowStam ? 0xffb866 : 0x9fe6ff);
