@@ -25,11 +25,11 @@ src/
   main.js            imports every module in load order, runs the main loop, exposes window.GAME
   state.js           G (run state), player, entity arrays, keys, and `shared` (values that get reassigned)
   utils.js           math helpers
-  data/              tuning tables: config, stances, enemies, levels, bosses, mando, skills, store, mastery, boons, mutators, difficulty, worlds (arena looks)
+  data/              tuning tables: config, movement, stances, enemies, levels, bosses, mando, skills, store, mastery, boons, mutators, difficulty, worlds (arena looks)
   engine/            renderer + post-processing, graphics quality, input, camera
   audio/             mixer + voice builder (engine.js), sound bank (sfx.js), adaptive per-world score (music.js), loops + ambience (director.js)
   fx/                particles, floating text, VFX lights, saber trail, one-shot VFX, ambient embers
-  player/            hero swap, movement, damage, updatePlayer (update.js), animation
+  player/            hero swap, movement, parkour, damage, updatePlayer (update.js), animation
     model/           hero models: rig + sockets, outfit slots (jedi.js, mando.js), weapons, render styles, looks
     jedi/            stances, focus, saber combat, Force powers, Judgement FX
     mando/           weapons, gadgets, darksaber
@@ -53,6 +53,8 @@ Each file starts with a one-line description. Balance changes usually only touch
 **Changing sounds:** every sound is synthesized. One-shots are recipes in the `S` bank in `src/audio/sfx.js` (a few layered tones and noise bursts each); most take a world position so they pan and fade with distance. Continuous sounds (saber hums, jetpack, flamethrower, each world's ambience) live in `src/audio/director.js`, and each world's score (key, tempo, chords, melody, drum kit) is a palette in `src/audio/music.js`. Audition all of it with `npm run dev` and `/tools/sound-lab.html`.
 
 **Changing progression:** between waves there are two currencies with one job each. XP buys abilities (`data/store.js`: auto-unlocks, fork pairs, finals) and mastery ranks that upgrade abilities you own (`data/mastery.js`); in survival it also buys the repeatable powers. Skill points, one per wave cleared, buy training (`data/skills.js`). Ability code reads its tuning through `abil(id)`, so a mastery rank is just a multiplier or bonus on a field of the ability's `CFG.abilities` / `MANDO` entry. To check prices against what a campaign pays out, run `npm run dev` and open `/tools/progression-lab.html`.
+
+**Changing movement and combat feel:** grounded movement and parkour (air control, fall weight, landing stagger and roll, mantle/vault reach, wall-run) are tuned in `src/data/movement.js`; the code lives in `src/player/parkour.js` and `locomotion.js`. Parry/block strictness, swing arcs and lunge reach are in `CFG.player` (`src/data/config.js`).
 
 **Live tweaking:** `window.GAME` in the browser console exposes the config tables and most game functions.
 

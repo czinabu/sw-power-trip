@@ -79,7 +79,9 @@ function poseBody(dt, dr, vis, planted, POSE, moving){
     const lr = player.moveVel.x*(-ffz) + player.moveVel.z*ffx;
     const leanG = (stance().gait && stance().gait.lean) || 1;   // FAST leans eagerly into the run; STRONG runs upright & heavy
     vis.rotation.x = dr(vis.rotation.x, lf*0.024*leanG + (planted ? POSE.lean : 0), 9);
-    vis.rotation.z = dr(vis.rotation.z, lr*0.018*leanG, 9);   // bank INTO the strafe (was inverted — leaned the wrong way)
+    // WALL-RUN — feet on the wall, body tipped out away from it (the normal in the body's own left/right)
+    const wallLean = player.wallRun ? -0.5 * (player.wallRun.nx * Math.cos(player.faceYaw) - player.wallRun.nz * Math.sin(player.faceYaw)) : 0;
+    vis.rotation.z = dr(vis.rotation.z, player.wallRun ? wallLean : lr*0.018*leanG, player.wallRun ? 14 : 9);   // bank INTO the strafe (was inverted — leaned the wrong way)
     vis.position.y = dr(vis.position.y, 0, 10);
   }
 

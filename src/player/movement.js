@@ -5,17 +5,20 @@ import { CFG } from '../data/config.js';
 import { sfx, S } from '../audio/sfx.js';
 import { V3, clamp } from '../utils.js';
 import { burst } from '../fx/particles.js';
-import { floater } from '../fx/floaters.js';
 import { shared, G, solids, keys, player } from '../state.js';
 import { DJUMP_FORCE, WALLKICK_FORCE } from '../data/mando.js';
 import { fwd, rightV, playerPos, stance } from './helpers.js';
 import { cancelSwing } from './jedi/combat.js';
 import { STEP_UP } from '../world/collision.js';
 import { flipStyle } from './anim/agility.js';
+import { MOVE } from '../data/movement.js';
+import { tryVault, findLedge, startMantle, requestRoll } from './parkour.js';
 
 export function forceDash(){
   const A = CFG.abilities.dash;
-  if (!G.unlocked.dash || player.cds.dash > 0 || player.force < A.cost || G.mode !== 'play') return;
+  if (G.mode !== 'play' || player.mantle) return;
+  if (requestRoll(playerPos())) return;   // SHIFT just before a hard landing rolls out of it instead (free)
+  if (!G.unlocked.dash || player.cds.dash > 0 || player.force < A.cost || player.landStagT > 0) return;
   if (player.atkT > 0) cancelSwing();   // DASH-CANCEL — bail a swing into an evasive dash in any direction
   player.force -= A.cost;   // the dash spends Force
   player.cds.dash = A.cd * (stance().dashCd || 1) * player.up.dashCdMult;
@@ -39,12 +42,18 @@ export function forceDash(){
 }
 
 export function doJump(){
-  if (G.mode !== 'play' || player.slamming) return;
+  if (G.mode !== 'play' || player.slamming || player.mantle) return;
+  // COYOTE TIME — a jump just after running off a ledge still counts as a ground jump
+  const coyote = !player.grounded && player.vy <= 0.5 && G.gt - (player.lastGroundT ?? -9) < MOVE.coyote
+                 && G.gt - (player.lastJumpT ?? -9) > MOVE.coyote;
+  const onGround = player.grounded || coyote;
+  if (onGround && !player.blockHeld && tryVault(playerPos())) return;   // running at low cover: up and over it
   if (G.hero === 'mando'){
     // a ground hop to kick off the ground; sustained flight is HOLD SPACE (jetpack in updatePlayer)
-    if (player.grounded){ player.vy = CFG.player.jumpVel * 0.9; player.grounded = false; S.jump(); }
+    if (onGround){ player.vy = CFG.player.jumpVel * 0.9; player.grounded = false; player.lastJumpT = G.gt; S.jump(); }
     return;
   }
+  if (player.landStagT > 0) return;   // knees still buckled from a hard landing
   if (player.blockHeld && player.grounded){
     // FORCE-ASSISTED EVADE out of the guard — a long, clean acrobatic leap that carries you clear.
     //   W = FRONT handspring · A/D = SIDE flip · S/neutral = BACK flip. i-frames last the whole move.
@@ -62,24 +71,30 @@ export function doJump(){
     sfx(360, 0.12, 'sine', 0.05, 600); S.dash();
     return;
   }
-  if (player.grounded){
+  if (onGround){
     player.vy = CFG.player.jumpVel;
     player.grounded = false;
+    player.lastJumpT = G.gt;
     return;
   }
+  // airborne at a ledge within reach: grab it now rather than spending the double jump
+  const pp0 = playerPos();
+  const ledge = findLedge(pp0, fwd(), STEP_UP, MOVE.reach);
+  if (ledge){ startMantle(pp0, ledge, false); return; }
   // airborne: a nearby wall/pillar lets you KICK OFF — light parkour to reposition mid-fight. Costs a SMALL Force
   // fee (used to be free): cheap enough that one mid-fight reposition barely registers, but enough that spam-
   // chaining kicks in a tight corridor (e.g. the Overwatch Gantry's climbing flue) for endless free altitude
   // self-limits once Force runs dry, instead of being a truly unlimited climb the jetpack never gets to be.
   // (Insufficient Force just silently falls through to the double-jump check below, same as that check's own
   // silent low-Force fail — no new denial UI needed.)
-  const wn = nearbyWallNormal();
+  const wn = player.wallRun ? V3(player.wallRun.nx, 0, player.wallRun.nz) : nearbyWallNormal();
   if (wn && player.force >= WALLKICK_FORCE){
     player.force -= WALLKICK_FORCE;
     player.vy = CFG.player.jumpVel * 1.08;
     player.vel.addScaledVector(wn, 13);          // launch away from the surface
     player.airLeft = CFG.player.airJumps;        // refresh air options so you can chain kicks
     player.doubleJumped = false;
+    player.wallRun = null; player.wallRunUsed = false;   // a kick can carry onto the opposite wall for another run
     // FLIP off the wall — kick into a backward somersault facing the way you're looking (push-off direction)
     const spin = (wn.x * fwd().z - wn.z * fwd().x) >= 0 ? 1 : -1;
     const facingWall = (-wn.x) * fwd().x + (-wn.z) * fwd().z;   // >0 = looking INTO the wall → backflip away
@@ -87,10 +102,11 @@ export function doJump(){
     player.flip = { ...flipStyle('wall', facingWall > 0 ? 'back' : 'fwd'), t: 0, dur: 0.66, side: spin };
     const pp = playerPos();
     burst(V3(pp.x - wn.x*0.6, pp.y + 0.6, pp.z - wn.z*0.6), stance().blade, 9, 6, 3);
-    floater(pp, 'WALL KICK', '#bfe8ff');
     sfx(420, 0.12, 'square', 0.06, 900); S.dash();
     return;
   }
+  // JUMP BUFFER — about to touch down: hold the press and jump on landing instead of burning the double jump
+  if (player.vy < 0 && pp0.y - (player.groundY || 0) < Math.max(0.6, -player.vy * MOVE.jumpBuffer)){ player.jumpBufT = G.gt; return; }
   // DOUBLE JUMP is only available on the way UP — once you're descending, holding space FLOATS you down instead
   if (player.airLeft > 0 && player.vy > 0 && player.force >= DJUMP_FORCE){
     player.airLeft--;

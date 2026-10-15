@@ -49,7 +49,11 @@ function updatePlayerMeters(dt, pp, st){
   else player.stam = clamp(player.stam + CFG.player.stamRegen * player.up.stamRegen * (player.exhausted ? 0.7 : 1) * dt, 0, CFG.player.maxStam);
   if (player.dashT > 0) player.dashT -= dt;
   if (player.riposteT > 0) player.riposteT -= dt;
-  if (player.parryT > 0) player.parryT -= dt;
+  // a parry window that runs out without catching anything was a GUESS: the guard is slow to re-time for a moment
+  // (a parry that lands zeroes parryT itself, so it never reaches this)
+  if (player.parryT > 0){ player.parryT -= dt; if (player.parryT <= 0) player.parryLockT = CFG.player.parryWhiffLock; }
+  if (player.parryLockT > 0) player.parryLockT -= dt;
+  if (player.landStagT > 0) player.landStagT -= dt;   // HARD LANDING recovery
   if (player.blockHeld) player.blockT += dt;
   // FORCE BARRIER bubble — track its life and animate the shimmering shell around the player
   if (player.barrierT > 0){

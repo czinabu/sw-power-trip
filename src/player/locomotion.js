@@ -13,6 +13,9 @@ import { slamImpact } from './jedi/force.js';
 import { spawnGroundShock } from '../fx/vfx.js';
 import { clampToArena, collideSolids } from '../world/collision.js';
 import { mandoSlamImpact } from './mando/gadgets.js';
+import { MOVE } from '../data/movement.js';
+import { updateMantle, tryAutoMantle, updateWallRun, landingImpact } from './parkour.js';
+import { doJump } from './movement.js';
 
 // Horizontal movement: WASD steering on the ground (or Mando air momentum), plus lunge/dash impulse velocity.
 // Returns whether there is movement input this frame (the pose code reads it).
@@ -23,7 +26,9 @@ export function updateMovement(dt, pp, st, f, r){
                    * (player.atkT > 0 && st.moveAtkPenalty ? st.moveAtkPenalty : 1)    // DARKSABER crawls while committed to a swing
                    * (1 + (player.momentumStacks || 0) * 0.06)                          // MOMENTUM boon — kills build speed
                    * (player.boon && player.boon.adrenal && player.hp < maxHp()*0.35 ? 1.18 : 1)    // ADRENALINE boon — desperate burst
-                   * focusMoveMul();                                                     // FORCE FOCUS — lighter on the feet in flow
+                   * focusMoveMul()                                                      // FORCE FOCUS — lighter on the feet in flow
+                   * (player.atkT > 0 && G.hero !== 'mando' ? MOVE.swingMove : 1)       // a swing plants the feet: spacing is yours to manage
+                   * (player.landStagT > 0 ? MOVE.staggerMove : 1);                     // HARD LANDING — the knees are still buckled
   const want = V3(0,0,0);
   if (keys['w']) want.add(f);
   if (keys['s']) want.sub(f);
@@ -43,19 +48,28 @@ export function updateMovement(dt, pp, st, f, r){
     const k = Math.max(0, 1 - dt*drag);
     player.moveVel.x *= k; player.moveVel.z *= k;
     pp.addScaledVector(player.moveVel, dt);
+  } else if (player.mantle){
+    // a ledge pull-up / vault owns the body (parkour.js)
   } else {
-    // GROUND (or Jedi): steer toward the input direction at the stance's acceleration; quick decel on release
+    // GROUND (or Jedi): steer toward the input direction at the stance's acceleration. Speed BUILDS, and planting to
+    // stop or turn back against your momentum brakes harder. In the AIR the jump keeps its takeoff momentum: WASD
+    // only nudges it (no input = no steering at all), so a leap is a commitment instead of a floaty drift.
+    const airborne = !player.grounded && !player.wallRun;
     const topSpeed = CFG.player.speed * speedMul;
     if (moving) want.normalize().multiplyScalar(topSpeed);
-    TMP.subVectors(want, player.moveVel);
-    const dl = TMP.length();
-    const accelMul = (st.accel || 1) * (moving ? 1 : 1.6);
-    if (dl > 0.001) player.moveVel.addScaledVector(TMP.normalize(), Math.min(dl, CFG.player.accel * accelMul * dt));
+    if (!(airborne && !moving)){
+      TMP.subVectors(want, player.moveVel);
+      const dl = TMP.length();
+      const against = !moving || want.dot(player.moveVel) < 0;
+      let accel = (against ? MOVE.brake : MOVE.accel) * (st.accel || 1);
+      if (airborne) accel = MOVE.accel * (st.accel || 1) * (player.gliding ? 0.5 : MOVE.airControl);
+      if (dl > 0.001) player.moveVel.addScaledVector(TMP.normalize(), Math.min(dl, accel * dt));
+    }
     pp.addScaledVector(player.moveVel, dt);
   }
   // impulse velocity (lunge/dash) with damping — a flip/dash GLIDES (low drag) so it actually carries you
   pp.addScaledVector(player.vel, dt);
-  const velDrag = (player.flip || player.dashT > 0) ? 2.6 : 9;
+  const velDrag = (player.flip || player.dashT > 0) ? 2.6 : (!player.grounded && G.hero !== 'mando') ? 1.2 : 9;   // airborne impulses (wall kicks, leaps) carry
   player.vel.multiplyScalar(Math.max(0, 1 - dt*velDrag));
   if (player.kickT > 0) player.kickT -= dt;   // JEDI front-kick recovery (hero-agnostic so it always winds down)
   return moving;
@@ -103,9 +117,16 @@ export function updateForceJump(dt, pp, f, r){
 }
 
 export function updateGravityAndLanding(dt, pp){
-  // gravity / landing — gentled while the Jedi is gliding (graceful arc), fully cancelled during the Mando hover
-  player.vy -= CFG.player.gravity * (player.hovering ? 0 : player.gliding ? JEDI_FORCE.riseGravity : 1) * dt;
+  if (updateMantle(dt, pp)){ player.groundY = player.mantle ? player.mantle.y1 : pp.y; return; }   // a pull-up owns the body
+  if (tryAutoMantle(pp)) return;
+  updateWallRun(dt, pp);
+  // gravity / landing — gentled while the Jedi is gliding (graceful arc), fully cancelled during the Mando hover.
+  // A plain Jedi jump falls HARDER than it rose (no hang at the apex) and a wall-run barely loses height.
+  const jediFall = G.hero !== 'mando' && !player.gliding && player.vy < 0;
+  const gMul = player.hovering ? 0 : player.wallRun ? MOVE.wallRunGravity : player.gliding ? JEDI_FORCE.riseGravity : jediFall ? MOVE.fallGravity : 1;
+  player.vy -= CFG.player.gravity * gMul * dt;
   if (player.gliding && player.vy < -JEDI_FORCE.glideFall) player.vy = -JEDI_FORCE.glideFall;   // graceful (not floaty) descent
+  if (player.vy < -MOVE.maxFall) player.vy = -MOVE.maxFall;
   pp.y += player.vy * dt;
   // resolve solid obstacles horizontally + find the surface underfoot (floor or a platform top)
   const wasGrounded = player.grounded;
@@ -114,6 +135,7 @@ export function updateGravityAndLanding(dt, pp){
                               // (so hovering just over a tall pillar reads as low, not high)
   if (pp.y <= support + 0.001){
     const impact = Math.max(0, -player.vy);   // how hard you came down (drives the touchdown beat)
+    const slammed = player.slamming;
     pp.y = support; player.vy = 0;
     if (player.slamming){
       (G.hero === 'mando' ? mandoSlamImpact : slamImpact)();
@@ -137,8 +159,14 @@ export function updateGravityAndLanding(dt, pp){
         S.heavy();                                 // an extra crunch on a heavy drop
       }
     }
+    // HARD LANDING (Jedi) — a long drop buckles the knees unless you rolled out of it (parkour.js)
+    if (!wasGrounded && !slammed) landingImpact(impact);
     player.grounded = true; player.airLeft = CFG.player.airJumps;
     player.doubleJumped = false; player.fjUsed = false;   // re-arm the Force-jump takeoff for the next leap
+    player.wallRunUsed = false; player.wallRun = null;
+    player.lastGroundT = G.gt;
+    // JUMP BUFFER — a jump pressed just before touchdown fires now
+    if (!wasGrounded && G.gt - (player.jumpBufT ?? -9) < MOVE.jumpBuffer){ player.jumpBufT = -9; doJump(); }
   } else player.grounded = false;
   clampToArena(pp, null, null);
 }

@@ -84,8 +84,9 @@ export function startLevel(idx){
   player.exhausted = false;
   document.getElementById('stamvig').style.opacity = '0';
   player.blockHeld = false;
-  player.parryT = 0;
+  player.parryT = 0; player.parryLockT = 0;
   player.riposteT = 0;
+  player.mantle = null; player.wallRun = null; player.wallRunUsed = false; player.landStagT = 0;   // parkour state
   player.judgeT = 0;
   player.judgeTargets = [];
   player.barrierT = 0; if (shared._barrierMesh) shared._barrierMesh.visible = false;

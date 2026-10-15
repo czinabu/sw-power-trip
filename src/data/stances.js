@@ -20,11 +20,11 @@ export const STANCES = {
             dmg: 0.58, heavyDmg: 0.42, speed: 2.05, knock: 0.38, stamina: 6, lunge: 1.4, move: 1.42, accel: 1.7, twist: 0.4, bladeLen: 0.94,
             radiusMult: 1.45, forceRegen: 1.5, costMult: { push: 0.7, pull: 0.7 }, dashCd: 0.48,
             comboGap: 1.25, fovKick: 6,
-            moveAtk: 1.08,        // PASSIVE: +8% footwork even mid-swing — kite while you cleave
+            moveAtk: 1.5,         // PASSIVE: keeps most of its footwork mid-swing (every other form plants its feet) — kite while you cleave
             finisherArc: 1.1,     // the finisher cleaves ~10% wider — built for crowds
             castMul: 0.65,        // SYNERGY: snappy Force casts — the gesture fires ~35% faster
             gait: { amp: 1.0, lift: 1.3, bob: 0.45, lean: 1.25 },   // MOVEMENT: light, high-kneed, springy — a duelist on the balls of their feet
-            syn: 'CROWDS · snappy Force casts · +8% move while attacking · WEAK vs armor' },
+            syn: 'CROWDS · snappy Force casts · keeps moving while attacking · WEAK vs armor' },
   medium: { name: 'NIMAN — BALANCED', form: 'niman', formNo: 'VI', blade: 0x3aff8c,
             dmg: 1.0, heavyDmg: 0.95, speed: 1.0, knock: 0.85, stamina: 11, lunge: 1.15, move: 1.0, accel: 1.0, twist: 0.55, bladeLen: 1.0,
             radiusMult: 1.0, cdMult: 0.65, parryBonus: 0.10, comboGap: 1.0, fovKick: 0,

@@ -12,10 +12,15 @@ const CONTROLS = {
       ['HOLD SPACE', 'Force leap and glide', 'Spends Force'],
       ['SHIFT', 'Dash', 'A dodge-flip with brief invulnerability'],
     ]},
+    { title: 'PARKOUR', rows: [
+      ['W + SPACE', 'Vault / climb', 'Run and jump at low cover to vault it; jump at a ledge to pull up'],
+      ['W', 'Wall-run', 'Jump alongside a tall wall at speed; SPACE kicks off it'],
+      ['SHIFT', 'Landing roll', 'Just before a hard landing, or you stagger'],
+    ]},
     { title: 'FIGHT', rows: [
       ['LMB', 'Saber combo', 'Cuts follow your movement; every third is a finisher'],
-      ['HOLD RMB', 'Block', 'Absorbs hits; costs stamina'],
-      ['TAP RMB', 'Parry and deflect', 'Time it as a blow or bolt lands to counter'],
+      ['HOLD RMB', 'Block', 'Soaks most of a blow; heavy hits drain stamina'],
+      ['TAP RMB', 'Parry and deflect', 'Time it as a blow or bolt lands; a missed parry can\'t be retried for a moment'],
       ['E', 'Kick', 'Shoves a foe back'],
       ['1 / 2 / 3', 'Saber form', 'Or the mouse wheel'],
       ['G', 'Switch grip', 'Regular or reverse; swings hit the same either way'],
@@ -33,7 +38,7 @@ const CONTROLS = {
     { title: 'MOVE', rows: [
       ['W A S D', 'Move'],
       ['MOUSE', 'Aim'],
-      ['SPACE', 'Hop'],
+      ['SPACE', 'Hop', 'Run and hop at low cover to vault it; hop at a ledge to climb'],
       ['HOLD SPACE', 'Jetpack thrust', 'Hover and climb; burns fuel'],
       ['HOLD SHIFT', 'Boost in the air', 'Look down to dive'],
       ['SHIFT', 'Dodge on the ground'],
@@ -62,6 +67,7 @@ const TIPS = {
     '<b>Focus</b> builds with clean hits and parries and boosts your damage. Taking a hit breaks it.',
     '<b>Forms:</b> Ataru for crowds, Niman for all-round play, Djem So for brutes and bosses.',
     'Any swing can be cancelled into a block, a Force power or a dash.',
+    'Swings only hit what\'s in front of you and plant your feet, so step into range before you cut. Parry, don\'t just block: a block lets some of the blow through.',
     'After each wave, spend <b>XP</b> on new abilities and on mastering the ones you have, and <b>skill points</b> on training.',
   ],
   mando: [
