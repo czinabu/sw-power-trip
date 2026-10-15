@@ -11,11 +11,13 @@ import { spawnVent, spawnBarrel } from '../hazards.js';
    into LANES, support GIRDERS (wall-jump), molten floor channels, and INTENTIONAL hazards (fire vents + explosive
    barrels) woven through the lanes. "The machinery itself is a weapon." */
 export function buildFoundryArena(L){
-  const metal  = new THREE.MeshStandardMaterial({ color: 0x3c424b, roughness: 0.55, metalness: 0.75 });
-  const metalD = new THREE.MeshStandardMaterial({ color: 0x24282e, roughness: 0.6, metalness: 0.7 });
-  const rust   = new THREE.MeshStandardMaterial({ color: 0x6b4a32, roughness: 0.85, metalness: 0.4 });
-  const stripe = new THREE.MeshStandardMaterial({ color: 0xc9a23a, roughness: 0.6, metalness: 0.5 });
-  const molten = new THREE.MeshBasicMaterial({ color: 0xff7a1e, fog: false });   // bloom turns it into a glow
+  const pal = L.pal || {};   // the world theme's colours (data/worlds.js); the defaults are the original look
+  const metal  = new THREE.MeshStandardMaterial({ color: pal.metal ?? 0x3c424b, roughness: 0.55, metalness: 0.75 });
+  const metalD = new THREE.MeshStandardMaterial({ color: pal.metalD ?? 0x24282e, roughness: 0.6, metalness: 0.7 });
+  const rust   = new THREE.MeshStandardMaterial({ color: pal.rust ?? 0x6b4a32, roughness: 0.85, metalness: 0.4 });
+  const stripe = new THREE.MeshStandardMaterial({ color: pal.stripe ?? 0xc9a23a, roughness: 0.6, metalness: 0.5 });
+  const moltenC = pal.molten ?? 0xff7a1e;
+  const molten = new THREE.MeshBasicMaterial({ color: moltenC, fog: false });   // bloom turns it into a glow
   const addBox = (x, z, hx, hz, h, mat, solid, climbable) => {
     const m = new THREE.Mesh(new THREE.BoxGeometry(hx*2, h, hz*2), mat || metal);
     m.position.set(x, h/2, z); m.castShadow = true; m.receiveShadow = true; shared.arenaGroup.add(m);
@@ -78,9 +80,9 @@ export function buildFoundryArena(L){
     }
     // guard rail + warning beacon on the deck — a landmark visible across the foundry floor
     const rail = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.6, 0.1),
-      new THREE.MeshStandardMaterial({ color: 0xc9a23a, roughness: 0.5, metalness: 0.6 }));
+      new THREE.MeshStandardMaterial({ color: pal.stripe ?? 0xc9a23a, roughness: 0.5, metalness: 0.6 }));
     rail.position.set(t3.x, t3.h + 0.7, t3.z + 1.7); shared.arenaGroup.add(rail);
-    const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6), new THREE.MeshBasicMaterial({ color: 0xff5040 }));
+    const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6), new THREE.MeshBasicMaterial({ color: pal.beacon ?? 0xff5040 }));
     beacon.position.set(t3.x, t3.h + 1.3, t3.z); shared.arenaGroup.add(beacon);
   }
   // ---- MACHINE-BLOCK COVER — boxes of varied height that carve the floor into LANES & chokepoints ----
@@ -107,7 +109,7 @@ export function buildFoundryArena(L){
     const ch = new THREE.Mesh(new THREE.PlaneGeometry(0.6, len), molten);
     ch.rotation.x = -Math.PI/2; ch.rotation.z = a; ch.position.set(Math.cos(a)*len*0.4, 0.05, Math.sin(a)*len*0.4); shared.arenaGroup.add(ch);
     hazardZones.push({ kind:'line', cx: ch.position.x, cz: ch.position.z, dirX: Math.cos(a), dirZ: Math.sin(a),
-      halfLen: len*0.4, halfW: 0.55, period: 5.5, warnDur: 1.0, activeDur: 1.1, dmg: 15, color: 0xff7a1e, t: i*1.7 });
+      halfLen: len*0.4, halfW: 0.55, period: 5.5, warnDur: 1.0, activeDur: 1.1, dmg: 15, color: moltenC, t: i*1.7 });
   }
   // ---- HAZARDS woven into the lanes — fire VENTS + explosive BARRELS at open spots between the machinery ----
   for (let i = 0; i < 5; i++){ const s = farSpot(shared.arenaHalf*0.3, shared.arenaHalf*0.7, 4.0); if (s) spawnVent(V3(s.x, 0, s.z)); }

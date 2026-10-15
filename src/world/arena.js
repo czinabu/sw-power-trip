@@ -5,9 +5,14 @@ import * as THREE from 'three';
 import { renderer, scene, hemi, sun } from '../engine/renderer.js';
 import { V3, rand } from '../utils.js';
 import { shared, barrels, vents, pillars, solids, hazardZones } from '../state.js';
-import { spawnVent, spawnBarrel } from './hazards.js';
+import { spawnVent, spawnBarrel, setHazardStyle } from './hazards.js';
 import { makeFloorTex, makeSkyTex } from './textures.js';
 import { buildAmbient } from '../fx/ambient.js';
+import { themeFor } from '../data/worlds.js';
+import { paintSky, paintFloor } from './paint.js';
+import { buildBackdrop } from './backdrop.js';
+import { bakeArena, toon } from './ink.js';
+import { applyAtmosphere } from './atmosphere.js';
 import { buildTempleArena } from './arenas/temple.js';
 import { buildFoundryArena } from './arenas/foundry.js';
 import { buildPlainsArena } from './arenas/plains.js';
@@ -26,6 +31,10 @@ export function buildArena(L){
   shared.ambient = null;
   shared.templeBrazier = null;   // cleared each rebuild; the temple layout re-assigns it (so we never flicker a stale mesh)
 
+  const T = themeFor(L);
+  setHazardStyle(T && (T.hazards || {}));
+  if (T) buildWorld(L, T);
+  else {
   scene.fog = new THREE.Fog(L.fog, L.arena*(L.fogStart || 0.5), L.arena*1.9);
   renderer.setClearColor(L.sky);
   sun.color.setHex(L.sun || 0xfff2dd);
@@ -55,8 +64,9 @@ export function buildArena(L){
   grid.material.transparent = true;
   grid.material.opacity = 0.3;
   shared.arenaGroup.add(grid);
+  }
 
-  buildAmbient(L);
+  buildAmbient(T ? { ...L, ambient: T.ambient } : L);
 
   // scattered pillars — atmosphere AND solid wall-jump surfaces for parkour.
   // Tall ones ring the edge for depth; squat ones sit in the play space, low enough to
@@ -68,9 +78,10 @@ export function buildArena(L){
   for (const b of barrels) scene.remove(b.mesh); barrels.length = 0;
   hazardZones.length = 0;
   // AUTHORED per-level layouts get their own builder; everything else uses the scattered procedural cover below.
-  if (L.layout === 'temple'){ buildTempleArena(L); }
-  else if (L.layout === 'foundry'){ buildFoundryArena(L); }
-  else if (L.layout === 'plains'){ buildPlainsArena(L); }
+  const LP = { ...L, pal: (T && T.pal) || {} };   // builders read their colours from the world's palette
+  if (L.layout === 'temple'){ buildTempleArena(LP); }
+  else if (L.layout === 'foundry'){ buildFoundryArena(LP); }
+  else if (L.layout === 'plains'){ buildPlainsArena(LP); }
   else {
   // pick a spot at least `gap` clear of every other obstacle so cover stays SPREAD OUT — clustered obstacles
   // form walls that trap the enemy AI. Returns null if no open spot is found (so we just place fewer).
@@ -147,4 +158,36 @@ export function buildArena(L){
       spawnBarrel(V3(Math.cos(a)*r, 0, Math.sin(a)*r));
     }
   }
+  // INK: cel-shade every static prop and merge them into a handful of draw calls (glows and hazards stay live)
+  if (T) shared.arenaBake = bakeArena(shared.arenaGroup, T.ink ?? 0.045);
+}
+
+/* a themed world: painted sky, lights + fog (atmosphere.js), painted floor, an outer ground that runs out to the
+   horizon, and the backdrop landmarks (baked here with a thicker outline so they read at distance) */
+function buildWorld(L, T){
+  const lt = T.light, sunSpec = T.sky.sun && { ...T.sky.sun, az: T.sky.sun.az ?? Math.atan2(lt.dir[2], lt.dir[0]) };
+  const sky = new THREE.Mesh(new THREE.SphereGeometry(L.arena*1.7, 32, 16),
+    new THREE.MeshBasicMaterial({ map: paintSky({ ...T.sky, sun: sunSpec }), side: THREE.BackSide, fog: false }));
+  sky.userData.noBake = true;
+  shared.arenaGroup.add(sky);
+  applyAtmosphere(T, L, sky);
+
+  const floorTex = paintFloor(T.floor);
+  floorTex.repeat.set(L.arena/9, L.arena/9);
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(L.arena, L.arena, 8, 8), toon(0xffffff, { map: floorTex }));
+  floor.rotation.x = -Math.PI/2; floor.receiveShadow = true; floor.userData.noBake = true;
+  shared.arenaGroup.add(floor);
+  // the ground past the edge: a plain ring (no outline), a hair lower so the floor always wins where they overlap
+  const outer = new THREE.Mesh(new THREE.RingGeometry(L.arena*0.5, L.arena*1.7, 48, 1), toon(T.outer ?? T.floor.base));
+  outer.rotation.x = -Math.PI/2; outer.position.y = -0.04; outer.receiveShadow = true; outer.userData.noBake = true;
+  shared.arenaGroup.add(outer);
+  // a dark ink line marks the playable edge (the same square the movement clamp uses)
+  const edge = new THREE.Mesh(new THREE.RingGeometry(L.arena*0.5 - 0.12, L.arena*0.5 + 0.12, 4, 1, Math.PI/4),
+    new THREE.MeshBasicMaterial({ color: 0x07060a, transparent: true, opacity: 0.35 }));
+  edge.rotation.x = -Math.PI/2; edge.rotation.z = 0; edge.scale.setScalar(Math.SQRT2); edge.position.y = 0.02;
+  shared.arenaGroup.add(edge);
+
+  const back = buildBackdrop(T.backdrop, L.arena/2, T.seed || 1);
+  shared.arenaGroup.add(back);
+  bakeArena(back, T.inkFar ?? 0.16);
 }

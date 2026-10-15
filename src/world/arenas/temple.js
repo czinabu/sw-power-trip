@@ -11,9 +11,11 @@ import { shared, pillars, solids, hazardZones } from '../../state.js';
    break blaster/flyer line-of-sight, and set dressing (brazier, banners, rubble, a gold floor inlay). */
 
 export function buildTempleArena(L){
-  const stone  = new THREE.MeshStandardMaterial({ color: 0x7c715a, roughness: 0.93, metalness: 0.05 });
-  const stoneD = new THREE.MeshStandardMaterial({ color: 0x564b39, roughness: 0.95, metalness: 0.04 });
-  const trim   = new THREE.MeshStandardMaterial({ color: 0xb89a5a, roughness: 0.5, metalness: 0.55 });
+  const pal = L.pal || {};   // the world theme's colours (data/worlds.js); the defaults are the original look
+  const stone  = new THREE.MeshStandardMaterial({ color: pal.stone ?? 0x7c715a, roughness: 0.93, metalness: 0.05 });
+  const stoneD = new THREE.MeshStandardMaterial({ color: pal.stoneD ?? 0x564b39, roughness: 0.95, metalness: 0.04 });
+  const trim   = new THREE.MeshStandardMaterial({ color: pal.trim ?? 0xb89a5a, roughness: 0.5, metalness: 0.55 });
+  const fireC  = pal.brazier ?? 0xff8a2a;
   const addBox = (x, z, hx, hz, h, mat, solid, climbable) => {
     const m = new THREE.Mesh(new THREE.BoxGeometry(hx*2, h, hz*2), mat || stone);
     m.position.set(x, h/2, z); m.castShadow = true; m.receiveShadow = true; shared.arenaGroup.add(m);
@@ -31,18 +33,18 @@ export function buildTempleArena(L){
   }
   // a gold inlay ring set into the floor around the dais — a focal anchor
   const inlay = new THREE.Mesh(new THREE.RingGeometry(3.7, 4.2, 40),
-    new THREE.MeshBasicMaterial({ color: 0x8a6e2e, transparent: true, opacity: 0.5, side: THREE.DoubleSide }));
+    new THREE.MeshBasicMaterial({ color: pal.inlay ?? 0x8a6e2e, transparent: true, opacity: 0.5, side: THREE.DoubleSide }));
   inlay.rotation.x = -Math.PI/2; inlay.position.y = 0.03; shared.arenaGroup.add(inlay);
   // ---- SUMMIT BRAZIER — the level's glowing landmark (bloom does the glow; flickered in updateAmbient) ----
   const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.46, 0.3, 0.34, 12), stoneD);
   bowl.position.set(0, 1.5 + 0.17, 0); bowl.castShadow = true; shared.arenaGroup.add(bowl);
   const fire = new THREE.Mesh(new THREE.ConeGeometry(0.38, 0.8, 10),
-    new THREE.MeshBasicMaterial({ color: 0xff8a2a }));
+    new THREE.MeshBasicMaterial({ color: fireC }));
   fire.position.set(0, 1.5 + 0.66, 0); shared.arenaGroup.add(fire);
   shared.templeBrazier = fire;
   // the dais is deliberately contested (see note above) — a periodic ERUPTION punishes camping the summit
   hazardZones.push({ kind:'point', cx:0, cz:0, r:2.3, period:8, warnDur:1.4, activeDur:1.0,
-    dmg:24, color:0xff8a2a, flash:true, t:0 });
+    dmg:24, color:fireC, flash:true, t:0 });
   // ---- GRAND COLUMNS — a temple ring: cover, wall-jump surfaces, and vertical grandeur ----
   const colN = 8, colR = Math.min(shared.arenaHalf * 0.62, 13.5);
   for (let i = 0; i < colN; i++){
@@ -57,11 +59,11 @@ export function buildTempleArena(L){
     // a hanging banner on every other column — deep crimson with a gold hem
     if (i % 2 === 0){
       const ban = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 3.2),
-        new THREE.MeshStandardMaterial({ color: 0x6e1f24, roughness: 0.9, side: THREE.DoubleSide }));
+        new THREE.MeshStandardMaterial({ color: pal.banner ?? 0x6e1f24, roughness: 0.9, side: THREE.DoubleSide }));
       ban.position.set(x - Math.cos(a)*(rad+0.02), h - 2.4, z - Math.sin(a)*(rad+0.02));
       ban.rotation.y = a + Math.PI/2; shared.arenaGroup.add(ban);
       const hem = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 0.28),
-        new THREE.MeshStandardMaterial({ color: 0xb89a5a, roughness: 0.6, metalness: 0.4, side: THREE.DoubleSide }));
+        new THREE.MeshStandardMaterial({ color: pal.trim ?? 0xb89a5a, roughness: 0.6, metalness: 0.4, side: THREE.DoubleSide }));
       hem.position.set(ban.position.x, h - 4.0, ban.position.z); hem.rotation.y = ban.rotation.y; shared.arenaGroup.add(hem);
     }
   }
@@ -87,7 +89,7 @@ export function buildTempleArena(L){
     }
     const rail = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.6, 0.1), trim);
     rail.position.set(t3.x, t3.h + 0.7, t3.z + 1.7); shared.arenaGroup.add(rail);
-    const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6), new THREE.MeshBasicMaterial({ color: 0xff8a2a }));
+    const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6), new THREE.MeshBasicMaterial({ color: fireC }));
     beacon.position.set(t3.x, t3.h + 1.3, t3.z); shared.arenaGroup.add(beacon);
   }
   // ---- LOW BROKEN WALLS — ruined temple stonework that breaks blaster/flyer sightlines into the mid-field.

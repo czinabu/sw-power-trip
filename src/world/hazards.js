@@ -12,6 +12,11 @@ import { playerPos } from '../player/helpers.js';
 import { damageEnemy } from '../enemies/damage.js';
 import { damageBoss } from '../boss/boss.js';
 import { hurtPlayer } from '../player/damage.js';
+import { toon, toonUnique, inkify } from './ink.js';
+
+// the world theme's hazard colours (set by buildArena); null = the original look
+let hzPal = null;
+export function setHazardStyle(pal){ hzPal = pal || null; }
 
 /* ============================================================
    HAZARDS — shock vents & explosive barrels (level config)
@@ -19,8 +24,9 @@ import { hurtPlayer } from '../player/damage.js';
 export function spawnVent(pos){
   const g = new THREE.Group();
   const base = new THREE.Mesh(new THREE.CylinderGeometry(2.6, 2.8, 0.18, 18),
-    new THREE.MeshStandardMaterial({ color: 0x2a3340, roughness: 0.5, metalness: 0.6 }));
+    hzPal ? toon(hzPal.vent ?? 0x2a3340) : new THREE.MeshStandardMaterial({ color: 0x2a3340, roughness: 0.5, metalness: 0.6 }));
   base.position.y = 0.09; base.receiveShadow = true; g.add(base);
+  if (hzPal) inkify(base, 0.05);
   const core = new THREE.Mesh(new THREE.CylinderGeometry(2.1, 2.1, 0.1, 18),
     new THREE.MeshBasicMaterial({ color: 0x113355 }));
   core.position.y = 0.2; g.add(core);
@@ -50,7 +56,15 @@ export function updateVents(dt){
 }
 export function spawnBarrel(pos){
   const m = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 1.2, 10),
-    new THREE.MeshStandardMaterial({ color: 0xa33820, roughness: 0.5, metalness: 0.3, emissive: 0x441100, emissiveIntensity: 0.6 }));
+    hzPal ? toonUnique(hzPal.barrel ?? 0xa33820, { emissive: 0x441100, ei: 0.6 })
+      : new THREE.MeshStandardMaterial({ color: 0xa33820, roughness: 0.5, metalness: 0.3, emissive: 0x441100, emissiveIntensity: 0.6 }));
+  if (hzPal){
+    inkify(m, 0.035);
+    for (const y of [-0.32, 0.32]){   // two dark hoops so it reads as a fuel drum, not a red cylinder
+      const hoop = new THREE.Mesh(new THREE.CylinderGeometry(0.57, 0.57, 0.1, 10), toon(0x2a2224));
+      hoop.position.y = y; m.add(hoop);
+    }
+  }
   m.position.copy(pos); m.position.y = 0.6;
   m.castShadow = true;
   scene.add(m);

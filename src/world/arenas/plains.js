@@ -10,10 +10,12 @@ import { spawnVent, spawnBarrel } from '../hazards.js';
    the back ("something darker stands behind it"), two climbable ruin platforms, and scattered munitions. The CENTRE
    is kept open for the boss fight. */
 export function buildPlainsArena(L){
-  const stone  = new THREE.MeshStandardMaterial({ color: 0x4a3b3f, roughness: 0.92, metalness: 0.06 });
-  const stoneD = new THREE.MeshStandardMaterial({ color: 0x2e2227, roughness: 0.95, metalness: 0.04 });
-  const dark   = new THREE.MeshStandardMaterial({ color: 0x1a1016, roughness: 0.9, metalness: 0.12 });
-  const voidGlow = new THREE.MeshBasicMaterial({ color: 0x9a3bff, fog: false });   // ominous violet void-rifts (bloom)
+  const pal = L.pal || {};   // the world theme's colours (data/worlds.js); the defaults are the original look
+  const stone  = new THREE.MeshStandardMaterial({ color: pal.stone ?? 0x4a3b3f, roughness: 0.92, metalness: 0.06 });
+  const stoneD = new THREE.MeshStandardMaterial({ color: pal.stoneD ?? 0x2e2227, roughness: 0.95, metalness: 0.04 });
+  const dark   = new THREE.MeshStandardMaterial({ color: pal.dark ?? 0x1a1016, roughness: 0.9, metalness: 0.12 });
+  const voidC  = pal.voidGlow ?? 0x9a3bff;
+  const voidGlow = new THREE.MeshBasicMaterial({ color: voidC, fog: false });   // ominous violet void-rifts (bloom)
   const addBox = (x, z, hx, hz, h, mat, solid, climbable) => {
     const m = new THREE.Mesh(new THREE.BoxGeometry(hx*2, h, hz*2), mat || stone);
     m.position.set(x, h/2, z); m.castShadow = true; m.receiveShadow = true; shared.arenaGroup.add(m);
@@ -43,7 +45,7 @@ export function buildPlainsArena(L){
   }
   // the altar PULSES — approach the monument and you're punished for it ("something darker stands behind it")
   hazardZones.push({ kind:'point', cx:0, cz:mz, r:3.0, period:7, warnDur:1.3, activeDur:1.1,
-    dmg:20, color:0x9a3bff, flash:true, t:2.4 });
+    dmg:20, color:voidC, flash:true, t:2.4 });
   for (const sx of [-1, 1]){                                         // flanking shattered pillars
     const px = sx * 4.6, h = rand(5, 7.5);
     const p = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.8, h, 7), stoneD);
@@ -72,7 +74,7 @@ export function buildPlainsArena(L){
     }
     const rail = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.6, 0.1), dark);
     rail.position.set(t3.x, t3.h + 0.7, t3.z + 1.7); shared.arenaGroup.add(rail);
-    const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6), new THREE.MeshBasicMaterial({ color: 0x9a3bff }));
+    const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6), new THREE.MeshBasicMaterial({ color: pal.beacon ?? voidC }));
     beacon.position.set(t3.x, t3.h + 1.3, t3.z); shared.arenaGroup.add(beacon);
   }
   // ---- SCATTERED RUINS — broken walls (sightline cover for the ranged/flyer fights). Axis-aligned (collision

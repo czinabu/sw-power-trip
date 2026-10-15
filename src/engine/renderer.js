@@ -42,7 +42,7 @@ sun.shadow.radius = 3.5;        // softer, more natural shadow edges
 sun.shadow.bias = -0.0004;
 scene.add(sun);
 // cool rim/back light to separate silhouettes from the gloom — key to an "immersive" 3D look
-const rim = new THREE.DirectionalLight(0x5a7fd8, 0.5);
+export const rim = new THREE.DirectionalLight(0x5a7fd8, 0.5);
 rim.position.set(-26, 18, -30);
 scene.add(rim);
 
