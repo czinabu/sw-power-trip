@@ -5,6 +5,7 @@ import { ENGAGE } from '../data/enemies.js';
 import { rand } from '../utils.js';
 import { G, enemies } from '../state.js';
 import { fwd, playerPos } from '../player/helpers.js';
+import { navDist, navClass } from './nav.js';
 
 // hostile melee foes that take turns (bombers rush regardless; the Warbringer runs its own leap pattern)
 export const usesToken = e => !e.converted && !e.dead && !e.t.ranged && !e.t.bomber && !e.warbringer;
@@ -34,8 +35,10 @@ export function updateDirector(dt){
       if (e.tokenT > ENGAGE.tokenHold && !ACTIVE[e.state]){ dropToken(e); continue; }
       held++;
     } else if (e.state === 'chase' && !(e.tokenRest > 0)){
-      const dx = e.group.position.x - pp.x, dz = e.group.position.z - pp.z;
-      waiting.push({ e, d: dx*dx + dz*dz });
+      // closest by WALKING distance, so a foe right behind a wall doesn't take a turn it can't use
+      const p = e.group.position, dx = p.x - pp.x, dz = p.z - pp.z;
+      const walk = navDist(p.x, p.z, navClass(0.7 * (e.t.scale || 1)));
+      waiting.push({ e, d: Number.isFinite(walk) ? Math.max(walk, Math.sqrt(dx*dx + dz*dz)) : Math.sqrt(dx*dx + dz*dz) + 20 });
     }
   }
   const free = meleeSlots() - held;

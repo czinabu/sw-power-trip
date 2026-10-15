@@ -16,6 +16,7 @@ import { applyAtmosphere, clearAtmosphere } from './atmosphere.js';
 import { buildTempleArena } from './arenas/temple.js';
 import { buildFoundryArena } from './arenas/foundry.js';
 import { buildPlainsArena } from './arenas/plains.js';
+import { buildNav } from '../enemies/nav.js';
 
 /* ============================================================
    ARENA
@@ -161,6 +162,7 @@ export function buildArena(L){
       spawnBarrel(V3(Math.cos(a)*r, 0, Math.sin(a)*r));
     }
   }
+  buildNav();   // the enemy pathing grid follows the new layout (enemies/nav.js)
   // INK: cel-shade every static prop and merge them into a handful of draw calls (glows and hazards stay live)
   if (T) shared.arenaBake = bakeArena(shared.arenaGroup, T.ink ?? 0.045);
 }
