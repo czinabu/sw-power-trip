@@ -25,6 +25,7 @@ export const shared = {
   levelPhase: 'idle',   // idle | between | fighting | bossfight
   phaseT: 0,
   lockFallback: false,   // pointer lock unavailable (e.g. embedded preview) — play with plain mouse-move look
+  lockWorked: false,     // pointer lock has succeeded at least once, so a refusal is transient (Esc cooldown), not unsupported
 };
 
 /* ============================================================

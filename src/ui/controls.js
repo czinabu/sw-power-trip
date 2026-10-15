@@ -18,6 +18,7 @@ const CONTROLS = {
       ['TAP RMB', 'Parry and deflect', 'Time it as a blow or bolt lands to counter'],
       ['E', 'Kick', 'Shoves a foe back'],
       ['1 / 2 / 3', 'Saber form', 'Or the mouse wheel'],
+      ['G', 'Switch grip', 'Regular or reverse; swings hit the same either way'],
       ['RMB + SPACE', 'Evasive leap', 'Jump while blocking to vault clear'],
     ]},
     { title: 'FORCE POWERS', rows: [
