@@ -319,7 +319,7 @@ export function mandoBoostDash(){
   // (handled per-frame in updatePlayer) — so this only fires a dodge when grounded.
   const A = MANDO.boostDash;
   if (G.mode !== 'play' || !player.grounded || player.cds.dash > 0 || player.jet < A.fuel) return;
-  player.cds.dash = A.cd; player.dashT = A.time;   // i-frames
+  player.cds.dash = A.cd; player.dashT = A.time; player.dashStartT = G.gt;   // i-frames (+ the perfect-dodge clock)
   player.jet = Math.max(0, player.jet - A.fuel);
   const dir = V3(0,0,0);
   if (keys['w']) dir.add(fwd());

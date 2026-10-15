@@ -18,6 +18,8 @@ import {
   forcePush, forceSlam, saberThrow, forcePull, forceRepulse, forceBarrier, forceMend, forceJudgement
 } from '../player/jedi/force.js';
 import { forceDash, doJump } from '../player/movement.js';
+import { trySlide } from '../player/parkour.js';
+import { toggleLock } from '../player/lockon.js';
 import {
   bactaStim, mandoRocket, mandoJetMissile, whistlingBirds, thermalDetonator, grappleHook, jetSlam,
   mandoBoostDash, gauntletPunch
@@ -53,6 +55,7 @@ document.addEventListener('mousedown', (e) => {
     }
     return;
   }
+  if (e.button === 1){ e.preventDefault(); toggleLock(); return; }   // middle mouse: soft lock-on (Jedi)
   // LMB while guarding (RMB held) hurls the saber; otherwise it's a normal swing
   if (e.button === 0){
     if (player.blockHeld && G.unlocked.throw) saberThrow();
@@ -135,7 +138,10 @@ document.addEventListener('keydown', (e) => {
       if (k === '3') switchWeapon(player.up.darksaber ? 'darksaber' : 'disruptor');
     }
   } else {
-    if (k === 'shift') forceDash();
+    // SHIFT with W on the ground SPRINTS (held; locomotion.js reads it); any other SHIFT is the dash (or a landing roll)
+    if (k === 'shift' && !e.repeat && !(keys['w'] && player.grounded && !player.blockHeld && !(player.landStagT > 0))) forceDash();
+    if (k === 'q' && !e.repeat) trySlide();            // SLIDE out of a sprint
+    if (k === 't' && !e.repeat) toggleLock();          // soft lock-on
     if (k === 'f') forcePush();
     if (k === 'c') forcePull();
     if (k === 'e' && !e.repeat) forceKick();   // FRONT KICK — always-available melee, shares 'E' with the Mando's punch

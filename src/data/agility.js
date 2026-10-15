@@ -99,6 +99,7 @@ const OFF = [-0.55, -0.8, -0.25];
 export const AIR_GUARDS = {
   regular: {
     ataru: {
+      hang:   { hand: [0.16, 0.78, 0.3], blade: [0.35, 0.25, -0.9], twist: 0, off: { hand: [-0.18, 0.78, 0.3], pole: [-0.6, -0.3, -0.5] } },   // hands up on the ledge lip
       tuck:   { hand: [0.14, -0.02, 0.26], blade: [0.25, 0.55, -0.8], two: true, twist: -0.1, pole: [0.6, -0.7, -0.3] },          // hilt hugged in, blade clear behind
       layout: { hand: [0.44, 0.06, 0.1], blade: [0.7, 0.6, -0.4], twist: 0.05, off: { hand: [-0.46, 0.06, 0.1], pole: OFF } },
       trail:  { hand: [0.3, -0.24, -0.06], blade: [0.2, -0.32, -0.93], twist: -0.12, off: { hand: [-0.3, 0.02, 0.3], pole: OFF } },
@@ -106,12 +107,14 @@ export const AIR_GUARDS = {
       run:    { hand: [0.3, -0.3, -0.04], blade: [0.2, -0.58, -0.79], twist: -0.08, off: { hand: [-0.28, -0.12, 0.22], pole: OFF } },
     },
     niman: {
+      hang:   { hand: [0.16, 0.78, 0.3], blade: [0.35, 0.25, -0.9], twist: 0, off: { hand: [-0.18, 0.78, 0.3], pole: [-0.6, -0.3, -0.5] } },   // hands up on the ledge lip
       tuck:   { hand: [0.2, -0.04, 0.24], blade: [0.35, 0.65, -0.65], twist: 0, off: { hand: [-0.2, -0.04, 0.24], pole: OFF } },
       layout: { hand: [0.46, 0.08, 0.06], blade: [0.75, 0.62, -0.25], twist: 0, off: { hand: [-0.48, 0.1, 0.08], pole: OFF } },
       palm:   { hand: [0.38, -0.06, -0.06], blade: [0.5, 0.62, -0.6], twist: 0.08, off: { hand: [-0.16, -0.4, 0.44], pole: OFF } },
       run:    { hand: [0.32, -0.14, 0.1], blade: [0.12, 0.72, -0.68], twist: 0.04, off: { hand: [-0.28, -0.1, 0.2], pole: OFF } },
     },
     djemso: {
+      hang:   { hand: [0.16, 0.78, 0.3], blade: [0.35, 0.25, -0.9], twist: 0, off: { hand: [-0.18, 0.78, 0.3], pole: [-0.6, -0.3, -0.5] } },   // hands up on the ledge lip
       tuck:   { hand: [0.14, 0.12, 0.24], blade: [0.25, 0.65, -0.7], two: true, twist: 0.1, pole: [0.7, -0.6, -0.2] },
       hammer: { hand: [0.08, 0.5, 0.12], blade: [0.05, 0.62, -0.78], two: true, twist: 0.06, pole: [0.7, -0.3, -0.4] },
       smash:  { hand: [0.06, -0.24, 0.5], blade: [0.0, -0.6, 0.8], two: true, twist: 0.0, lean: 0.12, pole: [0.6, -0.8, 0] },
@@ -120,10 +123,13 @@ export const AIR_GUARDS = {
   },
   reverse: {
     // the reverse grip already lays the blade along the forearm: flips just hug it in, and the run sweeps it back
-    ataru:  { plunge: { hand: [0.1, -0.02, 0.36], blade: [0.04, -0.95, 0.3], twist: -0.05, pole: [0.8, -0.3, -0.5], off: { hand: [-0.3, -0.2, 0.3], pole: OFF } },
+    ataru:  { hang:   { hand: [0.16, 0.78, 0.3], blade: [0.2, -0.4, -0.9], twist: 0, pole: [0.8, -0.3, -0.5], off: { hand: [-0.18, 0.78, 0.3], pole: [-0.6, -0.3, -0.5] } },
+              plunge: { hand: [0.1, -0.02, 0.36], blade: [0.04, -0.95, 0.3], twist: -0.05, pole: [0.8, -0.3, -0.5], off: { hand: [-0.3, -0.2, 0.3], pole: OFF } },
               run:    { hand: [0.3, -0.24, -0.16], blade: [0.12, 0.3, -0.95], twist: -0.1, pole: [0.8, -0.3, -0.5], off: { hand: [-0.28, -0.1, 0.22], pole: OFF } } },
-    niman:  { run:    { hand: [0.3, -0.22, -0.1], blade: [0.12, 0.3, -0.95], twist: 0, pole: [0.8, -0.3, -0.5], off: { hand: [-0.28, -0.1, 0.22], pole: OFF } },
+    niman:  { hang:   { hand: [0.16, 0.78, 0.3], blade: [0.2, -0.4, -0.9], twist: 0, pole: [0.8, -0.3, -0.5], off: { hand: [-0.18, 0.78, 0.3], pole: [-0.6, -0.3, -0.5] } },
+              run:    { hand: [0.3, -0.22, -0.1], blade: [0.12, 0.3, -0.95], twist: 0, pole: [0.8, -0.3, -0.5], off: { hand: [-0.28, -0.1, 0.22], pole: OFF } },
               palm:   { hand: [0.36, -0.12, -0.08], blade: [0.2, 0.3, -0.93], twist: 0.08, pole: [0.8, -0.3, -0.5], off: { hand: [-0.16, -0.4, 0.44], pole: OFF } } },
-    djemso: { smash:  { hand: [0.12, -0.28, 0.46], blade: [0.05, -0.95, 0.3], twist: 0.0, lean: 0.12, pole: [0.8, -0.3, -0.5] } },
+    djemso: { smash:  { hand: [0.12, -0.28, 0.46], blade: [0.05, -0.95, 0.3], twist: 0.0, lean: 0.12, pole: [0.8, -0.3, -0.5] },
+              hang:   { hand: [0.16, 0.78, 0.3], blade: [0.2, -0.4, -0.9], twist: 0, pole: [0.8, -0.3, -0.5], off: { hand: [-0.18, 0.78, 0.3], pole: [-0.6, -0.3, -0.5] } } },
   },
 };

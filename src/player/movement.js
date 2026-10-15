@@ -12,17 +12,17 @@ import { cancelSwing } from './jedi/combat.js';
 import { STEP_UP } from '../world/collision.js';
 import { flipStyle } from './anim/agility.js';
 import { MOVE } from '../data/movement.js';
-import { tryVault, findLedge, startMantle, requestRoll } from './parkour.js';
+import { tryVault, findLedge, startMantle, requestRoll, hangClimb } from './parkour.js';
 
 export function forceDash(){
   const A = CFG.abilities.dash;
-  if (G.mode !== 'play' || player.mantle) return;
+  if (G.mode !== 'play' || player.mantle || player.hang) return;
   if (requestRoll(playerPos())) return;   // SHIFT just before a hard landing rolls out of it instead (free)
   if (!G.unlocked.dash || player.cds.dash > 0 || player.force < A.cost || player.landStagT > 0) return;
   if (player.atkT > 0) cancelSwing();   // DASH-CANCEL — bail a swing into an evasive dash in any direction
   player.force -= A.cost;   // the dash spends Force
   player.cds.dash = A.cd * (stance().dashCd || 1) * player.up.dashCdMult;
-  player.dashT = A.time;
+  player.dashT = A.time; player.dashStartT = G.gt;   // PERFECT DODGE reads the dash's start (player/damage.js)
   const dir = V3(0,0,0);
   if (keys['w']) dir.add(fwd());
   if (keys['s']) dir.sub(fwd());
@@ -43,6 +43,7 @@ export function forceDash(){
 
 export function doJump(){
   if (G.mode !== 'play' || player.slamming || player.mantle) return;
+  if (player.hang){ hangClimb(); return; }   // SPACE off a ledge hang pulls you up
   // COYOTE TIME — a jump just after running off a ledge still counts as a ground jump
   const coyote = !player.grounded && player.vy <= 0.5 && G.gt - (player.lastGroundT ?? -9) < MOVE.coyote
                  && G.gt - (player.lastJumpT ?? -9) > MOVE.coyote;
@@ -61,6 +62,7 @@ export function doJump(){
     player.grounded = false;
     const dur = 0.72;                                 // slower, more cinematic — the spin hangs with the arc
     player.dashT = Math.max(player.dashT, dur);        // i-frames for the full flip — a real dodge
+    player.dashStartT = G.gt;
     let dir = 'back', side = 1;
     if (keys['w']){ dir = 'fwd'; player.vel.addScaledVector(fwd(), 22); }                      // FRONT handspring, far forward
     else if (keys['a']){ dir = 'side'; side = -1; player.vel.addScaledVector(rightV(), -21); }  // SIDE flip, left

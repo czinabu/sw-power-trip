@@ -14,7 +14,7 @@ import { spawnGroundShock } from '../fx/vfx.js';
 import { clampToArena, collideSolids } from '../world/collision.js';
 import { mandoSlamImpact } from './mando/gadgets.js';
 import { MOVE } from '../data/movement.js';
-import { updateMantle, tryAutoMantle, updateWallRun, landingImpact } from './parkour.js';
+import { updateMantle, tryAutoMantle, updateWallRun, landingImpact, updateHang } from './parkour.js';
 import { doJump } from './movement.js';
 
 // Horizontal movement: WASD steering on the ground (or Mando air momentum), plus lunge/dash impulse velocity.
@@ -28,13 +28,33 @@ export function updateMovement(dt, pp, st, f, r){
                    * (player.boon && player.boon.adrenal && player.hp < maxHp()*0.35 ? 1.18 : 1)    // ADRENALINE boon — desperate burst
                    * focusMoveMul()                                                      // FORCE FOCUS — lighter on the feet in flow
                    * (player.atkT > 0 && G.hero !== 'mando' ? MOVE.swingMove : 1)       // a swing plants the feet: spacing is yours to manage
-                   * (player.landStagT > 0 ? MOVE.staggerMove : 1);                     // HARD LANDING — the knees are still buckled
+                   * (player.landStagT > 0 ? MOVE.staggerMove : 1)                      // HARD LANDING — the knees are still buckled
+                   * (player.flinchT > 0 ? CFG.player.flinch.move : 1);                 // HIT REACTION — reeling from a blow
   const want = V3(0,0,0);
   if (keys['w']) want.add(f);
   if (keys['s']) want.sub(f);
   if (keys['d']) want.add(r);
   if (keys['a']) want.sub(r);
   const moving = want.lengthSq() > 0.01;
+  // SPRINT (Jedi) — SHIFT held with W on the ground: faster, heavier to steer, and it burns stamina while it lasts
+  const wasSprinting = player.sprinting;
+  player.sprinting = G.hero !== 'mando' && !!keys['shift'] && !!keys['w'] && (player.grounded || wasSprinting)
+                     && !player.blockHeld && player.atkT <= 0 && !player.exhausted && player.stam > 1 && !(player.flinchT > 0)
+                     && !(player.landStagT > 0) && !(player.slideT > 0) && !player.mantle && !player.hang;
+  if (player.sprinting && player.grounded){
+    player.stam = Math.max(0, player.stam - MOVE.sprintStam * dt);
+    player.stamDelay = Math.max(player.stamDelay, 0.25);
+  }
+  // PIVOT — reversing hard at speed plants the feet: you brake to a stop before the new direction takes
+  if (player.pivotT > 0) player.pivotT -= dt;
+  else if (G.hero !== 'mando' && player.grounded && moving && !(player.slideT > 0)){
+    const sp = Math.hypot(player.moveVel.x, player.moveVel.z);
+    if (sp > MOVE.pivotMinSpeed){
+      const wl = Math.hypot(want.x, want.z), cosA = (want.x * player.moveVel.x + want.z * player.moveVel.z) / (wl * sp);
+      if (cosA < Math.cos(MOVE.pivotAngle)) player.pivotT = MOVE.pivotTime;
+    }
+  }
+  if (player.slideT > 0) player.slideT -= dt;
   const mandoAir = G.hero === 'mando' && !player.grounded;
   if (mandoAir){
     // MOMENTUM FLIGHT — WASD ADDS horizontal thrust; release and the speed CARRIES (low drag). A soft cap keeps
@@ -48,20 +68,25 @@ export function updateMovement(dt, pp, st, f, r){
     const k = Math.max(0, 1 - dt*drag);
     player.moveVel.x *= k; player.moveVel.z *= k;
     pp.addScaledVector(player.moveVel, dt);
-  } else if (player.mantle){
-    // a ledge pull-up / vault owns the body (parkour.js)
+  } else if (player.mantle || player.hang){
+    // a ledge pull-up / vault / hang owns the body (parkour.js)
+  } else if (player.slideT > 0 && player.grounded){
+    // SLIDE — no steering: the skid carries the run's speed and bleeds it off
+    player.moveVel.multiplyScalar(Math.max(0, 1 - dt * MOVE.slideDrag));
+    pp.addScaledVector(player.moveVel, dt);
   } else {
     // GROUND (or Jedi): steer toward the input direction at the stance's acceleration. Speed BUILDS, and planting to
     // stop or turn back against your momentum brakes harder. In the AIR the jump keeps its takeoff momentum: WASD
     // only nudges it (no input = no steering at all), so a leap is a commitment instead of a floaty drift.
     const airborne = !player.grounded && !player.wallRun;
-    const topSpeed = CFG.player.speed * speedMul;
-    if (moving) want.normalize().multiplyScalar(topSpeed);
+    const topSpeed = CFG.player.speed * speedMul * (player.sprinting ? MOVE.sprintMul : 1);
+    if (moving && !(player.pivotT > 0)) want.normalize().multiplyScalar(topSpeed);
+    else if (player.pivotT > 0) want.set(0, 0, 0);   // planted: kill the old momentum first
     if (!(airborne && !moving)){
       TMP.subVectors(want, player.moveVel);
       const dl = TMP.length();
-      const against = !moving || want.dot(player.moveVel) < 0;
-      let accel = (against ? MOVE.brake : MOVE.accel) * (st.accel || 1);
+      const against = !moving || want.dot(player.moveVel) < 0 || player.pivotT > 0;
+      let accel = (against ? MOVE.brake : MOVE.accel) * (st.accel || 1) * (player.sprinting && !against ? MOVE.sprintAccel : 1);
       if (airborne) accel = MOVE.accel * (st.accel || 1) * (player.gliding ? 0.5 : MOVE.airControl);
       if (dl > 0.001) player.moveVel.addScaledVector(TMP.normalize(), Math.min(dl, accel * dt));
     }
@@ -117,6 +142,7 @@ export function updateForceJump(dt, pp, f, r){
 }
 
 export function updateGravityAndLanding(dt, pp){
+  if (updateHang(dt, pp)){ player.groundY = 0; return; }   // hanging off a ledge
   if (updateMantle(dt, pp)){ player.groundY = player.mantle ? player.mantle.y1 : pp.y; return; }   // a pull-up owns the body
   if (tryAutoMantle(pp)) return;
   updateWallRun(dt, pp);

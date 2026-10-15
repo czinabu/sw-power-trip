@@ -7,6 +7,7 @@ import { clamp, dampAngle, wrapAngle, V3 } from '../utils.js';
 import { burst } from '../fx/particles.js';
 import { G, player } from '../state.js';
 import { MANDO } from '../data/mando.js';
+import { MOVE } from '../data/movement.js';
 import { stance } from './helpers.js';
 import { tryAttack, applySwingDamage, FLOW } from './jedi/combat.js';
 import { mandoAimPoint, mandoWeapon, mandoShielding } from './mando/weapons.js';
@@ -58,7 +59,14 @@ function poseBody(dt, dr, vis, planted, POSE, moving){
   if ((G.hero !== 'mando' && !inCombatPose && moving) || player.backRun)
     face = Math.atan2(player.moveVel.x, player.moveVel.z);
   if (G.hero === 'mando') player.faceYaw = mandoTurn(face, player.backRun ? 11 : player._unwindT > 0 ? 12 : 26, dt);
-  else player.faceYaw = dampAngle(player.faceYaw, face, inCombatPose ? 26 : 11, dt);
+  else {
+    // TURNING WEIGHT — the Jedi eases round at a capped rate (slower still at a sprint) instead of snapping; on a
+    // ledge he faces the wall
+    if (player.hang) face = Math.atan2(-player.hang.nx, -player.hang.nz);
+    const rate = player.sprinting ? MOVE.sprintTurn : inCombatPose ? MOVE.combatTurnRate : MOVE.turnRate;
+    const step = wrapAngle(dampAngle(player.faceYaw, face, inCombatPose ? 26 : 11, dt) - player.faceYaw);
+    player.faceYaw += clamp(step, -rate * dt, rate * dt);
+  }
   player.group.rotation.y = player.faceYaw;
 
   if (player.slamming){
@@ -78,7 +86,10 @@ function poseBody(dt, dr, vis, planted, POSE, moving){
     const lf = player.moveVel.x*ffx + player.moveVel.z*ffz;
     const lr = player.moveVel.x*(-ffz) + player.moveVel.z*ffx;
     const leanG = (stance().gait && stance().gait.lean) || 1;   // FAST leans eagerly into the run; STRONG runs upright & heavy
-    vis.rotation.x = dr(vis.rotation.x, lf*0.024*leanG + (planted ? POSE.lean : 0), 9);
+    // HIT REACTION snaps the torso back; a PIVOT sits the hips down against the old momentum
+    const reel = player.flinchT > 0 ? -0.32 * (player.flinchT / (player.flinchMax || 0.3)) : 0;
+    const plant = player.pivotT > 0 ? -0.18 : 0;
+    vis.rotation.x = dr(vis.rotation.x, lf*0.024*leanG + (planted ? POSE.lean : 0) + reel + plant, reel ? 22 : 9);
     // WALL-RUN — feet on the wall, body tipped out away from it (the normal in the body's own left/right)
     const wallLean = player.wallRun ? -0.5 * (player.wallRun.nx * Math.cos(player.faceYaw) - player.wallRun.nz * Math.sin(player.faceYaw)) : 0;
     vis.rotation.z = dr(vis.rotation.z, player.wallRun ? wallLean : lr*0.018*leanG, player.wallRun ? 14 : 9);   // bank INTO the strafe (was inverted — leaned the wrong way)

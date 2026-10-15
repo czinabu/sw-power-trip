@@ -6,11 +6,28 @@ import { S } from '../audio/sfx.js';
 import { V3, clamp } from '../utils.js';
 import { burst } from '../fx/particles.js';
 import { shared, G, solids, keys, player } from '../state.js';
-import { fwd, rightV } from './helpers.js';
+import { fwd, rightV, playerPos } from './helpers.js';
 import { STEP_UP } from '../world/collision.js';
 
 const smooth = k => k * k * (3 - 2 * k);
 const easeOut = k => 1 - (1 - k) * (1 - k);
+
+/* one solid seen from `pp`: distance to its face, the outward face normal, the nearest point on the face, and a spot
+   to stand on its top just inside that lip. null when `pp` is already over it. */
+function probeSolid(c, pp){
+  if (c.box){
+    const fx = clamp(pp.x, c.x - c.hx, c.x + c.hx), fz = clamp(pp.z, c.z - c.hz, c.z + c.hz);
+    const dx = pp.x - fx, dz = pp.z - fz, d = Math.hypot(dx, dz);
+    if (d < 0.001) return null;
+    const nx = dx / d, nz = dz / d;
+    const inX = Math.min(0.6, c.hx * 0.9), inZ = Math.min(0.6, c.hz * 0.9);
+    return { d, nx, nz, fx, fz, x: clamp(fx - nx * 0.6, c.x - c.hx + inX, c.x + c.hx - inX), z: clamp(fz - nz * 0.6, c.z - c.hz + inZ, c.z + c.hz - inZ) };
+  }
+  const dx = pp.x - c.x, dz = pp.z - c.z, dc = Math.hypot(dx, dz);
+  if (dc < 0.001) return null;
+  const nx = dx / dc, nz = dz / dc, ins = Math.max(0, c.r - 0.6);
+  return { d: dc - c.r, nx, nz, fx: c.x + nx * c.r, fz: c.z + nz * c.r, x: c.x + nx * ins, z: c.z + nz * ins };
+}
 
 /* LEDGE PROBE — the nearest solid in front of the body (along unit `dir`) whose top sits between `minUp` and `maxUp`
    above the feet and whose face is within grabbing distance. Returns where to stand on top, or null. */
@@ -20,25 +37,10 @@ export function findLedge(pp, dir, minUp, maxUp){
   for (const c of solids){
     const up = c.h - pp.y;
     if (up <= minUp || up > maxUp) continue;
-    let nx, nz, d, tx, tz;
-    if (c.box){
-      const cx = clamp(pp.x, c.x - c.hx, c.x + c.hx), cz = clamp(pp.z, c.z - c.hz, c.z + c.hz);
-      const dx = pp.x - cx, dz = pp.z - cz; d = Math.hypot(dx, dz);
-      if (d < 0.001) continue;                       // already over it — collision handles that
-      nx = dx / d; nz = dz / d;
-      const inX = Math.min(0.6, c.hx * 0.9), inZ = Math.min(0.6, c.hz * 0.9);
-      tx = clamp(cx - nx * 0.6, c.x - c.hx + inX, c.x + c.hx - inX);
-      tz = clamp(cz - nz * 0.6, c.z - c.hz + inZ, c.z + c.hz - inZ);
-    } else {
-      const dx = pp.x - c.x, dz = pp.z - c.z, dc = Math.hypot(dx, dz);
-      if (dc < 0.001) continue;
-      d = dc - c.r; nx = dx / dc; nz = dz / dc;
-      const ins = Math.max(0, c.r - 0.6);
-      tx = c.x + nx * ins; tz = c.z + nz * ins;
-    }
-    if (d > reach) continue;
-    if (-(nx * dir.x + nz * dir.z) < 0.55) continue;   // must be heading into its face
-    if (d < bestD){ bestD = d; best = { c, top: c.h, x: tx, z: tz }; }
+    const pr = probeSolid(c, pp);
+    if (!pr || pr.d > reach) continue;
+    if (-(pr.nx * dir.x + pr.nz * dir.z) < 0.55) continue;   // must be heading into its face
+    if (pr.d < bestD){ bestD = pr.d; best = { c, top: c.h, ...pr }; }
   }
   return best;
 }
@@ -93,10 +95,76 @@ export function tryAutoMantle(pp){
   if (player.grounded || player.mantle || player.slamming || !keys['w'] || G.mode !== 'play') return false;
   if (G.hero === 'mando' && (player.jetActive || player.hovering || player.boosting)) return false;
   if (player.vy > 7) return false;   // still rocketing up off a jump: let the arc carry you first
+  if (G.gt < (player.hangCdT ?? -9)) return false;   // just let go of a ledge: don't snatch it straight back
   const ledge = findLedge(pp, moveDir(), STEP_UP, MOVE.reach);
   if (!ledge) return false;
-  startMantle(pp, ledge, false);
+  // a high lip (the Jedi): catch it and HANG; anything lower is pulled straight up onto
+  if (G.hero !== 'mando' && ledge.top - pp.y > MOVE.hangFrom) startHang(ledge);
+  else startMantle(pp, ledge, false);
   return true;
+}
+
+/* LEDGE HANG (Jedi) — hands on the lip, feet against the face. A/D shimmy along it, W (held) or SPACE pulls up,
+   S lets go. The hang owns the body until one of those. */
+function startHang(ledge){
+  player.hang = { c: ledge.c, nx: ledge.nx, nz: ledge.nz, held: 0 };
+  player.vel.set(0, 0, 0); player.moveVel.set(0, 0, 0); player.vy = 0;
+  player.wallRun = null; player.gliding = false; player.flip = null;
+  hangPlace(playerPos(), ledge);
+  burst(V3(ledge.fx, ledge.top, ledge.fz), 0x9a9288, 4, 2, 1.5, 0.8);
+  S.land(0.15);
+}
+function hangPlace(pp, pr){
+  pp.set(pr.fx + pr.nx * 0.6, player.hang.c.h - MOVE.hangDrop, pr.fz + pr.nz * 0.6);
+}
+export function hangClimb(){
+  const h = player.hang; if (!h) return;
+  const pp = playerPos(), pr = probeSolid(h.c, pp);
+  player.hang = null;
+  if (!pr) return;
+  startMantle(pp, { top: h.c.h, x: pr.x, z: pr.z }, false);
+  player.mantle.dur = MOVE.hangClimbTime;
+}
+export function hangDrop(){
+  if (!player.hang) return;
+  const pp = playerPos();
+  pp.x += player.hang.nx * 0.25; pp.z += player.hang.nz * 0.25;   // push off the face so collision doesn't snag
+  player.hang = null; player.hangCdT = G.gt + 0.45;
+}
+// Advances an active hang. Returns true while it owns the body.
+export function updateHang(dt, pp){
+  const h = player.hang;
+  if (!h) return false;
+  player.vy = 0; player.grounded = false;
+  if (keys['s']){ hangDrop(); return false; }
+  if (keys['w']){ h.held += dt; if (h.held >= MOVE.hangClimbHold){ hangClimb(); return true; } } else h.held = 0;
+  // SHIMMY — A/D along the face (relative to the camera, so A is always screen-left)
+  const side = (keys['d'] ? 1 : 0) - (keys['a'] ? 1 : 0);
+  if (side){
+    const r = rightV(), tx = -h.nz, tz = h.nx;
+    const sgn = Math.sign(r.x * tx + r.z * tz) || 1;
+    const ox = pp.x, oz = pp.z;
+    pp.x += tx * sgn * side * MOVE.shimmySpeed * dt; pp.z += tz * sgn * side * MOVE.shimmySpeed * dt;
+    const pr = probeSolid(h.c, pp);
+    // the hands stay on the same face: rounding a corner (or running out of lip) stops the shimmy
+    if (!pr || pr.nx * h.nx + pr.nz * h.nz < 0.97 || pr.d > 0.9){ pp.x = ox; pp.z = oz; }
+    else { hangPlace(pp, pr); if (Math.random() < 0.08) burst(V3(pr.fx, h.c.h, pr.fz), 0x9a9288, 1, 1.5, 1, 0.6); }
+  }
+  return true;
+}
+
+/* SLIDE (Jedi) — Q out of a sprint: drop low and skid, keeping the run's speed and ducking under blaster fire. */
+export function trySlide(){
+  if (G.hero === 'mando' || !player.grounded || player.slideT > 0 || player.mantle || player.hang || G.mode !== 'play') return;
+  const hs = Math.hypot(player.moveVel.x, player.moveVel.z);
+  if (hs < MOVE.slideMinSpeed) return;
+  player.slideT = MOVE.slideTime;
+  player.moveVel.multiplyScalar((hs + MOVE.slideBoost) / hs);
+  player.sprinting = false;
+  player.flip = { t: 0, dur: MOVE.slideTime, pitch: -0.55, drop: 0.6, legs: 'slide', arms: null, side: 1, ease: 'twirl' };
+  const pp = playerPos();
+  burst(V3(pp.x, 0.15, pp.z), 0x9a9288, 8, 4, 1, 0.9);
+  S.dash();
 }
 
 /* VAULT — a jump pressed while running at low cover goes up and over it in one move. */
