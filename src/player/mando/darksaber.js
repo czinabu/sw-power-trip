@@ -11,6 +11,7 @@ import { fwd, playerPos } from '../helpers.js';
 import { damageEnemy, flinchEnemy } from '../../enemies/damage.js';
 import { damageBoss, bossStagger } from '../../boss/boss.js';
 import { spawnHitSpark } from '../../fx/vfx.js';
+import { clashFlash } from '../../fx/ink.js';
 import { aCost } from './weapons.js';
 
 /* THE DARKSABER — the Mando's earned melee: a heavy arc-slash that cleaves the front, deflects bolts,
@@ -39,7 +40,7 @@ export function updateDark(dt){
     if (b.friendly) continue;
     if (b.mesh.position.distanceTo(V3(pp.x, b.mesh.position.y, pp.z)) < 2.8){
       b.friendly = true; b.dir.set(f.x, 0, f.z).normalize(); b.dmg = 34; b.speed *= 1.3; b.mesh.material.color.setHex(0xb98cff);
-      burst(b.mesh.position.clone(), 0xc9a6ff, 3, 5, 3); S.deflect();
+      clashFlash(b.mesh.position.clone(), 0xc9a6ff, false); S.deflect();
     }
   }
   // the cut lands just past the apex

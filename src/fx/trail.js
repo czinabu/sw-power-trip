@@ -13,9 +13,14 @@ import { FORM_OF } from '../data/poses.js';
    streaks. Each form leaves its own trail: Ataru short and whippy, Djem So long and heavy, the darksaber a pale
    cold edge. */
 const trailGeo = new THREE.BufferGeometry();
-export const trailMesh = new THREE.Mesh(trailGeo, new THREE.MeshBasicMaterial({
+const glowTrailMat = new THREE.MeshBasicMaterial({
   color: 0xffffff, transparent: true, opacity: 0.95, side: THREE.DoubleSide,
-  blending: THREE.AdditiveBlending, depthWrite: false, vertexColors: true }));
+  blending: THREE.AdditiveBlending, depthWrite: false, vertexColors: true });
+// the darksaber can't glow additively (its blade is black): its streak is drawn as ink, a near-black smear with a
+// white crackling edge, alpha-blended so the dark actually shows
+const darkTrailMat = new THREE.MeshBasicMaterial({
+  color: 0xffffff, transparent: true, opacity: 0.92, side: THREE.DoubleSide, depthWrite: false, vertexColors: true });
+export const trailMesh = new THREE.Mesh(trailGeo, glowTrailMat);
 trailMesh.frustumCulled = false;
 trailMesh.visible = false;
 scene.add(trailMesh);
@@ -27,6 +32,7 @@ const TRAIL = {   // life (s) · core (how hot the leading edge burns) · base (
 };
 const SUB = 4;   // Catmull-Rom subdivisions between frame samples
 const trailPts = [];
+const _ca = [0, 0, 0, 1], _cb = [0, 0, 0, 1];
 const TRB = new THREE.Vector3(), TRT = new THREE.Vector3(), _c = new THREE.Color(), _cw = new THREE.Color(0xffffff);
 let trailCol = new THREE.Color(0x55ccff), trailCfg = TRAIL.niman, tipSpeed = 0;
 const cr = (p0, p1, p2, p3, t, out) => {   // centripetal-free uniform Catmull-Rom, plenty for a blade arc
@@ -48,6 +54,7 @@ export function updateTrail(dt){
   if (swinging && bladeNode){
     const dark = bladeNode === player.darksaberMesh;
     trailCfg = TRAIL[dark ? 'darksaber' : (FORM_OF[G.stance] || 'niman')];
+    trailMesh.material = dark ? darkTrailMat : glowTrailMat;
     const len = dark ? 1.3 : 0.18 + 1.6 * (stance().bladeLen || 1);   // to the blade tip
     const sampleNode = dark ? bladeNode : (player.saberBladeRoot || bladeNode);
     sampleNode.updateWorldMatrix(true, false);
@@ -76,25 +83,31 @@ export function updateTrail(dt){
   pts.push(trailPts[n0 - 1]);
   const n = pts.length;
   const pos = new Float32Array((n-1)*18);
-  const col = new Float32Array((n-1)*18);
-  // per sample: brightness fades with age and toward the tail; the newest edge burns toward white
-  const shade = (p, i) => {
+  const col = new Float32Array((n-1)*24);
+  // per sample: brightness fades with age and toward the tail; the newest edge burns toward white. The fade is
+  // QUANTISED into cel bands (like the toon ramp on the models), so the streak reads as flat painted arcs.
+  const dark = trailMesh.material === darkTrailMat;
+  const band = (x) => Math.ceil(x * 4) / 4;
+  const shade = (p, i, out) => {
     const f = Math.max(0, 1 - p.age / trailCfg.life), lead = i / (n-1);
-    const k = f * f * lead;
-    const hot = Math.pow(lead, 6) * f * trailCfg.core;
-    return _c.copy(trailCol).multiplyScalar(k).lerp(_cw, hot);
+    const k = band(f * f * lead);
+    const hot = Math.pow(lead, 6) * f * trailCfg.core > 0.3 ? 1 : 0;   // a hard white leading edge, not a soft blend
+    if (dark){ _c.setRGB(0.05, 0.04, 0.08).lerp(_cw, hot); out[3] = k; }
+    else { _c.copy(trailCol).multiplyScalar(k).lerp(_cw, hot * 0.85); out[3] = 1; }
+    out[0] = _c.r; out[1] = _c.g; out[2] = _c.b;
+    return out;
   };
   let o = 0, c = 0;
   const put = (v) => { pos[o++] = v.x; pos[o++] = v.y; pos[o++] = v.z; };
-  const tint = (cl) => { col[c++] = cl.r; col[c++] = cl.g; col[c++] = cl.b; };
+  const tint = (cl) => { col[c++] = cl[0]; col[c++] = cl[1]; col[c++] = cl[2]; col[c++] = cl[3]; };
   for (let i = 0; i < n-1; i++){
     const a = pts[i], b = pts[i+1];
     put(a.b); put(a.t); put(b.t); put(a.b); put(b.t); put(b.b);
-    const ca = shade(a, i).clone(), cb = shade(b, i+1).clone();
+    const ca = shade(a, i, _ca), cb = shade(b, i+1, _cb);
     tint(ca); tint(ca); tint(cb); tint(ca); tint(cb); tint(cb);
   }
   trailGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  trailGeo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  trailGeo.setAttribute('color', new THREE.BufferAttribute(col, 4));
 }
 
 /* ---------- blade FX ----------

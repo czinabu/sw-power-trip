@@ -6,7 +6,7 @@ import { CFG } from '../../data/config.js';
 import { scene } from '../../engine/renderer.js';
 import { sfx, S } from '../../audio/sfx.js';
 import { V3, rand, clamp, TMP } from '../../utils.js';
-import { acquireParticle, burst } from '../../fx/particles.js';
+import { burst } from '../../fx/particles.js';
 import { floater, screenFlash } from '../../fx/floaters.js';
 import { shared, G, enemies, bolts, barrels, vfx, player } from '../../state.js';
 import { flashLight } from '../../fx/lights.js';
@@ -16,6 +16,7 @@ import { damageEnemy, flinchEnemy } from '../../enemies/damage.js';
 import { damageBoss, bossStun, bossStagger } from '../../boss/boss.js';
 import { cancelSwing } from './combat.js';
 import { spawnPushWave, spawnGroundShock } from '../../fx/vfx.js';
+import { inkSprite, sparks, motes, dustRing, barrierMaterial, bindBarrier } from '../../fx/ink.js';
 
 /* trigger the off-hand reaching gesture used by every Force power */
 export function castGesture(kind, dur){ dur *= (stance().castMul || 1); player.castT = dur; player.castMax = dur; player.castKind = kind; }   // ATARU casts snap off faster
@@ -39,16 +40,6 @@ export function forcePush(){
   G.shake = Math.max(G.shake, 0.3);
   castGesture('push', 0.28);                       // off-hand palm-thrust
   spawnPushWave(pp.clone(), f.clone(), col, 0.6);  // a modest shove — basic ability, not a grand blast
-  // a faint puff of energy off the palm
-  for (let i = 0; i < 5; i++){
-    const m = acquireParticle();
-    m.material.color.setHex(col); m.material.opacity = 0.6;
-    m.position.set(pp.x + f.x*1.2 + rand(-0.25,0.25), 1.45 + rand(-0.3,0.3), pp.z + f.z*1.2 + rand(-0.25,0.25));
-    m.scale.setScalar(rand(0.5,0.9));
-    const spd = rand(7, 13);
-    m.userData.vel.set(f.x*spd + rand(-2,2), rand(0,2.5), f.z*spd + rand(-2,2));
-    m.userData.life = rand(0.22, 0.42);
-  }
   const cosLim = Math.cos(A.angle);
   let pushed = 0;
   for (const e of enemies){
@@ -116,7 +107,8 @@ export function forceSlam(){
   player.vel.set(0, 0, 0);
   player.vy = -32;                       // drive straight down
   S.dash();
-  burst(playerPos().clone(), 0x88ddff, 8, 5, 3);
+  const sp = playerPos();
+  sparks(V3(sp.x, sp.y + 1.2, sp.z), stance().blade, 8, 10, { dir: V3(0, 1, 0), cone: 0.5, life: 0.25, grav: 0 });   // the air tears as you drop
 }
 export function slamImpact(){
   const A = CFG.abilities.slam, st = stance();
@@ -128,18 +120,11 @@ export function slamImpact(){
   // a clean pair of ground shockwaves — weight without the fireworks
   spawnGroundShock(pp, col, A.radius + 3,  0.42, 0.5);    // core ring
   spawnGroundShock(pp, col, A.radius + 9,  0.72, 0.28);   // wide trailing wave
-  // a low ground flash disc + a soft, short-lived impact light
-  const dmat = new THREE.MeshBasicMaterial({ color: 0xcfe6f0, transparent:true, opacity:0.28, side:THREE.DoubleSide, blending:THREE.AdditiveBlending, depthWrite:false });
-  const disc = new THREE.Mesh(new THREE.CircleGeometry(A.radius*0.6, 36), dmat);
-  disc.rotation.x = -Math.PI/2; disc.position.set(pp.x, 0.06, pp.z);
-  scene.add(disc);
-  vfx.push({ mesh:disc, t:0, dur:0.24, update(kk){ dmat.opacity = 0.28*(1-kk); disc.scale.setScalar(1 + kk*0.6); }});
+  // the impact: a cel starburst at the feet, a soft short-lived light, a ring of dust puffs and a little debris
+  inkSprite({ pos: V3(pp.x, pp.y + 0.5, pp.z), shape: 'star', points: 8, sharp: 0.15, color: col, size: [1.6, 4.4], life: 0.16, steps: 2, coreW: 0.4 });
   flashLight(col, 5, A.radius*1.8, V3(pp.x, 1.0, pp.z), 0.3);
-  // a low dust kick + a little tumbling debris — grounded, not a geyser
-  burst(V3(pp.x, 0.25, pp.z), 0xbcd2dc, 24, 12, 3, 0.9);   // outward dust sheet
-  burst(V3(pp.x, 0.35, pp.z), 0x9a9a9a, 14, 9,  7, 1.1);   // tumbling debris
-  // a low ring of kicked-up dust spreading out along the ground
-  for (let n = 0; n < 14; n++){ const a = (n/14)*Math.PI*2; burst(V3(pp.x + Math.cos(a)*1.2, 0.15, pp.z + Math.sin(a)*1.2), 0xbcd2dc, 1, 8, 1, 1.0); }
+  dustRing(pp, A.radius);
+  burst(V3(pp.x, 0.35, pp.z), 0x9a9a9a, 10, 9, 7, 1.1);   // tumbling debris
   for (const e of enemies){
     if (e.dead || e.converted || e.state === 'spawn') continue;
     TMP.subVectors(e.group.position, pp); TMP.y = 0;
@@ -151,22 +136,19 @@ export function slamImpact(){
   }
   if (shared.boss && shared.boss.hp > 0 && shared.boss.group.position.distanceTo(pp) < A.radius) damageBoss(A.dmg * (st.powerDmg || 1));
 }
-function spawnPlayerRing(pos, maxR){
-  const m = new THREE.Mesh(new THREE.TorusGeometry(1, 0.25, 8, 40),
-    new THREE.MeshBasicMaterial({ color: 0x66ccff, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false }));
-  m.rotation.x = Math.PI/2; m.position.copy(pos); m.position.y = 0.3;
-  scene.add(m);
-  let r = 1;
-  const grow = () => {
-    r += 0.8;
-    m.scale.set(r, r, 1);
-    m.material.opacity = Math.max(0, 0.8 * (1 - r/(maxR+2)));
-    if (r < maxR + 2) requestAnimationFrame(grow);
-    else scene.remove(m);
-  };
-  grow();
+// the repulse front: a waist-high ink ring racing out from the body (driven by the VFX loop, so it respects slow-mo)
+function spawnPlayerRing(pos, maxR, color){
+  inkSprite({ pos: V3(pos.x, pos.y + 1.0, pos.z), normal: V3(0, 1, 0), shape: 'ring', inner: 0.9, color, size: [1.5, (maxR + 2) * 2],
+              ease: 3, life: 0.42, fadeAt: 0.3, coreW: 0.25, inkW: 0.3 });
+  inkSprite({ pos: V3(pos.x, pos.y + 1.0, pos.z), normal: V3(0, 1, 0), shape: 'ring', inner: 0.93, color, size: [1.2, (maxR + 2) * 1.6],
+              ease: 3, life: 0.5, delay: 0.06, op: 0.6, fadeAt: 0.3, coreW: 0.25, inkW: 0.3 });
 }
 
+let _throwLight = null;
+function throwLight(){
+  if (!_throwLight){ _throwLight = new THREE.PointLight(0xffffff, 0, 8); scene.add(_throwLight); }
+  return _throwLight;
+}
 export function saberThrow(){
   const A = CFG.abilities.throw;
   if (!G.unlocked.throw || player.cds.throw > 0 || player.force < A.cost || shared.saberProj || G.mode !== 'play') return;
@@ -179,8 +161,10 @@ export function saberThrow(){
     new THREE.MeshBasicMaterial({ color: 0xffffff }));
   const glow = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.09, 1.75, 8),
     new THREE.MeshBasicMaterial({ color: stance().blade, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false }));
-  const l = new THREE.PointLight(stance().blade, 8, 8);
-  m.add(blade, glow, l);
+  // one light that lives in the scene for good and only fades (adding a light per throw recompiles every material)
+  const l = throwLight();
+  l.color.setHex(stance().blade); l.intensity = 8;
+  m.add(blade, glow);
   m.rotation.z = Math.PI/2;
   m.position.set(pp.x + f.x, 1.7, pp.z + f.z);
   scene.add(m);
@@ -200,7 +184,7 @@ export function updateSaberThrow(dt){
     TMP.set(pp.x, 1.7, pp.z).sub(sp.mesh.position);
     const d = TMP.length();
     if (d < 1.2){
-      scene.remove(sp.mesh); shared.saberProj = null;
+      scene.remove(sp.mesh); shared.saberProj = null; throwLight().intensity = 0;
       player.saberHand.visible = true;
       return;
     }
@@ -208,6 +192,14 @@ export function updateSaberThrow(dt){
     sp.mesh.position.addScaledVector(TMP, A.speed * 1.3 * dt);
   }
   sp.mesh.rotation.y += dt * 22;
+  throwLight().position.copy(sp.mesh.position);
+  // the spinning blade smears into a disc of light: short-lived flat echoes laid down along its flight
+  sp.echoT = (sp.echoT || 0) - dt;
+  if (sp.echoT <= 0){
+    sp.echoT = 0.03;
+    inkSprite({ pos: sp.mesh.position, normal: V3(0, 1, 0), shape: 'ring', inner: 0.12, color: stance().blade, size: [1.8, 1.8],
+                life: 0.09, steps: 2, op: 0.55, coreW: 0.2, inkW: 0.1 });
+  }
   for (const e of enemies){
     if (e.dead || e.converted || sp.hitSet.has(e)) continue;
     if (sp.mesh.position.distanceTo(e.group.position.clone().setY(1.7)) < 2.0){
@@ -243,7 +235,8 @@ export function forcePull(){
     if (d > A.range || d < 2.5) continue;
     TMP.normalize();
     if (TMP.dot(f) < cosLim) continue;
-    burst(V3(e.group.position.x, 1.5, e.group.position.z), 0x88ddff, 4, 4, 3);
+    const ep = e.group.position;
+    sparks(V3(ep.x, ep.y + 1.5, ep.z), stance().blade, 4, d * 2.4, { dir: TMP.clone().negate(), cone: 0.15, life: 0.3, grav: 0, stretch: 4 });   // yanked: streaks toward you
     if (e.t.heavy){
       e.group.position.addScaledVector(TMP, -2.5);   // brutes only stumble closer
       e.state = 'recover'; e.st = 0.5;
@@ -254,6 +247,13 @@ export function forcePull(){
       e.flash = 0.1;
     }
     n++;
+  }
+  // the Force reaching out and closing: ripple rings collapsing back toward the hand
+  for (let i = 0; i < 3; i++){
+    const at = A.range * (0.75 - i*0.15);
+    inkSprite({ pos: V3(pp.x + f.x*at, 1.45, pp.z + f.z*at), normal: f, shape: 'ring', inner: 0.86, color: stance().blade,
+                size: [4.2 - i*0.5, 0.7], ease: 2, life: 0.3, delay: i*0.05, op: 0.9 - i*0.2, fadeAt: 0.5, coreW: 0.2, inkW: 0.22,
+                vel: f.clone().multiplyScalar(-at / 0.3) });
   }
   if (n) floater(pp, 'PULL', '#7fd4ff');
 }
@@ -269,12 +269,14 @@ export function forceRepulse(){
   player.force -= cost; player.cds.repulse = A.cd * (st.cdMult || 1);
   castGesture('push', 0.34);
   const pp = playerPos(), col = stance().blade;
-  spawnPlayerRing(pp.clone(), radius);
+  spawnPlayerRing(pp.clone(), radius, col);
   spawnGroundShock(pp.clone().setY(0.1), col, radius + 1, 0.4, 0.7);
   spawnGroundShock(pp.clone().setY(0.1), 0xffffff, radius + (up ? 6 : 3), up ? 0.7 : 0.5, 0.4);
-  // BIGGER cast burst + a denser wave of particles
-  burst(V3(pp.x, 1.5, pp.z), col, up ? 54 : 38, 15, 7, 1.2); burst(V3(pp.x, 1.5, pp.z), 0xffffff, 20, 17, 5);
-  for (let n = 0; n < (up ? 22 : 14); n++) burst(V3(pp.x + rand(-0.6,0.6), rand(0.4,2.4), pp.z + rand(-0.6,0.6)), col, 1, 9, 4, 1.0);
+  // the cast: a big cel starburst off the body, a hard radial spray of streaks and dust thrown out along the floor
+  inkSprite({ pos: V3(pp.x, pp.y + 1.3, pp.z), shape: 'star', points: 10, sharp: 0.15, color: col, size: [2, up ? 7 : 5.5], life: 0.2, steps: 2, coreW: 0.38, spin: 1.5 });
+  inkSprite({ pos: V3(pp.x, pp.y + 1.3, pp.z), shape: 'disc', color: col, size: [1.2, 2.6], life: 0.1, steps: 2, coreW: 0.7 });
+  sparks(V3(pp.x, pp.y + 1.3, pp.z), col, up ? 28 : 20, 24, { up: 0.1, life: 0.32, grav: 2, stretch: 4 });
+  dustRing(pp, radius * 0.8);
   screenFlash('radial-gradient(ellipse at center, rgba(150,210,255,'+(up?0.55:0.4)+'), transparent 60%)', up ? 0.9 : 0.6, 0.32);
   G.shake = Math.max(G.shake, up ? 1.5 : 1.1); G.hitstop = Math.max(G.hitstop, 0.1);
   S.slam(); S.boom(); sfx(70, 0.4, 'sine', 0.2, 24);
@@ -298,10 +300,11 @@ export function forceRepulse(){
 
 function ensureBarrierMesh(){
   if (shared._barrierMesh) return;
-  const geo = new THREE.SphereGeometry(1.7, 20, 16);
-  const mat = new THREE.MeshBasicMaterial({ color: 0x6fd0ff, transparent: true, opacity: 0.22,
-    blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+  const geo = new THREE.SphereGeometry(1.7, 32, 24);
+  const mat = barrierMaterial(0x6fd0ff);
+  mat.opacity = 0.22;
   shared._barrierMesh = new THREE.Mesh(geo, mat);
+  bindBarrier(shared._barrierMesh);
   shared._barrierMesh.visible = false;
   scene.add(shared._barrierMesh);
 }
@@ -326,7 +329,8 @@ export function forceBarrier(){
   castGesture('push', 0.3);
   const pp = playerPos(), col = 0x6fd0ff;
   spawnGroundShock(pp.clone().setY(0.1), col, A.radius, 0.4, 0.6);
-  burst(V3(pp.x, 1.4, pp.z), col, 26, 7, 4, 1.0); burst(V3(pp.x, 1.4, pp.z), 0xffffff, 12, 9, 4);
+  inkSprite({ pos: V3(pp.x, pp.y + 1.4, pp.z), shape: 'star', points: 6, sharp: 0.22, color: col, size: [1.4, 4.2], life: 0.18, steps: 2, coreW: 0.4 });
+  sparks(V3(pp.x, pp.y + 1.4, pp.z), col, 14, 12, { life: 0.3, size: 0.5 });
   screenFlash('radial-gradient(ellipse at center, rgba(120,210,255,.35), transparent 60%)', 0.5, 0.3);
   G.shake = Math.max(G.shake, 0.4);
   barrierShove(0.7, A.castKnock);   // CAST — a firm shove clears space around you as the bubble snaps up
@@ -356,8 +360,9 @@ export function mendComplete(){
   player.hp += healed;
   player.lastHurt = G.gt;   // mending resets the passive-regen delay window
   spawnGroundShock(pp.clone().setY(0.1), 0x53ff8c, 3.0, 0.5, 0.55);
-  burst(V3(pp.x, 1.4, pp.z), 0x53ff8c, 34, 7, 5, 1.1); burst(V3(pp.x, 1.2, pp.z), 0xc8ffd8, 16, 5, 4);
-  for (let i = 0; i < 16; i++) burst(V3(pp.x + rand(-0.5,0.5), rand(0.2,2.3), pp.z + rand(-0.5,0.5)), 0x7bffae, 1, 3, 5, 0.9);
+  inkSprite({ pos: V3(pp.x, pp.y + 1.3, pp.z), shape: 'star', points: 4, sharp: 0.12, color: 0x53ff8c, size: [1.4, 3.6], life: 0.24, steps: 3, coreW: 0.4, rot: 0 });
+  motes(V3(pp.x, pp.y, pp.z), 0x7bffae, 14, 0.6, { h: 2.2, delay: 0.25 });
+  sparks(V3(pp.x, pp.y + 1.2, pp.z), 0x7bffae, 10, 7, { dir: V3(0, 1, 0), cone: 0.8, life: 0.4, grav: -2 });
   screenFlash('radial-gradient(ellipse at center, rgba(80,255,140,.32), transparent 60%)', 0.5, 0.36);
   floater(V3(pp.x, 1.0, pp.z), '+' + healed, '#7bffae');
   sfx(440, 0.35, 'sine', 0.13, 980); sfx(880, 0.3, 'sine', 0.08, 1500);   // a bright restorative chime

@@ -9,6 +9,7 @@ import { floater } from '../../fx/floaters.js';
 import { G, keys, player } from '../../state.js';
 import { MANDO } from '../../data/mando.js';
 import { _look, _lh } from './weapons.js';
+import { thrust, jetIgnite } from '../../fx/ink.js';
 
 export function updateMandoFlight(dt, pp, f, r){
   // JETPACK — its OWN limited fuel (player.jet). Drains fast in the air, recovers on the ground.
@@ -21,7 +22,7 @@ export function updateMandoFlight(dt, pp, f, r){
   const wantHover = !player.grounded && !player.jetActive && (player.blockHeld || player.zoom) && player.jet > 0 && G.mode === 'play' && player.darkT <= 0;
   player.hovering = false;
   if (player.jetActive){
-    if (!wasJet){ S.dash(); burst(V3(pp.x, pp.y+0.3, pp.z), 0x9ad8ff, 9, 7, -3, 0.9); G.shake = Math.max(G.shake, 0.12); }   // ignition pop
+    if (!wasJet){ S.dash(); jetIgnite(pp); G.shake = Math.max(G.shake, 0.12); }   // ignition pop
     player.grounded = false; player.doubleJumped = false;
     const jetPow = player.up.jetPow || 0.62;                              // booster-tier power (weak until upgraded)
     // SPACE = pure VERTICAL thrust: a controlled hover/climb. Looking up climbs a little more; no diving here
@@ -32,7 +33,7 @@ export function updateMandoFlight(dt, pp, f, r){
     // DARKSABER jetpack synergy — the thrusters sip fuel while you're mid-swing (an aerial saber assault)
     const meleeEff = (player.weapon === 'darksaber' && player.atkT > 0) ? 0.45 : 1;
     player.jet = Math.max(0, player.jet - MANDO.jetDrain * fuelMul * meleeEff * dt);
-    for (let n = 0; n < 2; n++) burst(V3(pp.x + rand(-0.18,0.18), pp.y + 0.42, pp.z + rand(-0.18,0.18)), n ? 0xffffff : 0x66c6ff, 1, 3, -7, 0.75);
+    thrust(dt, 1);
     player.jetSfx = (player.jetSfx || 0) - dt;
     if (player.jetSfx <= 0){ player.jetSfx = 0.09; sfx(rand(190,250), 0.11, 'triangle', 0.035, 120); }
   } else if (wantHover){
@@ -41,7 +42,7 @@ export function updateMandoFlight(dt, pp, f, r){
     player.hovering = true;
     player.vy = dampToward(player.vy, 0, dt, 9);                            // arrest the fall → hold position
     player.jet = Math.max(0, player.jet - MANDO.jetHover * (player.up.jetHoverMul || 1.7) * fuelMul * dt);
-    if (Math.random() < 0.5) burst(V3(pp.x + rand(-0.2,0.2), pp.y + 0.35, pp.z + rand(-0.2,0.2)), 0x9ad8ff, 1, 2, -4, 0.6);
+    thrust(dt, 0.4);
   } else {
     // recover fuel — a trickle in the air, fast on the ground (so you can't fly/hover forever)
     player.jet = Math.min(player.jetMax, player.jet + (player.grounded ? MANDO.jetRegenGround : MANDO.jetRegen) * dt);
@@ -60,7 +61,7 @@ export function updateMandoFlight(dt, pp, f, r){
     player.moveVel.addScaledVector(_lh, MANDO.boostThrust * jetPow * dt);    // strong horizontal momentum (carries)
     if (_look.y < -0.1) player.vy += _look.y * MANDO.boostDiveAccel * dt;    // looking down while boosting → DIVE, building speed
     player.jet = Math.max(0, player.jet - MANDO.boostDrain * fuelMul * dt);
-    for (let n = 0; n < 2; n++) burst(V3(pp.x - _lh.x*0.3 + rand(-0.15,0.15), pp.y + 0.4, pp.z - _lh.z*0.3 + rand(-0.15,0.15)), n ? 0xffffff : 0x66c6ff, 1, 4, -6, 0.8);
+    thrust(dt, 1.4, _lh);
     player.jetSfx = (player.jetSfx || 0) - dt;
     if (player.jetSfx <= 0){ player.jetSfx = 0.07; sfx(rand(150,210), 0.12, 'sawtooth', 0.04, 100); }
   }

@@ -1,14 +1,15 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
-// One-shot VFX: push waves, hit sparks, parry flashes, ground shocks.
+// One-shot VFX: push waves, hit sparks, parry flashes, ground shocks (drawn with the Ink kit in ink.js).
 
-import * as THREE from 'three';
-import { scene, camera } from '../engine/renderer.js';
+import { scene } from '../engine/renderer.js';
 import { V3 } from '../utils.js';
 import { vfx } from '../state.js';
 import { flashLight } from './lights.js';
+import { inkSprite, sparks, puff, hitSpark, clashFlash, groundRing, updateInk } from './ink.js';
 
 /* ---------- pooled flourish VFX (shockwaves, ground rings, flashes) — driven by the main loop so they respect slow-mo ---------- */
 export function updateVFX(dt){
+  updateInk(dt);
   for (let i = vfx.length-1; i >= 0; i--){
     const v = vfx[i];
     v.t += dt;
@@ -23,73 +24,38 @@ export function updateVFX(dt){
 }
 // an expanding shockwave projected forward — a wall of force leaving the hand.
 // power (~0.5 basic … 1.5 mighty) scales how big, far-travelling and bright it is.
+// Drawn in Ink: concentric ripple rings with an ink rim and a hot leading edge, plus speed-line streaks.
 export function spawnPushWave(pos, dir, color, power){
   power = power || 1;
   dir = dir.clone().setY(0).normalize();
-  const q = new THREE.Quaternion().setFromUnitVectors(V3(0,0,1), dir);
-  const ring = (r0, r1, dur, op, lead) => {
-    const mat = new THREE.MeshBasicMaterial({ color, transparent:true, opacity:op, side:THREE.DoubleSide, blending:THREE.AdditiveBlending, depthWrite:false });
-    const m = new THREE.Mesh(new THREE.RingGeometry(r0, r1, 36), mat);
-    m.quaternion.copy(q);
-    const start = V3(pos.x + dir.x, 1.45, pos.z + dir.z);
-    m.position.copy(start);
-    scene.add(m);
-    vfx.push({ mesh:m, t:0, dur, update(kk){
-      const e = 1 - Math.pow(1-kk, 2);
-      const sc = 1 + e * (4 + 4*power);
-      m.scale.set(sc, sc, 1);
-      m.position.copy(start).addScaledVector(dir, lead + e * (6 + 7*power));   // ride forward off the hand
-      mat.opacity = op * (1 - kk);
-    }});
+  const start = V3(pos.x + dir.x, (pos.y || 0) + 1.45, pos.z + dir.z);
+  const ripple = (delay, op, lead) => {
+    inkSprite({ pos: start, normal: dir, shape: 'ring', inner: 0.7, color, size: [0.9, 2.4 + 3.6*power], ease: 2,
+                life: 0.36, delay, op, fadeAt: 0.3, coreW: 0.14, inkW: 0.16,
+                vel: dir.clone().multiplyScalar((14 + 12*power) * lead) });
   };
-  ring(0.45, 0.72, 0.4,  0.42, 0);            // restrained leading wave
-  ring(0.35, 0.6,  0.48, 0.26, -1.0*power);   // faint trailing wave
-  // a small energy flash at the hand, sized to the power — no scene light, kept subtle
-  const fmat = new THREE.MeshBasicMaterial({ color, transparent:true, opacity:0.42, blending:THREE.AdditiveBlending, depthWrite:false });
-  const flash = new THREE.Mesh(new THREE.SphereGeometry(0.13 + 0.06*power, 12, 8), fmat);
-  flash.position.set(pos.x + dir.x, 1.45, pos.z + dir.z);
-  scene.add(flash);
-  vfx.push({ mesh:flash, t:0, dur:0.26, update(kk){
-    flash.scale.setScalar(1 + kk*1.6);
-    fmat.opacity = 0.42 * (1 - kk);
-  }});
+  ripple(0, 1, 1);
+  ripple(0.06, 0.7, 0.8);
+  // the shove itself: a wedge of translucent, blade-tinted air puffs that tumble forward and break up
+  for (let i = 0; i < 4; i++){
+    const side = (i - 1.5) * 0.45;
+    puff(V3(start.x + dir.z*side, start.y + (i % 2 ? 0.25 : -0.2), start.z - dir.x*side), color, 1.3 + 0.7*power, 0.34,
+         V3(dir.x*(20 + 8*power) + dir.z*side*4, 0, dir.z*(20 + 8*power) - dir.x*side*4), { grow0: 0.35, drag: 3, shade: 0.25, op: 0.45, delay: i*0.015 });
+  }
+  // the palm burst + speed lines thrown down the push
+  inkSprite({ pos: start, shape: 'star', points: 6, sharp: 0.3, color, size: [0.35, 0.9 + 0.4*power], life: 0.14, steps: 2, coreW: 0.45 });
+  sparks(start, color, Math.round(6 + 6*power), 26 + 10*power, { dir, cone: 0.28, life: 0.22, grav: 0, stretch: 4, size: 0.45 });
 }
-// a bright impact at the point a blade connects — flash + camera-facing shock ring
+// a bright impact at the point a blade connects — cel star, shock ring and streak sparks
 export function spawnHitSpark(pos, color, power){
-  power = power || 1;
-  const fmat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent:true, opacity:0.9, blending:THREE.AdditiveBlending, depthWrite:false });
-  const fl = new THREE.Mesh(new THREE.SphereGeometry(0.14 + 0.08*power, 8, 6), fmat);
-  fl.position.copy(pos); scene.add(fl);
-  vfx.push({ mesh:fl, t:0, dur:0.13, update(kk){ fl.scale.setScalar(1 + kk*2.2); fmat.opacity = 0.9*(1-kk); }});
-  const rmat = new THREE.MeshBasicMaterial({ color, transparent:true, opacity:0.8, side:THREE.DoubleSide, blending:THREE.AdditiveBlending, depthWrite:false });
-  const ring = new THREE.Mesh(new THREE.RingGeometry(0.22, 0.4, 18), rmat);
-  ring.position.copy(pos); ring.lookAt(camera.position);   // face the player
-  scene.add(ring);
-  vfx.push({ mesh:ring, t:0, dur:0.2, update(kk){ const r = 1 + kk*(3 + power*1.6); ring.scale.set(r, r, 1); rmat.opacity = 0.8*(1-kk); }});
+  hitSpark(pos, color, power || 1);
 }
 // a bright clash burst at chest height — perfect-parry flash
 export function spawnParryFlash(pos, color){
-  const fmat = new THREE.MeshBasicMaterial({ color, transparent:true, opacity:0.95, blending:THREE.AdditiveBlending, depthWrite:false });
-  const s = new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 8), fmat);
-  s.position.set(pos.x, pos.y, pos.z); scene.add(s);
-  flashLight(color, 7, 8, s.position, 0.28);
-  vfx.push({ mesh:s, t:0, dur:0.28, update(kk){ s.scale.setScalar(1 + kk*3); fmat.opacity = 0.95*(1-kk); }});
-  const rmat = new THREE.MeshBasicMaterial({ color, transparent:true, opacity:0.85, side:THREE.DoubleSide, blending:THREE.AdditiveBlending, depthWrite:false });
-  const ring = new THREE.Mesh(new THREE.RingGeometry(0.4, 0.72, 28), rmat);
-  ring.position.copy(s.position); ring.rotation.x = Math.PI/2; scene.add(ring);
-  vfx.push({ mesh:ring, t:0, dur:0.32, update(kk){ const r = 1 + kk*5; ring.scale.set(r, r, 1); rmat.opacity = 0.85*(1-kk); }});
+  clashFlash(V3(pos.x, pos.y, pos.z), color, true);
+  flashLight(color, 7, 8, V3(pos.x, pos.y, pos.z), 0.28);
 }
 // a flat expanding ring on the ground — slam shockwave
 export function spawnGroundShock(pos, color, maxR, dur, op){
-  const mat = new THREE.MeshBasicMaterial({ color, transparent:true, opacity:op, side:THREE.DoubleSide, blending:THREE.AdditiveBlending, depthWrite:false });
-  const m = new THREE.Mesh(new THREE.RingGeometry(0.55, 1.0, 48), mat);
-  m.rotation.x = -Math.PI/2;
-  m.position.set(pos.x, 0.12, pos.z);
-  scene.add(m);
-  vfx.push({ mesh:m, t:0, dur, update(kk){
-    const e = 1 - Math.pow(1-kk, 3);
-    const r = 0.55 + e * maxR;
-    m.scale.set(r, r, 1);
-    mat.opacity = op * (1 - kk);
-  }});
+  groundRing(pos, color, maxR, dur, op);
 }

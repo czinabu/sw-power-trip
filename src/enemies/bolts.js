@@ -6,7 +6,6 @@ import { CFG } from '../data/config.js';
 import { scene } from '../engine/renderer.js';
 import { sfx, S } from '../audio/sfx.js';
 import { V3, clamp, TMP } from '../utils.js';
-import { burst } from '../fx/particles.js';
 import { floater, screenFlash } from '../fx/floaters.js';
 import { shared, G, enemies, bolts, solids, player } from '../state.js';
 import { HEADSHOT_MULT } from '../data/mando.js';
@@ -15,15 +14,24 @@ import { damageEnemy, flinchEnemy, nearestEnemyInCone } from './damage.js';
 import { damageBoss } from '../boss/boss.js';
 import { FOCUS, addFocus } from '../player/jedi/focus.js';
 import { spawnHitSpark, spawnParryFlash } from '../fx/vfx.js';
+import { boltImpact, clashFlash } from '../fx/ink.js';
 import { mandoWeapon, boltDamage, hitMarker } from '../player/mando/weapons.js';
 import { hurtPlayer } from '../player/damage.js';
 
 /* ============================================================
    PROJECTILES — blaster bolts & boss orbs
    ============================================================ */
-const boltGeo = new THREE.CapsuleGeometry(0.06, 0.7, 3, 6);
+/* A bolt is drawn like the films' blaster fire, inked: a white-hot core inside a saturated colour sheath, wrapped in a
+   thin dark outline so it reads against bright skies too. b.mesh is the colour sheath, so everything that recolours a
+   bolt (reflects, deflects) keeps working through b.mesh.material.color. */
+const boltGeo = new THREE.CapsuleGeometry(0.075, 0.72, 3, 6);
+const boltCoreGeo = new THREE.CapsuleGeometry(0.034, 0.66, 3, 6);
+const boltInkGeo = new THREE.CapsuleGeometry(0.1, 0.76, 3, 6);
+const boltCoreMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(2.4, 2.4, 2.4), toneMapped: false });   // over 1.0 → blooms
+const boltInkMat = new THREE.MeshBasicMaterial({ color: 0x07060a, side: THREE.BackSide, transparent: true, opacity: 0.85, depthWrite: false });
 export function fireBolt(pos, dir, speed, dmg, friendly){
-  const m = new THREE.Mesh(boltGeo, new THREE.MeshBasicMaterial({ color: friendly ? 0x66ccff : 0xff3322 }));
+  const m = new THREE.Mesh(boltGeo, new THREE.MeshBasicMaterial({ color: friendly ? 0x66ccff : 0xff3322, toneMapped: false }));
+  m.add(new THREE.Mesh(boltCoreGeo, boltCoreMat), new THREE.Mesh(boltInkGeo, boltInkMat));
   m.position.copy(pos);
   m.quaternion.setFromUnitVectors(V3(0,1,0), dir.clone().normalize());
   scene.add(m);
@@ -79,7 +87,7 @@ export function updateBolts(dt){
         if (tgt && tgt !== shared.boss) b.dir.subVectors(tgt.group.position, b.mesh.position).setY(0).normalize();
         else b.dir.negate();
         b.mesh.material.color.setHex(0x6fd0ff);
-        burst(V3(b.mesh.position.x, b.mesh.position.y, b.mesh.position.z), 0x6fd0ff, 4, 5, 3);
+        spawnHitSpark(b.mesh.position.clone(), 0x6fd0ff, 0.7);
         sfx(1400, 0.08, 'square', 0.05, 1800);
       } else if (d < 2.6 && deflecting){
         if (parried) player.parryT = 0;
@@ -96,7 +104,7 @@ export function updateBolts(dt){
           spawnParryFlash(V3(b.mesh.position.x, b.mesh.position.y, b.mesh.position.z), 0xffd24a);
           screenFlash('radial-gradient(ellipse at center, rgba(255,230,150,.4), transparent 65%)', 0.7, 0.28);
           S.parry(); floater(pp, 'PARRY!', '#ffe27a'); if (G.stats) G.stats.parries++;
-        } else { S.deflect(); floater(pp, 'DEFLECT', '#7fd4ff'); if (G.stats) G.stats.deflects++; }
+        } else { clashFlash(b.mesh.position.clone(), stance().blade, false); S.deflect(); floater(pp, 'DEFLECT', '#7fd4ff'); if (G.stats) G.stats.deflects++; }
         addFocus(parried ? FOCUS.gainParry : FOCUS.gainDeflect);   // deflecting fire feeds the flow
       } else if (d < 2.5 && shielding){
         // GAUNTLET SHIELD — catch the bolt on the disc and HURL it back at the nearest threat. Costs stamina per catch.
@@ -108,19 +116,20 @@ export function updateBolts(dt){
         else b.dir.negate();
         b.mesh.material.color.setHex(0x6fd0ff);
         player.shieldFlash = 0.22;   // the disc flares on the catch (drawn in updatePlayer)
-        burst(V3(b.mesh.position.x, b.mesh.position.y, b.mesh.position.z), 0x6fd0ff, 6, 6, 3);
+        clashFlash(b.mesh.position.clone(), 0x6fd0ff, false);
         G.shake = Math.max(G.shake, 0.12); G.hitstop = Math.max(G.hitstop, 0.02);
         S.deflect(); floater(pp, 'DEFLECT', '#7fd4ff'); if (G.stats) G.stats.deflects++;
       } else if (d < 2.2 && blocking){
         // absorbed on the guard — costs stamina, no reflection
         player.stam = Math.max(0, player.stam - 7 * player.up.blockStam * (stance().blockStamMul || 1));
         player.stamDelay = CFG.player.stamDelay;
-        burst(V3(b.mesh.position.x, b.mesh.position.y, b.mesh.position.z), stance().blade, 4, 4, 3);
+        spawnHitSpark(b.mesh.position.clone(), stance().blade, 0.8);
         G.shake = Math.max(G.shake, 0.12);
         sfx(820, 0.07, 'square', 0.05, 460); floater(pp, 'BLOCK', '#9cc8e8');
         kill = true;
       } else if (d < 1.2 && dy < 1.2){
         hurtPlayer(b.dmg, b.mesh.position); kill = true;
+        boltImpact(b.mesh.position, b.mesh.material.color.getHex(), b.dir);
       }
     } else if (!kill && b.friendly){
       for (const e of enemies){
@@ -143,6 +152,7 @@ export function updateBolts(dt){
             sfx(1900, 0.08, 'square', 0.06, 420); G.hitstop = Math.max(G.hitstop, 0.04); G.shake = Math.max(G.shake, 0.18);
           }
           damageEnemy(e, dmg, b.dir, 6); flinchEnemy(e, b.dir, 0.4); kill = true;
+          if (!isHead) boltImpact(b.mesh.position, b.mesh.material.color.getHex(), b.dir);
           if (b.playerShot){ if (G.stats) G.stats.shotsHit++; hitMarker(e.dead ? 'kill' : (isHead ? 'head' : 'hit')); }
           break;   // bolts make foes recoil
         }
@@ -152,6 +162,7 @@ export function updateBolts(dt){
         const isHead = b.mesh.position.y >= shared.boss.group.position.y + 2.4;
         if (isHead){ dmg *= 1.8; floater(V3(shared.boss.group.position.x, 3.0, shared.boss.group.position.z), 'HEADSHOT', '#ffd24a'); sfx(1900,0.08,'square',0.06,420); }
         damageBoss(dmg); kill = true;
+        boltImpact(b.mesh.position, b.mesh.material.color.getHex(), b.dir);
         if (b.playerShot){ if (G.stats) G.stats.shotsHit++; hitMarker(shared.boss.hp <= 0 ? 'kill' : (isHead ? 'head' : 'hit')); }
       }
     }

@@ -11,6 +11,7 @@ import { volatileBlast } from './elites.js';
 import { bomberExplode } from './specials.js';
 import { FOCUS, addFocus } from '../player/jedi/focus.js';
 import { spawnHitSpark, spawnGroundShock } from '../fx/vfx.js';
+import { sparks } from '../fx/ink.js';
 import { addStreak } from '../player/damage.js';
 import { gainXp, killBonus } from '../game/progression.js';
 
@@ -63,8 +64,8 @@ export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick){
     if (meaty){
       // a spray of sparks off the hit + a bright impact flash & ring — every connect reads as a real hit
       const kd = knockDir.clone().setY(0).normalize();
-      burst(cp, 0xffffff, Math.round(4 + power*4), 7 + power*5, 5);
-      burst(V3(cp.x + kd.x*0.4, cp.y, cp.z + kd.z*0.4), col, Math.round(4 + power*4), 6 + power*5, 3);
+      sparks(cp, 0xffffff, Math.round(3 + power*3), 9 + power*5, { dir: kd, cone: 0.8, life: 0.24 });
+      sparks(V3(cp.x + kd.x*0.4, cp.y, cp.z + kd.z*0.4), col, Math.round(3 + power*3), 7 + power*5, { dir: kd, cone: 1, life: 0.3 });
       spawnHitSpark(cp, col, power);
       if (e.hp > 0){
         G.hitstop = Math.max(G.hitstop, 0.02 + power*0.028);   // a micro-freeze on impact — the core of "punch"

@@ -16,6 +16,7 @@ import { damageBoss } from '../../boss/boss.js';
 import { tryAttack } from '../jedi/combat.js';
 import { updateDark } from './darksaber.js';
 import { spawnHitSpark } from '../../fx/vfx.js';
+import { muzzleFlash, inkSprite, sparks, puff, screenAngle } from '../../fx/ink.js';
 
 /* ============================================================
    MANDALORIAN — jetpack, dual blasters, flamethrower, wrist rockets
@@ -114,12 +115,25 @@ export function spawnBlasterBolt(origin, dir, dmg, color, scale, W, opts){
     b.foMin = opts.foMin != null ? opts.foMin : W.foMin;   // for range damage falloff (bracing lifts the floor)
     b.playerShot = true; }   // tag for accuracy tracking
   if (G.stats) G.stats.shotsFired++;
-  const fm = new THREE.MeshBasicMaterial({ color, transparent:true, opacity:0.9, blending:THREE.AdditiveBlending, depthWrite:false });
-  const flash = new THREE.Mesh(new THREE.SphereGeometry(0.14*scale, 8, 6), fm); flash.position.copy(origin); scene.add(flash);
-  // muzzle flash fires every shot — no per-shot PointLight (the additive sphere + bloom already glows; a light here
-  // would churn the light count). Big one-off blasts (explosions/parries) use the pooled flashLight() instead.
-  vfx.push({ mesh:flash, t:0, dur:0.08, update(k){ flash.scale.setScalar(1 + k*2.2); fm.opacity = 0.9*(1-k); }});
-  burst(origin, 0xffd28a, 2, 6, 1, 0.5);
+  // muzzle flash fires every shot, drawn at the barrel of whichever gun is nearest the bolt's origin — pooled Ink
+  // sprites, no per-shot PointLight (a light here would churn the light count; big blasts use flashLight()).
+  muzzleFlash(gunMuzzle(origin), dir, color, 0.55 + scale * 0.3);
+}
+// the world-space barrel tip of the visible gun closest to `near` (falls back to `near` itself)
+const MUZZLES = [['pistols', 'R', [0, 0.115, 0.38]], ['pistols', 'L', [0, 0.115, 0.38]], ['rifleMesh', null, [0, 0.11, 0.96]]];
+const _mz = new THREE.Vector3(), _mzBest = new THREE.Vector3();
+function gunMuzzle(near){
+  let best = 1.2;   // only snap to a gun that's actually by the shot
+  _mzBest.copy(near);
+  for (const [key, side, at] of MUZZLES){
+    const g = side ? (player[key] && player[key][side]) : player[key];
+    if (!g || !g.visible) continue;
+    g.updateWorldMatrix(true, false);
+    _mz.set(at[0], at[1], at[2]); g.localToWorld(_mz);
+    const d = _mz.distanceTo(near);
+    if (d < best){ best = d; _mzBest.copy(_mz); }
+  }
+  return _mzBest;
 }
 // a friendly bolt's damage drops with distance travelled (per-weapon foStart/foEnd/foMin)
 export function boltDamage(b){
@@ -198,12 +212,22 @@ function fireRifle(W){
   const aim = mandoAimPoint();
   const o = muzzleOrigin(0.06);
   spawnBlasterBolt(o, V3(aim.x-o.x, aim.y-o.y, aim.z-o.z).normalize(), W.dmg * player.up.dmg, 0x7fe0ff, 2.0, W);
+  disruptorWake(gunMuzzle(o).clone(), V3(aim.x-o.x, aim.y-o.y, aim.z-o.z).normalize());
   player.recoil = 0.5; player.recoilKick = 0.5;
   G.shake = Math.max(G.shake, 0.4); G.hitstop = Math.max(G.hitstop, 0.05);
   screenFlash('radial-gradient(ellipse at center, rgba(120,210,255,.2), transparent 60%)', 0.35, 0.2);
   sfx(110, 0.1, 'sawtooth', 0.06, 46); sfx(60, 0.16, 'sine', 0.08, 28);
   player.fireCd = W.fireCd / (player.up.fireRate || 1);
   addHeat(W);   // a heavy charge — overheats after a couple of shots
+}
+// the disruptor's ionised wake — a corkscrew of ink rings left hanging along the first stretch of the shot
+function disruptorWake(from, dir){
+  for (let i = 0; i < 9; i++){
+    const t = 0.8 + i * 1.5;
+    inkSprite({ pos: V3(from.x + dir.x*t, from.y + dir.y*t, from.z + dir.z*t), normal: dir, shape: 'ring', inner: 0.7, color: 0x7fe0ff,
+                size: [0.35, 0.75 + i*0.05], life: 0.32, delay: i * 0.012, fadeAt: 0.25, coreW: 0.25, inkW: 0.24, op: 0.9 });
+  }
+  sparks(from, 0xaff0ff, 6, 14, { dir, cone: 0.25, life: 0.2, grav: 0, size: 0.45 });
 }
 // disruptor used un-scoped = an electric SPEAR: a fast, snappy thrust that lunges you in
 function spearStab(W){
@@ -220,8 +244,11 @@ function spearStab(W){
     damageEnemy(best, W.stabDmg * player.up.dmg, f, 10);
     hitMarker(best.dead ? 'kill' : 'hit');
     const hp = best.group.position;
-    burst(V3(hp.x, 1.4, hp.z), 0x7fe0ff, 14, 9, 5); spawnHitSpark(V3(hp.x, 1.5, hp.z), 0xaff0ff, 1.4);
-    for (let n = 0; n < 4; n++) burst(V3(hp.x + rand(-0.4,0.4), rand(1,2.4), hp.z + rand(-0.4,0.4)), 0x9fdcff, 1, 4, 3);
+    spawnHitSpark(V3(hp.x, 1.5, hp.z), 0xaff0ff, 1.4);
+    // the shock crawls over the target: jagged blue stars flickering up the body
+    for (let n = 0; n < 5; n++) inkSprite({ pos: V3(hp.x + rand(-0.4,0.4), rand(0.9,2.3), hp.z + rand(-0.4,0.4)), shape: 'star', points: 5, sharp: 0.12,
+      color: 0x7fe0ff, size: [0.5, 0.8], life: 0.12, delay: n * 0.04, steps: 2, coreW: 0.35 });
+    sparks(V3(hp.x, 1.5, hp.z), 0x9fdcff, 10, 10, { life: 0.3, size: 0.45 });
     G.shake = Math.max(G.shake, 0.3); G.hitstop = Math.max(G.hitstop, 0.06);
     floater(hp, 'STUN', '#aff0ff');
   } else if (shared.boss && shared.boss.hp > 0 && shared.boss.group.position.distanceTo(pp) < W.stabRange + 1){ damageBoss(W.stabDmg * player.up.dmg); }
@@ -230,6 +257,7 @@ export function mandoFlame(){   // keydown cue only — the stream itself is HEL
   if (player.force < 5){ if (G.gt - player.lastWinded > 0.5){ player.lastWinded = G.gt; floater(playerPos(), 'NO FUEL', '#ff6a3a'); } return; }
   sfx(150, 0.22, 'sawtooth', 0.06, 60);
 }
+const FLAME = [[0, 0xfff1b8], [0.14, 0xffd34a], [0.36, 0xff8a2a], [0.6, 0xc8461e], [0.78, 0x4a3c36]];
 export function updateFlame(dt){
   const A = MANDO.flame;
   const active = G.hero === 'mando' && G.unlocked.flame && !!keys['f'] && player.force > 4 && G.mode === 'play' && player.darkT <= 0;
@@ -247,18 +275,17 @@ export function updateFlame(dt){
   const cosLim = Math.cos(A.angle);
   const fy = pp.y + 1.4;   // the stream pours from the player's OWN height (so it tracks you into the air)
   fl.position.set(pp.x + f.x*2.2, fy, pp.z + f.z*2.2);
-  // a roaring stream of fire fanning from the wrist
-  for (let n = 0; n < 5; n++){
-    const t = rand(0.8, range), spread = rand(-A.angle, A.angle);
+  // a roaring stream of fire fanning from the wrist: toon flame puffs that leave the nozzle white-hot and cool in hard
+  // steps (yellow, orange, ember) into ink-rimmed smoke as they reach the end of the stream. Emitted by time, not frame.
+  player.flameEmit = (player.flameEmit || 0) + dt * 64;
+  for (; player.flameEmit >= 1; player.flameEmit--){
+    const spread = rand(-A.angle, A.angle) * 0.8;
     const dx = f.x*Math.cos(spread) - f.z*Math.sin(spread), dz = f.x*Math.sin(spread) + f.z*Math.cos(spread);
-    const m = acquireParticle();
-    m.material.color.setHex(n%3?0xff7a1a:0xffe06a);
-    m.material.opacity = 0.85; m.material.blending = THREE.AdditiveBlending; m.material.depthWrite = false;
-    m.position.set(pp.x + dx*t*0.55 + rand(-0.25,0.25), fy + rand(-0.2,0.5), pp.z + dz*t*0.55 + rand(-0.25,0.25));
-    m.scale.setScalar(rand(0.9, 1.0 + t*0.28));   // fire widens as it travels
-    m.userData.vel.set(dx*10, rand(0.4,2.4), dz*10);
-    m.userData.life = rand(0.22,0.46);
+    const spd = range * rand(2.2, 2.9), life = rand(0.32, 0.44);
+    puff(V3(pp.x + f.x*0.9, fy + rand(-0.1,0.15), pp.z + f.z*0.9), FLAME[0][1], rand(0.9, 1.3) + range*0.12, life,
+         V3(dx*spd, rand(0.6,2.2), dz*spd), { ramp: FLAME, drag: 2.2, grav: -3, grow0: 0.25, shade: 0.3, inkW: 0.12 });
   }
+  if (Math.random() < 0.5) sparks(V3(pp.x + f.x*1.2, fy, pp.z + f.z*1.2), 0xffd06a, 1, range * 2.2, { dir: f, cone: A.angle, life: 0.3, grav: -2, size: 0.4 });
   // a low continuous roar, throttled so it doesn't machine-gun
   player.flameSfx = (player.flameSfx || 0) - dt;
   if (player.flameSfx <= 0){ player.flameSfx = 0.11; sfx(rand(64,104), 0.16, 'sawtooth', 0.05, 46); }
