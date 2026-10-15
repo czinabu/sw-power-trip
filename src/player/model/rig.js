@@ -14,6 +14,12 @@
 
 import * as THREE from 'three';
 
+/* The joints are built with armR at +x, which (facing +z) is the body's LEFT. Rather than re-sign every pose, the
+   whole model is mirrored on x (model/index.js), which puts armR, the weapon hand, on his right. Anything in the
+   rig that reacts to a WORLD side (strafe lean, head look, cloth swing) multiplies by MIRROR; poses authored
+   relative to the weapon hand need nothing. */
+export const MIRROR = -1;
+
 export const DIM = {
   hipY: 1.04, hipX: 0.11, thigh: 0.45, shin: 0.41,
   torsoY: 0.16, chestY: 0.3, headY: 0.48, shX: 0.27, shY: 0.32, upper: 0.34, fore: 0.3,

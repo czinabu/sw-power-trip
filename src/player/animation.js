@@ -13,6 +13,7 @@ import { mandoAimPoint, mandoWeapon, mandoShielding } from './mando/weapons.js';
 import { DARK_DUR } from './mando/darksaber.js';
 import { FORM_OF, FOOTWORK } from '../data/poses.js';
 import { pistolPose, riflePose, rifleLowered, restGun } from './anim/guns.js';
+import { MIRROR } from './model/rig.js';
 import { saberPose, guardPose, swingPose, applySaberPose, releaseSaberPose } from './anim/saber.js';
 
 export function animatePlayer(dt, pp, st, f, r, moving){
@@ -190,7 +191,7 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
   R.torso.rotation.y = dr(R.torso.rotation.y, 0, 11);
   // the master's gaze tracks the camera even when the body doesn't
   const lookDiff = ((G.yaw - player.faceYaw + Math.PI*3) % (Math.PI*2)) - Math.PI;
-  R.head.rotation.y = dr(R.head.rotation.y, clamp(lookDiff, -0.7, 0.7), 10);
+  R.head.rotation.y = dr(R.head.rotation.y, clamp(lookDiff, -0.7, 0.7) * MIRROR, 10);
   if (G.hero !== 'mando') R.head.rotation.x = dr(R.head.rotation.x, 0, 9);   // JEDI level head; the Mando pose drives its own head pitch (don't fight it)
   return { ph, inten, gait };
 }
@@ -419,7 +420,7 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
       vis.rotation.z = dr(vis.rotation.z, roll, 6);
       vis.position.y = dr(vis.position.y, liftFor(Math.max(Math.abs(pitch), Math.abs(roll))), 8);
       R.head.rotation.x = dr(R.head.rotation.x, -pitch * 0.8, 10);   // visor stays on the horizon
-      R.head.rotation.z = dr(R.head.rotation.z, -roll * 0.8, 10);
+      R.head.rotation.z = dr(R.head.rotation.z, -roll * 0.8 * MIRROR, 10);
       player._airLean = pitch;
     }
   } else if (!player.slamming && !player.flip){
@@ -474,7 +475,7 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
         const strafeLean = clamp(latV * 0.035, -0.5, 0.5);
         vis.rotation.x = dr(vis.rotation.x, 0, 9);
         vis.rotation.z = dr(vis.rotation.z, strafeLean, 10);
-        R.head.rotation.z = dr(R.head.rotation.z, -strafeLean * 0.65, 10);
+        R.head.rotation.z = dr(R.head.rotation.z, -strafeLean * 0.65 * MIRROR, 10);
       }
 
       // (the gauntlet SHIELD disc is driven below, OUTSIDE the grounded branch, so it also shows mid-flight)
@@ -549,8 +550,9 @@ function secondaryMotion(dt, vis, R){
   player._lastYaw = yaw;
   _sv.set(player.moveVel.x + player.vel.x, 0, player.moveVel.z + player.vel.z);
   const vf = _sv.x * Math.sin(yaw) + _sv.z * Math.cos(yaw);
-  const vr = _sv.x * Math.cos(yaw) - _sv.z * Math.sin(yaw);
-  const flare = Math.min(0.9, Math.abs(yawRate) * 0.06);          // a spin throws every panel outward
+  const vr = (_sv.x * Math.cos(yaw) - _sv.z * Math.sin(yaw)) * MIRROR;   // in the (mirrored) rig's own sideways
+  const flare = Math.min(0.9, Math.abs(yawRate) * 0.06);
+  const spinR = yawRate * MIRROR;          // a spin throws every panel outward
   const lift = Math.min(0.6, Math.max(0, -player.vy) * 0.03);     // falling lifts the hem
   const F = R.flaps;
   if (F && R.skirt.visible){
@@ -567,6 +569,6 @@ function secondaryMotion(dt, vis, R){
     const sp = Math.hypot(vf, vr);
     const flutter = Math.sin(G.gt * 11) * Math.min(0.08, sp * 0.006);
     R.cape.rotation.x = base.x + spring(R.cape, 'cx', clamp(Math.max(0, vf) * 0.05 + climb + lift * 0.8, 0, 1.1) + flutter, dt, 60, 7);
-    R.cape.rotation.z = base.z + spring(R.cape, 'cz', clamp(-vr * 0.03 - yawRate * 0.04, -0.5, 0.5), dt, 60, 7);
+    R.cape.rotation.z = base.z + spring(R.cape, 'cz', clamp(-vr * 0.03 - spinR * 0.04, -0.5, 0.5), dt, 60, 7);
   }
 }

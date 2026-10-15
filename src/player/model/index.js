@@ -4,7 +4,7 @@
 // onto `target`. Rebuild with a different look to restyle: nothing outside this folder knows about outfits.
 
 import * as THREE from 'three';
-import { buildRig } from './rig.js';
+import { buildRig, MIRROR } from './rig.js';
 import { makeStyle } from './styles.js';
 import { resolveLook } from './appearance.js';
 import { JEDI_PARTS } from './jedi.js';
@@ -29,7 +29,7 @@ export function buildHeroModel(target, lookIn = {}){
   target.mandoParts = mando.parts;
   target.headBare = jedi.parts;   // setHero() shows these for the Jedi and hides them for the Mando
   target.look = look;
-  R.vis.scale.setScalar(1.18);
+  R.vis.scale.set(1.18 * MIRROR, 1.18, 1.18);   // mirrored so the weapon hand (armR) is his RIGHT hand
   return R.vis;
 }
 

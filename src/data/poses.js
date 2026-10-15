@@ -84,17 +84,18 @@ export const SABER_GUARDS = {
 };
 
 /* ---------------- SWINGS: chamber → strike → follow-through keyframes per pattern ----------------
-   Pattern ids match SWING_PATTERNS in data/stances.js. "right" sweeps toward the hero's right (the off-hand side,
-   −x), "left" is the backhand, "forward" the overhead, "back" the cut behind, diagL/diagR the shoulder-to-hip cuts.
+   Pattern ids match SWING_PATTERNS in data/stances.js. The hero is right-handed (+x is his right, see rig.js), so
+   "left" is the forehand across the body toward −x and "right" the backhand out to the weapon side; "forward" the
+   overhead, "back" the cut behind, diagL/diagR the shoulder-to-hip cuts.
    twist is the upper-body turn at that key. */
 export const SABER_SWINGS = {
   regular: {
-    right: [
+    left:  [
       { hand: [0.42, 0.22, -0.04], blade: [0.62, 0.32, -0.72], twist: 0.5 },
       { hand: [0.08, 0.06, 0.56],  blade: [-0.12, 0.06, 1],    twist: -0.05 },
       { hand: [-0.32, -0.06, 0.3], blade: [-0.86, -0.12, -0.3], twist: -0.55 },
     ],
-    left: [
+    right: [
       { hand: [-0.28, 0.16, 0.22], blade: [-0.82, 0.3, -0.3],  twist: -0.5 },
       { hand: [0.06, 0.06, 0.56],  blade: [0.12, 0.06, 1],     twist: 0.05 },
       { hand: [0.46, 0.0, 0.06],   blade: [0.86, -0.06, -0.42], twist: 0.55 },
@@ -109,12 +110,12 @@ export const SABER_SWINGS = {
       { hand: [0.38, 0.1, -0.02],  blade: [0.34, 0.3, -0.9],   twist: 0.55 },
       { hand: [0.26, 0.42, -0.08], blade: [0.12, 0.42, -0.9],  twist: 0.75 },
     ],
-    diagR: [
+    diagL: [
       { hand: [0.4, 0.46, -0.04],  blade: [0.48, 0.62, -0.62], twist: 0.42 },
       { hand: [0.1, 0.16, 0.55],   blade: [-0.3, 0.45, 0.85],  twist: 0 },
       { hand: [-0.26, -0.3, 0.34], blade: [-0.6, -0.55, 0.55], twist: -0.42 },
     ],
-    diagL: [
+    diagR: [
       { hand: [-0.24, 0.42, 0.16], blade: [-0.6, 0.6, -0.5],   twist: -0.42 },
       { hand: [0.06, 0.16, 0.55],  blade: [0.3, 0.45, 0.85],   twist: 0 },
       { hand: [0.42, -0.3, 0.24],  blade: [0.6, -0.55, 0.5],   twist: 0.42 },
@@ -124,12 +125,12 @@ export const SABER_SWINGS = {
   // whip it round so the TIP sweeps the way the cut travels (a strafe-right cut carries the tip to the right);
   // the back cut is a stab driven straight back past the hip.
   reverse: {
-    right: [
+    left:  [
       { hand: [0.4, 0.24, 0.08],   blade: [0.35, -0.2, -0.9],   twist: 0.55 },
       { hand: [0.1, 0.08, 0.46],   blade: [-0.1, -0.15, 1],     twist: 0 },
       { hand: [-0.3, 0.02, 0.32],  blade: [-0.92, -0.12, 0.25], twist: -0.65 },
     ],
-    left: [
+    right: [
       { hand: [-0.24, 0.2, 0.3],   blade: [-0.4, -0.2, -0.88],  twist: -0.6 },
       { hand: [0.08, 0.08, 0.48],  blade: [0.1, -0.15, 1],      twist: 0.05 },
       { hand: [0.46, 0.04, 0.14],  blade: [0.92, -0.12, 0.25],  twist: 0.6 },
@@ -144,12 +145,12 @@ export const SABER_SWINGS = {
       { hand: [0.34, -0.26, -0.1], blade: [0.12, -0.16, -0.98], twist: 0.35 },
       { hand: [0.32, -0.28, -0.2], blade: [0.14, -0.2, -0.97],  twist: 0.45 },
     ],
-    diagR: [
+    diagL: [
       { hand: [0.38, 0.46, 0.08],  blade: [0.4, -0.3, -0.85],   twist: 0.45 },
       { hand: [0.1, 0.12, 0.48],   blade: [-0.2, -0.35, 0.9],   twist: 0 },
       { hand: [-0.28, -0.24, 0.3], blade: [-0.7, -0.55, 0.4],   twist: -0.5 },
     ],
-    diagL: [
+    diagR: [
       { hand: [-0.22, 0.4, 0.26],  blade: [-0.45, -0.3, -0.85], twist: -0.5 },
       { hand: [0.1, 0.12, 0.48],   blade: [0.2, -0.35, 0.9],    twist: 0 },
       { hand: [0.44, -0.24, 0.18], blade: [0.7, -0.55, 0.4],    twist: 0.5 },

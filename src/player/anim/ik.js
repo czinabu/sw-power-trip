@@ -11,6 +11,14 @@ const UP = new THREE.Vector3(0, 1, 0);
 const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3(), _d = new THREE.Vector3();
 const _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _q3 = new THREE.Quaternion(), _m = new THREE.Matrix4();
 
+/* The rotation taking `from`-local directions into `to`'s frame, read from the world matrices. Not via
+   getWorldQuaternion: the hero model is mirrored (see rig.js MIRROR), and a world quaternion can't hold a mirror. */
+const _m2 = new THREE.Matrix4();
+function relRot(to, from, out){
+  _m2.copy(to.matrixWorld).invert().multiply(from.matrixWorld);
+  return out.setFromRotationMatrix(_m.extractRotation(_m2));
+}
+
 /* Two-bone IK: put the arm's wrist at `target` (chest space), bending the elbow toward `pole` (a chest-space
    direction the elbow should point, e.g. down and out). Writes sh.quaternion and el.rotation; leaves wr alone. */
 export function solveArm(arm, target, pole){
@@ -46,9 +54,7 @@ export function aimHeld(chest, wr, node, axis, dir, wristShare = 0.35, upAxis = 
   // chest-space dir → the elbow's frame (the wrist joint's parent)
   const el = wr.parent;
   el.updateWorldMatrix(true, false);
-  chest.getWorldQuaternion(_q2);
-  el.getWorldQuaternion(_q3).invert();
-  _q2.premultiply(_q3);   // chest → elbow frame
+  relRot(el, chest, _q2);   // chest → elbow frame
   const want = _a.copy(dir).applyQuaternion(_q2).normalize();
   const full = _q.setFromUnitVectors(_b.copy(axis).normalize(), want);
   if (upAxis && upHint){
@@ -84,9 +90,8 @@ export function wristInChest(chest, arm, out){
 /* A held node's axis direction in chest space. */
 export function axisInChest(chest, node, axis, out){
   node.updateWorldMatrix(true, false);
-  node.getWorldQuaternion(_q3);
-  chest.getWorldQuaternion(_q2).invert();
-  return out.copy(axis).applyQuaternion(_q3).applyQuaternion(_q2).normalize();
+  chest.updateWorldMatrix(true, false);
+  return out.copy(axis).applyQuaternion(relRot(chest, node, _q3)).normalize();
 }
 
 /* Direction slerp (handles the long sweeps of a cut without collapsing through the middle). */
