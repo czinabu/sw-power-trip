@@ -24,6 +24,14 @@ export const CFG = {
     hitRadius: 3.2,                  // swing damage radius
     // swing ARCS as cosines off your facing: a cut hits ~140° in front, a strafe sweep ~160°, the finisher ~190°
     swingArc: { cut: 0.34, sweep: 0.17, finisher: -0.1 },
+    // HIT REACTIONS — a blow that lands staggers you: the swing is knocked loose and your feet slow
+    flinch: { light: 0.2, heavy: 0.42, heavyDmg: 20, ranged: 0.1, move: 0.25, knock: 4.5, immune: 0.6 },
+    // PERFECT DODGE — a dash that starts within `window` s of a blow landing slows time and arms a counter
+    perfectDodge: { window: 0.16, slowmo: 0.3, slowT: 0.5, refund: 1, cd: 1.0 },
+    // BLADE CLASH — your cut meets a foe's strike mid-arc: neither lands, both recoil
+    clash: { from: 0.15, to: 0.75, knock: 9, push: 5, stam: 6 },
+    // SOFT LOCK-ON (T / middle mouse) — the camera keeps one foe framed
+    lockOn: { range: 22, keep: 28, cone: 0.55, yawPull: 7, pitch: 0.3, pitchPull: 2.5 },
   },
   abilities: {
     // BASIC powers — cheap, available from the start

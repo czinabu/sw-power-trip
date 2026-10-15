@@ -18,7 +18,7 @@ import { updateBossLightFX } from './light.js';
 import { buildBoss } from './mesh.js';
 import { spawnGroundShock } from '../fx/vfx.js';
 import { clampToArena } from '../world/collision.js';
-import { hurtPlayer } from '../player/damage.js';
+import { hurtPlayer, perfectDodge } from '../player/damage.js';
 import { queueSpawn } from '../game/flow.js';
 import { gainXp } from '../game/progression.js';
 import { victory } from '../game/summary.js';
@@ -244,7 +244,8 @@ export function updateBoss(dt){
         burst(V3(g.position.x + tx*2, 1.8, g.position.z + tz*2), 0xff3333, 10, 8, 3);
         G.shake = Math.max(G.shake, 0.35);
         S.swing('strong'); S.whoosh(g.position, true);
-        if (dist < BOSS_CFG.combo.range && player.dashT <= 0){
+        if (dist < BOSS_CFG.combo.range && player.dashT > 0) perfectDodge(g.position);   // dashed through it on the beat
+        else if (dist < BOSS_CFG.combo.range && player.dashT <= 0){
           const res = hurtPlayer(BOSS_CFG.combo.dmg, g.position, false, true);   // melee — high ground denies it
           if (res === 'parried'){
             if (shared.boss.swingsLeft > 1){

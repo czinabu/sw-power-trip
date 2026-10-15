@@ -10,9 +10,10 @@ import { floater, screenFlash } from '../fx/floaters.js';
 import { shared, G, enemies, player } from '../state.js';
 import { MANDO } from '../data/mando.js';
 import { fwd, playerPos, stance, maxHp } from './helpers.js';
-import { flinchEnemy } from '../enemies/damage.js';
+import { flinchEnemy, staggerEnemy } from '../enemies/damage.js';
 import { FOCUS, addFocus } from './jedi/focus.js';
-import { deflectAnim } from './jedi/combat.js';
+import { deflectAnim, cancelSwing } from './jedi/combat.js';
+import { sparks, clashFlash } from '../fx/ink.js';
 import { spawnHitSpark, spawnParryFlash, spawnGroundShock } from '../fx/vfx.js';
 import { updateBoonStrip } from '../game/boons.js';
 import { endRun } from '../game/summary.js';
@@ -21,9 +22,69 @@ import { overlay, setOverlayState } from '../ui/menus.js';
 import { diffDmgMul } from '../data/difficulty.js';
 
 const MELEE_REACH_UP = 1.7;   // a melee foe can't strike you if you're perched higher than this above their feet
+/* PERFECT DODGE — a blow that arrives in the first instant of a dash: time slows, the dash is refunded and (Jedi)
+   the next cut is a riposte. Called by anything that would have hit you while the dash's i-frames were up. */
+export function perfectDodge(fromPos){
+  const P = CFG.player.perfectDodge;
+  if (G.mode !== 'play' || !fromPos) return false;
+  if (G.gt - (player.dashStartT ?? -9) > P.window || G.gt - (player.lastPerfectT ?? -9) < P.cd) return false;
+  player.lastPerfectT = G.gt;
+  G.slowmo = Math.min(G.slowmo, P.slowmo); G.slowmoT = Math.max(G.slowmoT, P.slowT);
+  if (G.hero === 'mando') player.jet = Math.min(player.jetMax, player.jet + MANDO.boostDash.fuel * P.refund);
+  else {
+    player.force = clamp(player.force + CFG.abilities.dash.cost * P.refund, 0, CFG.player.maxForce);
+    player.riposteT = CFG.player.riposteTime;   // the next cut answers it
+    player.cds.dash = 0;
+    addFocus(FOCUS.gainParry);
+  }
+  const pp = playerPos();
+  burst(V3(pp.x, 1.3, pp.z), 0x9fe6ff, 14, 7, 3, 0.8);
+  screenFlash('radial-gradient(ellipse at center, transparent 45%, rgba(140,210,255,.35) 100%)', 0.8, 0.4);
+  floater(pp, 'PERFECT DODGE', '#9fe6ff');
+  sfx(1400, 0.1, 'sine', 0.05, 700); sfx(300, 0.25, 'sine', 0.06, 150);
+  if (G.stats) G.stats.perfectDodges = (G.stats.perfectDodges || 0) + 1;
+  return true;
+}
+
+/* BLADE CLASH — your cut is mid-arc when a foe's strike lands from in front: the blades meet, neither blow lands,
+   and both fighters are thrown apart. Heavy forms (Djem So, the darksaber) win the clash and stagger the foe. */
+function bladeClash(fromPos){
+  const C = CFG.player.clash;
+  let foe = null, bd = 1.3;
+  for (const e of enemies){
+    if (e.dead || e.converted) continue;
+    const d = Math.hypot(e.group.position.x - fromPos.x, e.group.position.z - fromPos.z);
+    if (d < bd){ bd = d; foe = e; }
+  }
+  if (!foe) return false;   // the boss's blows aren't clashable — parry those
+  const pp = playerPos();
+  TMP.subVectors(fromPos, pp); TMP.y = 0; TMP.normalize();
+  const dir = TMP.clone();
+  cancelSwing();
+  player.vel.addScaledVector(dir, -C.push);
+  player.stam = Math.max(0, player.stam - C.stam); player.stamDelay = CFG.player.stamDelay;
+  const heavy = (G.hero !== 'mando' && G.stance === 'strong') || G.hero === 'mando';
+  if (heavy) staggerEnemy(foe, dir.x, dir.z);
+  else flinchEnemy(foe, dir, C.knock * 0.12);
+  const cp = V3(pp.x + dir.x * 1.2, pp.y + 1.5, pp.z + dir.z * 1.2);
+  clashFlash(cp, stance().blade, true);
+  sparks(cp, 0xffe9b0, 14, 12, { life: 0.3 });
+  G.hitstop = Math.max(G.hitstop, 0.08); G.shake = Math.max(G.shake, 0.45);
+  S.clash(cp, true);
+  if (G.stats) G.stats.clashes = (G.stats.clashes || 0) + 1;
+  return true;
+}
+
 export function hurtPlayer(dmg, fromPos, silent, melee, chip){
   if (G.mode !== 'play') return 'none';
-  if (player.dashT > 0) return 'none';
+  if (player.dashT > 0){ if (!silent) perfectDodge(fromPos); return 'none'; }
+  const raw = dmg;
+  // a cut in flight meets a melee strike from in front: CLASH (before any guard, since a swing can't be guarding)
+  if (melee && fromPos && !silent && player.swing && player.atkT > 0 && (G.hero !== 'mando' || player.weapon === 'darksaber')){
+    const k = player.swing.t / player.swing.dur, C = CFG.player.clash;
+    TMP.subVectors(fromPos, playerPos()); TMP.y = 0;
+    if (k >= C.from && k <= C.to && TMP.lengthSq() > 0.001 && TMP.normalize().dot(fwd()) > 0.2 && bladeClash(fromPos)) return 'clashed';
+  }
   // perched on high ground — a grounded melee attacker simply can't reach up to you
   if (melee && fromPos && playerPos().y - fromPos.y > MELEE_REACH_UP){
     if (!silent) floater(playerPos(), 'OUT OF REACH', '#bfe8ff');
@@ -116,6 +177,21 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip){
   player.lastHurt = G.gt;
   if (G.hero !== 'mando' && !chip) player.focus = (player.focus || 0) * FOCUS.hitLoss;   // FORCE FOCUS — a clean trade is broken when you're hit (not by block chip)
   if (fromPos){ player.hitFrom = V3(fromPos.x, 1.4, fromPos.z); player.dmgIndT = 1.0; }   // THREAT — point the damage arc at the source
+  // HIT REACTION — a blow that lands knocks the swing loose and slows your feet for a beat. A short immunity after
+  // each flinch stops a pack from stun-locking you, and Djem So's armored commitment shrugs off light hits mid-swing.
+  if (!silent && !chip && fromPos){
+    const F = CFG.player.flinch, heavyHit = raw >= F.heavyDmg;
+    const armored = player.atkT > 0 && G.hero !== 'mando' && stance().atkDR && !heavyHit;
+    if (!armored && G.gt - (player.flinchAt ?? -9) > F.immune){
+      player.flinchT = player.flinchMax = melee ? (heavyHit ? F.heavy : F.light) : F.ranged;
+      player.flinchAt = G.gt;
+      if (melee){
+        if (player.atkT > 0 || player.darkT > 0) cancelSwing();
+        TMP.subVectors(playerPos(), fromPos); TMP.y = 0;
+        if (TMP.lengthSq() > 0.001) player.vel.addScaledVector(TMP.normalize(), F.knock * (heavyHit ? 1.6 : 1));
+      }
+    }
+  }
   if (!silent){
     G.shake = Math.max(G.shake, 0.45);
     if (fromPos){ player.camKickT = G.gt; player.camKickX = fromPos.x; player.camKickZ = fromPos.z; }   // the camera recoils away from the blow

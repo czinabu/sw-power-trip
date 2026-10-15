@@ -34,4 +34,21 @@ export const MOVE = {
   wallRunGravity: 0.22, // gravity multiplier while running the wall
   wallRunLift: 3.2,     // a small upward kick as the feet catch the wall
   wallRunSpeed: 9.5,    // speed carried along the wall
+  // ledge hang (Jedi): a lip caught high (more than `hangFrom` above the feet) is hung from instead of vaulted
+  hangFrom: 1.6,        // lower ledges are pulled straight up onto
+  hangDrop: 2.05,       // feet hang this far below the lip
+  shimmySpeed: 1.8,     // A/D along the face
+  hangClimbHold: 0.22,  // hold W this long (or tap SPACE) to pull up; S lets go
+  hangClimbTime: 0.5,
+  // sprint and slide (Jedi): hold SHIFT with W to sprint; Q mid-sprint drops into a slide
+  sprintMul: 1.42,      // top speed while sprinting
+  sprintStam: 15,       // stamina per second
+  sprintAccel: 0.55,    // steering while sprinting is heavier (accel multiplier)
+  sprintTurn: 4.2,      // max body turn rate while sprinting (rad/s)
+  slideTime: 0.62, slideBoost: 2.5, slideDrag: 1.6, slideMinSpeed: 7.5,
+  // turning weight: the Jedi's body turns at a capped rate instead of snapping
+  turnRate: 10,         // rad/s roaming
+  combatTurnRate: 16,   // rad/s squared up in combat
+  pivotAngle: 2.1,      // reversing input by more than this (rad) at speed plants the feet and pivots
+  pivotTime: 0.16, pivotMinSpeed: 5,
 };

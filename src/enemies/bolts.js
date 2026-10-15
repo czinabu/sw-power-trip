@@ -131,7 +131,7 @@ export function updateBolts(dt){
         G.shake = Math.max(G.shake, 0.12);
         S.block(b.mesh.position); floater(pp, 'BLOCK', '#9cc8e8');
         kill = true;
-      } else if (d < 1.2 && dy < 1.2){
+      } else if (d < 1.2 && dy < 1.2 && !(player.slideT > 0 && b.mesh.position.y > pp.y + 0.8)){   // a slide ducks under fire
         hurtPlayer(b.dmg, b.mesh.position); kill = true;
         boltImpact(b.mesh.position, b.mesh.material.color.getHex(), b.dir);
       }

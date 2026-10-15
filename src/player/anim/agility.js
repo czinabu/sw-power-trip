@@ -82,6 +82,7 @@ export function jediAirLegs(dt, dr, R){
     return true;
   }
   if (player.grounded) return false;
+  if (player.hang){ poseLegs(R, dr, LEGS.float, 1, 10); return true; }   // hanging: legs loose against the face
   if (player.slamming){ poseLegs(R, dr, LEGS[A.slam.legs] || LEGS.tuck, 0.7, 14); return true; }
   if (player.gliding){
     poseLegs(R, dr, player.vy > 1 ? LEGS.hurdle : (LEGS[A.glide.legs] || LEGS.float), A.glide.legs === 'tuck' && player.vy <= 1 ? 0.75 : 1, 7);
@@ -101,6 +102,7 @@ export function jediAgilityArms(running){
   const A = agilityOf();
   if (player.slamLandT > 0) return { key: A.slam.land, rate: 2.4 };
   if (player.slamming) return { key: A.slam.arms, rate: 2.4 };
+  if (player.hang) return { key: 'hang', rate: 3 };   // both hands up on the lip
   if (player.flip) return { key: player.flip.arms, rate: 2.2 };
   if (!player.grounded){
     if (player.gliding) return { key: player.vy > 1 ? A.rise.arms : A.glide.arms, rate: 1.2 };

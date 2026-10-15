@@ -25,7 +25,7 @@ export function tryAttack(flow = false){
     if (G.gt - (player.lastWinded || -9) > 0.5){ player.lastWinded = G.gt; floater(playerPos(), 'NO BLADE', '#bfe8ff'); sfx(220, 0.06, 'sine', 0.04, 160); }
     return;
   }
-  if (G.mode !== 'play' || player.blockHeld || player.judgeT > 0 || player.mendT > 0 || player.swingLock > 0 || player.mantle) return;
+  if (G.mode !== 'play' || player.blockHeld || player.judgeT > 0 || player.mendT > 0 || player.swingLock > 0 || player.mantle || player.hang || player.flinchT > 0 || player.slideT > 0) return;
   // input buffering, but ONLY in the back half of the current swing — early mashing is ignored so
   // the combo flows on rhythm instead of spraying three swings off one frantic burst of clicks.
   // A press in the back half queues the next cut. If that was the ONLY press this swing (no early click), the
@@ -261,7 +261,7 @@ export function applySwingDamage(step){
 // space-maker (the Mando's gauntlet-punch counterpart). The short recovery (kickT) keeps it from being mashed.
 const JEDI_KICK = { range: 3.0, arc: 0.62, dmg: 10, knock: 28, recover: 0.4 };
 export function forceKick(){
-  if (G.mode !== 'play' || G.hero === 'mando' || player.kickT > 0 || player.judgeT > 0 || player.mendT > 0 || player.flip || player.slamming) return;
+  if (G.mode !== 'play' || G.hero === 'mando' || player.kickT > 0 || player.judgeT > 0 || player.mendT > 0 || player.flip || player.slamming || player.hang || player.flinchT > 0) return;
   const A = JEDI_KICK;
   player.kickT = player.kickMax = A.recover;
   const f = fwd(), pp = playerPos();

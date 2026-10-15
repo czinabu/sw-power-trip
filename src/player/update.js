@@ -15,6 +15,7 @@ import { updateMandoCombat } from './mando/weapons.js';
 import { updateMovement, updateForceJump, updateGravityAndLanding } from './locomotion.js';
 import { updateMandoFlight } from './mando/flight.js';
 import { animatePlayer } from './animation.js';
+import { updateLockOn } from './lockon.js';
 
 // Per-frame player update. Each step below runs in this exact order every frame; the order matters
 // (e.g. movement feeds the jetpack, both feed gravity/landing, and the pose reads the landed state).
@@ -22,6 +23,7 @@ export function updatePlayer(dt){
   const pp = playerPos();
   const st = stance();
   updatePlayerMeters(dt, pp, st);
+  updateLockOn(dt);   // a soft lock steers the view before anything reads fwd()
   const f = fwd(), r = rightV();
   const moving = updateMovement(dt, pp, st, f, r);
   if (G.hero === 'mando'){
@@ -54,6 +56,7 @@ function updatePlayerMeters(dt, pp, st){
   if (player.parryT > 0){ player.parryT -= dt; if (player.parryT <= 0) player.parryLockT = CFG.player.parryWhiffLock; }
   if (player.parryLockT > 0) player.parryLockT -= dt;
   if (player.landStagT > 0) player.landStagT -= dt;   // HARD LANDING recovery
+  if (player.flinchT > 0) player.flinchT -= dt;        // HIT REACTION recovery
   if (player.blockHeld) player.blockT += dt;
   // FORCE BARRIER bubble — track its life and animate the shimmering shell around the player
   if (player.barrierT > 0){
