@@ -48,7 +48,7 @@ export function mandoRocket(){
   rockets.push({ mesh: m, dir: dir.clone(), speed: A.speed, life: 3 });
   // launch FEEL: muzzle smoke + flash, a back-kick of recoil, a screen punch
   muzzleFlash(origin, dir, 0xffb04a, 1.1);
-  for (let n = 0; n < 3; n++) puff(origin.clone().addScaledVector(dir, -0.4 - n*0.3), 0x8a8580, 0.9, 0.5, V3(rand(-1,1), rand(0.5,1.5), rand(-1,1)), { delay: n*0.03 });
+  for (let n = 0; n < 3; n++) puff(origin.clone().addScaledVector(dir, 0.5 + n*0.35), 0x8a8580, 0.45, 0.35, V3(rand(-1,1), rand(0.5,1.5), rand(-1,1)), { delay: n*0.03, op: 0.8 });
   player.vel.addScaledVector(f, -3.5);   // the launch shoves you back a touch
   player.recoil = 0.3;
   G.shake = Math.max(G.shake, 0.3);
@@ -95,7 +95,7 @@ export function mandoJetMissile(){
   scene.add(m);
   rockets.push({ mesh: m, dir: dir.clone(), speed: A.speed, life: 3.4, big: true });
   muzzleFlash(origin, dir, 0xffb04a, 1.6);
-  for (let n = 0; n < 5; n++) puff(origin.clone().addScaledVector(dir, -0.5 - n*0.35), 0x8a8580, 1.2, 0.65, V3(rand(-1.5,1.5), rand(0.5,2), rand(-1.5,1.5)), { delay: n*0.03 });
+  for (let n = 0; n < 4; n++) puff(origin.clone().addScaledVector(dir, 0.6 + n*0.4), 0x8a8580, 0.6, 0.4, V3(rand(-1.5,1.5), rand(0.5,2), rand(-1.5,1.5)), { delay: n*0.03, op: 0.8 });
   player.vel.addScaledVector(f, -5);   // a serious kick
   player.recoil = 0.45; G.shake = Math.max(G.shake, 0.5);
   S.bolt(); sfx(56, 0.5, 'sawtooth', 0.14, 40); sfx(120, 0.2, 'square', 0.08, 60);
@@ -112,7 +112,7 @@ export function updateRockets(dt){
       const tail = rk.mesh.position.clone().addScaledVector(rk.dir, rk.big ? -0.45 : -0.28);
       inkSprite({ pos: tail, shape: 'star', points: 2, sharp: 0.2, color: 0xffa13a, size: [rk.big ? 0.95 : 0.7, 0.3], life: 0.07, steps: 2,
                   rot: screenAngle(rk.dir), coreW: 0.45 });
-      puff(tail, 0x9a948c, rk.big ? 0.75 : 0.5, rand(0.45, 0.7), V3(rand(-0.4,0.4), rand(0.3,0.9), rand(-0.4,0.4)), { grow0: 0.6, shade: 0.32 });
+      puff(tail, 0x9a948c, rk.big ? 0.6 : 0.42, rand(0.4, 0.6), V3(rand(-0.4,0.4), rand(0.3,0.9), rand(-0.4,0.4)), { grow0: 0.6, shade: 0.32, op: 0.85 });
     }
     const p = rk.mesh.position;
     let hit = rk.life <= 0 || p.y <= 0.2;

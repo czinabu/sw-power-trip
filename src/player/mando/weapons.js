@@ -117,7 +117,7 @@ export function spawnBlasterBolt(origin, dir, dmg, color, scale, W, opts){
   if (G.stats) G.stats.shotsFired++;
   // muzzle flash fires every shot, drawn at the barrel of whichever gun is nearest the bolt's origin — pooled Ink
   // sprites, no per-shot PointLight (a light here would churn the light count; big blasts use flashLight()).
-  muzzleFlash(gunMuzzle(origin), dir, color, 0.55 + scale * 0.3);
+  muzzleFlash(gunMuzzle(origin), dir, color, 0.7 + scale * 0.35);
 }
 // the world-space barrel tip of the visible gun closest to `near` (falls back to `near` itself)
 const MUZZLES = [['pistols', 'R', [0, 0.115, 0.38]], ['pistols', 'L', [0, 0.115, 0.38]], ['rifleMesh', null, [0, 0.11, 0.96]]];

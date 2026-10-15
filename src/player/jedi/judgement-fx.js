@@ -14,9 +14,9 @@ import { inkSprite } from '../../fx/ink.js';
    hand-drawn lightning instead of fizzing. */
 const SEG = 10, FORK = 5;
 const MAIN_W = 0.17, FORK_W = 0.1;
-const COLOR = 0x6effa0;   // Electric Judgement burns GREEN
+const COLOR = 0x38f070;   // Electric Judgement burns GREEN
 const mat = new THREE.ShaderMaterial({
-  uniforms: { uColor: { value: new THREE.Color(COLOR) }, uCore: { value: new THREE.Color(0xeaffef).multiplyScalar(2.4) },
+  uniforms: { uColor: { value: new THREE.Color(COLOR) }, uCore: { value: new THREE.Color(0xd8ffe2).multiplyScalar(1.5) },
               uInk: { value: new THREE.Color(0x07060a) }, uOpacity: { value: 1 } },
   vertexShader: /* glsl */`
     attribute float across; varying float vA;
@@ -25,7 +25,7 @@ const mat = new THREE.ShaderMaterial({
     uniform vec3 uColor, uCore, uInk; uniform float uOpacity; varying float vA;
     void main(){
       float a = abs(vA);
-      vec3 col = a < 0.34 ? uCore : (a < 0.72 ? uColor : uInk);
+      vec3 col = a < 0.2 ? uCore : (a < 0.7 ? uColor : uInk);
       gl_FragColor = vec4(col, uOpacity * (a < 0.72 ? 1.0 : 0.85));
     }`,
   transparent: true, depthWrite: false, side: THREE.DoubleSide,

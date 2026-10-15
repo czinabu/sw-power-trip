@@ -97,7 +97,7 @@ function hot(hex, k){ return _hot.setHex(hex).multiplyScalar(k); }
 /* spawn one ink sprite. o:
    pos, vel, grav, drag · life, delay · size: [from, to], ease (power of the ease-out) · color, core (hex), coreHot,
    ink · shape ('disc'|'star'|'ring'|'puff'), points, sharp, inner, coreW, inkW, arc, shade · dissolve: [from, to]
-   rot, spin · normal (flat sprite facing this way; billboards when absent) · op, fadeAt, steps · ramp: [[k, hex], …]
+   rot, spin · normal (flat sprite facing this way, turned by rot; billboards when absent) · op, fadeAt, steps · ramp: [[k, hex], …]
    (stepped colour over life, e.g. fire cooling to smoke) · follow (Object3D to ride) */
 export function inkSprite(o){
   const m = sprites[head]; head = (head + 1) % POOL;
@@ -119,7 +119,7 @@ export function inkSprite(o){
   U.uInk.value.setHex(o.ink != null ? o.ink : INK);
   U.uDissolve.value = o.dissolve ? o.dissolve[0] : 0;
   U.uRot.value = o.rot != null ? o.rot : rand(0, Math.PI * 2);
-  if (o.normal){ U.uBill.value = 0; m.quaternion.setFromUnitVectors(_z, o.normal); }
+  if (o.normal){ U.uBill.value = 0; m.quaternion.setFromUnitVectors(_z, o.normal); if (o.rot != null) m.rotateZ(o.rot); }
   else { U.uBill.value = 1; m.quaternion.identity(); }
   apply(m, 0);
   m.visible = u.delay <= 0;
@@ -227,7 +227,7 @@ export function boltImpact(pos, color, dir){
 export function clashFlash(pos, color, big = true){
   inkSprite({ pos, shape: 'disc', color: 0xffffff, size: [0.8, 1.6], life: 0.08, steps: 2, coreW: 0.75, inkW: 0.1 });
   inkSprite({ pos, shape: 'star', points: 8, sharp: 0.14, color, size: [1.4, big ? 3.2 : 2.2], life: 0.24, fadeAt: 0.3, steps: 3, coreW: 0.34, spin: 2 });
-  inkSprite({ pos, shape: 'ring', inner: 0.8, color, size: [0.6, big ? 5.4 : 3.6], life: 0.3, ease: 3, inkW: 0.2, coreW: 0.25 });
+  inkSprite({ pos, shape: 'ring', inner: 0.8, color, core: color, coreHot: 1.2, size: [0.6, big ? 5.4 : 3.6], life: 0.3, ease: 3, inkW: 0.22, coreW: 0.2 });
   sparks(pos, color, big ? 12 : 7, 13, { life: 0.32, size: 0.55 });
 }
 
@@ -250,7 +250,7 @@ export function puff(pos, color, size, life, vel, o = {}){
    (white, yellow, orange, ember) into ink-rimmed smoke, a ground shock and a spray of debris streaks */
 const FIRE = [[0, 0xffe08a], [0.07, 0xffd34a], [0.3, 0xff8a2a], [0.5, 0xc2401c], [0.66, 0x4a3a34]];
 export function explosion(pos, radius, big = false){
-  const R = radius * (big ? 0.55 : 0.48);
+  const R = radius * (big ? 0.45 : 0.42);
   inkSprite({ pos, shape: 'star', points: 8, sharp: 0.18, color: 0xffd34a, size: [R * 1.2, R * 3], life: 0.14, fadeAt: 0.25, steps: 2, coreW: 0.4, coreHot: 1.5 });
   inkSprite({ pos, shape: 'disc', color: 0xffe9a0, size: [R * 1.4, R * 2], life: 0.06, steps: 1, coreW: 0.6, coreHot: 1.3, inkW: 0.08 });
   const n = big ? 11 : 7;
@@ -308,11 +308,11 @@ export function jetIgnite(pp){
 }
 
 // a ring of cel dust puffs kicked out along the ground from a landing
-export function dustRing(pp, radius, color = 0xbcb4a6){
-  for (let n = 0; n < 12; n++){
-    const a = (n / 12) * Math.PI * 2 + rand(-0.2, 0.2), r = rand(0.8, 1.4);
-    puff(_v.set(pp.x + Math.cos(a)*r, (pp.y || 0) + 0.35, pp.z + Math.sin(a)*r), color, rand(1.0, 1.5), rand(0.5, 0.75),
-         new THREE.Vector3(Math.cos(a) * radius * 1.6, rand(0.5, 1.5), Math.sin(a) * radius * 1.6), { drag: 3.4, grow0: 0.4, shade: 0.35 });
+export function dustRing(pp, radius, color = 0x8a7f72){
+  for (let n = 0; n < 9; n++){
+    const a = (n / 9) * Math.PI * 2 + rand(-0.25, 0.25), r = rand(0.8, 1.4);
+    puff(_v.set(pp.x + Math.cos(a)*r, (pp.y || 0) + 0.4, pp.z + Math.sin(a)*r), color, rand(1.5, 2.1), rand(0.5, 0.75),
+         new THREE.Vector3(Math.cos(a) * radius * 1.6, rand(0.5, 1.5), Math.sin(a) * radius * 1.6), { drag: 3.4, grow0: 0.45, shade: 0.3, op: 0.7, inkW: 0.03 });
   }
 }
 

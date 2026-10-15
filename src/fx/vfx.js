@@ -5,7 +5,7 @@ import { scene } from '../engine/renderer.js';
 import { V3 } from '../utils.js';
 import { vfx } from '../state.js';
 import { flashLight } from './lights.js';
-import { inkSprite, sparks, puff, hitSpark, clashFlash, groundRing, updateInk } from './ink.js';
+import { inkSprite, sparks, hitSpark, clashFlash, groundRing, updateInk } from './ink.js';
 
 /* ---------- pooled flourish VFX (shockwaves, ground rings, flashes) — driven by the main loop so they respect slow-mo ---------- */
 export function updateVFX(dt){
@@ -29,22 +29,17 @@ export function spawnPushWave(pos, dir, color, power){
   power = power || 1;
   dir = dir.clone().setY(0).normalize();
   const start = V3(pos.x + dir.x, (pos.y || 0) + 1.45, pos.z + dir.z);
+  const front = V3(pos.x + dir.x*2.2, (pos.y || 0) + 1.3, pos.z + dir.z*2.2);   // ripples form ahead of the palm, clear of the body
   const ripple = (delay, op, lead) => {
-    inkSprite({ pos: start, normal: dir, shape: 'ring', inner: 0.7, color, size: [0.9, 2.4 + 3.6*power], ease: 2,
-                life: 0.36, delay, op, fadeAt: 0.3, coreW: 0.14, inkW: 0.16,
+    inkSprite({ pos: front, normal: dir, shape: 'ring', inner: 0.66, color, size: [0.8, 2.6 + 3*power], ease: 2,
+                life: 0.3, delay, op, fadeAt: 0.25, coreW: 0.12, coreHot: 1.1, inkW: 0.2,
                 vel: dir.clone().multiplyScalar((14 + 12*power) * lead) });
   };
   ripple(0, 1, 1);
   ripple(0.06, 0.7, 0.8);
-  // the shove itself: a wedge of translucent, blade-tinted air puffs that tumble forward and break up
-  for (let i = 0; i < 4; i++){
-    const side = (i - 1.5) * 0.45;
-    puff(V3(start.x + dir.z*side, start.y + (i % 2 ? 0.25 : -0.2), start.z - dir.x*side), color, 1.3 + 0.7*power, 0.34,
-         V3(dir.x*(20 + 8*power) + dir.z*side*4, 0, dir.z*(20 + 8*power) - dir.x*side*4), { grow0: 0.35, drag: 3, shade: 0.25, op: 0.45, delay: i*0.015 });
-  }
   // the palm burst + speed lines thrown down the push
   inkSprite({ pos: start, shape: 'star', points: 6, sharp: 0.3, color, size: [0.35, 0.9 + 0.4*power], life: 0.14, steps: 2, coreW: 0.45 });
-  sparks(start, color, Math.round(6 + 6*power), 26 + 10*power, { dir, cone: 0.28, life: 0.22, grav: 0, stretch: 4, size: 0.45 });
+  sparks(start, color, Math.round(10 + 8*power), 28 + 10*power, { dir, cone: 0.32, life: 0.26, grav: 0, stretch: 5, size: 0.5 });
 }
 // a bright impact at the point a blade connects — cel star, shock ring and streak sparks
 export function spawnHitSpark(pos, color, power){
