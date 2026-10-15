@@ -14,7 +14,8 @@ import { rand, clamp } from '../utils.js';
 const PARTICLE_MAX = 420;
 const partGeo = new THREE.TetrahedronGeometry(0.14);
 const particles = [];
-let _partHead = 0;          // ring cursor — wraps and recycles the oldest when full
+let _partHead = 0;
+const _up = new THREE.Vector3(0, 1, 0), _dir = new THREE.Vector3();          // ring cursor — wraps and recycles the oldest when full
 for (let i = 0; i < PARTICLE_MAX; i++){
   const m = new THREE.Mesh(partGeo, new THREE.MeshBasicMaterial({ transparent: true }));
   m.visible = false;
@@ -28,6 +29,7 @@ export function acquireParticle(){
   _partHead = (_partHead + 1) % PARTICLE_MAX;
   m.visible = true;
   m.userData.active = true;
+  m.userData.streak = 0; m.userData.grav = 14;   // plain tumbling chunk unless sparks() asks for a streak
   m.material.opacity = 1;
   m.material.blending = THREE.NormalBlending;   // reset in case it was reused from a flame puff
   m.material.depthWrite = true;
@@ -51,10 +53,15 @@ export function updateParticles(dt){
     if (!u.active) continue;
     u.life -= dt;
     if (u.life <= 0){ u.active = false; p.visible = false; continue; }
-    u.vel.y -= 14*dt;
+    u.vel.y -= u.grav*dt;
     p.position.addScaledVector(u.vel, dt);
     if (p.position.y < 0.05){ p.position.y = 0.05; u.vel.y *= -0.4; u.vel.x *= 0.7; u.vel.z *= 0.7; }
     p.material.opacity = clamp(u.life*2.5, 0, 1);
-    p.rotation.x += dt*6; p.rotation.z += dt*5;
+    if (u.streak){
+      // SPARK — a sliver stretched along its flight, so fast debris reads as a streak of light instead of a chip
+      const sp = u.vel.length();
+      if (sp > 0.01) p.quaternion.setFromUnitVectors(_up, _dir.copy(u.vel).divideScalar(sp));
+      p.scale.y = p.scale.x * (1 + Math.min(u.streak, sp * 0.12) * 2);
+    } else { p.rotation.x += dt*6; p.rotation.z += dt*5; }
   }
 }

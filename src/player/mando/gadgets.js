@@ -15,6 +15,7 @@ import { damageEnemy, flinchEnemy, staggerEnemy } from '../../enemies/damage.js'
 import { damageBoss, bossStagger } from '../../boss/boss.js';
 import { spawnHitSpark, spawnGroundShock } from '../../fx/vfx.js';
 import { collideSolids } from '../../world/collision.js';
+import { explosion, inkSprite, sparks, puff, motes, muzzleFlash, screenAngle, dustRing } from '../../fx/ink.js';
 import { mandoAimPoint, aCost } from './weapons.js';
 
 // BACTA STIM (H) — the Mando's mirror of Force Mend: a quick injector channel that restores the same big chunk of
@@ -27,6 +28,7 @@ export function bactaStim(){
   player.mendT = player.mendMax = A.channel;   // a FAST stim — quicker than the Jedi channel
   const pp = playerPos();
   spawnGroundShock(pp.clone().setY(0.1), 0x6fffc0, 2.0, 0.5, 0.5);
+  motes(V3(pp.x, pp.y + 0.3, pp.z), 0x9fffd0, 8, 0.45, { delay: 0.3 });
   S.dash(); sfx(300, 0.4, 'sine', 0.08, 880); sfx(520, 0.4, 'sine', 0.05, 1180);
   floater(V3(pp.x, 1.0, pp.z), 'BACTA STIM…', '#9fffd0');
 }
@@ -45,7 +47,8 @@ export function mandoRocket(){
   scene.add(m);
   rockets.push({ mesh: m, dir: dir.clone(), speed: A.speed, life: 3 });
   // launch FEEL: muzzle smoke + flash, a back-kick of recoil, a screen punch
-  burst(origin, 0xffd28a, 6, 7, 3, 0.9); burst(origin, 0x888888, 5, 4, 3, 1.0);
+  muzzleFlash(origin, dir, 0xffb04a, 1.1);
+  for (let n = 0; n < 3; n++) puff(origin.clone().addScaledVector(dir, 0.5 + n*0.35), 0x8a8580, 0.45, 0.35, V3(rand(-1,1), rand(0.5,1.5), rand(-1,1)), { delay: n*0.03, op: 0.8 });
   player.vel.addScaledVector(f, -3.5);   // the launch shoves you back a touch
   player.recoil = 0.3;
   G.shake = Math.max(G.shake, 0.3);
@@ -58,10 +61,9 @@ function rocketExplode(pos, big){
   const scale = big ? 1.9 : 1;
   S.boom(); sfx(big ? 38 : 48, big ? 0.7 : 0.5, 'sine', big ? 0.32 : 0.26, big ? 12 : 16);
   G.shake = Math.max(G.shake, big ? 1.7 : 1.0); G.hitstop = Math.max(G.hitstop, big ? 0.1 : 0.05);
-  spawnGroundShock(pos.clone().setY(0.1), 0xffd06a, radius + 1, 0.32*scale, 0.6);
-  spawnGroundShock(pos.clone().setY(0.1), 0xffa84a, radius + 4, 0.55*scale, 0.4);
+  explosion(pos, radius, big);
   if (big) spawnGroundShock(pos.clone().setY(0.1), 0xff7a3a, radius + 9, 0.8, 0.3);
-  burst(pos, 0xffe27a, 16*scale, 16, 5, 1.0); burst(pos, 0xffb060, 24*scale, 12, 7, 1.2); burst(pos, 0x5a5a5a, 16*scale, 8, 9, 1.3);
+  burst(pos, 0x5a5a5a, 8*scale, 8, 9, 1.2);   // tumbling debris chunks
   flashLight(0xffa040, big ? 18 : 10, radius*2.8, pos, 0.34);
   if (big) screenFlash('radial-gradient(ellipse at center, rgba(255,150,70,.5), rgba(255,90,40,.15) 50%, transparent 70%)', 0.9, 0.4);
   for (const e of enemies){
@@ -92,7 +94,8 @@ export function mandoJetMissile(){
   m.position.copy(origin); m.quaternion.setFromUnitVectors(V3(0,1,0), dir);
   scene.add(m);
   rockets.push({ mesh: m, dir: dir.clone(), speed: A.speed, life: 3.4, big: true });
-  burst(origin, 0xffd28a, 12, 9, 4, 1.2); burst(origin, 0x888888, 10, 5, 4, 1.3);
+  muzzleFlash(origin, dir, 0xffb04a, 1.6);
+  for (let n = 0; n < 4; n++) puff(origin.clone().addScaledVector(dir, 0.6 + n*0.4), 0x8a8580, 0.6, 0.4, V3(rand(-1.5,1.5), rand(0.5,2), rand(-1.5,1.5)), { delay: n*0.03, op: 0.8 });
   player.vel.addScaledVector(f, -5);   // a serious kick
   player.recoil = 0.45; G.shake = Math.max(G.shake, 0.5);
   S.bolt(); sfx(56, 0.5, 'sawtooth', 0.14, 40); sfx(120, 0.2, 'square', 0.08, 60);
@@ -102,9 +105,15 @@ export function updateRockets(dt){
   for (let i = rockets.length-1; i >= 0; i--){
     const rk = rockets[i]; rk.life -= dt;
     rk.mesh.position.addScaledVector(rk.dir, rk.speed * dt);
-    // a hot exhaust trail — fire core + smoke
-    burst(rk.mesh.position.clone(), Math.random()<0.5?0xff8a2a:0xffd06a, 1, 2, 1, 0.7);
-    if (Math.random() < 0.6) burst(rk.mesh.position.clone(), 0x888888, 1, 1, 1, 0.8);
+    // a hot exhaust trail — a flickering cel flame at the nozzle and a rope of ink-rimmed smoke left hanging
+    rk.trailT = (rk.trailT || 0) - dt;
+    if (rk.trailT <= 0){
+      rk.trailT = 0.022;
+      const tail = rk.mesh.position.clone().addScaledVector(rk.dir, rk.big ? -0.45 : -0.28);
+      inkSprite({ pos: tail, shape: 'star', points: 2, sharp: 0.2, color: 0xffa13a, size: [rk.big ? 0.95 : 0.7, 0.3], life: 0.07, steps: 2,
+                  rot: screenAngle(rk.dir), coreW: 0.45 });
+      puff(tail, 0x9a948c, rk.big ? 0.6 : 0.42, rand(0.4, 0.6), V3(rand(-0.4,0.4), rand(0.3,0.9), rand(-0.4,0.4)), { grow0: 0.6, shade: 0.32, op: 0.85 });
+    }
     const p = rk.mesh.position;
     let hit = rk.life <= 0 || p.y <= 0.2;
     if (!hit) for (const e of enemies){ if (e.dead || e.converted) continue; if (p.distanceTo(e.group.position.clone().setY(p.y)) < 1.4){ hit = true; break; } }
@@ -152,7 +161,10 @@ export function updateBirds(dt){
       }
     }
     bd.mesh.position.addScaledVector(bd.vel, dt);
-    if (Math.random() < 0.7) burst(bd.mesh.position.clone(), 0x9fd6ff, 1, 1, 1, 0.5);
+    // each bird whistles along on a thin cel contrail
+    bd.trailT = (bd.trailT || 0) - dt;
+    if (bd.trailT <= 0){ bd.trailT = 0.03;
+      inkSprite({ pos: bd.mesh.position, shape: 'disc', color: 0x9fd6ff, size: [0.32, 0.08], life: 0.22, steps: 3, coreW: 0.5, inkW: 0.2 }); }
     // detonate on contact (or expiry)
     let hit = bd.life <= 0 || bd.mesh.position.y < 0.15;
     let victim = null;
@@ -160,7 +172,7 @@ export function updateBirds(dt){
     if (!hit && shared.boss && shared.boss.hp > 0 && bd.mesh.position.distanceTo(shared.boss.group.position.clone().setY(bd.mesh.position.y)) < 1.7){ hit = true; victim = shared.boss; }
     if (hit){
       const A = MANDO.birds, p = bd.mesh.position.clone();
-      burst(p, 0xbfe8ff, 8, 9, 4, 0.9); spawnHitSpark(p, 0xdff1ff, 0.8);
+      explosion(p, MANDO.birds.radius * 0.55, false); spawnHitSpark(p, 0xdff1ff, 0.8);
       sfx(rand(1600,2200), 0.06, 'sine', 0.04, 700);
       const bdmg = A.dmg * player.up.dmg * (player.up.rocketDmg || 1);
       for (const e of enemies){ if (e.dead || e.converted || e.state === 'spawn') continue; const d = e.group.position.distanceTo(p); if (d < A.radius){ const kd = TMP.subVectors(e.group.position, p).setY(0).normalize().clone(); damageEnemy(e, bdmg, kd, A.knock); flinchEnemy(e, kd, 0.3); } }
@@ -205,8 +217,8 @@ export function updateDetos(dt){
     if (g.fuse <= 0){
       const A = MANDO.deto, p = g.mesh.position.clone();
       S.boom(); sfx(50, 0.45, 'sine', 0.24, 18); G.shake = Math.max(G.shake, 0.9); G.hitstop = Math.max(G.hitstop, 0.05);
-      spawnGroundShock(p.clone().setY(0.1), 0xffb04a, A.radius + 2, 0.5, 0.5);
-      burst(p, 0xffd06a, 18, 14, 6, 1.1); burst(p, 0x6a6a6a, 12, 8, 8, 1.2);
+      explosion(p, A.radius, false);
+      burst(p, 0x6a6a6a, 8, 8, 8, 1.1);
       flashLight(0xffa040, 9, A.radius*2.6, p, 0.3);
       const ddmg = A.dmg * player.up.dmg * (player.up.rocketDmg || 1);
       for (const e of enemies){ if (e.dead || e.converted || e.state === 'spawn') continue; const d = e.group.position.distanceTo(p); if (d < A.radius){ const kd = TMP.subVectors(e.group.position, p).setY(0).normalize().clone(); damageEnemy(e, ddmg * (1 - d/A.radius*0.4), kd, A.knock); flinchEnemy(e, kd, 0.6); } }
@@ -283,7 +295,7 @@ export function jetSlam(){
   player.jet -= MANDO.slam.cost;
   player.aiming = 0.5;
   player.slamming = true; player.flip = null; player.vel.set(0,0,0); player.vy = -MANDO.slam.diveVel;
-  S.dash(); burst(playerPos().clone(), 0x88ddff, 8, 6, 3, 0.8);
+  S.dash(); sparks(playerPos().clone().setY(playerPos().y + 0.6), 0x88ddff, 8, 9, { dir: V3(0,1,0), cone: 0.5, life: 0.25, grav: 0 });
 }
 export function mandoSlamImpact(){
   const A = MANDO.slam, pp = playerPos();
@@ -291,7 +303,9 @@ export function mandoSlamImpact(){
   G.shake = Math.max(G.shake, 1.3); G.hitstop = Math.max(G.hitstop, 0.1);
   spawnGroundShock(pp, 0x9ad8ff, A.radius + 2, 0.4, 0.55);
   spawnGroundShock(pp, 0x66c6ff, A.radius + 7, 0.7, 0.3);
-  burst(V3(pp.x, 0.3, pp.z), 0xbcd2dc, 20, 13, 5, 1.0); burst(V3(pp.x, 0.4, pp.z), 0x9a9a9a, 12, 9, 8, 1.2);
+  inkSprite({ pos: V3(pp.x, pp.y + 0.6, pp.z), shape: 'star', points: 8, sharp: 0.16, color: 0x9ad8ff, size: [1.5, 4.2], life: 0.16, steps: 2, coreW: 0.4 });
+  dustRing(pp, A.radius);
+  burst(V3(pp.x, 0.4, pp.z), 0x9a9a9a, 10, 9, 8, 1.1);
   flashLight(0x88ccff, 8, A.radius*2.2, V3(pp.x, 1, pp.z), 0.3);
   for (const e of enemies){ if (e.dead || e.converted || e.state === 'spawn') continue; const d = e.group.position.distanceTo(pp); if (d < A.radius){ const kd = TMP.subVectors(e.group.position, pp).setY(0).normalize().clone(); damageEnemy(e, A.dmg * player.up.dmg, kd, A.knock); flinchEnemy(e, kd, 0.7); } }
   if (shared.boss && shared.boss.hp > 0 && shared.boss.group.position.distanceTo(pp) < A.radius) damageBoss(A.dmg * player.up.dmg);
@@ -314,7 +328,9 @@ export function mandoBoostDash(){
   if (dir.lengthSq() < 0.01) dir.copy(fwd());
   dir.normalize();
   player.vel.addScaledVector(dir, A.speed);
-  for (let n = 0; n < 8; n++) burst(V3(playerPos().x - dir.x*0.4, 1.1 + rand(-0.3,0.5), playerPos().z - dir.z*0.4), n%2?0xffffff:0x66c6ff, 1, 7, 2, 0.7);
+  const bp = playerPos();
+  sparks(V3(bp.x - dir.x*0.4, bp.y + 1.2, bp.z - dir.z*0.4), 0x66c6ff, 8, 12, { dir: V3(-dir.x, -0.3, -dir.z), cone: 0.35, life: 0.22, grav: 0 });
+  for (let n = 0; n < 3; n++) puff(V3(bp.x - dir.x*(0.5 + n*0.5), bp.y + 0.35, bp.z - dir.z*(0.5 + n*0.5)), 0xb8c2c8, 0.8, 0.4, V3(-dir.x*2, 0.6, -dir.z*2), { delay: n*0.03 });
   S.dash(); sfx(rand(220,300), 0.12, 'triangle', 0.05, 120);
 }
 // GAUNTLET MELEE (E) — a fast beskar punch with a 2-hit combo; the 2nd strike is a heavier cross. Always available
@@ -350,12 +366,15 @@ export function gauntletPunch(){
     G.hitstop = Math.max(G.hitstop, heavy ? 0.09 : 0.05);
     G.shake = Math.max(G.shake, heavy ? 0.55 : 0.32);
     spawnHitSpark(ip, heavy ? 0xc9a6ff : 0xffd28a, heavy ? 1.6 : 1.0);
-    burst(ip, heavy ? 0xc9a6ff : 0xffe7b0, heavy ? 12 : 7, 10, 4, 0.9); burst(ip, 0xcfe0ec, 5, 5, 3);
+    sparks(ip, heavy ? 0xc9a6ff : 0xffe7b0, heavy ? 8 : 5, 11, { dir: f, cone: 0.6, life: 0.24 });
     if (heavy){   // VIBROBLADE — a sharp violet slash arc + a ringing edge
-      burst(ip, 0xffffff, 6, 13, 3, 0.6); floater(V3(pp.x, 1.9, pp.z), 'VIBROBLADE', '#c9a6ff');
+      inkSprite({ pos: ip, shape: 'ring', inner: 0.86, arc: 1.1, color: 0xc9a6ff, size: [1.6, 2.6], life: 0.14, steps: 2, coreW: 0.3, inkW: 0.25,
+                  rot: Math.PI * (0.35 + Math.random() * 0.3) });
+      floater(V3(pp.x, 1.9, pp.z), 'VIBROBLADE', '#c9a6ff');
       sfx(1800, 0.09, 'square', 0.05, 720); sfx(2400, 0.07, 'triangle', 0.04, 900);
     }
     S.heavy();
-  } else { burst(ip, 0xcfe0ec, 3, 5, 3); }
+  } else { puff(ip, 0xcfe0ec, 0.55, 0.22, f.clone().multiplyScalar(4), { grow0: 0.4 }); }
   sfx(heavy ? 140 : 230, 0.1, 'square', 0.06, 60); sfx(90, 0.08, 'sawtooth', 0.05, 40);
 }
+

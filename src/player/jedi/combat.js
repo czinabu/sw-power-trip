@@ -13,6 +13,7 @@ import { damageEnemy, flinchEnemy, nearestEnemyInCone, staggerEnemy } from '../.
 import { damageBoss } from '../../boss/boss.js';
 import { FOCUS, focusTier, focusDmgMul, addFocus } from './focus.js';
 import { spawnHitSpark, spawnGroundShock } from '../../fx/vfx.js';
+import { inkSprite, sparks, clashFlash } from '../../fx/ink.js';
 
 export function tryAttack(){
   // the blade is MID-FLIGHT (thrown) — no saber strikes until it returns to your hand. Force powers still work.
@@ -133,9 +134,8 @@ export function applySwingDamage(step){
     G.shake = Math.max(G.shake, cancelRip ? 1.0 : 0.8);
     G.slowmo = Math.min(G.slowmo, 0.3); G.slowmoT = Math.max(G.slowmoT, 0.14);
     const rfp = V3(rp.x + fwd().x, 1.6, rp.z + fwd().z);
-    burst(rfp, 0xffd24a, 22, 11, 5);
-    burst(rfp, 0xffffff, 12, 14, 4);
-    spawnHitSpark(rfp, 0xffffff, 1.6);
+    clashFlash(rfp, 0xffd24a, true);
+    sparks(rfp, 0xffe27a, 14, 15, { dir: fwd(), cone: 0.7, life: 0.34 });
     screenFlash('radial-gradient(ellipse at center, rgba(255,255,255,.45), rgba(255,210,90,.1) 55%, transparent 72%)', 0.85, 0.32);
     S.riposte(); sfx(140, 0.22, 'sawtooth', 0.14, 50);
   }
@@ -200,8 +200,9 @@ export function applySwingDamage(step){
       const pp0 = playerPos(), ip = V3(pp0.x + fwd().x*1.6, 1.2, pp0.z + fwd().z*1.6);
       spawnGroundShock(V3(ip.x, 0.1, ip.z), st.blade, 5.5, 0.34, 0.6);
       spawnGroundShock(V3(ip.x, 0.1, ip.z), 0xffffff, 8, 0.5, 0.3);
-      burst(ip, st.blade, 26, 13, 6, 1.3); burst(ip, 0xffffff, 16, 16, 5);     // a violet shockburst + white spark core
-      for (let n = 0; n < 10; n++) burst(V3(ip.x+rand(-0.5,0.5), rand(0.4,2.2), ip.z+rand(-0.5,0.5)), st.blade, 1, 11, 5, 1.1);
+      inkSprite({ pos: ip, shape: 'star', points: 10, sharp: 0.14, color: st.blade, size: [1.6, 4.6], life: 0.2, steps: 2, coreW: 0.38 });   // the cel shockburst
+      sparks(ip, st.blade, 18, 16, { life: 0.4, size: 0.6 }); sparks(ip, 0xffffff, 8, 18, { life: 0.3 });
+      burst(ip, 0x9a9a9a, 8, 9, 6, 1.1);   // chips of stone
       spawnHitSpark(ip, 0xffffff, 2.0);
       screenFlash('radial-gradient(ellipse at center, rgba(180,90,255,.4), transparent 62%)', 0.7, 0.3);
       sfx(50, 0.34, 'sine', 0.2, 20); sfx(150, 0.12, 'square', 0.09, 50); sfx(90, 0.2, 'sawtooth', 0.08, 36);
