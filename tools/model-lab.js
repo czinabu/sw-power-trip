@@ -2,18 +2,20 @@
 // Model lab (dev only: `npm run dev`, then open /tools/model-lab.html).
 // Lines up both heroes in a few key poses under the game's own lights, so model and style changes can be judged
 // side by side without playing. URL params: ?style=shard|ink|forged  &look=<SAMPLE_LOOKS name>  &hero=jedi|mando
-// &view=front|back  &orbit=1 (slow turntable).
+// &grip=reverse  &view=front|back  &orbit=1 (slow turntable).
 
 import * as THREE from 'three';
 import { scene, camera, composer, renderer } from '../src/engine/renderer.js';
 import { buildHeroModel } from '../src/player/model/index.js';
 import { STYLE_DEFS } from '../src/player/model/styles.js';
 import { SAMPLE_LOOKS } from '../src/player/model/appearance.js';
+import { applySaberGrip } from '../src/player/model/weapons.js';
 
 const q = new URLSearchParams(location.search);
 const STYLE = q.get('style') || 'ink';
 const LOOK_NAME = q.get('look') || '';
 const LOOK = { ...(SAMPLE_LOOKS[LOOK_NAME] || {}), style: STYLE };
+const GRIP = q.get('grip') || 'regular';   // &grip=reverse
 const VIEW = q.get('view') || 'front';
 
 scene.background = new THREE.Color(0x0d1016);
@@ -63,6 +65,7 @@ function figure(poseName){
   const P = POSES[poseName];
   const t = { group: new THREE.Group() };
   t.group.add(buildHeroModel(t, LOOK));
+  applySaberGrip(t, GRIP);
   const R = t.rig, mando = P.hero === 'mando';
   for (const m of t.mandoParts) m.visible = mando;
   for (const m of t.headBare) m.visible = !mando;

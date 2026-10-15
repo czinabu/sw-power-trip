@@ -4,6 +4,7 @@
 //            hero/weapon today; this tag is where per-weapon holds plug in when that's reworked.
 //   socket — default mount (handR / handL / back / hipL / hipR)
 //   grip   — position + rotation of the weapon in the socket: change this to change how it's held
+//            (the lightsaber also has a regular/reverse grip preference, see applySaberGrip)
 //   build  — returns { group, ...hooks } built in the current render style
 // Adding a weapon type = one entry here + mounting it in mountLoadout().
 
@@ -17,20 +18,20 @@ export const WEAPON_MODELS = {
   saber: {
     hold: 'saber-1h', socket: 'handR', grip: { pos: [0, GRIP_Y, 0], rot: [0.25, 0, -0.4] },
     build(S){
-      const g = new THREE.Group();
+      const g = new THREE.Group(), root = new THREE.Group(); g.add(root);   // root flips for a reverse grip
       S.add(loft([
         { y:-0.13, w:0.06, d:0.06 }, { y:-0.11, w:0.078, d:0.078 }, { y:-0.08, w:0.066, d:0.066 },
         { y:0.06, w:0.066, d:0.066 }, { y:0.08, w:0.086, d:0.086 }, { y:0.12, w:0.08, d:0.08 }, { y:0.13, w:0.06, d:0.06 },
-      ], ngon(8, Math.PI/8)), 'hilt', g);
-      for (let i = 0; i < 4; i++) S.add(block(0.072, 0.012, 0.072, 0.4), 'leather', g, [0, -0.05 + i*0.03, 0], [0,0,0], { outline: false });
-      S.add(block(0.022, 0.035, 0.03, 0.3), 'gunDark', g, [0, 0.02, 0.038], [0,0,0], { outline: false });   // activator
+      ], ngon(8, Math.PI/8)), 'hilt', root);
+      for (let i = 0; i < 4; i++) S.add(block(0.072, 0.012, 0.072, 0.4), 'leather', root, [0, -0.05 + i*0.03, 0], [0,0,0], { outline: false });
+      S.add(block(0.022, 0.035, 0.03, 0.3), 'gunDark', root, [0, 0.02, 0.038], [0,0,0], { outline: false });   // activator
       const blade = new THREE.Mesh(new THREE.CylinderGeometry(0.034, 0.022, 1.55, 8), new THREE.MeshBasicMaterial({ color: 0xffffff }));
       blade.position.y = 0.95;
       const glow = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.06, 1.6, 8), glowMat(0x33bbff, 0.45));
       glow.position.y = 0.95;
       const light = new THREE.PointLight(0x44bbff, 8, 9); light.position.y = 0.9;
-      g.add(blade, glow, light);
-      return { group: g, blade, glow, light };
+      root.add(blade, glow, light);
+      return { group: g, bladeRoot: root, blade, glow, light };
     },
   },
 
@@ -84,6 +85,16 @@ export const WEAPON_MODELS = {
   },
 };
 
+/* SABER GRIP — a player preference: 'regular' (blade out of the thumb side) or 'reverse' (Shien reverse grip, blade
+   out of the pinky side along the forearm). Visual only: swing reach and damage don't depend on the blade mesh.
+   The animated node (player.saberHand) is untouched; only the hilt+blade root inside it flips. */
+let saberGrip = 'regular';
+export function applySaberGrip(player, grip){
+  saberGrip = grip === 'reverse' ? 'reverse' : 'regular';
+  const root = player.saberBladeRoot;
+  if (root) root.rotation.x = saberGrip === 'reverse' ? Math.PI : 0;
+}
+
 export function mountWeapon(R, S, id, socket){
   const def = WEAPON_MODELS[id];
   const w = def.build(S);
@@ -100,6 +111,8 @@ export function mountLoadout(R, S, player){
   player.saberHand = saber.group;
   player.saberPivot = R.armR.sh;
   player.blade = { blade: saber.blade, glow: saber.glow, light: saber.light };
+  player.saberBladeRoot = saber.bladeRoot;
+  applySaberGrip(player, saberGrip);
 
   player.pistols = { L: mountWeapon(R, S, 'pistol', 'handL').group, R: mountWeapon(R, S, 'pistol', 'handR').group };
 
