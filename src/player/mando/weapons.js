@@ -193,8 +193,9 @@ function fireBlaster(W){
   const opts = { spread, foMin };
   const col = steadyAim ? 0xffd24a : 0xffb84a;   // braced bolts glint hotter
   if (W.dual && player.backRun){
-    // running away: only the gun hand fires back over his shoulder (he faces the camera, so it's on screen-left)
-    const o = muzzleOrigin(-1);
+    // running away: one hand fires back over his shoulder (he faces the camera, so his gun hand is on screen-left;
+    // anim/guns.js switches to the left hand, screen-right, when the target is round on that side)
+    const o = muzzleOrigin(player.backHand === 'L' ? 1 : -1);
     spawnBlasterBolt(o, V3(aim.x-o.x, aim.y-o.y, aim.z-o.z).normalize(), dmg, col, 1.1, W, opts);
   } else if (W.dual){
     const side = player.firePistol; player.firePistol = -side;
