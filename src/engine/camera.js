@@ -2,16 +2,33 @@
 // Third-person follow camera.
 
 import { camera } from './renderer.js';
-import { rand, clamp, TMP } from '../utils.js';
-import { shared, G, player } from '../state.js';
+import { clamp, TMP } from '../utils.js';
+import { shared, G, player, enemies } from '../state.js';
 import { fwd, rightV, playerPos, stance } from '../player/helpers.js';
 import { cameraClearance } from '../world/collision.js';
+import { CFG } from '../data/config.js';
 
 /* ============================================================
    CAMERA — third person follow
    ============================================================ */
-let camDist = 8.5, camFov = 70;
+let camDist = 8.5, camFov = 70, camLift = 0, deadAt = -1, fovPunch = 0;
+// smooth layered-sine noise in [-1,1] — shake that rolls instead of buzzing frame to frame
+const wob = (t, s) => (Math.sin(t*23.1 + s) * 0.55 + Math.sin(t*37.7 + s*2.3) * 0.3 + Math.sin(t*61.3 + s*4.1) * 0.15);
+
+// how crowded is the fight around the hero? nearby enemies count fully, ones at the edge of the radius fade out
+function crowdAround(pp){
+  const R = CFG.camera.crowdRadius;
+  let n = 0;
+  for (const e of enemies){
+    if (e.dead || !e.group) continue;
+    const d = Math.hypot(e.group.position.x - pp.x, e.group.position.z - pp.z);
+    if (d < R) n += d < R*0.6 ? 1 : (R - d) / (R*0.4);
+  }
+  return n;
+}
+
 export function updateCamera(dt){
+  const C = CFG.camera;
   const pp = playerPos();
   const f = fwd();
   const vx = player.moveVel.x + player.vel.x, vz = player.moveVel.z + player.vel.z;
@@ -39,22 +56,66 @@ export function updateCamera(dt){
   // camera breathes with the action: pulls back HARD at high flight speed (Mando), softer otherwise, + for the boss
   const adsFly = G.hero === 'mando' && (player.blockHeld || player.zoom);   // aiming → steadier, tighter camera
   const pullback = (G.hero === 'mando') ? clamp(speed * 0.14, 0, 4) : clamp(speed * 0.08, 0, 2);
-  const wantDist = (8.2 + pullback + (shared.boss && shared.boss.hp > 0 ? 1.4 : 0)) * distMul;
-  camDist += (wantDist - camDist) * Math.min(1, dt*3.5);
+  // COMBAT FRAMING — a pack closing in pushes the lens back and up so the whole brawl stays on screen; a quiet
+  // arena (between waves, nothing near) tucks it in closer for a grounded, over-the-shoulder feel
+  const boss = shared.boss && shared.boss.hp > 0 ? shared.boss : null;
+  const crowd = crowdAround(pp);
+  let frame = Math.min(C.crowdMax, crowd * C.crowdPull);
+  let lift = Math.min(1, crowd / 5) * C.crowdLift;
+  if (boss){
+    // the boss is big: the closer it gets, the further back we sit so its windups stay readable
+    const bd = Math.hypot(boss.group.position.x - pp.x, boss.group.position.z - pp.z);
+    frame = Math.max(frame, C.bossDist + clamp(1 - (bd - 3) / 9, 0, 1) * (C.bossNear - C.bossDist));
+    lift = Math.max(lift, C.crowdLift);
+  } else if (G.mode === 'play' && crowd < 0.3 && shared.levelPhase !== 'fighting') frame = C.calmDist;
+  if (adsFly) lift *= 0.3;   // don't drift the reticle's eye-line while aiming
+  camLift += (lift - camLift) * Math.min(1, dt*2);
+  const wantDist = (C.baseDist + pullback + frame) * distMul;
+  // draw back quicker than we settle in, so a closing pack is framed before it lands its first hit
+  camDist += (wantDist - camDist) * Math.min(1, dt * (wantDist > camDist ? 3.5 : 2.2));
   const cosP = Math.cos(G.pitch), sinP = Math.sin(G.pitch);
-  TMP.set(tx - f.x*camDist*cosP + rv.x*ots, ty + camHi + camDist*sinP, tz - f.z*camDist*cosP + rv.z*ots);
+  // DEATH — the view slowly rises and draws back off the fallen hero (real time: the death slow-mo would stall it)
+  let dk = 0;
+  if (G.mode === 'dead'){ if (deadAt < 0) deadAt = performance.now(); dk = Math.min(1, (performance.now() - deadAt) / 2500); dk = dk*dk*(3 - 2*dk); }
+  else deadAt = -1;
+  const d = camDist + dk*3;
+  TMP.set(tx - f.x*d*cosP + rv.x*ots, ty + camHi + camLift + dk*3 + d*sinP, tz - f.z*d*cosP + rv.z*ots);
   if (TMP.y < 0.4) TMP.y = 0.4;
   // never park the lens inside a column or wall: pull in along the view line when tall cover is in the way
   { const k = cameraClearance(tx, ty, tz, TMP.x, TMP.y, TMP.z); if (k < 1) TMP.set(tx + (TMP.x - tx)*k, ty + (TMP.y - ty)*k, tz + (TMP.z - tz)*k); }
   // INERTIA — the camera lags when you boost / fly fast (a weighty swoop), but snaps tight when you're AIMING
   const lagBase = (adsFly) ? 0.00002 : (G.hero === 'mando' && (player.boosting || speed > 14)) ? 0.02 : 0.00004;
   camera.position.lerp(TMP, 1 - Math.pow(lagBase, dt));
+  // ...and the lag must never drag the lens THROUGH cover on the way: re-check where it actually ended up
+  { const cp = camera.position, k = cameraClearance(tx, ty, tz, cp.x, cp.y, cp.z); if (k < 1) cp.set(tx + (cp.x - tx)*k, ty + (cp.y - ty)*k, tz + (cp.z - tz)*k); }
+  // SHAKE — trauma model: strength is shake², so chip damage barely registers and a boss slam rattles the screen.
+  // Smooth noise (real time, so a hitstop freeze-frame still trembles) with a touch of roll; damped while scoped.
+  const now = performance.now() / 1000;
+  let shakeRoll = 0;
   if (G.shake > 0){
     G.shake = Math.max(0, G.shake - dt*2.2);
-    camera.position.x += rand(-1,1) * G.shake * 0.22;
-    camera.position.y += rand(-1,1) * G.shake * 0.22;
+    const tr = Math.min(1, G.shake) ** 2 * (player.zoom ? 0.35 : adsFly ? 0.6 : 1);
+    camera.position.x += wob(now, 0.0) * tr * C.shake * 1.6;
+    camera.position.y += wob(now, 1.7) * tr * C.shake * 1.6;
+    camera.position.z += wob(now, 3.1) * tr * C.shake;
+    shakeRoll = wob(now, 5.3) * tr * C.shakeRoll;
+  }
+  // HIT KICK — taking a blow knocks the lens away from where it came from, then springs back
+  if (player.camKickT != null){
+    const age = G.gt - player.camKickT;
+    if (age < 0.3){
+      const kx = pp.x - player.camKickX, kz = pp.z - player.camKickZ, kl = Math.hypot(kx, kz) || 1;
+      const amt = (1 - age / 0.3) ** 2 * C.hitKick * (player.zoom ? 0.3 : 1);
+      camera.position.x += kx / kl * amt; camera.position.z += kz / kl * amt; camera.position.y -= amt * 0.3;
+    }
+  }
+  // HANDHELD SWAY — a faint idle drift so the view feels held, not bolted on; gone when moving fast or aiming
+  if (C.sway > 0 && !adsFly && G.mode === 'play'){
+    const sw = C.sway * (1 - clamp(speed / 6, 0, 1));
+    camera.position.x += Math.sin(now * 0.63) * sw; camera.position.y += Math.sin(now * 0.91 + 1.3) * sw * 0.7;
   }
   if (player.landDip > 0) camera.position.y -= player.landDip;   // TOUCHDOWN — the view dips with the impact (decayed in updatePlayer)
+  if (camera.position.y < 0.25) camera.position.y = 0.25;        // none of the above may push the lens under the floor
   // Mando aims a bit ABOVE its own head height; while DIVING the look target drops so the camera follows the dive angle
   const diveLook = (G.hero === 'mando' && player.boosting) ? clamp(player.vy * 0.06, -2.0, 0) : 0;
   camera.lookAt(tx + f.x*3 + rv.x*ots, ty + (G.hero === 'mando' ? 0.7 : 0.5) + diveLook, tz + f.z*3 + rv.z*ots);
@@ -64,12 +125,17 @@ export function updateCamera(dt){
   let rollGain = (G.hero === 'mando') ? (player.boosting ? 0.013 : !player.grounded ? 0.009 : 0.006) : 0.0035;
   let rollMax  = (G.hero === 'mando') ? (player.boosting ? 0.13 : 0.08) : 0.045;
   if (adsFly){ rollGain *= 0.35; rollMax *= 0.45; }
-  camera.rotateZ(clamp(-strafe * rollGain, -rollMax, rollMax));
+  camera.rotateZ(clamp(-strafe * rollGain, -rollMax, rollMax) + shakeRoll);
   // FOV kick on dashes and at speed; disruptor ZOOM (ADS) pulls the view in tight for precision
   // blasters get a SLIGHT aim zoom only while BRACING (hold RMB) for precision — single pulls in more than dual
   const blasterAim = (G.hero === 'mando' && !player.zoom && player.blockHeld && (player.weapon === 'single' || player.weapon === 'dual'))
                      ? (player.weapon === 'single' ? 28 : 20) : 0;   // bracing zooms in HARD now — the payoff for steadying
+  // IMPACT PUNCH — heavy hitstop snaps the view in a touch (instantly, the sim is frozen) and slow-mo holds it there,
+  // so the big moments feel close; it releases once the beat is over
+  if (G.mode === 'play' && !player.zoom && (G.hitstop > 0.04 || G.slowmo < 0.9)) fovPunch = C.impactFov;
+  else fovPunch = Math.max(0, fovPunch - dt * C.impactFov * 4);
   const wantFov = player.zoom ? 30 : (70 + (player.dashT > 0 ? 15 : 0) + clamp(speed * 0.22, 0, 6) + (stance().fovKick || 0) - blasterAim);
   camFov += (wantFov - camFov) * Math.min(1, dt * (player.zoom ? 12 : 7));
-  if (Math.abs(camera.fov - camFov) > 0.02){ camera.fov = camFov; camera.updateProjectionMatrix(); }
+  const fov = camFov - fovPunch;
+  if (Math.abs(camera.fov - fov) > 0.02){ camera.fov = fov; camera.updateProjectionMatrix(); }
 }

@@ -112,6 +112,7 @@ export function hurtPlayer(dmg, fromPos, silent, melee){
   if (fromPos){ player.hitFrom = V3(fromPos.x, 1.4, fromPos.z); player.dmgIndT = 1.0; }   // THREAT — point the damage arc at the source
   if (!silent){
     G.shake = Math.max(G.shake, 0.45);
+    if (fromPos){ player.camKickT = G.gt; player.camKickX = fromPos.x; player.camKickZ = fromPos.z; }   // the camera recoils away from the blow
     S.hurt();
     const v = document.getElementById('vig');
     v.style.opacity = '1';

@@ -38,4 +38,20 @@ export const CFG = {
   convertDmgMult: 3,   // damage dealt by Force-converted allies (legacy enemy-state machinery)
   bossReflectWindow: 5.0,  // orb must be within this distance when you PUSH (precise timing)
   killStreakTimeout: 4.0,
+  // CAMERA — follow-cam feel (see src/engine/camera.js)
+  camera: {
+    baseDist: 8.2,            // resting follow distance
+    calmDist: -0.7,           // between waves / nothing nearby: tuck in closer for a more grounded, personal view
+    crowdRadius: 10,          // enemies inside this range count toward the crowd pull-back
+    crowdPull: 0.32,          // extra distance per nearby enemy...
+    crowdMax: 1.8,            // ...capped here, so a brawl always fits on screen
+    crowdLift: 0.5,           // and the lens rises up to this much so the pack reads over the hero's shoulders
+    bossDist: 1.4,            // boss fights sit further back...
+    bossNear: 2.0,            // ...and further still (up to this) while the boss is right on top of you
+    shake: 0.32,              // screen-shake strength (trauma² — small hits stay subtle, big ones land hard)
+    shakeRoll: 0.035,         // max roll (radians) at full trauma
+    hitKick: 0.42,            // the lens is knocked away from whatever hit you
+    impactFov: 3.5,           // FOV punch-in on heavy hitstop / slow-mo beats
+    sway: 0.035,              // idle handheld drift (0 to disable)
+  },
 };
