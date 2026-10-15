@@ -103,7 +103,7 @@ export function startLevel(idx){
     //  Jedi: Saber + Block + Push + Dash (Pull auto-unlocks after wave 2).  Mando: Single blaster + weak jetpack +
     //  Brace (RMB) + Flame + Rocket (Dual auto-unlocks after wave 1).
     G.unlocked = G.hero === 'jedi' ? { push: true, dash: true } : { flame: true, rocket: true };
-    G.stanceUnlocked = {};   // NIMAN is always available; FAST/STRONG auto-unlock
+    G.stanceUnlocked = {};   // NIMAN is always available; ATARU/DJEM SO auto-unlock
     G.waveTotal = -1; G.mandoChoiceShown = false;
     G.xp = 0; G.xpEarned = 0; G.skillBought = 0; G.skillPoints = 0; G.powerLv = {}; G.seenTypes = {};
     G.boonOffer = null; G.boonPicked = false;

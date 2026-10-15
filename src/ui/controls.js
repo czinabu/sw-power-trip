@@ -59,7 +59,7 @@ const TIPS = {
     '<b>Stamina</b> is the violet gauge beside your crosshair. Swings and blocks spend it; run dry and your guard breaks.',
     '<b>Force</b> (bottom-left bar) powers your abilities and refills over time.',
     '<b>Focus</b> builds with clean hits and parries and boosts your damage. Taking a hit breaks it.',
-    '<b>Forms:</b> Shii-Cho for crowds, Niman for all-round play, Djem So for brutes and bosses.',
+    '<b>Forms:</b> Ataru for crowds, Niman for all-round play, Djem So for brutes and bosses.',
     'Any swing can be cancelled into a block, a Force power or a dash.',
     'After each wave, spend <b>XP</b> on new abilities and <b>skill points</b> on training.',
   ],

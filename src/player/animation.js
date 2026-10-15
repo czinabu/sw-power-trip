@@ -3,13 +3,18 @@
 
 import * as THREE from 'three';
 import { CFG } from '../data/config.js';
-import { clamp, dampAngle } from '../utils.js';
+import { clamp, dampAngle, V3 } from '../utils.js';
+import { burst } from '../fx/particles.js';
 import { shared, G, player } from '../state.js';
 import { MANDO } from '../data/mando.js';
 import { stance } from './helpers.js';
 import { tryAttack, applySwingDamage } from './jedi/combat.js';
 import { mandoAimPoint, mandoWeapon, mandoShielding } from './mando/weapons.js';
 import { DARK_DUR } from './mando/darksaber.js';
+import { FORM_OF, FOOTWORK } from '../data/poses.js';
+import { pistolPose, riflePose, rifleLowered, restGun } from './anim/guns.js';
+import { MIRROR } from './model/rig.js';
+import { saberPose, guardPose, swingPose, applySaberPose, releaseSaberPose } from './anim/saber.js';
 
 export function animatePlayer(dt, pp, st, f, r, moving){
   const dr = (cur, tgt, l) => cur + (tgt - cur) * Math.min(1, l*dt);
@@ -18,13 +23,7 @@ export function animatePlayer(dt, pp, st, f, r, moving){
   // planted = settled AND holding ground (standing still or block-walking) — drives footwork
   const settled = player.atkT <= 0 && !player.flip && !player.slamming && player.judgeT <= 0;
   const planted = settled && player.grounded && (!moving || player.blockHeld);
-  const POSE = (G.hero === 'mando' && player.weapon === 'darksaber')
-    ? { crouch: -0.16, splay: 0.4, lead: 0.16, lean: 0.16, width: 1.5 }   // DARKSABER — low, wide, aggressive duelist's stance
-    : ({
-    fast:   { crouch: -0.24, splay: 0.10, lead: 0.40, lean: 0.18, width: 0.86 },   // LOW aggressive crouch, slim robe, light on the feet
-    medium: { crouch:  0.00, splay: 0.12, lead: 0.02, lean: 0.00, width: 1.10 },   // clean upright, balanced, square — classic guard
-    strong: { crouch: -0.16, splay: 0.54, lead: -0.05, lean: 0.20, width: 1.62 },  // WIDE planted stance, robe flared, leaning into the blow
-  })[G.stance];
+  const POSE = footwork();
 
   const vis = player.vis, R = player.rig;
   poseBody(dt, dr, vis, planted, POSE, moving);
@@ -32,6 +31,7 @@ export function animatePlayer(dt, pp, st, f, r, moving){
   animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait);
   animateForceCast(dt, dr, R);
   if (G.hero === 'mando') animateMandoPose(dt, dr, vis, R, pp, f, r);
+  secondaryMotion(dt, vis, R);
   player.arcMesh.material.opacity = Math.max(0, player.arcMesh.material.opacity - dt*4);
 
   // saber hum swells with the action
@@ -113,13 +113,28 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
   // PER-STANCE GAIT — same skeleton, different run: FAST is light & high-kneed, STRONG is long & planted (mando = neutral)
   const gait = (G.hero === 'mando' || !stance().gait) ? { amp: 1, lift: 1, bob: 0.35 } : stance().gait;
 
+  // TOUCHDOWN — the knees soak a landing (harder falls sink deeper), then spring back up
+  if (player.grounded && player._wasGrounded === false){
+    player.landT = LAND_T; player.landAmt = clamp(0.3 + (player.landDip || 0) * 1.6, 0.3, 1);
+    if (player.landAmt > 0.45 && !player.slamming){   // a real drop kicks up a ring of dust at the feet
+      const pp = player.group.position;
+      for (let i = 0; i < 8; i++){ const a = i / 8 * Math.PI * 2;
+        burst(V3(pp.x + Math.cos(a)*0.45, pp.y + 0.08, pp.z + Math.sin(a)*0.45), 0x8f8578, 1, 2.5 * player.landAmt, 0.6, 0.9); }
+    }
+  }
+  player._wasGrounded = player.grounded;
+  if (player.landT > 0) player.landT -= dt;
+  const land = player.landT > 0 ? Math.sin((1 - player.landT / LAND_T) * Math.PI) * player.landAmt : 0;
+  player._land = land;
   // legs: stride + knee lift, tuck in the air or during flips
   if (player.grounded && !player.flip){
     const lead = planted ? POSE.lead : 0;   // bladed/staggered footing when planted, neutral when moving
-    R.legL.hip.rotation.x  = dr(R.legL.hip.rotation.x,  Math.sin(ph) * 0.55 * inten * gait.amp - lead, 14);
-    R.legR.hip.rotation.x  = dr(R.legR.hip.rotation.x, -Math.sin(ph) * 0.55 * inten * gait.amp + lead, 14);
-    R.legL.knee.rotation.x = dr(R.legL.knee.rotation.x, -Math.max(0, -Math.sin(ph - 0.4)) * 0.9 * inten * gait.lift, 14);
-    R.legR.knee.rotation.x = dr(R.legR.knee.rotation.x, -Math.max(0,  Math.sin(ph - 0.4)) * 0.9 * inten * gait.lift, 14);
+    // a swing steps into the cut: the off-side foot drives forward, the back leg loads
+    const step = (player._swingDrop || 0) * 2.2;
+    R.legL.hip.rotation.x  = dr(R.legL.hip.rotation.x,  Math.sin(ph) * 0.55 * inten * gait.amp - lead - step - land*0.5, 14);
+    R.legR.hip.rotation.x  = dr(R.legR.hip.rotation.x, -Math.sin(ph) * 0.55 * inten * gait.amp + lead + step*0.6 - land*0.35, 14);
+    R.legL.knee.rotation.x = dr(R.legL.knee.rotation.x, -Math.max(0, -Math.sin(ph - 0.4)) * 0.9 * inten * gait.lift - step*0.8 - land*0.95, 14);
+    R.legR.knee.rotation.x = dr(R.legR.knee.rotation.x, -Math.max(0,  Math.sin(ph - 0.4)) * 0.9 * inten * gait.lift - step*1.1 - land*0.8, 14);
   } else if (player.airDive){
     // PRONE flight — legs DEAD STRAIGHT and in line with the torso so the whole body reads as one long flat plank.
     // Forward superman: legs trail straight back (hip ~0). Reclined back-fall: feet kick out front.
@@ -131,11 +146,12 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
     R.legL.knee.rotation.x = dr(R.legL.knee.rotation.x, -0.04, 10);
     R.legR.knee.rotation.x = dr(R.legR.knee.rotation.x, -0.04, 10);
   } else if (G.hero === 'mando' && !player.grounded){
-    // LOW / SLOW FLIGHT — thighs trail BACK and the lower legs fold backward (not a knees-forward tuck)
-    R.legL.hip.rotation.x  = dr(R.legL.hip.rotation.x,  0.28, 9);
-    R.legR.hip.rotation.x  = dr(R.legR.hip.rotation.x,  0.24, 9);
-    R.legL.knee.rotation.x = dr(R.legL.knee.rotation.x, -0.8, 9);   // calf folds back/up behind the thigh
-    R.legR.knee.rotation.x = dr(R.legR.knee.rotation.x, -0.75, 9);
+    // UPRIGHT JETPACK — legs hang loose under the pack, one a touch ahead of the other, trailing as you lean
+    const trail = (player._airLean || 0) * 0.6;
+    R.legL.hip.rotation.x  = dr(R.legL.hip.rotation.x,  -0.06 + trail + Math.sin(G.gt * 1.3) * 0.04, 6);
+    R.legR.hip.rotation.x  = dr(R.legR.hip.rotation.x,   0.14 + trail, 6);
+    R.legL.knee.rotation.x = dr(R.legL.knee.rotation.x, -0.22 - trail * 0.5, 6);
+    R.legR.knee.rotation.x = dr(R.legR.knee.rotation.x, -0.42 - trail * 0.6, 6);
   } else {
     R.legL.hip.rotation.x  = dr(R.legL.hip.rotation.x,  -0.5, 8);
     R.legR.hip.rotation.x  = dr(R.legR.hip.rotation.x,  -0.35, 8);
@@ -145,6 +161,11 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
   // stance width — feet splay out for the wide STRONG guard, stay close for FAST
   R.legL.hip.rotation.z = dr(R.legL.hip.rotation.z, planted ? -POSE.splay : 0, 9);
   R.legR.hip.rotation.z = dr(R.legR.hip.rotation.z, planted ?  POSE.splay : 0, 9);
+  // ANKLES — feet stay planted flat on the ground under the leg angles; in the air the toes point
+  for (const L of [R.legL, R.legR]){
+    const flat = -(L.hip.rotation.x + L.knee.rotation.x) * 0.9;
+    L.ank.rotation.x = dr(L.ank.rotation.x, player.grounded && !player.flip ? flat : 0.45, 14);
+  }
   // JEDI FRONT KICK — the right leg SNAPS forward (hard-set, overriding the stride pose above) and the torso leans
   // back to counterweight it. `ext` is a 0→1→0 envelope so the leg shoots out and recovers within kickT.
   if (G.hero !== 'mando' && player.kickT > 0){
@@ -156,10 +177,10 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
   }
   // hips bob + robe flare with speed; crouch lowers the center of gravity per stance
   player._crouch = dr(player._crouch || 0, planted ? POSE.crouch : 0, 8);
-  R.hips.position.y = 1.04 + player._crouch + (player.grounded ? Math.abs(Math.sin(ph)) * 0.05 * inten : 0.05);
+  R.hips.position.y = 1.04 + player._crouch - (player._swingDrop || 0) - land*0.2 + (player.grounded ? Math.abs(Math.sin(ph)) * 0.05 * inten : 0.05);
   R.skirt.rotation.x = dr(R.skirt.rotation.x, 0.13 * inten, 8);   // Jedi-only robe (hidden for the Mando)
   R.skirt.rotation.z = dr(R.skirt.rotation.z, Math.sin(ph) * 0.05 * inten, 8);
-  // robe FLARE reads the stance silhouette: wide for DJEM SO, slim for SHII-CHO (relaxes toward neutral while running)
+  // robe FLARE reads the stance silhouette: wide for DJEM SO, slim for ATARU (relaxes toward neutral while running)
   const skirtW = planted ? (POSE.width || 1) : 1;
   R.skirt.scale.x = dr(R.skirt.scale.x, skirtW, 7);
   R.skirt.scale.z = dr(R.skirt.scale.z, skirtW, 7);
@@ -170,64 +191,51 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
   R.torso.rotation.y = dr(R.torso.rotation.y, 0, 11);
   // the master's gaze tracks the camera even when the body doesn't
   const lookDiff = ((G.yaw - player.faceYaw + Math.PI*3) % (Math.PI*2)) - Math.PI;
-  R.head.rotation.y = dr(R.head.rotation.y, clamp(lookDiff, -0.7, 0.7), 10);
+  R.head.rotation.y = dr(R.head.rotation.y, clamp(lookDiff, -0.7, 0.7) * MIRROR, 10);
   if (G.hero !== 'mando') R.head.rotation.x = dr(R.head.rotation.x, 0, 9);   // JEDI level head; the Mando pose drives its own head pitch (don't fight it)
   return { ph, inten, gait };
 }
 
 // Arms: saber swings, guard/parry, idle and run carriage.
+// Bladed weapons (the Jedi saber in either grip, the Mando's darksaber) are posed by anim/saber.js from the guards
+// and swing keyframes in data/poses.js; Force gestures, Mend and Judgement stay plain joint poses here.
 function animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait){
-  // --- arms ---
+  const held = heldBlade();
+  const form = FORM_OF[G.hero === 'mando' ? 'darksaber' : G.stance] || 'niman';
+  const grip = form === 'darksaber' ? 'regular' : (G.saberGrip === 'reverse' ? 'reverse' : 'regular');
   if (player.atkT > 0){
-    // saber swing driven through the right arm, pattern chosen by movement direction
+    // saber swing: the keyframed cut for this form, grip and direction
     player.atkT -= dt;
     const sw = player.swing;
     sw.t += dt;
-    const k = clamp(sw.t / sw.dur, 0, 1);
-    const p = sw.pat;
-    // PER-STANCE SWING IDENTITY — same pattern, different body language:
-    //   SHII-CHO (fast): shallow coil, light follow, a lot of WRIST — whippy flurries.
-    //   NIMAN (balanced): textbook 1.0 across the board.
-    //   DJEM SO (strong): a deep coil and a heavy, lingering FOLLOW-THROUGH, almost no wrist — it's all shoulder & weight.
-    const coil = sw.riposte ? 0.5 : (st.swingCoil || 1);          // a riposte barely winds up — it's an instant answer
-    const follow = st.swingFollow || 1, wrist = st.wristSnap || 1;
-    // anticipation: coil back in the first ~30%, then explode through the cut
-    const wind = k < 0.3 ? -(1 - k/0.3) * 0.4 * coil : 0;          // STRONG coils deep; FAST/riposte barely pull back
-    // STRONG holds the cut a touch longer (heavier release curve); FAST snaps through (a sharper curve)
-    const relExp = 0.6 / (follow > 1 ? follow : 1) * (wrist > 1 ? 0.85 : 1);
-    const rel = k < 0.3 ? 0 : Math.pow((k-0.3)/0.7, relExp);       // accelerating release, shaped by the form
-    const punch = Math.sin(k * Math.PI);                          // 0→1→0 reach/whip envelope
-    const turn = Math.sign(p.yT - p.yF);                          // which way the cut travels (R→L = -1, L→R = +1)
-    // RIGHT ARM drives the blade — shoulder sweep + raise + roll, elbow whip, wrist snap
-    R.armR.sh.rotation.y = p.yF + (p.yT - p.yF) * rel + wind * Math.sign(p.yF || 1);
-    R.armR.sh.rotation.x = p.xF + (p.xT - p.xF) * rel - punch * 0.25 * follow;   // STRONG drops the shoulder deeper through the cut
-    R.armR.sh.rotation.z = dr(R.armR.sh.rotation.z, p.zF + (p.zT - p.zF) * rel, 16);
-    R.armR.el.rotation.x = -(0.95 - punch * (0.85 + p.reach));    // elbow extends hard mid-swing
-    R.armR.el.rotation.y = dr(R.armR.el.rotation.y, (p.zT - p.zF) * 0.4 * rel, 14);
-    // wrist snaps the saber through the arc — FAST whips with the wrist, STRONG barely rolls it
-    player.saberHand.rotation.x = dr(player.saberHand.rotation.x, 0.15 + punch * 0.5 * wrist, 16);
-    player.saberHand.rotation.z = p.wF + (p.wT - p.wF) * rel;
-    player.saberHand.rotation.y = dr(player.saberHand.rotation.y, punch * 0.55 * turn * wrist, 16);   // wrist yaw snaps the way the cut travels
-    // the whole right shoulder punches forward so the strike reads as a reaching lunge — STRONG/riposte drive in harder
-    R.torso.position.z = dr(R.torso.position.z, punch * p.reach * 0.35 * (sw.riposte ? 1.5 : follow), 14);
-    // torso COILS toward the start side, then UNWINDS through the cut — sells left vs right
-    R.torso.rotation.y = dr(R.torso.rotation.y, turn * (-0.28 * (1 - rel) + 0.5 * rel), 16);
-    // off-hand counterbalances the cut
-    R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -0.4 - punch * 0.5, 13);
-    R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, 0.25 + punch * 0.2, 13);
-    R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -0.4 - punch * 0.3, 13);
+    // (no blade in hand — e.g. the weapon was swapped mid-swing — just run the swing's clock out)
+    const cue = held ? swingPose(R, held, grip, form, sw) : { k: Math.min(1, sw.t / sw.dur), env: 0, cut: 0, spin: 0, hop: 0, drop: 0 };
+    if (held) applySaberPose(R, held, player.castT <= 0);
+    // the body turns with the blade; a finisher spins all the way round (Ataru leaps into it)
+    const turn = Math.sign(sw.pat.yT - sw.pat.yF);
     if (!player.flip){
-      if (sw.dir === 'neutral' && sw.step === 2) vis.rotation.y = rel * Math.PI * 2;   // only the neutral combo finisher does a full spin
-      else vis.rotation.y = punch * st.twist * turn;                                    // directional swings turn the body the way the blade travels
+      if (cue.spin) vis.rotation.y = easeInOut(cue.cut) * Math.PI * 2 * cue.spin * (turn || 1);
+      else vis.rotation.y = cue.env * st.twist * turn * 0.55;
+      if (cue.hop) vis.position.y = Math.sin(Math.PI * cue.k) * cue.hop;
     }
-    if (!sw.applied && k > 0.35){ sw.applied = true; applySwingDamage(sw.step); }
+    // drive in on the strike: the weapon shoulder reaches, the hips sink for the power forms
+    R.torso.position.z = dr(R.torso.position.z, cue.env * 0.12 * (sw.riposte ? 1.6 : 1), 14);
+    R.torso.rotation.y = dr(R.torso.rotation.y, 0, 12);
+    vis.rotation.x = dr(vis.rotation.x, saberPose.lean, 14);
+    player._swingDrop = cue.drop * cue.env;
+    if (!sw.applied && cue.k > 0.35){ sw.applied = true; applySwingDamage(sw.step); }
     if (player.atkT <= 0){
       player.lastAtkEnd = G.gt;
       vis.rotation.y = 0;
+      player._swingDrop = 0;
       if (player.queuedAtk){ player.queuedAtk = false; tryAttack(); }   // buffered combo
     }
-  } else if (player.mendT > 0){
+    return;
+  }
+  player._swingDrop = 0;
+  if (player.mendT > 0){
     // FORCE MEND channel — both hands drawn in over the heart, gathering the Force inward (a clear wind-up)
+    releaseSaberPose(R, dt);
     const k = 1 - clamp(player.mendT / (player.mendMax || 0.7), 0, 1);   // 0→1 as the channel completes
     R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -1.15, 16);
     R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, 0.55, 16);
@@ -237,76 +245,44 @@ function animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait){
     R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -1.25, 16);
     vis.rotation.x = dr(vis.rotation.x, 0.12 - k*0.04, 12);   // hunch in, then straighten as it releases
     vis.rotation.y = dr(vis.rotation.y, 0, 12);
-  } else if (G.hero !== 'mando' && player.blockHeld){
-    // guard pose differs per form — nimble one-hander, balanced two-hander, or a braced wall (JEDI only;
-    // the Mando block below fully owns the Mando's arms — running these too would fight & dilute its poses)
-    let b;
-    if (G.stance === 'fast'){
-      // SHII-CHO: quick one-handed high guard, blade slashed across at an angle, off-hand free & trailing
-      b = { rShx:-1.78, rShy:-0.12, rShz:0.34, rElx:-0.5, sabx:-0.55, sabz:0.85,
-            lShx:-0.15, lShy:-0.42, lElx:-0.7, lean:0.04, twist:-0.2 };
-    } else if (G.stance === 'strong'){
-      // DJEM SO: heavy committed two-hander, blade angled low & defensive, leaning HARD into the impact
-      b = { rShx:-1.38, rShy:-0.55, rShz:-0.34, rElx:-0.5, sabx:-1.5, sabz:0.2,
-            lShx:-1.32, lShy:0.55, lElx:-0.5, lean:0.32, twist:0.0 };
-    } else {
-      // NIMAN: clean balanced two-handed guard, blade vertical before the chest
-      b = { rShx:-1.45, rShy:-0.45, rShz:-0.1, rElx:-0.3, sabx:-1.25, sabz:0.0,
-            lShx:-1.2, lShy:0.5, lElx:-0.4, lean:0.07, twist:0.0 };
-    }
-    R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, b.rShx, 14);
-    R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, b.rShy, 14);
-    R.armR.sh.rotation.z = dr(R.armR.sh.rotation.z, b.rShz, 14);
-    R.armR.el.rotation.x = dr(R.armR.el.rotation.x, b.rElx, 14);
-    R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, b.lShx, 14);
-    R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, b.lShy, 14);
-    R.armL.el.rotation.x = dr(R.armL.el.rotation.x, b.lElx, 14);
-    player.saberHand.rotation.x = dr(player.saberHand.rotation.x, b.sabx, 14);
-    player.saberHand.rotation.z = dr(player.saberHand.rotation.z, b.sabz, 14);
-    R.torso.rotation.y = dr(R.torso.rotation.y, b.twist, 12);
-    vis.rotation.x = dr(vis.rotation.x, b.lean, 12);
-    vis.rotation.y = dr(vis.rotation.y, 0, 12);
-  } else if (G.hero !== 'mando' && player.judgeT > 0){
-    // left palm forward, lightning pouring from the fingers
+  } else if (G.hero !== 'mando' && player.judgeT > 0 && !player.blockHeld){
+    // left palm forward, lightning pouring from the fingers; the saber drops to a low trailing guard
+    releaseSaberPose(R, dt);
     R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -1.5, 12);
     R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, 0.15, 12);
     R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -0.1, 12);
     R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -0.2, 10);
     R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, 0.4, 10);
     vis.rotation.y = dr(vis.rotation.y, 0, 12);
-  } else if (G.hero !== 'mando'){
-    // stance-flavored ready pose — each form holds a distinct, recognizable guard at rest (JEDI only)
-    const breath = Math.sin(G.gt*1.9)*0.04;
-    let a;
-    if (G.stance === 'fast'){
-      // SHII-CHO: low aggressive guard, saber carried forward & down, blade-side shoulder leading
-      a = { rShx:-0.52, rShy:0.55, rShz:0.06, rElx:-0.35, sabx:0.95, sabz:-0.1,
-            lShx:0.2, lShy:-0.3, lElx:-0.6, twist:-0.28 };
-    } else if (G.stance === 'strong'){
-      // DJEM SO: heavy high guard — saber held up & out to the right, tip skyward (not across the body)
-      a = { rShx:-1.05, rShy:-0.95, rShz:-0.5, rElx:-1.2, sabx:0.15, sabz:-0.35,
-            lShx:-0.45, lShy:0.3, lElx:-0.85, twist:0.05 };
-    } else {
-      // NIMAN: classic upright ready, saber held at a natural angle before the body
-      a = { rShx:-0.42, rShy:0.05, rShz:-0.12, rElx:-0.5, sabx:0.25, sabz:-0.4,
-            lShx:-0.05, lShy:0.0, lElx:-0.25, twist:0.04 };
-    }
-    // a moving Jedi isn't a statue — the saber arm sways gently in counter to the stride (subtle, the guard still reads)
-    R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, a.rShx + breath + (moving ? Math.sin(ph) * 0.13 * inten * gait.amp : 0), 9);
-    R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, a.rShy, 8);
-    R.armR.sh.rotation.z = dr(R.armR.sh.rotation.z, a.rShz, 8);
-    R.armR.el.rotation.x = dr(R.armR.el.rotation.x, a.rElx, 8);
-    R.armR.el.rotation.y = dr(R.armR.el.rotation.y, 0, 8);
-    R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, (moving ? -Math.sin(ph) * 0.5 * inten * gait.amp : a.lShx + breath), 10);
-    R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, a.lShy, 8);
-    R.armL.el.rotation.x = dr(R.armL.el.rotation.x, a.lElx, 8);
-    player.saberHand.rotation.x = dr(player.saberHand.rotation.x, a.sabx, 8);
-    player.saberHand.rotation.z = dr(player.saberHand.rotation.z, a.sabz, 8);
-    player.saberHand.rotation.y = dr(player.saberHand.rotation.y, 0, 8);
-    R.torso.rotation.y = dr(R.torso.rotation.y, planted ? a.twist : 0, 9);
+  } else if (held){
+    // GUARD — each form holds its own recognizable ready guard, and its own block (data/poses.js)
+    const blocking = player.blockHeld;
+    // a moving hero isn't a statue — the guard rides the stride a little (the shape still reads)
+    const sway = { y: moving && !blocking ? Math.sin(ph * 2) * 0.025 * inten : Math.sin(G.gt * 1.9) * 0.01,
+                   z: moving && !blocking ? Math.sin(ph) * 0.04 * inten * gait.amp : 0 };
+    const body = guardPose(dt, R, held, grip, form, blocking, sway);
+    // a free off hand swings with the stride when running (two-handed guards keep it on the hilt)
+    applySaberPose(R, held, player.castT <= 0);
+    R.torso.rotation.y = dr(R.torso.rotation.y, planted ? body.torso : 0, 9);
+    if (blocking || planted) vis.rotation.x = dr(vis.rotation.x, saberPose.lean + (planted ? footwork().lean : 0), 12);
     vis.rotation.y = dr(vis.rotation.y, 0, 12);
+  } else {
+    releaseSaberPose(R, dt);
   }
 }
+
+// the bladed weapon in hand right now (or null): the Jedi saber, or the Mando's darksaber when it's equipped
+function heldBlade(){
+  if (G.hero !== 'mando') return player.saberHand ? { node: player.saberHand, root: player.saberBladeRoot } : null;
+  if (player.weapon === 'darksaber' && player.darksaberMesh) return { node: player.darksaberMesh, root: null };
+  return null;
+}
+export function footwork(){
+  return FOOTWORK[(G.hero === 'mando' && player.weapon === 'darksaber') ? 'darksaber' : (FORM_OF[G.stance] || 'niman')];
+}
+const _IDQ = new THREE.Quaternion();
+const LAND_T = 0.34;
+const easeInOut = t => t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t + 2, 2) / 2;
 
 function animateForceCast(dt, dr, R){
   // --- force-cast gesture: the off-hand reaches out to project the power ---
@@ -338,45 +314,19 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
   const _vx = player.moveVel.x + player.vel.x, _vz = player.moveVel.z + player.vel.z;
   const _spd = Math.hypot(_vx, _vz);
   const _aiming = player.zoom || player.aiming > 0 || player.blockHeld || player.firing;
-  const flyingFree = !player.grounded && !player.slamming && !player.flip && !_aiming && _spd > 1.2 && w !== 'darksaber';
+  // FREE FLIGHT (the superman lay-out) is for a hard BOOST only — Boba Fett, not Superman: cruising and hovering
+  // stay upright with the weapon still held (see the flight pose below).
+  const flyingFree = !player.grounded && !player.slamming && !player.flip && !_aiming && player.boosting && _spd > 1.2 && w !== 'darksaber';
+  const gunsIK = !flyingFree && !player.isShielding && player.meleeT <= 0 && player.darkT <= 0 && !(player.blockHeld && player.grounded);
   if (!flyingFree){
   if (w === 'darksaber'){
-    // DARKSABER drives the shared Jedi saber rig: the swing block (player.atkT>0) already animated the arm.
-    // When idle, hold an AGGRESSIVE low guard — blade cocked back & out to the side, ready to strike. Bracing
-    // (RMB parry) snaps to a tighter, forward, two-handed-ish wall guard — sharper than a classic Jedi guard.
-    if (player.atkT <= 0){
-      if (player.blockHeld){
-        // BLOCK — a heavy braced WALL guard: both hands hauling the blade up high & forward, hard forward lean,
-        // wide low base. He's bracing to TANK the hit, not standing politely upright.
-        R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -1.35, 16);
-        R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, 0.0, 16);
-        R.armR.sh.rotation.z = dr(R.armR.sh.rotation.z, -0.15, 16);
-        R.armR.el.rotation.x = dr(R.armR.el.rotation.x, -1.7, 16);
-        R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -1.3, 14);
-        R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, 0.5, 14);   // off-hand wraps onto the hilt
-        R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -1.35, 14);
-        vis.rotation.x = dr(vis.rotation.x, 0.26, 12);              // braced forward lean
-        R.torso.position.z = dr(R.torso.position.z, 0.18, 12);
-      } else {
-        // IDLE READY — a HEAVY, aggressive high guard: blade reared up & out to the strong side, shoulders tense,
-        // both hands committed to the hilt. Reads as a weighty weapon held with effort, not a casual saber.
-        R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -1.0, 12);
-        R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, 0.34, 12);
-        R.armR.sh.rotation.z = dr(R.armR.sh.rotation.z, -0.6, 12);   // reared up to the side, tip skyward
-        R.armR.el.rotation.x = dr(R.armR.el.rotation.x, -1.15, 12);
-        R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -0.85, 11);
-        R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, 0.45, 11);   // support hand toward the hilt
-        R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -0.95, 11);
-        vis.rotation.x = dr(vis.rotation.x, 0.08, 10);               // a slight forward, coiled lean
-      }
-    }
+    // DARKSABER: animateArms (anim/saber.js) owns both arms — heavy two-handed guards and swings
   } else if (player.darkT > 0){
-    const k = 1 - Math.max(0, player.darkT) / DARK_DUR;   // overhead → diagonal cut
-    R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -2.7 + k*3.7, 24);
-    R.armR.sh.rotation.z = dr(R.armR.sh.rotation.z, 0.9 - k*2.0, 24);
-    R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, -0.1, 18);
-    R.armR.el.rotation.x = dr(R.armR.el.rotation.x, -0.25, 18);
-    R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -0.7, 14);
+    // DARKSABER ABILITY SLASH (drawn just for the cut) — the darksaber form's heavy diagonal, keyframed like a swing
+    if (!player._darkSw) player._darkSw = { t: 0, dur: DARK_DUR, step: 0, dir: 'ability', pat: { id: 'diagR' } };
+    player._darkSw.t = DARK_DUR - Math.max(0, player.darkT);
+    swingPose(R, { node: player.darksaberMesh, root: null }, 'regular', 'darksaber', player._darkSw);
+    applySaberPose(R, { node: player.darksaberMesh, root: null }, true);
   } else if (twoH && player.stabT > 0){
     // SPEAR STAB — both arms drive the rifle forward like a pike
     const ext = Math.sin((1 - Math.max(0,player.stabT)/0.24) * Math.PI);
@@ -388,6 +338,7 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
     R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -0.45, 16);
   } else if (twoH && !player.zoom && player.aiming <= 0){
     // DISRUPTOR REST — carried low across the body; the barrel only swings OUT when you aim (RMB) or attack
+    rifleLowered();
     R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -0.42, 12);
     R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, 0.06, 12);
     R.armR.sh.rotation.z = dr(R.armR.sh.rotation.z, -0.1, 12);
@@ -395,37 +346,34 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
     R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -0.55, 12);
     R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, 0.12, 12);
     R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -0.75, 12);
+  } else if (gunsIK){
+    // GUNSLINGER — blasters at the hip until he shoots, then up one-handed down the aim line; the disruptor shouldered
+    const aimPt = mandoAimPoint();   // also refreshes the reticle lock state (player.lockOn)
+    if (twoH) riflePose(dt, R, player, aimPt);
+    else pistolPose(dt, R, player, aimPt, w === 'dual');
   } else {
-    const aimX = -1.45 + player.recoil * 4;   // arms RAISED — gun held up at shoulder level, not the waist
-    R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, aimX, 16);
-    R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, -0.12, 14);
-    R.armR.sh.rotation.z = dr(R.armR.sh.rotation.z, -0.18, 14);
-    R.armR.el.rotation.x = dr(R.armR.el.rotation.x, -0.15, 14);
-    if (w === 'dual'){
-      // DUAL — aggressive GUNSLINGER: off-hand held LOW & out to the side, body open (no support, less lean)
-      R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -0.65 + player.recoil*2, 14);
-      R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, -0.45, 14);   // splayed outward
-      R.armL.sh.rotation.z = dr(R.armL.sh.rotation.z, 0.2, 14);
-      R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -0.35, 14);
-    } else {
-      // SINGLE / DISRUPTOR — braced two-hand: the LEFT hand comes across to SUPPORT the blaster
-      R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, aimX, 16);
-      R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, twoH ? -0.16 : 0.16, 14);   // brought toward centre, under the gun
-      R.armL.el.rotation.x = dr(R.armL.el.rotation.x, twoH ? -0.55 : -0.7, 14);
-    }
-    mandoAimPoint();   // refresh the reticle lock state (sets player.lockOn)
+    mandoAimPoint();
   }
-  }   // end !flyingFree (the flight pose below owns the arms during a free-flight superman)
-  // DISRUPTOR barrel: swings OUT to aim, lies back along the forearm at rest (attached to the hands)
-  if (player.rifleMesh){
+  if (player.darkT <= 0) player._darkSw = null;
+  }   // end !flyingFree (the flight pose below owns the arms during a boosted superman)
+  if (!gunsIK || flyingFree || w === 'darksaber'){
+    // an FK pose owns the arms: settle the guns back into their holds and the wrists square
+    if (w !== 'darksaber' && player.darkT <= 0){ R.armR.wr.quaternion.slerp(_IDQ, Math.min(1, dt*12)); R.armL.wr.quaternion.slerp(_IDQ, Math.min(1, dt*12)); }
+    restGun(player.pistols.R, dt); restGun(player.pistols.L, dt);
+    if (w !== 'darksaber' && player.darkT <= 0) R.chest.rotation.y = dr(R.chest.rotation.y, 0, 10);
+  }
+  // DISRUPTOR barrel: aimed by riflePose while shouldered; otherwise lies back along the forearm at rest
+  if (player.rifleMesh && !(gunsIK && twoH && (player.zoom || player.aiming > 0))){
     const out = player.zoom || player.aiming > 0 || player.stabT > 0;
     player.rifleMesh.rotation.x = dr(player.rifleMesh.rotation.x, out ? 1.15 : -0.35, 9);
+    player.rifleMesh.rotation.y = dr(player.rifleMesh.rotation.y, 0, 9);
+    player.rifleMesh.rotation.z = dr(player.rifleMesh.rotation.z, 0, 9);
   }
-  // AIR FLIGHT POSE — lays the body out toward HORIZONTAL as you pick up speed (scales in naturally, not a snap).
-  //  • FREE FLIGHT: a forward superman — arms thrust ahead, head craned UP to look where you're going.
-  //  • AIMING/BRACING: leans flat toward your DRIFT (pitch from fwd/back, roll from side) blended smoothly so
-  //    swapping directions is fluid; the HELMET counter-rotates so its top always stays up & looks forward.
-  // Pitch/roll pivot about the torso (we lift `vis`) so it reads as a flat body at altitude, not a nose-dive.
+  // AIR FLIGHT POSE (docs/animation-guidelines.md: "Boba Fett, not Superman, unless boosting")
+  //  • CRUISE / HOVER: upright, leaning a little into the way you travel, with small hover corrections.
+  //  • BOOST: the committed lay-out — body toward horizontal (needs speed AND altitude), arms thrust ahead.
+  //  • AIMING / BRACING: upright and steady, a slight tactical cant; the helmet stays level on the target.
+  // Pitch/roll pivot about the torso (we lift `vis`) so a lean reads as the body tilting, not a nose-dive.
   const AIRREF = MANDO.airSpeed || 12;
   player.airDive = 0;
   if (!player.grounded && !player.slamming && !player.flip){
@@ -435,34 +383,23 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
     const FLAT = Math.PI / 2;           // horizontal — 0° to the ground (full lay-out at cruise speed)
     const HEAD_UP = 0.5;                // how far above level the visor cranes when fully flat
     const speed = Math.hypot(vF, vR);
-    // flatness needs BOTH speed AND ALTITUDE — skim low and you stay fairly upright; only a decent height
-    // off the ground lets the body lay all the way out into a flat prone.
-    const speedF = clamp((speed - 0.5) / 5.2, 0, 1);   // early-game slight leaning
+    const speedF = clamp((speed - 0.5) / 5.2, 0, 1);
     const altF = clamp((pp.y - (player.groundY || 0) - 0.5) / 4.0, 0, 1);
     const lvl = speedF * altF;
-    const aiming = player.zoom || player.aiming > 0 || player.blockHeld || player.firing;
     const liftFor = a => pivot * (1 - Math.cos(a));
-    if (lvl <= 0.001){
-      // hovering / barely moving — upright, feet down
-      vis.rotation.x = dr(vis.rotation.x, 0, 7);
-      vis.rotation.z = dr(vis.rotation.z, 0, 7);
-      vis.position.y = dr(vis.position.y, 0, 7);
-      R.head.rotation.x = dr(R.head.rotation.x, 0, 8);
-      R.head.rotation.z = dr(R.head.rotation.z, 0, 8);
-    } else if (!aiming){
-      // FREE FLIGHT — forward superman (always forward, regardless of drift)
+    if (flyingFree && lvl > 0.001){
+      // BOOST — forward superman (always forward, regardless of drift)
       const pitchAmount = clamp(Math.abs(vF) / AIRREF, 0, 1);
       const pitchScale = 0.45 + (lvl * 0.30);
       const pitch = (FLAT * pitchScale) * pitchAmount * (vF >= 0 ? 1 : -1);
       vis.rotation.x = dr(vis.rotation.x, pitch, 8);
-      vis.rotation.z = dr(vis.rotation.z, clamp(vR * 0.065, -0.42, 0.42), 10);  // stronger side lean to better match forward/back pitch intensity
+      vis.rotation.z = dr(vis.rotation.z, clamp(vR * 0.065, -0.42, 0.42), 10);
       vis.position.y = dr(vis.position.y, liftFor(pitch), 8);
       R.head.rotation.x = dr(R.head.rotation.x, -pitch - HEAD_UP*lvl, 11);     // counter the body + crane UP
       R.head.rotation.z = dr(R.head.rotation.z, 0, 11);
       player.airDive = lvl > 0.4 ? 2 : 0;
-      // SUPERMAN arms — ALWAYS reach forward in WORLD space: the shoulder angle tracks the body pitch so the
-      // arms point ahead whether you're flat (high) or upright (low), never straight up.
-      const armX = -1.45 - pitch * 0.9;   // pitch 0 → ~-1.45 (forward-horizontal) · pitch π/2 → ~-2.86 (overhead = forward)
+      // SUPERMAN arms — ALWAYS reach forward in WORLD space: the shoulder angle tracks the body pitch
+      const armX = -1.45 - pitch * 0.9;
       R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, armX, 11);
       R.armR.sh.rotation.z = dr(R.armR.sh.rotation.z, 0.16, 11);
       R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, -0.14, 11);
@@ -472,19 +409,19 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
       R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, 0.14, 11);
       R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -0.22, 11);
     } else {
-      // AIMING / BRACING — flat lean BLENDED from drift: pitch (fwd/back) + roll (side) at once → fluid swaps.
-      // Plus a small constant RIGHT lean (a tactical aim-stance tilt) on top of the drift roll.
-      const AIM_LEAN = 0.16;
-      const pitch = clamp(vF / AIRREF, -1, 1) * FLAT * lvl;
-      const roll  = clamp(vR / AIRREF, -1, 1) * FLAT * lvl + AIM_LEAN;
-      vis.rotation.x = dr(vis.rotation.x, pitch, 9);
-      vis.rotation.z = dr(vis.rotation.z, roll, 9);                            // bank INTO the strafe (right→right) + a base right lean
-      vis.position.y = dr(vis.position.y, liftFor(Math.max(Math.abs(pitch), Math.abs(roll))), 9);
-      // HELMET looks FORWARD where you're aiming (fully counter the body so the visor is level — works even when
-      // reclined back), and counters the roll so its top stays up.
-      R.head.rotation.x = dr(R.head.rotation.x, -pitch, 11);
-      R.head.rotation.z = dr(R.head.rotation.z, -roll, 11);                    // cancels body roll → top of head stays up
-      player.airDive = Math.abs(roll) > Math.abs(pitch) ? (roll >= 0 ? 1 : -1) : (pitch >= 0 ? 2 : 3);
+      // UPRIGHT — lean modestly into travel, bank into a strafe, and keep making the small corrections of a
+      // jetpack holding station. Aiming steadies it (less lean, a slight cant toward the gun).
+      const aiming = player.zoom || player.aiming > 0 || player.blockHeld || player.firing;
+      const calm = aiming ? 0.55 : 1;
+      const wob = player.hovering || speed < 2 ? 1 : 0.4;
+      const pitch = clamp(vF / AIRREF, -1, 1) * 0.34 * calm + Math.sin(G.gt * 2.1) * 0.03 * wob;
+      const roll  = clamp(vR / AIRREF, -1, 1) * 0.3 * calm + Math.cos(G.gt * 1.7) * 0.028 * wob + (aiming ? 0.06 : 0);
+      vis.rotation.x = dr(vis.rotation.x, pitch, 6);
+      vis.rotation.z = dr(vis.rotation.z, roll, 6);
+      vis.position.y = dr(vis.position.y, liftFor(Math.max(Math.abs(pitch), Math.abs(roll))), 8);
+      R.head.rotation.x = dr(R.head.rotation.x, -pitch * 0.8, 10);   // visor stays on the horizon
+      R.head.rotation.z = dr(R.head.rotation.z, -roll * 0.8 * MIRROR, 10);
+      player._airLean = pitch;
     }
   } else if (!player.slamming && !player.flip){
     if (player.dashT > 0){
@@ -538,7 +475,7 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
         const strafeLean = clamp(latV * 0.035, -0.5, 0.5);
         vis.rotation.x = dr(vis.rotation.x, 0, 9);
         vis.rotation.z = dr(vis.rotation.z, strafeLean, 10);
-        R.head.rotation.z = dr(R.head.rotation.z, -strafeLean * 0.65, 10);
+        R.head.rotation.z = dr(R.head.rotation.z, -strafeLean * 0.65 * MIRROR, 10);
       }
 
       // (the gauntlet SHIELD disc is driven below, OUTSIDE the grounded branch, so it also shows mid-flight)
@@ -592,5 +529,46 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
     sg.visible = true;
   } else if (player.shieldMesh){
     player.shieldMesh.visible = false;
+  }
+}
+
+/* SECONDARY MOTION — cloth that follows the body instead of being bolted to it. Each robe panel and the cape is a
+   damped spring chasing a target set by how the body moves: running streams them back, a spin flares them out,
+   falling lifts them, and stopping lets them swing through and settle. */
+const _sv = new THREE.Vector3();
+function spring(o, key, target, dt, k = 90, c = 9){
+  const s = o.userData[key] || (o.userData[key] = { a: 0, w: 0 });
+  const h = Math.min(dt, 1/30);
+  s.w += (k * (target - s.a) - c * s.w) * h;
+  s.a += s.w * h;
+  return s.a;
+}
+function secondaryMotion(dt, vis, R){
+  if (dt <= 0) return;
+  const yaw = player.faceYaw + vis.rotation.y;
+  const yawRate = player._lastYaw == null ? 0 : (((yaw - player._lastYaw + Math.PI*3) % (Math.PI*2)) - Math.PI) / dt;
+  player._lastYaw = yaw;
+  _sv.set(player.moveVel.x + player.vel.x, 0, player.moveVel.z + player.vel.z);
+  const vf = _sv.x * Math.sin(yaw) + _sv.z * Math.cos(yaw);
+  const vr = (_sv.x * Math.cos(yaw) - _sv.z * Math.sin(yaw)) * MIRROR;   // in the (mirrored) rig's own sideways
+  const flare = Math.min(0.9, Math.abs(yawRate) * 0.06);
+  const spinR = yawRate * MIRROR;          // a spin throws every panel outward
+  const lift = Math.min(0.6, Math.max(0, -player.vy) * 0.03);     // falling lifts the hem
+  const F = R.flaps;
+  if (F && R.skirt.visible){
+    // + rotates a panel's hem back toward the body's rear in its own frame (YXZ), − lifts it outward
+    F.F.rotation.x = spring(F.F, 'sp', clamp(vf * 0.045, -0.5, 0.7) - flare - lift, dt);
+    F.B.rotation.x = spring(F.B, 'sp', -clamp(vf * 0.06, -0.3, 0.9) - flare - lift, dt);
+    F.L.rotation.x = spring(F.L, 'sp', clamp(vr * 0.05, -0.6, 0.6) - flare - lift, dt);
+    F.R.rotation.x = spring(F.R, 'sp', -clamp(vr * 0.05, -0.6, 0.6) - flare - lift, dt);
+  }
+  // CAPE — trails behind with speed and climb, flutters when moving fast, swings out on a turn
+  if (R.cape && R.cape.children.length){
+    const base = R.cape.userData.base || (R.cape.userData.base = R.cape.rotation.clone());
+    const climb = player.grounded ? 0 : Math.max(0, player.vy) * 0.03;
+    const sp = Math.hypot(vf, vr);
+    const flutter = Math.sin(G.gt * 11) * Math.min(0.08, sp * 0.006);
+    R.cape.rotation.x = base.x + spring(R.cape, 'cx', clamp(Math.max(0, vf) * 0.05 + climb + lift * 0.8, 0, 1.1) + flutter, dt, 60, 7);
+    R.cape.rotation.z = base.z + spring(R.cape, 'cz', clamp(-vr * 0.03 - spinR * 0.04, -0.5, 0.5), dt, 60, 7);
   }
 }

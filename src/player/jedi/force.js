@@ -18,7 +18,7 @@ import { cancelSwing } from './combat.js';
 import { spawnPushWave, spawnGroundShock } from '../../fx/vfx.js';
 
 /* trigger the off-hand reaching gesture used by every Force power */
-export function castGesture(kind, dur){ dur *= (stance().castMul || 1); player.castT = dur; player.castMax = dur; player.castKind = kind; }   // SHII-CHO casts snap off faster
+export function castGesture(kind, dur){ dur *= (stance().castMul || 1); player.castT = dur; player.castMax = dur; player.castKind = kind; }   // ATARU casts snap off faster
 // turn the Jedi to FACE the direction an ability is aimed — soft-snaps the yaw onto the nearest foe in
 // the frontal cone so powers commit toward the threat (the Force equivalent of the Mando squaring up)
 function faceAbilityAim(range){

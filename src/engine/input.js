@@ -71,7 +71,7 @@ document.addEventListener('mousedown', (e) => {
       if (cancelled){
         // STANCE-SPECIFIC CANCEL FEEL
         if (G.stance === 'fast'){
-          // SHII-CHO — a quick repositioning step in the way you're moving (or hop back if still)
+          // ATARU — a quick repositioning step in the way you're moving (or hop back if still)
           const d = V3(0,0,0);
           if (keys['w']) d.add(fwd()); if (keys['s']) d.sub(fwd());
           if (keys['d']) d.add(rightV()); if (keys['a']) d.sub(rightV());
