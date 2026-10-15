@@ -3,7 +3,7 @@
 
 import * as THREE from 'three';
 import { CFG } from '../data/config.js';
-import { clamp, dampAngle, V3 } from '../utils.js';
+import { clamp, dampAngle, wrapAngle, V3 } from '../utils.js';
 import { burst } from '../fx/particles.js';
 import { G, player } from '../state.js';
 import { MANDO } from '../data/mando.js';
@@ -103,7 +103,7 @@ function mandoBackRun(){
 // stays toward the target the whole way round, and turning back retraces the same path (no spinning the other way
 // when the turn is near 180° and the shortest way round flips).
 function mandoTurn(face, lambda, dt){
-  const fromAim = a => { let d = ((a - G.yaw + Math.PI*3) % (Math.PI*2)) - Math.PI; if (d < -Math.PI/2) d += Math.PI*2; return d; };
+  const fromAim = a => wrapAngle(a - G.yaw, -Math.PI/2);   // [-π/2, 3π/2): the off-hand side wraps past 180°
   const cur = fromAim(player.faceYaw), tgt = fromAim(face);
   return G.yaw + cur + (tgt - cur) * (1 - Math.exp(-lambda*dt));
 }
@@ -210,7 +210,7 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
   R.torso.position.z = dr(R.torso.position.z, 0, 11);
   R.torso.rotation.y = dr(R.torso.rotation.y, 0, 11);
   // the master's gaze tracks the camera even when the body doesn't
-  const lookDiff = ((G.yaw - player.faceYaw + Math.PI*3) % (Math.PI*2)) - Math.PI;
+  const lookDiff = wrapAngle(G.yaw - player.faceYaw);
   if (!player.backRun) R.head.rotation.y = dr(R.head.rotation.y, clamp(lookDiff, -0.7, 0.7) * MIRROR, 10);   // (running away: anim/guns.js turns it to the target)
   if (G.hero !== 'mando') R.head.rotation.x = dr(R.head.rotation.x, 0, 9);   // JEDI level head; the Mando pose drives its own head pitch (don't fight it)
   return { ph, inten, gait };
@@ -572,7 +572,7 @@ function spring(o, key, target, dt, k = 90, c = 9){
 function secondaryMotion(dt, vis, R){
   if (dt <= 0) return;
   const yaw = player.faceYaw + vis.rotation.y;
-  const yawRate = player._lastYaw == null ? 0 : (((yaw - player._lastYaw + Math.PI*3) % (Math.PI*2)) - Math.PI) / dt;
+  const yawRate = player._lastYaw == null ? 0 : wrapAngle(yaw - player._lastYaw) / dt;
   player._lastYaw = yaw;
   _sv.set(player.moveVel.x + player.vel.x, 0, player.moveVel.z + player.vel.z);
   const vf = _sv.x * Math.sin(yaw) + _sv.z * Math.cos(yaw);
