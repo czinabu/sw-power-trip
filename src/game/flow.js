@@ -5,7 +5,7 @@ import { CFG } from '../data/config.js';
 import { LEVELS } from '../data/levels.js';
 import { scene } from '../engine/renderer.js';
 import { sfx } from '../audio/sfx.js';
-import { V3, rand } from '../utils.js';
+import { V3 } from '../utils.js';
 import { burst } from '../fx/particles.js';
 import { floater } from '../fx/floaters.js';
 import { shared, G, rockets, birds, detos, enemies, bolts, orbs, rings, vfx, player } from '../state.js';
@@ -16,7 +16,7 @@ import { setStanceHud, switchStance } from '../player/jedi/stance.js';
 import { spawnEnemy } from '../enemies/spawn.js';
 import { damageEnemy } from '../enemies/damage.js';
 import { spawnBoss } from '../boss/boss.js';
-import { findClearSpawn } from '../world/collision.js';
+import { findClearSpawn, edgeSpawn } from '../world/collision.js';
 import { buildArena } from '../world/arena.js';
 import { spawnChampion, startEndlessWave, endlessWaveCleared } from './survival.js';
 import { gainXp, applyJetTier } from './progression.js';
@@ -203,9 +203,7 @@ export function updateFlow(dt){
     if (s.t <= 0){
       if (s.type === 'warbringer') spawnChampion();   // a campaign mid-boss — picks its own arena-edge spot
       else {
-        const a = Math.random()*Math.PI*2;
-        const r = shared.arenaHalf * rand(0.75, 0.92);
-        spawnEnemy(s.type, V3(Math.cos(a)*r, 0, Math.sin(a)*r));
+        spawnEnemy(s.type, edgeSpawn(0.75, 0.92, 0.8));   // a clear spot on the edge ring (never inside cover or a hazard)
       }
       G.spawnQueue.splice(i,1);
     }

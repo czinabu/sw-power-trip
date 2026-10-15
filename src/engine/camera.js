@@ -5,6 +5,7 @@ import { camera } from './renderer.js';
 import { rand, clamp, TMP } from '../utils.js';
 import { shared, G, player } from '../state.js';
 import { fwd, rightV, playerPos, stance } from '../player/helpers.js';
+import { cameraClearance } from '../world/collision.js';
 
 /* ============================================================
    CAMERA — third person follow
@@ -43,6 +44,8 @@ export function updateCamera(dt){
   const cosP = Math.cos(G.pitch), sinP = Math.sin(G.pitch);
   TMP.set(tx - f.x*camDist*cosP + rv.x*ots, ty + camHi + camDist*sinP, tz - f.z*camDist*cosP + rv.z*ots);
   if (TMP.y < 0.4) TMP.y = 0.4;
+  // never park the lens inside a column or wall: pull in along the view line when tall cover is in the way
+  { const k = cameraClearance(tx, ty, tz, TMP.x, TMP.y, TMP.z); if (k < 1) TMP.set(tx + (TMP.x - tx)*k, ty + (TMP.y - ty)*k, tz + (TMP.z - tz)*k); }
   // INERTIA — the camera lags when you boost / fly fast (a weighty swoop), but snaps tight when you're AIMING
   const lagBase = (adsFly) ? 0.00002 : (G.hero === 'mando' && (player.boosting || speed > 14)) ? 0.02 : 0.00004;
   camera.position.lerp(TMP, 1 - Math.pow(lagBase, dt));

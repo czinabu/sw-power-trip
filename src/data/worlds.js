@@ -1,0 +1,204 @@
+// POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
+// WORLDS: the look of each arena (sky, light, fog, floor, prop palette, backdrop landmarks, ambient particles, and
+// how the mood shifts as the fight climbs). Purely visual: layouts, collision, spawns and hazards live in the arena
+// builders and LEVELS and are the same in every world. Edit colours freely.
+//
+// Three directions were prototyped; WORLD picks the one the game uses (the world lab can show any of them).
+//   siege  — one temple world across one day: dawn courtyard → Imperial foundry at dusk → the burning city at night
+//   worlds — three worlds on the road to the Sith: Jedha's holy city → Mustafar's forge → Exegol's storm
+//   frozen — the ice world of Ilum: crystal temple → foundry cut into the glacier → frozen battlefield under aurora
+
+export const WORLD_DIRECTIONS = {
+  siege: {
+    label: 'Siege of the Temple',
+    temple: {
+      sky: { top: 0x2a3f6a, horizon: 0xf0c8a8, below: 0x9a8c8c, bands: 7, stars: 30,
+        sun: { el: 0.12, color: 0xffe2b8, halo: 0xffc898, size: 30 },
+        clouds: { color: 0xf4d2bc, under: 0xb98a8e, count: 16, lo: 0.45, hi: 0.85 },
+        ridges: [{ color: 0x8a7f96, h: 0.1, rough: 0.05 }] },
+      fog: 0xc6aca8, fogStart: 0.72, fogEnd: 2.9,
+      light: { sun: 0xffdcb4, sunI: 1.75, dir: [15, 34, 37], hemiSky: 0xb8c6e6, hemiGround: 0x5a4a44, fill: 0.78, rim: 0xffc0a0, rimI: 0.45 },
+      floor: { kind: 'flagstone', base: 0x8f8575, seed: 4 },
+      outer: 0x7a7066,
+      pal: { stone: 0xa89c86, stoneD: 0x7c705e, trim: 0xd8b46a, banner: 0x7a2026, brazier: 0xff9a3a, inlay: 0xb08a3a },
+      backdrop: [
+        { kind: 'temple', az: -2.3, r: 2.2, scale: 1.1, color: 0x9a8e86, color2: 0xb0a49a, glow: 0xffd890 },
+        { kind: 'towers', count: 26, r: [1.5, 2.6], h: [14, 36], color: 0x6c6c84, color2: 0x7c7890, windows: 0xffe0a8, skip: [[-2.3, 0.35]] },
+        { kind: 'destroyer', az: -1.6, r: 2.2, y: 30, scale: 0.9, color: 0x8890a0, color2: 0x737b8c, glow: 0x9ad8ff },
+      ],
+      ambient: { kind: 'dust', color: 0xffe4c8, count: 120, size: 0.28 },
+      beats: { fog: 0xd0a080, fill: 1.08, tint: 0xffd0a0 },
+    },
+    foundry: {
+      sky: { top: 0x2a1a30, horizon: 0xff8a3a, below: 0x5a3020, bands: 7, stars: 10,
+        sun: { el: 0.08, color: 0xffb060, halo: 0xff8040, size: 46 },
+        clouds: { color: 0x6a3a3a, under: 0x3a2028, count: 18, lo: 0.4, hi: 0.9 },
+        ridges: [{ color: 0x4a2a2a, h: 0.08, rough: 0.04 }] },
+      fog: 0x8a4a34, fogStart: 0.72, fogEnd: 2.9,
+      light: { sun: 0xffb478, sunI: 1.85, dir: [25, 36, -31], hemiSky: 0xd89a7a, hemiGround: 0x3a2018, fill: 0.9, rim: 0xff8a50, rimI: 0.55 },
+      floor: { kind: 'deck', base: 0x4e4a4c, stripe: 0xd9a43a, seed: 9 },
+      outer: 0x3a3030,
+      pal: { metal: 0x58606a, metalD: 0x30343a, rust: 0x7a4e32, stripe: 0xd9a43a, molten: 0xff7a1e, beacon: 0xff5040 },
+      backdrop: [
+        { kind: 'stacks', count: 6, r: [1.4, 2.0], h: [22, 34], color: 0x3a3436, band: 0xd9a43a, glow: 0xff8a2a, smoke: 0x4a3a3a },
+        { kind: 'towers', count: 22, r: [1.5, 2.6], h: [12, 30], color: 0x3a2e34, color2: 0x4a3a40, windows: 0xff9a4a },
+        { kind: 'destroyer', az: 2.2, r: 1.45, y: 34, scale: 1.0, color: 0x5a5a66, color2: 0x4a4a56, glow: 0x9ad8ff },
+      ],
+      ambient: { kind: 'embers', color: 0xff7733, count: 190 },
+      beats: { fog: 0x9a3a22, fill: 1.1, tint: 0xff8060 },
+    },
+    plains: {
+      sky: { top: 0x0a0610, horizon: 0x9a3018, below: 0x2a1010, bands: 7, stars: 60,
+        sun: { el: 0.5, color: 0xd8d0c8, size: 16, kind: 'moon' },
+        clouds: { color: 0x4a2622, under: 0x24121a, count: 22, lo: 0.35, hi: 0.95 },
+        ridges: [{ color: 0x2a1414, h: 0.06, rough: 0.05 }] },
+      fog: 0x4a2020, fogStart: 0.72, fogEnd: 2.9,
+      light: { sun: 0xffb0a0, sunI: 1.75, dir: [14, 50, 40], hemiSky: 0xc07a7a, hemiGround: 0x2a1418, fill: 0.98, rim: 0xff7050, rimI: 0.6 },
+      floor: { kind: 'ash', base: 0x4a3c3c, seed: 13 },
+      outer: 0x2e2224,
+      pal: { stone: 0x5c4a4c, stoneD: 0x3e3032, dark: 0x1e1418, voidGlow: 0x9a3bff, beacon: 0x9a3bff },
+      backdrop: [
+        { kind: 'temple', az: -Math.PI/2, r: 2.1, scale: 1.0, color: 0x3a2a2c, color2: 0x2a1e20, glow: 0xff5a2a },
+        { kind: 'towers', count: 30, r: [1.4, 2.6], h: [12, 34], color: 0x2a2024, color2: 0x342628, windows: 0xff6a2a, skip: [[-Math.PI/2, 0.35]] },
+        { kind: 'destroyer', az: 0.4, r: 1.4, y: 36, scale: 1.1, color: 0x4a4650, color2: 0x3a3640, glow: 0xff7a5a },
+        { kind: 'destroyer', az: 2.6, r: 1.6, y: 44, scale: 0.7, color: 0x4a4650, color2: 0x3a3640, glow: 0xff7a5a },
+      ],
+      ambient: { kind: 'ash', color: 0xb8a8a8, count: 200, size: 0.26, opacity: 0.6 },
+      storm: { every: [4, 9], fill: 0.9, sky: 0.5, ramp: 2, color: 0xff9a6a },   // turbolaser flashes from the fleet overhead
+      beats: { fog: 0x6a1a1a, fill: 1.05, tint: 0xff5a40 },
+    },
+  },
+
+  worlds: {
+    label: 'Road to the Sith',
+    temple: {   // JEDHA — the holy city at golden hour
+      sky: { top: 0x46689a, horizon: 0xd9a46a, below: 0xb08458, bands: 7, stars: 0,
+        sun: { el: 0.2, color: 0xffe2a8, halo: 0xe8b070, size: 18 },
+        clouds: { color: 0xe8c08e, under: 0xb88a62, count: 10, lo: 0.5, hi: 0.85 },
+        ridges: [{ color: 0xb88a5e, h: 0.1, rough: 0.04, seed: 3 }, { color: 0x9c7250, h: 0.06, rough: 0.06, seed: 8 }] },
+      fog: 0xc89a6a, fogStart: 0.75, fogEnd: 3.0,
+      light: { sun: 0xffdcae, sunI: 1.7, dir: [15, 34, 37], hemiSky: 0xb8c8e4, hemiGround: 0x7a5a3a, fill: 0.7, rim: 0xffc890, rimI: 0.5 },
+      floor: { kind: 'flagstone', base: 0xa48660, seed: 4 },
+      outer: 0xb08a5e,
+      pal: { stone: 0xb89a70, stoneD: 0x8e7250, trim: 0xd8b46a, banner: 0xa8402a, brazier: 0xffa040, inlay: 0xc08a3a },
+      backdrop: [
+        { kind: 'ramparts', r: 1.6, segments: 26, h: 3.6, color: 0xae8c64, color2: 0x987a56, roof: 0x7a4e32, gaps: [-2.4] },
+        { kind: 'statue', az: -2.4, r: 2.1, scale: 1.3, color: 0xa88a66, color2: 0x8e7052, dark: 0x4a3828, metal: 0x7a7266 },
+        { kind: 'mesas', count: 9, r: [2.2, 2.7], h: [20, 36], w: [18, 34], color: 0xae7a52, color2: 0x986a48, skip: [[-2.4, 0.45]] },
+        { kind: 'dunes', count: 10, r: [1.75, 2.0], h: 4, color: 0xbc9064 },
+        // the Empire is already here: a Star Destroyer hangs over the holy city (the threat the campaign walks toward)
+        { kind: 'destroyer', az: -1.8, r: 2.3, y: 22, scale: 1.2, color: 0x8a8c96, color2: 0x767884, glow: 0x9ad8ff },
+      ],
+      hazards: { vent: 0x5a4430, ventIdle: 0x2a1e12, barrel: 0xa33820 },
+      ambient: { kind: 'dust', color: 0xffe2b0, count: 130, size: 0.3 },
+      beats: { fog: 0xc0784a, fill: 1.06, tint: 0xff9a68 },
+    },
+    foundry: {   // MUSTAFAR — the forgeworks on the lava flats
+      sky: { top: 0x1a0a08, horizon: 0xc8461c, below: 0x3a1408, bands: 7, stars: 0,
+        clouds: { color: 0x4a2a24, under: 0x24120e, count: 24, lo: 0.3, hi: 0.95 },
+        ridges: [{ color: 0x2a120c, h: 0.14, rough: 0.1, spiky: 0.6, seed: 5 }, { color: 0x150a08, h: 0.07, rough: 0.12, seed: 9 }] },
+      fog: 0x5e2616, fogStart: 0.72, fogEnd: 2.9,
+      light: { sun: 0xffb080, sunI: 1.8, dir: [30, 40, -27], hemiSky: 0xffa070, hemiGround: 0x4a1a10, fill: 0.9, rim: 0xff6a30, rimI: 0.65 },
+      floor: { kind: 'basalt', base: 0x3c3434, glow: 0xff7a1e, seed: 9 },
+      outer: 0x1e1414,
+      pal: { metal: 0x565c66, metalD: 0x2e3238, rust: 0x6b4a32, stripe: 0xd9a43a, molten: 0xff7a1e, beacon: 0xff5040 },
+      backdrop: [
+        { kind: 'volcano', az: 2.4, r: 2.6, scale: 0.75, color: 0x2a1a18, lava: 0xff6a1a },
+        { kind: 'spires', count: 14, r: [1.6, 2.4], h: [10, 24], color: 0x241816, color2: 0x30201c, glow: 0xff5a14, skip: [[2.4, 0.4]] },
+        { kind: 'stacks', count: 4, r: [1.6, 1.8], h: [18, 26], color: 0x2e2a2c, band: 0xd9a43a, glow: 0xff8a2a, smoke: 0x5a4440, skip: [[2.4, 0.5]] },
+        { kind: 'lavaflows', count: 7, lava: 0xff6a1a, crust: 0x1a0c08, w: 1.4, reach: 3.0 },
+      ],
+      // vents are lava geysers here: dark crust → amber warning → a molten burst
+      hazards: { vent: 0x2e2626, ventIdle: 0x2a0e06, ventActive: 0xff8a2a, barrel: 0x8a3020 },
+      ambient: { kind: 'embers', color: 0xff7733, count: 220 },
+      beats: { fog: 0x7a2210, fill: 1.12, tint: 0xff6a40 },
+    },
+    plains: {   // EXEGOL — the Sith wastes under a lightning storm
+      sky: { top: 0x06060c, horizon: 0x3c3e5c, below: 0x16141c, bands: 6, stars: 0,
+        clouds: { color: 0x44445e, under: 0x1a1a26, count: 30, lo: 0.25, hi: 0.95 },
+        ridges: [{ color: 0x14121a, h: 0.12, rough: 0.12, spiky: 1.2, seed: 21 }] },
+      fog: 0x2c2a3c, fogStart: 0.72, fogEnd: 2.9,
+      light: { sun: 0xc8d0ff, sunI: 1.9, dir: [14, 50, 40], hemiSky: 0xa0a0d4, hemiGround: 0x3a2a36, fill: 1.1, rim: 0xb060ff, rimI: 0.8 },
+      floor: { kind: 'ash', base: 0x6a6472, seed: 13 },
+      outer: 0x2c2834,
+      pal: { stone: 0x6a6070, stoneD: 0x463c4c, dark: 0x1a1620, voidGlow: 0x9a3bff, beacon: 0x9a3bff },
+      backdrop: [
+        { kind: 'pyramid', az: -Math.PI/2, r: 2.2, scale: 1.0, color: 0x1a1620, color2: 0x241e2a, glow: 0xb050ff },
+        { kind: 'spires', count: 14, r: [1.5, 2.3], h: [14, 34], color: 0x221e2a, color2: 0x2c2634, skip: [[-Math.PI/2, 0.45]] },
+        { kind: 'cliffs', count: 12, r: [1.8, 2.5], h: [10, 18], w: 0.35, color: 0x24202c, color2: 0x1c1822, skip: [[-Math.PI/2, 0.5]] },
+      ],
+      // vents are Sith vents: violet when they fire
+      hazards: { vent: 0x2a2632, ventIdle: 0x140c22, ventActive: 0xb070ff, barrel: 0x8a2a30 },
+      ambient: { kind: 'ash', color: 0xa8a4c0, count: 200, size: 0.24, opacity: 0.55 },
+      storm: { every: [3, 7], fill: 1.3, sky: 1.1, ramp: 2 },
+      beats: { fog: 0x3c1426, fill: 1.08, tint: 0xff4060 },
+    },
+  },
+
+  frozen: {
+    label: 'The Frozen Front',
+    temple: {   // ILUM — the crystal temple in the glacier
+      sky: { top: 0x3c6a9c, horizon: 0xdcecf6, below: 0xb8ccdc, bands: 7, stars: 0,
+        sun: { el: 0.25, color: 0xffffff, halo: 0xd8ecff, size: 22 },
+        clouds: { color: 0xf0f6fc, under: 0xb4c8dc, count: 14, lo: 0.45, hi: 0.9 },
+        ridges: [{ color: 0xb4c8dc, h: 0.16, rough: 0.1, spiky: 0.5, seed: 2 }, { color: 0x94aec8, h: 0.08, rough: 0.08, seed: 6 }] },
+      fog: 0xb8cadb, fogStart: 0.72, fogEnd: 2.9,
+      light: { sun: 0xf4f8ff, sunI: 1.65, dir: [-38, 40, 12], hemiSky: 0xc8dcf4, hemiGround: 0x5a6a80, fill: 0.72, rim: 0x8ad8ff, rimI: 0.5 },
+      floor: { kind: 'ice', base: 0x8ea2b6, seed: 4 },   // blue-grey, not white: white troopers must still read on it
+      outer: 0xc4d4e2,
+      pal: { stone: 0xa8b8c8, stoneD: 0x7c8ea2, trim: 0x7ad0ff, banner: 0x2a4a7a, brazier: 0x6ad8ff, inlay: 0x4aa8d8 },
+      backdrop: [
+        { kind: 'cliffs', count: 16, r: [1.5, 2.2], h: [12, 24], w: 0.32, color: 0xb4c8dc, color2: 0x9ab2ca },
+        { kind: 'crystals', count: 9, r: [1.08, 1.25], h: [5, 10], color: 0x8ad8ff, glow: 0x3aa8ff },
+        { kind: 'dunes', count: 12, r: [1.1, 1.3], h: 3, color: 0xdce8f2 },
+      ],
+      ambient: { kind: 'snow', color: 0xffffff, count: 220, size: 0.22, opacity: 0.8 },
+      beats: { fog: 0x9ab0c8, fill: 0.95, tint: 0xb0d0ff },
+    },
+    foundry: {   // the Imperial foundry cut into the ice
+      sky: { top: 0x4a5a70, horizon: 0xa8b8c8, below: 0x8a98a8, bands: 6, stars: 0,
+        clouds: { color: 0xb8c4d0, under: 0x7a8898, count: 28, lo: 0.2, hi: 0.95 },
+        ridges: [{ color: 0x8a9cb0, h: 0.14, rough: 0.1, spiky: 0.4, seed: 7 }] },
+      fog: 0x8c9aac, fogStart: 0.72, fogEnd: 2.9,
+      light: { sun: 0xe8f0ff, sunI: 1.7, dir: [-34, 46, 14], hemiSky: 0xb8c8e0, hemiGround: 0x3a3a44, fill: 0.85, rim: 0xff8a40, rimI: 0.5 },
+      floor: { kind: 'deck', base: 0x5a6470, stripe: 0xd9a43a, seed: 9 },
+      outer: 0xb8c6d4,
+      pal: { metal: 0x606c78, metalD: 0x353c46, rust: 0x6b5a4a, stripe: 0xd9a43a, molten: 0xff7a1e, beacon: 0xff5040 },
+      backdrop: [
+        { kind: 'cliffs', count: 18, r: [1.5, 2.2], h: [14, 26], w: 0.3, color: 0xa8bccf, color2: 0x8aa2b8 },
+        { kind: 'stacks', count: 5, r: [1.15, 1.3], h: [16, 24], color: 0x3a4048, band: 0xd9a43a, glow: 0xff8a2a, smoke: 0x8a9098 },
+      ],
+      ambient: { kind: 'snow', color: 0xffffff, count: 240, size: 0.22, opacity: 0.75 },
+      beats: { fog: 0x7a7a8a, fill: 1.05, tint: 0xffb090 },
+    },
+    plains: {   // the frozen battlefield at night, under the aurora
+      sky: { top: 0x040814, horizon: 0x1c3456, below: 0x14202e, bands: 6, stars: 90,
+        sun: { el: 0.55, color: 0xe8f0ff, size: 15, kind: 'moon' },
+        aurora: { colors: [0x2affa0, 0x8a5aff] },
+        ridges: [{ color: 0x14243a, h: 0.12, rough: 0.1, spiky: 0.5, seed: 12 }] },
+      fog: 0x1e2e44, fogStart: 0.72, fogEnd: 2.9,
+      light: { sun: 0xc8d8ff, sunI: 1.7, dir: [14, 50, 40], hemiSky: 0x90a8d0, hemiGround: 0x1a2030, fill: 0.98, rim: 0x6ae8c0, rimI: 0.6 },
+      floor: { kind: 'snow', base: 0x6a7c92, seed: 13 },
+      outer: 0x5a6a80,
+      pal: { stone: 0x5e6a7c, stoneD: 0x3e4858, dark: 0x141a26, voidGlow: 0x9a3bff, beacon: 0x9a3bff },
+      backdrop: [
+        { kind: 'pyramid', az: -Math.PI/2, r: 2.2, scale: 0.9, color: 0x161c28, color2: 0x202836, glow: 0xb050ff },
+        { kind: 'walker', az: -1.0, r: 1.45, scale: 1.2, color: 0x7a8494, color2: 0x5e6878, glow: 0xff5a3a },
+        { kind: 'cliffs', count: 14, r: [1.6, 2.3], h: [12, 22], w: 0.32, color: 0x3e4c60, color2: 0x324054, skip: [[-Math.PI/2, 0.45]] },
+      ],
+      ambient: { kind: 'snow', color: 0xe8f0ff, count: 260, size: 0.22, opacity: 0.8 },
+      beats: { fog: 0x2a1630, fill: 1.05, tint: 0xd060ff },
+    },
+  },
+};
+
+export let WORLD = 'worlds';
+export function setWorld(name){ if (WORLD_DIRECTIONS[name]) WORLD = name; }
+// preview another direction without editing code: open the game with ?world=siege (or worlds / frozen)
+try { const q = new URLSearchParams(location.search).get('world'); if (q) setWorld(q); } catch(e){}
+
+/* the theme for a level (by its layout), or null for unthemed/procedural arenas */
+export function themeFor(L){
+  const d = WORLD_DIRECTIONS[WORLD];
+  return (d && L.layout && d[L.layout]) || null;
+}

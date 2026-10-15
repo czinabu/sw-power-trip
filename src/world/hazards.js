@@ -12,6 +12,27 @@ import { playerPos } from '../player/helpers.js';
 import { damageEnemy } from '../enemies/damage.js';
 import { damageBoss } from '../boss/boss.js';
 import { hurtPlayer } from '../player/damage.js';
+import { toon, toonUnique, inkify, hullGeo, inkHull } from './ink.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+
+// the world theme's hazard colours (set by buildArena); null = the original look
+let hzPal = null;
+export function setHazardStyle(pal){ hzPal = pal || null; }
+
+// the Ink fuel drum: body + two dark hoops merged into ONE vertex-coloured mesh (plus one outline hull), built once
+// per colour, so a field of barrels stays cheap
+const drumCache = new Map();
+function drumGeo(color){
+  if (drumCache.has(color)) return drumCache.get(color);
+  const paint = (g, hex) => { const c = new THREE.Color(hex), n = g.attributes.position.count, a = new Float32Array(n*3);
+    for (let i = 0; i < n; i++){ a[i*3] = c.r; a[i*3+1] = c.g; a[i*3+2] = c.b; } g.setAttribute('color', new THREE.BufferAttribute(a, 3)); g.deleteAttribute('uv'); return g; };
+  const parts = [paint(new THREE.CylinderGeometry(0.55, 0.55, 1.2, 10), color)];
+  for (const y of [-0.32, 0.32]) parts.push(paint(new THREE.CylinderGeometry(0.575, 0.575, 0.1, 10).translate(0, y, 0), 0x2a2224));
+  const g = mergeGeometries(parts, false);
+  const out = { g, hull: hullGeo(g) };
+  drumCache.set(color, out);
+  return out;
+}
 
 /* ============================================================
    HAZARDS — shock vents & explosive barrels (level config)
@@ -19,23 +40,26 @@ import { hurtPlayer } from '../player/damage.js';
 export function spawnVent(pos){
   const g = new THREE.Group();
   const base = new THREE.Mesh(new THREE.CylinderGeometry(2.6, 2.8, 0.18, 18),
-    new THREE.MeshStandardMaterial({ color: 0x2a3340, roughness: 0.5, metalness: 0.6 }));
+    hzPal ? toon(hzPal.vent ?? 0x2a3340) : new THREE.MeshStandardMaterial({ color: 0x2a3340, roughness: 0.5, metalness: 0.6 }));
   base.position.y = 0.09; base.receiveShadow = true; g.add(base);
+  if (hzPal) inkify(base, 0.05);
   const core = new THREE.Mesh(new THREE.CylinderGeometry(2.1, 2.1, 0.1, 18),
-    new THREE.MeshBasicMaterial({ color: 0x113355 }));
+    new THREE.MeshBasicMaterial({ color: (hzPal && hzPal.ventIdle) ?? 0x113355 }));
   core.position.y = 0.2; g.add(core);
   g.position.copy(pos);
   scene.add(g);
-  vents.push({ group: g, core, cycle: rand(0, 3) });
+  // per-world colours: idle → warn (always the same amber, so the telegraph reads everywhere) → active
+  vents.push({ group: g, core, cycle: rand(0, 3),
+    cols: { idle: (hzPal && hzPal.ventIdle) ?? 0x113355, active: (hzPal && hzPal.ventActive) ?? 0x55ddff } });
 }
 export function updateVents(dt){
   for (const v of vents){
     v.cycle = (v.cycle + dt) % 3.0;
     const active = v.cycle > 2.0;          // 1s active per 3s cycle
     const warn = v.cycle > 1.5 && !active;
-    v.core.material.color.setHex(active ? 0x55ddff : warn ? 0xddaa22 : 0x113355);
+    v.core.material.color.setHex(active ? v.cols.active : warn ? 0xddaa22 : v.cols.idle);
     if (active){
-      if (Math.random() < 0.4) burst(V3(v.group.position.x + rand(-1.5,1.5), 0.3, v.group.position.z + rand(-1.5,1.5)), 0x55ddff, 1, 2, 9, 0.8);
+      if (Math.random() < 0.4) burst(V3(v.group.position.x + rand(-1.5,1.5), 0.3, v.group.position.z + rand(-1.5,1.5)), v.cols.active, 1, 2, 9, 0.8);
       const pp = playerPos();
       if (pp.distanceTo(v.group.position) < 2.4 && pp.y < 1) hurtPlayer(12*dt + 0.001, v.group.position, true);
       for (const e of enemies){
@@ -49,8 +73,17 @@ export function updateVents(dt){
   }
 }
 export function spawnBarrel(pos){
-  const m = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 1.2, 10),
-    new THREE.MeshStandardMaterial({ color: 0xa33820, roughness: 0.5, metalness: 0.3, emissive: 0x441100, emissiveIntensity: 0.6 }));
+  let m;
+  if (hzPal){
+    const d = drumGeo(hzPal.barrel ?? 0xa33820);
+    const mat = toonUnique(0xffffff, { emissive: 0x441100, ei: 0.6 }); mat.vertexColors = true;   // own material: the fuse flashes it
+    m = new THREE.Mesh(d.g, mat);
+    const hull = new THREE.Mesh(d.hull, inkHull(0.035)); hull.castShadow = false; m.add(hull);
+    m.userData.keepGeo = true; hull.userData.keepGeo = true;   // shared, cached geometry
+  } else {
+    m = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 1.2, 10),
+      new THREE.MeshStandardMaterial({ color: 0xa33820, roughness: 0.5, metalness: 0.3, emissive: 0x441100, emissiveIntensity: 0.6 }));
+  }
   m.position.copy(pos); m.position.y = 0.6;
   m.castShadow = true;
   scene.add(m);

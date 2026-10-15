@@ -3,7 +3,7 @@
 
 import { V3, clamp } from '../utils.js';
 import { burst } from '../fx/particles.js';
-import { shared, solids } from '../state.js';
+import { shared, solids, hazardZones, vents } from '../state.js';
 import { damageEnemy } from '../enemies/damage.js';
 
 // LINE-OF-SIGHT — does any real wall/pillar/crate (shallow CLIMBABLE steps don't count, same convention as the
@@ -109,4 +109,41 @@ export function findClearSpawn(x0, z0, margin){
     }
   }
   return { x: x0, z: z0 };   // shouldn't happen — cover is sparse relative to arena size
+}
+
+/* EDGE SPAWN — a random point on the arena's edge ring (r = arenaHalf × [lo, hi]) that is clear of every solid, vent
+   and hazard zone, so a foe never pops in inside a girder or onto a live vent. radius = the body's radius. */
+function spotInHazard(x, z, pad){
+  for (const v of vents) if (Math.hypot(x - v.group.position.x, z - v.group.position.z) < 2.6 + pad) return true;
+  for (const hz of hazardZones){
+    if (hz.kind === 'point'){ if (Math.hypot(x - hz.cx, z - hz.cz) < hz.r + pad) return true; continue; }
+    const dx = x - hz.cx, dz = z - hz.cz, t = clamp(dx*hz.dirX + dz*hz.dirZ, -hz.halfLen, hz.halfLen);
+    if (Math.hypot(x - (hz.cx + hz.dirX*t), z - (hz.cz + hz.dirZ*t)) < hz.halfW + pad) return true;
+  }
+  return false;
+}
+export function edgeSpawn(lo = 0.75, hi = 0.92, radius = 0.8){
+  let x = 0, z = 0;
+  for (let t = 0; t < 24; t++){
+    const a = Math.random()*Math.PI*2, r = shared.arenaHalf * (lo + Math.random()*(hi - lo));
+    x = Math.cos(a)*r; z = Math.sin(a)*r;
+    if (!spotBlocked(x, z, radius) && !spotInHazard(x, z, radius)) break;
+  }
+  return V3(x, 0, z);
+}
+
+/* CAMERA CLEARANCE — walk the line from the hero's head (a) to the wanted camera spot (b) and return how far along it
+   the camera may sit (1 = all the way) before a solid that's taller than the line at that point gets in the way.
+   Low steps and climbables never count; a small margin keeps the lens off the surface. */
+export function cameraClearance(ax, ay, az, bx, by, bz){
+  const N = 16;
+  for (let s = 2; s <= N; s++){
+    const t = s / N, x = ax + (bx - ax)*t, y = ay + (by - ay)*t, z = az + (bz - az)*t;
+    for (const c of solids){
+      if (c.climbable || c.h < y) continue;
+      if (c.box){ if (x > c.x - c.hx - 0.25 && x < c.x + c.hx + 0.25 && z > c.z - c.hz - 0.25 && z < c.z + c.hz + 0.25) return Math.max(0.25, (s - 1.5) / N); }
+      else if (Math.hypot(x - c.x, z - c.z) < c.r + 0.25) return Math.max(0.25, (s - 1.5) / N);
+    }
+  }
+  return 1;
 }
