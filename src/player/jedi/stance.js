@@ -7,7 +7,7 @@ import { V3 } from '../../utils.js';
 import { burst } from '../../fx/particles.js';
 import { floater } from '../../fx/floaters.js';
 import { G, player } from '../../state.js';
-import { trailMesh } from '../../fx/trail.js';
+import { reigniteBlade } from '../../fx/trail.js';
 import { playerPos, stance } from '../helpers.js';
 
 /* ---------- stance switching: 1/2/3 or mouse wheel ---------- */
@@ -33,9 +33,7 @@ export function switchStance(id, silent){
   // blade re-tunes to the form
   player.blade.glow.material.color.setHex(st.blade);
   player.blade.light.color.setHex(st.blade);
-  player.blade.blade.scale.y = st.bladeLen;
-  player.blade.glow.scale.y = st.bladeLen;
-  trailMesh.material.color.setHex(st.blade);
+  if (!silent) reigniteBlade();   // snap-hiss: the blade retracts and re-ignites in the new form's colour
   setStanceHud();
   if (!silent){
     const pp = playerPos();

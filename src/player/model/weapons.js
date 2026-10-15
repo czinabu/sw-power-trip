@@ -101,6 +101,7 @@ export function mountWeapon(R, S, id, socket){
   w.group.position.set(...def.grip.pos);
   w.group.rotation.set(...def.grip.rot);
   w.group.userData.weapon = { id, hold: def.hold };
+  w.group.userData.restQ = w.group.quaternion.clone();   // the mount grip, for poses that hand the weapon back
   R.sockets[socket || def.socket].add(w.group);
   return w;
 }

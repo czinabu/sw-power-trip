@@ -34,7 +34,7 @@ export const JEDI_AUTO = [
   // FORCE PULL — auto-unlocks early (after wave 2); it's no longer in the starting kit
   { key:'pull',   level:0, wave:2, stage:1, hud:'C', name:'FORCE PULL',
     has:()=>!!G.unlocked.pull,        grant(){ G.unlocked.pull = true; } },
-  { key:'fast',   level:0, wave:2, stage:2, hud:'1', name:'SHII-CHO — FAST FORM',
+  { key:'fast',   level:0, wave:2, stage:2, hud:'1', name:'ATARU — FAST FORM',
     has:()=>stanceUnlocked('fast'),   grant(){ (G.stanceUnlocked = G.stanceUnlocked || {}).fast = true; setStanceHud(); } },
   { key:'strong', level:1, wave:2, stage:4, hud:'3', name:'DJEM SO — STRONG FORM',
     has:()=>stanceUnlocked('strong'), grant(){ (G.stanceUnlocked = G.stanceUnlocked || {}).strong = true; setStanceHud(); } },

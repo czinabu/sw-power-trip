@@ -9,7 +9,8 @@
 //                                 └─ cape (cape pivot)
 //
 // Joint positions match the original rig exactly, so the existing poses in animation.js land the same.
-// chest, wr, ank, the skirt flaps and the cape are new joints that rest at zero (nothing drives them yet).
+// chest, wr, ank, the skirt flaps and the cape rest at zero; animation.js drives them (upper-body twist, wrist snap,
+// foot plant, cloth follow-through).
 
 import * as THREE from 'three';
 
@@ -32,7 +33,7 @@ export function buildRig(){
   const legL = leg(-1), legR = leg(1);
 
   const skirt = G(); skirt.position.y = 0.04; hips.add(skirt);
-  const flap = (x, z, ry) => { const f = G(); f.position.set(x, 0, z); f.rotation.y = ry; skirt.add(f); return f; };
+  const flap = (x, z, ry) => { const f = G(); f.position.set(x, 0, z); f.rotation.order = 'YXZ'; f.rotation.y = ry; skirt.add(f); return f; };   // YXZ: rotation.x swings the panel in its own frame
   const flaps = { F: flap(0, 0.12, 0), B: flap(0, -0.12, Math.PI), L: flap(-0.17, 0, -Math.PI/2), R: flap(0.17, 0, Math.PI/2) };
 
   const torso = G(); torso.position.y = DIM.torsoY; hips.add(torso);
