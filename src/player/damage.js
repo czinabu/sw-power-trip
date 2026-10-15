@@ -21,7 +21,7 @@ import { overlay, setOverlayState } from '../ui/menus.js';
 import { diffDmgMul } from '../data/difficulty.js';
 
 const MELEE_REACH_UP = 1.7;   // a melee foe can't strike you if you're perched higher than this above their feet
-export function hurtPlayer(dmg, fromPos, silent, melee){
+export function hurtPlayer(dmg, fromPos, silent, melee, chip){
   if (G.mode !== 'play') return 'none';
   if (player.dashT > 0) return 'none';
   // perched on high ground — a grounded melee attacker simply can't reach up to you
@@ -87,11 +87,16 @@ export function hurtPlayer(dmg, fromPos, silent, melee){
         return 'parried';
       }
       if (player.blockHeld && player.stam > 0){
-        player.stam = Math.max(0, player.stam - CFG.player.blockStamCost * player.up.blockStam * (stance().blockStamMul || 1));
+        // a heavy blow (a brute's maul) jars the guard far harder than a grunt's chop
+        const heavy = Math.max(1, dmg / CFG.player.blockHeavy);
+        player.stam = Math.max(0, player.stam - CFG.player.blockStamCost * heavy * player.up.blockStam * (stance().blockStamMul || 1));
         player.stamDelay = CFG.player.stamDelay;
         burst(V3(pp.x + fwd().x, 1.5, pp.z + fwd().z), stance().blade, 5, 4, 3);
-        G.shake = Math.max(G.shake, 0.15);
+        G.shake = Math.max(G.shake, 0.15 * heavy);
+        player.vel.addScaledVector(fwd(), -2.5 * heavy);   // the blow drives you back a step
         sfx(900, 0.07, 'square', 0.05, 500);
+        // a block is not a parry: some of a melee blow still gets through the guard
+        if (melee && CFG.player.blockChip > 0) hurtPlayer(dmg * CFG.player.blockChip, null, true, false, true);
         return 'blocked';
       }
       if (player.blockHeld) dmg *= 0.5;   // guard crushed (out of stamina) — half damage bleeds through
@@ -109,7 +114,7 @@ export function hurtPlayer(dmg, fromPos, silent, melee){
   player.hp -= dmg;
   if (G.stats) G.stats.dmgTaken += dmg;
   player.lastHurt = G.gt;
-  if (G.hero !== 'mando') player.focus = (player.focus || 0) * FOCUS.hitLoss;   // FORCE FOCUS — a clean trade is broken when you're hit
+  if (G.hero !== 'mando' && !chip) player.focus = (player.focus || 0) * FOCUS.hitLoss;   // FORCE FOCUS — a clean trade is broken when you're hit (not by block chip)
   if (fromPos){ player.hitFrom = V3(fromPos.x, 1.4, fromPos.z); player.dmgIndT = 1.0; }   // THREAT — point the damage arc at the source
   if (!silent){
     G.shake = Math.max(G.shake, 0.45);

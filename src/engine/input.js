@@ -48,7 +48,7 @@ document.addEventListener('mousedown', (e) => {
         // DARKSABER guards & PARRIES like a lightsaber — RMB interrupts a swing at any point into the guard
         cancelSwing();
         player.blockHeld = true; player.blockT = 0;
-        player.parryT = CFG.player.parryWindow + (stance().parryBonus || 0) + (player.up.parry || 0);
+        if (!(player.parryLockT > 0)) player.parryT = CFG.player.parryWindow + (stance().parryBonus || 0) + (player.up.parry || 0);
       } else player.blockHeld = true;                 // beskar brace — pure damage soak, no parry
     }
     return;
@@ -85,7 +85,9 @@ document.addEventListener('mousedown', (e) => {
           player.swingLock = 0.2;       // …but you're slow to swing again
         }
       }
-      player.parryT = pwin;
+      // a parry that just whiffed leaves the guard un-timed for a moment: this click only blocks
+      if (player.parryLockT > 0) sfx(260, 0.05, 'triangle', 0.025, 200);
+      else player.parryT = pwin;
     }
   }
 });

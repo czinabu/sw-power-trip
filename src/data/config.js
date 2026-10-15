@@ -14,10 +14,16 @@ export const CFG = {
     maxStam: 100, stamRegen: 22, stamDelay: 0.62,   // stamina system for swings/blocks — slower recovery, longer delay (no mindless mashing)
     blockStamCost: 12, blockMoveCost: 0,
     parryWindow: 0.16,               // a TIMED window — opens the instant you click RMB
-    riposteTime: 1.6,
+    parryWhiffLock: 0.42,            // a window that catches nothing leaves the guard unable to parry for this long (no spamming RMB)
+    blockChip: 0.22,                 // fraction of a BLOCKED melee blow that still gets through the guard (a parry takes none)
+    blockHeavy: 20,                  // blows at least this strong cost proportionally more stamina to block
+    riposteTime: 0.9,                // the counter must follow the parry promptly
     comboDamage: [30, 30, 56],      // damage per combo step (3rd is finisher) — toned down for a stiffer challenge
-    comboRange: 7.5,                 // lunge targeting range
-    hitRadius: 3.6,                  // swing damage radius
+    comboRange: 5.0,                 // lunge targeting range
+    lungeMax: 2.4,                   // the farthest a cut's lunge closes on a foe — close the rest of the gap yourself
+    hitRadius: 3.2,                  // swing damage radius
+    // swing ARCS as cosines off your facing: a cut hits ~140° in front, a strafe sweep ~160°, the finisher ~190°
+    swingArc: { cut: 0.34, sweep: 0.17, finisher: -0.1 },
   },
   abilities: {
     // BASIC powers — cheap, available from the start
