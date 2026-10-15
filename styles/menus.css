@@ -69,6 +69,16 @@
 #overlay .go{animation:none}
 #restartBtn{display:none;color:#ffcfa0;border-color:rgba(200,120,60,.45)}
 #restartBtn:hover{border-color:#ffb060;color:#ffe2c4}
+#overlay.st-menu #homeBtn{display:none}
+/* leave-run confirm: swaps in for the action row so a stray click can't throw a run away */
+#homeconfirm{display:none;flex-direction:column;align-items:center;gap:12px;margin-top:28px;padding:16px 22px;cursor:default;
+  border:1px solid rgba(200,120,60,.45);border-radius:var(--r-lg);background:rgba(30,16,8,.72);animation:rise .2s var(--ease)}
+#overlay.confirming #homeconfirm{display:flex}
+#overlay.confirming .ov-actions{display:none}
+.hc-q{font:600 15px/1.35 var(--font-ui);letter-spacing:1px;color:var(--ink-soft)}
+.hc-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+#homeYes{color:#ffcfa0;border-color:rgba(200,120,60,.6)}
+#homeYes:hover{border-color:#ffb060;color:#ffe2c4}
 /* settings: one tidy row of pills */
 #settingsrow{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:22px}
 #overlay.st-menu #settingsrow{justify-content:flex-start}

@@ -1,5 +1,5 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
-// Main menu: hero, mode and difficulty pickers, pause and restart.
+// Main menu: hero, mode and difficulty pickers, pause, restart, return to menu and fullscreen.
 
 import { renderer } from '../engine/renderer.js';
 import { cycleQuality } from '../engine/quality.js';
@@ -24,7 +24,7 @@ export const overlay = document.getElementById('overlay');
 let _ovState = 'menu';
 export function setOverlayState(state){
   _ovState = state;
-  overlay.classList.remove('st-menu', 'st-pause', 'st-dead', 'st-victory');
+  overlay.classList.remove('st-menu', 'st-pause', 'st-dead', 'st-victory', 'confirming');
   overlay.classList.add('st-' + state);
   document.body.classList.toggle('in-menu', state === 'menu');
   document.getElementById('banner').style.opacity = '0';   // the overlay carries the message; don't let a banner ghost through it
@@ -169,7 +169,7 @@ document.addEventListener('click', (e) => {
 }, true);
 overlay.addEventListener('click', (e) => {
   // only the primary button or empty backdrop launches/resumes: a stray click on a label or setting shouldn't
-  if (e.target.closest('#settingsrow, #runsummary, #setup, .ov-foot')) return;
+  if (e.target.closest('#settingsrow, #runsummary, #setup, #homeconfirm, .ov-foot')) return;
   audioInit();
   try { renderer.domElement.requestPointerLock(); } catch(e){}
   setTimeout(() => {
@@ -208,6 +208,47 @@ function restartRun(){
   if (!shared.lockFallback){ try { renderer.domElement.requestPointerLock(); } catch(e){} }
 }
 document.getElementById('restartBtn').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); restartRun(); });
+// MAIN MENU — abandon the run and go back to the title screen. From pause it asks first (a run is easy to lose
+// by accident); from the fallen/victory screens the run is already over, so it goes straight there.
+function goHome(){
+  overlay.classList.remove('confirming');
+  document.getElementById('skilltree').style.display = 'none';
+  G.skillSelect = false;
+  if (G.stats){ G.stats._ended = false; G.stats.summary = null; }
+  document.getElementById('runsummary').style.display = 'none';
+  startLevel(0);   // sweep the battlefield and reset the hero + kit, exactly as a fresh campaign would
+  G.mode = 'menu'; G.paused = false; G.slowmo = 1; G.slowmoT = 0; G.hitstop = 0;
+  overlay.style.display = 'flex';
+  refreshSurvivalLock();
+  setOverlayState('menu');
+  overlay.scrollTop = 0;
+}
+document.getElementById('homeBtn').addEventListener('click', (e) => {
+  e.stopPropagation(); audioInit();
+  if (_ovState === 'pause') overlay.classList.add('confirming'); else goHome();
+});
+document.getElementById('homeYes').addEventListener('click', (e) => { e.stopPropagation(); goHome(); });
+document.getElementById('homeNo').addEventListener('click', (e) => { e.stopPropagation(); overlay.classList.remove('confirming'); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && overlay.classList.contains('confirming')) overlay.classList.remove('confirming'); });
+// FULLSCREEN — the whole page goes fullscreen (HUD and menus are DOM over the canvas). Esc while playing still just
+// pauses: the browser spends the first Esc on the pointer lock and only a second one leaves fullscreen.
+const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement;
+function syncFullscreen(){ document.getElementById('fsval').textContent = fsEl() ? 'ON' : 'OFF'; }
+function toggleFullscreen(){
+  const root = document.documentElement;
+  try {
+    if (fsEl()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    else {
+      const p = (root.requestFullscreen || root.webkitRequestFullscreen).call(root, { navigationUI: 'hide' });
+      if (p && p.catch) p.catch(() => {});
+    }
+  } catch(err){}
+}
+if (!(document.fullscreenEnabled || document.webkitFullscreenEnabled)) document.getElementById('fsctl').style.display = 'none';
+document.getElementById('fsctl').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); toggleFullscreen(); });
+document.addEventListener('fullscreenchange', syncFullscreen);
+document.addEventListener('webkitfullscreenchange', syncFullscreen);
+syncFullscreen();
 document.getElementById('continueBtn').addEventListener('click', (e) => { e.stopPropagation(); closeProgress(); });
 // GRAPHICS selector on the overlay — cycle quality without resuming/launching (stop the click bubbling to the overlay)
 document.getElementById('gfxctl').addEventListener('click', (e) => { e.stopPropagation(); cycleQuality(); });
