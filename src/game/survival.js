@@ -12,7 +12,7 @@ import { floater } from '../fx/floaters.js';
 import { shared, G, enemies, bolts, player } from '../state.js';
 import { playerPos, maxHp } from '../player/helpers.js';
 import { makeBossBar, spawnEnemy } from '../enemies/spawn.js';
-import { findClearSpawn } from '../world/collision.js';
+import { findClearSpawn, edgeSpawn } from '../world/collision.js';
 import { buildArena } from '../world/arena.js';
 import { startLevel, checkUnlocks } from './flow.js';
 import { MUTATORS } from '../data/mutators.js';
@@ -71,8 +71,7 @@ function applyMilestone(n, list){
 // THE WARBRINGER — a true MID-BOSS: a wall of HP, a floating health bar, and a signature telegraphed LEAP-SLAM
 // (a tall pounce that quakes the ground where you stood — dash or jump it). Headlines every endless milestone.
 export function spawnChampion(){
-  const a = Math.random()*Math.PI*2, r = shared.arenaHalf*0.85;
-  spawnEnemy('brute', V3(Math.cos(a)*r, 0, Math.sin(a)*r));
+  spawnEnemy('brute', edgeSpawn(0.82, 0.88, 1.8));   // the champion is big: find it a clear patch of the edge
   const e = enemies[enemies.length-1]; if (!e) return;
   e.champion = true; e.warbringer = true; e.leapCd = rand(3.5, 5.5);
   e.hp = Math.round(e.hp * 4.5);                                  // a wall of HP

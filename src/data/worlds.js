@@ -82,10 +82,10 @@ export const WORLD_DIRECTIONS = {
       outer: 0xb08a5e,
       pal: { stone: 0xb89a70, stoneD: 0x8e7250, trim: 0xd8b46a, banner: 0xa8402a, brazier: 0xffa040, inlay: 0xc08a3a },
       backdrop: [
-        { kind: 'ramparts', r: 1.16, segments: 20, h: 3.6, color: 0xae8c64, color2: 0x987a56, roof: 0x7a4e32, gaps: [-2.4] },
-        { kind: 'statue', az: -2.4, r: 1.75, scale: 1.3, color: 0xa88a66, color2: 0x8e7052, dark: 0x4a3828, metal: 0x7a7266 },
+        { kind: 'ramparts', r: 1.6, segments: 26, h: 3.6, color: 0xae8c64, color2: 0x987a56, roof: 0x7a4e32, gaps: [-2.4] },
+        { kind: 'statue', az: -2.4, r: 2.1, scale: 1.3, color: 0xa88a66, color2: 0x8e7052, dark: 0x4a3828, metal: 0x7a7266 },
         { kind: 'mesas', count: 9, r: [2.2, 2.7], h: [20, 36], w: [18, 34], color: 0xae7a52, color2: 0x986a48, skip: [[-2.4, 0.45]] },
-        { kind: 'dunes', count: 10, r: [1.35, 1.6], h: 4, color: 0xbc9064 },
+        { kind: 'dunes', count: 10, r: [1.75, 2.0], h: 4, color: 0xbc9064 },
         // the Empire is already here: a Star Destroyer hangs over the holy city (the threat the campaign walks toward)
         { kind: 'destroyer', az: -1.8, r: 2.3, y: 22, scale: 1.2, color: 0x8a8c96, color2: 0x767884, glow: 0x9ad8ff },
       ],
@@ -104,8 +104,8 @@ export const WORLD_DIRECTIONS = {
       pal: { metal: 0x565c66, metalD: 0x2e3238, rust: 0x6b4a32, stripe: 0xd9a43a, molten: 0xff7a1e, beacon: 0xff5040 },
       backdrop: [
         { kind: 'volcano', az: 2.4, r: 2.6, scale: 0.75, color: 0x2a1a18, lava: 0xff6a1a },
-        { kind: 'spires', count: 14, r: [1.35, 2.2], h: [10, 24], color: 0x241816, color2: 0x30201c, glow: 0xff5a14, skip: [[2.4, 0.4]] },
-        { kind: 'stacks', count: 4, r: [1.2, 1.35], h: [18, 26], color: 0x2e2a2c, band: 0xd9a43a, glow: 0xff8a2a, smoke: 0x5a4440, skip: [[2.4, 0.5]] },
+        { kind: 'spires', count: 14, r: [1.6, 2.4], h: [10, 24], color: 0x241816, color2: 0x30201c, glow: 0xff5a14, skip: [[2.4, 0.4]] },
+        { kind: 'stacks', count: 4, r: [1.6, 1.8], h: [18, 26], color: 0x2e2a2c, band: 0xd9a43a, glow: 0xff8a2a, smoke: 0x5a4440, skip: [[2.4, 0.5]] },
         { kind: 'lavaflows', count: 7, lava: 0xff6a1a, crust: 0x1a0c08, w: 1.4, reach: 3.0 },
       ],
       // vents are lava geysers here: dark crust → amber warning → a molten burst
@@ -124,7 +124,7 @@ export const WORLD_DIRECTIONS = {
       pal: { stone: 0x6a6070, stoneD: 0x463c4c, dark: 0x1a1620, voidGlow: 0x9a3bff, beacon: 0x9a3bff },
       backdrop: [
         { kind: 'pyramid', az: -Math.PI/2, r: 2.2, scale: 1.0, color: 0x1a1620, color2: 0x241e2a, glow: 0xb050ff },
-        { kind: 'spires', count: 14, r: [1.4, 2.3], h: [14, 34], color: 0x221e2a, color2: 0x2c2634, skip: [[-Math.PI/2, 0.45]] },
+        { kind: 'spires', count: 14, r: [1.5, 2.3], h: [14, 34], color: 0x221e2a, color2: 0x2c2634, skip: [[-Math.PI/2, 0.45]] },
         { kind: 'cliffs', count: 12, r: [1.8, 2.5], h: [10, 18], w: 0.35, color: 0x24202c, color2: 0x1c1822, skip: [[-Math.PI/2, 0.5]] },
       ],
       // vents are Sith vents: violet when they fire

@@ -37,6 +37,26 @@ Survival mode rotates through the same three worlds.
 - **Ink outlines:** `ink` (default 0.045) for arena props, `inkFar` (default 0.16) for the backdrop so it still
   reads at distance. Double-sided cloth (banners) is baked without an outline.
 
+## Layouts
+
+Each arena is authored, not rolled (`src/world/arenas/kit.js` gives a seeded random so details look the same every
+run). The three plans grow with the campaign:
+
+| Level | Plan | Hazards |
+|---|---|---|
+| 1 Jedha (half 21) | symmetric courtyard: walkable ziggurat, 8 columns at r 13, east/west walls, 4 L-ruins, gantry SE | summit brazier eruption, 3 drums by the walls |
+| 2 Mustafar (half 26) | safe cardinal lanes, danger diagonals: smelter, 4 molten channels each ending in a vent, 8 machine blocks, 2 catwalks, 6 girders, crane S | 4 channels, 4 vents, 6 drums inside the blocks |
+| 3 Exegol (half 36) | open duelling ground (r < 11) for the boss, 7 cover pods at r 22, 2 ruin platforms, columns at r 26, altar S | altar pulse, 4 vents at r 12, 7 drums |
+
+- Every solid is axis-aligned (collision is boxes and columns). Anything visible on the floor is either solid or a
+  low **climbable** step under `STEP_UP`; nothing is decoration you walk through.
+- Vaultable cover stays under the 1.93 single-jump apex. The gantry tiers are above it on purpose.
+- Gaps between solids are wide enough for a brute (radius about 1.1); keep that when adding cover.
+- The north lane (the player's spawn side) stays clear. Enemy spawns use `edgeSpawn()` in `collision.js`, which
+  picks a ring spot clear of solids, vents and hazard zones.
+- Drums never sit in a hazard zone or vent radius, and vents never overlap each other.
+- The camera pulls in (`cameraClearance()`) when tall cover sits between it and the hero, instead of clipping.
+
 ## Performance
 
 - An arena's static props bake into one mesh per material plus one outline hull each: the Jedha courtyard goes from
