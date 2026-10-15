@@ -120,18 +120,19 @@ export const SABER_SWINGS = {
       { hand: [0.42, -0.3, 0.24],  blade: [0.6, -0.55, 0.5],   twist: 0.42 },
     ],
   },
-  // REVERSE GRIP: the fist leads and the blade trails it. Cuts are driven by the elbow and a hard body turn; the
-  // back cut is a stab driven straight back past the hip.
+  // REVERSE GRIP: the cut starts with the blade laid back along the forearm, then the elbow and a hard body turn
+  // whip it round so the TIP sweeps the way the cut travels (a strafe-right cut carries the tip to the right);
+  // the back cut is a stab driven straight back past the hip.
   reverse: {
     right: [
-      { hand: [0.4, 0.26, 0.06],   blade: [0.3, -0.3, -0.9],   twist: 0.55 },
-      { hand: [0.02, 0.1, 0.5],    blade: [0.92, -0.1, 0.36],  twist: 0 },
-      { hand: [-0.34, 0.02, 0.28], blade: [0.3, -0.12, 0.95],  twist: -0.65 },
+      { hand: [0.4, 0.24, 0.08],   blade: [0.35, -0.2, -0.9],   twist: 0.55 },
+      { hand: [0.1, 0.08, 0.46],   blade: [-0.1, -0.15, 1],     twist: 0 },
+      { hand: [-0.3, 0.02, 0.32],  blade: [-0.92, -0.12, 0.25], twist: -0.65 },
     ],
     left: [
-      { hand: [-0.26, 0.22, 0.3],  blade: [-0.4, -0.25, -0.88], twist: -0.6 },
-      { hand: [0.14, 0.06, 0.54],  blade: [-0.88, -0.1, 0.46],  twist: 0.05 },
-      { hand: [0.5, 0.04, 0.1],    blade: [-0.12, -0.12, 0.99], twist: 0.6 },
+      { hand: [-0.24, 0.2, 0.3],   blade: [-0.4, -0.2, -0.88],  twist: -0.6 },
+      { hand: [0.08, 0.08, 0.48],  blade: [0.1, -0.15, 1],      twist: 0.05 },
+      { hand: [0.46, 0.04, 0.14],  blade: [0.92, -0.12, 0.25],  twist: 0.6 },
     ],
     forward: [   // hammer-fist stab: fist high, blade hanging back, then driven down and forward
       { hand: [0.18, 0.6, 0.12],   blade: [0, -0.5, -0.86],    twist: 0.1 },
@@ -144,14 +145,14 @@ export const SABER_SWINGS = {
       { hand: [0.32, -0.28, -0.2], blade: [0.14, -0.2, -0.97],  twist: 0.45 },
     ],
     diagR: [
-      { hand: [0.38, 0.46, 0.06],  blade: [0.4, -0.2, -0.9],   twist: 0.45 },
-      { hand: [0.08, 0.1, 0.52],   blade: [0.6, 0.55, 0.55],   twist: 0 },
-      { hand: [-0.3, -0.24, 0.3],  blade: [0.5, 0.5, 0.7],     twist: -0.5 },
+      { hand: [0.38, 0.46, 0.08],  blade: [0.4, -0.3, -0.85],   twist: 0.45 },
+      { hand: [0.1, 0.12, 0.48],   blade: [-0.2, -0.35, 0.9],   twist: 0 },
+      { hand: [-0.28, -0.24, 0.3], blade: [-0.7, -0.55, 0.4],   twist: -0.5 },
     ],
     diagL: [
-      { hand: [-0.22, 0.4, 0.26],  blade: [-0.5, -0.2, -0.85], twist: -0.5 },
-      { hand: [0.08, 0.1, 0.52],   blade: [-0.6, 0.5, 0.6],    twist: 0 },
-      { hand: [0.45, -0.24, 0.16], blade: [-0.4, 0.5, 0.75],   twist: 0.5 },
+      { hand: [-0.22, 0.4, 0.26],  blade: [-0.45, -0.3, -0.85], twist: -0.5 },
+      { hand: [0.1, 0.12, 0.48],   blade: [0.2, -0.35, 0.9],    twist: 0 },
+      { hand: [0.44, -0.24, 0.18], blade: [0.7, -0.55, 0.4],    twist: 0.5 },
     ],
   },
 };
