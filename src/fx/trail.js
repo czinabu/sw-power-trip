@@ -26,9 +26,11 @@ export function updateTrail(dt){
                   : (player.darksaberMesh && player.darksaberMesh.visible) ? player.darksaberMesh : null;
   if (player.atkT > 0 && bladeNode){
     const tipY = bladeNode === player.saberHand ? 1.85 : 1.3;   // the darksaber blade is a touch shorter
-    bladeNode.updateWorldMatrix(true, false);
-    TRB.set(0, 0.1, 0);    bladeNode.localToWorld(TRB);
-    TRT.set(0, tipY, 0);   bladeNode.localToWorld(TRT);   // sample hilt→tip of the blade
+    // sample the Jedi blade in its own root so the trail follows a reverse grip too
+    const sampleNode = bladeNode === player.saberHand ? (player.saberBladeRoot || bladeNode) : bladeNode;
+    sampleNode.updateWorldMatrix(true, false);
+    TRB.set(0, 0.1, 0);    sampleNode.localToWorld(TRB);
+    TRT.set(0, tipY, 0);   sampleNode.localToWorld(TRT);   // sample hilt→tip of the blade
     trailPts.push({ b: TRB.clone(), t: TRT.clone(), age: 0 });
     if (trailPts.length > 24) trailPts.shift();
     trailMesh.material.color.setHex((player.swing && player.swing.riposte) ? 0xffe27a

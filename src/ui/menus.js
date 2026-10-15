@@ -4,7 +4,8 @@
 import { renderer } from '../engine/renderer.js';
 import { cycleQuality } from '../engine/quality.js';
 import { audioInit, setMasterVol, sfx } from '../audio/sfx.js';
-import { shared, G } from '../state.js';
+import { shared, G, player } from '../state.js';
+import { applySaberGrip } from '../player/model/weapons.js';
 import { setHero } from '../player/hero.js';
 import { startLevel } from '../game/flow.js';
 import { startEndless } from '../game/survival.js';
@@ -108,6 +109,15 @@ function setSwingMirror(on){
 }
 setSwingMirror(localStorage.getItem('sw_swingmirror') === '1');
 document.getElementById('swingctl').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setSwingMirror(!G.swingMirror); });
+// SABER GRIP — regular or reverse (Shien) lightsaber grip; a look preference, swings hit the same either way
+function setSaberGrip(grip){
+  G.saberGrip = grip === 'reverse' ? 'reverse' : 'regular';
+  try { localStorage.setItem('sw_sabergrip', G.saberGrip); } catch(e){}
+  applySaberGrip(player, G.saberGrip);
+  const gv = document.getElementById('gripval'); if (gv) gv.textContent = G.saberGrip.toUpperCase();
+}
+setSaberGrip(localStorage.getItem('sw_sabergrip') || 'regular');
+document.getElementById('gripctl').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setSaberGrip(G.saberGrip === 'reverse' ? 'regular' : 'reverse'); });
 // SETTINGS — mouse sensitivity + master volume sliders. stopPropagation on both click & pointerdown so dragging
 // the thumb never bubbles into the overlay's click-to-resume/launch handler.
 function setMouseSens(v){

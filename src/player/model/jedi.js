@@ -1,0 +1,125 @@
+// POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
+// The Jedi outfit, split into SLOTS (legs, waist, torso, head, arms). Each slot has named variants; the look in
+// appearance.js picks one per slot. A character creator only has to change that look object and rebuild.
+//
+// Add a variant: write a function (R, k) => { ...k.add(...) } under the slot below, then name it in a look.
+// k.add() places a styled mesh and records it as a Jedi part; k.mat() reads the look's palette.
+
+import { loft, limb, plate, block, shard, chamfer, ngon, KEEL, SHIELD, HEAD } from './shapes.js';
+
+// a C-shaped section (open at the front) so a hood can be lofted around the head without covering the face
+const HOOD = (() => {
+  const outer = [], inner = [], N = 9, open = 0.62;
+  for (let i = 0; i <= N; i++){
+    const a = Math.PI/2 + open + (i / N) * (Math.PI*2 - open*2);
+    outer.push([Math.cos(a), Math.sin(a)]);
+    inner.push([Math.cos(a) * 0.84, Math.sin(a) * 0.84]);
+  }
+  return outer.concat(inner.reverse());
+})();
+
+export const JEDI_PARTS = {
+  legs: {
+    // dark trousers into tall chiseled boots
+    boots(R, k){
+      for (const L of [R.legL, R.legR]){
+        k.add(limb(0.45, [[-0.06,0.205,0.2],[0.2,0.19,0.19],[0.75,0.145,0.155],[1,0.125,0.13]], KEEL), 'robe', L.hip);
+        k.add(block(0.11, 0.08, 0.11, 0.4), 'robe', L.knee, [0, 0, 0.015]);
+        k.add(limb(0.41, [[0.05,0.125,0.135],[0.12,0.145,0.155],[0.4,0.13,0.14,-0.005],[0.82,0.1,0.11],[1,0.1,0.11]], KEEL), 'boot', L.knee);
+        k.add(block(0.155, 0.05, 0.165, 0.4), 'boot', L.knee, [0, -0.07, 0]);   // boot cuff
+        // foot: a side-profile wedge with a pointed toe, extruded across the width
+        k.add(plate([[-0.07,0.03],[-0.085,-0.075],[0.15,-0.085],[0.2,-0.055],[0.09,-0.005],[0.03,0.035]], 0.1, 0.012),
+          'boot', L.ank, [0, 0, 0], [0, -Math.PI/2, 0]);
+      }
+    },
+  },
+
+  waist: {
+    // split robe panels: each hangs from its own flap joint so it can swing on its own
+    panels(R, k){
+      k.add(loft([{ y:-0.12, w:0.3, d:0.2 }, { y:0, w:0.34, d:0.22 }, { y:0.14, w:0.31, d:0.2 }], SHIELD), 'robe', R.hips);
+      k.add(loft([{ y:-0.44, w:0.46, d:0.36 }, { y:-0.12, w:0.38, d:0.27 }, { y:0.02, w:0.33, d:0.23 }], chamfer(0.42)), 'robe', R.skirt);
+      const panel = (w, len) => plate([[-w,0.03],[w,0.03],[w*1.25,-len*0.88],[0,-len],[-w*1.25,-len*0.88]], 0.022, 0.008);
+      k.add(panel(0.11, 0.6), 'tabard', R.flaps.F, [0, 0, 0.02], [-0.14, 0, 0]);
+      k.add(panel(0.16, 0.7), 'robe',   R.flaps.B, [0, 0, 0.02], [-0.12, 0, 0]);
+      k.add(panel(0.09, 0.52), 'robe',  R.flaps.L, [0, 0, 0.02], [-0.16, 0, 0]);
+      k.add(panel(0.09, 0.52), 'robe',  R.flaps.R, [0, 0, 0.02], [-0.16, 0, 0]);
+    },
+    // one long robe to the shin, no split
+    long(R, k){
+      k.add(loft([{ y:-0.12, w:0.3, d:0.2 }, { y:0, w:0.34, d:0.22 }, { y:0.14, w:0.31, d:0.2 }], SHIELD), 'robe', R.hips);
+      k.add(loft([{ y:-0.78, w:0.58, d:0.46 }, { y:-0.4, w:0.46, d:0.34 }, { y:-0.12, w:0.38, d:0.27 }, { y:0.02, w:0.33, d:0.23 }], chamfer(0.42)), 'robe', R.skirt);
+      k.add(plate([[-0.1,0.03],[0.1,0.03],[0.12,-0.66],[0,-0.72],[-0.12,-0.66]], 0.02, 0.006), 'tabard', R.flaps.F, [0, 0, 0.05], [-0.2, 0, 0]);
+    },
+  },
+
+  torso: {
+    // tan tunic with a V-neck, obi belt, and tabards over each shoulder
+    tunic(R, k){
+      k.add(loft([{ y:0, w:0.32, d:0.21 }, { y:0.2, w:0.3, d:0.2 }, { y:0.36, w:0.34, d:0.22 }], SHIELD), 'tunic', R.torso);
+      k.add(loft([{ y:0.04, w:0.37, d:0.255 }, { y:0.21, w:0.355, d:0.245 }], SHIELD), 'leather', R.torso);
+      k.add(plate([[-0.035,-0.045],[0.035,-0.045],[0.045,0],[0.035,0.045],[-0.035,0.045],[-0.045,0]], 0.02, 0.006), 'trim', R.torso, [0, 0.125, 0.128]);
+      k.add(loft([{ y:0, w:0.34, d:0.225 }, { y:0.14, w:0.47, d:0.27 }, { y:0.27, w:0.53, d:0.26 }, { y:0.35, w:0.37, d:0.2 }, { y:0.4, w:0.2, d:0.15 }], SHIELD), 'tunic', R.chest);
+      k.add(plate([[-0.085,0.39],[0.085,0.39],[0,0.16]], 0.02, 0.004), 'leather', R.chest, [0, 0, 0.122], [0.08, 0, 0]);
+      const strip = plate([[-0.045,0.4],[0.045,0.4],[0.055,-0.24],[0,-0.29],[-0.055,-0.24]], 0.018, 0.005);
+      for (const sx of [-1, 1]){
+        k.add(strip, 'tabard', R.chest, [0.105*sx, 0, 0.133], [0.02, 0, 0]);
+        k.add(strip, 'tabard', R.chest, [0.105*sx, 0, -0.133], [-0.02, 0, 0]);
+      }
+      k.add(loft([{ y:0.32, w:0.31, d:0.23 }, { y:0.41, w:0.22, d:0.18 }, { y:0.44, w:0.19, d:0.16 }], chamfer(0.45)), 'robe', R.chest);   // collar wrap
+    },
+  },
+
+  head: {
+    // bare head: chiseled skull, brow ridge, nose, ears
+    bald(R, k){ face(R, k); },
+    // the same face under a raised hood
+    hood(R, k){
+      face(R, k);
+      k.add(loft([
+        { y:-0.02, w:0.34, d:0.32, z:-0.03 }, { y:0.14, w:0.29, d:0.3, z:-0.02 },
+        { y:0.3, w:0.27, d:0.28, z:-0.025 }, { y:0.39, w:0.15, d:0.18, z:-0.04 }, { y:0.42, w:0.02, d:0.03, z:-0.05 },
+      ], HOOD, { capTop: false, capBottom: false }), 'robe', R.head);
+    },
+  },
+
+  arms: {
+    // tunic sleeves flaring at the forearm, leather bracers, blocky hands
+    sleeves(R, k){
+      for (const A of [R.armL, R.armR]){
+        const s = A.side;
+        k.add(loft([{ y:-0.08, w:0.2, d:0.19 }, { y:0.02, w:0.195, d:0.185 }, { y:0.075, w:0.11, d:0.13 }], chamfer(0.42)), 'tunic', A.sh, [0.02*s, 0.03, 0], [0, 0, -0.3*s]);
+        k.add(limb(0.34, [[-0.2,0.15,0.15],[0.06,0.165,0.16],[0.5,0.135,0.135],[1,0.105,0.11]], chamfer(0.4)), 'tunic', A.sh);
+        k.add(limb(0.3, [[0,0.1,0.1],[0.45,0.12,0.12],[0.78,0.16,0.155]], KEEL), 'tunic', A.el);
+        k.add(limb(0.3, [[0.6,0.085,0.085],[1,0.075,0.075]], chamfer(0.3)), 'leather', A.el);
+        hand(A, k, 'skin');
+      }
+    },
+  },
+};
+
+function face(R, k){
+  k.add(loft([{ y:-0.1, w:0.11, d:0.11 }, { y:0.06, w:0.1, d:0.1 }], ngon(6, Math.PI/6)), 'skin', R.head);
+  k.add(loft([
+    { y:0.02, w:0.1,  d:0.11, z:0.035 },
+    { y:0.06, w:0.16, d:0.17, z:0.015 },
+    { y:0.12, w:0.2,  d:0.215 },
+    { y:0.19, w:0.215,d:0.235 },
+    { y:0.25, w:0.205,d:0.23, z:-0.005 },
+    { y:0.3,  w:0.165,d:0.19, z:-0.01 },
+    { y:0.33, w:0.07, d:0.09, z:-0.01 },
+  ], HEAD), 'skin', R.head);
+  k.add(block(0.17, 0.032, 0.04, 0.45), k.mat('skin', { shade: 0.7 }), R.head, [0, 0.188, 0.1], [0.25, 0, 0]);   // brow ridge
+  k.add(shard(0.045, 0.05, 0.035), 'skin', R.head, [0, 0.16, 0.1], [1.95, 0, 0]);   // nose
+  for (const sx of [-1, 1]){
+    k.add(block(0.03, 0.055, 0.045, 0.4), 'skin', R.head, [0.105*sx, 0.15, -0.005]);
+    k.add(block(0.034, 0.012, 0.01, 0.2), 'hair', R.head, [0.042*sx, 0.168, 0.112], [0, 0, -0.18*sx], { outline: false });
+  }
+  k.add(block(0.06, 0.014, 0.01, 0.3), 'hair', R.head, [0, 0.085, 0.112], [0, 0, 0], { outline: false });   // set mouth
+}
+
+// a blocky fist + thumb on the wrist joint (shared with the Mando, who wears gloves)
+export function hand(A, k, mat){
+  k.add(loft([{ y:-0.13, w:0.068, d:0.058 }, { y:-0.09, w:0.088, d:0.062 }, { y:-0.02, w:0.08, d:0.056 }, { y:0.01, w:0.064, d:0.05 }], chamfer(0.3)), mat, A.wr, [0,0,0], [0,0,0], { scale: 1.15 });
+  k.add(block(0.03, 0.06, 0.032, 0.3), mat, A.wr, [0, -0.05, 0.035], [0.4, 0, 0]);
+}

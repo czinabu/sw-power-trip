@@ -34,6 +34,7 @@ export const G = {
   mode: 'menu',          // menu | play | dead | victory
   paused: false,         // true while the pause/ESC overlay is up — freezes the whole sim
   skillSelect: false, skillPoints: 0, skillSpent: 0,   // between-wave skill-tree pause
+  saberGrip: 'regular',   // player preference: 'regular' or 'reverse' lightsaber grip (visual only)
   swingMirror: false,   // player preference: flips which way strafe-L/R directional cuts sweep
   mouseSens: 1,          // player preference: mouse look sensitivity multiplier
   levelIdx: 0, wave: 0, waveTotal: -1,   // waveTotal = cumulative waves started (drives Mando ability unlocks)
