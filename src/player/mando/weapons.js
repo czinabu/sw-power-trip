@@ -178,7 +178,11 @@ function fireBlaster(W){
   const spread = baseSpread + (steadyAim ? inacc * 0.003 : inacc * 0.028);   // boosting blooms the cone hard
   const opts = { spread, foMin };
   const col = steadyAim ? 0xffd24a : 0xffb84a;   // braced bolts glint hotter
-  if (W.dual){
+  if (W.dual && player.backRun){
+    // running away: only the gun hand fires back over his shoulder (he faces the camera, so it's on screen-left)
+    const o = muzzleOrigin(-1);
+    spawnBlasterBolt(o, V3(aim.x-o.x, aim.y-o.y, aim.z-o.z).normalize(), dmg, col, 1.1, W, opts);
+  } else if (W.dual){
     const side = player.firePistol; player.firePistol = -side;
     const o = muzzleOrigin(side);
     spawnBlasterBolt(o, V3(aim.x-o.x, aim.y-o.y, aim.z-o.z).normalize(), dmg, col, 1.1, W, opts);
