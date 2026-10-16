@@ -18,12 +18,15 @@ export const MANDO = {
   boostDash: { speed: 30, time: 0.30, cd: 0.6, fuel: 16 },      // SHIFT TAP on the GROUND — a dodge; spends jet fuel
   // ABILITY base costs are deliberately STEEP — upgrades (player.up.abilityCostMul) bring them down
   flame: { range: 8.5, angle: 0.5, dmg: 42, knock: 4, fuel: 52 },  // F (HELD) — flamethrower, Force/sec in a cone (drains faster now)
-  rocket: { cost: 34, cd: 2.4, speed: 34, dmg: 6, radius: 6.6, knock: 60 },   // Q — wrist rocket: pure CROWD CONTROL — strong knockback / area denial, minimal damage
+  // Q — wrist rocket: a PRECISE stagger. Knocks down the foe it hits and anyone right beside it, minimal damage. It used
+  // to be a 6.6m, 60-knock blast every 2.4s from wave 1 (area denial on demand, and the same job as the detonator); the
+  // wide blast now belongs to the THERMAL DETONATOR, and mastery grows the rocket back toward it late in the run.
+  rocket: { cost: 34, cd: 4.0, speed: 34, dmg: 6, radius: 3.2, knock: 38 },
   // late/heavy ordnance is TAXING — long cooldowns + steep Force so the big blasts are a deliberate beat, not spam
   jetMissile: { cost: 74, cd: 14.0, speed: 30, dmg: 180, radius: 11, knock: 28 },  // Z — Boba-Fett back launcher: HUGE blast
   dark: { cost: 36, cd: 0.6, dmg: 78, range: 5.6, arc: 1.4, knock: 20 },      // DARKSABER weapon — LMB slash
   birds: { cost: 48, cd: 7.5, count: 6, dmg: 20, radius: 2.6, speed: 26, knock: 6 },   // V — whistling birds (homing)
-  deto:  { cost: 42, cd: 5.2, fuse: 1.15, dmg: 72, radius: 5.5, knock: 22 },           // G — thermal detonator (sticky)
+  deto:  { cost: 42, cd: 5.2, fuse: 1.15, dmg: 72, radius: 6.5, knock: 22 },           // G — thermal detonator (sticky) — THE Mando area blast (radius 5.5→6.5 as the rocket shrank)
   grapple: { cost: 18, cd: 1.2, range: 26, pullSpeed: 42 },                            // C — grappling hook
   slam:  { cost: 34, dmg: 46, radius: 9, knock: 24, diveVel: 34 },                     // X (air) — jetpack slam (jet fuel)
   // (the E melee kit — string, catch, charge, dive kick, takedown — is tuned in data/duel.js MANDO_MELEE)
