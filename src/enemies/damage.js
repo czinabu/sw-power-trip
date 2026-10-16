@@ -17,7 +17,9 @@ import { gainXp, killBonus } from '../game/progression.js';
 import { ENGAGE } from '../data/enemies.js';
 import { dropToken } from './director.js';
 
-export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick){
+/* opts.launch === false: a blow with no rocket behind it (the Mandalorian's fists, knee and blade). It never floors or
+   throws a live foe (the caller staggers or shoves it), and a foe it kills crumples where it stands instead of flying. */
+export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick, opts){
   if (e.dead) return;
   if (e.state === 'stasis') dmg *= 1.5;   // frozen targets shatter harder
   if (e.state === 'stagger') dmg *= 1.5;  // a parried, stumbling foe is wide open
@@ -80,9 +82,15 @@ export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick){
   if (e.hp <= 0){
     e.dead = true; e.state = 'ragdoll'; e.st = 0;
     if (e.t.bomber && !e._blew) bomberExplode(e);   // a SABOTEUR killed before its fuse still goes off — don't kill it point-blank
-    const d = knockDir ? knockDir.clone() : fwd();
-    e.vel.copy(d.multiplyScalar((knockPow||14) * (e.t.heavy ? 0.5 : 1)));
-    e.vel.y = rand(5, 9) * (e.t.heavy ? 0.6 : 1);
+    const d = knockDir ? knockDir.clone().setY(0) : fwd();
+    if (opts && opts.launch === false){   // folds up and drops: a step back with the blow, then onto its back
+      e.crumple = true;
+      e.vel.copy(d.multiplyScalar(Math.min(knockPow || 0, 8) * 0.35));
+      e.vel.y = 1.5;
+    } else {
+      e.vel.copy(d.multiplyScalar((knockPow||14) * (e.t.heavy ? 0.5 : 1)));
+      e.vel.y = rand(5, 9) * (e.t.heavy ? 0.6 : 1);
+    }
     G.hitstop = Math.max(G.hitstop, isFinisher ? 0.1 : 0.05);
     G.shake = Math.max(G.shake, 0.38);
     addStreak(e.t.score);
@@ -103,6 +111,8 @@ export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick){
       for (const o of enemies) if (!o.dead && !o.converted) hostiles++;
       if (hostiles === 0 && G.spawnQueue.length === 0){ G.slowmo = 0.3; G.slowmoT = 0.5; }  // wave-clear kill cam
     }
+  } else if (opts && opts.launch === false){
+    // no launch: the caller decides how it reels (a flinch, a shove, a stagger)
   } else if (knockDir && knockPow > 16 && !e.t.heavy && !e.t.fly){
     // a LIVE knockdown — controlled tip-back, stops acting, then gets up (NOT the free-spin death ragdoll).
     // FLYERS are exempt (they stay aloft, just flinch) — a non-lethal hit shouldn't drop them to the floor.

@@ -16,6 +16,7 @@ import { spawnHitSpark, spawnGroundShock } from '../../fx/vfx.js';
 import { inkSprite, sparks, puff, clashFlash, thrust } from '../../fx/ink.js';
 
 const DOWNED = { stagger: 1, knockdown: 1, getup: 1 };
+const NO_LAUNCH = { launch: false };
 const live = e => !e.dead && !e.converted && e.state !== 'spawn';
 
 // E: what the Mando does depends on the moment — finish a reeling foe, dive from the air, charge in with W, or strike
@@ -72,10 +73,10 @@ function strike(){
     if (TMP.lengthSq() > 0.001 && TMP.normalize().dot(f) < cosLim) continue;
     const dres = duelDefend(e, B.line, B.heavy ? 'punchHeavy' : 'punch', B.heavy);
     if (dres === 'block' || dres === 'dodge'){ turned++; continue; }
-    damageEnemy(e, dmg, f.clone(), B.knock, B.heavy);
+    damageEnemy(e, dmg, f.clone(), B.knock, B.heavy, false, NO_LAUNCH);   // fists rock a foe, they don't launch it
     if (!e.dead){
       if (B.stagger) staggerEnemy(e, f.x, f.z, 'VIBROBLADE');
-      else flinchEnemy(e, f, B.heavy ? 0.5 : 0.25);
+      else flinchEnemy(e, f, B.shove);
     }
     hit++;
   }
@@ -139,7 +140,8 @@ function takedown(e){
   player.vel.addScaledVector(dir, Math.max(0, d - 1.2) * 9);   // close the last step
   const big = e.t.heavy || e.warbringer || e.champion;
   const dmg = (M.takedown.dmg + (big ? 0 : (e.maxHp || e.hp) * M.takedown.maxFrac)) * (player.up.dmg || 1);
-  damageEnemy(e, dmg, dir, 24, true);
+  damageEnemy(e, dmg, dir, 24, true, false, NO_LAUNCH);   // a finisher that puts it down, not a launch
+  if (!e.dead && !e.t.heavy && !e.t.fly){ e.state = 'knockdown'; e.st = 0.9; e.vel.copy(dir).multiplyScalar(3); e.vel.y = 2.5; }   // slammed to the floor at your feet
   const ip = V3(g.position.x, 1.4, g.position.z);
   inkSprite({ pos: ip, shape: 'ring', inner: 0.84, arc: 1.4, color: 0xc9a6ff, size: [2, 3.2], life: 0.18, steps: 2, coreW: 0.32, inkW: 0.25, rot: rand(0, Math.PI) });
   sparks(ip, 0xc9a6ff, 14, 14, { dir, cone: 0.7, life: 0.3 });
