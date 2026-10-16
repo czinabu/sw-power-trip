@@ -111,7 +111,7 @@ export function updateCamera(dt){
   let shakeRoll = 0;
   if (G.shake > 0){
     G.shake = Math.max(0, G.shake - dt*2.2);
-    const tr = Math.min(1, G.shake) ** 2 * (player.zoom ? 0.35 : adsFly ? 0.6 : 1);
+    const tr = Math.min(1, G.shake) ** 2 * (player.zoom ? 0.35 : adsFly ? 0.6 : 1) * G.shakeScale;   // × the SHAKE setting
     camera.position.x += wob(now, 0.0) * tr * C.shake * 1.6;
     camera.position.y += wob(now, 1.7) * tr * C.shake * 1.6;
     camera.position.z += wob(now, 3.1) * tr * C.shake;
@@ -122,7 +122,7 @@ export function updateCamera(dt){
     const age = G.gt - player.camKickT;
     if (age < 0.3){
       const kx = pp.x - player.camKickX, kz = pp.z - player.camKickZ, kl = Math.hypot(kx, kz) || 1;
-      const amt = (1 - age / 0.3) ** 2 * C.hitKick * (player.zoom ? 0.3 : 1);
+      const amt = (1 - age / 0.3) ** 2 * C.hitKick * (player.zoom ? 0.3 : 1) * G.shakeScale;
       camera.position.x += kx / kl * amt; camera.position.z += kz / kl * amt; camera.position.y -= amt * 0.3;
     }
   }
