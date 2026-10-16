@@ -39,7 +39,7 @@ export const G = {
   swingMirror: false,   // player preference: flips which way strafe-L/R directional cuts sweep
   mouseSens: 1,          // player preference: mouse look sensitivity multiplier
   levelIdx: 0, wave: 0, waveTotal: -1,   // waveTotal = cumulative waves started (drives Mando ability unlocks)
-  yaw: 0, pitch: 0.35,
+  yaw: 0, pitch: 0.22,
   hitstop: 0, shake: 0, slowmo: 1, slowmoT: 0,
   gt: 0,
   streak: 0, streakT: 0,
