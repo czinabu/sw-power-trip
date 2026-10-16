@@ -63,7 +63,7 @@ export function updateCamera(dt){
     const target = (player.camSide || 1) * (aiming ? C.mandoShoulderAim : flying ? C.mandoShoulderFly : C.mandoShoulder);
     player.camOts = (player.camOts || 0) + (target - (player.camOts || 0)) * Math.min(1, dt*4);   // smooth the swap
     ots = player.camOts;
-    camHi = 1.1;                                          // sit HIGH so the helmet stays well below the centred crosshair
+    camHi = 1.3;                                          // sit HIGH so the helmet stays well below the centred crosshair
     distMul = aiming ? 1.0 : flying ? 1.3 : 1.15;         // a touch further out than the Jedi: a gunfight needs the room
   }
   // camera breathes with the action: pulls back HARD at high flight speed (Mando), softer otherwise, + for the boss
@@ -89,17 +89,18 @@ export function updateCamera(dt){
   const wantDist = (C.baseDist + pullback + frame) * distMul;
   // draw back quicker than we settle in, so a closing pack is framed before it lands its first hit
   camDist += (wantDist - camDist) * Math.min(1, dt * (wantDist > camDist ? 3.5 : 2.2));
-  // MANDO AIM-UP — looking up used to swing the lens down under the hero (so aiming at a head dropped the view to the
-  // floor). Below `mandoOrbitFloor` the lens holds its height and the VIEW tilts up instead, like a shooter's camera
-  const orbitP = G.hero === 'mando' ? Math.max(G.pitch, C.mandoOrbitFloor) : G.pitch;
-  const tiltUp = (orbitP - G.pitch) * C.mandoTiltGain;   // gain matches how fast the orbit turned the view, so no kink
-  const cosP = Math.cos(orbitP), sinP = Math.sin(orbitP);
+  const cosP = Math.cos(G.pitch), sinP = Math.sin(G.pitch);
   // DEATH — the view slowly rises and draws back off the fallen hero (real time: the death slow-mo would stall it)
   let dk = 0;
   if (G.mode === 'dead'){ if (deadAt < 0) deadAt = performance.now(); dk = Math.min(1, (performance.now() - deadAt) / 2500); dk = dk*dk*(3 - 2*dk); }
   else deadAt = -1;
   const d = camDist + dk*3;
   TMP.set(tx - f.x*d*cosP + rv.x*ots, ty + camHi + camLift + dk*3 + d*sinP, tz - f.z*d*cosP + rv.z*ots);
+  // aiming up swings the lens down behind the hero; never let it sink below `minLensY` over their feet, so the
+  // view never comes up from the floor. Past that point the swing it would have made raises the aim point instead,
+  // so you can keep looking up at the same rate
+  const lensFloor = pp.y + C.minLensY, aimRise = Math.max(0, lensFloor - TMP.y);
+  if (TMP.y < lensFloor) TMP.y = lensFloor;
   if (TMP.y < 0.4) TMP.y = 0.4;
   // never park the lens inside a prop (inside one, its ink hull fills the screen black): pull in along the line from
   // the hero's head. The head, not the look-ahead point, because running at a wall puts the look-ahead inside it
@@ -143,8 +144,7 @@ export function updateCamera(dt){
   // Mando aims a bit ABOVE its own head height; while DIVING the look target drops so the camera follows the dive angle
   const diveLook = (G.hero === 'mando' && player.boosting) ? clamp(player.vy * 0.06, -2.0, 0) : 0;
   const ahead = C.lookAhead;
-  const tiltLook = tiltUp > 0 ? Math.tan(tiltUp) * (d*cosP + ahead) : 0;   // raise the aim point by the pitch we held back
-  camera.lookAt(tx + f.x*ahead + rv.x*ots, ty + C.lookUp + (G.hero === 'mando' ? 0.3 : 0) + diveLook + tiltLook, tz + f.z*ahead + rv.z*ots);
+  camera.lookAt(tx + f.x*ahead + rv.x*ots, ty + C.lookUp + (G.hero === 'mando' ? 0.3 : 0) + diveLook + aimRise, tz + f.z*ahead + rv.z*ots);
   // camera ROLL into a strafe — subtle for the Jedi; a pronounced Max-Payne bank for the boosting Mando, but
   // damped right down while AIMING so the shot stays readable.
   const strafe = vx * (-f.z) + vz * f.x;
