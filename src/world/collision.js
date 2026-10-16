@@ -131,19 +131,3 @@ export function edgeSpawn(lo = 0.75, hi = 0.92, radius = 0.8){
   }
   return V3(x, 0, z);
 }
-
-/* CAMERA CLEARANCE — walk the line from the hero's head (a) to the wanted camera spot (b) and return how far along it
-   the camera may sit (1 = all the way) before a solid that's taller than the line at that point gets in the way.
-   Low steps and climbables never count; a small margin keeps the lens off the surface. */
-export function cameraClearance(ax, ay, az, bx, by, bz){
-  const N = 16;
-  for (let s = 2; s <= N; s++){
-    const t = s / N, x = ax + (bx - ax)*t, y = ay + (by - ay)*t, z = az + (bz - az)*t;
-    for (const c of solids){
-      if (c.climbable || c.h < y) continue;
-      if (c.box){ if (x > c.x - c.hx - 0.25 && x < c.x + c.hx + 0.25 && z > c.z - c.hz - 0.25 && z < c.z + c.hz + 0.25) return Math.max(0.25, (s - 1.5) / N); }
-      else if (Math.hypot(x - c.x, z - c.z) < c.r + 0.25) return Math.max(0.25, (s - 1.5) / N);
-    }
-  }
-  return 1;
-}
