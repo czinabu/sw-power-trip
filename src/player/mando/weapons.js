@@ -268,6 +268,7 @@ function spearStab(W){
   } else if (shared.boss && shared.boss.hp > 0 && shared.boss.group.position.distanceTo(pp) < W.stabRange + 1){ damageBoss(W.stabDmg * player.up.dmg); }
 }
 export function mandoFlame(){   // keydown cue only — the stream itself is HELD (handled in updateFlame)
+  if (!G.unlocked.flame) return;
   if (player.force < 5){ if (G.gt - player.lastWinded > 0.5){ player.lastWinded = G.gt; floater(playerPos(), 'NO FUEL', '#ff6a3a'); } return; }
   S.jetIgnite();   // the pilot catches — the roar itself is a loop in audio/director.js
 }

@@ -45,7 +45,8 @@ export const CFG = {
     judge:  { cost: 72, cd: 12.0, range: 14, angle: 0.9, targets: 4, time: 1.3, tick: 0.12, dmg: 7 },  // chain lightning channel
     repulse:{ cost: 82, cd: 11.0, radius: 13, dmg: 30, knock: 36 },   // FORCE REPULSE — a 360° concussive blast
     // FORCE BARRIER — the kit's lone DEFENSIVE power: a brief bubble that soaks damage and auto-deflects bolts.
-    barrier:{ cost: 35, cd: 11.0, dur: 3.0, dr: 0.7, radius: 2.4, knockR: 6.5, castKnock: 20, expireKnock: 11 },
+    // `cd` starts when the bubble DROPS (see forceBarrier), so a cast comes back every cd + dur = 11s, as before.
+    barrier:{ cost: 35, cd: 8.0, dur: 3.0, dr: 0.7, radius: 2.4, knockR: 6.5, castKnock: 20, expireKnock: 11 },
     // FORCE MEND — pour the Force into your own wounds: a big restorative pulse. Steep cost + long cd (no spamming).
     mend:   { cost: 55, cd: 16.0, heal: 0.30 },   // heal = fraction of MAX vitality (a strong relief, not a full reset — pressure persists). shared by Bacta Stim
   },

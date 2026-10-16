@@ -70,6 +70,7 @@ function card(opts){
   return c;
 }
 const needXp = (cost) => 'NEED ' + (cost - (G.xp || 0)) + ' MORE XP';
+const opensIn = (n) => 'OPENS IN ' + n + ' MORE WAVE' + (n === 1 ? '' : 'S');
 function bump(id){ const el = document.getElementById(id).parentElement; el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
 let _lastXp = 0, _lastSp = 0;
 export function renderProgress(){
@@ -132,7 +133,8 @@ export function renderProgress(){
     const pips = '<div class="pips">' + '<i class="on"></i>'.repeat(o.rank) + '<i></i>'.repeat(n - o.rank) + '</div>';
     mast.appendChild(card({ cls: ' mastery' + (last ? ' last' : ''), tag: 'MASTERY · RANK ' + RANK_NUM[o.rank + 1],
       ico: o.m.ico, nm: o.m.nm, ds: o.m.ranks[o.rank].ds, extra: pips,
-      cost: o.cost + ' XP', afford: xp >= o.cost, why: needXp(o.cost), onClick: () => buyMastery(o) }));
+      cost: o.cost + ' XP', afford: o.open && xp >= o.cost, why: o.open ? needXp(o.cost) : opensIn(o.opensIn),
+      onClick: () => buyMastery(o) }));
   }
   // SURVIVAL POWER-UPS — repeatable stat upgrades (endless only): an XP sink that never runs out. They sit after the
   // mastery ranks so the one-off upgrades to your kit stay up top.

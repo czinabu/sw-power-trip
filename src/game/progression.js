@@ -53,17 +53,19 @@ function storeStageOpen(n){ const s = (n.stage != null) ? n.stage : (STORE_TIER_
 export function storeAvail(n){ return !n.owned() && storeStageOpen(n) && (!n.avail || n.avail()) && !forkTaken(n, storeSet()); }
 // is any ability still to come this run (not owned, not locked out by a fork pick)? — even if its wave hasn't arrived yet
 export function storeRemaining(){ const set = storeSet(); return set.some(n => !n.owned() && (!n.avail || n.avail()) && !forkTaken(n, set)); }
-// POWER MASTERY — the next rank of every ability you own, as { m, rank, cost } (rank is 0 for rank I)
+// POWER MASTERY — the next rank of every ability you own, as { m, rank, cost, open, opensAt } (rank is 0 for rank I).
+// rank II waits for its `r2` wave; until then the offer is listed but closed (opensIn = waves still to clear).
+function masteryOpen(m, rank){ return rank < 1 || m.r2 == null || (G.waveTotal || 0) >= m.r2; }
 export function masteryOffers(){
   const out = [];
   for (const m of masterySet()){
     const r = masteryRank(m.id);
-    if (m.owned() && r < m.ranks.length) out.push({ m, rank: r, cost: m.cost[r] });
+    if (m.owned() && r < m.ranks.length) out.push({ m, rank: r, cost: m.cost[r], open: masteryOpen(m, r), opensIn: Math.max(1, (m.r2 || 0) - (G.waveTotal || 0)) });
   }
   return out;
 }
 export function buyMastery(o){
-  if (!G.skillSelect || (G.xp||0) < o.cost || masteryRank(o.m.id) !== o.rank || !o.m.owned()) return;
+  if (!G.skillSelect || (G.xp||0) < o.cost || masteryRank(o.m.id) !== o.rank || !o.m.owned() || !masteryOpen(o.m, o.rank)) return;
   if (!G.mastery) G.mastery = {};
   G.xp -= o.cost; G.mastery[o.m.id] = o.rank + 1;
   floater(playerPos(), o.m.nm + ' ' + RANK_NUM[o.rank + 1] + '!', '#ffd24a');
@@ -80,7 +82,7 @@ export function nextStoreGoal(){
     if (!best || n.cost < best.cost) best = { nm: n.nm, cost: n.cost };
   }
   for (const o of masteryOffers())
-    if (!best || o.cost < best.cost) best = { nm: o.m.nm + ' ' + RANK_NUM[o.rank + 1], cost: o.cost };
+    if (o.open && (!best || o.cost < best.cost)) best = { nm: o.m.nm + ' ' + RANK_NUM[o.rank + 1], cost: o.cost };
   return best;
 }
 export function powerLv(id){ return (G.powerLv && G.powerLv[id]) || 0; }

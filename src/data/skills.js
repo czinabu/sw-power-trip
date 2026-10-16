@@ -11,7 +11,9 @@ import { MANDO_STORE, JEDI_STORE } from './store.js';
    ADEPT (II) and MASTER (III) skills only unlock once you've invested enough,
    so the strongest abilities are earned, not handed out.
    ============================================================ */
-export const TIER_REQ = { 1: 0, 2: 2, 3: 4 };   // total skill points spent to unlock each tier
+// KNIGHT opens on the 4th upgrade screen (end of level 1) and MASTER on the 8th (end of level 2), so the capstones
+// arrive for the final level. Was 2 / 4, which put a capstone like BLADE STORM in hand from the 5th wave of 12.
+export const TIER_REQ = { 1: 0, 2: 3, 3: 7 };   // total skill points spent to unlock each tier
 export const TIER_NAME = { 1: 'PADAWAN', 2: 'KNIGHT', 3: 'MASTER' };
 export const SKILLS = [
   // ---- TIER I — PADAWAN foundations, stackable ----
@@ -67,6 +69,9 @@ export const MANDO_SKILLS = [
   { id:'gam',     ico:'⛨', nm:'FULL BESKAR\'GAM', tier:2, max:2, ds:'Brace soaks +18% · +15 max vit',
     fl:'Let them break their blades on you.', apply(){ player.up.braceDR = (player.up.braceDR || 0) + 0.18; player.up.hpMax += 15; player.hp = Math.min(player.hp + 15, maxHp()); } },
   { id:'ord',     ico:'✸', nm:'ORDNANCE EXPERT',  tier:2, max:2, ds:'+45% rocket, detonator &amp; bird damage · bigger blasts',
+    // only on offer once you carry real ordnance: the wrist rocket alone deals 6 damage, so taking this before
+    // the birds / detonator / missile arrive was a wasted point
+    avail:()=>!!(G.unlocked.birds || G.unlocked.deto || G.unlocked.jetmissile),
     fl:'If one charge is good, six are better.', apply(){ player.up.rocketDmg = (player.up.rocketDmg || 1) * 1.45; player.up.rocketR = (player.up.rocketR || 1) * 1.2; } },
   { id:'incend',  ico:'✦', nm:'INCENDIARY FUEL',  tier:2, max:2, ds:'Flamethrower +45% damage &amp; reach',
     fl:'Some bounties are best brought in warm.', apply(){ player.up.flameDmg = (player.up.flameDmg || 1) * 1.45; player.up.flameRange = (player.up.flameRange || 1) * 1.18; } },
@@ -79,9 +84,9 @@ export const MANDO_SKILLS = [
   { id:'super',   ico:'❂', nm:'SUPERCOMMANDO',    tier:3, max:1, ds:'+35 max vitality · take 18% less damage',
     fl:'Death Watch trained. Forged in fire.', apply(){ player.up.hpMax += 35; player.hp = Math.min(player.hp + 35, maxHp()); player.up.dr = 1 - (1-(player.up.dr||0))*0.82; } },
   { id:'arsenal', ico:'⚡', nm:'FULL ARSENAL',     tier:3, max:1, ds:'+30% weapon damage · +20% fire rate',
-    fl:'Bring everything. Leave nothing.', apply(){ player.up.dmg *= 1.3; player.up.fireRate = (player.up.fireRate||1)*1.2; player.up.rocketDmg = (player.up.rocketDmg||1)*1.3; player.up.flameDmg = (player.up.flameDmg||1)*1.3; } },
-  { id:'marshal', ico:'✺', nm:'SKY MARSHAL',      tier:3, max:1, ds:'Jetpack barely sips fuel · refuel now',
-    fl:'They will look up, and they will fear.', apply(){ player.up.fuelEff = (player.up.fuelEff||1)*0.55; player.up.move *= 1.1; player.force = CFG.player.maxForce; } },
+    fl:'Bring everything. Leave nothing.', apply(){ player.up.dmg *= 1.3; player.up.fireRate = (player.up.fireRate||1)*1.2; player.up.flameDmg = (player.up.flameDmg||1)*1.3; } },   // ordnance reads dmg × rocketDmg, so dmg alone covers it (it used to get ×1.69)
+  { id:'marshal', ico:'✺', nm:'SKY MARSHAL',      tier:3, max:1, ds:'Jetpack barely sips fuel · +10% move speed · refuel now',
+    fl:'They will look up, and they will fear.', apply(){ player.up.fuelEff = (player.up.fuelEff||1)*0.55; player.up.move *= 1.1; player.jet = player.jetMax; } },   // refuels the JETPACK (it used to refill gadget power instead)
   // NOTE: the Darksaber is NOT a skill-tree pick — it's one half of the wave-10 weapon FORK
   // (DISRUPTOR *or* DARKSABER, never both). See openMandoChoice().
 ];

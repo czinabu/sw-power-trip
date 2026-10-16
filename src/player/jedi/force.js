@@ -20,6 +20,10 @@ import { spawnPushWave, spawnGroundShock } from '../../fx/vfx.js';
 import { inkSprite, sparks, motes, dustRing, barrierMaterial, bindBarrier } from '../../fx/ink.js';
 
 /* trigger the off-hand reaching gesture used by every Force power */
+// a Jedi power's Force cost after the survival cost cuts (ATTUNEMENT, DEEP RESERVES, FORCE NEXUS) — the same
+// player.up.abilityCostMul the Mando's gadgets already read; before this the Jedi paid full price regardless
+const fcost = (base) => base * (player.up.abilityCostMul || 1);
+
 export function castGesture(kind, dur){ dur *= (stance().castMul || 1); player.castT = dur; player.castMax = dur; player.castKind = kind; }   // ATARU casts snap off faster
 // turn the Jedi to FACE the direction an ability is aimed — soft-snaps the yaw onto the nearest foe in
 // the frontal cone so powers commit toward the threat (the Force equivalent of the Mando squaring up)
@@ -30,7 +34,7 @@ function faceAbilityAim(range){
 export function forcePush(){
   const A = abil('push');
   const st = stance();
-  const cost = A.cost * ((st.costMult && st.costMult.push) || 1) * (st.powerCostMul || 1);
+  const cost = fcost(A.cost * ((st.costMult && st.costMult.push) || 1) * (st.powerCostMul || 1));
   if (!G.unlocked.push || player.cds.push > 0 || player.force < cost || G.mode !== 'play') return;
   if (player.atkT > 0) cancelSwing();   // flow straight out of a saber swing into the shove
   player.force -= cost; player.cds.push = A.cd * (st.cdMult || 1);
@@ -93,7 +97,7 @@ let slamHintT = 0;
 export function forceSlam(){
   const A = abil('jslam');
   const st = stance();
-  const slamCost = A.cost * (st.powerCostMul || 1);
+  const slamCost = fcost(A.cost * (st.powerCostMul || 1));
   if (!G.unlocked.slam || player.cds.slam > 0 || player.force < slamCost || G.mode !== 'play' || player.slamming) return;
   if (player.grounded){
     // AIRBORNE ONLY — no ground-stomp variant anymore; jump (or double-jump) first to set up the dive.
@@ -151,8 +155,9 @@ function throwLight(){
 }
 export function saberThrow(){
   const A = abil('throw');
-  if (!G.unlocked.throw || player.cds.throw > 0 || player.force < A.cost || shared.saberProj || G.mode !== 'play') return;
-  player.force -= A.cost; player.cds.throw = A.cd * (stance().cdMult || 1);
+  const cost = fcost(A.cost);
+  if (!G.unlocked.throw || player.cds.throw > 0 || player.force < cost || shared.saberProj || G.mode !== 'play') return;
+  player.force -= cost; player.cds.throw = A.cd * (stance().cdMult || 1);
   faceAbilityAim(A.range);   // line the throw up on the nearest target
   castGesture('push', 0.3);  // face the throw direction
   const f = fwd(), pp = playerPos();
@@ -217,7 +222,7 @@ export function updateSaberThrow(dt){
 export function forcePull(){
   const A = abil('pull');
   const st = stance();
-  const cost = A.cost * ((st.costMult && st.costMult.pull) || 1);
+  const cost = fcost(A.cost * ((st.costMult && st.costMult.pull) || 1));
   if (!G.unlocked.pull || player.cds.pull > 0 || player.force < cost || G.mode !== 'play') return;
   if (player.atkT > 0) cancelSwing();   // flow straight out of a saber swing into the pull
   player.force -= cost; player.cds.pull = A.cd * (st.cdMult || 1);
@@ -260,7 +265,7 @@ export function forcePull(){
 /* FORCE REPULSE — a 360° concussive blast that hurls everything around you away (high-tier) */
 export function forceRepulse(){
   const A = abil('repulse'), st = stance();
-  const cost = A.cost * (st.powerCostMul || 1);            // DJEM SO casts cost more...
+  const cost = fcost(A.cost * (st.powerCostMul || 1));    // DJEM SO casts cost more...
   if (!G.unlocked.repulse || player.cds.repulse > 0 || player.force < cost || G.mode !== 'play') return;
   const up = !!player.up.repulseUp;                        // the FINAL upgrade supercharges it
   const psc = st.powerScale || 1;                          // ...but erupt with BRUTE scale
@@ -321,8 +326,11 @@ export function barrierShove(power, knock){
 }
 export function forceBarrier(){
   const A = abil('barrier');
-  if (!G.unlocked.barrier || player.cds.barrier > 0 || player.force < A.cost || G.mode !== 'play') return;
-  player.force -= A.cost; player.cds.barrier = A.cd * (stance().cdMult || 1);
+  const cost = fcost(A.cost);
+  if (!G.unlocked.barrier || player.cds.barrier > 0 || player.force < cost || G.mode !== 'play') return;
+  // the cooldown only starts once the bubble drops, so uptime can never reach 100% (Ataru's −35% cooldown plus
+  // mastery used to let a 4.5s, 80% bubble come back every 4.6s — permanent near-immunity)
+  player.force -= cost; player.cds.barrier = A.cd * (stance().cdMult || 1) + A.dur;
   player.barrierT = A.dur;
   ensureBarrierMesh();
   castGesture('push', 0.3);
@@ -343,9 +351,10 @@ export function forceBarrier(){
 const MEND_CHANNEL = 0.7;
 export function forceMend(){
   const A = abil('mend');
-  if (!G.unlocked.mend || player.cds.mend > 0 || player.mendT > 0 || player.force < A.cost || G.mode !== 'play') return;
+  const cost = fcost(A.cost);
+  if (!G.unlocked.mend || player.cds.mend > 0 || player.mendT > 0 || player.force < cost || G.mode !== 'play') return;
   if (player.hp >= maxHp()){ floater(playerPos(), 'UNHURT', '#7bffae'); return; }   // don't waste it at full health
-  player.force -= A.cost; player.cds.mend = A.cd * (stance().cdMult || 1);
+  player.force -= cost; player.cds.mend = A.cd * (stance().cdMult || 1);
   player.mendT = player.mendMax = MEND_CHANNEL;   // begin the channel — the heal lands when it completes
   const pp = playerPos();
   spawnGroundShock(pp.clone().setY(0.1), 0x6fd0ff, 2.4, 0.55, 0.5);   // a BLUE force ring blooms as you start
@@ -370,8 +379,9 @@ export function mendComplete(){
 /* FORCE JUDGEMENT — channel chain lightning through the front cone */
 export function forceJudgement(){
   const A = abil('judge');
-  if (!G.unlocked.judge || player.cds.judge > 0 || player.force < A.cost || G.mode !== 'play' || player.judgeT > 0) return;
-  player.force -= A.cost;
+  const cost = fcost(A.cost);
+  if (!G.unlocked.judge || player.cds.judge > 0 || player.force < cost || G.mode !== 'play' || player.judgeT > 0) return;
+  player.force -= cost;
   faceAbilityAim(A.range);   // aim the storm at the nearest foe
   player.cds.judge = A.cd * (stance().cdMult || 1);
   player.judgeT = A.time;

@@ -109,8 +109,8 @@ export function startLevel(idx){
   if (idx === 0){
     // fresh campaign — STARTING KIT only; the rest auto-unlocks or is bought with XP.
     //  Jedi: Saber + Block + Push + Dash (Pull auto-unlocks after wave 2).  Mando: Single blaster + weak jetpack +
-    //  Brace (RMB) + Flame + Rocket (Dual auto-unlocks after wave 1).
-    G.unlocked = G.hero === 'jedi' ? { push: true, dash: true } : { flame: true, rocket: true };
+    //  Brace (RMB) + Rocket (Dual auto-unlocks after wave 1, Flame after wave 2).
+    G.unlocked = G.hero === 'jedi' ? { push: true, dash: true } : { rocket: true };
     G.stanceUnlocked = {};   // NIMAN is always available; ATARU/DJEM SO auto-unlock
     G.waveTotal = -1; G.mandoChoiceShown = false;
     G.xp = 0; G.xpEarned = 0; G.skillPoints = 0; G.powerLv = {}; G.mastery = {}; G.seenTypes = {};
