@@ -160,6 +160,10 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
   player._crouch = dr(player._crouch || 0, planted ? POSE.crouch : 0, 8);
   R.hips.position.y = 1.04 + player._crouch - (player._swingDrop || 0) - land*0.2 - (player._agiDrop || 0)
                       + (player.grounded && !player.flip ? gaitHipOffset(GS, gait) : 0.05);
+  // a foot standing lower than the body (off a step, one foot down from a crate) needs the hips to come down to it
+  const fd = player.grounded && !player.flip && player._footDrop ? Math.min(0, player._footDrop[0], player._footDrop[1]) : 0;
+  player._hipSink = dr(player._hipSink || 0, fd * GAIT.hipSink / 1.18, 14);
+  R.hips.position.y += player._hipSink;
   player._legIK = null;   // set below while the feet are solved onto the floor (ankle angles per leg)
   // legs: stride + knee lift (+ knee = the shin folds back, a real knee bend); the Jedi's air, flip and dive legs come from anim/agility.js
   if (G.hero !== 'mando' && jediAirLegs(dt, dr, R)){

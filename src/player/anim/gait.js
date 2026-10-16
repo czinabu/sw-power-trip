@@ -10,6 +10,7 @@ import { clamp } from '../../utils.js';
 import { player } from '../../state.js';
 import { GAIT } from '../../data/movement.js';
 import { DIM } from '../model/rig.js';
+import { groundAt, STEP_UP } from '../../world/collision.js';
 
 const TAU = Math.PI * 2;
 const _inv = new THREE.Matrix4(), _p = new THREE.Vector3(), _q = new THREE.Vector3();
@@ -17,6 +18,16 @@ const SCALE = 1.18;                                   // hero model scale (model
 export const ANK = DIM.hipY - 0.06 - DIM.thigh - DIM.shin;   // ankle height above the floor with the legs straight
 const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
 const lerp = (a, b, t) => a + (b - a) * t;
+
+/* The ankle's resting height (world y) for a foot planted at (x, z): on whatever it stands on there, a step up at most
+   STEP_UP above the body's support and at most GAIT.reachDown below it (a foot off an edge hangs, toes down). Also
+   records how far the lowest foot sits below the support this frame, so the hips can sink to reach it. */
+export function floorAt(x, z, i){
+  const base = player.group.position.y;
+  const d = clamp(groundAt(x, z, base + STEP_UP) - base, -GAIT.reachDown, STEP_UP);
+  (player._footDrop || (player._footDrop = [0, 0]))[i] = d;
+  return base + d + ANK * SCALE;
+}
 
 /* Advance the stride clock and acceleration estimate. `speed` is ground speed (m/s). Returns the gait state the
    pose needs this frame; player.runPhase follows the clock so the arm pump and run twist stay in step. */
@@ -91,7 +102,8 @@ export function gaitLegs(g, fwd, right, R, vis){
     _p.set(DIM.hipX * side + gx, gy * cl - gz * sl - vis.position.y, gy * sl + gz * cl);
     if (!swing){
       // touch down: lock this spot in the world and hold it for the whole stance
-      if (!locks[i]) locks[i] = _p.clone().applyMatrix4(vis.matrixWorld).setY(floor);
+      if (!locks[i]){ locks[i] = _p.clone().applyMatrix4(vis.matrixWorld); locks[i].y = floorAt(locks[i].x, locks[i].z, i); }
+      else floorAt(locks[i].x, locks[i].z, i);
       _p.copy(locks[i]).applyMatrix4(_inv);
     } else {
       if (locks[i]){
@@ -102,6 +114,9 @@ export function gaitLegs(g, fwd, right, R, vis){
       }
       const fade = 1 - u * u * (3 - 2 * u);
       _p.x += offs[i][0] * fade; _p.z += offs[i][1] * fade;
+      // over a step or an edge the swing rides the ground under it
+      _q.copy(_p).applyMatrix4(vis.matrixWorld);
+      _p.y += (floorAt(_q.x, _q.z, i) - floor) / SCALE;
     }
     out.push(solveLeg(_p.z, _p.y - hy, _p.x - DIM.hipX * side, toe - lean));
   });

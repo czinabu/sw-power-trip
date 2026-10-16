@@ -66,6 +66,9 @@ export const GAIT = {
   blendFrom: 0.15, blendTo: 1.1,   // below `blendFrom` m/s the stance footwork owns the legs; above `blendTo` the gait does
   // weight: the body leans with ACCELERATION (a push to start, a sit-back to stop, a bank into a turn), on top of the
   // small speed lean animation.js already gives
+  // uneven ground: each foot stands on what is under it; the hips sink to let the lower foot reach
+  reachDown: 0.35,      // furthest (m) a foot reaches below the body's support (past an edge it hangs)
+  hipSink: 0.8,         // share of the lower foot's drop the hips sink by
   accelLean: 0.014, accelBank: 0.011, accelMax: 0.2, accelSmooth: 9,
 };
 

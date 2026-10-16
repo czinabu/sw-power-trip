@@ -9,7 +9,7 @@ import { clamp } from '../../utils.js';
 import { player } from '../../state.js';
 import { FOOTING } from '../../data/movement.js';
 import { DIM } from '../model/rig.js';
-import { solveLeg, ANK } from './gait.js';
+import { solveLeg, ANK, floorAt } from './gait.js';
 
 const SCALE = 1.18;
 const _inv = new THREE.Matrix4(), _v = new THREE.Vector3();
@@ -32,23 +32,22 @@ export function footingLegs(dt, R, vis, still, splay){
   const M = vis.matrixWorld;
   _inv.copy(M).invert();
   const yaw = player.faceYaw + vis.rotation.y;
-  const floor = player.group.position.y + ANK * SCALE;
   let F = player._footing;
   if (!F){
     // plant where the feet are now; a foot still in the air finishes its step down to the stance
-    F = player._footing = { feet: [R.legL, R.legR].map(L => {
+    F = player._footing = { feet: [R.legL, R.legR].map((L, i) => {
       L.ank.updateWorldMatrix(true, false);
       const p = new THREE.Vector3().setFromMatrixPosition(L.ank.matrixWorld);
-      return { at: p, yaw, step: p.y > floor + 0.04 ? { from: p.clone(), t: 0, dur: FOOTING.stepTime } : null };
+      return { at: p, yaw, step: p.y > floorAt(p.x, p.z, i) + 0.04 ? { from: p.clone(), t: 0, dur: FOOTING.stepTime } : null };
     }), last: 0 };
   }
   const legs = [[still[0], still[1], splay[0], -1], [still[2], still[3], splay[1], 1]];
   // where each foot belongs, in the world, and how far out of place it is
-  const want = legs.map(([h, k, r, side]) => {
+  const want = legs.map(([h, k, r, side], i) => {
     const p = restLocal(h, k, r, side, new THREE.Vector3()).applyMatrix4(M);
-    p.y = floor;
     // drifting slowly: aim the step a little ahead so it isn't immediately out of place again
     p.x += player.moveVel.x * FOOTING.lead; p.z += player.moveVel.z * FOOTING.lead;
+    p.y = floorAt(p.x, p.z, i);   // onto whatever is there: the floor, a step, a crate top
     return p;
   });
   const err = F.feet.map((f, i) => Math.hypot(f.at.x - want[i].x, f.at.z - want[i].z));
@@ -70,11 +69,12 @@ export function footingLegs(dt, R, vis, still, splay){
       s.t += dt;
       const u = clamp(s.t / s.dur, 0, 1), e = u * u * (3 - 2 * u);
       f.at.lerpVectors(s.from, want[i], e);
-      f.at.y = Math.max(s.from.y + (floor - s.from.y) * e, floor) + Math.sin(Math.PI * u) * FOOTING.lift;
+      f.at.y = Math.max(s.from.y + (want[i].y - s.from.y) * e, Math.min(s.from.y, want[i].y)) + Math.sin(Math.PI * u) * FOOTING.lift;
       f.yaw += Math.atan2(Math.sin(yaw - f.yaw), Math.cos(yaw - f.yaw)) * Math.min(1, dt / Math.max(s.dur - s.t, dt));
       toe = Math.sin(Math.PI * u) * 0.35;
-      if (u >= 1){ f.at.y = floor; f.yaw = yaw; f.step = null; }
+      if (u >= 1){ f.at.y = want[i].y; f.yaw = yaw; f.step = null; }
     }
+    else floorAt(f.at.x, f.at.z, i);   // (keeps the hips' reach-down current for a planted foot)
     // the planted (or stepping) foot into the body's frame, relative to the hip joint
     _v.copy(f.at).applyMatrix4(_inv);
     const side = i === 0 ? -1 : 1;

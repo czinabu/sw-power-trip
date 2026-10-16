@@ -105,6 +105,10 @@ out of a run settles in a step or two, turning on the spot steps round (a locked
 the ankle), and switching form or sinking into a guard steps the feet to the new width. The stance's leg shape in
 `FOOTWORK` (`data/poses.js`) is what the feet are stepped to.
 
+Each foot stands on whatever is under it (`groundAt` in `world/collision.js`): a step, rubble or a crate top. A foot
+reaches at most `GAIT.reachDown` below the body's support (past an edge it hangs), and the hips sink to let the lower
+foot reach the ground.
+
 ## Rig features to use
 
 - **New joints** (`src/player/model/rig.js`): chest (upper-body twist separate from the hips), wrists (snap and weapon angle), ankles (foot plant), four robe flaps and the cape pivot (follow-through and secondary motion).
