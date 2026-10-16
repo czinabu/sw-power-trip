@@ -59,7 +59,8 @@ export const CFG = {
     // shoulder height just off the right shoulder, and a moderate FOV keeps the backdrop large (a wide FOV shrinks
     // everything past the hero, which is what made the arenas read small)
     fov: 60,                  // vertical degrees at rest (was 70: ~106° across a 16:9 screen, a fisheye on the props)
-    pivotY: 1.7,              // the lens orbits a point this high over the hero's feet (shoulder / head height)
+    pivotY: 1.9,              // the lens orbits a point this high over the hero's feet (just over head height)
+    minLensY: 1.3,            // looking up swings the lens down, but never lower than this over the hero's feet
     shoulder: 0.75,           // Jedi lens sits this far right of the spine, so the foe ahead is never hidden behind you
     lookAhead: 5,             // the lens aims this far past the hero...
     lookUp: -0.15,            // ...and this high over the pivot (a hair under it keeps the hero's boots in frame)
@@ -71,8 +72,6 @@ export const CFG = {
     mandoShoulder: 0.95,      // MANDO lens offset off the shoulder (never centred, see camera.js)...
     mandoShoulderAim: 1.25,   // ...wider while aiming / bracing, so the reticle is always clear of the helmet...
     mandoShoulderFly: 1.05,   // ...and in the air
-    mandoOrbitFloor: 0.14,    // MANDO: looking up past this pitch tilts the view instead of lowering the lens...
-    mandoTiltGain: 0.55,      // ...turning it this much per radian of mouse pitch (the orbit's own rate at the floor)
     duelPull: 0.18,           // LOCK-ON: per metre to the locked foe, the lens backs off so both duelists stay framed...
     duelMax: 1.6,             // ...up to this much
     crowdLift: 0.5,           // and the lens rises up to this much so the pack reads over the hero's shoulders
