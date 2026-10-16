@@ -242,5 +242,6 @@ export function makeStyle(name = 'ink', colors = {}){
     return m;
   }
 
-  return { name, cfg, mat, add, addSkinned, seam, seamMats };
+  const outline = () => cfg.outline ? inkMaterial() : null;
+  return { name, cfg, mat, add, addSkinned, outline, seam, seamMats };
 }

@@ -6,6 +6,7 @@
 // k.add() places a styled mesh and records it as a Jedi part; k.mat() reads the look's palette. k.skin() lays one
 // continuous skinned surface over several joints (trousers over hip and knee, a sleeve over shoulder and elbow).
 
+import * as THREE from 'three';
 import { loft, limb, plate, block, shard, chamfer, ngon, KEEL, SHIELD, HEAD } from './shapes.js';
 import { seg } from './skin.js';
 
@@ -44,17 +45,19 @@ export const JEDI_PARTS = {
     panels(R, k){
       k.add(loft([{ y:-0.12, w:0.3, d:0.2 }, { y:0, w:0.34, d:0.22 }, { y:0.14, w:0.31, d:0.2 }], SHIELD), 'robe', R.hips);
       k.add(loft([{ y:-0.44, w:0.46, d:0.36 }, { y:-0.12, w:0.38, d:0.27 }, { y:0.02, w:0.33, d:0.23 }], chamfer(0.42)), 'robe', R.skirt);
-      const panel = (w, len) => plate([[-w,0.03],[w,0.03],[w*1.25,-len*0.88],[0,-len],[-w*1.25,-len*0.88]], 0.022, 0.008);
-      k.add(panel(0.11, 0.6), 'tabard', R.flaps.F, [0, 0, 0.02], [-0.14, 0, 0]);
-      k.add(panel(0.16, 0.7), 'robe',   R.flaps.B, [0, 0, 0.02], [-0.12, 0, 0]);
-      k.add(panel(0.09, 0.52), 'robe',  R.flaps.L, [0, 0, 0.02], [-0.16, 0, 0]);
-      k.add(panel(0.09, 0.52), 'robe',  R.flaps.R, [0, 0, 0.02], [-0.16, 0, 0]);
+      // the four panels are real cloth: pinned at the belt, kicked by the legs, streaming and settling on their own
+      const body = k.bodyCapsules([[R.skirt, robeLow(R, k), 0.14]]);
+      k.cloth('tabard', R.skirt, { W: 4, H: 8, rest: panel(R.flaps.F, 0.11, 0.6, 0.14), thick: 0.022, capsules: body });
+      k.cloth('robe',   R.skirt, { W: 5, H: 8, rest: panel(R.flaps.B, 0.16, 0.7, 0.12), thick: 0.022, capsules: body });
+      k.cloth('robe',   R.skirt, { W: 3, H: 7, rest: panel(R.flaps.L, 0.09, 0.52, 0.16), thick: 0.022, capsules: body });
+      k.cloth('robe',   R.skirt, { W: 3, H: 7, rest: panel(R.flaps.R, 0.09, 0.52, 0.16), thick: 0.022, capsules: body });
     },
     // one long robe to the shin, no split
     long(R, k){
       k.add(loft([{ y:-0.12, w:0.3, d:0.2 }, { y:0, w:0.34, d:0.22 }, { y:0.14, w:0.31, d:0.2 }], SHIELD), 'robe', R.hips);
       k.add(loft([{ y:-0.78, w:0.58, d:0.46 }, { y:-0.4, w:0.46, d:0.34 }, { y:-0.12, w:0.38, d:0.27 }, { y:0.02, w:0.33, d:0.23 }], chamfer(0.42)), 'robe', R.skirt);
-      k.add(plate([[-0.1,0.03],[0.1,0.03],[0.12,-0.66],[0,-0.72],[-0.12,-0.66]], 0.02, 0.006), 'tabard', R.flaps.F, [0, 0, 0.05], [-0.2, 0, 0]);
+      k.cloth('tabard', R.skirt, { W: 4, H: 9, rest: panel(R.flaps.F, 0.1, 0.72, 0.2, 0.05, 0.2), thick: 0.02,
+        capsules: k.bodyCapsules([[R.skirt, robeLow(R, k), 0.2]]) });
     },
   },
 
@@ -107,6 +110,23 @@ export const JEDI_PARTS = {
     },
   },
 };
+
+/* a robe panel's rest shape in the skirt's frame (u across, v down): hangs from the belt where `flap` sits, widening
+   to a pointed hem, tilted out by `tilt`, `z` in front of the flap. The cloth hangs from the skirt itself; the flap
+   joint only says where (its springs would otherwise drag the cloth's rest shape around) */
+function panel(flap, w, len, tilt, z = 0.02, flare = 0.25){
+  const c = Math.cos(-tilt), s = Math.sin(-tilt);
+  flap.updateMatrix();
+  const M = flap.matrix.clone(), p = new THREE.Vector3();
+  return (u, v) => {
+    const x = u * w * (1 + flare * v);
+    const y = 0.03 - v * len * (0.88 + 0.12 * (1 - Math.abs(u)));
+    return p.set(x, y * c - z * s, y * s + z * c).applyMatrix4(M).toArray();
+  };
+}
+
+// the bottom of the robe's under-tube, for the panels to drape over
+function robeLow(R, k){ return R.skirt.userData.low || (R.skirt.userData.low = k.group(R.skirt, [0, -0.36, 0])); }
 
 function face(R, k){
   k.add(loft([{ y:-0.1, w:0.11, d:0.11 }, { y:0.06, w:0.1, d:0.1 }], ngon(6, Math.PI/6)), 'skin', R.head);

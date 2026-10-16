@@ -91,24 +91,20 @@ export const MANDO_PARTS = {
 
   cape: {
     // Both capes are worn UNDER the jetpack, as Boba and Din wear theirs: the top panel hangs in the gap between the
-    // back plate and the pack, and a hinged hem hangs free below the pack (R.cape.userData.hem). animation.js only
+    // back plate and the pack, and a cloth hem hangs free below the pack (capeHem, simulated by cloth.js). animation.js only
     // lets the top panel sway sideways in that gap; the hem takes the trail and flutter, so it never swings through
     // the pack. (The pack's front face sits at chest z ≈ -0.26, the back plate at ≈ -0.14.)
     // half cape off the left shoulder (Boba): a strip shows beside the left tank, the ragged hem below the pack
     half(R, k){
       R.cape.position.set(-0.2, 0.36, -0.2); R.cape.rotation.set(0, 0, 0);
       k.add(plate([[-0.18,0.0],[0.13,0.0],[0.15,-0.74],[-0.2,-0.74]], 0.012, 0.004), 'cloth', R.cape, [0, 0, 0], [0, 0, 0], { outline: false });
-      const hem = k.group(R.cape, [0, -0.74, 0]);
-      k.add(plate([[-0.2,0.01],[0.15,0.01],[0.12,-0.24],[0.0,-0.32],[-0.22,-0.4]], 0.012, 0.004), 'cloth', hem, [0, 0, 0], [0, 0, 0], { outline: false });
-      R.cape.userData.hem = hem;
+      capeHem(R, k, { top: [-0.2, 0.15], bottom: [-0.22, 0.12], drop: [-0.4, -0.24], dip: 0.04 });
     },
     // full cape across both shoulders, down to the knees below the pack
     full(R, k){
       R.cape.position.set(0, 0.36, -0.2); R.cape.rotation.set(0, 0, 0);
       k.add(plate([[-0.26,0.0],[0.26,0.0],[0.29,-0.74],[-0.29,-0.74]], 0.012, 0.004), 'cloth', R.cape, [0, 0, 0], [0, 0, 0], { outline: false });
-      const hem = k.group(R.cape, [0, -0.74, 0]);
-      k.add(plate([[-0.29,0.01],[0.29,0.01],[0.33,-0.5],[0.1,-0.56],[-0.1,-0.56],[-0.33,-0.5]], 0.012, 0.004), 'cloth', hem, [0, 0, 0], [0, 0, 0], { outline: false });
-      R.cape.userData.hem = hem;
+      capeHem(R, k, { top: [-0.29, 0.29], bottom: [-0.33, 0.33], drop: [-0.5, -0.5], dip: 0.06 });
     },
     none(){},
   },
@@ -156,6 +152,20 @@ export const MANDO_PARTS = {
     },
   },
 };
+
+/* the cape below the pack is real cloth (cloth.js), pinned along the bottom of the top panel: it trails, flutters
+   and swings on a turn by itself, and the legs and hips push it aside. top/bottom = [left x, right x],
+   drop = how far each side hangs, dip = extra length at the middle */
+function capeHem(R, k, { top, bottom, drop, dip }){
+  const lerp = (a, b, t) => a + (b - a) * t;
+  R.cape.userData.hem = k.group(R.cape, [0, -0.74, 0]);   // marks the cape as worn under the pack (animation.js)
+  k.cloth('cloth', R.cape, { W: 6, H: 7, thick: 0.012, outline: false, capsules: k.bodyCapsules(), slack: 0.8,
+    rest: (u, v) => {
+      const t = (u + 1) / 2;
+      return [lerp(lerp(top[0], top[1], t), lerp(bottom[0], bottom[1], t), v),
+        -0.73 + v * (lerp(drop[0], drop[1], t) - dip * (1 - Math.abs(u))), 0];
+    } });
+}
 
 function arms(R, k, pauldrons){
   for (const A of [R.armL, R.armR]){
