@@ -3,9 +3,11 @@
 // appearance.js picks one per slot. A character creator only has to change that look object and rebuild.
 //
 // Add a variant: write a function (R, k) => { ...k.add(...) } under the slot below, then name it in a look.
-// k.add() places a styled mesh and records it as a Jedi part; k.mat() reads the look's palette.
+// k.add() places a styled mesh and records it as a Jedi part; k.mat() reads the look's palette. k.skin() lays one
+// continuous skinned surface over several joints (trousers over hip and knee, a sleeve over shoulder and elbow).
 
 import { loft, limb, plate, block, shard, chamfer, ngon, KEEL, SHIELD, HEAD } from './shapes.js';
+import { seg } from './skin.js';
 
 // a C-shaped section (open at the front) so a hood can be lofted around the head without covering the face
 const HOOD = (() => {
@@ -23,8 +25,11 @@ export const JEDI_PARTS = {
     // dark trousers into tall chiseled boots
     boots(R, k){
       for (const L of [R.legL, R.legR]){
-        k.add(limb(0.45, [[-0.06,0.205,0.2],[0.2,0.19,0.19],[0.75,0.145,0.155],[1,0.125,0.13]], KEEL), 'robe', L.hip);
-        k.add(block(0.11, 0.08, 0.11, 0.4), 'robe', L.knee, [0, 0, 0.015]);
+        // trousers: one surface over hip and knee that bends with the leg, tucked into the boot top
+        k.skin('robe', [
+          ...seg(0.45, [[-0.06,0.205,0.2],[0.2,0.19,0.19],[0.75,0.145,0.155],[1,0.125,0.13]]),
+          ...seg(0.41, [[0.12,0.115,0.12]], 0.45),
+        ], { bones: [L.hip, L.knee], at: [0.45] });
         k.add(limb(0.41, [[0.05,0.125,0.135],[0.12,0.145,0.155],[0.4,0.13,0.14,-0.005],[0.82,0.1,0.11],[1,0.1,0.11]], KEEL), 'boot', L.knee);
         k.add(block(0.155, 0.05, 0.165, 0.4), 'boot', L.knee, [0, -0.07, 0]);   // boot cuff
         // foot: a side-profile wedge with a pointed toe, extruded across the width
@@ -56,10 +61,13 @@ export const JEDI_PARTS = {
   torso: {
     // tan tunic with a V-neck, obi belt, and tabards over each shoulder
     tunic(R, k){
-      k.add(loft([{ y:0, w:0.32, d:0.21 }, { y:0.2, w:0.3, d:0.2 }, { y:0.36, w:0.34, d:0.22 }], SHIELD), 'tunic', R.torso);
+      // the tunic is one surface from waist to collar that bends and twists between the torso and chest joints
+      k.skin('tunic', [
+        { t:0, w:0.32, d:0.21 }, { t:0.2, w:0.3, d:0.2 },
+        ...seg(1, [[0,0.34,0.225],[0.14,0.47,0.27],[0.27,0.53,0.26],[0.35,0.37,0.2],[0.4,0.2,0.15]], 0.3),
+      ], { bones: [R.torso, R.chest], at: [0.3], blend: 0.08, profile: SHIELD, dir: 1 });
       k.add(loft([{ y:0.04, w:0.37, d:0.255 }, { y:0.21, w:0.355, d:0.245 }], SHIELD), 'leather', R.torso);
       k.add(plate([[-0.035,-0.045],[0.035,-0.045],[0.045,0],[0.035,0.045],[-0.035,0.045],[-0.045,0]], 0.02, 0.006), 'trim', R.torso, [0, 0.125, 0.128]);
-      k.add(loft([{ y:0, w:0.34, d:0.225 }, { y:0.14, w:0.47, d:0.27 }, { y:0.27, w:0.53, d:0.26 }, { y:0.35, w:0.37, d:0.2 }, { y:0.4, w:0.2, d:0.15 }], SHIELD), 'tunic', R.chest);
       k.add(plate([[-0.085,0.39],[0.085,0.39],[0,0.16]], 0.02, 0.004), 'leather', R.chest, [0, 0, 0.122], [0.08, 0, 0]);
       const strip = plate([[-0.045,0.4],[0.045,0.4],[0.055,-0.24],[0,-0.29],[-0.055,-0.24]], 0.018, 0.005);
       for (const sx of [-1, 1]){
@@ -89,8 +97,10 @@ export const JEDI_PARTS = {
       for (const A of [R.armL, R.armR]){
         const s = A.side;
         k.add(loft([{ y:-0.08, w:0.2, d:0.19 }, { y:0.02, w:0.195, d:0.185 }, { y:0.075, w:0.11, d:0.13 }], chamfer(0.42)), 'tunic', A.sh, [0.02*s, 0.03, 0], [0, 0, -0.3*s]);
-        k.add(limb(0.34, [[-0.2,0.15,0.15],[0.06,0.165,0.16],[0.5,0.135,0.135],[1,0.105,0.11]], chamfer(0.4)), 'tunic', A.sh);
-        k.add(limb(0.3, [[0,0.1,0.1],[0.45,0.12,0.12],[0.78,0.16,0.155]], KEEL), 'tunic', A.el);
+        k.skin('tunic', [
+          ...seg(0.34, [[-0.2,0.15,0.15],[0.06,0.165,0.16],[0.5,0.135,0.135],[1,0.105,0.11]]),
+          ...seg(0.3, [[0.1,0.1,0.1],[0.45,0.12,0.12],[0.78,0.16,0.155]], 0.34),
+        ], { bones: [A.sh, A.el], at: [0.34], blend: 0.05, profile: chamfer(0.4) });
         k.add(limb(0.3, [[0.6,0.085,0.085],[1,0.075,0.075]], chamfer(0.3)), 'leather', A.el);
         hand(A, k, 'skin');
       }

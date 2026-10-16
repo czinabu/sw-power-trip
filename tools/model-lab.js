@@ -43,6 +43,12 @@ const POSES = {
     saber: [0.25, 0, -0.4], torso: [0, 0.16, 0], torsoZ: 0.22, visX: 0.12,
     legL: { hip: [-0.45, 0, -0.08], knee: [0.3, 0, 0] }, legR: { hip: [0.35, 0, 0.08], knee: [0.4, 0, 0] }, drop: -0.06,
   },
+  jedi_land: {
+    label: 'Landing crouch', hero: 'jedi',
+    armR: { sh: [-0.9, -0.6, -0.4], el: [-1.9, 0, 0] }, armL: { sh: [-0.6, 0.4, 0.3], el: [-1.6, 0, 0] },
+    saber: [0.15, 0, -0.35], torso: [0.35, 0.45, 0],
+    legL: { hip: [-1.3, 0, -0.15], knee: [1.9, 0, 0] }, legR: { hip: [-0.45, 0, 0.2], knee: [1.5, 0, 0] }, drop: -0.36,
+  },
   mando_dual: {
     label: 'Dual blasters', hero: 'mando', weapon: 'dual',
     armR: { sh: [-1.45, -0.12, -0.18], el: [-0.15, 0, 0] }, armL: { sh: [-0.65, -0.45, 0.2], el: [-0.35, 0, 0] },
@@ -52,6 +58,12 @@ const POSES = {
     label: 'Disruptor aim', hero: 'mando', weapon: 'disruptor',
     armR: { sh: [-1.45, -0.12, -0.18], el: [-0.15, 0, 0] }, armL: { sh: [-1.45, -0.16, 0.12], el: [-0.55, 0, 0] },
     torso: [0, -0.1, 0], legL: { hip: [-0.25, 0, -0.1], knee: [0.15, 0, 0] }, legR: { hip: [0.2, 0, 0.1], knee: [0.25, 0, 0] },
+  },
+  mando_land: {
+    label: 'Landing crouch', hero: 'mando', weapon: 'single',
+    armR: { sh: [-1.1, -0.3, -0.2], el: [-1.4, 0, 0] }, armL: { sh: [-0.5, 0.4, 0.4], el: [-1.9, 0, 0] },
+    torso: [0.4, -0.4, 0],
+    legL: { hip: [-1.3, 0, -0.15], knee: [1.9, 0, 0] }, legR: { hip: [-0.45, 0, 0.2], knee: [1.5, 0, 0] }, drop: -0.36,
   },
   mando_fly: {
     label: 'Jetpack flight', hero: 'mando', fly: true, yaw: 1.25,

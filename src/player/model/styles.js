@@ -159,6 +159,40 @@ export function makeStyle(name = 'ink', colors = {}){
     return m;
   }
 
+  /* place a SKINNED styled mesh: one continuous surface that bends with the rig instead of a rigid piece per joint.
+     geo is built in `frame`'s space (a rig joint, in the rest pose), `bones` are rig joints and
+     weigh(x, y, z) → [[boneIndex, weight], …] (up to 4, summing to 1) says how much each joint carries a vertex.
+     The mesh hangs off `root` (the model root, vis); its ink hull is a skinned child so hiding the mesh hides both. */
+  function addSkinned(geo, key, root, frame, bones, weigh, o = {}){
+    root.updateWorldMatrix(true, true);   // the rest pose: bind against it
+    const toRoot = new THREE.Matrix4().copy(root.matrixWorld).invert().multiply(frame.matrixWorld);
+    const skinned = g => {
+      const out = g.clone(), p = out.attributes.position, n = p.count;
+      const idx = new Uint16Array(n * 4), wt = new Float32Array(n * 4);
+      for (let i = 0; i < n; i++){
+        const ws = weigh(p.getX(i), p.getY(i), p.getZ(i));
+        for (let j = 0; j < ws.length && j < 4; j++){ idx[i*4+j] = ws[j][0]; wt[i*4+j] = ws[j][1]; }
+      }
+      out.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(idx, 4));
+      out.setAttribute('skinWeight', new THREE.Float32BufferAttribute(wt, 4));
+      return out.applyMatrix4(toRoot);
+    };
+    const skeleton = new THREE.Skeleton(bones);   // rig groups work as bones: a skeleton only reads their world matrices
+    const bind = (m, parent) => {
+      m.frustumCulled = false;   // the bounds would be the rest pose's; the hero is always on screen anyway
+      parent.add(m); m.updateMatrixWorld(true);
+      m.bind(skeleton, m.matrixWorld);
+      return m;
+    };
+    const m = bind(new THREE.SkinnedMesh(skinned(prep(geo)), typeof key === 'string' ? mat(key) : key), root);
+    m.castShadow = o.shadow !== false;
+    if (cfg.outline && o.outline !== false){
+      const hull = bind(new THREE.SkinnedMesh(skinned(outlineGeo(geo)), inkMaterial()), m);
+      hull.castShadow = false;
+    }
+    return m;
+  }
+
   // glowing seam line — a thin unlit strip VFX can pulse later (the look decides whether a hero has them)
   const seamMats = new Map();
   function seam(geo, color, parent, p, r, o = {}){
@@ -170,5 +204,5 @@ export function makeStyle(name = 'ink', colors = {}){
     return m;
   }
 
-  return { name, cfg, mat, add, seam, seamMats };
+  return { name, cfg, mat, add, addSkinned, seam, seamMats };
 }
