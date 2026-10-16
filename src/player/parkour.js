@@ -161,7 +161,7 @@ export function trySlide(){
   player.slideT = MOVE.slideTime;
   player.moveVel.multiplyScalar((hs + MOVE.slideBoost) / hs);
   player.sprinting = false;
-  player.flip = { t: 0, dur: MOVE.slideTime, pitch: -0.55, drop: 0.6, legs: 'slide', arms: null, side: 1, ease: 'twirl' };
+  player.flip = { t: 0, dur: MOVE.slideTime, pitch: -0.3, drop: 0.5, legs: 'kneeslide', arms: null, side: 1, ease: 'twirl' };
   const pp = playerPos();
   burst(V3(pp.x, 0.15, pp.z), 0x9a9288, 8, 4, 1, 0.9);
   S.dash();

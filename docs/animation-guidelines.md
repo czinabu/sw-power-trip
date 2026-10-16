@@ -81,7 +81,13 @@ body move for each lives in `src/data/agility.js` and is posed by `src/player/an
 
 Knees bend with **+x** on the knee joint (the shin folds back); −x hyperextends. Hips are −x for thigh forward.
 Flips turn about the centre of mass, not the feet. A flip is described by turns about the body's axes (somer, twist,
-roll, spin) plus a leg shape (tuck, pike, layout, split, slide) and an air guard for the saber hand(s).
+roll, spin) plus a leg shape (tuck, pike, layout, split, slide, kneeslide) and an air guard for the saber hand(s).
+
+The sprint slide (Q) is a real knee slide: the hips sit almost to the floor in the first fifth of it, the lead leg
+reaches out along the ground, the trail shin folds under, and the body leans back over it, rising out at the end
+(`kneeslide` in `anim/agility.js`; there's no slide in the capture library, so this one is authored).
+
+![Slide: before and after](gait/slide.jpg)
 
 The Mando keeps to beskar and jets: the ground dodge is a thruster-shoved slide, a hop tucks the knees, ignition
 snaps the legs together under the pack, and a jet slam drops into a three-point landing.
@@ -122,6 +128,22 @@ they feed it each foot's path, heel strike and toe-off, so the planted-foot lock
 work on top. Past the fastest clip the stride quickens rather than lengthens and each foot spends less of the cycle on
 the ground, so the planted leg can still reach. In the air the flight's phase is read off the vertical speed against
 the take-off's, and a bigger jump drives the knees harder than the captured hop. A jetpack flight keeps its own pose.
+
+![Flips: procedural (above each pair) and captured](gait/mocap-flips.jpg)
+
+Flips and rolls take their timing from captured ones too (`MOCAP_MOVES`): a back tuck, a front handspring, a side
+flip and a dive roll. Each gives how far through its turn the whole body is (measured head over feet, so the crouch
+before and the settle after don't count) and the legs through it. `flipBody` turns the body on that curve instead of a
+symmetric ease, so a flip turns early off the push, whips through the middle and opens for the landing, and keeps the
+form's turn count, twist and duration from `data/agility.js`. Where the style's legs match the clip (a tuck; an aerial's
+split) the legs are the captured ones; a pike or layout keeps its authored shape. Spins and slides keep their twirl.
+
+A saber cut's body comes from the swordplay captures (`MOCAP_SWORD`: every strike in them, averaged and lined up on
+contact). The hips lead: the body is already turning through the strike and keeps going after contact, and the
+shoulders trail the hips, then whip past them at contact (`mocapCut`, applied to the whole body's turn and the
+torso's twist in animation.js). The blade's keyframes in `data/poses.js` and the hit timing don't change.
+
+![Cuts: procedural and captured](gait/mocap-cuts.jpg)
 
 ![Run and jump, procedural and captured](gait/mocap-run.jpg)
 ![Jump and landing](gait/mocap-jump.jpg)

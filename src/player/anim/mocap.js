@@ -8,7 +8,7 @@
 //
 // Off with ?mocap=0 in the URL, to compare against the procedural stride.
 
-import { MOCAP, MOCAP_N, MOCAP_JUMP, MOCAP_JUMP_N } from '../../data/mocap.js';
+import { MOCAP, MOCAP_N, MOCAP_JUMP, MOCAP_JUMP_N, MOCAP_MOVES, MOCAP_SWORD } from '../../data/mocap.js';
 import { DIM } from '../model/rig.js';
 
 const SCALE = 1.18;
@@ -110,4 +110,47 @@ export const MOCAP_LAND_T = MOCAP_JUMP.land.dur * 0.7;   // a touch quicker than
 export function mocapLand(u){
   const L = MOCAP_JUMP.land;
   return { drop: along(L.drop, u), pitch: along(L.pitch, u) };
+}
+
+/* ---------------- flips and rolls ---------------- */
+/* The captured flip for a flip state (anim/agility.js), or null: a somersault backward is the back tuck, forward the
+   front handspring (or the dive roll, for a roll along the ground), and a cartwheel turn is the side flip. A twirl
+   (a spin dodge, a slide) isn't a flip and keeps its own timing. */
+export function mocapFlip(fl){
+  if (!MOCAP_ON || fl.ease === 'twirl') return null;
+  if (fl.somer) return MOCAP_MOVES[(fl.lift || 0) < 0 ? 'roll' : fl.somer < 0 ? 'back' : 'front'];
+  if (fl.roll) return MOCAP_MOVES.side;
+  return null;
+}
+
+// how far through its turn the body is at phase p of the move (0..1, exactly 0 and 1 at the ends)
+export function flipTurn(m, p){
+  const e = m.e, a = e[0], b = e[e.length - 1];
+  return Math.min(1, Math.max(0, (along(e, p) - a) / (b - a)));
+}
+
+// the legs at phase p, [left hip, left knee, right hip, right knee, spread] like anim/agility.js' LEGS shapes
+export function flipLegs(m, p){
+  const L = m.legs;
+  return [along(L.lt, p), along(L.lk, p), along(L.rt, p), along(L.rk, p), along(L.sp, p)];
+}
+
+/* ---------------- sword cuts ---------------- */
+// a sample of a sword channel at u (0..1 across the captured window, contact at 0.5)
+function cutAt(arr, u){
+  const n = arr.length, x = Math.min(1, Math.max(0, u)) * (n - 1), i = Math.min(Math.floor(x), n - 2), t = x - i;
+  return arr[i] + (arr[i + 1] - arr[i]) * t;
+}
+const smooth01 = x => { const u = Math.min(1, Math.max(0, x)); return u * u * (3 - 2 * u); };
+
+/* The body behind a cut at swing progress k, with the swing's chamber / strike / follow-through times (data/poses.js
+   SWING_STYLE): the hips lead (already turning through the strike, still going after contact) and the shoulders
+   trail them, then whip past at contact. turn: the whole body's turn toward the cut (about −0.3 at the start, wound
+   back, to 0.7 at the follow-through); chest: the shoulders against the hips (−1 trailing … 1 leading). Both ease in
+   over the chamber and out over the recovery, so a cut starts and ends square. */
+export function mocapCut(k, tc, ts, tf){
+  const u = k < ts ? 0.5 * k / ts : 0.5 + 0.5 * Math.min(1, (k - ts) / (tf - ts));
+  const back = k > tf ? 1 - smooth01((k - tf) / (1 - tf)) : 1;
+  const w = smooth01(k / tc) * back;
+  return { turn: (cutAt(MOCAP_SWORD.pel, u) - 0.3) * w, chest: cutAt(MOCAP_SWORD.chest, u) * w };
 }
