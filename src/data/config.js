@@ -31,7 +31,7 @@ export const CFG = {
     // BLADE CLASH — your cut meets a foe's strike mid-arc: neither lands, both recoil
     clash: { from: 0.15, to: 0.75, knock: 9, push: 5, stam: 6 },
     // SOFT LOCK-ON (T / middle mouse) — the camera keeps one foe framed
-    lockOn: { range: 22, keep: 28, cone: 0.55, yawPull: 7, pitch: 0.3, pitchPull: 2.5 },
+    lockOn: { range: 22, keep: 28, cone: 0.55, yawPull: 7, pitch: 0.2, pitchPull: 2.5 },
   },
   abilities: {
     // BASIC powers — cheap, available from the start
@@ -54,14 +54,24 @@ export const CFG = {
   killStreakTimeout: 4.0,
   // CAMERA — follow-cam feel (see src/engine/camera.js)
   camera: {
-    baseDist: 8.2,            // resting follow distance
-    calmDist: -0.7,           // between waves / nothing nearby: tuck in closer for a more grounded, personal view
+    // LENS — a big-budget third-person framing: the hero fills about a third of the frame height, the lens rides at
+    // shoulder height just off the right shoulder, and a moderate FOV keeps the backdrop large (a wide FOV shrinks
+    // everything past the hero, which is what made the arenas read small)
+    fov: 56,                  // vertical degrees at rest (was 70: ~106° across a 16:9 screen, a fisheye on the props)
+    pivotY: 1.7,              // the lens orbits a point this high over the hero's feet (shoulder / head height)
+    shoulder: 0.75,           // Jedi lens sits this far right of the spine, so the foe ahead is never hidden behind you
+    lookAhead: 5,             // the lens aims this far past the hero...
+    lookUp: -0.15,            // ...and this high over the pivot (a hair under it keeps the hero's boots in frame)
+    baseDist: 5.4,            // resting follow distance (was 8.2)
+    calmDist: -0.4,           // between waves / nothing nearby: tuck in closer for a more grounded, personal view
     crowdRadius: 10,          // enemies inside this range count toward the crowd pull-back
-    crowdPull: 0.32,          // extra distance per nearby enemy...
-    crowdMax: 1.8,            // ...capped here, so a brawl always fits on screen
+    crowdPull: 0.4,           // extra distance per nearby enemy...
+    crowdMax: 2.6,            // ...capped here, so a brawl always fits on screen
+    duelPull: 0.18,           // LOCK-ON: per metre to the locked foe, the lens backs off so both duelists stay framed...
+    duelMax: 1.6,             // ...up to this much
     crowdLift: 0.5,           // and the lens rises up to this much so the pack reads over the hero's shoulders
-    bossDist: 1.4,            // boss fights sit further back...
-    bossNear: 2.0,            // ...and further still (up to this) while the boss is right on top of you
+    bossDist: 2.4,            // boss fights sit further back...
+    bossNear: 3.4,            // ...and further still (up to this) while the boss is right on top of you
     shake: 0.32,              // screen-shake strength (trauma² — small hits stay subtle, big ones land hard)
     shakeRoll: 0.035,         // max roll (radians) at full trauma
     hitKick: 0.42,            // the lens is knocked away from whatever hit you
