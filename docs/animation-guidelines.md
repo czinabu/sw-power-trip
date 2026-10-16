@@ -86,6 +86,18 @@ roll, spin) plus a leg shape (tuck, pike, layout, split, slide) and an air guard
 The Mando keeps to beskar and jets: the ground dodge is a thruster-shoved slide, a hop tucks the knees, ignition
 snaps the legs together under the pack, and a jet slam drops into a three-point landing.
 
+## Gait
+
+The legs on the ground are solved, not swung (`src/player/anim/gait.js`, tuned in `GAIT` in `src/data/movement.js`).
+A stride clock advances with distance travelled; each foot follows a stance path, where its ground contact moves
+back at exactly the body's speed so it stays put in the world, then a swing path that leaves and arrives at that same
+speed. Two-bone leg IK puts the ankle on the path, compensating for the body's lean. Steps lengthen and quicken with
+speed; a walk keeps both feet down for a moment, a run has a flight phase; the foot heel-strikes, rolls and toes off.
+Strafing and backpedalling follow the same paths in the direction of travel. A form's `gait` in `data/stances.js`
+still sets its character: `amp` scales step length, `lift` the swing foot's height, `bob` the hip dip. Standing, the
+stance footwork owns the legs and the two blend by speed. The body also leans with acceleration (a push to start, a
+sit-back to stop, a bank into a turn).
+
 ## Rig features to use
 
 - **New joints** (`src/player/model/rig.js`): chest (upper-body twist separate from the hips), wrists (snap and weapon angle), ankles (foot plant), four robe flaps and the cape pivot (follow-through and secondary motion).

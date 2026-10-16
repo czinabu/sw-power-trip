@@ -1,5 +1,5 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
-// MOVE: grounded-movement and parkour tuning (air control, fall weight, landings, mantle/vault, wall-run, roll).
+// MOVE: grounded-movement and parkour tuning (air control, fall weight, landings, mantle/vault, wall-run, roll); GAIT: the planted-foot stride.
 
 /* The Jedi's feet. A jump is a commitment: you steer it a little, it comes down faster than it went up, and a
    long drop costs a beat on landing unless you roll out of it. The Force leap/glide (HOLD SPACE) keeps its own
@@ -51,4 +51,20 @@ export const MOVE = {
   combatTurnRate: 16,   // rad/s squared up in combat
   pivotAngle: 2.1,      // reversing input by more than this (rad) at speed plants the feet and pivots
   pivotTime: 0.16, pivotMinSpeed: 5,
+};
+
+/* GAIT: how the feet carry the body (player/anim/gait.js). The legs are solved to planted foot targets, so a foot on
+   the ground stays where it landed instead of skating. Distances are metres in the world, speeds m/s.
+   A stance's `gait` (data/stances.js) scales these: amp → step length, lift → foot lift, bob → hip bob. */
+export const GAIT = {
+  step: [0.5, 0.145, 2.0],  // step length = base + per (m/s) of speed, capped: a walk takes short steps, a sprint long ones
+  duty: [0.6, 0.32],        // share of each foot's cycle spent on the ground, walk → run (below 0.5 both feet leave it)
+  runFrom: 2.5, runAt: 7,   // speeds (m/s) the walk becomes a run over
+  lift: [0.07, 0.3],        // swing foot clearance, walk → run (the run's heel kicks up behind)
+  bob: [0.022, 0.07],       // hip dip at each footfall (rig units), walk → run
+  runDrop: 0.06,            // hips sit this much lower at a run so the knees stay flexed
+  blendFrom: 0.15, blendTo: 1.1,   // below `blendFrom` m/s the stance footwork owns the legs; above `blendTo` the gait does
+  // weight: the body leans with ACCELERATION (a push to start, a sit-back to stop, a bank into a turn), on top of the
+  // small speed lean animation.js already gives
+  accelLean: 0.014, accelBank: 0.011, accelMax: 0.2, accelSmooth: 9,
 };
