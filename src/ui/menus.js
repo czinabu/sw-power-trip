@@ -14,6 +14,7 @@ import { closeProgress } from './store-ui.js';
 import { DIFFS } from '../data/difficulty.js';
 import { renderControls } from './controls.js';
 import { svgIcon } from './icons.js';
+import './roadmap.js';
 
 /* ============================================================
    INPUT
