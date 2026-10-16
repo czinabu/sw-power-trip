@@ -91,14 +91,23 @@ export function tryAttack(flow = false){
     TMP.normalize();
     // NO aim assist — you aim the cut yourself. The lunge only closes a short gap toward a foe you're already
     // facing; anything farther you have to walk into range first (footwork is part of the fight).
-    if (d > 2.2) player.vel.addScaledVector(TMP, lunge * Math.min(d - 1.8, CFG.player.lungeMax) / 0.18);
+    if (d > 2.2) stepIntoCut(TMP, lunge * Math.min(d - 1.8, CFG.player.lungeMax) / 0.18);
   } else if (backStrike){
-    player.vel.addScaledVector(fwd(), -4.5 * lunge);   // shove off the back foot, away from the threat
+    stepIntoCut(fwd(), -4.5 * lunge);   // shove off the back foot, away from the threat
   } else {
-    player.vel.addScaledVector(fwd(), 7 * lunge);   // step into the strike
+    stepIntoCut(fwd(), 7 * lunge);   // step into the strike
   }
   S.swing(G.hero === 'mando' ? 'dark' : G.stance);   // the blade's whoosh, voiced by form
   if (flow && G.hero !== 'mando') sfx(1250, 0.06, 'sine', 0.022, 1900);   // a faint ring: the link landed in rhythm
+}
+// The cut's travel. On the ground it is ROOT MOTION: the same distance the old shove carried (impulse ÷ the ground
+// drag in locomotion.js), but laid along the swing so the body drives through the strike with the lead foot
+// (locomotion.js moves it, anim/footing.js steps the feet). In the air it stays a shove.
+const GROUND_DRAG = 9;
+function stepIntoCut(dir, impulse){
+  if (player.grounded && player.swing){
+    player.swing.travel = { x: dir.x * impulse / GROUND_DRAG, z: dir.z * impulse / GROUND_DRAG, done: 0 };
+  } else player.vel.addScaledVector(dir, impulse);
 }
 // Bail out of a saber swing at ANY point — into a guard/parry, a Force power, or a dash. The unspent cut is
 // forfeit (that's the price of going defensive/Force mid-stroke). PARTIAL cost: an EARLY feint (first ~30%) is

@@ -9,6 +9,7 @@ export const MOVE = {
   accel: 22,            // m/s² toward the input direction (was CFG.player.accel 34, near-instant)
   brake: 46,            // m/s² when stopping or reversing against your momentum
   swingMove: 0.55,      // footwork while a saber swing is in flight (Ataru's moveAtk multiplies on top)
+  cutTravel: [0.08, 0.5],   // span of a grounded cut (0–1) its forward drive is laid over; the strike lands at ~0.37
   // air: a jump keeps its takeoff momentum; WASD only nudges it
   airControl: 0.22,     // fraction of ground accel available while airborne (not gliding)
   fallGravity: 1.6,     // gravity multiplier once falling — a sharper arc, no hang at the top
@@ -80,4 +81,6 @@ export const FOOTING = {
   stepTime: 0.2,    // seconds for a step (a little longer for a big one)
   lift: 0.09,       // how high the stepping foot comes up
   lead: 0.12,       // a step aims this many seconds of drift ahead
+  cutStrike: 0.37,  // a cut's lead step plants at this share of the swing (as the blade lands)
+  spinRate: 6,      // the body turning faster than this (rad/s, a spinning cut) pivots the feet with it
 };

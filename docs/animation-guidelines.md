@@ -109,6 +109,12 @@ Each foot stands on whatever is under it (`groundAt` in `world/collision.js`): a
 reaches at most `GAIT.reachDown` below the body's support (past an edge it hangs), and the hips sink to let the lower
 foot reach the ground.
 
+**Cuts step.** A grounded cut's forward drive is root motion (`stepIntoCut` in `player/jedi/combat.js`, laid over the
+swing by `MOVE.cutTravel` in `locomotion.js`): the same distance the old shove carried, but the body drives through
+the strike instead of sliding out ahead of it. The lead foot (the back foot for a back strike) lifts as the cut starts
+and plants as the blade lands (`FOOTING.cutStrike`), where the drive will end; the trailing foot follows after. A
+spinning finisher pivots the feet with the body. In the air a cut still shoves.
+
 ## Rig features to use
 
 - **New joints** (`src/player/model/rig.js`): chest (upper-body twist separate from the hips), wrists (snap and weapon angle), ankles (foot plant), four robe flaps and the cape pivot (follow-through and secondary motion).
