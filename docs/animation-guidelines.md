@@ -132,6 +132,13 @@ symmetric ease, so a flip turns early off the push, whips through the middle and
 form's turn count, twist and duration from `data/agility.js`. Where the style's legs match the clip (a tuck; an aerial's
 split) the legs are the captured ones; a pike or layout keeps its authored shape. Spins and slides keep their twirl.
 
+A saber cut's body comes from the swordplay captures (`MOCAP_SWORD`: every strike in them, averaged and lined up on
+contact). The hips lead: the body is already turning through the strike and keeps going after contact, and the
+shoulders trail the hips, then whip past them at contact (`mocapCut`, applied to the whole body's turn and the
+torso's twist in animation.js). The blade's keyframes in `data/poses.js` and the hit timing don't change.
+
+![Cuts: procedural and captured](gait/mocap-cuts.jpg)
+
 ![Run and jump, procedural and captured](gait/mocap-run.jpg)
 ![Jump and landing](gait/mocap-jump.jpg)
 

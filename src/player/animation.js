@@ -17,7 +17,7 @@ import { pistolPose, riflePose, rifleLowered, restGun } from './anim/guns.js';
 import { MIRROR } from './model/rig.js';
 import { saberPose, guardPose, swingPose, deflectPose, applySaberPose, releaseSaberPose, airGuard } from './anim/saber.js';
 import { advanceGait, gaitLegs, gaitHipOffset, releaseGait } from './anim/gait.js';
-import { MOCAP_ON, MOCAP_LAND_T, mocapLand, mocapAirLegs, airPhase } from './anim/mocap.js';
+import { MOCAP_ON, MOCAP_LAND_T, mocapLand, mocapAirLegs, airPhase, mocapCut } from './anim/mocap.js';
 import { footingLegs, releaseFooting } from './anim/footing.js';
 import { stepCloth } from './model/cloth.js';
 import { jediAirLegs, jediAgilityArms, jediAgilityPost, mandoAgilityPost, landingStyle, slamPitch } from './anim/agility.js';
@@ -324,16 +324,18 @@ function animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait){
     // its chamber, so a linked string never snaps back to square between strokes
     if (!sw.body) sw.body = { ry: Math.atan2(Math.sin(vis.rotation.y), Math.cos(vis.rotation.y)), py: vis.position.y, drop: player._swingDrop || 0 };
     const tc = (sw.anim && sw.anim.tc) || 0.25, inB = cue.k < tc ? 1 - easeInOut(cue.k / tc) : 0;
+    // captured (anim/mocap.js): the hips lead the cut and the shoulders whip through after them
+    const MC = MOCAP_ON && sw.anim && !cue.spin ? mocapCut(cue.k, sw.anim.tc, sw.anim.ts, sw.anim.tf) : null;
     if (!player.flip){
       if (cue.spin) vis.rotation.y = easeInOut(cue.cut) * Math.PI * 2 * cue.spin * (turn || 1);
-      else vis.rotation.y = cue.env * st.twist * turn * 0.55;
+      else vis.rotation.y = MC ? MC.turn * st.twist * turn * 0.75 : cue.env * st.twist * turn * 0.55;
       if (cue.hop) vis.position.y = Math.sin(Math.PI * cue.k) * cue.hop;
       vis.rotation.y += sw.body.ry * inB;
       vis.position.y += sw.body.py * inB;
     }
     // drive in on the strike: the weapon shoulder reaches, the hips sink for the power forms
     R.torso.position.z = dr(R.torso.position.z, cue.env * 0.12 * (sw.riposte ? 1.6 : 1), 14);
-    R.torso.rotation.y = dr(R.torso.rotation.y, 0, 12);
+    R.torso.rotation.y = dr(R.torso.rotation.y, MC ? MC.chest * 0.22 * (turn || 1) : 0, MC ? 30 : 12);
     vis.rotation.x = dr(vis.rotation.x, saberPose.lean, 14);
     player._swingDrop = cue.drop * cue.env + sw.body.drop * inB;
     if (!sw.applied && cue.k > 0.35){ sw.applied = true; applySwingDamage(sw.step); }
