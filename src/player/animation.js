@@ -701,7 +701,9 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
   // === SINGLE-BLASTER GAUNTLET SHIELD — projected energy disc on the left forearm. Driven here (not in the
   // grounded branch) so it holds whether you're standing OR flying. Flares on a catch; warns amber when stamina
   // runs low (the shield can't deflect once it's dry).
+  const wasShielding = player.isShielding;
   player.isShielding = mandoShielding();
+  if (player.isShielding && !wasShielding) player.shieldFlash = Math.max(player.shieldFlash || 0, 0.1);   // the disc pops up as it re-forms
   player.shieldFlash = Math.max(0, (player.shieldFlash || 0) - dt * 3.2);
   if (player.isShielding){
     if (!player.shieldMesh){
