@@ -129,6 +129,14 @@ function setMouseSens(v){
   const sl = document.getElementById('senssl'); if (sl && +sl.value !== G.mouseSens) sl.value = G.mouseSens;
 }
 setMouseSens(parseFloat(localStorage.getItem('sw_sens')) || 1);
+// SCREEN SHAKE — scales every camera shake, roll and hit kick (0 turns them off)
+function setShakeScale(v){
+  G.shakeScale = Math.max(0, Math.min(1.5, isNaN(v) ? 1 : v));
+  try { localStorage.setItem('sw_shake', G.shakeScale); } catch(e){}
+  const sv = document.getElementById('shakeval'); if (sv) sv.textContent = G.shakeScale ? Math.round(G.shakeScale * 100) + '%' : 'OFF';
+  const sl = document.getElementById('shakesl'); if (sl && +sl.value !== G.shakeScale) sl.value = G.shakeScale;
+}
+{ let v; try { v = parseFloat(localStorage.getItem('sw_shake')); } catch(e){} setShakeScale(isNaN(v) ? 1 : v); }
 setMasterVol(shared.masterVol);   // sync the sliders/labels to the values already loaded from localStorage
 setMusicVol(AE.vol.music); setSfxVol(AE.vol.sfx);
 const senssl = document.getElementById('senssl'), volsl = document.getElementById('volsl');
@@ -138,6 +146,10 @@ senssl.addEventListener('input', (e) => setMouseSens(parseFloat(e.target.value))
 volsl.addEventListener('pointerdown', (e) => e.stopPropagation());
 volsl.addEventListener('click', (e) => e.stopPropagation());
 volsl.addEventListener('input', (e) => { audioInit(); setMasterVol(parseFloat(e.target.value)); });
+{ const sl = document.getElementById('shakesl');
+  sl.addEventListener('pointerdown', (e) => e.stopPropagation());
+  sl.addEventListener('click', (e) => e.stopPropagation());
+  sl.addEventListener('input', (e) => setShakeScale(parseFloat(e.target.value))); }
 for (const [id, set] of [['mussl', setMusicVol], ['fxsl', setSfxVol]]){
   const sl = document.getElementById(id); if (!sl) continue;
   sl.addEventListener('pointerdown', (e) => e.stopPropagation());
