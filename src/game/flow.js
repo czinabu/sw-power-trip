@@ -60,7 +60,7 @@ export function startLevel(idx){
   // reset transient combat state
   player.slamming = false;
   player.doubleJumped = false;
-  player.firing = false; player.fireCd = 0; player.flaming = false; player.jetActive = false; player.boosting = false; player.meleeT = 0; player.lockOn = false;
+  player.firing = false; player.trigHeld = false; player.shieldDropT = 0; player.fireCd = 0; player.flaming = false; player.jetActive = false; player.boosting = false; player.meleeT = 0; player.lockOn = false;
   player.darkT = 0; player.darkApplied = false; if (player.darksaberMesh) player.darksaberMesh.visible = false;
   player.zoom = false; player.aiming = 0; player.recoilKick = 0; player.stabT = 0; player.heat = 0; player.overheat = false; player.ventT = 0;
   player.jet = player.jetMax;

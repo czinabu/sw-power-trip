@@ -44,6 +44,7 @@ document.addEventListener('mousedown', (e) => {
   if (G.hero === 'mando'){
     if (e.button === 0){
       const W = mandoWeapon();
+      player.trigHeld = true;                        // single: a held trigger keeps the shield down
       if (W.fire === 'auto') player.firing = true;   // dual: hold to spray
       else fireTrigger();                            // single (semi) & disruptor (bolt-action): one shot per click
     }
@@ -98,7 +99,7 @@ document.addEventListener('mousedown', (e) => {
   }
 });
 document.addEventListener('mouseup', (e) => {
-  if (e.button === 0) player.firing = false;
+  if (e.button === 0){ player.firing = false; player.trigHeld = false; }
   if (e.button === 2){ player.blockHeld = false; player.zoom = false; }
 });
 document.addEventListener('wheel', (e) => {

@@ -85,7 +85,7 @@ const TIPS = {
     '<b>Jet fuel</b> shows on the lights of your jetpack. The reticle turns orange when it runs low.',
     '<b>Gadget power</b> (bottom-left bar) fuels flame, rockets and other gadgets.',
     'The reticle turns <b>gold</b> when a target is under it.',
-    'Hold RMB with the single blaster to raise a shield that deflects bolts.',
+    'Hold RMB with the single blaster to raise a shield that deflects bolts. Firing drops it; it comes back half a second after you stop.',
     '<b>Sith acolytes</b> bat blaster fire back. Close in: punch through their guard, charge them with W + E, catch their cuts with E and finish them with a takedown.',
     'After each wave, spend <b>XP</b> on new gadgets and on mastering the ones you have, and <b>skill points</b> on weapon upgrades.',
   ],
