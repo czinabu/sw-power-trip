@@ -20,6 +20,8 @@ import { enemyDmgScale } from '../game/survival.js';
 import { ENGAGE } from '../data/enemies.js';
 import { updateDirector, usesToken, dropToken, rangedSlotFree, behindCamera } from './director.js';
 import { updateNav, navSteer, navClass, navClearance } from './nav.js';
+import { DUEL } from '../data/duel.js';
+import { updateDuel, cleanupDuel, planAttack, quickStrike, windupPose, strikePose, maybeFeint, chainNext, updateSaberLock } from './duel.js';
 
 const NAV_EVERY = 0.1;      // seconds between a foe's route checks (the field itself refreshes in nav.js)
 const STUCK_AFTER = 0.5;    // window (s) over which a chasing foe must make headway, or it sidesteps to work itself free
@@ -37,6 +39,7 @@ export function updateEnemies(dt){
   const pp = playerPos();
   updateNav(dt, pp);    // refresh the flow field toward the player (nav.js)
   updateDirector(dt);   // hand out attack tokens before anyone decides to swing
+  updateSaberLock(dt);  // a bind in progress (duel.js) runs before the foe it holds
   for (let i = enemies.length-1; i >= 0; i--){
     const e = enemies[i], g = e.group, t = e.t;
     e.st -= dt;
@@ -79,6 +82,11 @@ export function updateEnemies(dt){
       case 'chase': {
         if (tgtPos) g.rotation.y = Math.atan2(tx, tz);
         if (e.stunT > 0) break;   // reeling from a saber hit — no step, no swing this beat
+        // DUELLING — a foe that just turned your blade answers at once, outside the turn queue (duel.js)
+        if (e.counterQueued && tgtPos && !e.converted){
+          e.counterQueued = false;
+          if (dist < t.range + 1.2){ e.counterAt = G.gt; quickStrike(e, DUEL.counterWindup); break; }
+        }
         // WARBRINGER mid-boss — periodically LEAPS and quakes the ground where you stand (dash/jump it)
         if (e.warbringer && !e.converted && dist > 4.5 && dist < 17 && (e.leapCd = (e.leapCd || 3) - dt) <= 0){
           e.state = 'leapwind'; e.st = 0.55;
@@ -223,6 +231,8 @@ export function updateEnemies(dt){
             // a swing coiled BEHIND the camera gets a longer tell, so off-screen hits stay fair
             e.wu = t.windup * (!t.ranged && !e.converted && behindCamera(g.position) ? ENGAGE.rearWindup : 1);
             e.state = 'windup'; e.st = e.wu; telegraphWindup(e);
+            // a duellist picks its line, and whether this one is a feint, a held strike or the start of a string
+            if (e.dp && !t.ranged && !e.converted) planAttack(e); else e.plan = null;
             if (!t.ranged && !e.converted) G.lastMeleeWindupT = G.gt;
           }
           // else: another melee foe just committed to a swing — hold in chase this frame and retry next frame
@@ -245,8 +255,10 @@ export function updateEnemies(dt){
       case 'windup': {
         g.rotation.y = Math.atan2(tx, tz);
         const heavy = !!t.heavy;
-        g.userData.bodyMat.emissive.setHex(e.converted ? 0x33cc55 : 0xff2a18);
-        const wk = 1 - Math.max(e.st,0)/(e.wu || t.windup);
+        g.userData.bodyMat.emissive.setHex(e.converted ? 0x33cc55 : (e.plan && e.plan.side === 'T') ? 0xfff0e0 : 0xff2a18);
+        // (a held strike's extra beat sits at the apex: the coil completes over the base wind-up, then waits)
+        const wk = e.plan ? clamp((e.wu - Math.max(e.st,0)) / (e.wuBase || e.wu), 0, 1) : 1 - Math.max(e.st,0)/(e.wu || t.windup);
+        if (e.plan && maybeFeint(e, wk)) break;   // a FEINT: it snaps to the other side and comes in fast
         // anticipation: COIL hard and fast, then hold at the apex (a readable pause before the blow)
         const coil = Math.pow(wk, 0.5);
         g.userData.bodyMat.emissiveIntensity = (0.4 + coil * coil * 2.4) + Math.sin(G.gt*30)*0.25*coil;   // pulsing charge
@@ -255,8 +267,9 @@ export function updateEnemies(dt){
         // (vertical position is owned by the surface-height step after collision — keep the coil/lean tell only)
         // eyes flare wide as the strike charges
         if (g.userData.eye){ const s = 1 + coil*(heavy?1.4:0.9); g.userData.eye.scale.set(g.userData.eyeBase.x*s, g.userData.eyeBase.y*(1+coil*1.6), g.userData.eyeBase.z); }
-        // the weapon REARS BACK & HIGH — a huge, unmistakable tell
-        if (g.userData.staff){
+        // the weapon REARS BACK & HIGH — a huge, unmistakable tell (a duellist's shows the line it will come in on)
+        if (e.plan) windupPose(e, coil);
+        else if (g.userData.staff){
           g.userData.staff.rotation.z = 0.5 - coil * 2.9;
           g.userData.staff.rotation.x = 0.3 + coil * 0.9;
         } else if (g.userData.weaponArm){
@@ -299,7 +312,8 @@ export function updateEnemies(dt){
         // body whips from the coiled lean-back through to a committed forward pitch
         g.rotation.x = -0.4*(1-chop) + (heavy ? 0.32 : 0.22)*chop;
         if (g.userData.eye) g.userData.eye.scale.copy(g.userData.eyeBase);
-        if (g.userData.staff){
+        if (e.plan) strikePose(e, chop);
+        else if (g.userData.staff){
           g.userData.staff.rotation.z = -2.4 + chop * 3.4;   // whip the staff down across the body
           g.userData.staff.rotation.x = 0.9;
         } else if (g.userData.weaponArm){
@@ -309,15 +323,19 @@ export function updateEnemies(dt){
         // the blow lands at the apex of the swing — parry by clicking RMB right here
         if (!e.struck && k >= 0.5){
           e.struck = true;
-          if (dist < t.range + 1.7){
-            const lunge = heavy ? 0.9 : 0.5;
-            g.position.x += tx*lunge; g.position.z += tz*lunge;   // lunge into the strike
+          const thrust = !!(e.plan && e.plan.side === 'T');
+          // REACH — the blow lands only if the weapon really gets there: the lunge closes in (never into the body), then
+          // the target has to be inside the weapon's reach. Step back out of a slow wind-up and it whiffs.
+          const lunge = Math.min(thrust ? 1.4 : heavy ? 0.9 : 0.5, Math.max(0, dist - 1.2));
+          g.position.x += tx*lunge; g.position.z += tz*lunge;   // lunge into the strike
+          if (dist - lunge <= t.range * ENGAGE.reach + (thrust ? ENGAGE.thrustReach : 0)){
             if (heavy){ G.shake = Math.max(G.shake, 0.3); burst(V3(g.position.x+tx, 0.3, g.position.z+tz), 0xbbbbbb, 6, 6, 3); }
             if (e.converted){
               if (tgtEnemy) damageEnemy(tgtEnemy, t.dmg * CFG.convertDmgMult, V3(tx,0,tz), 10);
               else if (tgtBoss) damageBoss(t.dmg * CFG.convertDmgMult);
             } else {
-              const res = hurtPlayer(t.dmg * enemyDmgScale(), g.position, false, true);   // melee — blocked by high ground
+              // a THRUST drives through a held guard: parry it or get out of the way
+              const res = hurtPlayer(t.dmg * enemyDmgScale() * (thrust ? DUEL.thrustDmg : 1), g.position, false, true, false, thrust ? { unblockable: true } : null);   // melee — blocked by high ground
               if (res === 'parried'){
                 // perfectly parried — the weapon is knocked wide and the foe STUMBLES, wide open
                 staggerEnemy(e, -tx, -tz);
@@ -329,6 +347,7 @@ export function updateEnemies(dt){
           }
         }
         if (e.st <= 0 && e.state === 'strike'){
+          if (chainNext(e)) break;   // a duellist's STRING: the next cut winds up straight out of this one
           if (!e.dead){ e.state = 'recover'; e.st = t.recover; }
           if (e.token) dropToken(e, true);   // swung — step back into the ring and let the next foe in
           g.userData.bodyMat.emissiveIntensity = 0;
@@ -336,7 +355,7 @@ export function updateEnemies(dt){
         break;
       }
       case 'recover':
-        easeWeaponHome(g, dt);
+        if (!e.dp || dist >= DUEL.guardRange) easeWeaponHome(g, dt);   // (a duellist settles into its guard instead: duel.js)
         g.rotation.x = dampToward(g.rotation.x, 0, dt, 10);
         if (g.userData.eye) g.userData.eye.scale.copy(g.userData.eyeBase);
         if (e.st <= 0){ e.state = 'chase'; g.rotation.x = 0; }
@@ -377,6 +396,8 @@ export function updateEnemies(dt){
         if (e.st <= 0){ e.state = 'recover'; e.st = 0.4; g.rotation.x = 0; g.userData.bodyMat.emissiveIntensity = 0; }
         break;
       }
+      case 'lock':   // blade to blade with the hero: duel.js drives the bind
+        break;
       case 'stasis':
         if (e.st <= 0){
           e.state = 'chase';
@@ -436,9 +457,10 @@ export function updateEnemies(dt){
       case 'fade':
         g.scale.multiplyScalar(Math.max(0.01, 1 - dt*2.2));
         g.position.y -= dt * 0.6;
-        if (e.st <= 0){ if (e.aimLine){ scene.remove(e.aimLine); e.aimLine = null; } if (e.hpBar){ scene.remove(e.hpBar); e.hpBar = null; } scene.remove(g); enemies.splice(i,1); }
+        if (e.st <= 0){ cleanupDuel(e); if (e.aimLine){ scene.remove(e.aimLine); e.aimLine = null; } if (e.hpBar){ scene.remove(e.hpBar); e.hpBar = null; } scene.remove(g); enemies.splice(i,1); }
         break;
     }
+    if (e.dp && !e.dead) updateDuel(e, dt, dist);   // guard, posture, the guard arc (duel.js)
     // ranged-hit recoil — a quick backward flinch that reads as "I felt that"
     if (e.flinch > 0){
       e.flinch -= dt;

@@ -12,6 +12,7 @@ import { MANDO, MANDO_WEAPONS, weaponUnlocked } from '../../data/mando.js';
 import { abil } from '../../data/mastery.js';
 import { fwd, rightV, playerPos } from '../helpers.js';
 import { damageEnemy } from '../../enemies/damage.js';
+import { updateMandoMelee } from './melee.js';
 import { fireBolt } from '../../enemies/bolts.js';
 import { damageBoss } from '../../boss/boss.js';
 import { tryAttack } from '../jedi/combat.js';
@@ -317,7 +318,7 @@ export function updateFlame(dt){
 export function updateMandoCombat(dt, f, r){
   if (player.fireCd > 0) player.fireCd -= dt;
   if (player.stabT > 0) player.stabT -= dt;
-  if (player.meleeT > 0) player.meleeT -= dt;   // gauntlet-punch recovery
+  updateMandoMelee(dt);   // the E kit: string recovery, catch window, charge and dive (melee.js)
   if (player.aiming > 0) player.aiming -= dt;
   if (player.zoom) player.aiming = 0.3;                 // holding the scope keeps you squared up
   player.recoilKick = Math.max(0, player.recoilKick - dt*3.5);

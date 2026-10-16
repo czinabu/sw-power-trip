@@ -1,6 +1,8 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
 // Level and wave flow: startLevel, startWave, updateFlow, ability unlock gates.
 
+import { cleanupDuel, endLock } from '../enemies/duel.js';
+import { resetMandoMelee } from '../player/mando/melee.js';
 import { CFG } from '../data/config.js';
 import { LEVELS } from '../data/levels.js';
 import { scene } from '../engine/renderer.js';
@@ -37,8 +39,9 @@ export function startLevel(idx){
   G.endless = false; G.mut = null;   // campaign — never in survival mode (startEndless re-flags after this)
   const L = LEVELS[idx];
   // clear battlefield
-  for (const e of enemies) scene.remove(e.group);
+  for (const e of enemies){ scene.remove(e.group); cleanupDuel(e); }
   enemies.length = 0;
+  endLock();
   for (const b of bolts) scene.remove(b.mesh);
   bolts.length = 0;
   for (const o of orbs) scene.remove(o.mesh);
@@ -89,6 +92,7 @@ export function startLevel(idx){
   player.mantle = null; player.wallRun = null; player.wallRunUsed = false; player.landStagT = 0;   // parkour state
   player.hang = null; player.slideT = 0; player.sprinting = false; player.pivotT = 0; player.flinchT = 0;
   player.lockTarget = null;
+  resetMandoMelee();
   player.judgeT = 0;
   player.judgeTargets = [];
   player.barrierT = 0; if (shared._barrierMesh) shared._barrierMesh.visible = false;

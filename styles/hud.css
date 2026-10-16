@@ -226,3 +226,14 @@ body.mando #stancebox,body.mando #xh,body.mando #fcmeter{display:none!important}
 #lockmark{position:absolute;left:0;top:0;width:0;height:0;opacity:0;transition:opacity .12s;pointer-events:none}
 #lockmark::before{content:'';position:absolute;left:-7px;top:-7px;width:10px;height:10px;border:2px solid rgba(255,226,122,.9);
   transform:rotate(45deg);box-shadow:0 0 6px rgba(255,210,90,.6)}
+
+/* ---------- centre: SABER LOCK — the bind's balance, yours on the right ---------- */
+#lockbar{position:fixed;left:50%;top:62%;transform:translate(-50%,6px);width:300px;text-align:center;opacity:0;transition:opacity .15s,transform .15s;pointer-events:none}
+#lockbar.on{opacity:1;transform:translate(-50%,0)}
+#lockbar .lb-k{font:700 13px/1 var(--font-ui);letter-spacing:3px;color:#ffe6b0;text-shadow:0 0 10px rgba(255,170,60,.6);margin-bottom:7px}
+#lockbar .lb-track{position:relative;height:8px;border-radius:4px;background:linear-gradient(90deg,rgba(255,60,50,.55),rgba(30,20,20,.6) 50%,rgba(90,200,255,.55));
+  box-shadow:0 0 0 1px rgba(255,255,255,.18),0 2px 10px rgba(0,0,0,.5)}
+#lockbar .lb-mid{position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:rgba(255,255,255,.5)}
+#lockbar .lb-fill{position:absolute;left:50%;top:-5px;width:6px;height:18px;margin-left:-3px;border-radius:3px;background:#fff;box-shadow:0 0 12px #ffe6b0,0 0 4px #fff}
+#lockbar .lb-hint{margin-top:8px;font-size:11px;letter-spacing:1.5px;color:var(--ink-soft)}
+#lockbar .lb-hint b{color:var(--ink)}

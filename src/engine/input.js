@@ -22,8 +22,10 @@ import { trySlide } from '../player/parkour.js';
 import { toggleLock } from '../player/lockon.js';
 import {
   bactaStim, mandoRocket, mandoJetMissile, whistlingBirds, thermalDetonator, grappleHook, jetSlam,
-  mandoBoostDash, gauntletPunch
+  mandoBoostDash
 } from '../player/mando/gadgets.js';
+import { mandoMelee } from '../player/mando/melee.js';
+import { lockPress, lockKick, lockPush } from '../enemies/duel.js';
 import { mandoWeapon, switchWeapon, startReload, fireTrigger, mandoFlame } from '../player/mando/weapons.js';
 import { startLevel } from '../game/flow.js';
 import { showBanner } from '../ui/banners.js';
@@ -38,6 +40,7 @@ document.addEventListener('mousemove', (e) => {
 });
 document.addEventListener('mousedown', (e) => {
   if (!inputActive()) return;
+  if (player.saberLock){ if (e.button === 0) lockPress(); return; }   // blades bound: LMB drives (enemies/duel.js)
   if (G.hero === 'mando'){
     if (e.button === 0){
       const W = mandoWeapon();
@@ -129,7 +132,7 @@ document.addEventListener('keydown', (e) => {
       if (k === 'x'){ if (G.unlocked.slam) jetSlam(); else if (G.unlocked.grapple) grappleHook(); }                 // MID: jetpack SLAM or GRAPPLE
       if (k === 'v'){ if (G.unlocked.birds) whistlingBirds(); else if (G.unlocked.deto) thermalDetonator(); }       // LATE: BIRDS or DETONATOR
       if (k === 'z') mandoJetMissile();
-      if (k === 'e' && !e.repeat) gauntletPunch();   // beskar gauntlet melee (always available)
+      if (k === 'e' && !e.repeat) mandoMelee();   // close quarters: string, catch, charge, dive kick, takedown (melee.js)
       if (k === 'h' && !e.repeat) bactaStim();        // bacta stim self-heal (store unlock)
       if (k === 'r' && !e.repeat) startReload();
       if (k === '1') switchWeapon('single');
@@ -142,9 +145,9 @@ document.addEventListener('keydown', (e) => {
     if (k === 'shift' && !e.repeat && !(keys['w'] && player.grounded && !player.blockHeld && !(player.landStagT > 0))) forceDash();
     if (k === 'q' && !e.repeat) trySlide();            // SLIDE out of a sprint
     if (k === 't' && !e.repeat) toggleLock();          // soft lock-on
-    if (k === 'f') forcePush();
+    if (k === 'f'){ if (!(player.saberLock && lockPush())) forcePush(); }   // in a saber lock: a point-blank shove that breaks it
     if (k === 'c') forcePull();
-    if (k === 'e' && !e.repeat) forceKick();   // FRONT KICK — always-available melee, shares 'E' with the Mando's punch
+    if (k === 'e' && !e.repeat){ if (player.saberLock) lockKick(); else forceKick(); }   // FRONT KICK — always-available melee, shares 'E' with the Mando's punch
     if (k === 'v') forceBarrier();     // Force Barrier — the defensive bubble (its fork-sibling SABER THROW is RMB+LMB)
     // ADAPTIVE FORK KEYS — each either/or pair shares ONE bind (you only ever own one of the pair).
     if (k === 'x'){ if (G.unlocked.slam) forceSlam(); else if (G.unlocked.mend) forceMend(); }                         // UTIL: force SLAM or MEND

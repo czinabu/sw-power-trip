@@ -50,6 +50,7 @@ export function genEndlessWave(n){
     brute:   n >= 5 ? 0.3 + (n-4)*0.14 : 0,
     bomber:  n >= 6 ? 0.3 + (n-5)*0.07 : 0,    // saboteurs harass from wave 6
     sniper:  n >= 7 ? 0.25 + (n-6)*0.06 : 0,   // marksmen pick at you from wave 7
+    acolyte: n >= 6 ? 0.2 + (n-5)*0.05 : 0,    // Sith acolytes, the saber duellists, from wave 6
   };
   if (G.mut === 'swarm')    w.grunt *= 2.3;
   if (G.mut === 'marksmen'){ w.blaster *= 2.2; w.flyer *= 1.9; w.sniper *= 2.4; }

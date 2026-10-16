@@ -1,6 +1,7 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
 // Player animation: stance posture, body facing, flips, and the rig pose (legs, torso, arms, Force cast, Mando weapon/flight poses).
 
+import { sweepBlade } from './jedi/bladehit.js';
 import * as THREE from 'three';
 import { CFG } from '../data/config.js';
 import { clamp, dampAngle, wrapAngle, V3 } from '../utils.js';
@@ -338,7 +339,13 @@ function animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait){
     R.torso.rotation.y = dr(R.torso.rotation.y, MC ? MC.chest * 0.22 * (turn || 1) : 0, MC ? 30 : 12);
     vis.rotation.x = dr(vis.rotation.x, saberPose.lean, 14);
     player._swingDrop = cue.drop * cue.env + sw.body.drop * inB;
-    if (!sw.applied && cue.k > 0.35){ sw.applied = true; applySwingDamage(sw.step); }
+    // CONTACT — the cut lands on what the blade actually sweeps through this frame (jedi/bladehit.js), during the
+    // stroke itself (not the chamber or the follow-through); the strike point still runs the swing's one-off effects
+    if (held){
+      const touched = sweepBlade(sw, cue.k >= ((sw.anim && sw.anim.tc) || 0.25) * 0.6 && cue.k <= 0.92);
+      if (touched && touched.length) applySwingDamage(sw.step, touched);
+    }
+    if (!sw.applied && cue.k > 0.35){ sw.applied = true; applySwingDamage(sw.step, held || sw.cutSet ? [] : undefined); }
     // IN-RHYTHM LINK (Jedi): one well-timed press this swing → the next cut leaves from the follow-through
     if (player.queuedAtk && !sw.rushed && G.hero !== 'mando' && sw.applied && cue.k >= FLOW.at){
       player.atkT = 0; player.queuedAtk = false; player.lastAtkEnd = G.gt;
@@ -593,16 +600,59 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
     vis.position.y = dr(vis.position.y, 0, 10);   // settle the body height (the jedi-only lean block no longer does this for us)
     R.head.rotation.x = dr(R.head.rotation.x, 0, 9);   // level the head when grounded
   }
-  // GAUNTLET PUNCH — the right arm drives a forward cross and the torso leans into it (overrides the weapon pose)
+  // CLOSE QUARTERS (E, player/mando/melee.js) — each beat of the kit has its own body: a left jab, a right cross, a
+  // rising knee, the vibroblade slash, the shoulder-first jet charge, the boot-first dive, the vambrace catch
+  if (!(player.meleeT > 0)) R.torso.rotation.x = dr(R.torso.rotation.x, 0, 12);   // settle a knee/charge/dive hunch
   if (player.meleeT > 0){
-    const mk = 1 - clamp(player.meleeT / (player.meleeMax || 0.32), 0, 1);   // 0→1 through the punch
-    const ext = Math.sin(mk * Math.PI);                                      // 0→1→0 punch envelope
-    R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -1.5 - ext*0.25, 26);
-    R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, -0.12, 22);
-    R.armR.sh.rotation.z = dr(R.armR.sh.rotation.z, -0.05, 22);
-    R.armR.el.rotation.x = dr(R.armR.el.rotation.x, -0.95 + ext*0.9, 28);    // elbow snaps straight on the punch
-    R.torso.position.z = dr(R.torso.position.z, ext * 0.32, 24);             // shoulder drives forward for weight
-    R.torso.rotation.y = dr(R.torso.rotation.y, -ext * 0.22, 22);
+    const mk = 1 - clamp(player.meleeT / (player.meleeMax || 0.32), 0, 1);   // 0→1 through the move
+    const ext = Math.sin(mk * Math.PI);                                      // 0→1→0 strike envelope
+    const kind = player.meleeKind || 'cross';
+    if (kind === 'jab'){
+      R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -1.5 - ext*0.2, 28);
+      R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, 0.14, 22);
+      R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -1.0 + ext*0.95, 30);
+      R.torso.position.z = dr(R.torso.position.z, ext * 0.22, 24);
+      R.torso.rotation.y = dr(R.torso.rotation.y, ext * 0.2, 22);
+    } else if (kind === 'knee'){
+      R.legR.hip.rotation.x = -1.65 * ext;
+      R.legR.knee.rotation.x = 0.4 + ext * 1.5;
+      R.legL.knee.rotation.x = 0.2 * ext;
+      R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -1.25, 22); R.armR.el.rotation.x = dr(R.armR.el.rotation.x, -1.5, 22);
+      R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -1.25, 22); R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -1.5, 22);
+      R.torso.rotation.x = 0.18 * ext;   // the hands haul the head down onto the rising knee
+    } else if (kind === 'blade' || kind === 'takedown'){
+      // the wrist blade carves across: wound high over the right shoulder, ripped through to the left hip
+      const sweep = clamp(mk * 1.6, 0, 1);
+      R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -2.3 + sweep * 1.5, 30);
+      R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, 0.55 - sweep * 1.35, 30);
+      R.armR.el.rotation.x = dr(R.armR.el.rotation.x, -0.9 + ext * 0.7, 30);
+      R.torso.rotation.y = dr(R.torso.rotation.y, 0.3 - sweep * 0.7, 22);
+      R.torso.position.z = dr(R.torso.position.z, ext * (kind === 'takedown' ? 0.4 : 0.28), 24);
+    } else if (kind === 'charge'){
+      R.torso.rotation.y = dr(R.torso.rotation.y, -0.55, 18);
+      R.torso.position.z = dr(R.torso.position.z, 0.3, 18);
+      R.torso.rotation.x = dr(R.torso.rotation.x, 0.3, 18);
+      R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -0.7, 20); R.armR.el.rotation.x = dr(R.armR.el.rotation.x, -1.9, 20);
+      R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -0.9, 20); R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -1.6, 20);
+    } else if (kind === 'dive'){
+      R.legR.hip.rotation.x = -1.25; R.legR.knee.rotation.x = 0.1;   // the lead boot driven out at the target
+      R.legL.hip.rotation.x = 0.35;  R.legL.knee.rotation.x = 1.4;
+      R.torso.rotation.x = dr(R.torso.rotation.x, -0.2, 18);
+      R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -0.4, 16); R.armL.sh.rotation.z = dr(R.armL.sh.rotation.z, 0.6, 16);
+    } else if (kind === 'catch'){
+      // the left vambrace thrown up across the face, the blow turned on the beskar
+      R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -1.75, 34);
+      R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, 0.65, 34);
+      R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -1.65, 34);
+      R.torso.rotation.y = dr(R.torso.rotation.y, 0.22, 24);
+    } else {
+      R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -1.5 - ext*0.25, 26);
+      R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, -0.12, 22);
+      R.armR.sh.rotation.z = dr(R.armR.sh.rotation.z, -0.05, 22);
+      R.armR.el.rotation.x = dr(R.armR.el.rotation.x, -0.95 + ext*0.9, 28);    // elbow snaps straight on the punch
+      R.torso.position.z = dr(R.torso.position.z, ext * 0.32, 24);             // shoulder drives forward for weight
+      R.torso.rotation.y = dr(R.torso.rotation.y, -ext * 0.22, 22);
+    }
   }
   // === SINGLE-BLASTER GAUNTLET SHIELD — projected energy disc on the left forearm. Driven here (not in the
   // grounded branch) so it holds whether you're standing OR flying. Flares on a catch; warns amber when stamina

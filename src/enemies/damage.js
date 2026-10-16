@@ -148,7 +148,7 @@ export function interruptEnemy(e, dir, heavyBlow){
     return false;
   }
   if (!(e.state === 'windup' || (e.state === 'strike' && !e.struck))) return false;
-  if ((e.t.staff || (e.t.shield && !e.shieldBroken)) && !heavyBlow) return false;
+  if ((e.t.staff || (e.dp && e.dp.lock) || (e.t.shield && !e.shieldBroken)) && !heavyBlow) return false;
   if (G.gt < (e.poiseT || 0)) return false;
   e.poiseT = G.gt + ENGAGE.poise;
   e.state = 'recover'; e.st = 0.5; e.flinch = 0.15;
@@ -221,7 +221,7 @@ export function bossTelegraph(g, tx, tz){
 }
 
 // a parried foe stumbles: knocked off balance, weapon flung wide, open to a free hit
-export function staggerEnemy(e, awayX, awayZ){
+export function staggerEnemy(e, awayX, awayZ, label){
   const g = e.group;
   e.state = 'stagger';
   e.st = e.t.staff ? 1.5 : (e.t.heavy ? 1.25 : 1.3);   // brutes recover slower; staff foes longest
@@ -232,6 +232,6 @@ export function staggerEnemy(e, awayX, awayZ){
   spawnHitSpark(cp, 0xffd24a, 1.3);
   G.hitstop = Math.max(G.hitstop, 0.08);
   G.shake = Math.max(G.shake, 0.4);
-  floater(g.position, e.t.heavy ? 'STAGGERED!' : 'PARRIED!', '#ffe27a');
+  floater(g.position, label || (e.t.heavy ? 'STAGGERED!' : 'PARRIED!'), '#ffe27a');
   S.parry(cp);
 }

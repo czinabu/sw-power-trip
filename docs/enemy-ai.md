@@ -32,6 +32,30 @@ tokens) is unchanged by this and lives in `src/data/enemies.js` (`ENEMY_TYPES`, 
 - **Ranged troopers:** out of range they advance along the field. In range with no shot they hide behind cover and
   peek; after 3s they flank for 4s to find a clear shot instead of firing into the wall.
 
+## Duelling
+
+Sword-armed foes with a profile in `DUEL_PROFILES` (`src/data/duel.js`) fight like duellists. The code is
+`src/enemies/duel.js`; `ai.js` calls into it when a foe commits to a swing, every wind-up and strike frame, and once a
+frame per living duellist.
+
+- **Guard:** a duellist covers one line (left, right or high from the hero's view) and holds its weapon there. Magnaguards
+  and Sith acolytes also show a pale arc on that side. A cut on the covered line is turned at the profile's `block`
+  chance, other lines at a fraction of it (`DUEL.offLine`). The line a cut comes in on is where its swing starts
+  (`cutLine()`): D starts on the left, A on the right, W and finishers come down high.
+- **Reading you:** the same line twice in a row and the guard locks onto it (amber arc, `READ YOU`) until you change it.
+- **Posture:** each turned blow adds strain (more for finishers and Djem So, a lot for a kick or a jet charge). Past the
+  profile's `posture` the guard breaks: the foe staggers, wide open. Posture drains back when left alone.
+- **Offence:** each swing is planned when it starts: its line (shown by the wind-up pose), whether it is a feint (it
+  switches side at `DUEL.feintAt` and comes in fast, so a reflex parry whiffs), a held strike (waits at the apex), a
+  thrust (white tell; a held block can't stop it, parry or dodge), and how many cuts follow in the string.
+- **Counter:** a foe that turns a blow may answer at once, outside the attack-token queue.
+- **Saber lock:** your cut meeting a duellist's strike mid-arc binds the blades (`LOCK`). Mash LMB to drive through, or
+  break it with a kick (stamina) or a Force push (Force). Win and the foe reels with your riposte ready; lose and its
+  blade gets through.
+- **Bolts:** acolytes bat blaster fire back at the shooter from the front.
+
+`window.GAME.duel` exposes the tables and the lock in the dev console.
+
 ## Checking it
 
 `window.GAME.nav` exposes the grid (`NAV`), `navSteer` and `navDist` in the dev console. `NAV.dist[0]` is the

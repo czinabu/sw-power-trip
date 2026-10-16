@@ -76,6 +76,8 @@ import './data/difficulty.js';
 import './engine/input.js';
 import { updateCamera } from './engine/camera.js';
 import { NAV, buildNav, updateNav, navSteer, navDist } from './enemies/nav.js';
+import { DUEL, DUEL_PROFILES, MANDO_MELEE } from './data/duel.js';
+import { LOCK, startLock, endLock, duelDefend } from './enemies/duel.js';
 
 setHero(G.hero);   // initialise control text + crosshair for the default hero
 
@@ -139,4 +141,5 @@ window.GAME = { CFG, ENEMY_TYPES, LEVELS, BOSS_CFG, BOSS_MANDO, STANCES, SKILLS,
   FOCUS, focusTier, focusDmgMul, focusRegenMul, addFocus, updateFocus, enemyDmgScale, applySwingDamage,
   hitMarker, spawnBlasterBolt, mandoWeapon, updateBolts, updateHud,
   hazardZones, updateHazardZones, hazardContains, setOverlayState, nav: { NAV, buildNav, updateNav, navSteer, navDist },
+  duel: { DUEL, DUEL_PROFILES, MANDO_MELEE, LOCK, startLock, endLock, duelDefend },
   get boss(){ return shared.boss; }, get saberProj(){ return shared.saberProj; } };
