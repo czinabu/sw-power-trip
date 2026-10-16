@@ -54,7 +54,7 @@ Each file starts with a one-line description. Balance changes usually only touch
 
 **Changing progression:** between waves there are two currencies with one job each. XP buys abilities (`data/store.js`: auto-unlocks, fork pairs, finals) and mastery ranks that upgrade abilities you own (`data/mastery.js`); in survival it also buys the repeatable powers. Skill points, one per wave cleared, buy training (`data/skills.js`). Ability code reads its tuning through `abil(id)`, so a mastery rank is just a multiplier or bonus on a field of the ability's `CFG.abilities` / `MANDO` entry. To check prices against what a campaign pays out, run `npm run dev` and open `/tools/progression-lab.html`.
 
-**Changing movement and combat feel:** grounded movement and parkour (air control, fall weight, landing stagger and roll, mantle/vault reach, ledge hang, wall-run, sprint and slide, turn rate and pivots) the gait (step length, foot lift, hip bob, acceleration lean; `GAIT`) and standing footwork (when a foot steps; `FOOTING`) are tuned in `src/data/movement.js`; the code lives in `src/player/parkour.js` and `locomotion.js`. Parry/block strictness, swing arcs, lunge reach, hit flinch, perfect dodge, blade clashes and lock-on are in `CFG.player` (`src/data/config.js`); lock-on lives in `src/player/lockon.js`.
+**Changing movement and combat feel:** grounded movement and parkour (air control, fall weight, landing stagger and roll, mantle/vault reach, ledge hang, wall-run, sprint and slide, turn rate and pivots) the gait (step length, foot lift, hip bob, acceleration lean; `GAIT`) and standing footwork (when a foot steps; `FOOTING`) are tuned in `src/data/movement.js`; the code lives in `src/player/parkour.js` and `locomotion.js`. The run and jump are shaped by motion capture (`src/data/mocap.js`, made by `tools/mocap/convert.mjs`; `?mocap=0` turns it off; see docs/animation-guidelines.md). Parry/block strictness, swing arcs, lunge reach, hit flinch, perfect dodge, blade clashes and lock-on are in `CFG.player` (`src/data/config.js`); lock-on lives in `src/player/lockon.js`.
 
 **Live tweaking:** `window.GAME` in the browser console exposes the config tables and most game functions.
 
@@ -125,6 +125,7 @@ Each file starts with a one-line description. Balance changes usually only touch
 - **EffectComposer** + UnrealBloomPass for glow
 - **Web Audio API** for all sound (procedural synthesis — no audio files)
 - **Vite** for the dev server and build, with `vite-plugin-singlefile` to inline everything into one HTML file
+- Motion capture: the data used in this project was obtained from [mocap.cs.cmu.edu](http://mocap.cs.cmu.edu). The database was created with funding from NSF EIA-0196217.
 - Built with the assistance of [Claude Code](https://claude.ai/code)
 ## License
 

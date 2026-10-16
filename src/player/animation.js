@@ -17,6 +17,7 @@ import { pistolPose, riflePose, rifleLowered, restGun } from './anim/guns.js';
 import { MIRROR } from './model/rig.js';
 import { saberPose, guardPose, swingPose, deflectPose, applySaberPose, releaseSaberPose, airGuard } from './anim/saber.js';
 import { advanceGait, gaitLegs, gaitHipOffset, releaseGait } from './anim/gait.js';
+import { MOCAP_ON, MOCAP_LAND_T, mocapLand, mocapAirLegs, airPhase } from './anim/mocap.js';
 import { footingLegs, releaseFooting } from './anim/footing.js';
 import { stepCloth } from './model/cloth.js';
 import { jediAirLegs, jediAgilityArms, jediAgilityPost, mandoAgilityPost, landingStyle, slamPitch } from './anim/agility.js';
@@ -31,6 +32,7 @@ export function animatePlayer(dt, pp, st, f, r, moving){
   const POSE = footwork();
 
   const vis = player.vis, R = player.rig;
+  mocapUpper(R, null);   // take last frame's captured chest twist off, so every pose below works from its own values
   poseBody(dt, dr, vis, planted, POSE, moving);
   const { ph, inten, gait } = animateLegsAndTorso(dt, dr, R, planted, POSE);
   animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait);
@@ -38,6 +40,7 @@ export function animatePlayer(dt, pp, st, f, r, moving){
   // agility (anim/agility.js) poses flips, dives and landings after the arms, so the guard's damping can't blunt them
   if (G.hero !== 'mando') jediAgilityPost(dt, dr, vis, R, { ph, inten, planted });
   if (G.hero === 'mando'){ animateMandoPose(dt, dr, vis, R, pp, f, r); mandoAgilityPost(dt, dr, vis, R, f, r); }
+  mocapUpper(R, player._gait);
   secondaryMotion(dt, vis, R);
   stepCloth(player, dt, player.group.position.y + 0.02);   // the robe panels and cape hem (model/cloth.js), after the pose
   player.arcMesh.material.opacity = Math.max(0, player.arcMesh.material.opacity - dt*4);
@@ -152,7 +155,7 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
   // TOUCHDOWN — the knees soak a landing (harder falls sink deeper), then spring back up
   if (player.grounded && player._wasGrounded === false){
     const LS = landingStyle();   // Djem So sinks deep and rises slow; Ataru lands soft and springs straight back up
-    player.landDur = LAND_T / (LS.spring || 1);
+    player.landDur = (MOCAP_ON ? MOCAP_LAND_T : LAND_T) / (LS.spring || 1);
     player.landT = player.landDur; player.landAmt = clamp(0.3 + (player.landDip || 0) * 1.6, 0.3, 1) * (LS.depth || 1);
     if (player.landAmt > 0.45 && !player.slamming){   // a real drop kicks up a ring of dust at the feet
       const pp = player.group.position;
@@ -160,10 +163,17 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
         burst(V3(pp.x + Math.cos(a)*0.45, pp.y + 0.08, pp.z + Math.sin(a)*0.45), 0x8f8578, 1, 2.5 * player.landAmt, 0.6, 0.9); }
     }
   }
+  // the flight's phase reads off the vertical speed against the take-off's (a second jump in the air restarts it)
+  if (!player.grounded && (player._wasGrounded !== false || player.vy > (player._vyPrev || 0) + 2)) player._vy0 = Math.max(0, player.vy);
+  player._vyPrev = player.vy;
   player._wasGrounded = player.grounded;
   if (player.landT > 0) player.landT -= dt;
-  const land = player.landT > 0 ? Math.sin((1 - player.landT / (player.landDur || LAND_T)) * Math.PI) * player.landAmt : 0;
+  const landU = player.landT > 0 ? 1 - player.landT / (player.landDur || LAND_T) : 1;
+  // captured: the knees give fast and the body rises back slowly, tipping forward over the feet; else a plain sine
+  const LC = MOCAP_ON && player.landT > 0 ? mocapLand(landU) : null;
+  const land = player.landT > 0 ? (LC ? LC.drop : Math.sin(landU * Math.PI)) * player.landAmt : 0;
   player._land = land;
+  player._landPitch = LC ? LC.pitch * player.landAmt * 2 : 0;
   // hips: crouch lowers the center of gravity per stance; on the move they sit lower and dip at each footfall
   // (set before the legs, which are solved down from here)
   player._crouch = dr(player._crouch || 0, planted ? POSE.crouch : 0, 8);
@@ -173,6 +183,16 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
   const fd = player.grounded && !player.flip && player._footDrop ? Math.min(0, player._footDrop[0], player._footDrop[1]) : 0;
   player._hipSink = dr(player._hipSink || 0, fd * GAIT.hipSink / 1.18, 14);
   R.hips.position.y += player._hipSink;
+  // the captured stride's pelvis (anim/mocap.js): it bobs, sways, surges and rolls over each stance foot, turning with
+  // the legs. Set before the legs, which are solved in its frame. Fades out with the gait
+  const B = GS.body && player.grounded && !player.flip ? GS.body : null, bw = B ? GS.w : 0;
+  const along = hSpeed > 1e-3 ? Math.abs((tvx*Math.sin(player.faceYaw) + tvz*Math.cos(player.faceYaw)) / hSpeed) : 1;   // running, not strafing
+  player._mcAlong = along;
+  R.hips.position.x = dr(R.hips.position.x, B ? B.sway * bw : 0, 20);
+  R.hips.position.z = dr(R.hips.position.z, B ? B.surge * bw : 0, 20);
+  R.hips.rotation.x = dr(R.hips.rotation.x, (B ? B.pitch * bw : 0) + player._landPitch, 20);
+  R.hips.rotation.z = dr(R.hips.rotation.z, B ? -B.roll * bw : 0, 20);
+  if (GS.body) R.hips.rotation.y = dr(R.hips.rotation.y, B ? B.yaw * bw * along : 0, 20);   // (else anim/agility.js turns the Jedi's)
   player._legIK = null;   // set below while the feet are solved onto the floor (ankle angles per leg)
   // legs: stride + knee lift (+ knee = the shin folds back, a real knee bend); the Jedi's air, flip and dive legs come from anim/agility.js
   if (G.hero !== 'mando' && jediAirLegs(dt, dr, R)){
@@ -221,6 +241,11 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
     R.legR.hip.rotation.z  = dr(R.legR.hip.rotation.z, -0.04, 10);
     R.legL.knee.rotation.x = dr(R.legL.knee.rotation.x, 0.04, 10);
     R.legR.knee.rotation.x = dr(R.legR.knee.rotation.x, 0.04, 10);
+  } else if (G.hero === 'mando' && !player.grounded && MOCAP_ON && !player.jetActive && !player.hovering && !player.boosting){
+    // a plain jump or fall, jets off: the captured jump's legs (anim/mocap.js)
+    const [lh, lk, rh, rk] = mocapAirLegs(airPhase(player._vy0, player.vy), player._vy0);
+    R.legL.hip.rotation.x = dr(R.legL.hip.rotation.x, lh, 16); R.legL.knee.rotation.x = dr(R.legL.knee.rotation.x, lk, 16);
+    R.legR.hip.rotation.x = dr(R.legR.hip.rotation.x, rh, 16); R.legR.knee.rotation.x = dr(R.legR.knee.rotation.x, rk, 16);
   } else if (G.hero === 'mando' && !player.grounded){
     // UPRIGHT JETPACK — legs hang loose under the pack, one a touch ahead of the other, trailing as you lean
     const trail = (player._airLean || 0) * 0.6;
@@ -613,6 +638,23 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
   } else if (player.shieldMesh){
     player.shieldMesh.visible = false;
   }
+}
+
+/* CAPTURED UPPER BODY — with the motion-captured stride the chest twists against the pelvis and the head holds
+   steady, laid on top of whatever pose the arms and torso are in. When the hands are busy (a swing, a block, a cast,
+   the Mando aiming) the shoulders instead stay square while the pelvis turns under them. Called with no gait to
+   take the last frame's layer off before posing. */
+function mocapUpper(R, g){
+  const A = player._mcUp || (player._mcUp = { ty: 0, tz: 0, hy: 0 });
+  R.torso.rotation.y -= A.ty; R.torso.rotation.z -= A.tz; R.head.rotation.y -= A.hy;
+  A.ty = A.tz = A.hy = 0;
+  const B = g && g.body;
+  if (!B || !player.grounded || player.flip) return;
+  const w = g.w * (player._mcAlong ?? 1);
+  const free = G.hero !== 'mando' && player.atkT <= 0 && !player.blockHeld && player.castT <= 0 && player.judgeT <= 0 ? 1 : 0;
+  const yaw = lerp(-B.yaw, B.cyaw, free) * w, roll = lerp(-B.roll, B.croll, free) * g.w;
+  A.ty = yaw; A.tz = -roll; A.hy = -(B.yaw * w + yaw) * 0.8;
+  R.torso.rotation.y += A.ty; R.torso.rotation.z += A.tz; R.head.rotation.y += A.hy;
 }
 
 /* SECONDARY MOTION — cloth that follows the body instead of being bolted to it. Each robe panel and the cape is a
