@@ -71,8 +71,11 @@ function poseBody(dt, dr, vis, planted, POSE, moving){
     // TURNING WEIGHT — the Jedi eases round at a capped rate (slower still at a sprint) instead of snapping; on a
     // ledge he faces the wall
     if (player.hang) face = Math.atan2(-player.hang.nx, -player.hang.nz);
-    const rate = player.sprinting ? MOVE.sprintTurn : inCombatPose ? MOVE.combatTurnRate : MOVE.turnRate;
-    const step = wrapAngle(dampAngle(player.faceYaw, face, inCombatPose ? 26 : 11, dt) - player.faceYaw);
+    // a flip launched along the travel (anim/agility.js launchFlip) faces it fast, so the flip turns the way you go
+    const flipFace = player.flip && player.flip.face != null && !player.hang;
+    if (flipFace) face = player.flip.face;
+    const rate = flipFace ? 25 : player.sprinting ? MOVE.sprintTurn : inCombatPose ? MOVE.combatTurnRate : MOVE.turnRate;
+    const step = wrapAngle(dampAngle(player.faceYaw, face, flipFace ? 30 : inCombatPose ? 26 : 11, dt) - player.faceYaw);
     player.faceYaw += clamp(step, -rate * dt, rate * dt);
   }
   player.group.rotation.y = player.faceYaw;

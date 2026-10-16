@@ -10,9 +10,42 @@ import { DJUMP_FORCE, WALLKICK_FORCE } from '../data/mando.js';
 import { fwd, rightV, playerPos, stance } from './helpers.js';
 import { cancelSwing } from './jedi/combat.js';
 import { STEP_UP } from '../world/collision.js';
-import { flipStyle } from './anim/agility.js';
+import { flipStyle, launchFlip } from './anim/agility.js';
 import { MOVE } from '../data/movement.js';
 import { tryVault, findLedge, startMantle, requestRoll, hangClimb } from './parkour.js';
+
+/* MOMENTUM in a chain of moves: each move sends you where it says, instead of piling its push on top of whatever the
+   last move left. The run's momentum (moveVel) and the impulses (vel) are steered together. */
+// keep only the part of the momentum that goes along (dx, dz): a dash backward out of a run goes backward
+function commitTo(dx, dz){
+  for (const v of [player.moveVel, player.vel]){
+    const a = v.x * dx + v.z * dz;
+    v.x = dx * Math.max(0, a); v.z = dz * Math.max(0, a);
+  }
+}
+// turn the momentum to (dx, dz) and keep its speed: a second jump steers the leap toward the stick
+function turnTo(dx, dz){
+  for (const v of [player.moveVel, player.vel]){
+    const sp = Math.hypot(v.x, v.z);
+    v.x = dx * sp; v.z = dz * sp;
+  }
+}
+// drop the part of the momentum that drives into a surface with outward normal (nx, nz): a wall kick leaves the wall
+function offWall(nx, nz){
+  for (const v of [player.moveVel, player.vel]){
+    const a = v.x * nx + v.z * nz;
+    if (a < 0){ v.x -= nx * a; v.z -= nz * a; }
+  }
+}
+// the direction the movement keys point (camera space), or null
+function stickDir(){
+  const d = V3(0, 0, 0);
+  if (keys['w']) d.add(fwd());
+  if (keys['s']) d.sub(fwd());
+  if (keys['d']) d.add(rightV());
+  if (keys['a']) d.sub(rightV());
+  return d.lengthSq() > 0.01 ? d.normalize() : null;
+}
 
 export function forceDash(){
   const A = CFG.abilities.dash;
@@ -30,13 +63,14 @@ export function forceDash(){
   if (keys['a']) dir.sub(rightV());
   if (dir.lengthSq() < 0.01) dir.copy(fwd());
   dir.normalize();
+  commitTo(dir.x, dir.z);
   player.vel.addScaledVector(dir, A.speed);
   // the dash's body move is the form's (data/agility.js): Ataru's butterfly twist and tuck flips, Niman's spin
   // dodge, Djem So's driven slide. The flip only poses the body; the impulse and i-frames above do the work.
   const df = dir.dot(fwd()), drr = dir.dot(rightV());
   const sideDash = Math.abs(drr) >= Math.abs(df);
-  player.flip = { ...flipStyle('dash', sideDash ? 'side' : (df >= 0 ? 'fwd' : 'back')), t: 0, dur: 0.44,
-                  side: sideDash ? (drr >= 0 ? 1 : -1) : 1 };
+  const dd = sideDash ? 'side' : (df >= 0 ? 'fwd' : 'back');
+  launchFlip({ ...flipStyle('dash', dd), t: 0, dur: 0.44, side: sideDash ? (drr >= 0 ? 1 : -1) : 1 }, dd);
   burst(playerPos().clone().setY(1), 0x88ddff, 8, 5, 2);
   S.dash();
 }
@@ -63,12 +97,13 @@ export function doJump(){
     const dur = 0.72;                                 // slower, more cinematic — the spin hangs with the arc
     player.dashT = Math.max(player.dashT, dur);        // i-frames for the full flip — a real dodge
     player.dashStartT = G.gt;
-    let dir = 'back', side = 1;
-    if (keys['w']){ dir = 'fwd'; player.vel.addScaledVector(fwd(), 22); }                      // FRONT handspring, far forward
-    else if (keys['a']){ dir = 'side'; side = -1; player.vel.addScaledVector(rightV(), -21); }  // SIDE flip, left
-    else if (keys['d']){ dir = 'side'; side = 1; player.vel.addScaledVector(rightV(), 21); }    // SIDE flip, right
-    else player.vel.addScaledVector(fwd(), -20);                                                // BACK flip, away
-    player.flip = { ...flipStyle('evade', dir), t: 0, dur, side };                             // the form's flip (data/agility.js)
+    let dir = 'back', side = 1, push = fwd().multiplyScalar(-20);                               // BACK flip, away
+    if (keys['w']){ dir = 'fwd'; push = fwd().multiplyScalar(22); }                             // FRONT handspring, far forward
+    else if (keys['a']){ dir = 'side'; side = -1; push = rightV().multiplyScalar(-21); }        // SIDE flip, left
+    else if (keys['d']){ dir = 'side'; side = 1; push = rightV().multiplyScalar(21); }          // SIDE flip, right
+    const pl = push.length(); commitTo(push.x / pl, push.z / pl);
+    player.vel.add(push);
+    launchFlip({ ...flipStyle('evade', dir), t: 0, dur, side }, dir);                           // the form's flip (data/agility.js)
     burst(playerPos().clone().setY(0.8), stance().blade, 10, 6, 2);
     sfx(360, 0.12, 'sine', 0.05, 600); S.dash();
     return;
@@ -93,6 +128,7 @@ export function doJump(){
   if (wn && player.force >= WALLKICK_FORCE){
     player.force -= WALLKICK_FORCE;
     player.vy = CFG.player.jumpVel * 1.08;
+    offWall(wn.x, wn.z);                         // nothing still driving into the wall
     player.vel.addScaledVector(wn, 13);          // launch away from the surface
     player.airLeft = CFG.player.airJumps;        // refresh air options so you can chain kicks
     player.doubleJumped = false;
@@ -101,7 +137,8 @@ export function doJump(){
     const spin = (wn.x * fwd().z - wn.z * fwd().x) >= 0 ? 1 : -1;
     const facingWall = (-wn.x) * fwd().x + (-wn.z) * fwd().z;   // >0 = looking INTO the wall → backflip away
     // looking at the wall → flip backward off it; looking away → forward handspring off it
-    player.flip = { ...flipStyle('wall', facingWall > 0 ? 'back' : 'fwd'), t: 0, dur: 0.66, side: spin };
+    const wd = facingWall > 0 ? 'back' : 'fwd';
+    launchFlip({ ...flipStyle('wall', wd), t: 0, dur: 0.66, side: spin }, wd);
     const pp = playerPos();
     burst(V3(pp.x - wn.x*0.6, pp.y + 0.6, pp.z - wn.z*0.6), stance().blade, 9, 6, 3);
     sfx(420, 0.12, 'square', 0.06, 900); S.dash();
@@ -117,8 +154,12 @@ export function doJump(){
     player.vy = CFG.player.jumpVel * 1.35;   // a big, epic Force-leap on the second jump
     // the form's second-jump move, facing the way you're looking: Ataru's twisting front flip, Niman's layout,
     // Djem So's flipless Force leap (data/agility.js); slowed to hang with the big Force-leap arc
-    player.flip = { ...flipStyle('double'), t: 0, dur: 0.82 };
-    player.vel.addScaledVector(fwd(), 5);    // slight forward carry
+    // the second jump steers the leap: held keys turn the momentum their way, with a slight carry that way (the way
+    // you're looking with no keys held)
+    const sd = stickDir();
+    if (sd) turnTo(sd.x, sd.z);
+    player.vel.addScaledVector(sd || fwd(), 5);
+    launchFlip({ ...flipStyle('double'), t: 0, dur: 0.82 }, 'fwd');
     burst(playerPos().clone().setY(playerPos().y + 0.4), 0x88ddff, 6, 4, 2);
     S.dash();
   }
