@@ -98,6 +98,13 @@ still sets its character: `amp` scales step length, `lift` the swing foot's heig
 stance footwork owns the legs and the two blend by speed. The body also leans with acceleration (a push to start, a
 sit-back to stop, a bank into a turn).
 
+A foot in its stance is locked where it touched down, so a hard stop or a turn mid-stride can't drag it; the swing
+then starts from wherever the lock left it. Standing and at walking pace the footing (`src/player/anim/footing.js`,
+tuned in `FOOTING`) keeps both feet locked on the floor and steps one at a time when a foot is out of place: stopping
+out of a run settles in a step or two, turning on the spot steps round (a locked foot keeps its heading by turning at
+the ankle), and switching form or sinking into a guard steps the feet to the new width. The stance's leg shape in
+`FOOTWORK` (`data/poses.js`) is what the feet are stepped to.
+
 ## Rig features to use
 
 - **New joints** (`src/player/model/rig.js`): chest (upper-body twist separate from the hips), wrists (snap and weapon angle), ankles (foot plant), four robe flaps and the cape pivot (follow-through and secondary motion).

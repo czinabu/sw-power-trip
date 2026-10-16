@@ -5,14 +5,16 @@
 // both feet down for a moment and running has a flight phase. Strafing and backpedalling use the same paths in the
 // direction of travel. Also tracks acceleration for the body's lean (animation.js poseBody).
 
+import * as THREE from 'three';
 import { clamp } from '../../utils.js';
 import { player } from '../../state.js';
 import { GAIT } from '../../data/movement.js';
 import { DIM } from '../model/rig.js';
 
 const TAU = Math.PI * 2;
+const _inv = new THREE.Matrix4(), _p = new THREE.Vector3(), _q = new THREE.Vector3();
 const SCALE = 1.18;                                   // hero model scale (model/index.js): world metres → rig units
-const ANK = DIM.hipY - 0.06 - DIM.thigh - DIM.shin;   // ankle height above the floor with the legs straight
+export const ANK = DIM.hipY - 0.06 - DIM.thigh - DIM.shin;   // ankle height above the floor with the legs straight
 const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
 const lerp = (a, b, t) => a + (b - a) * t;
 
@@ -49,43 +51,69 @@ export function gaitHipOffset(g, style){
   return -(GAIT.runDrop * g.run + bob * dip) * g.w;
 }
 
-/* Leg angles for both feet on their gait paths. `fwd`/`right` is the direction of travel in the body's frame
-   (unit), hipsY the hips joint height, lean the body's forward tilt (vis.rotation.x) so the feet stay on the floor
-   under a leaning body (and the planted foot stays flat). Returns [hipX, kneeX, hipZ, ankX] for the left leg, then the right. */
-export function gaitLegs(g, fwd, right, hipsY, visY, lean){
+/* Leg angles for both feet on their gait paths. `fwd`/`right` is the direction of travel in the body's frame (unit).
+   The path is followed in the body's frame (lean-compensated, so the feet stay on the floor under a leaning body),
+   but a foot in its stance is LOCKED where it touched down in the world: the path alone would drag it when the
+   speed or the stride shape changes under it (a hard stop, a turn). Its swing then starts from wherever the lock
+   left it and blends back onto the path. Returns [hip pitch, knee bend, hip roll, ankle] for the left leg, then
+   the right. */
+export function gaitLegs(g, fwd, right, R, vis){
   const out = [];
   const sweep = 2 * g.step * g.duty / SCALE;   // ground contact distance per footfall, rig units
-  const hy = hipsY - 0.06;                       // hip joint height (rig units, vis frame)
-  const cl = Math.cos(-lean), sl = Math.sin(-lean);
-  for (const off of [0, 0.5]){                   // left foot, then right half a cycle later
+  const hy = R.hips.position.y - 0.06;           // hip joint height (rig units, vis frame)
+  const lean = vis.rotation.x, cl = Math.cos(-lean), sl = Math.sin(-lean);
+  vis.updateWorldMatrix(true, false);
+  _inv.copy(vis.matrixWorld).invert();
+  const floor = player.group.position.y + ANK * SCALE;
+  const locks = g.locks || (g.locks = [null, null]), offs = g.offs || (g.offs = [[0, 0], [0, 0]]);
+  [0, 0.5].forEach((off, i) => {                // left foot, then right half a cycle later
+    const side = i === 0 ? -1 : 1;
     const p = (g.cyc + off) % 1;
-    let s, lift, toe;
-    if (p < g.duty){
-      // STANCE — planted: the foot slides back under the body at exactly the travel speed (so in the world it stays put)
-      const u = p / g.duty;
+    let s, lift, toe, u, swing = p >= g.duty;
+    if (!swing){
+      // STANCE — on the path the foot slides back under the body at exactly the travel speed (still in the world)
+      u = p / g.duty;
       s = sweep * (0.5 - u); lift = 0;
       toe = u > 0.75 ? (u - 0.75) / 0.25 * 0.45 : u < 0.12 ? -0.18 * (1 - u / 0.12) : 0;   // heel strike, roll, toe-off
     } else {
       // SWING — peel off behind, the heel kicks up (more at a run), reach through and set down ahead. The path leaves
       // and arrives at the stance's speed (a Hermite curve with those end tangents), so the foot lifts off and sets
       // down still in the world instead of skidding in
-      const u = (p - g.duty) / (1 - g.duty), u2 = u * u, u3 = u2 * u;
+      u = (p - g.duty) / (1 - g.duty);
+      const u2 = u * u, u3 = u2 * u;
       const m = -sweep / g.duty * (1 - g.duty);   // the stance's foot velocity, in swing-u units
       s = (2*u3 - 3*u2 + 1) * -sweep/2 + (u3 - 2*u2 + u) * m + (-2*u3 + 3*u2) * sweep/2 + (u3 - u2) * m;
       lift = Math.sin(Math.PI * Math.pow(u, 0.75)) * g.lift / SCALE * g.w;
       toe = lerp(0.5, -0.1, u);
     }
-    // the ground point in the hero group's frame, then into the (leaning) body's frame
+    // the path point in the hero group's frame, then into the (leaning) body's frame
     const gz = s * fwd, gx = s * right, gy = ANK + lift;
-    const y = gy * cl - gz * sl - visY, z = gy * sl + gz * cl;
-    out.push(solveLeg(z, y - hy, gx, toe - lean));
-  }
+    _p.set(DIM.hipX * side + gx, gy * cl - gz * sl - vis.position.y, gy * sl + gz * cl);
+    if (!swing){
+      // touch down: lock this spot in the world and hold it for the whole stance
+      if (!locks[i]) locks[i] = _p.clone().applyMatrix4(vis.matrixWorld).setY(floor);
+      _p.copy(locks[i]).applyMatrix4(_inv);
+    } else {
+      if (locks[i]){
+        // lift off from where the lock actually is, then ease back onto the path through the swing
+        _q.copy(locks[i]).applyMatrix4(_inv);
+        offs[i][0] = _q.x - _p.x; offs[i][1] = _q.z - _p.z;
+        locks[i] = null;
+      }
+      const fade = 1 - u * u * (3 - 2 * u);
+      _p.x += offs[i][0] * fade; _p.z += offs[i][1] * fade;
+    }
+    out.push(solveLeg(_p.z, _p.y - hy, _p.x - DIM.hipX * side, toe - lean));
+  });
   return out;
 }
 
+/* Drop the stance locks (the gait isn't driving the legs). */
+export function releaseGait(g){ if (g) g.locks = null; }
+
 // two-bone IK in the leg's plane: thigh then shin, the knee bending forward. dz forward, dy down (negative), dx to the
 // body's right. Returns [hip pitch, knee bend, hip roll, ankle].
-function solveLeg(dz, dy, dx, toe){
+export function solveLeg(dz, dy, dx, toe){
   const a = DIM.thigh, b = DIM.shin;
   const d3 = Math.hypot(dz, dy, dx);
   const roll = Math.asin(clamp(dx / Math.max(d3, 1e-4), -0.6, 0.6));

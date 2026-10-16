@@ -1,5 +1,5 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
-// MOVE: grounded-movement and parkour tuning (air control, fall weight, landings, mantle/vault, wall-run, roll); GAIT: the planted-foot stride.
+// MOVE: grounded-movement and parkour tuning (air control, fall weight, landings, mantle/vault, wall-run, roll); GAIT: the planted-foot stride; FOOTING: standing steps.
 
 /* The Jedi's feet. A jump is a commitment: you steer it a little, it comes down faster than it went up, and a
    long drop costs a beat on landing unless you roll out of it. The Force leap/glide (HOLD SPACE) keeps its own
@@ -67,4 +67,14 @@ export const GAIT = {
   // weight: the body leans with ACCELERATION (a push to start, a sit-back to stop, a bank into a turn), on top of the
   // small speed lean animation.js already gives
   accelLean: 0.014, accelBank: 0.011, accelMax: 0.2, accelSmooth: 9,
+};
+
+/* FOOTING: standing and slow footwork (player/anim/footing.js). Feet stay locked on the floor; one steps when it is
+   out of place. Distances in metres, angles in radians. */
+export const FOOTING = {
+  reach: 0.16,      // a foot this far from where the stance wants it takes a step
+  turn: 0.6,        // ... or when the body has turned this far from the way the foot points
+  stepTime: 0.2,    // seconds for a step (a little longer for a big one)
+  lift: 0.09,       // how high the stepping foot comes up
+  lead: 0.12,       // a step aims this many seconds of drift ahead
 };
