@@ -9,6 +9,8 @@ import { makeStyle } from './styles.js';
 import { resolveLook } from './appearance.js';
 import { JEDI_PARTS } from './jedi.js';
 import { MANDO_PARTS } from './mando.js';
+import { chainGeo, chainWeights, rounded } from './skin.js';
+import { KEEL } from './shapes.js';
 import { mountLoadout } from './weapons.js';
 
 export function buildHeroModel(target, lookIn = {}){
@@ -51,6 +53,23 @@ function dress(R, S, hero, PARTS, player){
     mat: (key, over) => S.mat(key, over),
     add(geo, mat, parent, p, r, o){ const m = S.add(geo, mat, parent, p, r, o); shape(m, parent); parts.push(m); return m; },
     group(parent, p = [0,0,0], r = [0,0,0]){ const g = new THREE.Group(); g.position.set(...p); g.rotation.set(...r); parent.add(g); parts.push(g); return g; },
+    /* a skinned chain over `bones` (see skin.js): rings [{t, w, d, z?}] along it, bending at the distances `at`.
+       dir -1 runs down a limb, +1 up the spine. The build knobs are baked per vertex, by how much each bone carries it. */
+    skin(mat, rings, { bones, at, blend = 0.06, profile = KEEL, dir = -1, outline }){
+      const geo = chainGeo(rings, at, blend, rounded(profile), dir);
+      const fit = bones.map(b => limbJoints.has(b) ? [B.bulk, B.bulk] : (b === R.chest || b === R.torso) ? [B.shoulders, 1] : [1, 1]);
+      const weigh = (x, y) => chainWeights(dir * y, at, blend);
+      const p = geo.attributes.position;
+      for (let i = 0; i < p.count; i++){
+        let sx = 0, sz = 0;
+        for (const [b, w] of weigh(p.getX(i), p.getY(i))){ sx += fit[b][0] * w; sz += fit[b][1] * w; }
+        p.setX(i, p.getX(i) * sx); p.setZ(i, p.getZ(i) * sz);
+      }
+      geo.computeVertexNormals();
+      const m = S.addSkinned(geo, mat, R.vis, bones[0], bones, weigh, { outline });
+      parts.push(m);
+      return m;
+    },
     seam(geo, color, parent, p, r){ if (!hero.seams) return null; const m = S.seam(geo, color, parent, p, r); parts.push(m); return m; },
   };
   for (const [slot, variants] of Object.entries(PARTS)){

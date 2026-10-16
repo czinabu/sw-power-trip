@@ -6,6 +6,7 @@
 import * as THREE from 'three';
 import { loft, limb, plate, block, shard, chamfer, ngon, KEEL, SHIELD, HEAD } from './shapes.js';
 import { hand } from './jedi.js';
+import { seg } from './skin.js';
 
 const mirror = pts => pts.map(([x, y]) => [-x, y]).reverse();
 const SEAM_COOL = 0x5fd8ff, SEAM_WARM = 0xff7a3d;
@@ -15,10 +16,13 @@ export const MANDO_PARTS = {
     // suit, thigh plate, knee cop, shin greave, armored boot, right-hip holster
     armored(R, k){
       for (const L of [R.legL, R.legR]){
-        k.add(limb(0.45, [[-0.06,0.18,0.18],[0.2,0.17,0.17],[0.75,0.13,0.14],[1,0.11,0.12]], KEEL), 'suit', L.hip);
+        // the flight suit: one surface over hip and knee, down into the boot
+        k.skin('suit', [
+          ...seg(0.45, [[-0.06,0.18,0.18],[0.2,0.17,0.17],[0.75,0.13,0.14],[1,0.11,0.12]]),
+          ...seg(0.41, [[0.1,0.14,0.15],[0.45,0.135,0.145],[0.8,0.115,0.125],[1,0.115,0.125]], 0.45),
+        ], { bones: [L.hip, L.knee], at: [0.45] });
         k.add(plate([[-0.07,0],[0.07,0],[0.078,-0.2],[0,-0.25],[-0.078,-0.2]], 0.03, 0.01), 'beskar2', L.hip, [0, -0.07, 0.085], [-0.06, 0, 0]);
         k.add(plate([[-0.055,0.04],[0.055,0.04],[0.065,-0.02],[0,-0.07],[-0.065,-0.02]], 0.03, 0.01), 'beskar', L.knee, [0, 0, 0.07]);
-        k.add(limb(0.41, [[0.04,0.11,0.12],[0.1,0.14,0.15],[0.45,0.135,0.145],[0.8,0.115,0.125],[1,0.115,0.125]], KEEL), 'suit', L.knee);
         k.add(limb(0.32, [[0,0.125,0.11,0.02],[0.3,0.15,0.13,0.02],[1,0.12,0.1,0.02]], KEEL), 'beskar2', L.knee, [0, -0.08, 0]);
         k.add(plate([[-0.075,0.035],[-0.09,-0.075],[0.16,-0.085],[0.21,-0.05],[0.1,0.0],[0.03,0.04]], 0.115, 0.014),
           'strap', L.ank, [0, 0, 0], [0, -Math.PI/2, 0]);
@@ -31,8 +35,11 @@ export const MANDO_PARTS = {
   torso: {
     // suit under pec plates, segmented abdomen, keystone, belt + pouches, back plate, pack straps
     cuirass(R, k){
-      k.add(loft([{ y:-0.12, w:0.3, d:0.2 }, { y:0, w:0.34, d:0.22 }, { y:0.14, w:0.31, d:0.2 }], SHIELD), 'suit', R.hips);
-      k.add(loft([{ y:0, w:0.31, d:0.2 }, { y:0.2, w:0.29, d:0.19 }, { y:0.36, w:0.33, d:0.21 }], SHIELD), 'suit', R.torso);
+      // the suit from pelvis to collar is one surface that bends and twists through the hips, torso and chest joints
+      k.skin('suit', [
+        { t:-0.12, w:0.3, d:0.2 }, { t:0, w:0.34, d:0.22 }, { t:0.16, w:0.31, d:0.2 }, { t:0.36, w:0.29, d:0.19 },
+        ...seg(1, [[0,0.33,0.22],[0.14,0.46,0.27],[0.27,0.52,0.26],[0.35,0.36,0.2],[0.4,0.2,0.15]], 0.46),
+      ], { bones: [R.hips, R.torso, R.chest], at: [0.16, 0.46], blend: 0.07, profile: SHIELD, dir: 1 });
       k.add(loft([{ y:0.04, w:0.38, d:0.26 }, { y:0.17, w:0.37, d:0.255 }], SHIELD), 'strap', R.torso);
       for (const bx of [-0.12, 0.12]) k.add(block(0.085, 0.1, 0.06, 0.3), 'beskar2', R.torso, [bx, 0.08, 0.14]);
       const abPlate = plate([[-0.115,-0.035],[0.115,-0.035],[0.125,0.03],[-0.125,0.03]], 0.028, 0.008);
@@ -40,7 +47,6 @@ export const MANDO_PARTS = {
       k.add(abPlate, 'beskar2', R.torso, [0, 0.32, 0.112], [0.08, 0, 0], { scale: [1.08, 1, 1] });
       k.seam(new THREE.BoxGeometry(0.22, 0.008, 0.008), SEAM_WARM, R.torso, [0, 0.285, 0.13]);
 
-      k.add(loft([{ y:0, w:0.33, d:0.22 }, { y:0.14, w:0.46, d:0.27 }, { y:0.27, w:0.52, d:0.26 }, { y:0.35, w:0.36, d:0.2 }, { y:0.4, w:0.2, d:0.15 }], SHIELD), 'suit', R.chest);
       const pec = [[0.0,0.0],[0.165,0.02],[0.19,0.13],[0.15,0.19],[0.02,0.17]];
       k.add(plate(pec, 0.04, 0.012), 'beskar', R.chest, [0.012, 0.12, 0.125], [-0.06, 0.22, 0]);
       k.add(plate(mirror(pec), 0.04, 0.012), 'beskar', R.chest, [-0.012, 0.12, 0.125], [-0.06, -0.22, 0]);
@@ -154,10 +160,12 @@ export const MANDO_PARTS = {
 function arms(R, k, pauldrons){
   for (const A of [R.armL, R.armR]){
     const s = A.side;
-    k.add(limb(0.34, [[-0.18,0.14,0.14],[0.06,0.15,0.15],[0.5,0.125,0.125],[1,0.1,0.105]], chamfer(0.4)), 'suit', A.sh);
+    k.skin('suit', [
+      ...seg(0.34, [[-0.18,0.14,0.14],[0.06,0.15,0.15],[0.5,0.125,0.125],[1,0.1,0.105]]),
+      ...seg(0.3, [[0.5,0.095,0.095],[1,0.08,0.08]], 0.34),
+    ], { bones: [A.sh, A.el], at: [0.34], blend: 0.05, profile: chamfer(0.4) });
     if (pauldrons) k.add(loft([{ y:-0.06, w:0.21, d:0.2 }, { y:0.03, w:0.2, d:0.19 }, { y:0.08, w:0.13, d:0.15 }], chamfer(0.42)),
       s > 0 ? 'accent' : 'beskar', A.sh, [0.025*s, 0.035, 0], [0, 0, -0.32*s]);
-    k.add(limb(0.3, [[0,0.1,0.1],[0.5,0.095,0.095],[1,0.08,0.08]], chamfer(0.35)), 'suit', A.el);
     k.add(limb(0.24, [[0,0.11,0.105],[0.6,0.115,0.11],[1,0.098,0.095]], KEEL), 'beskar2', A.el, [0, -0.04, 0]);
     k.add(plate([[-0.04,0],[0.04,0],[0.045,-0.12],[-0.045,-0.12]], 0.02, 0.006), 'beskar', A.el, [0, -0.08, 0.058]);
     k.seam(new THREE.BoxGeometry(0.008, 0.18, 0.008), SEAM_COOL, A.el, [0, -0.16, 0.07]);
