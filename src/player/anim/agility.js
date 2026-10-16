@@ -8,7 +8,8 @@ import { clamp } from '../../utils.js';
 import { G, player } from '../../state.js';
 import { AGILITY, MANDO_AGILITY } from '../../data/agility.js';
 import { FORM_OF } from '../../data/poses.js';
-import { MOCAP_ON, mocapAirLegs, airPhase } from './mocap.js';
+import { MOCAP_ON, mocapAirLegs, airPhase, mocapFlip, flipTurn, flipLegs } from './mocap.js';
+import { MOCAP_MOVES } from '../../data/mocap.js';
 
 const TAU = Math.PI * 2;
 const COM = 1.12;   // centre of mass above the feet in the hero group's space (rig hips × model scale): flips turn here
@@ -32,7 +33,10 @@ export function flipBody(dt, vis, fl){
   fl.t += dt;
   const p = clamp(fl.t / fl.dur, 0, 1);
   if (p >= 1){ vis.rotation.set(0, 0, 0); vis.position.set(0, 0, 0); player.flip = null; return; }
-  const e = fl.ease === 'twirl' ? twirlEase(p) : flipEase(p);
+  // the captured flip's turn (anim/mocap.js): a real flip turns slowly off the ground, whips round and eases into the
+  // landing; otherwise a symmetric ease
+  const cap = mocapFlip(fl);
+  const e = cap ? flipTurn(cap, p) : fl.ease === 'twirl' ? twirlEase(p) : flipEase(p);
   const arc = Math.sin(Math.PI * p);
   const s = fl.side || 1;
   const hold = Math.sqrt(arc);   // a tilt or bank that gets there early and stays through the middle
@@ -79,7 +83,14 @@ export function jediAirLegs(dt, dr, R){
   if (fl && !player.slamming){
     // shape opens at take-off and landing, closes through the middle; a held tuck (Djem So leap) stays closed
     const env = fl.tuckHold ? Math.min(1, Math.sin(Math.PI * clamp(fl.t / fl.dur, 0, 1)) * 2.2) : Math.pow(fl.env || 0, 0.6);
-    poseLegs(R, dr, mixLegs(LEGS.reach, LEGS[fl.legs] || LEGS.tuck, env), 1, 22);
+    // the captured flip's own legs where its shape is the one the style asks for (a tucked back or front flip, a
+    // tucked roll, an aerial's split); a pike or layout keeps its authored shape
+    const cap = !fl.tuckHold && mocapFlip(fl), legs = fl.legs || 'tuck';
+    const capLegs = cap && (cap === MOCAP_MOVES.side ? legs === 'split' || legs === 'tuck' : legs === 'tuck');
+    if (capLegs){
+      const m = cap === MOCAP_MOVES.front ? MOCAP_MOVES.back : cap;   // (a front tuck folds like a back tuck)
+      poseLegs(R, dr, flipLegs(m, clamp(fl.t / fl.dur, 0, 1)), 1, 22);
+    } else poseLegs(R, dr, mixLegs(LEGS.reach, LEGS[legs] || LEGS.tuck, env), 1, 22);
     return true;
   }
   if (player.grounded) return false;

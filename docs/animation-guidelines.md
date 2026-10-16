@@ -123,6 +123,15 @@ work on top. Past the fastest clip the stride quickens rather than lengthens and
 the ground, so the planted leg can still reach. In the air the flight's phase is read off the vertical speed against
 the take-off's, and a bigger jump drives the knees harder than the captured hop. A jetpack flight keeps its own pose.
 
+![Flips: procedural (above each pair) and captured](gait/mocap-flips.jpg)
+
+Flips and rolls take their timing from captured ones too (`MOCAP_MOVES`): a back tuck, a front handspring, a side
+flip and a dive roll. Each gives how far through its turn the whole body is (measured head over feet, so the crouch
+before and the settle after don't count) and the legs through it. `flipBody` turns the body on that curve instead of a
+symmetric ease, so a flip turns early off the push, whips through the middle and opens for the landing, and keeps the
+form's turn count, twist and duration from `data/agility.js`. Where the style's legs match the clip (a tuck; an aerial's
+split) the legs are the captured ones; a pike or layout keeps its authored shape. Spins and slides keep their twirl.
+
 ![Run and jump, procedural and captured](gait/mocap-run.jpg)
 ![Jump and landing](gait/mocap-jump.jpg)
 

@@ -26,6 +26,13 @@ const CLIPS = [
 
 const JUMP = ['13_11', 'subject 13: forward jump'];
 const NJ = 24;   // samples across the flight, and across the landing
+// acrobatics: name, file, rough frame range to look in, the axis it turns about (som = somersault, roll = cartwheel)
+const MOVES = [
+  ['back',  '88_01',  [0, 200],   'som',  'subject 88: backflip'],
+  ['front', '90_14',  [400, 700], 'som',  'subject 90: front handspring'],
+  ['side',  '90_08',  [150, 300], 'roll', 'subject 90: side flip'],
+  ['roll',  '127_23', [0, 240],   'som',  'subject 127: run, dive over, roll'],
+];
 
 const V = () => new THREE.Vector3();
 const UP = new THREE.Vector3(0, 1, 0);
@@ -180,6 +187,64 @@ function analyseJump(file){
   return { flightT: (down - off) * bvh.dt, rise: (A[off + Math.round((down - off) / 2)].hip - s0.hip), depth, landT: (end - down) * bvh.dt, deepAt: (deep - down) / (end - down), flight, land };
 }
 
+/* A flip or roll: how far through its turn the whole body is (0..1, head-over-feet axis, so a crouch doesn't count as
+   turning) and the legs, both across the move from the first ~6% of the turn to the last ~6% (the crouch before and the settle after happen on the ground). Legs are the rig's angles
+   relative to the clip's T-pose (straight legs, like the rig at rest): thigh swing (− = forward), knee fold, and the
+   legs' spread (+ = apart). */
+function analyseMove(file, [a, b], axis){
+  const bvh = parseBVH(fs.readFileSync(file, 'utf8'));
+  const P = [];
+  for (let f = 0; f < bvh.frames.length; f++) P.push(pose(bvh, f));
+  const mid = (q, x, y) => q[x].p.clone().add(q[y].p).multiplyScalar(0.5);
+  const body = q => {   // the whole body's frame: across the hips, up from the feet to the head
+    const ac = q.LeftUpLeg.p.clone().sub(q.RightUpLeg.p).normalize();
+    const up = q.Head.p.clone().sub(mid(q, 'LeftFoot', 'RightFoot')); up.sub(ac.clone().multiplyScalar(up.dot(ac))).normalize();
+    return new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(ac, up, ac.clone().cross(up).normalize()));
+  };
+  const lo = Math.max(1, a), hi = Math.min(b, P.length - 1);
+  const b0 = body(P[lo]), ax = new THREE.Vector3(axis === 'som' ? 1 : 0, 0, axis === 'som' ? 0 : 1).applyQuaternion(b0);
+  ax.y = 0; ax.normalize();
+  const rot = [0];
+  let prev = b0, A = 0;
+  for (let f = lo + 1; f <= hi; f++){   // integrate the turn about the starting axis (no wrap-around at upside down)
+    const cur = body(P[f]), d = cur.clone().multiply(prev.clone().invert());
+    if (d.w < 0) d.set(-d.x, -d.y, -d.z, -d.w);
+    const an = 2 * Math.acos(Math.min(1, d.w)), sn = Math.sin(an / 2);
+    if (sn > 1e-6) A += an * (d.x * ax.x + d.y * ax.y + d.z * ax.z) / sn;
+    prev = cur; rot.push(A);
+  }
+  const total = rot[rot.length - 1], frac = rot.map(r => r / total);
+  const half = frac.findIndex(x => x > 0.5);
+  let s0 = half; while (s0 > 0 && frac[s0] > 0.06) s0--;
+  let s1 = half; while (s1 < frac.length - 1 && frac[s1] < 0.94) s1++;
+  const angles = q => {
+    const p = n => q[n].p.clone();
+    const across = p('LeftUpLeg').sub(p('RightUpLeg')).normalize();
+    const up0 = p('Spine').sub(p('Hips')), up = up0.sub(across.clone().multiplyScalar(up0.dot(across))).normalize();
+    const back = up.clone().cross(across).normalize();
+    const sw = v => Math.atan2(v.dot(back), -v.dot(up));
+    const leg = (s, out) => {
+      const th = p(s + 'Leg').sub(p(s + 'UpLeg')), sh = p(s + 'Foot').sub(p(s + 'Leg'));
+      return [sw(th), sw(sh) - sw(th), Math.atan2(th.dot(across) * out, th.length())];
+    };
+    return { L: leg('Left', 1), R: leg('Right', -1) };
+  };
+  const T = angles(P[0]);   // the T-pose
+  const legs = { lt: [], lk: [], rt: [], rk: [], sp: [] }, e = [];
+  for (let k = 0; k < NJ; k++){
+    const x = s0 + (s1 - s0) * k / (NJ - 1), i = Math.min(Math.floor(x), s1 - 1), t = x - i;
+    const lerp = f => f(i) + (f(i + 1) - f(i)) * t;
+    e.push(r3(Math.min(1, Math.max(0, lerp(j => frac[j])))));
+    const an = j => angles(P[lo + j]);
+    const A0 = an(i), A1 = an(Math.min(i + 1, frac.length - 1));
+    const m = (a, b) => a + (b - a) * t;
+    legs.lt.push(r3(m(A0.L[0], A1.L[0]) - T.L[0])); legs.lk.push(r3(m(A0.L[1], A1.L[1]) - T.L[1]));
+    legs.rt.push(r3(m(A0.R[0], A1.R[0]) - T.R[0])); legs.rk.push(r3(m(A0.R[1], A1.R[1]) - T.R[1]));
+    legs.sp.push(r3((m(A0.L[2], A1.L[2]) - T.L[2] + m(A0.R[2], A1.R[2]) - T.R[2]) / 2));
+  }
+  return { turn: total / (2 * Math.PI), T: (s1 - s0) * bvh.dt, e, legs };
+}
+
 const dir = process.argv[2];
 const out = {};
 for (const [name, id, desc] of CLIPS){
@@ -189,6 +254,12 @@ for (const [name, id, desc] of CLIPS){
 }
 const jc = analyseJump(path.join(dir, JUMP[0] + '.bvh'));
 console.log(`jump   ${JUMP[0]}  flight ${jc.flightT.toFixed(2)}s  rise ${jc.rise.toFixed(2)}  landing ${jc.landT.toFixed(2)}s, deepest ${jc.depth.toFixed(2)} at ${jc.deepAt.toFixed(2)}`);
+const moves = {};
+for (const [name, id, range, axis, desc] of MOVES){
+  const m = analyseMove(path.join(dir, id + '.bvh'), range, axis);
+  console.log(`${name.padEnd(6)} ${id}  turn ${m.turn.toFixed(2)}  over ${m.T.toFixed(2)}s  e ${m.e.filter((_, i) => i % 4 === 0).join(' ')}`);
+  moves[name] = { src: `CMU ${id} (${desc})`, dur: r3(m.T), e: m.e, legs: m.legs };
+}
 const jump = { src: `CMU ${JUMP[0]} (${JUMP[1]})`, flight: jc.flight, land: { dur: r3(jc.landT), depth: r3(jc.depth), ...jc.land } };
 const js = `// POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
 // GENERATED by tools/mocap/convert.mjs: do not edit by hand. Motion-captured stride cycles (see player/anim/mocap.js).
@@ -206,6 +277,11 @@ export const MOCAP = ${JSON.stringify(out)};
 // standing (0..1 of its deepest, \`depth\` leg lengths) and the pelvis tipping forward (radians). dur: seconds.
 export const MOCAP_JUMP_N = ${NJ};
 export const MOCAP_JUMP = ${JSON.stringify(jump)};
+
+// Flips and rolls, ${NJ} samples across each (from the first of the turn to the last): e, how far through its turn the whole
+// body is (0..1); legs, thigh swing (lt/rt, − = forward), knee fold (lk/rk) and spread (sp, + = apart) from straight.
+// back: a back tuck; front: a front handspring; side: a side flip; roll: a dive roll.
+export const MOCAP_MOVES = ${JSON.stringify(moves)};
 `;
 fs.writeFileSync(new URL('../../src/data/mocap.js', import.meta.url), js);
 console.log('wrote src/data/mocap.js', (js.length / 1024).toFixed(1) + ' KB');
