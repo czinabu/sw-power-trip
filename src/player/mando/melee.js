@@ -16,7 +16,7 @@ import { spawnHitSpark, spawnGroundShock } from '../../fx/vfx.js';
 import { inkSprite, sparks, puff, clashFlash, thrust } from '../../fx/ink.js';
 
 const DOWNED = { stagger: 1, knockdown: 1, getup: 1 };
-const NO_LAUNCH = { launch: false };
+const NO_LAUNCH = { launch: false }, KNEE = { launch: false, fold: 1 };   // a knee doubles the foe over
 const live = e => !e.dead && !e.converted && e.state !== 'spawn';
 
 // E: what the Mando does depends on the moment — finish a reeling foe, dive from the air, charge in with W, or strike
@@ -59,10 +59,15 @@ function strike(){
   const step = linked ? player.punchStep + 1 : 0;
   const B = M.string[step];
   player.punchStep = step;
-  player.meleeT = player.meleeMax = B.recover; player.meleeKind = B.name;
+  player.meleeT = player.meleeMax = B.recover; player.meleeKind = B.name; player.meleeSkip = 0;
   player.aiming = 0.3;
+  player.vel.addScaledVector(fwd(), B.lunge);
+  // the blow lands when the fist does: B.contact seconds in, at full extension (animation.js draws the same beats)
+  player.meleePending = B;
+  S.jump(); sfx(B.heavy ? 140 : 230, 0.08, 'square', 0.04, 60);   // the whoosh of the throw
+}
+function landStrike(B){
   const f = fwd(), pp = playerPos(), dmg = B.dmg * (player.up.dmg || 1);
-  player.vel.addScaledVector(f, B.lunge);
   const cosLim = Math.cos(M.arc);
   let hit = 0, turned = 0;
   for (const e of enemies){
@@ -73,7 +78,7 @@ function strike(){
     if (TMP.lengthSq() > 0.001 && TMP.normalize().dot(f) < cosLim) continue;
     const dres = duelDefend(e, B.line, B.heavy ? 'punchHeavy' : 'punch', B.heavy);
     if (dres === 'block' || dres === 'dodge'){ turned++; continue; }
-    damageEnemy(e, dmg, f.clone(), B.knock, B.heavy, false, NO_LAUNCH);   // fists rock a foe, they don't launch it
+    damageEnemy(e, dmg, f.clone(), B.knock, B.heavy, false, B.name === 'knee' ? KNEE : NO_LAUNCH);   // fists rock a foe, they don't launch it
     if (!e.dead){
       if (B.stagger) staggerEnemy(e, f.x, f.z, 'VIBROBLADE');
       else flinchEnemy(e, f, B.shove);
@@ -97,7 +102,6 @@ function strike(){
     player.meleeT += 0.12;   // knocked off a guard: the arm jars back and the next beat comes late
     player.punchStep = -1;
   } else puff(ip, 0xcfe0ec, 0.55, 0.22, f.clone().multiplyScalar(4), { grow0: 0.4 });
-  S.jump(); sfx(B.heavy ? 140 : 230, 0.08, 'square', 0.04, 60);
 }
 
 /* ---------------- the vambrace catch (called by hurtPlayer when a blow lands inside the window) ---------------- */
@@ -194,7 +198,7 @@ function updateCharge(dt){
   spawnHitSpark(ip, 0xffd28a, 1.6); sparks(ip, 0xffe7b0, 10, 12, { dir, cone: 0.6, life: 0.28 });
   G.hitstop = Math.max(G.hitstop, 0.1); G.shake = Math.max(G.shake, 0.7);
   S.punch(ip, 1.6); S.heavy(ip);
-  player.meleeT = player.meleeMax = 0.3; player.meleeKind = 'cross';
+  player.meleeT = player.meleeMax = 0.3; player.meleeKind = 'cross'; player.meleeSkip = 0.1;   // the pose picks up AT the impact
 }
 
 /* ---------------- dive kick (E in the air): drop onto a foe below ---------------- */
@@ -252,7 +256,7 @@ function updateDive(dt){
   burst(V3(ip.x, 0.5, ip.z), 0xb8c2c8, 10, 7, 4, 1);
   G.hitstop = Math.max(G.hitstop, 0.1); G.shake = Math.max(G.shake, 0.8);
   S.slam(ip); S.punch(ip, 1.4);
-  player.meleeT = player.meleeMax = 0.35; player.meleeKind = 'knee';
+  player.meleeT = player.meleeMax = 0.35; player.meleeKind = 'knee'; player.meleeSkip = 0.12;
 }
 
 /* ---------------- per frame (from updateMandoCombat) ---------------- */
@@ -263,6 +267,11 @@ export function updateMandoMelee(dt){
   if (player.dive) updateDive(dt);
   if (player.meleeT > 0){
     player.meleeT -= dt;
+    const B = player.meleePending;
+    if (B && (player.meleeKind !== B.name || player.meleeMax - player.meleeT >= B.contact)){
+      player.meleePending = null;
+      if (player.meleeKind === B.name) landStrike(B);   // (a catch or a takedown cut in first: the throw never lands)
+    }
     if (player.meleeT <= 0){
       player.meleeEndAt = G.gt;
       if (player.meleeQueued){ player.meleeQueued = false; mandoMelee(); }
@@ -271,5 +280,5 @@ export function updateMandoMelee(dt){
 }
 export function resetMandoMelee(){
   player.catchT = 0; player.catchLockT = 0; player.charge = null; player.dive = null;
-  player.meleeQueued = false; player.punchStep = -1; player.meleeT = 0;
+  player.meleeQueued = false; player.punchStep = -1; player.meleeT = 0; player.meleePending = null;
 }
