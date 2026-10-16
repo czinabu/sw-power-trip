@@ -22,8 +22,11 @@ export const ENEMY_TYPES = {
   // JET TROOPER — a HOVERING ranged skirmisher. It floats above the fray, matches your altitude (so you can't just
   // fly/hover above it) and rains bolts. Squishy & a priority target: counter it with ranged tools / Force powers /
   // by deflecting its own fire back — the saber can't reach it. Dies by tumbling out of the sky.
+  // Knocked down (a Pull, a Push, a slam) it drops, and the crash WRECKS ITS JETPACK: it gets up and fights on foot as a
+  // blaster trooper. A blow with blastKnock or more behind it (Repulse 36, a Mando rocket 38, the jet missile 28) blows
+  // it out of the sky outright, whatever its health.
   flyer:   { hp: 46,  speed: 7.6, dmg: 10, range: 17,  windup: 0.66, recover: 1.05,
-             scale: 0.96, color: 0x55708e, eye: 0x66ccff, model: 'jet', ranged: true, boltSpeed: 25, fly: true, score: 2 },
+             scale: 0.96, color: 0x55708e, eye: 0x66ccff, model: 'jet', ranged: true, boltSpeed: 25, fly: true, blastKnock: 28, score: 2 },
   // SENTINEL — a riot-shield trooper. Its deflector eats FRONTAL chip damage; you must FLANK it, or break its
   // guard with a finisher / Djem-So heavy / a RIPOSTE. Slow, durable, anchors a line. Shield shatters, then it's open.
   phalanx: { hp: 95,  speed: 4.8, dmg: 16, range: 2.9, windup: 0.6,  recover: 0.72, swing: 0.18,
