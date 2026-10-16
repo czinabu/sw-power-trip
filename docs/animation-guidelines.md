@@ -81,7 +81,13 @@ body move for each lives in `src/data/agility.js` and is posed by `src/player/an
 
 Knees bend with **+x** on the knee joint (the shin folds back); −x hyperextends. Hips are −x for thigh forward.
 Flips turn about the centre of mass, not the feet. A flip is described by turns about the body's axes (somer, twist,
-roll, spin) plus a leg shape (tuck, pike, layout, split, slide) and an air guard for the saber hand(s).
+roll, spin) plus a leg shape (tuck, pike, layout, split, slide, kneeslide) and an air guard for the saber hand(s).
+
+The sprint slide (Q) is a real knee slide: the hips sit almost to the floor in the first fifth of it, the lead leg
+reaches out along the ground, the trail shin folds under, and the body leans back over it, rising out at the end
+(`kneeslide` in `anim/agility.js`; there's no slide in the capture library, so this one is authored).
+
+![Slide: before and after](gait/slide.jpg)
 
 The Mando keeps to beskar and jets: the ground dodge is a thruster-shoved slide, a hop tucks the knees, ignition
 snaps the legs together under the pack, and a jet slam drops into a three-point landing.

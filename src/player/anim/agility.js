@@ -39,7 +39,9 @@ export function flipBody(dt, vis, fl){
   const e = cap ? flipTurn(cap, p) : fl.ease === 'twirl' ? twirlEase(p) : flipEase(p);
   const arc = Math.sin(Math.PI * p);
   const s = fl.side || 1;
-  const hold = Math.sqrt(arc);   // a tilt or bank that gets there early and stays through the middle
+  // a tilt or bank that gets there early and stays through the middle; a slide drops in fast (a runner sits into it
+  // in about a sixth of a second), holds, and rises out at the end
+  const hold = fl.legs === 'kneeslide' ? clamp(p / 0.2, 0, 1) * (1 - Math.pow(clamp((p - 0.75) / 0.25, 0, 1), 2)) : Math.sqrt(arc);
   const rx = (fl.somer || 0) * TAU * e + (fl.pitch || 0) * hold;
   const ry = ((fl.spin || 0) + (fl.twist || 0)) * s * TAU * (fl.twist && !fl.spin ? clamp((e - 0.15) / 0.7, 0, 1) : e);
   const rz = (fl.roll || 0) * s * TAU * e + ((fl.tilt || 0) + (fl.bank || 0)) * s * hold;
@@ -48,7 +50,7 @@ export function flipBody(dt, vis, fl){
   const piv = (fl.somer || fl.roll) ? COM : fl.spin ? COM * 0.55 : 0;
   _v.set(0, piv, 0).applyEuler(_e.set(rx, ry, rz));
   vis.position.set(-_v.x, piv - _v.y + (fl.lift || 0) * arc, -_v.z);
-  fl.p = p; fl.env = arc;
+  fl.p = p; fl.env = arc; fl.hold = hold;
 }
 
 /* ---------------- legs ---------------- */
@@ -64,6 +66,7 @@ const LEGS = {
   hurdle: [-1.45, 1.35, 0.5, 0.95, 0.04],
   reach:  [-0.42, 0.5, -0.12, 0.28, 0.08],
   kneel:  [-1.25, 1.45, 0.25, 2.25, 0.18],   // the R (back) knee goes down: a superhero landing
+  kneeslide: [-0.8, 0.12, -0.4, 1.95, 0.1],   // a sprint slide: lead leg out along the ground, trail shin folded under
 };
 function poseLegs(R, dr, shape, w, rate){
   const [lh, lk, rh, rk, sp] = shape;
@@ -82,7 +85,7 @@ export function jediAirLegs(dt, dr, R){
   const fl = player.flip;
   if (fl && !player.slamming){
     // shape opens at take-off and landing, closes through the middle; a held tuck (Djem So leap) stays closed
-    const env = fl.tuckHold ? Math.min(1, Math.sin(Math.PI * clamp(fl.t / fl.dur, 0, 1)) * 2.2) : Math.pow(fl.env || 0, 0.6);
+    const env = fl.tuckHold ? Math.min(1, Math.sin(Math.PI * clamp(fl.t / fl.dur, 0, 1)) * 2.2) : fl.legs === 'kneeslide' ? (fl.hold || 0) : Math.pow(fl.env || 0, 0.6);
     // the captured flip's own legs where its shape is the one the style asks for (a tucked back or front flip, a
     // tucked roll, an aerial's split); a pike or layout keeps its authored shape
     const cap = !fl.tuckHold && mocapFlip(fl), legs = fl.legs || 'tuck';
@@ -149,7 +152,7 @@ export function jediAgilityPost(dt, dr, vis, R, ctx){
   // after a slam: the knee goes down and the blade (or palm) stays planted, then he rises out of it
   slamLanding(dt, dr, R, A.slam.kneel, ctx.inten);
   // a driven slide (Djem So's dash) sinks the hips through the move
-  if (player.flip && player.flip.drop) player._agiDrop = Math.max(player._agiDrop, player.flip.drop * Math.sqrt(player.flip.env || 0));
+  if (player.flip && player.flip.drop) player._agiDrop = Math.max(player._agiDrop, player.flip.drop * (player.flip.hold ?? Math.sqrt(player.flip.env || 0)));
   // the run: hips swing with the legs and the shoulders counter them; the free hand pumps (sway.off in animateArms)
   const run = player.grounded && !player.flip && player.atkT <= 0 && !ctx.planted ? clamp(ctx.inten, 0, 1.2) : 0;
   const tw = Math.sin(ctx.ph) * run * (A.run.twist || 1);
