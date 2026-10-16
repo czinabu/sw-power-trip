@@ -8,6 +8,7 @@ import { screenFlash } from '../../fx/floaters.js';
 import { shared, G, enemies, bolts, player } from '../../state.js';
 import { MANDO } from '../../data/mando.js';
 import { fwd, playerPos } from '../helpers.js';
+import { inReach } from '../../enemies/hitbox.js';
 import { damageEnemy, flinchEnemy } from '../../enemies/damage.js';
 import { damageBoss, bossStagger } from '../../boss/boss.js';
 import { spawnHitSpark } from '../../fx/vfx.js';
@@ -56,8 +57,8 @@ export function updateDark(dt){
       if (e.dead || e.converted || e.state === 'spawn') continue;
       TMP.subVectors(e.group.position, pp); TMP.y = 0;
       const d = TMP.length();
-      if (d > A.range) continue;
-      if (d > 0.4 && TMP.normalize().dot(f) < cosLim) continue;
+      if (!inReach(e, pp, A.range, d > 0.4 ? f : null, cosLim)) continue;   // the slash reaches any of the body in its arc
+      TMP.normalize();
       damageEnemy(e, A.dmg * player.up.dmg, TMP.clone(), A.knock); flinchEnemy(e, f, 0.9);
     }
     if (shared.boss && shared.boss.hp > 0){

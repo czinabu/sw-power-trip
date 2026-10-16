@@ -20,6 +20,7 @@ import { mandoWeapon, boltDamage, hitMarker } from '../player/mando/weapons.js';
 import { hurtPlayer } from '../player/damage.js';
 import { deflectAnim } from '../player/jedi/combat.js';
 import { deflectPlayerBolt } from './duel.js';
+import { sweepHit, headPos } from './hitbox.js';
 
 /* ============================================================
    PROJECTILES — blaster bolts & boss orbs
@@ -28,6 +29,8 @@ import { deflectPlayerBolt } from './duel.js';
    thin dark outline so it reads against bright skies too. b.mesh is the colour sheath, so everything that recolours a
    bolt (reflects, deflects) keeps working through b.mesh.material.color. */
 const boltGeo = new THREE.CapsuleGeometry(0.075, 0.72, 3, 6);
+const BOLT_R = 0.08;                               // a bolt's own thickness when it meets a body
+const PREV = new THREE.Vector3(), HIT = new THREE.Vector3();
 const boltCoreGeo = new THREE.CapsuleGeometry(0.034, 0.66, 3, 6);
 const boltInkGeo = new THREE.CapsuleGeometry(0.1, 0.76, 3, 6);
 const boltCoreMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(2.4, 2.4, 2.4), toneMapped: false });   // over 1.0 → blooms
@@ -46,6 +49,7 @@ export function updateBolts(dt){
   for (let i = bolts.length-1; i >= 0; i--){
     const b = bolts[i];
     b.life -= dt;
+    PREV.copy(b.mesh.position);   // where it was last frame: friendly bolts sweep the whole step for bodies
     b.mesh.position.addScaledVector(b.dir, b.speed * dt);
     let kill = b.life <= 0;
     // COVER — a bolt (either side) that's crossed inside a real wall/pillar/crate is blocked there, same convention
@@ -139,36 +143,38 @@ export function updateBolts(dt){
       // a near miss tears past your ear
       if (!kill && !b.friendly && !b.whiz && d < 3.2 && near){ b.whiz = true; S.whiz(b.mesh.position); }
     } else if (!kill && b.friendly){
+      // the bolt hits the FIRST body along its flight this frame, exactly where that body is (hitbox.js): legs, arms
+      // and shoulders count, the gap beside a foe doesn't, and only the head itself is a headshot
+      let foe = null, hit = null;
       for (const e of enemies){
         if (e.dead || e.converted) continue;
-        // TIGHT hitbox — the bolt must actually strike the SILHOUETTE: a slim torso column (horizontal) AND be
-        // at body height (vertical band from shins to crown). No more "near the foe at any height" free hits.
-        const s = e.t.scale || 1;
-        const ex = e.group.position;
-        const hd = Math.hypot(b.mesh.position.x - ex.x, b.mesh.position.z - ex.z);   // horizontal dist to the body axis
-        const by = b.mesh.position.y - ex.y;                                          // height above the foe's feet
-        const headCenter = 2.1 * s;
-        if (hd < 0.6 * s && by > 0.3 * s && by < 2.5 * s){
-          if (deflectPlayerBolt(e, b)) break;   // a saber duellist bats it straight back at you (duel.js)
+        const h = sweepHit(e, PREV, b.mesh.position, BOLT_R);
+        if (h && (!hit || h.t < hit.t)){ hit = h; foe = e; }
+      }
+      const bp = shared.boss && shared.boss.hp > 0 ? shared.boss.group.position : null;
+      const bossT = bp ? segCylinder(PREV, b.mesh.position, bp, 1.6, bp.y, bp.y + 3.4) : -1;
+      if (foe && !(bossT >= 0 && bossT < hit.t)){
+        const e = foe;
+        b.mesh.position.lerpVectors(PREV, b.mesh.position, hit.t);   // the impact shows where it struck
+        if (!deflectPlayerBolt(e, b)){   // a saber duellist bats it straight back at you (duel.js)
           let dmg = boltDamage(b);   // range falloff
-          const isHead = (hd < 0.42 * s && Math.abs(by - headCenter) < 0.34 * s);   // HEADSHOT — a tight band right on the head
+          const isHead = hit.head;
           if (isHead){
             dmg *= HEADSHOT_MULT;
-            const headY = ex.y + headCenter;
-            spawnHitSpark(V3(ex.x, headY + 0.1, ex.z), 0xffd24a, 1.5);
-            floater(V3(ex.x, headY + 0.45, ex.z), 'HEADSHOT', '#ffd24a');
+            const hp = headPos(e, HIT);
+            spawnHitSpark(V3(hp.x, hp.y + 0.1, hp.z), 0xffd24a, 1.5);
+            floater(V3(hp.x, hp.y + 0.45, hp.z), 'HEADSHOT', '#ffd24a');
             sfx(1900, 0.08, 'square', 0.05, 420); S.blastHit(b.mesh.position, 1.4); G.hitstop = Math.max(G.hitstop, 0.04); G.shake = Math.max(G.shake, 0.18);
           }
-          damageEnemy(e, dmg, b.dir, 6); flinchEnemy(e, b.dir, 0.4); kill = true;
+          damageEnemy(e, dmg, b.dir, 6); flinchEnemy(e, b.dir, 0.4); kill = true;   // bolts make foes recoil
           if (!isHead) boltImpact(b.mesh.position, b.mesh.material.color.getHex(), b.dir);
           if (b.playerShot){ if (G.stats) G.stats.shotsHit++; hitMarker(e.dead ? 'kill' : (isHead ? 'head' : 'hit')); }
-          break;   // bolts make foes recoil
         }
-      }
-      if (!kill && b.friendly && shared.boss && shared.boss.hp > 0 && b.mesh.position.distanceTo(shared.boss.group.position.clone().setY(b.mesh.position.y)) < 1.6){
+      } else if (bossT >= 0){
+        b.mesh.position.lerpVectors(PREV, b.mesh.position, bossT);
         let dmg = boltDamage(b);   // range falloff
-        const isHead = b.mesh.position.y >= shared.boss.group.position.y + 2.4;
-        if (isHead){ dmg *= 1.8; floater(V3(shared.boss.group.position.x, 3.0, shared.boss.group.position.z), 'HEADSHOT', '#ffd24a'); sfx(1900,0.08,'square',0.06,420); }
+        const isHead = b.mesh.position.y >= bp.y + 2.4;
+        if (isHead){ dmg *= 1.8; floater(V3(bp.x, 3.0, bp.z), 'HEADSHOT', '#ffd24a'); sfx(1900,0.08,'square',0.06,420); }
         damageBoss(dmg); kill = true;
         boltImpact(b.mesh.position, b.mesh.material.color.getHex(), b.dir);
         if (b.playerShot){ if (G.stats) G.stats.shotsHit++; hitMarker(shared.boss.hp <= 0 ? 'kill' : (isHead ? 'head' : 'hit')); }
@@ -176,5 +182,16 @@ export function updateBolts(dt){
     }
     if (kill){ scene.remove(b.mesh); bolts.splice(i,1); }
   }
+}
+// where segment a→b first enters an upright cylinder (centre c, radius r, y0..y1): 0..1, or -1 if it doesn't
+function segCylinder(a, b, c, r, y0, y1){
+  const ax = a.x - c.x, az = a.z - c.z, dx = b.x - a.x, dz = b.z - a.z, dy = b.y - a.y;
+  const qa = dx * dx + dz * dz, qb = 2 * (ax * dx + az * dz), qc = ax * ax + az * az - r * r;
+  let t0 = 0, t1 = 1;
+  if (qa < 1e-9){ if (qc > 0) return -1; }
+  else { const disc = qb * qb - 4 * qa * qc; if (disc < 0) return -1; const q = Math.sqrt(disc); t0 = Math.max(0, (-qb - q) / (2 * qa)); t1 = Math.min(1, (-qb + q) / (2 * qa)); }
+  if (Math.abs(dy) < 1e-9){ if (a.y < y0 || a.y > y1) return -1; }
+  else { let s0 = (y0 - a.y) / dy, s1 = (y1 - a.y) / dy; if (s0 > s1){ const k = s0; s0 = s1; s1 = k; } t0 = Math.max(t0, s0); t1 = Math.min(t1, s1); }
+  return t0 <= t1 ? t0 : -1;
 }
 export function updateOrbs(dt){ /* orbs retired in favor of force lightning */ }

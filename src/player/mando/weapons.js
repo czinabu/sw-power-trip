@@ -11,6 +11,7 @@ import { shared, G, enemies, bolts, vfx, keys, player } from '../../state.js';
 import { MANDO, MANDO_WEAPONS, weaponUnlocked } from '../../data/mando.js';
 import { abil } from '../../data/mastery.js';
 import { fwd, rightV, playerPos } from '../helpers.js';
+import { inReach, bodyRadius, sweepHit } from '../../enemies/hitbox.js';
 import { damageEnemy } from '../../enemies/damage.js';
 import { updateMandoMelee } from './melee.js';
 import { fireBolt } from '../../enemies/bolts.js';
@@ -24,9 +25,10 @@ import { muzzleFlash, inkSprite, sparks, puff, screenAngle } from '../../fx/ink.
    MANDALORIAN — jetpack, dual blasters, flamethrower, wrist rockets
    ============================================================ */
 // You shoot EXACTLY down the crosshair ray — NO aim assist. The bolt aims at the point on that ray where it
-// passes through an enemy's body column (so it converges on whatever the crosshair is over — head or torso),
+// passes into an enemy's body (so it converges on whatever the crosshair is over — head, torso, arm or legs),
 // or a far point if the crosshair is on empty space. You must put the crosshair on the foe yourself.
-const _camDir = new THREE.Vector3(), _ray = new THREE.Raycaster(), _ndc = new THREE.Vector2();
+const _camDir = new THREE.Vector3(), _ray = new THREE.Raycaster(), _ndc = new THREE.Vector2(), _far = new THREE.Vector3();
+const AIM_FAR = 80;
 export const _look = new THREE.Vector3(), _lh = new THREE.Vector3();   // camera look dir + its horizontal (jetpack dive thrust)
 export function mandoAimPoint(){
   _ndc.set((player.aimOff.x) * 2 / innerWidth, -(player.aimOff.y) * 2 / innerHeight);   // through the floating reticle
@@ -46,9 +48,14 @@ export function mandoAimPoint(){
     if (ry < cy0 || ry > cyTop) return;                  // crosshair is above the head or below the feet
     bestT = t; hit = true;
   };
+  // foes: the crosshair has to be over the body itself (its real hitbox, hitbox.js), and the shot converges a hand's
+  // depth INTO it, so a bolt from the gun (a little off the camera ray) still lands where the crosshair was
+  _far.copy(o).addScaledVector(d, AIM_FAR);
   for (const e of enemies){ if (e.dead || e.converted || e.state === 'spawn') continue;
-    const s = e.t.scale || 1; const p = e.group.position;
-    consider(p.x, p.z, p.y + 0.3, p.y + 2.45*s, 0.72*s); }   // column reaches up over the head (head sits at ~2.16*scale)
+    const h = sweepHit(e, o, _far, 0);
+    if (!h) continue;
+    const t = h.t * AIM_FAR + 0.15;
+    if (t >= 1 && t < bestT){ bestT = t; hit = true; } }
   if (shared.boss && shared.boss.hp > 0){ const p = shared.boss.group.position; consider(p.x, p.z, p.y + 0.3, p.y + 3.6, 1.7); }
   player.lockOn = hit;
   const t = hit ? bestT : 40;
@@ -245,7 +252,7 @@ function spearStab(W){
   player.vel.addScaledVector(f, 9);   // a committed spear LUNGE — drives you onto the target
   S.swing('fast'); S.zap(); sfx(1300, 0.1, 'sawtooth', 0.04, 200);
   let best = null, bd = W.stabRange;
-  for (const e of enemies){ if (e.dead || e.converted || e.state === 'spawn') continue; TMP.subVectors(e.group.position, pp); TMP.y = 0; const d = TMP.length(); if (d < bd && TMP.normalize().dot(f) > 0.4){ bd = d; best = e; } }
+  for (const e of enemies){ if (e.dead || e.converted || e.state === 'spawn') continue; TMP.subVectors(e.group.position, pp); TMP.y = 0; const d = TMP.length() - bodyRadius(e); if (d < bd && inReach(e, pp, W.stabRange, f, 0.4)){ bd = d; best = e; } }   // the prongs reach the body
   if (best){
     best.state = 'stagger'; best.st = W.stabStun; best.stumble = 0.3;
     damageEnemy(best, W.stabDmg * player.up.dmg, f, 10);
@@ -303,8 +310,8 @@ export function updateFlame(dt){
     if (Math.abs(TMP.y) > range*0.45) continue;   // the stream fires level — it won't roast foes on the ground far below
     TMP.y = 0;
     const d = TMP.length();
-    if (d > range || d < 0.1) continue;
-    if (TMP.normalize().dot(f) < cosLim) continue;
+    if (d < 0.1 || !inReach(e, pp, range, f, cosLim)) continue;   // the stream licks any of the body inside its fan
+    TMP.normalize();
     damageEnemy(e, dmg, null, 0, false, true);                 // tick = true → no spazz
     if (!e.dead && !e.t.heavy) e.group.position.addScaledVector(TMP, A.knock*dt);   // gentle, steady shove
   }
