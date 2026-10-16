@@ -11,9 +11,10 @@ import { player } from '../../state.js';
 import { GAIT } from '../../data/movement.js';
 import { DIM } from '../model/rig.js';
 import { groundAt, STEP_UP } from '../../world/collision.js';
+import { MOCAP_ON, LEG, mocapStride, mocapFoot, mocapBody } from './mocap.js';
 
 const TAU = Math.PI * 2;
-const _inv = new THREE.Matrix4(), _p = new THREE.Vector3(), _q = new THREE.Vector3();
+const _inv = new THREE.Matrix4(), _hinv = new THREE.Matrix4(), _p = new THREE.Vector3(), _q = new THREE.Vector3(), _h = new THREE.Vector3();
 const SCALE = 1.18;                                   // hero model scale (model/index.js): world metres → rig units
 export const ANK = DIM.hipY - 0.06 - DIM.thigh - DIM.shin;   // ankle height above the floor with the legs straight
 const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
@@ -41,11 +42,17 @@ export function advanceGait(dt, speed, style){
   }
   g.pvx = player.moveVel.x; g.pvz = player.moveVel.z;
   const run = smooth(GAIT.runFrom, GAIT.runAt, speed);
-  const stepWant = Math.min(GAIT.step[0] + GAIT.step[1] * speed, GAIT.step[2]) * (style.amp || 1);
+  // the motion-captured stride (anim/mocap.js) sets the step length and the feet's time on the ground; without it
+  // the procedural stride does
+  const mc = MOCAP_ON ? mocapStride(speed) : null;
+  const stepWant = mc ? mc.stride / 2 * (style.amp || 1) : Math.min(GAIT.step[0] + GAIT.step[1] * speed, GAIT.step[2]) * (style.amp || 1);
   g.step += (stepWant - g.step) * Math.min(1, dt * 6);   // eased, so a speed change doesn't jolt the foot targets
   g.cyc += speed * dt / (2 * g.step);                   // one cycle = two steps
   g.run = run;
-  g.duty = lerp(GAIT.duty[0], GAIT.duty[1], run);
+  g.mc = mc;
+  g.dutyF = mc ? mc.duty : null;
+  g.duty = mc ? (mc.duty[0] + mc.duty[1]) / 2 : lerp(GAIT.duty[0], GAIT.duty[1], run);
+  g.body = mc ? mocapBody(mc, g.cyc % 1) : null;   // the pelvis and chest for this moment of the stride
   g.lift = lerp(GAIT.lift[0], GAIT.lift[1], run) * (style.lift || 1);
   g.w = smooth(GAIT.blendFrom, GAIT.blendTo, speed);
   // the old sine stride had the left thigh furthest forward at sin(ph) = -1: keep that relation for the arms
@@ -56,6 +63,8 @@ export function advanceGait(dt, speed, style){
 /* Hip height offset for the gait: lower at a run, dipping at each footfall (mid-stance of either foot). */
 export function gaitHipOffset(g, style){
   if (!g || !(g.w > 0)) return 0;
+  // the captured bob, about the captured hip height (a runner's legs never straighten under them)
+  if (g.body) return (g.body.y * ((style.bob || 0.4) / 0.4) - (1 - g.mc.hipH) * LEG) * g.w;
   const p = g.cyc % 1;
   const bob = lerp(GAIT.bob[0], GAIT.bob[1], g.run) * ((style.bob || 0.4) / 0.4);
   const dip = 0.5 + 0.5 * Math.cos(TAU * 2 * (p - g.duty / 2));   // 1 at each foot's mid-stance
@@ -71,7 +80,9 @@ export function gaitHipOffset(g, style){
 export function gaitLegs(g, fwd, right, R, vis){
   const out = [];
   const sweep = 2 * g.step * g.duty / SCALE;   // ground contact distance per footfall, rig units
-  const hy = R.hips.position.y - 0.06;           // hip joint height (rig units, vis frame)
+  // the legs are solved in the pelvis' frame: the captured stride tips and turns the pelvis under the body
+  R.hips.updateMatrix();
+  _hinv.copy(R.hips.matrix).invert();
   const lean = vis.rotation.x, cl = Math.cos(-lean), sl = Math.sin(-lean);
   vis.updateWorldMatrix(true, false);
   _inv.copy(vis.matrixWorld).invert();
@@ -80,8 +91,14 @@ export function gaitLegs(g, fwd, right, R, vis){
   [0, 0.5].forEach((off, i) => {                // left foot, then right half a cycle later
     const side = i === 0 ? -1 : 1;
     const p = (g.cyc + off) % 1;
-    let s, lift, toe, u, swing = p >= g.duty;
-    if (!swing){
+    let s, lift, toe, u, side2 = 0, swing = p >= (g.dutyF ? g.dutyF[i] : g.duty);
+    if (g.mc){
+      // CAPTURED — the foot's real path: heel strike, roll, toe-off, the heel kicking up and the reach through,
+      // stretched to the stride actually taken
+      const d = g.dutyF[i], f = mocapFoot(g.mc, i, p, 2 * g.step / SCALE);
+      u = swing ? (p - d) / (1 - d) : p / d;
+      s = f.s; lift = f.h * g.w; toe = f.toe; side2 = f.x;
+    } else if (!swing){
       // STANCE — on the path the foot slides back under the body at exactly the travel speed (still in the world)
       u = p / g.duty;
       s = sweep * (0.5 - u); lift = 0;
@@ -98,13 +115,14 @@ export function gaitLegs(g, fwd, right, R, vis){
       toe = lerp(0.5, -0.1, u);
     }
     // the path point in the hero group's frame, then into the (leaning) body's frame
-    const gz = s * fwd, gx = s * right, gy = ANK + lift;
+    const gz = s * fwd, gx = s * right + side2, gy = ANK + lift;
     _p.set(DIM.hipX * side + gx, gy * cl - gz * sl - vis.position.y, gy * sl + gz * cl);
     if (!swing){
       // touch down: lock this spot in the world and hold it for the whole stance
       if (!locks[i]){ locks[i] = _p.clone().applyMatrix4(vis.matrixWorld); locks[i].y = floorAt(locks[i].x, locks[i].z, i); }
       else floorAt(locks[i].x, locks[i].z, i);
       _p.copy(locks[i]).applyMatrix4(_inv);
+      _p.y += lift;   // the heel rising off the ground toward toe-off (the captured stride; 0 for the procedural one)
     } else {
       if (locks[i]){
         // lift off from where the lock actually is, then ease back onto the path through the swing
@@ -118,7 +136,8 @@ export function gaitLegs(g, fwd, right, R, vis){
       _q.copy(_p).applyMatrix4(vis.matrixWorld);
       _p.y += (floorAt(_q.x, _q.z, i) - floor) / SCALE;
     }
-    out.push(solveLeg(_p.z, _p.y - hy, _p.x - DIM.hipX * side, toe - lean));
+    _h.copy(_p).applyMatrix4(_hinv);   // into the pelvis' frame, from its hip joint
+    out.push(solveLeg(_h.z, _h.y + 0.06, _h.x - DIM.hipX * side, toe - lean - R.hips.rotation.x));
   });
   return out;
 }

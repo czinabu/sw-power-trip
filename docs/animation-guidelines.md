@@ -109,6 +109,27 @@ Each foot stands on whatever is under it (`groundAt` in `world/collision.js`): a
 reaches at most `GAIT.reachDown` below the body's support (past an edge it hangs), and the hips sink to let the lower
 foot reach the ground.
 
+### Motion capture (prototype)
+
+The stride and the jump are driven by real motion capture by default (`?mocap=0` in the URL turns it off, to compare).
+`tools/mocap/convert.mjs` turns CMU clips into compact cycles in `src/data/mocap.js`: a walk, jog, run and sprint, each
+one steady stride of 40 samples with each ankle's path relative to its hip, the foot's roll, the pelvis' bob, sway,
+surge and rotation, and the chest's counter-twist, all in leg lengths and radians so they fit any leg. It also keeps
+one forward jump: the legs through the flight and the hips' drop through the landing.
+
+`src/player/anim/mocap.js` blends the stride cycles by speed and plays them by distance. They don't replace the gait:
+they feed it each foot's path, heel strike and toe-off, so the planted-foot locks, ground IK and every combat pose still
+work on top. Past the fastest clip the stride quickens rather than lengthens and each foot spends less of the cycle on
+the ground, so the planted leg can still reach. In the air the flight's phase is read off the vertical speed against
+the take-off's, and a bigger jump drives the knees harder than the captured hop. A jetpack flight keeps its own pose.
+
+![Run and jump, procedural and captured](gait/mocap-run.jpg)
+![Jump and landing](gait/mocap-jump.jpg)
+
+To add or swap a clip, download its BVH (the CMU BVH conversion by B. Hahne), add it to `CLIPS` or `JUMP` in the
+converter and run `node tools/mocap/convert.mjs <bvh folder>`. The data used here was obtained from mocap.cs.cmu.edu.
+The database was created with funding from NSF EIA-0196217.
+
 **Cuts step.** A grounded cut's forward drive is root motion (`stepIntoCut` in `player/jedi/combat.js`, laid over the
 swing by `MOVE.cutTravel` in `locomotion.js`): the same distance the old shove carried, but the body drives through
 the strike instead of sliding out ahead of it. The lead foot (the back foot for a back strike) lifts as the cut starts

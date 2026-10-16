@@ -8,6 +8,7 @@ import { clamp } from '../../utils.js';
 import { G, player } from '../../state.js';
 import { AGILITY, MANDO_AGILITY } from '../../data/agility.js';
 import { FORM_OF } from '../../data/poses.js';
+import { MOCAP_ON, mocapAirLegs, airPhase } from './mocap.js';
 
 const TAU = Math.PI * 2;
 const COM = 1.12;   // centre of mass above the feet in the hero group's space (rig hips × model scale): flips turn here
@@ -88,7 +89,12 @@ export function jediAirLegs(dt, dr, R){
     poseLegs(R, dr, player.vy > 1 ? LEGS.hurdle : (LEGS[A.glide.legs] || LEGS.float), A.glide.legs === 'tuck' && player.vy <= 1 ? 0.75 : 1, 7);
     return true;
   }
-  // a plain jump reads its phase off the vertical speed: drive the knee on the way up, tuck at the top, reach down
+  // a plain jump: the captured jump's legs (anim/mocap.js), unless the style turns a twist through a tuck
+  if (MOCAP_ON && !player._airSpin){
+    poseLegs(R, dr, [...mocapAirLegs(airPhase(player._vy0, player.vy), player._vy0), 0.05], 1, 16);
+    return true;
+  }
+  // otherwise it reads its phase off the vertical speed: drive the knee on the way up, tuck at the top, reach down
   const vy = player.vy;
   const up = clamp((vy - 1) / 6, 0, 1), down = clamp((-vy - 2) / 6, 0, 1);
   const top = LEGS.tuck.map(v => v * A.jump.tuck * 0.8);
@@ -136,8 +142,10 @@ export function jediAgilityPost(dt, dr, vis, R, ctx){
   // the run: hips swing with the legs and the shoulders counter them; the free hand pumps (sway.off in animateArms)
   const run = player.grounded && !player.flip && player.atkT <= 0 && !ctx.planted ? clamp(ctx.inten, 0, 1.2) : 0;
   const tw = Math.sin(ctx.ph) * run * (A.run.twist || 1);
-  R.hips.rotation.y = dr(R.hips.rotation.y, tw * 0.16, 16);
-  if (run > 0.05 && player.castT <= 0) R.torso.rotation.y = -tw * 0.24;
+  if (!(player._gait && player._gait.body)){   // (the motion-captured stride turns the hips and shoulders itself)
+    R.hips.rotation.y = dr(R.hips.rotation.y, tw * 0.16, 16);
+    if (run > 0.05 && player.castT <= 0) R.torso.rotation.y = -tw * 0.24;
+  }
 }
 
 function slamLanding(dt, dr, R, kneel, inten){
