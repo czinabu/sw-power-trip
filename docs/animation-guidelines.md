@@ -89,6 +89,13 @@ reaches out along the ground, the trail shin folds under, and the body leans bac
 
 ![Slide: before and after](gait/slide.jpg)
 
+Chained moves go where the last one sends you. Each dash, evade, wall kick and double jump steers the momentum it
+inherits (`commitTo`, `turnTo` and `offWall` in `player/movement.js`) instead of stacking its push on the old run:
+a dash keeps only the momentum along its own direction, a double jump turns the leap toward the held keys, and a wall
+kick drops whatever still drives into the wall. Flips start through `launchFlip` (`anim/agility.js`), which sets
+`flip.face` from the travel direction so the body faces the way the flip should turn (`animation.js` turns to it
+fast), and blends out of a flip that's cut short instead of snapping. A landing roll always rolls along the travel.
+
 The Mando keeps to beskar and jets: the ground dodge is a thruster-shoved slide, a hop tucks the knees, ignition
 snaps the legs together under the pack, and a jet slam drops into a three-point landing.
 

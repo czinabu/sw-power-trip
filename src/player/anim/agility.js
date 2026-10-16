@@ -27,6 +27,29 @@ export function flipStyle(kind, dir){
 const flipEase = p => p < 0.5 ? 4*p*p*p : 1 - Math.pow(-2*p + 2, 3) / 2;   // hangs at take-off and landing, whips through the tuck
 const twirlEase = p => 0.5 - 0.5 * Math.cos(Math.PI * p);
 
+/* Start a flip facing the way it travels. A flip turns about the body's own axes, so the body has to face the right
+   way for it to go where the hero is going: a front flip faces the travel, a back flip faces away from it, a
+   cartwheel or side twist faces across it (fl.side = which side the travel is on: +1 right). The body turns there
+   quickly while the flip is still leaving the ground (animation.js), and stays there until it lands, so chaining a
+   dash, a flip and a wall kick never leaves a somersault turning sideways to the motion. A flip started while
+   another is still turning carries that one's rotation and eases it out instead of snapping square.
+   dir: fwd | back | side, or null for a flip that doesn't care (a vault, a slide). */
+export function launchFlip(fl, dir){
+  const vis = player.vis;
+  const vx = player.vel.x + player.moveVel.x, vz = player.vel.z + player.moveVel.z;
+  if (dir && Math.hypot(vx, vz) > 1.5){
+    const t = Math.atan2(vx, vz);
+    fl.face = dir === 'back' ? t + Math.PI : dir === 'side' ? t + (fl.side || 1) * Math.PI / 2 : t;
+  }
+  const old = player.flip;
+  if (old && vis && (old.p || 0) < 1){
+    const w = a => Math.atan2(Math.sin(a), Math.cos(a));
+    fl.from = { x: w(vis.rotation.x), y: w(vis.rotation.y), z: w(vis.rotation.z), px: vis.position.x, py: vis.position.y, pz: vis.position.z };
+  }
+  player.flip = fl;
+  return fl;
+}
+
 /* WHOLE-BODY FLIP — advance the flip and pose `vis`, rotating about the centre of mass (not the feet), so a
    somersault reads as a body turning in the air instead of a plank swinging off its heels. */
 export function flipBody(dt, vis, fl){
@@ -50,6 +73,11 @@ export function flipBody(dt, vis, fl){
   const piv = (fl.somer || fl.roll) ? COM : fl.spin ? COM * 0.55 : 0;
   _v.set(0, piv, 0).applyEuler(_e.set(rx, ry, rz));
   vis.position.set(-_v.x, piv - _v.y + (fl.lift || 0) * arc, -_v.z);
+  if (fl.from){   // the flip this one cut short, easing out over its first fifth
+    const k = 1 - clamp(p / 0.2, 0, 1), o = k * k * (3 - 2 * k), f = fl.from;
+    vis.rotation.x += f.x * o; vis.rotation.y += f.y * o; vis.rotation.z += f.z * o;
+    vis.position.x += f.px * o; vis.position.y += f.py * o; vis.position.z += f.pz * o;
+  }
   fl.p = p; fl.env = arc; fl.hold = hold;
 }
 

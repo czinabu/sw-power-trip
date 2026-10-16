@@ -7,6 +7,7 @@ import { V3, clamp } from '../utils.js';
 import { burst } from '../fx/particles.js';
 import { shared, G, solids, keys, player } from '../state.js';
 import { fwd, rightV, playerPos } from './helpers.js';
+import { launchFlip } from './anim/agility.js';
 import { STEP_UP } from '../world/collision.js';
 
 const smooth = k => k * k * (3 - 2 * k);
@@ -276,15 +277,14 @@ export function requestRoll(pp){
 
 function landingRoll(){
   player.rollReqT = -9; player.landStagT = 0;
-  const f = fwd(), r = rightV();
+  const f = fwd();
   let dx = player.moveVel.x + player.vel.x, dz = player.moveVel.z + player.vel.z;
   if (dx * dx + dz * dz < 1){ dx = f.x; dz = f.z; }
   const d = Math.hypot(dx, dz); dx /= d; dz /= d;
   player.vel.x += dx * MOVE.rollSpeed; player.vel.z += dz * MOVE.rollSpeed;
   player.dashT = Math.max(player.dashT, MOVE.rollIframes);
   player.landDip = 0.12;
-  const df = dx * f.x + dz * f.z, drr = dx * r.x + dz * r.z, side = Math.abs(drr) > Math.abs(df);
-  player.flip = side ? { t: 0, dur: MOVE.rollTime, roll: 1, side: drr >= 0 ? 1 : -1, lift: -0.35, legs: 'tuck', arms: 'tuck' }
-                     : { t: 0, dur: MOVE.rollTime, somer: df >= 0 ? 1 : -1, lift: -0.45, legs: 'tuck', arms: 'tuck', side: 1 };
+  // a forward roll along the way you're going (the body turns to face it), whichever way the camera looks
+  launchFlip({ t: 0, dur: MOVE.rollTime, somer: 1, lift: -0.45, legs: 'tuck', arms: 'tuck', side: 1 }, 'fwd');
   S.land(0.3);
 }
