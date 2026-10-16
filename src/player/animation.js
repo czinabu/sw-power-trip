@@ -88,8 +88,13 @@ function poseBody(dt, dr, vis, planted, POSE, moving){
     const lf = player.moveVel.x*ffx + player.moveVel.z*ffz;
     const lr = player.moveVel.x*(-ffz) + player.moveVel.z*ffx;
     const leanG = (stance().gait && stance().gait.lean) || 1;   // FAST leans eagerly into the run; STRONG runs upright & heavy
-    // HIT REACTION snaps the torso back; a PIVOT sits the hips down against the old momentum
-    const reel = player.flinchT > 0 ? -0.32 * (player.flinchT / (player.flinchMax || 0.3)) : 0;
+    // a PIVOT sits the hips down against the old momentum
+    // HIT REACTION — the body is driven the way the blow pushes it: reeling back from the front, pitched forward from
+    // behind, knocked sideways from the flank; a heavy blow harder
+    const fk = player.flinchT > 0 ? (player.flinchT / (player.flinchMax || 0.3)) * (player.flinchHeavy ? 1.35 : 1) : 0;
+    const fdir = player.flinchDir;
+    const hf = fdir ? fdir.x*ffx + fdir.z*ffz : -1, hr = fdir ? fdir.x*(-ffz) + fdir.z*ffx : 0;
+    const reel = 0.32 * hf * fk, reelSide = 0.28 * hr * fk;
     const plant = player.pivotT > 0 ? -0.18 : 0;
     // WEIGHT — pushing off to start tips the body into it, braking sits it back, a turn banks into the curve
     const gs = player._gait, gm = GAIT.accelMax;
@@ -98,7 +103,7 @@ function poseBody(dt, dr, vis, planted, POSE, moving){
     vis.rotation.x = dr(vis.rotation.x, lf*0.024*leanG + af + (planted ? POSE.lean : 0) + reel + plant, reel ? 22 : 9);
     // WALL-RUN — feet on the wall, body tipped out away from it (the normal in the body's own left/right)
     const wallLean = player.wallRun ? -0.5 * (player.wallRun.nx * Math.cos(player.faceYaw) - player.wallRun.nz * Math.sin(player.faceYaw)) : 0;
-    vis.rotation.z = dr(vis.rotation.z, player.wallRun ? wallLean : lr*0.018*leanG + ar, player.wallRun ? 14 : 9);   // bank INTO the strafe (was inverted — leaned the wrong way)
+    vis.rotation.z = dr(vis.rotation.z, player.wallRun ? wallLean : lr*0.018*leanG + ar + reelSide, player.wallRun ? 14 : reelSide ? 22 : 9);   // bank INTO the strafe (was inverted — leaned the wrong way)
     vis.position.y = dr(vis.position.y, 0, 10);
   }
 
@@ -131,7 +136,9 @@ function mandoTurn(face, lambda, dt){
 function animateLegsAndTorso(dt, dr, R, planted, POSE){
   const vis = player.vis;
   /* ================= rig animation ================= */
-  const tvx = player.moveVel.x + player.vel.x, tvz = player.moveVel.z + player.vel.z;
+  // (a blow's shove isn't the legs' doing: while reeling the footing steps to catch the body instead of running it out)
+  const shoved = player.flinchT > 0 ? 0 : 1;
+  const tvx = player.moveVel.x + player.vel.x * shoved, tvz = player.moveVel.z + player.vel.z * shoved;
   const hSpeed = Math.hypot(tvx, tvz);
   // PER-STANCE GAIT — same skeleton, different run: FAST is light & high-kneed, STRONG is long & planted, the Mando heavy
   const gait = (G.hero === 'mando' || !stance().gait) ? MANDO_GAIT : stance().gait;

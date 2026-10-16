@@ -131,7 +131,7 @@ export function flinchEnemy(e, dir, push){
   if (!e || e.dead || e.converted) return;
   const heavy = !!e.t.heavy;
   e.flinch = Math.max(e.flinch || 0, heavy ? 0.08 : 0.15);
-  const d = dir.clone().setY(0); if (d.lengthSq() > 0.0001){ d.normalize(); e.group.position.addScaledVector(d, push * (heavy ? 0.22 : 1)); }
+  const d = dir.clone().setY(0); if (d.lengthSq() > 0.0001){ d.normalize(); e.flinchDir = d; e.group.position.addScaledVector(d, push * (heavy ? 0.22 : 1)); }
   // hammering a lightly-armored foe mid-wind-up can stagger the swing right out of them
   if (!heavy && (e.state === 'windup' || e.state === 'strike') && Math.random() < 0.5){ e.state = 'recover'; e.st = 0.3; easeWeaponHome(e.group, 0.016); }
 }
@@ -142,7 +142,11 @@ export function flinchEnemy(e, dir, push){
 export function interruptEnemy(e, dir, heavyBlow){
   if (e.dead || e.converted || e.t.heavy || e.t.bomber || e.warbringer) return false;
   // not swinging yet: a short HIT-STUN instead, so a connecting blade checks a light foe's advance for a beat
-  if (e.state === 'chase' && !e.t.fly){ e.stunT = ENGAGE.hitStun; e.flinch = Math.max(e.flinch || 0, 0.15); return false; }
+  if (e.state === 'chase' && !e.t.fly){
+    e.stunT = ENGAGE.hitStun; e.flinch = Math.max(e.flinch || 0, 0.15);
+    if (dir){ const d = dir.clone().setY(0); if (d.lengthSq() > 0.0001) e.flinchDir = d.normalize(); }
+    return false;
+  }
   if (!(e.state === 'windup' || (e.state === 'strike' && !e.struck))) return false;
   if ((e.t.staff || (e.t.shield && !e.shieldBroken)) && !heavyBlow) return false;
   if (G.gt < (e.poiseT || 0)) return false;
@@ -151,7 +155,7 @@ export function interruptEnemy(e, dir, heavyBlow){
   e.group.userData.bodyMat.emissiveIntensity = 0;
   if (e.aimLine) e.aimLine.visible = false;
   easeWeaponHome(e.group, 0.016);
-  if (dir){ const d = dir.clone().setY(0); if (d.lengthSq() > 0.0001) e.group.position.addScaledVector(d.normalize(), 0.35); }
+  if (dir){ const d = dir.clone().setY(0); if (d.lengthSq() > 0.0001){ e.flinchDir = d.normalize(); e.group.position.addScaledVector(d, 0.35); } }
   if (e.token) dropToken(e, true);
   floater(V3(e.group.position.x, e.group.position.y + 1.2, e.group.position.z), 'INTERRUPT', '#9fe6ff');
   S.clash(V3(e.group.position.x, 1.5, e.group.position.z), false);

@@ -115,6 +115,11 @@ the strike instead of sliding out ahead of it. The lead foot (the back foot for 
 and plants as the blade lands (`FOOTING.cutStrike`), where the drive will end; the trailing foot follows after. A
 spinning finisher pivots the feet with the body. In the air a cut still shoves.
 
+**Hit reactions are directional.** A blow drives the body the way it pushes (`player.flinchDir`, set in
+`player/damage.js`): reeling back from the front, pitched forward from behind, knocked sideways from the flank, harder
+for a heavy blow. The shove doesn't run the legs: the footing steps to catch the body (a stumble). Enemies flinch the
+same way (`e.flinchDir`, posed in `enemies/ai.js`).
+
 ## Rig features to use
 
 - **New joints** (`src/player/model/rig.js`): chest (upper-body twist separate from the hips), wrists (snap and weapon angle), ankles (foot plant), four robe flaps and the cape pivot (follow-through and secondary motion).
