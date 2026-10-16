@@ -14,7 +14,7 @@ export const BOONS = [
   { id:'vitality', r:'common', ico:'✚', nm:'VITALITY',     ds:'+25 max vitality · heal to full',
     apply(){ player.up.hpMax += 25; player.hp = maxHp(); } },
   { id:'keen',     r:'common', ico:'⚔', nm:'KEEN EDGE',     ds:'+14% all damage',
-    apply(){ player.up.dmg *= 1.14; player.up.rocketDmg=(player.up.rocketDmg||1)*1.14; player.up.flameDmg=(player.up.flameDmg||1)*1.14; } },
+    apply(){ player.up.dmg *= 1.14; player.up.flameDmg=(player.up.flameDmg||1)*1.14; } },   // ordnance already scales with dmg
   { id:'swift',    r:'common', ico:'✦', nm:'SWIFT STRIKES', ds:'+12% attack & fire speed',
     apply(){ player.up.atkSpeed *= 1.12; player.up.fireRate=(player.up.fireRate||1)*1.12; } },
   { id:'reserves', r:'common', ico:'❂', nm:'DEEP RESERVES', ds:'+20% Force/fuel regen · −8% ability cost',

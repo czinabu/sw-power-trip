@@ -17,11 +17,12 @@ import { applyJetTier } from '../game/progression.js';
    Mando weapon fork (disruptor/darksaber) is the one FREE store choice. STORE_TIER_STAGE gates each tier by waveTotal.
    ============================================================ */
 export const MANDO_AUTO = [
-  // CORE abilities — automatic
-  { key:'flame',  stage:0, hud:'F', name:'FLAMETHROWER',
-    has:()=>!!G.unlocked.flame,          grant(){ G.unlocked.flame = true; } },
+  // CORE abilities — automatic. The rocket is in the starting kit; the FLAMETHROWER (a cone of damage over time,
+  // the Mando's first crowd-clearer) arrives after wave 2, the same beat the Jedi gets Force Pull and Ataru.
   { key:'rocket', stage:0, hud:'Q', name:'WRIST ROCKET',
     has:()=>!!G.unlocked.rocket,         grant(){ G.unlocked.rocket = true; } },
+  { key:'flame',  stage:2, hud:'F', name:'FLAMETHROWER',
+    has:()=>!!G.unlocked.flame,          grant(){ G.unlocked.flame = true; } },
   // weapon + jetpack — automatic
   { key:'dual', stage:1, hud:'2',   name:'DUAL BLASTERS',
     has:()=>!!G.unlocked.dual,           grant(){ G.unlocked.dual = true; if (player.weapon === 'single') switchWeapon('dual'); } },
@@ -75,7 +76,7 @@ export const MANDO_STORE = [
 ];
 /* JEDI ability arc — a steady, power-ASCENDING climb across the run:
    I  SIDEARM (early, cheap) — a real DEFENCE-vs-OFFENCE fork (this is where Force Barrier lives)
-   II CONTROL (mid, guaranteed) — Force Slam: a crowd-clearing breather, always earned
+   II SUSTAIN (mid) — Force Slam (an aerial knockdown) OR Force Mend (a self-heal)
    III ASCENSION (late) — your ULTIMATE: the two mightiest powers, mutually exclusive
    FINAL (latest, priciest) — a capstone that supercharges whichever ultimate you took.
    Costs climb with power so the strongest tools are unmistakably end-game rewards. */
@@ -104,7 +105,7 @@ export const JEDI_STORE = [
 // SURVIVAL POWER-UPS — repeatable, escalating XP sink so you keep scaling against the endless curve.
 // Named apart from the VITALITY boon and the Jedi BULWARK training card, which can sit on the same screen.
 export const ENDLESS_POWERS = [
-  { id:'might',    ico:'⚔', nm:'MIGHT',      ds:'+10% weapon &amp; power damage', apply(){ player.up.dmg *= 1.10; player.up.rocketDmg = (player.up.rocketDmg||1)*1.10; player.up.flameDmg = (player.up.flameDmg||1)*1.10; } },
+  { id:'might',    ico:'⚔', nm:'MIGHT',      ds:'+10% weapon &amp; power damage', apply(){ player.up.dmg *= 1.10; player.up.flameDmg = (player.up.flameDmg||1)*1.10; } },   // ordnance already scales with dmg
   { id:'vitality', ico:'✚', nm:'FORTITUDE',   ds:'+22 max vitality · full heal',  apply(){ player.up.hpMax += 22; player.hp = maxHp(); } },
   { id:'alacrity', ico:'✦', nm:'ALACRITY',   ds:'+8% attack &amp; fire speed',    apply(){ player.up.atkSpeed *= 1.08; player.up.fireRate = (player.up.fireRate||1)*1.08; } },
   { id:'attune',   ico:'❂', nm:'ATTUNEMENT', ds:'+15% Force regen · −5% cost',    apply(){ player.up.forceRegen *= 1.15; player.up.abilityCostMul *= 0.95; } },

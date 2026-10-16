@@ -59,7 +59,7 @@ const CONTROLS = {
       ['1 / 2 / 3', 'Switch weapon', 'Or the mouse wheel'],
     ]},
     { title: 'GADGETS', rows: [
-      ['F', 'Flamethrower', 'From the start'],
+      ['F', 'Flamethrower', 'Unlocks after wave 2'],
       ['Q', 'Wrist rocket', 'From the start'],
       ['X', 'Grappling hook', 'Earned with XP · or Jetpack Slam'],
       ['V', 'Whistling Birds', 'Earned with XP · or Thermal Detonator'],

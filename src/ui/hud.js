@@ -38,7 +38,7 @@ function cdSlot(id, key, cost){
   if (el._cdt) setText(el._cdt, left >= 1 ? String(Math.ceil(left)) : '');
   if (prev > 0 && left <= 0 && (_cdMax[key] || 0) >= 2){ el.classList.remove('ready'); void el.offsetWidth; el.classList.add('ready'); }   // just came off cooldown
   el.classList.toggle('cool', left > 0);
-  if (cost != null) el.classList.toggle('nofp', left <= 0 && player.force < cost);
+  if (cost != null) el.classList.toggle('nofp', left <= 0 && player.force < cost * (player.up.abilityCostMul || 1));   // the price the cast actually charges
 }
 
 // MANDO weapon slots: 1 blaster · 2 dual · 3 the signature weapon (Disruptor or Darksaber, whichever you took)
