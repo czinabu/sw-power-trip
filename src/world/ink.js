@@ -44,8 +44,14 @@ export function inkHull(width){
   const k = width.toFixed(3);
   if (inkCache.has(k)) return inkCache.get(k);
   const m = new THREE.MeshBasicMaterial({ color: INK, side: THREE.BackSide });
+  // the hull is dropped right at the lens: if the camera grazes (or briefly clips into) a prop, the hull's back faces
+  // would otherwise fill the view solid black instead of letting you see through
   m.onBeforeCompile = sh => {
-    sh.vertexShader = sh.vertexShader.replace('#include <begin_vertex>', `vec3 transformed = position + normal * ${k};`);
+    sh.vertexShader = 'varying float vInkDepth;\n' + sh.vertexShader
+      .replace('#include <begin_vertex>', `vec3 transformed = position + normal * ${k};`)
+      .replace('#include <project_vertex>', '#include <project_vertex>\n  vInkDepth = -mvPosition.z;');
+    sh.fragmentShader = 'varying float vInkDepth;\n' + sh.fragmentShader
+      .replace('void main() {', 'void main() {\n  if (vInkDepth < 0.6) discard;');
   };
   m.customProgramCacheKey = () => 'inkhull' + k;
   inkCache.set(k, m);

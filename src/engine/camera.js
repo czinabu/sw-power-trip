@@ -5,7 +5,7 @@ import { camera } from './renderer.js';
 import { clamp, TMP } from '../utils.js';
 import { shared, G, player, enemies } from '../state.js';
 import { fwd, rightV, playerPos, stance } from '../player/helpers.js';
-import { cameraClearance } from '../world/collision.js';
+import { cameraClearance } from '../world/camblock.js';
 import { CFG } from '../data/config.js';
 
 /* ============================================================
@@ -81,13 +81,14 @@ export function updateCamera(dt){
   const d = camDist + dk*3;
   TMP.set(tx - f.x*d*cosP + rv.x*ots, ty + camHi + camLift + dk*3 + d*sinP, tz - f.z*d*cosP + rv.z*ots);
   if (TMP.y < 0.4) TMP.y = 0.4;
-  // never park the lens inside a column or wall: pull in along the view line when tall cover is in the way
-  { const k = cameraClearance(tx, ty, tz, TMP.x, TMP.y, TMP.z); if (k < 1) TMP.set(tx + (TMP.x - tx)*k, ty + (TMP.y - ty)*k, tz + (TMP.z - tz)*k); }
+  // never park the lens inside a prop (inside one, its ink hull fills the screen black): pull in along the line from
+  // the hero's head. The head, not the look-ahead point, because running at a wall puts the look-ahead inside it
+  const hx = pp.x, hz = pp.z;
+  const clear = v => { const k = cameraClearance(hx, ty, hz, v.x, v.y, v.z); if (k < 1) v.set(hx + (v.x - hx)*k, ty + (v.y - ty)*k, hz + (v.z - hz)*k); };
+  clear(TMP);
   // INERTIA — the camera lags when you boost / fly fast (a weighty swoop), but snaps tight when you're AIMING
   const lagBase = (adsFly) ? 0.00002 : (G.hero === 'mando' && (player.boosting || speed > 14)) ? 0.02 : 0.00004;
   camera.position.lerp(TMP, 1 - Math.pow(lagBase, dt));
-  // ...and the lag must never drag the lens THROUGH cover on the way: re-check where it actually ended up
-  { const cp = camera.position, k = cameraClearance(tx, ty, tz, cp.x, cp.y, cp.z); if (k < 1) cp.set(tx + (cp.x - tx)*k, ty + (cp.y - ty)*k, tz + (cp.z - tz)*k); }
   // SHAKE — trauma model: strength is shake², so chip damage barely registers and a boss slam rattles the screen.
   // Smooth noise (real time, so a hitstop freeze-frame still trembles) with a touch of roll; damped while scoped.
   const now = performance.now() / 1000;
@@ -116,6 +117,9 @@ export function updateCamera(dt){
   }
   if (player.landDip > 0) camera.position.y -= player.landDip;   // TOUCHDOWN — the view dips with the impact (decayed in updatePlayer)
   if (camera.position.y < 0.25) camera.position.y = 0.25;        // none of the above may push the lens under the floor
+  // ...or into a prop: the lag, shake, hit kick and sway all move the lens after the check above, so check where it
+  // actually ended up
+  clear(camera.position);
   // Mando aims a bit ABOVE its own head height; while DIVING the look target drops so the camera follows the dive angle
   const diveLook = (G.hero === 'mando' && player.boosting) ? clamp(player.vy * 0.06, -2.0, 0) : 0;
   camera.lookAt(tx + f.x*3 + rv.x*ots, ty + (G.hero === 'mando' ? 0.7 : 0.5) + diveLook, tz + f.z*3 + rv.z*ots);
