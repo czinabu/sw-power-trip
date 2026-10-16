@@ -20,7 +20,7 @@ renderer.toneMappingExposure = 1.04;   // moodier, more filmic contrast
 document.body.appendChild(renderer.domElement);
 
 export const scene = new THREE.Scene();
-export const camera = new THREE.PerspectiveCamera(56, innerWidth/innerHeight, 0.1, 400);
+export const camera = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, 0.1, 400);
 
 /* bloom post-processing — sabers, bolts and embers glow */
 export const composer = new EffectComposer(renderer);

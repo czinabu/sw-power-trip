@@ -57,16 +57,19 @@ export const CFG = {
     // LENS — a big-budget third-person framing: the hero fills about a third of the frame height, the lens rides at
     // shoulder height just off the right shoulder, and a moderate FOV keeps the backdrop large (a wide FOV shrinks
     // everything past the hero, which is what made the arenas read small)
-    fov: 56,                  // vertical degrees at rest (was 70: ~106° across a 16:9 screen, a fisheye on the props)
+    fov: 60,                  // vertical degrees at rest (was 70: ~106° across a 16:9 screen, a fisheye on the props)
     pivotY: 1.7,              // the lens orbits a point this high over the hero's feet (shoulder / head height)
     shoulder: 0.75,           // Jedi lens sits this far right of the spine, so the foe ahead is never hidden behind you
     lookAhead: 5,             // the lens aims this far past the hero...
     lookUp: -0.15,            // ...and this high over the pivot (a hair under it keeps the hero's boots in frame)
     baseDist: 5.4,            // resting follow distance (was 8.2)
-    calmDist: -0.4,           // between waves / nothing nearby: tuck in closer for a more grounded, personal view
+    calmDist: 0.6,            // between waves / nothing nearby: ease back a touch so an empty arena never feels cramped
     crowdRadius: 10,          // enemies inside this range count toward the crowd pull-back
     crowdPull: 0.4,           // extra distance per nearby enemy...
     crowdMax: 2.6,            // ...capped here, so a brawl always fits on screen
+    mandoShoulder: 0.95,      // MANDO lens offset off the shoulder (never centred, see camera.js)...
+    mandoShoulderAim: 1.25,   // ...wider while aiming / bracing, so the reticle is always clear of the helmet...
+    mandoShoulderFly: 1.05,   // ...and in the air
     duelPull: 0.18,           // LOCK-ON: per metre to the locked foe, the lens backs off so both duelists stay framed...
     duelMax: 1.6,             // ...up to this much
     crowdLift: 0.5,           // and the lens rises up to this much so the pack reads over the hero's shoulders

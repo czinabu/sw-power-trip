@@ -11,7 +11,7 @@ import { CFG } from '../data/config.js';
 /* ============================================================
    CAMERA — third person follow
    ============================================================ */
-let camDist = 5, camFov = 56, camLift = 0, deadAt = -1, fovPunch = 0;
+let camDist = 5, camFov = 60, camLift = 0, deadAt = -1, fovPunch = 0;
 // smooth layered-sine noise in [-1,1] — shake that rolls instead of buzzing frame to frame
 const wob = (t, s) => (Math.sin(t*23.1 + s) * 0.55 + Math.sin(t*37.7 + s*2.3) * 0.3 + Math.sin(t*61.3 + s*4.1) * 0.15);
 
@@ -45,8 +45,8 @@ export function updateCamera(dt){
   const tz = pp.z + clamp(vz * 0.12, -1.5, 1.5);
   const ty = pp.y + C.pivotY;
   const rv = rightV();
-  // ----- MANDO camera: HIGH (helmet never over the crosshair) + a DIRECTIONAL shoulder offset that follows the
-  //       way you're strafing/flying, with situational distance & offset strength (see the design table) -----
+  // ----- MANDO camera: HIGH + ALWAYS over a shoulder (helmet never under the crosshair) — the shoulder follows the
+  //       way you last strafed, with situational distance & offset strength -----
   let camHi = 0, distMul = 1, ots = 0;
   if (G.hero !== 'mando'){
     // JEDI: over the right shoulder, like a modern saber game. The spine sits left of centre, so a foe straight ahead
@@ -57,9 +57,10 @@ export function updateCamera(dt){
     const aiming = player.blockHeld || player.zoom || player.aiming > 0;
     const flying = !player.grounded;
     const lat = vx*rv.x + vz*rv.z;                        // signed strafe: +right, -left
-    // CENTERED when standing still — only offset toward the side you're actually moving
-    const moving = Math.abs(lat) > 0.8;
-    const target = moving ? Math.sign(lat) * (aiming ? 1.5 : flying ? 0.85 : 0.6) : 0;
+    // never CENTRED: at this distance a centred Mando sits right under the crosshair, so aiming at a head put the
+    // reticle on your own back. Stay over the right shoulder, and swap sides only on a deliberate strafe the other way
+    if (Math.abs(lat) > 2.5) player.camSide = Math.sign(lat);
+    const target = (player.camSide || 1) * (aiming ? C.mandoShoulderAim : flying ? C.mandoShoulderFly : C.mandoShoulder);
     player.camOts = (player.camOts || 0) + (target - (player.camOts || 0)) * Math.min(1, dt*4);   // smooth the swap
     ots = player.camOts;
     camHi = 1.1;                                          // sit HIGH so the helmet stays well below the centred crosshair
@@ -149,7 +150,7 @@ export function updateCamera(dt){
   // FOV kick on dashes and at speed; disruptor ZOOM (ADS) pulls the view in tight for precision
   // blasters get a SLIGHT aim zoom only while BRACING (hold RMB) for precision — single pulls in more than dual
   const blasterAim = (G.hero === 'mando' && !player.zoom && player.blockHeld && (player.weapon === 'single' || player.weapon === 'dual'))
-                     ? (player.weapon === 'single' ? 28 : 20) : 0;   // bracing zooms in HARD now — the payoff for steadying
+                     ? (player.weapon === 'single' ? 14 : 9) : 0;    // bracing zooms in — the payoff for steadying (the lens is close already)
   // IMPACT PUNCH — heavy hitstop snaps the view in a touch (instantly, the sim is frozen) and slow-mo holds it there,
   // so the big moments feel close; it releases once the beat is over
   if (G.mode === 'play' && !player.zoom && (G.hitstop > 0.04 || G.slowmo < 0.9)) fovPunch = C.impactFov;
