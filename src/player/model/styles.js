@@ -5,7 +5,7 @@
 import * as THREE from 'three';
 import { mergeVertices, toCreasedNormals } from 'three/addons/utils/BufferGeometryUtils.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { renderer } from '../../engine/renderer.js';
+import { renderer, hemi } from '../../engine/renderer.js';
 
 export const STYLE_DEFS = {
   // SHARD — every plane is its own flat facet; a soft top-to-bottom value ramp keeps it from reading as raw low-poly
@@ -72,6 +72,44 @@ function bakeGradient(g, [lo, hi]){
   g.setAttribute('color', new THREE.BufferAttribute(col, 3));
 }
 
+/* SURFACE for the Ink look: cel bands alone make beskar and cloth read the same. Metal gets a stylised chrome
+   reflection (the arena's sky above a dark horizon line, mirrored in the plate, from the ambient light's own
+   colours so every arena tints it), a hard sun glint and a bright fresnel rim; rougher metal blurs the horizon.
+   Cloth and leather stay matte with only a faint soft rim, so the two materials separate at a glance. */
+const SKY = { value: hemi.color }, GROUND = { value: hemi.groundColor };
+function inkSurface(m, metal, rough){
+  m.onBeforeCompile = sh => {
+    Object.assign(sh.uniforms, { uSky: SKY, uGround: GROUND, uMetal: { value: metal }, uRough: { value: rough } });
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', '#include <common>\nuniform vec3 uSky, uGround;\nuniform float uMetal, uRough;')
+      .replace('#include <opaque_fragment>', `
+        vec3 vv = normalize(vViewPosition);   // towards the camera
+        vec3 nn = normalize(normal);
+        float lit = dot(reflectedLight.directDiffuse, vec3(0.333)) / max(dot(diffuseColor.rgb, vec3(0.333)), 1e-3);
+        float rim = pow(1.0 - clamp(dot(nn, vv), 0.0, 1.0), 3.0);
+        vec3 surf = vec3(0.0);
+        if (uMetal > 0.0){
+          vec3 r = inverseTransformDirection(reflect(-vv, nn), viewMatrix);   // world-space reflection
+          float w = mix(0.015, 0.2, uRough);
+          float sky = smoothstep(-w, w, r.y);
+          float horizon = 1.0 - smoothstep(0.0, w * 1.5 + 0.03, abs(r.y));   // the dark line where sky meets ground
+          vec3 env = mix(uGround * 0.5, uSky * (0.75 + 0.6 * smoothstep(0.35, 0.9, r.y)), sky) * (1.0 - 0.55 * horizon);
+          outgoingLight = mix(outgoingLight, outgoingLight * 0.45 + env * diffuseColor.rgb * 1.5, uMetal);
+          #if NUM_DIR_LIGHTS > 0
+            float glint = pow(max(dot(nn, normalize(directionalLights[0].direction + vv)), 0.0), mix(90.0, 18.0, uRough));
+            surf += directionalLights[0].color * smoothstep(0.45, 0.6, glint) * step(0.6, lit) * uMetal * 0.7;
+          #endif
+          surf += uSky * smoothstep(0.45, 0.55, rim) * uMetal * 0.45;
+        } else {
+          surf += uSky * rim * (1.0 - uRough) * 0.35 * diffuseColor.rgb;   // leather catches a little; wool almost none
+        }
+        outgoingLight += surf;
+        #include <opaque_fragment>`);
+  };
+  m.customProgramCacheKey = () => 'ink-surface-' + (metal > 0 ? 'm' : 'c');
+  return m;
+}
+
 export function makeStyle(name = 'ink', colors = {}){
   const cfg = STYLE_DEFS[name] || STYLE_DEFS.forged;
   const mats = new Map();
@@ -87,7 +125,7 @@ export function makeStyle(name = 'ink', colors = {}){
       // cel bands flatten metal; lift metals a touch so beskar still reads bright against the suit
       const c = new THREE.Color(d.c);
       if (d.m) c.offsetHSL(0, -0.05, 0.08);
-      m = new THREE.MeshToonMaterial({ color: c, gradientMap: toonRamp() });
+      m = inkSurface(new THREE.MeshToonMaterial({ color: c, gradientMap: toonRamp() }), Math.min(1, Math.max(0, ((d.m || 0) - 0.2) / 0.7)), d.r ?? 0.8);
     } else {
       m = new THREE.MeshStandardMaterial({
         color: d.c, roughness: d.r ?? 0.8, metalness: (d.m || 0) * (cfg.env ? 1 : 0.75), flatShading: cfg.flat,
