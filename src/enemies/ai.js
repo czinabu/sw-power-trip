@@ -35,6 +35,7 @@ function wallBetween(ax, az, b){
   return b.y < c.h - 0.5;
 }
 
+const NO_REACT = { ragdoll: 1, knockdown: 1, getup: 1, fade: 1, spawn: 1, lock: 1 };   // states that own the whole body
 export function updateEnemies(dt){
   const pp = playerPos();
   updateNav(dt, pp);    // refresh the flow field toward the player (nav.js)
@@ -43,6 +44,7 @@ export function updateEnemies(dt){
   for (let i = enemies.length-1; i >= 0; i--){
     const e = enemies[i], g = e.group, t = e.t;
     e.st -= dt;
+    if (e.hrA){ g.rotation.x -= e.hrA.x; g.rotation.z -= e.hrA.z; g.rotation.y -= e.hrA.y; e.hrA = null; }   // lift last frame's hit reaction off
     if (g.userData.eliteRing) g.userData.eliteRing.rotation.z += dt * 2.5;   // elite halo spins
     if (e.converted && !e.dead){
       e.convT -= dt;
@@ -476,12 +478,20 @@ export function updateEnemies(dt){
       if (!e.dead && (e.state === 'chase' || e.state === 'recover')){
         const k = Math.max(0, e.flinch) / 0.15;
         // driven the way the hit pushes: back from the front, forward from behind, sideways from the flank
-        const fd = e.flinchDir, fx = Math.sin(g.rotation.y), fz = Math.cos(g.rotation.y);
-        const hf = fd ? fd.x*fx + fd.z*fz : -1, hr = fd ? fd.x*(-fz) + fd.z*fx : 0;
-        g.rotation.x = 0.3 * hf * k;
-        g.rotation.z = 0.26 * hr * k;
-        if (e.flinch <= 0) g.rotation.z = 0;
         g.userData.bodyMat.emissiveIntensity = Math.max(g.userData.bodyMat.emissiveIntensity, k);
+      }
+    }
+    // HIT REACTION spring (damage.js hitReact): rock with the blow, overshoot a touch, settle; laid over the pose
+    if (e.hr){
+      const r = e.hr, free = !e.dead && !NO_REACT[e.state];
+      if (!free){ r.x = r.z = r.y = r.vx = r.vz = r.vy = 0; }
+      else if (r.x || r.z || r.y || r.vx || r.vz || r.vy){
+        const K = 320, C = 16, h = Math.min(dt, 1 / 30);
+        r.vx += (-K * r.x - C * r.vx) * h; r.x = clamp(r.x + r.vx * h, -0.6, 0.6);
+        r.vz += (-K * r.z - C * r.vz) * h; r.z = clamp(r.z + r.vz * h, -0.5, 0.5);
+        r.vy += (-K * r.y - C * r.vy) * h; r.y = clamp(r.y + r.vy * h, -0.5, 0.5);
+        if (Math.abs(r.x) + Math.abs(r.z) + Math.abs(r.y) + Math.abs(r.vx) + Math.abs(r.vz) + Math.abs(r.vy) < 1e-3){ r.x = r.z = r.y = r.vx = r.vz = r.vy = 0; }
+        g.rotation.x += r.x; g.rotation.z += r.z; g.rotation.y += r.y; e.hrA = { x: r.x, z: r.z, y: r.y };
       }
     }
     // JET TROOPER hover — drive altitude to ~1.5 above the player (so flying up never escapes it) with a gentle bob.

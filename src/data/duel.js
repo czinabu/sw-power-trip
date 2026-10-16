@@ -63,16 +63,17 @@ export const WIND = {
 
 /* THE MANDALORIAN'S CLOSE-QUARTERS KIT (E). No Jedi forms, but a bounty hunter who has fought every kind of thing:
    (the string's blows rock a foe back `shove` units and never launch it; a foe they kill crumples where it stands.
-   Only the jet-powered moves, the charge and the dive kick, throw bodies)
+   Only the jet-powered moves, the charge and the dive kick, throw bodies. Each blow LANDS `contact` seconds after the
+   press, when the fist reaches full extension: a short chamber, then a snap into the target)
    a four-beat string (jab, cross, knee, vibroblade), a jet-assisted charge (W + E with a foe ahead), a dive kick
    (E in the air), a vambrace CATCH (E as a blow lands turns it on the beskar and staggers the attacker) and a
    TAKEDOWN on anything staggered or floored. */
 export const MANDO_MELEE = {
   string: [
-    { name: 'jab',   dmg: 13, knock: 8,  line: 'L', recover: 0.3,  lunge: 4.5, shove: 0.3 },
-    { name: 'cross', dmg: 16, knock: 12, line: 'R', recover: 0.34, lunge: 5,   shove: 0.45 },
-    { name: 'knee',  dmg: 18, knock: 14, line: 'H', recover: 0.4,  lunge: 5.5, shove: 0.9, heavy: true },
-    { name: 'blade', dmg: 30, knock: 22, line: 'R', recover: 0.52, lunge: 6.5, shove: 0.5, heavy: true, stagger: true },
+    { name: 'jab',   dmg: 13, knock: 8,  line: 'L', recover: 0.3,  lunge: 4.5, shove: 0.3, contact: 0.07 },
+    { name: 'cross', dmg: 16, knock: 12, line: 'R', recover: 0.34, lunge: 5,   shove: 0.45, contact: 0.1 },
+    { name: 'knee',  dmg: 18, knock: 14, line: 'H', recover: 0.4,  lunge: 5.5, shove: 0.9, contact: 0.12, heavy: true },
+    { name: 'blade', dmg: 30, knock: 22, line: 'R', recover: 0.52, lunge: 6.5, shove: 0.5, contact: 0.13, heavy: true, stagger: true },
   ],
   combo: 0.55,            // seconds after a strike's recovery the next press still continues the string
   reach: 1.45, arc: 0.75,   // a fist lands within arm's length (+ the step it carries) of the body, in front

@@ -8,6 +8,7 @@ import { clamp, dampAngle, wrapAngle, V3 } from '../utils.js';
 import { burst } from '../fx/particles.js';
 import { G, player } from '../state.js';
 import { MANDO } from '../data/mando.js';
+import { MANDO_MELEE } from '../data/duel.js';
 import { MOVE, GAIT } from '../data/movement.js';
 import { stance } from './helpers.js';
 import { tryAttack, applySwingDamage, FLOW } from './jedi/combat.js';
@@ -427,6 +428,17 @@ const MANDO_GAIT = { amp: 0.95, lift: 0.7, bob: 0.45 };   // armour and a pack: 
 const SHIELD_SIZE = 0.6;   // gauntlet shield disc scale (visual only; what it blocks is decided in player/damage.js)
 const lerp = (a, b, t) => a + (b - a) * t;
 const easeInOut = t => t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t + 2, 2) / 2;
+/* A THROWN BLOW in four beats, over seconds since the press: a short CHAMBER that loads it (→ -1), a SNAP that
+   accelerates into the target and arrives at full extension exactly on the contact frame (→ +1, when melee.js lands
+   the hit), a HOLD on the impact, then the RECOVERY home (→ 0). Real strikes are fast out and slower back. */
+const BLOW_CONTACT = { ...Object.fromEntries(MANDO_MELEE.string.map(b => [b.name, b.contact])), takedown: 0.12, catch: 0.04, charge: 0, dive: 0 };
+function blowCurve(age, c, dur){
+  const w = c * 0.55, hold = 0.05;
+  if (age < w) return -Math.sin((age / w) * Math.PI / 2);
+  if (age < c){ const t = (age - w) / (c - w); return -1 + 2 * t * t; }
+  if (age < c + hold) return 1;
+  return 1 - easeInOut(clamp((age - c - hold) / Math.max(0.05, dur - c - hold), 0, 1));
+}
 
 function animateForceCast(dt, dr, R){
   // --- force-cast gesture: the off-hand reaches out to project the power ---
@@ -607,30 +619,44 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
   // rising knee, the vibroblade slash, the shoulder-first jet charge, the boot-first dive, the vambrace catch
   if (!(player.meleeT > 0)) R.torso.rotation.x = dr(R.torso.rotation.x, 0, 12);   // settle a knee/charge/dive hunch
   if (player.meleeT > 0){
-    const mk = 1 - clamp(player.meleeT / (player.meleeMax || 0.32), 0, 1);   // 0→1 through the move
-    const ext = Math.sin(mk * Math.PI);                                      // 0→1→0 strike envelope
+    const dur = player.meleeMax || 0.32, age = dur - player.meleeT + (player.meleeSkip || 0);
+    const mk = clamp(age / dur, 0, 1);                                       // 0→1 through the move
     const kind = player.meleeKind || 'cross';
+    const c = BLOW_CONTACT[kind] ?? 0.1;
+    const v = blowCurve(age, c, dur);   // -1 chambered … +1 full extension AT the contact frame … 0 back on guard
+    const ld = Math.max(0, v), ch = Math.max(0, -v);                         // the drive and the load, split
+    const snap = age > c * 0.55 && age < c + 0.05 ? 70 : 30;                // joints follow hard through the snap
     if (kind === 'jab'){
-      R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -1.5 - ext*0.2, 28);
-      R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, 0.14, 22);
-      R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -1.0 + ext*0.95, 30);
-      R.torso.position.z = dr(R.torso.position.z, ext * 0.22, 24);
-      R.torso.rotation.y = dr(R.torso.rotation.y, ext * 0.2, 22);
+      // lead hand: tucked to the chin, then fired straight out off a short hip turn, then snapped back to guard
+      R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -1.35 - ld*0.32 + ch*0.12, snap);
+      R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, 0.12 + ld*0.06, snap);
+      R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -1.45 + ld*1.4 - ch*0.2, snap);
+      R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -1.2, 20); R.armR.el.rotation.x = dr(R.armR.el.rotation.x, -1.75, 20);   // rear hand guards
+      R.torso.position.z = dr(R.torso.position.z, ld * 0.24 - ch * 0.04, snap);
+      R.torso.rotation.y = dr(R.torso.rotation.y, ld * 0.26 - ch * 0.08, snap);
+      R.torso.rotation.x = dr(R.torso.rotation.x, ld * 0.06, 24);
     } else if (kind === 'knee'){
-      R.legR.hip.rotation.x = -1.65 * ext;
-      R.legR.knee.rotation.x = 0.4 + ext * 1.5;
-      R.legL.knee.rotation.x = 0.2 * ext;
-      R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -1.25, 22); R.armR.el.rotation.x = dr(R.armR.el.rotation.x, -1.5, 22);
-      R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -1.25, 22); R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -1.5, 22);
-      R.torso.rotation.x = 0.18 * ext;   // the hands haul the head down onto the rising knee
+      // grab, haul the head down, drive the knee up into it: the hip loads back, then the whole body rises through it
+      // (legs are set outright: the gait writes them every frame, so easing toward a target would fight it)
+      R.legR.hip.rotation.x = 0.35 * ch - 1.8 * ld;
+      R.legR.knee.rotation.x = 0.5 + ch * 0.4 + ld * 1.55;
+      R.legL.knee.rotation.x = 0.25 * ch + 0.1 * ld;   // the standing leg sits, then pushes up
+      R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -1.45 + ld * 0.35, 26); R.armR.el.rotation.x = dr(R.armR.el.rotation.x, -1.3 - ld * 0.35, 26);
+      R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -1.45 + ld * 0.35, 26); R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -1.3 - ld * 0.35, 26);
+      R.torso.rotation.x = dr(R.torso.rotation.x, -0.12 * ch + 0.3 * ld, snap);   // lean back to load, fold over the knee
+      vis.position.y = dr(vis.position.y, -0.06 * ch + 0.07 * ld, 30);
     } else if (kind === 'blade' || kind === 'takedown'){
-      // the wrist blade carves across: wound high over the right shoulder, ripped through to the left hip
-      const sweep = clamp(mk * 1.6, 0, 1);
-      R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -2.3 + sweep * 1.5, 30);
-      R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, 0.55 - sweep * 1.35, 30);
-      R.armR.el.rotation.x = dr(R.armR.el.rotation.x, -0.9 + ext * 0.7, 30);
-      R.torso.rotation.y = dr(R.torso.rotation.y, 0.3 - sweep * 0.7, 22);
-      R.torso.position.z = dr(R.torso.position.z, ext * (kind === 'takedown' ? 0.4 : 0.28), 24);
+      // the wrist blade carves across: wound high over the right shoulder, ripped through to the left hip, the torso
+      // unwinding behind it and the follow-through carrying past the target
+      const sweep = clamp(v >= 0 && age > c ? 1 + (1 - v) * 0.25 : (v + 1) / 2, 0, 1.25);
+      R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -2.55 + sweep * 1.7, snap);
+      R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, 0.75 - sweep * 1.5, snap);
+      R.armR.el.rotation.x = dr(R.armR.el.rotation.x, -1.2 + Math.min(1, sweep) * 1.0, snap);
+      R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -1.1 + sweep * 0.5, 20); R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -1.5, 20);
+      R.torso.rotation.y = dr(R.torso.rotation.y, 0.45 - sweep * 0.9, snap);
+      R.torso.rotation.x = dr(R.torso.rotation.x, ld * 0.12, 24);
+      R.torso.position.z = dr(R.torso.position.z, ld * (kind === 'takedown' ? 0.42 : 0.3), snap);
+      vis.position.y = dr(vis.position.y, -0.08 * ld, 26);   // sinks into the cut
     } else if (kind === 'charge'){
       R.torso.rotation.y = dr(R.torso.rotation.y, -0.55, 18);
       R.torso.position.z = dr(R.torso.position.z, 0.3, 18);
@@ -643,18 +669,25 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
       R.torso.rotation.x = dr(R.torso.rotation.x, -0.2, 18);
       R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -0.4, 16); R.armL.sh.rotation.z = dr(R.armL.sh.rotation.z, 0.6, 16);
     } else if (kind === 'catch'){
-      // the left vambrace thrown up across the face, the blow turned on the beskar
-      R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -1.75, 34);
+      // the left vambrace thrown up across the face, the blow turned on the beskar: it jars back on the impact
+      const jar = Math.max(0, 1 - mk * 3);
+      R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -1.75 + jar * 0.2, 34);
       R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, 0.65, 34);
-      R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -1.65, 34);
+      R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -1.65 - jar * 0.2, 34);
       R.torso.rotation.y = dr(R.torso.rotation.y, 0.22, 24);
+      R.torso.position.z = dr(R.torso.position.z, -0.12 * jar, 30);
     } else {
-      R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -1.5 - ext*0.25, 26);
-      R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, -0.12, 22);
+      // the rear CROSS: weight loads onto the back foot with the shoulder turned away, then the hips and shoulder
+      // whip through and the fist lands at full reach with the body behind it, then it snaps home to the chin
+      R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -1.3 - ld*0.42 + ch*0.1, snap);
+      R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, -0.16 * ld + 0.1 * ch, snap);
       R.armR.sh.rotation.z = dr(R.armR.sh.rotation.z, -0.05, 22);
-      R.armR.el.rotation.x = dr(R.armR.el.rotation.x, -0.95 + ext*0.9, 28);    // elbow snaps straight on the punch
-      R.torso.position.z = dr(R.torso.position.z, ext * 0.32, 24);             // shoulder drives forward for weight
-      R.torso.rotation.y = dr(R.torso.rotation.y, -ext * 0.22, 22);
+      R.armR.el.rotation.x = dr(R.armR.el.rotation.x, -1.6 + ld*1.55 - ch*0.15, snap);   // elbow snaps straight on the punch
+      R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -1.25, 20); R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -1.7, 20);   // lead hand pulls back to guard
+      R.torso.position.z = dr(R.torso.position.z, ld * 0.36 - ch * 0.08, snap);   // shoulder drives forward for weight
+      R.torso.rotation.y = dr(R.torso.rotation.y, -ld * 0.42 + ch * 0.3, snap);   // the hip-and-shoulder turn
+      R.torso.rotation.x = dr(R.torso.rotation.x, ld * 0.1, 24);
+      vis.position.y = dr(vis.position.y, -0.05 * ld, 26);   // the knees give into the punch
     }
   }
   // === SINGLE-BLASTER GAUNTLET SHIELD — projected energy disc on the left forearm. Driven here (not in the

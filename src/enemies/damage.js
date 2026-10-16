@@ -68,6 +68,7 @@ export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick, opts){
     if (meaty){
       // a spray of sparks off the hit + a bright impact flash & ring — every connect reads as a real hit
       const kd = knockDir.clone().setY(0).normalize();
+      if (e.hp > 0) hitReact(e, kd, 0.18 + power * 0.22, opts && opts.fold);   // the body rocks with the blow
       sparks(cp, 0xffffff, Math.round(3 + power*3), 9 + power*5, { dir: kd, cone: 0.8, life: 0.24 });
       sparks(V3(cp.x + kd.x*0.4, cp.y, cp.z + kd.z*0.4), col, Math.round(3 + power*3), 7 + power*5, { dir: kd, cone: 1, life: 0.3 });
       spawnHitSpark(cp, col, power);
@@ -136,6 +137,19 @@ export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick, opts){
   }
 }
 
+/* HIT REACTION — the body takes the blow: it rocks away from where the hit came from (back from the front, sideways from
+   the flank, twisting off a side hit) and springs back with a little overshoot. Laid ON TOP of whatever the foe is
+   doing (ai.js runs the spring), so a swinging foe visibly eats the hit too. fold > 0 doubles it over instead (a knee
+   to the gut). amt ~0.3 a jab, ~0.6 a heavy blow. */
+export function hitReact(e, dir, amt, fold = 0){
+  if (!e || e.dead || !dir) return;
+  const g = e.group, fx = Math.sin(g.rotation.y), fz = Math.cos(g.rotation.y);
+  const l = Math.hypot(dir.x, dir.z) || 1, dx = dir.x / l, dz = dir.z / l;
+  const hf = dx*fx + dz*fz, hr = dx*(-fz) + dz*fx;
+  const k = amt * (e.t.heavy ? 0.4 : 1) * 24;
+  const r = e.hr || (e.hr = { x: 0, z: 0, y: 0, vx: 0, vz: 0, vy: 0 });
+  r.vx += (fold ? fold : hf) * k; r.vz += hr * k * 0.9; r.vy += -hr * k * 0.5;
+}
 // a ranged hit makes a foe physically REACT — recoil back, flinch, maybe drop a wind-up
 export function flinchEnemy(e, dir, push){
   if (!e || e.dead || e.converted) return;
