@@ -11,7 +11,7 @@ import { shared, G, enemies, bolts, vfx, keys, player } from '../../state.js';
 import { MANDO, MANDO_WEAPONS, weaponUnlocked } from '../../data/mando.js';
 import { abil } from '../../data/mastery.js';
 import { fwd, rightV, playerPos } from '../helpers.js';
-import { inReach, bodyRadius, sweepHit } from '../../enemies/hitbox.js';
+import { inReach, bodyRadius, sweepHit } from '../../enemies/bodyshape.js';
 import { damageEnemy } from '../../enemies/damage.js';
 import { updateMandoMelee } from './melee.js';
 import { fireBolt } from '../../enemies/bolts.js';
@@ -48,7 +48,7 @@ export function mandoAimPoint(){
     if (ry < cy0 || ry > cyTop) return;                  // crosshair is above the head or below the feet
     bestT = t; hit = true;
   };
-  // foes: the crosshair has to be over the body itself (its real hitbox, hitbox.js), and the shot converges a hand's
+  // foes: the crosshair has to be over the body itself (its real hitbox, bodyshape.js), and the shot converges a hand's
   // depth INTO it, so a bolt from the gun (a little off the camera ray) still lands where the crosshair was
   _far.copy(o).addScaledVector(d, AIM_FAR);
   for (const e of enemies){ if (e.dead || e.converted || e.state === 'spawn') continue;

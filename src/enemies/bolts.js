@@ -20,7 +20,7 @@ import { mandoWeapon, boltDamage, hitMarker } from '../player/mando/weapons.js';
 import { hurtPlayer } from '../player/damage.js';
 import { deflectAnim } from '../player/jedi/combat.js';
 import { deflectPlayerBolt } from './duel.js';
-import { sweepHit, headPos } from './hitbox.js';
+import { sweepHit, headPos } from './bodyshape.js';
 
 /* ============================================================
    PROJECTILES — blaster bolts & boss orbs
@@ -143,7 +143,7 @@ export function updateBolts(dt){
       // a near miss tears past your ear
       if (!kill && !b.friendly && !b.whiz && d < 3.2 && near){ b.whiz = true; S.whiz(b.mesh.position); }
     } else if (!kill && b.friendly){
-      // the bolt hits the FIRST body along its flight this frame, exactly where that body is (hitbox.js): legs, arms
+      // the bolt hits the FIRST body along its flight this frame, exactly where that body is (bodyshape.js): legs, arms
       // and shoulders count, the gap beside a foe doesn't, and only the head itself is a headshot
       let foe = null, hit = null;
       for (const e of enemies){

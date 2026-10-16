@@ -2,7 +2,7 @@
 // Enemy hitboxes: one body shape per model that every attack tests against (bolts, blasts, abilities, the blade).
 
 import * as THREE from 'three';
-import { HITBOX } from '../data/hitbox.js';
+import { HITBOX } from '../data/bodyshape.js';
 
 /* A foe's body is a stack of upright elliptic cylinders (legs, torso, head) in the model's OWN space: they turn, scale
    (elites included) and fall over with it, because every test happens in the foe's local frame. A shot that clips a

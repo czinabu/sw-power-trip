@@ -8,7 +8,7 @@ import { screenFlash } from '../../fx/floaters.js';
 import { shared, G, enemies, bolts, player } from '../../state.js';
 import { MANDO } from '../../data/mando.js';
 import { fwd, playerPos } from '../helpers.js';
-import { inReach } from '../../enemies/hitbox.js';
+import { inReach } from '../../enemies/bodyshape.js';
 import { damageEnemy, flinchEnemy } from '../../enemies/damage.js';
 import { damageBoss, bossStagger } from '../../boss/boss.js';
 import { spawnHitSpark } from '../../fx/vfx.js';
