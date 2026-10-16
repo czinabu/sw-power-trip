@@ -1,5 +1,5 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
-// Mando gadgets: rockets, whistling birds, detonators, grapple, jet slam, boost dash, gauntlet punch, bacta stim.
+// Mando gadgets: rockets, whistling birds, detonators, grapple, jet slam, boost dash, bacta stim (the E melee kit is in melee.js).
 
 import * as THREE from 'three';
 import { scene } from '../../engine/renderer.js';
@@ -333,49 +333,5 @@ export function mandoBoostDash(){
   sparks(V3(bp.x - dir.x*0.4, bp.y + 1.2, bp.z - dir.z*0.4), 0x66c6ff, 8, 12, { dir: V3(-dir.x, -0.3, -dir.z), cone: 0.35, life: 0.22, grav: 0 });
   for (let n = 0; n < 3; n++) puff(V3(bp.x - dir.x*(0.5 + n*0.5), bp.y + 0.35, bp.z - dir.z*(0.5 + n*0.5)), 0xb8c2c8, 0.8, 0.4, V3(-dir.x*2, 0.6, -dir.z*2), { delay: n*0.03 });
   S.dash(); sfx(rand(220,300), 0.12, 'triangle', 0.05, 120);
-}
-// GAUNTLET MELEE (E) — a fast beskar punch with a 2-hit combo; the 2nd strike is a heavier cross. Always available
-// (any weapon, ground or air) and synergises with boosting in. Strong knockback, decent damage — not Darksaber-tier.
-export function gauntletPunch(){
-  if (G.mode !== 'play' || G.hero !== 'mando' || player.meleeT > 0 || player.darkT > 0) return;
-  const A = MANDO.gauntlet;
-  const step = (G.gt - (player.lastPunch || -9) < A.combo) ? ((player.punchStep || 0) + 1) % 2 : 0;
-  player.punchStep = step; player.lastPunch = G.gt;
-  player.meleeT = player.meleeMax = A.recover; player.meleeStep = step;
-  const heavy = step === 1;
-  const dmg = (heavy ? A.dmg2 : A.dmg) * (player.up.dmg || 1);
-  const knock = heavy ? A.knock2 : A.knock;
-  player.aiming = 0.3;
-  const f = fwd(), pp = playerPos();
-  player.vel.addScaledVector(f, heavy ? 6.5 : 4.5);   // step/lunge into the punch for weight
-  const cosLim = Math.cos(A.arc);
-  let hit = 0;
-  // land the hit; the VIBROBLADE finisher (heavy) STAGGERS what it bites — a stumbling foe is then wide open (×1.5)
-  const hitFoe = (e) => { damageEnemy(e, dmg, f.clone(), knock, heavy); if (heavy) staggerEnemy(e, f.x, f.z); hit++; };
-  for (const e of enemies){
-    if (e.dead || e.converted || e.state === 'spawn') continue;
-    TMP.subVectors(e.group.position, pp); const d = TMP.length();
-    if (d > A.range + (e.t.scale||1)) continue;
-    if (Math.abs(TMP.y) > 2.2) continue;
-    TMP.y = 0; if (TMP.lengthSq() < 0.001) { hitFoe(e); continue; }
-    TMP.normalize(); if (TMP.dot(f) < cosLim) continue;
-    hitFoe(e);
-  }
-  if (shared.boss && shared.boss.hp > 0 && shared.boss.group.position.distanceTo(pp) < A.range + 1.5) damageBoss(dmg * 0.6);
-  const ip = V3(pp.x + f.x*1.5, 1.5, pp.z + f.z*1.5);
-  if (hit){
-    G.hitstop = Math.max(G.hitstop, heavy ? 0.09 : 0.05);
-    G.shake = Math.max(G.shake, heavy ? 0.55 : 0.32);
-    spawnHitSpark(ip, heavy ? 0xc9a6ff : 0xffd28a, heavy ? 1.6 : 1.0);
-    sparks(ip, heavy ? 0xc9a6ff : 0xffe7b0, heavy ? 8 : 5, 11, { dir: f, cone: 0.6, life: 0.24 });
-    if (heavy){   // VIBROBLADE — a sharp violet slash arc + a ringing edge
-      inkSprite({ pos: ip, shape: 'ring', inner: 0.86, arc: 1.1, color: 0xc9a6ff, size: [1.6, 2.6], life: 0.14, steps: 2, coreW: 0.3, inkW: 0.25,
-                  rot: Math.PI * (0.35 + Math.random() * 0.3) });
-      floater(V3(pp.x, 1.9, pp.z), 'VIBROBLADE', '#c9a6ff');
-      sfx(1800, 0.09, 'square', 0.05, 720); sfx(2400, 0.07, 'triangle', 0.04, 900);
-    }
-    S.punch(ip, heavy ? 1.5 : 1); if (heavy) S.heavy(ip);
-  } else { puff(ip, 0xcfe0ec, 0.55, 0.22, f.clone().multiplyScalar(4), { grow0: 0.4 }); }
-  S.jump(); sfx(heavy ? 140 : 230, 0.08, 'square', 0.04, 60);   // the swing's whoosh
 }
 

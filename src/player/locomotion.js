@@ -29,7 +29,8 @@ export function updateMovement(dt, pp, st, f, r){
                    * focusMoveMul()                                                      // FORCE FOCUS — lighter on the feet in flow
                    * (player.atkT > 0 && G.hero !== 'mando' ? MOVE.swingMove : 1)       // a swing plants the feet: spacing is yours to manage
                    * (player.landStagT > 0 ? MOVE.staggerMove : 1)                      // HARD LANDING — the knees are still buckled
-                   * (player.flinchT > 0 ? CFG.player.flinch.move : 1);                 // HIT REACTION — reeling from a blow
+                   * (player.flinchT > 0 ? CFG.player.flinch.move : 1)                  // HIT REACTION — reeling from a blow
+                   * (player.saberLock ? 0 : 1);                                         // SABER LOCK — feet planted in the bind
   const want = V3(0,0,0);
   if (keys['w']) want.add(f);
   if (keys['s']) want.sub(f);

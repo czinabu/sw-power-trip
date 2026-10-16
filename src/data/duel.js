@@ -1,0 +1,82 @@
+// POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
+// DUEL: how sword-armed foes fight back (guards, feints, strings, saber locks) and the Mandalorian's close-quarters kit.
+
+
+/* DUELLING — Jedi Academy style. A foe with a profile below doesn't just walk in and chop: it holds a GUARD on one
+   side (the glowing arc beside it shows which), turns blows that come in on that line, and answers with feints,
+   delayed strikes and strings of cuts. Spamming the same cut into a guard gets it blocked and countered; reading the
+   guard and cutting in on the open line (A / D / W pick where your cut starts) gets through.
+
+   Per-type profile (missing type = fights the old way):
+     block    chance to turn a cut that arrives on the guarded line (a side it isn't guarding: block × offLine)
+     posture  how much blocking it can take before its guard BREAKS (staggered, wide open)
+     feint    chance a wind-up is a fake: it rears back, then switches side and strikes fast (early parries whiff)
+     delay    chance it HOLDS the apex of a wind-up for an extra beat (punishes parrying on reflex)
+     chain    the most extra cuts it strings after the first (each one a quick, shorter wind-up)
+     counter  chance it answers a block with an immediate riposte
+     thrust   chance a strike is a lunging THRUST that a held block can't stop (parry it or dodge; white-red tell)
+     dodge    chance it steps back out of a cut it sees coming instead of blocking
+     deflect  chance it bats a blaster bolt back at the shooter (saber users only)
+     lock     a cut that meets its strike mid-arc becomes a SABER LOCK instead of a plain clash
+     push     how hard it drives a saber lock (balance per second) */
+export const DUEL_PROFILES = {
+  grunt:   { block: 0.18, posture: 40,  feint: 0,    delay: 0.15, chain: 0, counter: 0.15, thrust: 0,    dodge: 0 },
+  phalanx: { block: 0,    posture: 60,  feint: 0,    delay: 0.2,  chain: 1, counter: 0.3,  thrust: 0,    dodge: 0 },
+  duelist: { block: 0.55, posture: 70,  feint: 0.25, delay: 0.25, chain: 1, counter: 0.45, thrust: 0.1,  dodge: 0.1, lock: true, push: 0.38 },
+  acolyte: { block: 0.72, posture: 95,  feint: 0.3,  delay: 0.3,  chain: 2, counter: 0.6,  thrust: 0.15, dodge: 0.2, deflect: 0.75, lock: true, push: 0.5 },
+};
+
+export const DUEL = {
+  offLine: 0.22,          // a guard still turns this fraction of its block chance on the lines it ISN'T covering
+  guardShift: [0.9, 1.8], // seconds a guard holds a line before shifting (it also shifts to cover a line it was just hit on)
+  adaptAfter: 2,          // blocks on the SAME line in a row before it locks that line down (block → 0.95)
+  guardRange: 7,          // the guard arc only shows on foes this close
+  // POSTURE — what each kind of blow costs a guard (blocked cuts build it; posture drains back when left alone)
+  posture: { cut: 14, finisher: 26, heavyMul: 1.6, kick: 45, parry: 55, punch: 12, punchHeavy: 30, charge: 50, regen: 9, regenDelay: 1.6 },
+  bounce: { stam: 8, lock: 0.22 },   // a cut turned by a guard bounces off: this much stamina and a short re-swing lockout
+  // ENEMY OFFENCE
+  feintAt: 0.7,           // a feint breaks off this far into its wind-up...
+  feintRewind: 0.26,      // ...and the real strike winds up this fast from the other side
+  delayHold: [0.22, 0.42],// extra seconds a delayed strike hangs at the apex
+  chainWindup: 0.3,       // wind-up of each follow-on cut in a string
+  counterWindup: 0.24,    // wind-up of a riposte after a block
+  counterCd: 1.6,         // a foe counters at most this often
+  thrustDmg: 1.35,        // a thrust hits this much harder than a cut
+  dodgeStep: 7,           // backstep speed when it slips a cut
+  // SABER LOCK — blades bind; mash LMB to drive through, or break it with a kick (E) or a Force push (F)
+  lock: { chance: 0.7, time: 3.2, press: 0.15, stam: 3, kickStam: 22, pushCost: 18, loseDmg: 16, heavyPress: 1.35, fastPress: 0.85 },
+};
+
+/* POSES — what a duellist's weapon shows you (enemies/duel.js eases into these; tools/enemy-lab.html ?pose=guardL…windT
+   previews them). Sword arms: [weaponArm.rotation.x (raise), .z (out to its side + / across the body -)].
+   Staffs: [staff.rotation.z, .x]. */
+// guard: where the weapon is held tells you the covered line. weaponArm x raises it, z swings it out (+) or across (-)
+export const GUARD_POSE = {
+  sword: { R: [-1.15, 0.55], L: [-1.25, -0.85], H: [-2.35, 0.25] },
+  staff: { R: [0.0, 0.25],   L: [1.25, 0.6],    H: [-1.0, 1.2] },   // staff: [rotation.z, rotation.x]
+};
+// wind-up: where the weapon rears back to is where the strike comes FROM (T = a thrust, drawn back low)
+export const WIND = {
+  sword: { R: [-1.75, 1.35], L: [-1.9, -1.15], H: [-2.6, 0.2], T: [0.15, 0.1] },
+  staff: { R: [-2.0, 0.4],   L: [1.9, 0.5],     H: [-2.9, 1.2], T: [-1.4, -0.4] },
+};
+
+/* THE MANDALORIAN'S CLOSE-QUARTERS KIT (E). No Jedi forms, but a bounty hunter who has fought every kind of thing:
+   a four-beat string (jab, cross, knee, vibroblade), a jet-assisted charge (W + E with a foe ahead), a dive kick
+   (E in the air), a vambrace CATCH (E as a blow lands turns it on the beskar and staggers the attacker) and a
+   TAKEDOWN on anything staggered or floored. */
+export const MANDO_MELEE = {
+  string: [
+    { name: 'jab',   dmg: 13, knock: 8,  line: 'L', recover: 0.3,  lunge: 4.5 },
+    { name: 'cross', dmg: 16, knock: 12, line: 'R', recover: 0.34, lunge: 5 },
+    { name: 'knee',  dmg: 18, knock: 14, line: 'H', recover: 0.4,  lunge: 5.5, heavy: true },
+    { name: 'blade', dmg: 30, knock: 22, line: 'R', recover: 0.52, lunge: 6.5, heavy: true, stagger: true },
+  ],
+  combo: 0.55,            // seconds after a strike's recovery the next press still continues the string
+  reach: 1.45, arc: 0.75,   // a fist lands within arm's length (+ the step it carries) of the body, in front
+  catchWindow: 0.2,       // a blow landing this soon after E is caught on the vambrace
+  catchWhiff: 0.55,       // a catch window that caught nothing can't reopen for this long
+  charge: { minD: 3.2, maxD: 9, fuel: 18, cd: 1.4, dmg: 22, knock: 26, speed: 26 },
+  dive: { fuel: 14, cd: 1.0, dmg: 26, radius: 3.2, knock: 20, speed: 30 },
+  takedown: { range: 2.0, dmg: 70, maxFrac: 0.6 },   // + this fraction of a light foe's max health (not heavies/bosses)
+};

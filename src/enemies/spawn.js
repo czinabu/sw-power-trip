@@ -9,6 +9,7 @@ import { G, enemies } from '../state.js';
 import { buildEnemyMesh } from './mesh.js';
 import { enemyHpScale, applyElite } from './elites.js';
 import { showBanner } from '../ui/banners.js';
+import { initDuel } from './duel.js';
 
 // a floating boss-style health bar for elite/mid-boss units, billboarded toward the camera each frame
 export function makeBossBar(e){
@@ -27,6 +28,8 @@ const TYPE_TIPS = {
   bomber:  ['SABOTEUR', 'It rushes, then DETONATES — and blows on death. Kill it at range, PUSH it off, or DASH clear.'],
   sniper:  ['MARKSMAN', 'A laser marks you as it charges a hard shot. Break line of sight, DASH as it fires, or close in.'],
   brute:   ['BRUTE', 'A wall of muscle — too heavy to stagger lightly. Parry its swing, or floor it with a heavy blow.'],
+  duelist: ['MAGNAGUARD', 'A duellist: the pale arc shows the side it guards. Cut in from the OTHER side, kick (E) to break its guard, and parry its strike.'],
+  acolyte: ['SITH ACOLYTE', 'A trained saber duellist. It feints, strings cuts, deflects blaster fire and binds blades. Read its guard, break it, punish the opening.'],
   flyer:   ['JET TROOPER', 'It hovers out of saber reach — answer it with ranged tools, Force powers, or deflect its fire.'],
 };
 function maybeTip(typeName){
@@ -52,6 +55,7 @@ export function spawnEnemy(typeName, pos){
     aimLine: null,                                              // MARKSMAN laser sight (lazily built)
   };
   applyElite(e, g);
+  initDuel(e);   // sword-armed foes fight back: guards, feints, strings (duel.js)
   enemies.push(e);
   maybeTip(typeName);   // one-time onboarding tip the first time this archetype appears in a run
 }

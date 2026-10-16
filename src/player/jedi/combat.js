@@ -14,6 +14,9 @@ import { damageBoss } from '../../boss/boss.js';
 import { FOCUS, focusTier, focusDmgMul, addFocus } from './focus.js';
 import { spawnHitSpark, spawnGroundShock } from '../../fx/vfx.js';
 import { inkSprite, sparks, clashFlash } from '../../fx/ink.js';
+import { DUEL } from '../../data/duel.js';
+import { cutLine, duelDefend, isGuarding, guardImpact } from '../../enemies/duel.js';
+import { bodyRadius } from './bladehit.js';
 
 /* COMBO RHYTHM — fractions of a swing. A press before `open` is too early (and costs this link its flow); a single
    press from `open` on links in rhythm, and the next cut leaves at `at` (just after the follow-through). */
@@ -79,7 +82,10 @@ export function tryAttack(flow = false){
   // BACK STRIKE — attacking while retreating (S) whirls the blade behind you to punish
   // anything closing on your back, knocking it away. No aim-assist turn: you stay facing forward.
   const backStrike = dirKey === 'back' && !ripNow;
-  player.swing = { t: 0, applied: false, step, dur, pat, dir: dirKey, back: backStrike, riposte: ripNow, flow };
+  // the riposte is spent on THIS cut (it lands on whatever the blade meets first; see applySwingDamage)
+  const cancelRip = ripNow && !!player.cancelRiposte;
+  if (ripNow){ player.riposteT = 0; player.cancelRiposte = false; }
+  player.swing = { t: 0, applied: false, step, dur, pat, dir: dirKey, back: backStrike, riposte: ripNow, cancelRip, flow };
   player.deflectAnim = null;   // a cut takes the blade over from any catch in progress
   // cinematic lunge toward nearest target in view — STRONG's finisher lunges harder; a RIPOSTE drives in hardest
   const lunge = ripNow ? 2.0 : ((step === 2 && st.finisherLunge) ? st.finisherLunge : st.lunge);
@@ -129,8 +135,14 @@ export function cancelSwing(){
   sfx(640, 0.08, 'sine', 0.045, 1600); sfx(300, 0.06, 'triangle', 0.04, 900);
   return true;
 }
-export function applySwingDamage(step){
+/* A cut's damage. `only` (from anim: the blade's sweep, player/jedi/bladehit.js) lists exactly what the blade passed
+   through this frame, and only those are struck. An empty list is the swing's once-per-cut pass at the strike point
+   (the arc flash, the Tempest shockwave) with nothing hit. With no list at all (no blade in hand) it falls back to
+   striking everything in the swing's arc and radius. */
+export function applySwingDamage(step, only){
   const st = stance();
+  const sw0 = player.swing;
+  const fxPass = !only || only.length === 0;
   const isDark = G.hero === 'mando' && player.weapon === 'darksaber';
   let dmg = CFG.player.comboDamage[step] * st.dmg * player.up.dmg * focusDmgMul();   // FORCE FOCUS ramps saber damage
   const finisher = step === 2;
@@ -146,12 +158,15 @@ export function applySwingDamage(step){
     burst(V3(pp0.x + fwd().x*1.6, 0.6, pp0.z + fwd().z*1.6), 0xc9a6ff, 16, 9, 5, 1.0);
     S.slam(); beskarClang();
   }
-  const riposte = player.riposteT > 0;
+  const riposte = !!(sw0 && sw0.riposte) && !(only && only.length === 0);
   if (riposte){   // parry reward: the answer lands twice as hard (more with Riposte Master)
-    const cancelRip = !!player.cancelRiposte;   // parried straight out of a swing-cancel → a CRUSHING answer
+    const cancelRip = !!sw0.cancelRip;   // parried straight out of a swing-cancel → a CRUSHING answer
     dmg *= 2 * (player.up.riposte || 1) * (cancelRip ? 1.6 : 1);
     knock *= cancelRip ? 1.8 : 1;
-    player.riposteT = 0; player.cancelRiposte = false;
+  }
+  if (riposte && !sw0.ripFx){
+    sw0.ripFx = true;   // the flash and the sting play once, on the first thing the riposte meets
+    const cancelRip = !!sw0.cancelRip;
     const rp = playerPos();
     floater(rp, cancelRip ? 'COUNTER-RIPOSTE!' : 'RIPOSTE!', '#ffd24a');
     G.hitstop = Math.max(G.hitstop, cancelRip ? 0.2 : 0.16);
@@ -169,23 +184,30 @@ export function applySwingDamage(step){
   const back = !!(player.swing && player.swing.back);
   const f = fwd(); if (back) f.negate();   // back strike cleaves & knocks toward your rear
   const pp = playerPos();
-  let hits = 0;
+  let hits = 0, turned = 0;
+  const line = cutLine(player.swing);   // the line this cut comes in on — a duellist's guard covers one (enemies/duel.js)
   // the ARC: a cut covers what's in front of you, a strafe sweep a little wider, the finisher wider still (data/config.js)
   const A = CFG.player.swingArc, sdir = player.swing && player.swing.dir;
   const arcCos = finisher ? A.finisher : (sdir === 'left' || sdir === 'right' || back) ? A.sweep : A.cut;
   const reachUp = radius * 0.85;   // VERTICAL reach — a swing from the air can't hit foes far below you
-  const tryHit = (pos, fn) => {
+  const tryHit = (pos, fn, obj) => {
+    if (only){ if (only.includes(obj) && fn() !== false) hits++; return; }   // the blade decided: it touched this
     TMP.subVectors(pos, pp);
     if (Math.abs(TMP.y) > reachUp) return;   // must be at roughly your height (aim at them, don't sweep the ground from above)
     TMP.y = 0;
     const d = TMP.length();
     if (d > radius) return;
     if (d > 0.3 && TMP.normalize().dot(f) < arcCos) return;   // only what's in front of the blade's arc
-    fn(); hits++;
+    if (fn() !== false) hits++;
   };
   for (const e of enemies){
     if (e.dead || e.converted || e.state === 'spawn') continue;
     tryHit(e.group.position, () => {
+      // a duellist's guard may turn it (a riposte, the answer to a parry, always lands)
+      if (!riposte && !back){
+        const dres = duelDefend(e, line, finisher ? 'finisher' : 'cut', G.stance === 'strong' || isDark);
+        if (dres === 'block' || dres === 'dodge'){ turned++; return false; }
+      }
       damageEnemy(e, dmg * (e.t.heavy ? st.heavyDmg : 1), f.clone(), knock, finisher);
       if (!riposte && !e.dead) interruptEnemy(e, f, finisher || st.form === 'djemso' || isDark);   // striking first beats a wind-up
       if (riposte && !e.dead) staggerEnemy(e, f.x, f.z);   // a RIPOSTE floors what it answers — a true counter, wide open after
@@ -193,12 +215,19 @@ export function applySwingDamage(step){
       if (isDark && (finisher || e.t.staff) && e.t.staff && !e.dead && Math.random() < (finisher ? 0.5 : 0.18)){
         staggerEnemy(e, f.x, f.z); floater(e.group.position, 'DISARMED', '#c9a6ff');
       }
-    });
+    }, e);
   }
-  if (shared.boss && shared.boss.hp > 0) tryHit(shared.boss.group.position, () => damageBoss(dmg * st.heavyDmg));
+  if (shared.boss && shared.boss.hp > 0) tryHit(shared.boss.group.position, () => damageBoss(dmg * st.heavyDmg), shared.boss);
   for (let i = barrels.length-1; i >= 0; i--){
     const b = barrels[i];
-    tryHit(b.mesh.position, () => { if (b.fuse < 0) b.fuse = 0.1; });
+    tryHit(b.mesh.position, () => { if (b.fuse < 0) b.fuse = 0.1; }, b);
+  }
+  // the blade bounced off a guard and found nothing else: it jars the arm, costs breath and breaks the string
+  if (turned && !hits){
+    const B = DUEL.bounce;
+    player.stam = Math.max(0, player.stam - B.stam); player.stamDelay = CFG.player.stamDelay;
+    player.swingLock = Math.max(player.swingLock || 0, B.lock);
+    player.queuedAtk = false; player.comboStep = 2;
   }
   if (hits > 0){
     G.shake = Math.max(G.shake, finisher ? 0.5 : 0.2);
@@ -220,7 +249,8 @@ export function applySwingDamage(step){
     }
     // the STRONG finisher is a BONE-CRUNCHING blow — a long hitstop freeze, a big camera quake, a brief
     // slow-mo beat, a fat arc flash AND a violent eruption of sparks/debris so the weight really lands
-    if (G.stance === 'strong' && finisher){
+    if (G.stance === 'strong' && finisher && !(sw0 && sw0.heavyFx)){
+      if (sw0) sw0.heavyFx = true;
       G.hitstop = Math.max(G.hitstop, 0.22);
       G.shake = Math.max(G.shake, 1.7);
       G.slowmo = Math.min(G.slowmo, 0.42); G.slowmoT = Math.max(G.slowmoT, 0.14);
@@ -238,7 +268,7 @@ export function applySwingDamage(step){
   }
   // TEMPEST capstone — finishers erupt in a small Force shockwave: a SEPARATION tool (low dmg, strong knock,
   // tight radius + a brief stagger), not a nuke. Visuals kept small to match.
-  if (finisher && player.up.tempest){
+  if (finisher && player.up.tempest && fxPass){
     // CATACLYSM — a pure SEPARATION tool: a wide Force shockwave that HURLS the swarm off you. Very low damage;
     // its whole job is to make space, not to kill.
     const col = st.blade, R = 6.5;
@@ -258,6 +288,7 @@ export function applySwingDamage(step){
     if (shared.boss && shared.boss.hp > 0 && shared.boss.group.position.distanceTo(pp) < R) damageBoss(2);
   }
   // arc flash in the blade's color — leaned toward the side the cut travels (back strikes flash to the rear)
+  if (!fxPass) return;
   const sw = player.swing;
   const turn = sw && sw.pat ? Math.sign(sw.pat.yT - sw.pat.yF) : 0;
   player.arcMesh.rotation.z = (sw && sw.back ? Math.PI : 0) + turn * 0.55;
@@ -268,7 +299,7 @@ export function applySwingDamage(step){
 // JEDI FRONT KICK (E) — the Jedi's hands are full of saber, so the free melee is a leg: a snapping Force-assisted
 // front kick that SHOVES the front rank back to make room. Always available, NO Force cost, light damage — a pure
 // space-maker (the Mando's gauntlet-punch counterpart). The short recovery (kickT) keeps it from being mashed.
-const JEDI_KICK = { range: 3.0, arc: 0.62, dmg: 10, knock: 28, recover: 0.4 };
+const JEDI_KICK = { reach: 1.75, arc: 0.62, dmg: 10, knock: 28, recover: 0.4 };
 export function forceKick(){
   if (G.mode !== 'play' || G.hero === 'mando' || player.kickT > 0 || player.judgeT > 0 || player.mendT > 0 || player.flip || player.slamming || player.hang || player.flinchT > 0) return;
   const A = JEDI_KICK;
@@ -279,15 +310,16 @@ export function forceKick(){
   let hit = 0;
   for (const e of enemies){
     if (e.dead || e.converted || e.state === 'spawn') continue;
-    TMP.subVectors(e.group.position, pp); const d = TMP.length();
-    if (d > A.range + (e.t.scale||1)) continue;
+    TMP.subVectors(e.group.position, pp);
     if (Math.abs(TMP.y) > 2.2) continue;
     TMP.y = 0;
+    if (TMP.length() - bodyRadius(e) > A.reach + 4 / 9) continue;   // the boot has to reach the body (+ the step into it)
     const kd = TMP.lengthSq() < 0.001 ? f.clone() : TMP.clone().normalize();
     if (TMP.lengthSq() > 0.001 && kd.dot(f) < cosLim) continue;
+    if (isGuarding(e)) guardImpact(e, DUEL.posture.kick);   // a kick is the answer to a guard: it cracks posture wide
     damageEnemy(e, A.dmg, kd, A.knock); flinchEnemy(e, kd, 0.6); hit++;
   }
-  if (shared.boss && shared.boss.hp > 0 && shared.boss.group.position.distanceTo(pp) < A.range + 1.2) damageBoss(A.dmg * 0.5);
+  if (shared.boss && shared.boss.hp > 0 && shared.boss.group.position.distanceTo(pp) < A.reach + 1.2) damageBoss(A.dmg * 0.5);
   const ip = V3(pp.x + f.x*1.3, 1.0, pp.z + f.z*1.3);
   if (hit){
     G.hitstop = Math.max(G.hitstop, 0.05); G.shake = Math.max(G.shake, 0.3);

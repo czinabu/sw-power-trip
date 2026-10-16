@@ -190,6 +190,13 @@ function weaponArm(k, t, w){
     k.add(block(0.24, 0.045, 0.09, 0.35), 'gun', grip, [0, -0.08, 0]);
     k.add(loft([{ y:-0.08, w:0.045, d:0.045 }, { y:0.12, w:0.04, d:0.04 }], ngon(6)), 'leather', grip);
     k.add(block(0.06, 0.05, 0.06, 0.4), 'gun', grip, [0, 0.14, 0]);
+  } else if (t.weapon === 'saber'){
+    // lightsaber: a ribbed hilt in the fist and a blade of light down the same line the vibro-sword takes
+    k.add(loft([{ y:-0.12, w:0.05, d:0.05 }, { y:0.16, w:0.055, d:0.055 }], ngon(8, PI/8)), 'metal', grip, [0, 0.02, 0]);
+    k.add(loft([{ y:0, w:0.065, d:0.065 }, { y:0.05, w:0.06, d:0.06 }], ngon(8, PI/8)), 'black', grip, [0, -0.14, 0]);
+    k.add(block(0.03, 0.08, 0.03, 0.3), 'gun', grip, [0, 0.04, 0.045], [0,0,0], { outline: false });
+    k.glow(new THREE.CylinderGeometry(0.022, 0.016, 1.12, 8), 0xffffff, grip, [0, -0.72, 0]);
+    k.glow(new THREE.CylinderGeometry(0.06, 0.045, 1.16, 8), t.eye, grip, [0, -0.72, 0], [0,0,0], { opacity: 0.55 });
   } else {
     // vibro-maul: a long haft and a two-faced hammer head with glowing power cells
     k.add(loft([{ y:-1.15, w:0.07, d:0.07 }, { y:0.12, w:0.065, d:0.065 }], ngon(6)), 'leather', grip);
@@ -278,6 +285,17 @@ export const MODELS = {
     }
     for (const s of [-0.3, 0.3]) k.add(block(0.08, 0.08, 0.08, 0.35), 'leather', staff, [0, s, 0], [0,0,0], { outline: false });
     helmet(k, 'magna', t, 1.97);
+  },
+  // SITH ACOLYTE — a hooded saber duellist in a dark tunic and long cloak (acolyte)
+  acolyte(k, t){
+    const w = 0.96;
+    legs(k, w); hips(k, w); torso(k, w, { pack: false });
+    k.add(plate([[-0.32,0],[0.32,0],[0.4,-1.45],[0.14,-1.6],[-0.14,-1.6],[-0.4,-1.45]], 0.014, 0.004), 'cloth', k.root, [0, 1.86, -0.22], [0.08, 0, 0], { outline: false });
+    k.add(loft([{ y:1.6, w:0.64, d:0.44 }, { y:1.82, w:0.5, d:0.36 }, { y:1.9, w:0.3, d:0.26 }], chamfer(0.45)), 'cloth');
+    k.add(plate([[-0.22,0],[0.22,0],[0.26,-0.62],[-0.26,-0.62]], 0.014, 0.004), 'cloth', k.root, [0, 1.12, 0.17], [-0.05, 0, 0], { outline: false });   // tabard
+    sideArm(k, w, -1, [-0.3, 0, 0.12], { bend: -0.5 });
+    weaponArm(k, t, w);
+    helmet(k, 'purge', t);
   },
   // JET TROOPER — rocket pack, T-visor, carbine (flyer)
   jet(k, t){

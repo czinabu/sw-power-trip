@@ -19,6 +19,7 @@ import { boltImpact, clashFlash } from '../fx/ink.js';
 import { mandoWeapon, boltDamage, hitMarker } from '../player/mando/weapons.js';
 import { hurtPlayer } from '../player/damage.js';
 import { deflectAnim } from '../player/jedi/combat.js';
+import { deflectPlayerBolt } from './duel.js';
 
 /* ============================================================
    PROJECTILES — blaster bolts & boss orbs
@@ -148,6 +149,7 @@ export function updateBolts(dt){
         const by = b.mesh.position.y - ex.y;                                          // height above the foe's feet
         const headCenter = 2.1 * s;
         if (hd < 0.6 * s && by > 0.3 * s && by < 2.5 * s){
+          if (deflectPlayerBolt(e, b)) break;   // a saber duellist bats it straight back at you (duel.js)
           let dmg = boltDamage(b);   // range falloff
           const isHead = (hd < 0.42 * s && Math.abs(by - headCenter) < 0.34 * s);   // HEADSHOT — a tight band right on the head
           if (isHead){
@@ -163,7 +165,7 @@ export function updateBolts(dt){
           break;   // bolts make foes recoil
         }
       }
-      if (!kill && shared.boss && shared.boss.hp > 0 && b.mesh.position.distanceTo(shared.boss.group.position.clone().setY(b.mesh.position.y)) < 1.6){
+      if (!kill && b.friendly && shared.boss && shared.boss.hp > 0 && b.mesh.position.distanceTo(shared.boss.group.position.clone().setY(b.mesh.position.y)) < 1.6){
         let dmg = boltDamage(b);   // range falloff
         const isHead = b.mesh.position.y >= shared.boss.group.position.y + 2.4;
         if (isHead){ dmg *= 1.8; floater(V3(shared.boss.group.position.x, 3.0, shared.boss.group.position.z), 'HEADSHOT', '#ffd24a'); sfx(1900,0.08,'square',0.06,420); }

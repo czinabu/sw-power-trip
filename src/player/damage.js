@@ -20,6 +20,9 @@ import { endRun } from '../game/summary.js';
 import { showBanner } from '../ui/banners.js';
 import { overlay, setOverlayState } from '../ui/menus.js';
 import { diffDmgMul } from '../data/difficulty.js';
+import { DUEL } from '../data/duel.js';
+import { startLock } from '../enemies/duel.js';
+import { mandoCatch } from './mando/melee.js';
 
 const MELEE_REACH_UP = 1.7;   // a melee foe can't strike you if you're perched higher than this above their feet
 /* PERFECT DODGE — a blow that arrives in the first instant of a dash: time slows, the dash is refunded and (Jedi)
@@ -57,6 +60,8 @@ function bladeClash(fromPos){
     if (d < bd){ bd = d; foe = e; }
   }
   if (!foe) return false;   // the boss's blows aren't clashable — parry those
+  // a duellist's blade BINDS with yours instead: a saber lock (enemies/duel.js)
+  if (foe.dp && foe.dp.lock && Math.random() < DUEL.lock.chance && startLock(foe)) return true;
   const pp = playerPos();
   TMP.subVectors(fromPos, pp); TMP.y = 0; TMP.normalize();
   const dir = TMP.clone();
@@ -75,12 +80,13 @@ function bladeClash(fromPos){
   return true;
 }
 
-export function hurtPlayer(dmg, fromPos, silent, melee, chip){
+export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
+  const pierce = !!(opts && opts.unblockable);   // a THRUST (or a lost lock): a held guard can't stop it, only a parry
   if (G.mode !== 'play') return 'none';
   if (player.dashT > 0){ if (!silent) perfectDodge(fromPos); return 'none'; }
   const raw = dmg;
   // a cut in flight meets a melee strike from in front: CLASH (before any guard, since a swing can't be guarding)
-  if (melee && fromPos && !silent && player.swing && player.atkT > 0 && (G.hero !== 'mando' || player.weapon === 'darksaber')){
+  if (melee && fromPos && !silent && !(opts && opts.noClash) && player.swing && player.atkT > 0 && (G.hero !== 'mando' || player.weapon === 'darksaber')){
     const k = player.swing.t / player.swing.dur, C = CFG.player.clash;
     TMP.subVectors(fromPos, playerPos()); TMP.y = 0;
     if (k >= C.from && k <= C.to && TMP.lengthSq() > 0.001 && TMP.normalize().dot(fwd()) > 0.2 && bladeClash(fromPos)) return 'clashed';
@@ -94,8 +100,13 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip){
   // the SINGLE blaster raises the beskar SHIELD (player.isShielding). DUAL bracing is purely offensive — an
   // aggressive gunslinger stance with NO damage reduction. The DARKSABER skips this and uses the full lightsaber
   // block/parry path below instead (it guards & parries just like the Jedi medium stance).
+  // MANDO — the VAMBRACE CATCH: a blow that lands just after E is turned on the beskar, and the attacker reels
+  if (G.hero === 'mando' && melee && fromPos && !silent && player.catchT > 0){
+    TMP.subVectors(fromPos, playerPos()); TMP.y = 0;
+    if (TMP.lengthSq() < 0.001 || TMP.normalize().dot(fwd()) > -0.2){ mandoCatch(fromPos); return 'parried'; }
+  }
   if (G.hero === 'mando' && player.weapon !== 'darksaber'){
-    if (!silent && player.blockHeld && player.weapon === 'single' && fromPos){
+    if (!silent && !pierce && player.blockHeld && player.weapon === 'single' && fromPos){
       TMP.subVectors(fromPos, playerPos()); TMP.y = 0;
       if (TMP.lengthSq() < 0.001 || TMP.normalize().dot(fwd()) > -0.25){
         const pp = playerPos(), cpp = V3(pp.x + fwd().x*0.55, 1.5, pp.z + fwd().z*0.55);
@@ -147,7 +158,10 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip){
         addFocus(FOCUS.gainParry);   // a perfect parry is the biggest FOCUS spike
         return 'parried';
       }
-      if (player.blockHeld && player.stam > 0){
+      if (player.blockHeld && pierce){
+        floater(pp, 'GUARD PIERCED', '#ff6a3a');   // it drove straight through the block: full force
+        sfx(160, 0.12, 'square', 0.06, 70);
+      } else if (player.blockHeld && player.stam > 0){
         // a heavy blow (a brute's maul) jars the guard far harder than a grunt's chop
         const heavy = Math.max(1, dmg / CFG.player.blockHeavy);
         player.stam = Math.max(0, player.stam - CFG.player.blockStamCost * heavy * player.up.blockStam * (stance().blockStamMul || 1));
@@ -160,7 +174,7 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip){
         if (melee && CFG.player.blockChip > 0) hurtPlayer(dmg * CFG.player.blockChip, null, true, false, true);
         return 'blocked';
       }
-      if (player.blockHeld) dmg *= 0.5;   // guard crushed (out of stamina) — half damage bleeds through
+      else if (player.blockHeld) dmg *= 0.5;   // guard crushed (out of stamina) — half damage bleeds through
     }
   }
   dmg *= (1 - (player.up.dr || 0));   // UNSTOPPABLE damage reduction

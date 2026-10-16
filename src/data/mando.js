@@ -26,13 +26,7 @@ export const MANDO = {
   deto:  { cost: 42, cd: 5.2, fuse: 1.15, dmg: 72, radius: 5.5, knock: 22 },           // G — thermal detonator (sticky)
   grapple: { cost: 18, cd: 1.2, range: 26, pullSpeed: 42 },                            // C — grappling hook
   slam:  { cost: 34, dmg: 46, radius: 9, knock: 24, diveVel: 34 },                     // X (air) — jetpack slam (jet fuel)
-  // GAUNTLET MELEE — E: a beskar punch, always available (ground or air). Fast & weighty, a 2-hit combo, strong
-  // KNOCKBACK for control. Deliberately MODEST damage (well under the Darksaber) + a real recovery so it can't be
-  // spam-mashed — it's a finisher / space-maker, not a primary DPS tool.
-  // GAUNTLET MELEE (E): a 2-beat beskar strike. 1st = a quick gauntlet JAB (light, shoves). 2nd = the wrist
-  // VIBROBLADE finisher — bites deeper AND STAGGERS the foe (control, not raw DPS). Deliberately modest damage so
-  // it stays a space-maker/finisher, never a primary weapon.
-  gauntlet: { range: 3.0, arc: 0.7, dmg: 14, dmg2: 28, knock: 18, knock2: 24, recover: 0.46, combo: 0.5 },
+  // (the E melee kit — string, catch, charge, dive kick, takedown — is tuned in data/duel.js MANDO_MELEE)
   // BACTA STIM (H) — the Mando's self-heal: jam a bacta injector into the gauntlet line. Mirrors the Jedi's Force
   // Mend (a quick channel → a big restore). Mutually exclusive with HUNTER'S CREED (heal-per-kill) so you commit to
   // ONE sustain path. Heal amount reuses CFG.abilities.mend.heal via mendComplete(). Cooldown tightened 14→10s (Pass

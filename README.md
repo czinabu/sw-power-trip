@@ -54,7 +54,7 @@ Each file starts with a one-line description. Balance changes usually only touch
 
 **Changing progression:** between waves there are two currencies with one job each. XP buys abilities (`data/store.js`: auto-unlocks, fork pairs, finals) and mastery ranks that upgrade abilities you own (`data/mastery.js`); in survival it also buys the repeatable powers. Skill points, one per wave cleared, buy training (`data/skills.js`). Ability code reads its tuning through `abil(id)`, so a mastery rank is just a multiplier or bonus on a field of the ability's `CFG.abilities` / `MANDO` entry. To check prices against what a campaign pays out, run `npm run dev` and open `/tools/progression-lab.html`.
 
-**Changing movement and combat feel:** grounded movement and parkour (air control, fall weight, landing stagger and roll, mantle/vault reach, ledge hang, wall-run, sprint and slide, turn rate and pivots) the gait (step length, foot lift, hip bob, acceleration lean; `GAIT`) and standing footwork (when a foot steps; `FOOTING`) are tuned in `src/data/movement.js`; the code lives in `src/player/parkour.js` and `locomotion.js`. The run and jump are shaped by motion capture (`src/data/mocap.js`, made by `tools/mocap/convert.mjs`; `?mocap=0` turns it off; see docs/animation-guidelines.md). Parry/block strictness, swing arcs, lunge reach, hit flinch, perfect dodge, blade clashes and lock-on are in `CFG.player` (`src/data/config.js`); lock-on lives in `src/player/lockon.js`.
+**Changing movement and combat feel:** grounded movement and parkour (air control, fall weight, landing stagger and roll, mantle/vault reach, ledge hang, wall-run, sprint and slide, turn rate and pivots) the gait (step length, foot lift, hip bob, acceleration lean; `GAIT`) and standing footwork (when a foot steps; `FOOTING`) are tuned in `src/data/movement.js`; the code lives in `src/player/parkour.js` and `locomotion.js`. The run and jump are shaped by motion capture (`src/data/mocap.js`, made by `tools/mocap/convert.mjs`; `?mocap=0` turns it off; see docs/animation-guidelines.md). Parry/block strictness, swing arcs, lunge reach, hit flinch, perfect dodge, blade clashes and lock-on are in `CFG.player` (`src/data/config.js`); lock-on lives in `src/player/lockon.js`. How sword-armed foes duel back (guards, posture, feints, delayed strikes, strings, counters, saber locks) and the Mandalorian's close-quarters kit are tuned in `src/data/duel.js`; the code is `src/enemies/duel.js` and `src/player/mando/melee.js` (see docs/enemy-ai.md).
 
 **Live tweaking:** `window.GAME` in the browser console exposes the config tables and most game functions.
 
@@ -62,17 +62,18 @@ Each file starts with a one-line description. Balance changes usually only touch
 
 **Two playable heroes:**
 - **Jedi** — three lightsaber stances (Ataru / Niman / Djem So), parry & riposte combat, Force powers (Push, Pull, Slam, Repulse, Judgement, Barrier, Saber Throw, Mend), a Force Focus flow meter that rewards aggressive play
-- **Mandalorian** — jetpack flight with momentum/boost/dive/hover, dual blasters + disruptor rifle + darksaber, flamethrower, wrist rockets, whistling birds, grappling hook, jetpack missile, gauntlet shield
+- **Mandalorian** — jetpack flight with momentum/boost/dive/hover, dual blasters + disruptor rifle + darksaber, flamethrower, wrist rockets, whistling birds, grappling hook, jetpack missile, gauntlet shield, and a close-quarters kit on E (jab, cross, knee, vibroblade string; vambrace catch; jet charge; dive kick; takedowns)
 
 **Campaign** — 3 authored arenas on the road to the Sith (Holy City of Jedha, Mustafar Forge, Throne of Exegol), 4 waves each escalating to an end-boss (Darth Vexis for the Jedi, The Iron Magistrate for the Mando)
 
 **Survival mode** — unlocked after beating the campaign as both heroes. Endless escalating waves, 8 wave mutators, Warbringer mid-boss every 10 waves, arena rotation, repeatable power-ups, roguelite boon picks each wave
 
-**9 enemy types** — grunts, blaster troopers, staff duelists, brutes, jet troopers, shield sentinels, saboteur bombers, snipers (with laser-sight telegraph), and the Warbringer mid-boss with a leap-slam attack
+**10 enemy types** — grunts, blaster troopers, staff duelists, Sith acolytes (saber duellists), brutes, jet troopers, shield sentinels, saboteur bombers, snipers (with laser-sight telegraph), and the Warbringer mid-boss with a leap-slam attack
 
 **Combat depth:**
 - Directional saber swings tied to WASD movement
 - Timed parry window into a riposte counter-attack
+- Duellists that fight back, Jedi Academy style: they hold a guard on one line (cut in on another), feint, hold strikes, string cuts, counter a blocked blow, and bind blades in a saber lock; kicks and heavy blows break their posture
 - Per-stance Force synergy (fast = snappy casts, medium = efficient guard, strong = powerful but costly)
 - Bolt deflection and aimed reflection
 - Headshot system for blasters
