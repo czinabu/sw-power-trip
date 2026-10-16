@@ -11,6 +11,7 @@ import { floater, screenFlash } from '../../fx/floaters.js';
 import { shared, G, enemies, bolts, barrels, vfx, player } from '../../state.js';
 import { flashLight } from '../../fx/lights.js';
 import { fwd, playerPos, stance, maxHp } from '../helpers.js';
+import { inReach, distToBody } from '../../enemies/hitbox.js';
 import { ensureJudgeLines } from './judgement-fx.js';
 import { damageEnemy, flinchEnemy } from '../../enemies/damage.js';
 import { damageBoss, bossStun, bossStagger } from '../../boss/boss.js';
@@ -48,9 +49,8 @@ export function forcePush(){
     if (Math.abs(TMP.y) > A.range*0.4) continue;   // the shove goes level — not down onto foes far below
     TMP.y = 0;
     const d = TMP.length();
-    if (d > A.range) continue;
+    if (!inReach(e, pp, A.range, d > 1.5 ? f : null, cosLim)) continue;   // any of the body in the cone, not just its centre
     TMP.normalize();
-    if (d > 1.5 && TMP.dot(f) < cosLim) continue;
     const falloff = 1 - (d / A.range) * 0.5;
     damageEnemy(e, A.dmg, TMP.clone(), A.knock * falloff);
     pushed++;
@@ -128,7 +128,7 @@ export function slamImpact(){
   for (const e of enemies){
     if (e.dead || e.converted || e.state === 'spawn') continue;
     TMP.subVectors(e.group.position, pp); TMP.y = 0;
-    if (TMP.length() > A.radius) continue;
+    if (!inReach(e, pp, A.radius)) continue;
     damageEnemy(e, A.dmg * (st.powerDmg || 1), TMP.normalize().clone(), A.knock);
   }
   for (const b of barrels){
@@ -202,7 +202,7 @@ export function updateSaberThrow(dt){
   }
   for (const e of enemies){
     if (e.dead || e.converted || sp.hitSet.has(e)) continue;
-    if (sp.mesh.position.distanceTo(e.group.position.clone().setY(1.7)) < 2.0){
+    if (distToBody(e, sp.mesh.position) < 1.0){   // the spinning blade's disc touches the body
       sp.hitSet.add(e);
       damageEnemy(e, A.dmg, sp.dir.clone(), 12);
     }
@@ -232,9 +232,8 @@ export function forcePull(){
     if (e.dead || e.converted || e.state === 'spawn' || e.state === 'stasis') continue;
     TMP.subVectors(e.group.position, pp); TMP.y = 0;
     const d = TMP.length();
-    if (d > A.range || d < 2.5) continue;
+    if (d < 2.5 || !inReach(e, pp, A.range, f, cosLim)) continue;
     TMP.normalize();
-    if (TMP.dot(f) < cosLim) continue;
     const ep = e.group.position;
     sparks(V3(ep.x, ep.y + 1.5, ep.z), stance().blade, 4, d * 2.4, { dir: TMP.clone().negate(), cone: 0.15, life: 0.3, grav: 0, stretch: 4 });   // yanked: streaks toward you
     if (e.t.heavy){
@@ -285,7 +284,7 @@ export function forceRepulse(){
     TMP.subVectors(e.group.position, pp);
     if (Math.abs(TMP.y) > radius*0.7) continue;   // the blast bursts from YOU — it can't reach foes far below mid-air
     TMP.y = 0;
-    if (TMP.length() > radius) continue;
+    if (!inReach(e, pp, radius)) continue;
     const kd = TMP.clone().normalize();
     damageEnemy(e, dmg, kd, knock); flinchEnemy(e, kd, 0.8);
   }
@@ -315,7 +314,7 @@ export function barrierShove(power, knock){
   for (const e of enemies){
     if (e.dead || e.converted || e.state === 'spawn') continue;
     TMP.subVectors(e.group.position, pp); TMP.y = 0;
-    if (TMP.length() > A.knockR) continue;
+    if (!inReach(e, pp, A.knockR)) continue;
     const kd = TMP.normalize().clone();
     damageEnemy(e, 1, kd, knock); flinchEnemy(e, kd, 0.3);   // pure shove — ~no damage
   }
@@ -398,8 +397,7 @@ export function updateJudgement(dt){
     if (Math.abs(TMP.y) > A.range*0.5) continue;   // the storm arcs out level — not down to the ground from the air
     TMP.y = 0;
     const d = TMP.length();
-    if (d > A.range || d < 0.01) continue;
-    if (TMP.normalize().dot(f) < cosLim) continue;
+    if (d < 0.01 || !inReach(e, pp, A.range, f, cosLim)) continue;
     found.push({ e, d });
   }
   found.sort((a,b) => a.d - b.d);

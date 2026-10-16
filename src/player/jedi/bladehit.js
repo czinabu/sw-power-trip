@@ -4,13 +4,14 @@
 import * as THREE from 'three';
 import { shared, G, enemies, barrels, player } from '../../state.js';
 import { stance } from '../helpers.js';
+import { pointHit } from '../../enemies/hitbox.js';
+export { bodyRadius } from '../../enemies/hitbox.js';
 
-/* BODIES — each target is an upright capsule: radius and height scale with the unit (enemy.t.scale). A floored foe
-   is a low, wide slab. EDGE pads the blade by its glow, so a hit that LOOKS like it touched does. */
-export const BODY = { r: 0.42, h: 2.05, downR: 0.95, downH: 0.75, edge: 0.12, bossR: 0.75, bossH: 3.2, barrelR: 0.55, barrelH: 1.3 };
+/* BODIES — foes use their real hitbox (enemies/hitbox.js: legs, torso, head, turned and tipped over with the model);
+   the boss and barrels are upright capsules. EDGE pads the blade by its glow, so a hit that LOOKS like it touched does. */
+export const BODY = { edge: 0.12, bossR: 0.75, bossH: 3.2, barrelR: 0.55, barrelH: 1.3 };
 const ALONG = 7, SWEEP = 4;   // points sampled along the blade, and sub-steps between last frame's blade and this one's
-const B = new THREE.Vector3(), T = new THREE.Vector3(), PB = new THREE.Vector3(), PT = new THREE.Vector3();
-const DOWN = { knockdown: 1, getup: 1, ragdoll: 1 };
+const P = new THREE.Vector3(), B = new THREE.Vector3(), T = new THREE.Vector3(), PB = new THREE.Vector3(), PT = new THREE.Vector3();
 
 // the live blade, base → tip, in world space (the same line the swing trail draws). false when no blade is in hand.
 export function bladeSegment(outB, outT){
@@ -64,16 +65,13 @@ export function sweepBlade(sw, live){
     }
   };
   for (const e of enemies){
-    if (e.dead || e.converted || e.state === 'spawn') continue;
-    const p = e.group.position, s = e.t.scale || 1;
-    if (DOWN[e.state]) test(e, p.x, p.z, p.y - 0.2, p.y + BODY.downH * s, BODY.downR * s);
-    else test(e, p.x, p.z, p.y, p.y + BODY.h * s, BODY.r * s);
+    if (e.dead || e.converted || e.state === 'spawn' || cut.has(e)) continue;
+    for (let k = 0; k < pts.length; k += 3){
+      if (pointHit(e, P.set(pts[k], pts[k + 1], pts[k + 2]), BODY.edge)){ cut.add(e); out.push(e); break; }
+    }
   }
   const boss = shared.boss;
   if (boss && boss.hp > 0){ const p = boss.group.position; test(boss, p.x, p.z, p.y, p.y + BODY.bossH, BODY.bossR); }
   for (const b of barrels){ const p = b.mesh.position; test(b, p.x, p.z, p.y - BODY.barrelH / 2, p.y + BODY.barrelH / 2, BODY.barrelR); }
   return out;
 }
-
-// how far a fist, boot or blade at `reach` from the hero's centre gets into a body (for the Mando's melee and the kick)
-export const bodyRadius = e => (DOWN[e.state] ? BODY.downR : BODY.r) * (e.t.scale || 1);

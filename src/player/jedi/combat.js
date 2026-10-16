@@ -17,6 +17,7 @@ import { inkSprite, sparks, clashFlash } from '../../fx/ink.js';
 import { DUEL } from '../../data/duel.js';
 import { cutLine, duelDefend, isGuarding, guardImpact } from '../../enemies/duel.js';
 import { bodyRadius } from './bladehit.js';
+import { inReach } from '../../enemies/hitbox.js';
 
 /* COMBO RHYTHM — fractions of a swing. A press before `open` is too early (and costs this link its flow); a single
    press from `open` on links in rhythm, and the next cut leaves at `at` (just after the follow-through). */
@@ -196,8 +197,11 @@ export function applySwingDamage(step, only){
     if (Math.abs(TMP.y) > reachUp) return;   // must be at roughly your height (aim at them, don't sweep the ground from above)
     TMP.y = 0;
     const d = TMP.length();
-    if (d > radius) return;
-    if (d > 0.3 && TMP.normalize().dot(f) < arcCos) return;   // only what's in front of the blade's arc
+    if (obj && obj !== shared.boss && obj.group && obj.t){ if (!inReach(obj, pp, radius, d > 0.3 ? f : null, arcCos)) return; }   // a foe: any of its body
+    else {
+      if (d > radius) return;
+      if (d > 0.3 && TMP.normalize().dot(f) < arcCos) return;   // only what's in front of the blade's arc
+    }
     if (fn() !== false) hits++;
   };
   for (const e of enemies){
@@ -237,7 +241,7 @@ export function applySwingDamage(step, only){
       const pp1 = playerPos(), wp = V3(pp1.x + f.x*1.4, 0.6, pp1.z + f.z*1.4);
       spawnGroundShock(V3(wp.x, 0.1, wp.z), 0xffe27a, 4.2, 0.3, 0.45);
       burst(V3(wp.x, 1.2, wp.z), 0xffe27a, 8, 8, 4, 0.8);
-      for (const e of enemies){ if (e.dead || e.converted) continue; const dd = e.group.position.clone().sub(pp1).setY(0); if (dd.length() < 4.6) damageEnemy(e, dmg*0.3, dd.clone().normalize(), 10); }
+      for (const e of enemies){ if (e.dead || e.converted) continue; const dd = e.group.position.clone().sub(pp1).setY(0); if (inReach(e, pp1, 4.6)) damageEnemy(e, dmg*0.3, dd.clone().normalize(), 10); }
     }
     if (riposte) player.force = clamp(player.force + 10 + (player.up.parryForce || 0), 0, CFG.player.maxForce);   // a landed counter feeds the Force
     if (isDark && !finisher) beskarClang();   // every darksaber strike rings on beskar
@@ -280,7 +284,7 @@ export function applySwingDamage(step, only){
     for (const e of enemies){
       if (e.dead || e.converted || e.state === 'spawn') continue;
       TMP.subVectors(e.group.position, pp); TMP.y = 0;
-      if (TMP.length() > R) continue;
+      if (!inReach(e, pp, R)) continue;
       const kd = TMP.normalize().clone();
       damageEnemy(e, 2, kd, 13);   // flat chip damage, modest shove — utility only, no scaling
       flinchEnemy(e, kd, 0.4);

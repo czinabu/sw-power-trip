@@ -8,6 +8,7 @@ import { V3, rand } from '../utils.js';
 import { G, enemies } from '../state.js';
 import { buildEnemyMesh } from './mesh.js';
 import { enemyHpScale, applyElite } from './elites.js';
+import { attachHitboxDebug } from './hitbox.js';
 import { showBanner } from '../ui/banners.js';
 import { initDuel } from './duel.js';
 
@@ -55,6 +56,7 @@ export function spawnEnemy(typeName, pos){
     aimLine: null,                                              // MARKSMAN laser sight (lazily built)
   };
   applyElite(e, g);
+  attachHitboxDebug(e);   // ?hitbox draws it
   initDuel(e);   // sword-armed foes fight back: guards, feints, strings (duel.js)
   enemies.push(e);
   maybeTip(typeName);   // one-time onboarding tip the first time this archetype appears in a run

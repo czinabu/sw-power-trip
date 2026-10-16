@@ -18,6 +18,7 @@ import { collideSolids } from '../../world/collision.js';
 import { explosion, inkSprite, sparks, puff, motes, muzzleFlash, screenAngle, dustRing } from '../../fx/ink.js';
 import { mandoAimPoint, aCost } from './weapons.js';
 import { abil } from '../../data/mastery.js';
+import { sweepHit, distToBody, chestPos } from '../../enemies/hitbox.js';
 
 // BACTA STIM (H) — the Mando's mirror of Force Mend: a quick injector channel that restores the same big chunk of
 // vitality (reuses the mendT channel + mendComplete). Steep Force + long cooldown; locked against HUNTER'S CREED.
@@ -69,7 +70,7 @@ function rocketExplode(pos, big){
   if (big) screenFlash('radial-gradient(ellipse at center, rgba(255,150,70,.5), rgba(255,90,40,.15) 50%, transparent 70%)', 0.9, 0.4);
   for (const e of enemies){
     if (e.dead || e.converted || e.state === 'spawn') continue;
-    const d = e.group.position.distanceTo(pos);
+    const d = distToBody(e, pos);   // the blast reaches the body, not just the feet
     if (d < radius){ const kd = TMP.subVectors(e.group.position, pos).setY(0).normalize().clone(); damageEnemy(e, A.dmg * (1 - d/radius*0.4) * dmgMul, kd, A.knock); flinchEnemy(e, kd, big ? 0.9 : 0.6); }
   }
   if (shared.boss && shared.boss.hp > 0 && shared.boss.group.position.distanceTo(pos) < radius + 1){
@@ -105,6 +106,7 @@ export function mandoJetMissile(){
 export function updateRockets(dt){
   for (let i = rockets.length-1; i >= 0; i--){
     const rk = rockets[i]; rk.life -= dt;
+    rk.prev = (rk.prev || new THREE.Vector3()).copy(rk.mesh.position);
     rk.mesh.position.addScaledVector(rk.dir, rk.speed * dt);
     // a hot exhaust trail — a flickering cel flame at the nozzle and a rope of ink-rimmed smoke left hanging
     rk.trailT = (rk.trailT || 0) - dt;
@@ -117,7 +119,8 @@ export function updateRockets(dt){
     }
     const p = rk.mesh.position;
     let hit = rk.life <= 0 || p.y <= 0.2;
-    if (!hit) for (const e of enemies){ if (e.dead || e.converted) continue; if (p.distanceTo(e.group.position.clone().setY(p.y)) < 1.4){ hit = true; break; } }
+    // contact fuse: it goes off the moment its path touches a body (swept, so a fast rocket can't pass through one)
+    if (!hit) for (const e of enemies){ if (e.dead || e.converted) continue; const h = sweepHit(e, rk.prev || p, p, rk.big ? 0.45 : 0.3); if (h){ p.lerpVectors(rk.prev || p, p, h.t); hit = true; break; } }
     if (!hit && shared.boss && shared.boss.hp > 0 && p.distanceTo(shared.boss.group.position.clone().setY(p.y)) < (rk.big ? 2.4 : 1.8)) hit = true;
     if (hit){ rocketExplode(p.clone(), rk.big); scene.remove(rk.mesh); rockets.splice(i,1); }
   }
@@ -156,11 +159,12 @@ export function updateBirds(dt){
         bd.tgt = best;
       }
       if (bd.tgt){
-        const tp = bd.tgt.group.position;
-        TMP.set(tp.x - bd.mesh.position.x, (tp.y + 1.2) - bd.mesh.position.y, tp.z - bd.mesh.position.z).normalize();
+        const tp = bd.tgt === shared.boss ? bd.tgt.group.position.clone().setY(bd.tgt.group.position.y + 1.2) : chestPos(bd.tgt);
+        TMP.set(tp.x - bd.mesh.position.x, tp.y - bd.mesh.position.y, tp.z - bd.mesh.position.z).normalize();
         bd.vel.lerp(TMP.multiplyScalar(abil('birds').speed), Math.min(1, dt*6));
       }
     }
+    bd.prev = (bd.prev || new THREE.Vector3()).copy(bd.mesh.position);
     bd.mesh.position.addScaledVector(bd.vel, dt);
     // each bird whistles along on a thin cel contrail
     bd.trailT = (bd.trailT || 0) - dt;
@@ -169,14 +173,14 @@ export function updateBirds(dt){
     // detonate on contact (or expiry)
     let hit = bd.life <= 0 || bd.mesh.position.y < 0.15;
     let victim = null;
-    if (!hit) for (const e of enemies){ if (e.dead || e.converted) continue; if (bd.mesh.position.distanceTo(e.group.position.clone().setY(bd.mesh.position.y)) < 1.0){ hit = true; victim = e; break; } }
+    if (!hit) for (const e of enemies){ if (e.dead || e.converted) continue; const h = sweepHit(e, bd.prev, bd.mesh.position, 0.2); if (h){ bd.mesh.position.lerpVectors(bd.prev, bd.mesh.position, h.t); hit = true; victim = e; break; } }
     if (!hit && shared.boss && shared.boss.hp > 0 && bd.mesh.position.distanceTo(shared.boss.group.position.clone().setY(bd.mesh.position.y)) < 1.7){ hit = true; victim = shared.boss; }
     if (hit){
       const A = abil('birds'), p = bd.mesh.position.clone();
       explosion(p, abil('birds').radius * 0.55, false); spawnHitSpark(p, 0xdff1ff, 0.8);
       sfx(rand(1600,2200), 0.06, 'sine', 0.04, 700); S.boom(p, 0.25);
       const bdmg = A.dmg * player.up.dmg * (player.up.rocketDmg || 1);
-      for (const e of enemies){ if (e.dead || e.converted || e.state === 'spawn') continue; const d = e.group.position.distanceTo(p); if (d < A.radius){ const kd = TMP.subVectors(e.group.position, p).setY(0).normalize().clone(); damageEnemy(e, bdmg, kd, A.knock); flinchEnemy(e, kd, 0.3); } }
+      for (const e of enemies){ if (e.dead || e.converted || e.state === 'spawn') continue; const d = distToBody(e, p); if (d < A.radius){ const kd = TMP.subVectors(e.group.position, p).setY(0).normalize().clone(); damageEnemy(e, bdmg, kd, A.knock); flinchEnemy(e, kd, 0.3); } }
       if (shared.boss && shared.boss.hp > 0 && shared.boss.group.position.distanceTo(p) < A.radius) damageBoss(bdmg);
       scene.remove(bd.mesh); birds.splice(i,1);
     }
@@ -206,10 +210,11 @@ export function updateDetos(dt){
       else g.mesh.position.copy(g.stuck.group.position).add(g.stuckOff);
     } else {
       g.vel.y -= 26*dt;
+      g.prev = (g.prev || new THREE.Vector3()).copy(g.mesh.position);
       g.mesh.position.addScaledVector(g.vel, dt);
       if (g.mesh.position.y <= 0.16){ g.mesh.position.y = 0.16; g.vel.set(0,0,0); }
-      // stick to the first enemy it touches
-      for (const e of enemies){ if (e.dead || e.converted) continue; if (g.mesh.position.distanceTo(e.group.position.clone().setY(g.mesh.position.y)) < 0.9){ g.stuck = e; g.stuckOff = g.mesh.position.clone().sub(e.group.position); floater(e.group.position, 'STUCK!', '#ff8a3a'); break; } }
+      // stick to the first enemy it touches, where it touches
+      for (const e of enemies){ if (e.dead || e.converted) continue; const h = sweepHit(e, g.prev, g.mesh.position, 0.15); if (h){ g.mesh.position.lerpVectors(g.prev, g.mesh.position, h.t); g.stuck = e; g.stuckOff = g.mesh.position.clone().sub(e.group.position); floater(e.group.position, 'STUCK!', '#ff8a3a'); break; } }
       collideSolids(g.mesh.position, 0.2, false);
     }
     // blink faster as the fuse runs out
@@ -222,7 +227,7 @@ export function updateDetos(dt){
       burst(p, 0x6a6a6a, 8, 8, 8, 1.1);
       flashLight(0xffa040, 9, A.radius*2.6, p, 0.3);
       const ddmg = A.dmg * player.up.dmg * (player.up.rocketDmg || 1);
-      for (const e of enemies){ if (e.dead || e.converted || e.state === 'spawn') continue; const d = e.group.position.distanceTo(p); if (d < A.radius){ const kd = TMP.subVectors(e.group.position, p).setY(0).normalize().clone(); damageEnemy(e, ddmg * (1 - d/A.radius*0.4), kd, A.knock); flinchEnemy(e, kd, 0.6); } }
+      for (const e of enemies){ if (e.dead || e.converted || e.state === 'spawn') continue; const d = distToBody(e, p); if (d < A.radius){ const kd = TMP.subVectors(e.group.position, p).setY(0).normalize().clone(); damageEnemy(e, ddmg * (1 - d/A.radius*0.4), kd, A.knock); flinchEnemy(e, kd, 0.6); } }
       if (shared.boss && shared.boss.hp > 0 && shared.boss.group.position.distanceTo(p) < A.radius + 1){ damageBoss(ddmg); if (shared.boss.hp > 0 && (shared.boss.state === 'windup' || shared.boss.state === 'lightning' || shared.boss.state === 'chase')) bossStagger(); }
       for (const b of barrels){ if (b.mesh.position.distanceTo(p) < A.radius && b.fuse < 0) b.fuse = 0.15; }
       scene.remove(g.mesh); detos.splice(i,1);
@@ -308,7 +313,7 @@ export function mandoSlamImpact(){
   dustRing(pp, A.radius);
   burst(V3(pp.x, 0.4, pp.z), 0x9a9a9a, 10, 9, 8, 1.1);
   flashLight(0x88ccff, 8, A.radius*2.2, V3(pp.x, 1, pp.z), 0.3);
-  for (const e of enemies){ if (e.dead || e.converted || e.state === 'spawn') continue; const d = e.group.position.distanceTo(pp); if (d < A.radius){ const kd = TMP.subVectors(e.group.position, pp).setY(0).normalize().clone(); damageEnemy(e, A.dmg * player.up.dmg, kd, A.knock); flinchEnemy(e, kd, 0.7); } }
+  for (const e of enemies){ if (e.dead || e.converted || e.state === 'spawn') continue; const d = distToBody(e, pp); if (d < A.radius){ const kd = TMP.subVectors(e.group.position, pp).setY(0).normalize().clone(); damageEnemy(e, A.dmg * player.up.dmg, kd, A.knock); flinchEnemy(e, kd, 0.7); } }
   if (shared.boss && shared.boss.hp > 0 && shared.boss.group.position.distanceTo(pp) < A.radius) damageBoss(A.dmg * player.up.dmg);
   for (const b of barrels){ if (b.mesh.position.distanceTo(pp) < A.radius && b.fuse < 0) b.fuse = 0.15; }
 }

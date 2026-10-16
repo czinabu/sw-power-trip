@@ -56,6 +56,21 @@ frame per living duellist.
 
 `window.GAME.duel` exposes the tables and the lock in the dev console.
 
+## Hitboxes
+
+Every attack that touches a foe tests the same body: `src/enemies/hitbox.js`, with each model's shape in
+`src/data/hitbox.js` (legs, torso with the arms, head), measured off the models. The shapes live in the model's own
+space, so they turn, scale (elites too) and tip over with it.
+
+- Blaster bolts, rockets, whistling birds and detonators sweep their whole step each frame, so a fast shot can't pass
+  through a body, and they hit the first body along their path. Only the head band is a headshot.
+- The Mandalorian's crosshair converges on the body it's over, using the same shape.
+- Blasts measure to the nearest point of the body, not the feet. Cones and rings (Force push, pull, slam, repulse,
+  judgement, the flamethrower, the darksaber slash, the spear) reach any part of the body inside them.
+- The saber blade tests the points it sweeps through against the same shape.
+
+Open the game with `?hitbox` in the URL to draw every foe's hitbox as a wireframe (yellow = head).
+
 ## Checking it
 
 `window.GAME.nav` exposes the grid (`NAV`), `navSteer` and `navDist` in the dev console. `NAV.dist[0]` is the
