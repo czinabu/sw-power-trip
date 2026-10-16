@@ -62,7 +62,7 @@ Each file starts with a one-line description. Balance changes usually only touch
 
 **Two playable heroes:**
 - **Jedi** — three lightsaber stances (Ataru / Niman / Djem So), parry & riposte combat, Force powers (Push, Pull, Slam, Repulse, Judgement, Barrier, Saber Throw, Mend), a Force Focus flow meter that rewards aggressive play
-- **Mandalorian** — jetpack flight with momentum/boost/dive/hover, dual blasters + disruptor rifle + darksaber, flamethrower, wrist rockets, whistling birds, grappling hook, jetpack missile, gauntlet shield, and a close-quarters kit on E (jab, cross, knee, vibroblade string; vambrace catch; jet charge; dive kick; takedowns)
+- **Mandalorian** — jetpack flight with momentum/boost/dive/hover, dual blasters + disruptor rifle + darksaber, flamethrower, wrist rockets, whistling birds, grappling hook, jetpack missile, gauntlet shield, and a close-quarters kit on E (jab, cross, knee, vibroblade string; shield and blade behind the gauntlet shield; vambrace catch; jet charge; dive kick; takedowns)
 
 **Campaign** — 3 authored arenas on the road to the Sith (Holy City of Jedha, Mustafar Forge, Throne of Exegol), 4 waves each escalating to an end-boss (Darth Vexis for the Jedi, The Iron Magistrate for the Mando)
 

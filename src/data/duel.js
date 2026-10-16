@@ -82,4 +82,18 @@ export const MANDO_MELEE = {
   charge: { minD: 3.2, maxD: 9, fuel: 18, cd: 1.4, dmg: 22, knock: 26, speed: 26 },
   dive: { fuel: 14, cd: 1.0, dmg: 26, radius: 3.2, knock: 20, speed: 30 },
   takedown: { range: 2.0, dmg: 70, maxFrac: 0.6 },   // + this fraction of a light foe's max health (not heavies/bosses)
+  /* SHIELD AND BLADE — E while the single blaster's shield is up (RMB). The wrist vibroblade cuts from behind the
+     disc and the shield STAYS UP (firing drops it, cutting doesn't), so this is the crowd tool: a wide hack, a
+     backhand, then a shield BASH that staggers the light foes in front of you for takedowns. Every beat spends the
+     stamina the shield soaks with, you still move at brace speed and your back is open, so it holds a line rather
+     than out-damaging the blaster. `arc` is the half-angle in radians, `stam` the cost of the beat. */
+  guard: {
+    string: [
+      { name: 'hackA', dmg: 20, knock: 10, line: 'R', recover: 0.36, lunge: 2.5, shove: 0.6, contact: 0.11, reach: 2.2, arc: 1.15, stam: 8 },
+      { name: 'hackB', dmg: 20, knock: 10, line: 'L', recover: 0.36, lunge: 2.5, shove: 0.6, contact: 0.11, reach: 2.2, arc: 1.15, stam: 8 },
+      { name: 'bash',  dmg: 10, knock: 6,  line: 'H', recover: 0.55, lunge: 5,   shove: 0.8, contact: 0.12, reach: 2.3, arc: 1.0,  stam: 14, heavy: true, stagger: true },
+    ],
+    posture: 22,          // what the bash costs a duellist's guard (on top of the cut it lands as)
+    takedownReach: 1.6,   // behind the shield a takedown reaches this much further: the bash stumbles foes back out of arm's length
+  },
 };
