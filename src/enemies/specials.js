@@ -6,7 +6,7 @@ import { scene } from '../engine/renderer.js';
 import { S } from '../audio/sfx.js';
 import { V3, TMP } from '../utils.js';
 import { burst } from '../fx/particles.js';
-import { screenFlash } from '../fx/floaters.js';
+import { screenFlash, floater } from '../fx/floaters.js';
 import { shared, G, enemies, barrels, player } from '../state.js';
 import { flashLight } from '../fx/lights.js';
 import { playerPos } from '../player/helpers.js';
@@ -70,4 +70,23 @@ export function warbringerSlam(e, pos){
     hurtPlayer(e.t.dmg * 1.3 * enemyDmgScale(), pos);   // big & unblockable — DASH or JUMP the slam
     player.vel.addScaledVector(kd, 15); player.vy = Math.max(player.vy, 7);
   }
+}
+
+// JET TROOPER CRASH — slammed into the floor, the pack sparks out: the flames die, a puff of smoke, and from here on it
+// is a ground trooper (its type is swapped for a copy without fly, so it paths, takes cover and stands on surfaces)
+export function breakJetpack(e){
+  if (!e.t.fly) return;
+  e.t = Object.assign({}, e.t, { fly: false });
+  const g = e.group, p = g.position;
+  if (g.userData.thrusters) for (const th of g.userData.thrusters) th.visible = false;
+  burst(V3(p.x, p.y + 1.1, p.z), 0xffae2a, 10, 7, 5); burst(V3(p.x, p.y + 0.9, p.z), 0x555555, 8, 3, 3, 1.2);
+  floater(V3(p.x, p.y + 1.8, p.z), 'JETPACK BUSTED', '#ffb84a');
+  S.boom(p.clone(), 0.5);
+}
+// a big enough blast takes a jet trooper's fuel with it: a fireball where it hung in the air
+export function flyerBlowUp(e){
+  const p = e.group.position, at = V3(p.x, p.y + 1.1, p.z);
+  burst(at, 0xffae2a, 22, 12, 7); burst(at, 0xff5a1a, 14, 9, 6); burst(at, 0x444444, 8, 4, 3, 1.3);
+  flashLight(0xffae2a, 5, 9, at, 0.25);
+  G.shake = Math.max(G.shake, 0.6); S.boom(p.clone(), 1.1);
 }

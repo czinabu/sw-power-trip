@@ -31,7 +31,7 @@ const TYPE_TIPS = {
   brute:   ['BRUTE', 'A wall of muscle — too heavy to stagger lightly. Parry its swing, or floor it with a heavy blow.'],
   duelist: ['MAGNAGUARD', 'A duellist: the pale arc shows the side it guards. Cut in from the OTHER side, kick (E) to break its guard, and parry its strike.'],
   acolyte: ['SITH ACOLYTE', 'A trained saber duellist. It feints, strings cuts, deflects blaster fire and binds blades. Read its guard, break it, punish the opening.'],
-  flyer:   ['JET TROOPER', 'It hovers out of saber reach — answer it with ranged tools, Force powers, or deflect its fire.'],
+  flyer:   ['JET TROOPER', 'It hovers out of saber reach. Pull or shove it down to bust its jetpack, blast it out of the sky, or deflect its fire.'],
 };
 function maybeTip(typeName){
   if (!G.seenTypes) G.seenTypes = {};

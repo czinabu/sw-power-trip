@@ -9,7 +9,7 @@ import { burst } from '../fx/particles.js';
 import { G, enemies, solids } from '../state.js';
 import { MELEE_WINDUP_GAP } from '../data/mando.js';
 import { playerPos } from '../player/helpers.js';
-import { bomberExplode, updateAimLine, warbringerSlam } from './specials.js';
+import { bomberExplode, updateAimLine, warbringerSlam, breakJetpack } from './specials.js';
 import { damageEnemy, hostileTargetFor, easeWeaponHome, telegraphWindup, staggerEnemy } from './damage.js';
 import { fireBolt } from './bolts.js';
 import { damageBoss } from '../boss/boss.js';
@@ -451,6 +451,7 @@ export function updateEnemies(dt){
         g.rotation.z = dampToward(g.rotation.z, 0, dt, 9);       // never roll onto the side
         if (g.position.y <= 0){
           g.position.y = 0;
+          if (e.t.fly) breakJetpack(e);   // a jet trooper slammed into the floor: on foot from here
           if (e.vel.y < -4){ e.vel.y *= -0.3; e.vel.x *= 0.55; e.vel.z *= 0.55; burst(g.position, 0x888888, 3, 3, 2); }   // one small bounce
           else { e.vel.set(0,0,0); if (e.st <= 0){ e.state = 'getup'; e.st = 0.5; } }
         }
@@ -495,8 +496,9 @@ export function updateEnemies(dt){
       }
     }
     // JET TROOPER hover — drive altitude to ~1.5 above the player (so flying up never escapes it) with a gentle bob.
-    // Death (ragdoll) is exempt so a slain flyer tumbles out of the sky under gravity.
-    if (e.t.fly && !e.dead && e.state !== 'ragdoll' && e.state !== 'fade' && e.state !== 'spawn'){
+    // Death (ragdoll) and a knockdown are exempt, so a slain or floored flyer falls under gravity instead of the hover
+    // holding it up against the knock (that fight left it skidding on its back across the arena, never shooting).
+    if (e.t.fly && !e.dead && e.state !== 'ragdoll' && e.state !== 'knockdown' && e.state !== 'fade' && e.state !== 'spawn'){
       const flyH = clamp(playerPos().y + 1.5, 2.4, 9) + Math.sin(G.gt*2 + i) * 0.22;
       g.position.y = dampToward(g.position.y, flyH, dt, 4);
       if (g.userData.thrusters){ const fl = 0.7 + Math.abs(Math.sin(G.gt*18 + i)) * 0.5; for (const th of g.userData.thrusters) th.material.opacity = fl; }

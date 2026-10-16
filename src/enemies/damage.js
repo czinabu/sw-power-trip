@@ -8,7 +8,7 @@ import { floater } from '../fx/floaters.js';
 import { shared, G, enemies, player } from '../state.js';
 import { fwd, playerPos, stance, maxHp } from '../player/helpers.js';
 import { volatileBlast } from './elites.js';
-import { bomberExplode } from './specials.js';
+import { bomberExplode, flyerBlowUp } from './specials.js';
 import { FOCUS, addFocus } from '../player/jedi/focus.js';
 import { spawnHitSpark, spawnGroundShock } from '../fx/vfx.js';
 import { sparks } from '../fx/ink.js';
@@ -51,6 +51,9 @@ export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick, opts){
   if (player.boon && player.boon.exec && !tick && knockDir && !e.warbringer && !e.champion && e.maxHp && (e.hp - dmg) > 0 && (e.hp - dmg) < e.maxHp*0.22){
     dmg = e.hp; floater(V3(e.group.position.x, e.group.position.y+1.7, e.group.position.z), 'EXECUTE', '#ff7a7a');
   }
+  // a JET TROOPER caught by a big blast (see blastKnock in data/enemies.js) doesn't get knocked about: its pack goes up
+  const blownUp = e.t.fly && e.t.blastKnock && knockDir && !tick && knockPow >= e.t.blastKnock && !(opts && opts.launch === false);
+  if (blownUp) dmg = Math.max(dmg, e.hp);
   e.hp -= dmg;
   e.flash = Math.max(e.flash, tick ? 0.06 : 0.16);
   const p = e.group.position;
@@ -82,6 +85,7 @@ export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick, opts){
   }
   if (e.hp <= 0){
     e.dead = true; e.state = 'ragdoll'; e.st = 0;
+    if (blownUp) flyerBlowUp(e);
     if (e.t.bomber && !e._blew) bomberExplode(e);   // a SABOTEUR killed before its fuse still goes off — don't kill it point-blank
     const d = knockDir ? knockDir.clone().setY(0) : fwd();
     if (opts && opts.launch === false){   // folds up and drops: a step back with the blow, then onto its back
@@ -114,9 +118,9 @@ export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick, opts){
     }
   } else if (opts && opts.launch === false){
     // no launch: the caller decides how it reels (a flinch, a shove, a stagger)
-  } else if (knockDir && knockPow > 16 && !e.t.heavy && !e.t.fly){
+  } else if (knockDir && knockPow > 16 && !e.t.heavy){
     // a LIVE knockdown — controlled tip-back, stops acting, then gets up (NOT the free-spin death ragdoll).
-    // FLYERS are exempt (they stay aloft, just flinch) — a non-lethal hit shouldn't drop them to the floor.
+    // A JET TROOPER drops out of the air too, and the crash breaks its jetpack (ai.js knockdown).
     e.state = 'knockdown'; e.st = 0.7;
     e.vel.copy(knockDir.clone().multiplyScalar(knockPow));
     e.vel.y = rand(4, 7);
