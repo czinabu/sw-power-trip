@@ -11,7 +11,7 @@ import { floater, screenFlash } from '../../fx/floaters.js';
 import { shared, G, enemies, bolts, barrels, vfx, player } from '../../state.js';
 import { flashLight } from '../../fx/lights.js';
 import { fwd, playerPos, stance, maxHp } from '../helpers.js';
-import { inReach, distToBody } from '../../enemies/hitbox.js';
+import { inReach, distToBody } from '../../enemies/bodyshape.js';
 import { ensureJudgeLines } from './judgement-fx.js';
 import { damageEnemy, flinchEnemy } from '../../enemies/damage.js';
 import { damageBoss, bossStun, bossStagger } from '../../boss/boss.js';

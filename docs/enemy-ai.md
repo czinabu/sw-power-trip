@@ -58,8 +58,8 @@ frame per living duellist.
 
 ## Hitboxes
 
-Every attack that touches a foe tests the same body: `src/enemies/hitbox.js`, with each model's shape in
-`src/data/hitbox.js` (legs, torso with the arms, head), measured off the models. The shapes live in the model's own
+Every attack that touches a foe tests the same body: `src/enemies/bodyshape.js`, with each model's shape in
+`src/data/bodyshape.js` (legs, torso with the arms, head), measured off the models. The shapes live in the model's own
 space, so they turn, scale (elites too) and tip over with it.
 
 - Blaster bolts, rockets, whistling birds and detonators sweep their whole step each frame, so a fast shot can't pass

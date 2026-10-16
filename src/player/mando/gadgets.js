@@ -18,7 +18,7 @@ import { collideSolids } from '../../world/collision.js';
 import { explosion, inkSprite, sparks, puff, motes, muzzleFlash, screenAngle, dustRing } from '../../fx/ink.js';
 import { mandoAimPoint, aCost } from './weapons.js';
 import { abil } from '../../data/mastery.js';
-import { sweepHit, distToBody, chestPos } from '../../enemies/hitbox.js';
+import { sweepHit, distToBody, chestPos } from '../../enemies/bodyshape.js';
 
 // BACTA STIM (H) — the Mando's mirror of Force Mend: a quick injector channel that restores the same big chunk of
 // vitality (reuses the mendT channel + mendComplete). Steep Force + long cooldown; locked against HUNTER'S CREED.

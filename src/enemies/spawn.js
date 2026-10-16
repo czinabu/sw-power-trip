@@ -8,7 +8,7 @@ import { V3, rand } from '../utils.js';
 import { G, enemies } from '../state.js';
 import { buildEnemyMesh } from './mesh.js';
 import { enemyHpScale, applyElite } from './elites.js';
-import { attachHitboxDebug } from './hitbox.js';
+import { attachHitboxDebug } from './bodyshape.js';
 import { showBanner } from '../ui/banners.js';
 import { initDuel } from './duel.js';
 

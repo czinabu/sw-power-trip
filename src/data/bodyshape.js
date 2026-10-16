@@ -1,5 +1,5 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
-// HITBOX: each enemy model's body, measured off the models themselves (enemies/hitbox.js tests every attack against it).
+// HITBOX: each enemy model's body, measured off the models themselves (enemies/bodyshape.js tests every attack against it).
 
 /* Parts, bottom to top, in the model's own units (the unit's scale and any elite growth are applied on top):
      y0..y1   the height band, from the feet

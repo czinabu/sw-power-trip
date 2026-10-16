@@ -4,10 +4,10 @@
 import * as THREE from 'three';
 import { shared, G, enemies, barrels, player } from '../../state.js';
 import { stance } from '../helpers.js';
-import { pointHit } from '../../enemies/hitbox.js';
-export { bodyRadius } from '../../enemies/hitbox.js';
+import { pointHit } from '../../enemies/bodyshape.js';
+export { bodyRadius } from '../../enemies/bodyshape.js';
 
-/* BODIES — foes use their real hitbox (enemies/hitbox.js: legs, torso, head, turned and tipped over with the model);
+/* BODIES — foes use their real hitbox (enemies/bodyshape.js: legs, torso, head, turned and tipped over with the model);
    the boss and barrels are upright capsules. EDGE pads the blade by its glow, so a hit that LOOKS like it touched does. */
 export const BODY = { edge: 0.12, bossR: 0.75, bossH: 3.2, barrelR: 0.55, barrelH: 1.3 };
 const ALONG = 7, SWEEP = 4;   // points sampled along the blade, and sub-steps between last frame's blade and this one's

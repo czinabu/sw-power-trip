@@ -17,7 +17,7 @@ import { inkSprite, sparks, clashFlash } from '../../fx/ink.js';
 import { DUEL } from '../../data/duel.js';
 import { cutLine, duelDefend, isGuarding, guardImpact } from '../../enemies/duel.js';
 import { bodyRadius } from './bladehit.js';
-import { inReach } from '../../enemies/hitbox.js';
+import { inReach } from '../../enemies/bodyshape.js';
 
 /* COMBO RHYTHM — fractions of a swing. A press before `open` is too early (and costs this link its flow); a single
    press from `open` on links in rhythm, and the next cut leaves at `at` (just after the follow-through). */
