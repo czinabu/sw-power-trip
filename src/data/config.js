@@ -35,7 +35,7 @@ export const CFG = {
   },
   abilities: {
     // BASIC powers — cheap, available from the start
-    push:   { cost: 20, cd: 0.9,  range: 15, angle: 1.15, dmg: 2,  knock: 24 },   // pure UTILITY — a hard interrupting SHOVE, near-zero damage
+    push:   { cost: 20, cd: 1.4,  range: 15, angle: 1.15, dmg: 2,  knock: 24 },   // pure UTILITY — a hard interrupting SHOVE, near-zero damage. cd 0.9→1.4: it also reflects every bolt in the cone, so it was a near-constant shield from wave 1
     dash:   { cost: 16, cd: 0.9,  speed: 30, time: 0.34 },  // dash grants i-frames + a flip (spends Force)
     pull:   { cost: 30, cd: 3.0,  range: 18, angle: 1.2 },
     // ADVANCED powers — expensive, earned as the legend grows. The mightiest eat most of the bar.
