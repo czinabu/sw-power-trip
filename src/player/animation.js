@@ -18,6 +18,7 @@ import { MIRROR } from './model/rig.js';
 import { saberPose, guardPose, swingPose, deflectPose, applySaberPose, releaseSaberPose, airGuard } from './anim/saber.js';
 import { advanceGait, gaitLegs, gaitHipOffset, releaseGait } from './anim/gait.js';
 import { footingLegs, releaseFooting } from './anim/footing.js';
+import { stepCloth } from './model/cloth.js';
 import { jediAirLegs, jediAgilityArms, jediAgilityPost, mandoAgilityPost, landingStyle, slamPitch } from './anim/agility.js';
 
 export function animatePlayer(dt, pp, st, f, r, moving){
@@ -38,6 +39,7 @@ export function animatePlayer(dt, pp, st, f, r, moving){
   if (G.hero !== 'mando') jediAgilityPost(dt, dr, vis, R, { ph, inten, planted });
   if (G.hero === 'mando'){ animateMandoPose(dt, dr, vis, R, pp, f, r); mandoAgilityPost(dt, dr, vis, R, f, r); }
   secondaryMotion(dt, vis, R);
+  stepCloth(player, dt, player.group.position.y + 0.02);   // the robe panels and cape hem (model/cloth.js), after the pose
   player.arcMesh.material.opacity = Math.max(0, player.arcMesh.material.opacity - dt*4);
 
   // (the saber hum is driven from audio/director.js)

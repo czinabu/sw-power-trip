@@ -10,6 +10,7 @@ import { buildHeroModel } from '../src/player/model/index.js';
 import { STYLE_DEFS } from '../src/player/model/styles.js';
 import { SAMPLE_LOOKS } from '../src/player/model/appearance.js';
 import { applySaberGrip } from '../src/player/model/weapons.js';
+import { settleCloth } from '../src/player/model/cloth.js';
 
 const q = new URLSearchParams(location.search);
 const STYLE = q.get('style') || 'ink';
@@ -97,6 +98,7 @@ function figure(poseName){
   if (P.fly){ for (const g of t.jetGlow) g.material.opacity = 0.9; }
   t.blade.light.intensity = 2.5;   // the saber's real light floods a close-up; keep it low so the model reads
   t.yaw = P.yaw || 0;
+  settleCloth(t);   // drape the robe panels and cape hem over the pose
   return t;
 }
 

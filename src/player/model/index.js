@@ -10,6 +10,7 @@ import { resolveLook } from './appearance.js';
 import { JEDI_PARTS } from './jedi.js';
 import { MANDO_PARTS } from './mando.js';
 import { chainGeo, chainWeights, rounded } from './skin.js';
+import { makeCloth } from './cloth.js';
 import { KEEL } from './shapes.js';
 import { mountLoadout } from './weapons.js';
 
@@ -18,6 +19,7 @@ export function buildHeroModel(target, lookIn = {}){
   const S = makeStyle(look.style, { ...look.jedi.palette, ...look.mando.palette });
   const R = buildRig();
 
+  target.cloth = [];   // filled by k.cloth(); animation.js steps them
   const jedi = dress(R, S, look.jedi, JEDI_PARTS, target);
   const mando = dress(R, S, look.mando, MANDO_PARTS, target);
   for (const p of mando.parts) p.visible = false;
@@ -69,6 +71,19 @@ function dress(R, S, hero, PARTS, player){
       const m = S.addSkinned(geo, mat, R.vis, bones[0], bones, weigh, { outline });
       parts.push(m);
       return m;
+    },
+    /* a hanging piece of real cloth (see cloth.js): top row pinned to `anchor`, rest(u, v) → [x, y, z] in its frame,
+       pushed out of the capsules [[jointA, jointB, radius]] */
+    cloth(mat, anchor, { W, H, rest, thick = 0.02, capsules = [], outline = true, slack }){
+      const C = makeCloth({ anchor, W, Hn: H, rest, thick, capsules, root: R.vis, slack,
+        material: S.mat(mat), outlineMaterial: outline ? S.outline() : null });
+      player.cloth.push(C); parts.push(C.mesh);
+      return C;
+    },
+    // collision capsules for cloth: both legs, plus the pelvis-to-chest core
+    bodyCapsules(extra = []){
+      const legs = [R.legL, R.legR].flatMap(L => [[L.hip, L.knee, 0.1], [L.knee, L.ank, 0.08]]);
+      return [...legs, [R.hips, R.chest, 0.15], ...extra];
     },
     seam(geo, color, parent, p, r){ if (!hero.seams) return null; const m = S.seam(geo, color, parent, p, r); parts.push(m); return m; },
   };
