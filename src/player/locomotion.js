@@ -94,6 +94,16 @@ export function updateMovement(dt, pp, st, f, r){
   }
   // impulse velocity (lunge/dash) with damping — a flip/dash GLIDES (low drag) so it actually carries you
   pp.addScaledVector(player.vel, dt);
+  // ROOT MOTION — a grounded cut carries the body through the swing: little in the chamber, most of it driving into
+  // the strike, settling by the follow-through (the distance is set in jedi/combat.js stepIntoCut)
+  const sw = player.atkT > 0 && player.swing, tr = sw && sw.travel;
+  if (tr){
+    const k = clamp((sw.t / sw.dur - MOVE.cutTravel[0]) / (MOVE.cutTravel[1] - MOVE.cutTravel[0]), 0, 1);
+    const f = k * k * (3 - 2 * k), df = f - tr.done;
+    tr.done = f;
+    pp.x += tr.x * df; pp.z += tr.z * df;
+    player._rootVX = tr.x * df / Math.max(dt, 1e-4); player._rootVZ = tr.z * df / Math.max(dt, 1e-4);
+  } else player._rootVX = player._rootVZ = 0;
   const velDrag = (player.flip || player.dashT > 0) ? 2.6 : (!player.grounded && G.hero !== 'mando') ? 1.2 : 9;   // airborne impulses (wall kicks, leaps) carry
   player.vel.multiplyScalar(Math.max(0, 1 - dt*velDrag));
   if (player.kickT > 0) player.kickT -= dt;   // JEDI front-kick recovery (hero-agnostic so it always winds down)

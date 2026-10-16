@@ -86,6 +86,40 @@ roll, spin) plus a leg shape (tuck, pike, layout, split, slide) and an air guard
 The Mando keeps to beskar and jets: the ground dodge is a thruster-shoved slide, a hop tucks the knees, ignition
 snaps the legs together under the pack, and a jet slam drops into a three-point landing.
 
+## Gait
+
+The legs on the ground are solved, not swung (`src/player/anim/gait.js`, tuned in `GAIT` in `src/data/movement.js`).
+A stride clock advances with distance travelled; each foot follows a stance path, where its ground contact moves
+back at exactly the body's speed so it stays put in the world, then a swing path that leaves and arrives at that same
+speed. Two-bone leg IK puts the ankle on the path, compensating for the body's lean. Steps lengthen and quicken with
+speed; a walk keeps both feet down for a moment, a run has a flight phase; the foot heel-strikes, rolls and toes off.
+Strafing and backpedalling follow the same paths in the direction of travel. A form's `gait` in `data/stances.js`
+still sets its character: `amp` scales step length, `lift` the swing foot's height, `bob` the hip dip. Standing, the
+stance footwork owns the legs and the two blend by speed. The body also leans with acceleration (a push to start, a
+sit-back to stop, a bank into a turn).
+
+A foot in its stance is locked where it touched down, so a hard stop or a turn mid-stride can't drag it; the swing
+then starts from wherever the lock left it. Standing and at walking pace the footing (`src/player/anim/footing.js`,
+tuned in `FOOTING`) keeps both feet locked on the floor and steps one at a time when a foot is out of place: stopping
+out of a run settles in a step or two, turning on the spot steps round (a locked foot keeps its heading by turning at
+the ankle), and switching form or sinking into a guard steps the feet to the new width. The stance's leg shape in
+`FOOTWORK` (`data/poses.js`) is what the feet are stepped to.
+
+Each foot stands on whatever is under it (`groundAt` in `world/collision.js`): a step, rubble or a crate top. A foot
+reaches at most `GAIT.reachDown` below the body's support (past an edge it hangs), and the hips sink to let the lower
+foot reach the ground.
+
+**Cuts step.** A grounded cut's forward drive is root motion (`stepIntoCut` in `player/jedi/combat.js`, laid over the
+swing by `MOVE.cutTravel` in `locomotion.js`): the same distance the old shove carried, but the body drives through
+the strike instead of sliding out ahead of it. The lead foot (the back foot for a back strike) lifts as the cut starts
+and plants as the blade lands (`FOOTING.cutStrike`), where the drive will end; the trailing foot follows after. A
+spinning finisher pivots the feet with the body. In the air a cut still shoves.
+
+**Hit reactions are directional.** A blow drives the body the way it pushes (`player.flinchDir`, set in
+`player/damage.js`): reeling back from the front, pitched forward from behind, knocked sideways from the flank, harder
+for a heavy blow. The shove doesn't run the legs: the footing steps to catch the body (a stumble). Enemies flinch the
+same way (`e.flinchDir`, posed in `enemies/ai.js`).
+
 ## Rig features to use
 
 - **New joints** (`src/player/model/rig.js`): chest (upper-body twist separate from the hips), wrists (snap and weapon angle), ankles (foot plant), four robe flaps and the cape pivot (follow-through and secondary motion).

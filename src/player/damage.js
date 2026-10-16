@@ -185,6 +185,10 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip){
     if (!armored && G.gt - (player.flinchAt ?? -9) > F.immune){
       player.flinchT = player.flinchMax = melee ? (heavyHit ? F.heavy : F.light) : F.ranged;
       player.flinchAt = G.gt;
+      // which way the blow drives the body (animation.js reels it that way, not always backwards)
+      TMP.subVectors(playerPos(), fromPos); TMP.y = 0;
+      player.flinchDir = TMP.lengthSq() > 0.001 ? { x: TMP.x / TMP.length(), z: TMP.z / TMP.length() } : null;
+      player.flinchHeavy = melee && heavyHit;
       if (melee){
         if (player.atkT > 0 || player.darkT > 0) cancelSwing();
         TMP.subVectors(playerPos(), fromPos); TMP.y = 0;

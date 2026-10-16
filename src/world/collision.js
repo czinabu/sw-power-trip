@@ -80,6 +80,17 @@ export function collideSolids(pos, radius, climb){
   return support;
 }
 
+// GROUND UNDER A POINT — the highest solid top directly under (x, z) that is no higher than maxY (0 = the arena
+// floor). The body's support (collideSolids) is measured over its whole radius; feet ask this for their own spot.
+export function groundAt(x, z, maxY){
+  let g = 0;
+  for (const c of solids){
+    if (c.h > maxY || c.h <= g) continue;
+    if (c.box ? Math.abs(x - c.x) <= c.hx && Math.abs(z - c.z) <= c.hz : Math.hypot(x - c.x, z - c.z) <= c.r) g = c.h;
+  }
+  return g;
+}
+
 // SPAWN CLEARANCE — the intended spawn point (0, arenaHalf*0.5) sits at a fixed radius that overlaps the random-
 // cover placement bands in every arena builder (e.g. Temple's low walls roll up to exactly arenaHalf*0.5; Foundry's
 // machine blocks and Plains' ruins both farSpot into that radius too), and none of those placement loops know to

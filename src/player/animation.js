@@ -7,7 +7,7 @@ import { clamp, dampAngle, wrapAngle, V3 } from '../utils.js';
 import { burst } from '../fx/particles.js';
 import { G, player } from '../state.js';
 import { MANDO } from '../data/mando.js';
-import { MOVE } from '../data/movement.js';
+import { MOVE, GAIT } from '../data/movement.js';
 import { stance } from './helpers.js';
 import { tryAttack, applySwingDamage, FLOW } from './jedi/combat.js';
 import { mandoAimPoint, mandoWeapon, mandoShielding } from './mando/weapons.js';
@@ -16,6 +16,8 @@ import { FORM_OF, FOOTWORK } from '../data/poses.js';
 import { pistolPose, riflePose, rifleLowered, restGun } from './anim/guns.js';
 import { MIRROR } from './model/rig.js';
 import { saberPose, guardPose, swingPose, deflectPose, applySaberPose, releaseSaberPose, airGuard } from './anim/saber.js';
+import { advanceGait, gaitLegs, gaitHipOffset, releaseGait } from './anim/gait.js';
+import { footingLegs, releaseFooting } from './anim/footing.js';
 import { jediAirLegs, jediAgilityArms, jediAgilityPost, mandoAgilityPost, landingStyle, slamPitch } from './anim/agility.js';
 
 export function animatePlayer(dt, pp, st, f, r, moving){
@@ -86,13 +88,22 @@ function poseBody(dt, dr, vis, planted, POSE, moving){
     const lf = player.moveVel.x*ffx + player.moveVel.z*ffz;
     const lr = player.moveVel.x*(-ffz) + player.moveVel.z*ffx;
     const leanG = (stance().gait && stance().gait.lean) || 1;   // FAST leans eagerly into the run; STRONG runs upright & heavy
-    // HIT REACTION snaps the torso back; a PIVOT sits the hips down against the old momentum
-    const reel = player.flinchT > 0 ? -0.32 * (player.flinchT / (player.flinchMax || 0.3)) : 0;
+    // a PIVOT sits the hips down against the old momentum
+    // HIT REACTION — the body is driven the way the blow pushes it: reeling back from the front, pitched forward from
+    // behind, knocked sideways from the flank; a heavy blow harder
+    const fk = player.flinchT > 0 ? (player.flinchT / (player.flinchMax || 0.3)) * (player.flinchHeavy ? 1.35 : 1) : 0;
+    const fdir = player.flinchDir;
+    const hf = fdir ? fdir.x*ffx + fdir.z*ffz : -1, hr = fdir ? fdir.x*(-ffz) + fdir.z*ffx : 0;
+    const reel = 0.32 * hf * fk, reelSide = 0.28 * hr * fk;
     const plant = player.pivotT > 0 ? -0.18 : 0;
-    vis.rotation.x = dr(vis.rotation.x, lf*0.024*leanG + (planted ? POSE.lean : 0) + reel + plant, reel ? 22 : 9);
+    // WEIGHT — pushing off to start tips the body into it, braking sits it back, a turn banks into the curve
+    const gs = player._gait, gm = GAIT.accelMax;
+    const af = gs && player.grounded ? clamp((gs.ax*ffx + gs.az*ffz) * GAIT.accelLean, -gm, gm) : 0;
+    const ar = gs && player.grounded ? clamp((gs.ax*(-ffz) + gs.az*ffx) * GAIT.accelBank, -gm, gm) : 0;
+    vis.rotation.x = dr(vis.rotation.x, lf*0.024*leanG + af + (planted ? POSE.lean : 0) + reel + plant, reel ? 22 : 9);
     // WALL-RUN — feet on the wall, body tipped out away from it (the normal in the body's own left/right)
     const wallLean = player.wallRun ? -0.5 * (player.wallRun.nx * Math.cos(player.faceYaw) - player.wallRun.nz * Math.sin(player.faceYaw)) : 0;
-    vis.rotation.z = dr(vis.rotation.z, player.wallRun ? wallLean : lr*0.018*leanG, player.wallRun ? 14 : 9);   // bank INTO the strafe (was inverted — leaned the wrong way)
+    vis.rotation.z = dr(vis.rotation.z, player.wallRun ? wallLean : lr*0.018*leanG + ar + reelSide, player.wallRun ? 14 : reelSide ? 22 : 9);   // bank INTO the strafe (was inverted — leaned the wrong way)
     vis.position.y = dr(vis.position.y, 0, 10);
   }
 
@@ -123,14 +134,18 @@ function mandoTurn(face, lambda, dt){
 
 // Legs (stride, air tuck, stance splay, front kick), hips/robe, breathing and head look.
 function animateLegsAndTorso(dt, dr, R, planted, POSE){
+  const vis = player.vis;
   /* ================= rig animation ================= */
-  const hSpeed = Math.hypot(player.moveVel.x + player.vel.x, player.moveVel.z + player.vel.z);
-  player.runPhase += hSpeed * dt * 1.7;
-  if (G.hero === 'mando') player._strideQ = (player._strideQ || 0) + hSpeed * dt * 1.7 * (strideBack() ? -1 : 1);
+  // (a blow's shove isn't the legs' doing: while reeling the footing steps to catch the body instead of running it out)
+  const shoved = player.flinchT > 0 ? 0 : 1;
+  const tvx = player.moveVel.x + player.vel.x * shoved, tvz = player.moveVel.z + player.vel.z * shoved;
+  const hSpeed = Math.hypot(tvx, tvz);
+  // PER-STANCE GAIT — same skeleton, different run: FAST is light & high-kneed, STRONG is long & planted, the Mando heavy
+  const gait = (G.hero === 'mando' || !stance().gait) ? MANDO_GAIT : stance().gait;
+  // the stride clock runs on distance travelled (anim/gait.js); it also sets player.runPhase for the arms and twist
+  const GS = advanceGait(dt, hSpeed, gait);
   const ph = player.runPhase;
   const inten = clamp(hSpeed / CFG.player.speed, 0, 1.2);
-  // PER-STANCE GAIT — same skeleton, different run: FAST is light & high-kneed, STRONG is long & planted (mando = neutral)
-  const gait = (G.hero === 'mando' || !stance().gait) ? { amp: 1, lift: 1, bob: 0.35 } : stance().gait;
 
   // TOUCHDOWN — the knees soak a landing (harder falls sink deeper), then spring back up
   if (player.grounded && player._wasGrounded === false){
@@ -147,6 +162,16 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
   if (player.landT > 0) player.landT -= dt;
   const land = player.landT > 0 ? Math.sin((1 - player.landT / (player.landDur || LAND_T)) * Math.PI) * player.landAmt : 0;
   player._land = land;
+  // hips: crouch lowers the center of gravity per stance; on the move they sit lower and dip at each footfall
+  // (set before the legs, which are solved down from here)
+  player._crouch = dr(player._crouch || 0, planted ? POSE.crouch : 0, 8);
+  R.hips.position.y = 1.04 + player._crouch - (player._swingDrop || 0) - land*0.2 - (player._agiDrop || 0)
+                      + (player.grounded && !player.flip ? gaitHipOffset(GS, gait) : 0.05);
+  // a foot standing lower than the body (off a step, one foot down from a crate) needs the hips to come down to it
+  const fd = player.grounded && !player.flip && player._footDrop ? Math.min(0, player._footDrop[0], player._footDrop[1]) : 0;
+  player._hipSink = dr(player._hipSink || 0, fd * GAIT.hipSink / 1.18, 14);
+  R.hips.position.y += player._hipSink;
+  player._legIK = null;   // set below while the feet are solved onto the floor (ankle angles per leg)
   // legs: stride + knee lift (+ knee = the shin folds back, a real knee bend); the Jedi's air, flip and dive legs come from anim/agility.js
   if (G.hero !== 'mando' && jediAirLegs(dt, dr, R)){
     // posed: jump phases, Force leap and glide, flip tuck/pike/layout, slam dive
@@ -154,14 +179,36 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
     const lead = planted ? POSE.lead : 0;   // bladed/staggered footing when planted, neutral when moving
     // a swing steps into the cut: the off-side foot drives forward, the back leg loads
     const step = (player._swingDrop || 0) * 2.2;
-    // the stride runs backwards when he moves away from where he faces (the Jedi backing off in his guard, the Mando
-    // backpedalling while he braces or turns), instead of running forward on the spot while the body slides back
-    // (the Mando's stride clock runs backwards rather than mirroring, so the legs reverse without a pop as he turns)
-    const q = G.hero === 'mando' ? player._strideQ : ph * (strideBack() ? -1 : 1);
-    R.legL.hip.rotation.x  = dr(R.legL.hip.rotation.x,  Math.sin(q) * 0.55 * inten * gait.amp - lead - step - land*0.5, 14);
-    R.legR.hip.rotation.x  = dr(R.legR.hip.rotation.x, -Math.sin(q) * 0.55 * inten * gait.amp + lead + step*0.6 - land*0.35, 14);
-    R.legL.knee.rotation.x = dr(R.legL.knee.rotation.x, Math.max(0, -Math.sin(q - 0.4)) * 0.9 * inten * gait.lift + step*0.8 + land*0.95, 14);
-    R.legR.knee.rotation.x = dr(R.legR.knee.rotation.x, Math.max(0,  Math.sin(q - 0.4)) * 0.9 * inten * gait.lift + step*1.1 + land*0.8, 14);
+    // the stance's own leg shape and width (feet splay for the wide STRONG guard, stay close for FAST; a heavy landing
+    // spreads them): standing, the footing (anim/footing.js) keeps the feet planted and steps them to this shape
+    const still = [-lead - step - land*0.5, step*0.8 + land*0.95, lead + step*0.6 - land*0.35, step*1.1 + land*0.8];
+    const lsp = land * (landingStyle().splay || 0);
+    const splay = [(planted ? -POSE.splay : 0) - lsp, (planted ? POSE.splay : 0) + lsp];
+    // moving: the planted-foot gait (anim/gait.js); the two blend by speed
+    const w = GS.w;
+    let gaitA = null;
+    if (w > 0){
+      const ffx = Math.sin(player.faceYaw), ffz = Math.cos(player.faceYaw);
+      const fwd = hSpeed > 1e-3 ? (tvx*ffx + tvz*ffz) / hSpeed : 1, right = hSpeed > 1e-3 ? (tvx*(-ffz) + tvz*ffx) / hSpeed : 0;
+      gaitA = gaitLegs(GS, fwd, right, R, vis);
+      gaitA[0][0] -= step; gaitA[0][1] += step*0.8; gaitA[1][0] += step*0.6; gaitA[1][1] += step*1.1;
+    }
+    else releaseGait(GS);
+    let idleA = null;
+    if (w < 1) idleA = footingLegs(dt, R, vis, still, splay);
+    else releaseFooting();
+    // the solved angles are exact (no damping lag, or a planted foot would skate); coming down out of the air eases in
+    GS.inT = Math.min(1, (GS.inT || 0) + dt * 7);
+    const k = Math.max(GS.inT, Math.min(1, dt * 14));
+    player._legIK = [R.legL, R.legR].map((L, i) => {
+      const g = gaitA && gaitA[i], f = idleA && idleA[i];
+      const mix = j => g && f ? lerp(f[j], g[j], w) : (g || f)[j];
+      L.hip.rotation.x  += (mix(0) - L.hip.rotation.x) * k;
+      L.knee.rotation.x += (mix(1) - L.knee.rotation.x) * k;
+      L.hip.rotation.z  += (mix(2) - L.hip.rotation.z) * k;
+      L.ank.rotation.y  += ((f ? f[4] * (1 - w) : 0) - L.ank.rotation.y) * k;   // a locked foot keeps its heading
+      return mix(3);
+    });
   } else if (player.airDive){
     // PRONE flight — legs DEAD STRAIGHT and in line with the torso so the whole body reads as one long flat plank.
     // Forward superman: legs trail straight back (hip ~0). Reclined back-fall: feet kick out front.
@@ -185,20 +232,20 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
     R.legL.knee.rotation.x = dr(R.legL.knee.rotation.x, 1.0, 8);
     R.legR.knee.rotation.x = dr(R.legR.knee.rotation.x, 0.9, 8);
   }
-  // stance width — feet splay out for the wide STRONG guard, stay close for FAST
-  if (player.grounded && !player.flip){
-    const lsp = land * (landingStyle().splay || 0);   // a heavy landing spreads the feet
-    R.legL.hip.rotation.z = dr(R.legL.hip.rotation.z, (planted ? -POSE.splay : 0) - lsp, 9);
-    R.legR.hip.rotation.z = dr(R.legR.hip.rotation.z, (planted ?  POSE.splay : 0) + lsp, 9);
-  } else if (G.hero === 'mando' && !player.airDive){
-    R.legL.hip.rotation.z = dr(R.legL.hip.rotation.z, 0, 9);
-    R.legR.hip.rotation.z = dr(R.legR.hip.rotation.z, 0, 9);
+  if (!player._legIK){
+    releaseFooting(); releaseGait(GS); GS.inT = 0;
+    R.legL.ank.rotation.y = dr(R.legL.ank.rotation.y, 0, 12); R.legR.ank.rotation.y = dr(R.legR.ank.rotation.y, 0, 12);
+    if (G.hero === 'mando' && !player.airDive){
+      R.legL.hip.rotation.z = dr(R.legL.hip.rotation.z, 0, 9);
+      R.legR.hip.rotation.z = dr(R.legR.hip.rotation.z, 0, 9);
+    }
   }
   // ANKLES — feet stay planted flat on the ground under the leg angles; in the air the toes point
-  for (const L of [R.legL, R.legR]){
-    const flat = -(L.hip.rotation.x + L.knee.rotation.x) * 0.9;
-    L.ank.rotation.x = dr(L.ank.rotation.x, player.grounded && !player.flip ? flat : 0.45, 14);
-  }
+  // (on the ground the solver sets them: flat under a planted foot, heel strike and toe-off in the stride)
+  [R.legL, R.legR].forEach((L, i) => {
+    if (player._legIK) L.ank.rotation.x += (player._legIK[i] - L.ank.rotation.x) * Math.min(1, GS.inT + dt * 14);
+    else L.ank.rotation.x = dr(L.ank.rotation.x, 0.45, 14);
+  });
   // JEDI FRONT KICK — the right leg SNAPS forward (hard-set, overriding the stride pose above) and the torso leans
   // back to counterweight it. `ext` is a 0→1→0 envelope so the leg shoots out and recovers within kickT.
   if (G.hero !== 'mando' && player.kickT > 0){
@@ -208,9 +255,7 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
     R.legL.knee.rotation.x = 0.28 * ext;
     R.torso.rotation.x = -0.22 * ext;
   }
-  // hips bob + robe flare with speed; crouch lowers the center of gravity per stance
-  player._crouch = dr(player._crouch || 0, planted ? POSE.crouch : 0, 8);
-  R.hips.position.y = 1.04 + player._crouch - (player._swingDrop || 0) - land*0.2 - (player._agiDrop || 0) + (player.grounded ? Math.abs(Math.sin(ph)) * 0.05 * inten : 0.05);
+  // robe flare with speed
   R.skirt.rotation.x = dr(R.skirt.rotation.x, 0.13 * inten, 8);   // Jedi-only robe (hidden for the Mando)
   R.skirt.rotation.z = dr(R.skirt.rotation.z, Math.sin(ph) * 0.05 * inten, 8);
   // robe FLARE reads the stance silhouette: wide for DJEM SO, slim for ATARU (relaxes toward neutral while running)
@@ -334,17 +379,14 @@ function heldBlade(){
   if (player.weapon === 'darksaber' && player.darksaberMesh) return { node: player.darksaberMesh, root: null };
   return null;
 }
-// moving away from the way the body faces (more than sideways)?
-function strideBack(){
-  const ffx = Math.sin(player.faceYaw), ffz = Math.cos(player.faceYaw);
-  return player.moveVel.x*ffx + player.moveVel.z*ffz < -0.6 * Math.hypot(player.moveVel.x, player.moveVel.z) - 0.3;
-}
 export function footwork(){
   return FOOTWORK[(G.hero === 'mando' && player.weapon === 'darksaber') ? 'darksaber' : (FORM_OF[G.stance] || 'niman')];
 }
 const _IDQ = new THREE.Quaternion();
 const LAND_T = 0.34;
+const MANDO_GAIT = { amp: 0.95, lift: 0.7, bob: 0.45 };   // armour and a pack: shorter, lower, heavier steps than the Jedi
 const SHIELD_SIZE = 0.6;   // gauntlet shield disc scale (visual only; what it blocks is decided in player/damage.js)
+const lerp = (a, b, t) => a + (b - a) * t;
 const easeInOut = t => t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t + 2, 2) / 2;
 
 function animateForceCast(dt, dr, R){

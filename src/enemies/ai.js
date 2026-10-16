@@ -444,7 +444,12 @@ export function updateEnemies(dt){
       e.flinch -= dt;
       if (!e.dead && (e.state === 'chase' || e.state === 'recover')){
         const k = Math.max(0, e.flinch) / 0.15;
-        g.rotation.x = -0.3 * k;
+        // driven the way the hit pushes: back from the front, forward from behind, sideways from the flank
+        const fd = e.flinchDir, fx = Math.sin(g.rotation.y), fz = Math.cos(g.rotation.y);
+        const hf = fd ? fd.x*fx + fd.z*fz : -1, hr = fd ? fd.x*(-fz) + fd.z*fx : 0;
+        g.rotation.x = 0.3 * hf * k;
+        g.rotation.z = 0.26 * hr * k;
+        if (e.flinch <= 0) g.rotation.z = 0;
         g.userData.bodyMat.emissiveIntensity = Math.max(g.userData.bodyMat.emissiveIntensity, k);
       }
     }
