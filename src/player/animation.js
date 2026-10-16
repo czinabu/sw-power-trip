@@ -286,7 +286,7 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
     R.legR.knee.rotation.x = 0.1 + (1 - ext) * 0.7;
     R.legL.knee.rotation.x = 0.28 * ext;
     R.torso.rotation.x = -0.22 * ext;
-  }
+  } else if (G.hero !== 'mando' && !(player.atkT > 0)) R.torso.rotation.x = dr(R.torso.rotation.x, 0, 12);   // settle a swing's lean
   // robe flare with speed
   R.skirt.rotation.x = dr(R.skirt.rotation.x, 0.13 * inten, 8);   // Jedi-only robe (hidden for the Mando)
   R.skirt.rotation.z = dr(R.skirt.rotation.z, Math.sin(ph) * 0.05 * inten, 8);
@@ -317,9 +317,12 @@ function animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait){
   if (dfl){ dfl.t += dt; if (dfl.t >= dfl.dur || !held) player.deflectAnim = null; }
   if (player.atkT > 0){
     // saber swing: the keyframed cut for this form, grip and direction
-    player.atkT -= dt;
     const sw = player.swing;
-    sw.t += dt;
+    // BITE — when the blade meets a body it drags for an instant (the cut has to go THROUGH something), then carries on
+    const sdt = sw.bite > 0 ? dt * BITE.slow : dt;
+    if (sw.bite > 0) sw.bite -= dt;
+    player.atkT -= sdt;
+    sw.t += sdt;
     // (no blade in hand — e.g. the weapon was swapped mid-swing — just run the swing's clock out)
     const cue = held ? swingPose(R, held, grip, form, sw) : { k: Math.min(1, sw.t / sw.dur), env: 0, cut: 0, spin: 0, hop: 0, drop: 0 };
     if (held) applySaberPose(R, held, player.castT <= 0);
@@ -338,8 +341,12 @@ function animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait){
       vis.rotation.y += sw.body.ry * inB;
       vis.position.y += sw.body.py * inB;
     }
-    // drive in on the strike: the weapon shoulder reaches, the hips sink for the power forms
-    R.torso.position.z = dr(R.torso.position.z, cue.env * 0.12 * (sw.riposte ? 1.6 : 1), 14);
+    // the body LOADS into the chamber (weapon shoulder drawn back) and THROWS its weight through the strike: the
+    // shoulder reaches and the knees give, harder for a riposte; a spin or a leap carries its own body
+    const coil = cue.coil || 0, drive = cue.drive || 0;
+    R.torso.position.z = dr(R.torso.position.z, (drive * 0.17 - coil * 0.06) * (sw.riposte ? 1.5 : 1), 30);
+    R.torso.rotation.x = dr(R.torso.rotation.x, drive * 0.1 - coil * 0.05, 24);
+    if (!player.flip && !cue.hop && player.grounded) vis.position.y = dr(vis.position.y, -0.07 * drive, 26);
     R.torso.rotation.y = dr(R.torso.rotation.y, MC ? MC.chest * 0.22 * (turn || 1) : 0, MC ? 30 : 12);
     vis.rotation.x = dr(vis.rotation.x, saberPose.lean, 14);
     player._swingDrop = cue.drop * cue.env + sw.body.drop * inB;
@@ -347,7 +354,7 @@ function animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait){
     // stroke itself (not the chamber or the follow-through); the strike point still runs the swing's one-off effects
     if (held){
       const touched = sweepBlade(sw, cue.k >= ((sw.anim && sw.anim.tc) || 0.25) * 0.6 && cue.k <= 0.92);
-      if (touched && touched.length) applySwingDamage(sw.step, touched);
+      if (touched && touched.length){ applySwingDamage(sw.step, touched); sw.bite = BITE.time; }
     }
     if (!sw.applied && cue.k > 0.35){ sw.applied = true; applySwingDamage(sw.step, held || sw.cutSet ? [] : undefined); }
     // IN-RHYTHM LINK (Jedi): one well-timed press this swing → the next cut leaves from the follow-through
@@ -425,6 +432,7 @@ export function footwork(){
 const _IDQ = new THREE.Quaternion();
 const LAND_T = 0.34;
 const MANDO_GAIT = { amp: 0.95, lift: 0.7, bob: 0.45 };   // armour and a pack: shorter, lower, heavier steps than the Jedi
+const BITE = { time: 0.05, slow: 0.3 };   // a saber cut drags this long, at this speed, as it passes through a body
 const SHIELD_SIZE = 0.6;   // gauntlet shield disc scale (visual only; what it blocks is decided in player/damage.js)
 const lerp = (a, b, t) => a + (b - a) * t;
 const easeInOut = t => t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t + 2, 2) / 2;

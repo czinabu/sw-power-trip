@@ -35,6 +35,7 @@ const WRAP_BLADE = { regular: new THREE.Vector3(0, 0.78, -0.62).normalize(), rev
 
 const easeOut = t => 1 - (1 - t) * (1 - t);
 const easeIn = t => t * t * t;   // a cut accelerates into contact
+const COIL_HOLD = 0.22;   // the share of the stroke's time the blade hangs at the top of the chamber before it goes
 
 /* live, smoothed pose state (chest space) */
 export const saberPose = {
@@ -110,9 +111,12 @@ export function swingPose(R, held, grip, form, sw){
   }
   const A = sw.anim, [C, S, F] = A.keys;
   const k = Math.min(1, sw.t / sw.dur);
+  // COIL — the blade settles into the chamber and HANGS there for a beat before it snaps through (a riposte, already
+  // moving, doesn't pause); the stroke then accelerates hard into the strike key
+  const hold = sw.riposte ? 0 : COIL_HOLD * (A.ts - A.tc);
   let a, b, t, ta, tb;
   if (k < A.tc){ a = A.start; b = C; t = easeOut(k / A.tc); ta = A.start.twist; tb = C.twist; }
-  else if (k < A.ts){ a = C; b = S; t = easeIn((k - A.tc) / (A.ts - A.tc)); ta = C.twist; tb = S.twist; }
+  else if (k < A.ts){ a = C; b = S; t = easeIn(Math.max(0, k - A.tc - hold) / (A.ts - A.tc - hold)); ta = C.twist; tb = S.twist; }
   else if (k < A.tf){ a = S; b = F; t = easeOut((k - A.ts) / (A.tf - A.ts)); ta = S.twist; tb = F.twist; }
   else { a = F; b = A.rest; t = 0.3 * easeOut((k - A.tf) / (1 - A.tf)); ta = tb = F.twist; }
   arcLerp(a.hand, b.hand, t, PIVOT, saberPose.hand);
@@ -144,7 +148,11 @@ export function swingPose(R, held, grip, form, sw){
   }
   // progress through the actual cut (chamber → follow), for spins
   const cut = THREE.MathUtils.clamp((k - A.tc) / (A.tf - A.tc), 0, 1);
-  return { k, env: Math.sin(Math.PI * k), cut, spin: A.spin, hop: A.hop, drop: style.drop || 0, fin: A.fin, strike: k > A.tc && k < A.tf };
+  // the body's beats for animation.js: coil (loaded back into the chamber) and drive (the weight thrown through the
+  // strike, peaking as the blade reaches the strike key, then carried out by the follow-through)
+  const coil = k < A.tc ? easeOut(k / A.tc) : k < A.tc + hold ? 1 : k < A.ts ? 1 - (k - A.tc - hold) / (A.ts - A.tc - hold) : 0;
+  const drive = k < A.tc + hold ? 0 : k < A.ts ? easeIn((k - A.tc - hold) / (A.ts - A.tc - hold)) : k < A.tf ? 1 - 0.6 * easeOut((k - A.ts) / (A.tf - A.ts)) : 0.4 * (1 - easeOut((k - A.tf) / (1 - A.tf)));
+  return { k, env: Math.sin(Math.PI * k), cut, spin: A.spin, hop: A.hop, drop: style.drop || 0, fin: A.fin, strike: k > A.tc && k < A.tf, coil, drive };
 }
 
 /* DEFLECT — the blade snaps to catch a bolt and flicks it away. Which catch is picked from where the bolt arrives
