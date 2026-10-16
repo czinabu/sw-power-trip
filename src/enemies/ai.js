@@ -409,6 +409,15 @@ export function updateEnemies(dt){
       case 'ragdoll': {
         e.vel.y -= 22 * dt;
         g.position.addScaledVector(e.vel, dt);
+        if (e.crumple){
+          // CRUMPLE — a foe dropped by a fist or a knee buckles and falls onto its back where it stood
+          g.rotation.x = dampToward(g.rotation.x, -1.5, dt, 5); g.rotation.z = dampToward(g.rotation.z, 0, dt, 8);
+          if (g.position.y <= 0){
+            g.position.y = 0; e.vel.y = 0; e.vel.x *= Math.max(0, 1 - dt * 8); e.vel.z *= Math.max(0, 1 - dt * 8);
+            if (g.rotation.x < -1.4){ e.vel.set(0,0,0); e.state = 'fade'; e.st = 0.8; }
+          }
+          break;
+        }
         g.rotation.x += dt * 7; g.rotation.z += dt * 5;
         if (g.position.y < 0){
           g.position.y = 0;
