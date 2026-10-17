@@ -19,11 +19,11 @@ export function endRun(won){
   const score = Math.max(0, Math.round(
     st.kills * 12 + waves * (endless ? 200 : 120) + st.bestStreak * 20 + (st.parries + st.deflects) * 15 +
     (st.bossKilled ? 1500 : 0) + (acc > 0 ? acc * 400 : 0) - st.dmgTaken * 0.35));
-  const key = endless ? 'sw_best_endless' : 'sw_best_score';   // survival has its OWN leaderboard
+  const key = endless ? 'sw_best_endless' : G.mission ? 'sw_best_mission' : 'sw_best_score';   // survival and missions keep their OWN bests
   let best = 0; try { best = parseInt(localStorage.getItem(key) || '0', 10) || 0; } catch(e){}
   const newBest = score > best;
   if (newBest){ try { localStorage.setItem(key, String(score)); } catch(e){} best = score; }
-  st.summary = { won, elapsed, waves, acc, score, best, newBest, endless };
+  st.summary = { won, elapsed, waves, acc, score, best, newBest, endless, mission: !!G.mission };
   renderRunSummary();
 }
 function renderRunSummary(){
@@ -32,11 +32,11 @@ function renderRunSummary(){
   const mm = Math.floor(s.elapsed / 60), ss = Math.round(s.elapsed % 60);
   const timeStr = mm + ':' + (ss < 10 ? '0' : '') + ss;
   const stat = (label, val) => '<div class="rs-stat"><div class="rs-v">' + val + '</div><div class="rs-l">' + label + '</div></div>';
-  let grid = stat('TIME', timeStr) + stat(s.endless ? 'WAVE REACHED' : 'WAVES', s.waves) + stat('KILLS', st.kills) +
+  let grid = stat('TIME', timeStr) + (s.mission ? '' : stat(s.endless ? 'WAVE REACHED' : 'WAVES', s.waves)) + stat('KILLS', st.kills) +
              stat('BEST STREAK', '×' + st.bestStreak) + stat('DEFENSE', st.parries + st.deflects);
   if (s.acc >= 0) grid += stat('ACCURACY', Math.round(s.acc * 100) + '%');
   grid += stat('DMG TAKEN', Math.round(st.dmgTaken));
-  const title = s.endless ? 'SURVIVAL ENDED' : (s.won ? 'VICTORY' : 'YOU HAVE FALLEN');
+  const title = s.endless ? 'SURVIVAL ENDED' : s.mission ? (s.won ? 'MISSION COMPLETE' : 'MISSION FAILED') : (s.won ? 'VICTORY' : 'YOU HAVE FALLEN');
   let boonHtml = '';
   if (player.boons && Object.keys(player.boons).length){
     let items = '';

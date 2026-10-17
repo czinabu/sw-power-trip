@@ -16,6 +16,10 @@ body.in-menu #hud,body.in-menu #boonstrip{opacity:0;transition:none}
 #waveinfo .wi-w b{color:var(--ink);font-weight:800}
 #waveinfo .wi-h{display:block;font-size:12px;letter-spacing:1.5px;color:var(--ink-soft);margin-top:3px}
 #waveinfo .wi-h em{font-style:normal;color:#ff9a8a}
+#waveinfo .wi-h.warn{color:#ff9a8a}
+/* a story mission's objective progress (game/objectives.js) */
+#waveinfo .wi-bar{display:block;width:220px;height:4px;margin-top:6px;border-radius:2px;background:rgba(255,255,255,.14);overflow:hidden}
+#waveinfo .wi-bar i{display:block;height:100%;background:var(--gold);box-shadow:0 0 8px rgba(255,210,90,.6);transition:width .2s linear}
 #waveinfo .wi-mut{display:inline-block;margin-left:2px;padding:0 7px;border-radius:var(--r-chip);border:1px solid currentColor;font-size:10px;letter-spacing:1.5px}
 #xphud{align-self:flex-start;margin-top:4px;padding:5px 11px;border-radius:var(--r-chip);border:1px solid rgba(60,200,120,.35);
   background:rgba(8,26,18,.55);font:700 15px/1 var(--font-ui);color:var(--xp);text-shadow:0 0 10px var(--xp-glow);letter-spacing:1px}

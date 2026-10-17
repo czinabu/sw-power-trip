@@ -16,6 +16,7 @@ import { updateBoonStrip } from '../game/boons.js';
 import { renderThreats } from './threats.js';
 import { svgIcon, SLOT_ICON } from './icons.js';
 import { trainingProgress } from '../game/tutorial.js';
+import { objectiveHud } from '../game/objectives.js';
 
 // give every power slot its icon once (key badge top-left, icon centre, name below)
 for (const id in SLOT_ICON){ const el = document.getElementById(id); if (el) el.querySelector('.key').insertAdjacentHTML('afterend', svgIcon(SLOT_ICON[id])); }
@@ -122,6 +123,11 @@ export function updateHud(){
   if (G.training){
     const tp = trainingProgress();
     setHtml($('waveinfo'), '<span class="wi-l">TRAINING · ' + tp.place + '</span><span class="wi-w">LESSON ' + tp.lesson + ' / ' + tp.total + '</span>');
+  } else if (G.mission){
+    const o = objectiveHud();
+    if (o) setHtml($('waveinfo'), '<span class="wi-l">' + o.kicker + '</span><span class="wi-w">' + o.title + '</span>' +
+      '<span class="wi-h' + (o.warn ? ' warn' : '') + '">' + o.status + '</span>' +
+      (o.frac != null ? '<span class="wi-bar"><i style="width:' + (clamp(o.frac, 0, 1) * 100).toFixed(1) + '%"></i></span>' : ''));
   } else if (G.endless){
     const mut = G.mut ? MUTATORS.find(m => m.id === G.mut) : null;
     setHtml($('waveinfo'), '<span class="wi-l">SURVIVAL</span><span class="wi-w">WAVE ' + G.endlessWave + '</span>' + hostiles +

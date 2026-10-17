@@ -50,6 +50,7 @@
 .setup-row{display:grid;grid-template-columns:1fr 1.25fr;gap:14px}
 #overlay.st-menu .setup-row{grid-template-columns:1fr;gap:18px}
 #modeselect,#diffselect{display:flex;gap:6px}
+#modeselect{display:grid;grid-template-columns:1fr 1fr}   /* four modes: two by two */
 .modeopt{--bc:var(--gold);flex:1;padding:10px 12px;border:1px solid var(--edge);border-radius:var(--r);background:rgba(8,18,33,.7);cursor:pointer;
   pointer-events:auto;text-align:left;opacity:.7;transition:opacity .15s,border-color .15s,background .15s}
 .modeopt:hover{opacity:1;border-color:var(--edge-mid)}

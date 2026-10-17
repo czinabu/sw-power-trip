@@ -22,7 +22,7 @@ export const shared = {
   arenaLayout: 'temple',   // which authored layout is up (temple | foundry | plains) — picks the ambience, reverb and music palette
   ambient: null,   // drifting embers / ash / dust
   templeBrazier: null,
-  levelPhase: 'idle',   // idle | between | fighting | bossfight | training
+  levelPhase: 'idle',   // idle | between | fighting | bossfight | training | mission
   phaseT: 0,
   lockFallback: false,   // pointer lock unavailable (e.g. embedded preview) — play with plain mouse-move look
   lockWorked: false,     // pointer lock has succeeded at least once, so a refusal is transient (Esc cooldown), not unsupported
@@ -49,9 +49,10 @@ export const G = {
   stance: 'medium', stanceCd: 0,
   hero: 'jedi',          // 'jedi' (saber/Force) or 'mando' (jetpack/blasters) — chosen on the menu
   // SURVIVAL / ENDLESS mode
-  modeSel: 'campaign',   // menu pick: 'campaign' | 'endless' | 'training'
+  modeSel: 'campaign',   // menu pick: 'campaign' | 'endless' | 'training' | 'mission'
   endless: false,        // true while a survival run is active
   training: false,       // true while the tutorial runs (game/tutorial.js)
+  mission: false,        // true while a story mission runs (game/mission.js)
   endlessWave: 0,        // current survival wave (1-based)
   mut: null,             // active wave mutator id (or null)
   arenaRot: 0,           // which authored arena the survival run is currently on

@@ -9,6 +9,7 @@ import { rand, clamp } from '../utils.js';
 import { shared, G } from '../state.js';
 import { LEVELS } from '../data/levels.js';
 import { thunder } from '../audio/director.js';
+import { missionProgress } from '../game/mission.js';
 
 const A = { T: null, sky: null, base: null, p: 0, flash: 0, nextBolt: 0, bolt: 0, strike: null, half: 20 };
 
@@ -62,6 +63,7 @@ export function clearAtmosphere(){ A.T = null; A.sky = null; A.strike = null; }
 /* how far into this level's fight we are, 0 (first wave) → 1 (final wave / boss) */
 function progress(){
   if (shared.boss && shared.boss.hp > 0) return 1;
+  if (G.mission) return missionProgress();
   if (G.endless) return (((G.endlessWave || 1) - 1) % 5) / 4;
   const L = LEVELS[G.levelIdx], n = L ? L.waves.length : 4;
   return clamp(((G.wave || 1) - 1) / Math.max(1, n - 1), 0, 1);
