@@ -19,7 +19,8 @@ import { updateBoonStrip } from '../game/boons.js';
 import { endRun } from '../game/summary.js';
 import { showBanner } from '../ui/banners.js';
 import { overlay, setOverlayState } from '../ui/menus.js';
-import { diffDmgMul } from '../data/difficulty.js';
+import { diffDmgMul, diffWindow } from '../data/difficulty.js';
+import { masteryXp } from '../game/progression.js';
 import { DUEL } from '../data/duel.js';
 import { startLock } from '../enemies/duel.js';
 import { mandoCatch } from './mando/melee.js';
@@ -32,7 +33,7 @@ const MELEE_REACH_UP = 1.7;   // a melee foe can't strike you if you're perched 
 export function perfectDodge(fromPos){
   const P = CFG.player.perfectDodge;
   if (G.mode !== 'play' || !fromPos) return false;
-  if (G.gt - (player.dashStartT ?? -9) > P.window || G.gt - (player.lastPerfectT ?? -9) < P.cd) return false;
+  if (G.gt - (player.dashStartT ?? -9) > P.window + diffWindow() || G.gt - (player.lastPerfectT ?? -9) < P.cd) return false;
   player.lastPerfectT = G.gt;
   G.slowmo = Math.min(G.slowmo, P.slowmo); G.slowmoT = Math.max(G.slowmoT, P.slowT);
   if (G.hero === 'mando') player.jet = Math.min(player.jetMax, player.jet + MANDO.boostDash.fuel * P.refund);
@@ -48,6 +49,7 @@ export function perfectDodge(fromPos){
   floater(pp, 'PERFECT DODGE', '#9fe6ff');
   sfx(1400, 0.1, 'sine', 0.05, 700); sfx(300, 0.25, 'sine', 0.06, 150);
   if (G.stats) G.stats.perfectDodges = (G.stats.perfectDodges || 0) + 1;
+  masteryXp('perfectDodge');
   tutEvent('perfectDodge');
   return true;
 }
@@ -80,6 +82,7 @@ function bladeClash(fromPos){
   G.hitstop = Math.max(G.hitstop, 0.08); G.shake = Math.max(G.shake, 0.45);
   S.clash(cp, true);
   if (G.stats) G.stats.clashes = (G.stats.clashes || 0) + 1;
+  masteryXp('clash');
   return true;
 }
 
@@ -158,6 +161,7 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
         floater(pp, (player.cancelRiposte ? 'PARRY! ⟲ CRUSHING RIPOSTE' : 'PARRY! ⟲ RIPOSTE READY'), '#ffe27a');
         S.parry(fp);   // a bright ringing clash
         if (G.stats) G.stats.parries++;
+        masteryXp('parry');
         addFocus(FOCUS.gainParry);   // a perfect parry is the biggest FOCUS spike
         tutEvent('parry');
         return 'parried';
@@ -192,6 +196,7 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
   dmg *= diffDmgMul();   // DIFFICULTY scales all incoming damage (enemies, boss, blasts)
   player.hp -= dmg;
   if (G.stats) G.stats.dmgTaken += dmg;
+  G.waveDmg = (G.waveDmg || 0) + dmg; if (!chip) G.waveHits = (G.waveHits || 0) + 1;   // a blocked blow's chip doesn't spoil a flawless wave
   player.lastHurt = G.gt;
   if (G.hero !== 'mando' && !chip) player.focus = (player.focus || 0) * FOCUS.hitLoss;   // FORCE FOCUS — a clean trade is broken when you're hit (not by block chip)
   if (fromPos){ player.hitFrom = V3(fromPos.x, 1.4, fromPos.z); player.dmgIndT = 1.0; }   // THREAT — point the damage arc at the source

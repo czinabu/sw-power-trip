@@ -20,7 +20,7 @@ import { findClearSpawn, edgeSpawn } from '../world/collision.js';
 import { buildArena } from '../world/arena.js';
 import { startLevel, checkUnlocks } from './flow.js';
 import { MUTATORS } from '../data/mutators.js';
-import { gainXp } from './progression.js';
+import { payWaveClear } from './progression.js';
 import { openSkillTree } from '../ui/store-ui.js';
 import { showBanner } from '../ui/banners.js';
 
@@ -134,6 +134,7 @@ export function startEndlessWave(){
   for (let i = 0; i < list.length; i++){ t += (i>0 && i%pulse===0) ? surgeGap : 0.2; G.spawnQueue.push({ type:list[i], t }); }
   if (G.pendingChampion){ G.pendingChampion = false; spawnChampion(); }
   shared.levelPhase = 'fighting';
+  G.waveHits = 0; G.waveDmg = 0;   // how cleanly this wave is fought (payWaveClear)
   checkUnlocks(1600);   // survival earns the same auto-kit (stances, Force jump/pull, dual blasters, jetpack tiers) as waves climb
   const mut = G.mut ? MUTATORS.find(m => m.id === G.mut) : null;
   const head = milestone ? (n % 10 === 0 ? '◈ CHAMPION ◈' : '◈ ELITE SURGE ◈') : '';
@@ -142,7 +143,7 @@ export function startEndlessWave(){
   if (mut) floater(V3(playerPos().x, 2.2, playerPos().z), mut.name + ' — ' + mut.tip, mut.col);
 }
 export function endlessWaveCleared(){
-  gainXp(120 + G.endlessWave * 34);
+  payWaveClear(120 + G.endlessWave * 34);
   if (player.hp > 0 && player.hp < maxHp()){
     const healed = Math.min(maxHp()-player.hp, Math.round(maxHp()*((player.boon && player.boon.secwind) ? 0.60 : 0.30)));   // SECOND WIND boon heals extra
     player.hp += healed; const pp0 = playerPos();

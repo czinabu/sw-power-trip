@@ -27,10 +27,11 @@ import {
 import { mandoMelee } from '../player/mando/melee.js';
 import { lockPress, lockKick, lockPush } from '../enemies/duel.js';
 import { mandoWeapon, switchWeapon, startReload, fireTrigger, mandoFlame } from '../player/mando/weapons.js';
-import { startLevel } from '../game/flow.js';
+import { startLevel, retryLevel } from '../game/flow.js';
 import { showBanner } from '../ui/banners.js';
 import { overlay, setSaberGrip } from '../ui/menus.js';
 import { tutEvent } from '../game/tutor-bus.js';
+import { diffWindow } from '../data/difficulty.js';
 
 const inputActive = () => document.pointerLockElement === renderer.domElement || (shared.lockFallback && G.mode === 'play');
 document.addEventListener('mousemove', (e) => {
@@ -55,7 +56,7 @@ document.addEventListener('mousedown', (e) => {
         // DARKSABER guards & PARRIES like a lightsaber — RMB interrupts a swing at any point into the guard
         cancelSwing();
         player.blockHeld = true; player.blockT = 0;
-        if (!(player.parryLockT > 0)) player.parryT = CFG.player.parryWindow + (stance().parryBonus || 0) + (player.up.parry || 0);
+        if (!(player.parryLockT > 0)) player.parryT = CFG.player.parryWindow + (stance().parryBonus || 0) + (player.up.parry || 0) + diffWindow();
       } else player.blockHeld = true;                 // beskar brace — pure damage soak, no parry
     }
     return;
@@ -76,7 +77,7 @@ document.addEventListener('mousedown', (e) => {
       // land it on an incoming bolt or a melee strike to send it back / stagger the attacker.
       player.blockHeld = true;
       player.blockT = 0;
-      let pwin = CFG.player.parryWindow + (stance().parryBonus || 0) + player.up.parry;
+      let pwin = CFG.player.parryWindow + (stance().parryBonus || 0) + player.up.parry + diffWindow();
       if (cancelled){
         // STANCE-SPECIFIC CANCEL FEEL
         if (G.stance === 'fast'){
@@ -169,7 +170,7 @@ document.addEventListener('keydown', (e) => {
     G.mode = 'play'; G.slowmo = 1;
     overlay.style.display = 'none';
     document.getElementById('banner').style.opacity = '0';
-    startLevel(again ? 0 : G.levelIdx);
+    if (again) startLevel(0); else retryLevel();
     try { const p = renderer.domElement.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch(e){}
   }
 });

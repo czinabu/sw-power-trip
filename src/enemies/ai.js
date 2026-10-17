@@ -21,6 +21,7 @@ import { ENGAGE } from '../data/enemies.js';
 import { updateDirector, usesToken, dropToken, rangedSlotFree, behindCamera } from './director.js';
 import { updateNav, navSteer, navClass, navClearance } from './nav.js';
 import { DUEL } from '../data/duel.js';
+import { diffTellMul } from '../data/difficulty.js';
 import { updateDuel, cleanupDuel, planAttack, quickStrike, windupPose, strikePose, maybeFeint, chainNext, updateSaberLock } from './duel.js';
 import { TROOP_MELEE, TROOP_FIRE, GRENADE } from '../data/tactics.js';
 import { tickTactics, planTroopMelee, troopFeint, holdTremble, planShot, approachSteer, tryOrder, updateOrder, tryLunge, updateLungeWind,
@@ -267,7 +268,7 @@ export function updateEnemies(dt){
           // swing at once — ranged/converted foes are unaffected (already standoff/ally-targeted, not a swarm problem).
           else if (t.ranged || e.converted || G.gt - (G.lastMeleeWindupT ?? -9) >= MELEE_WINDUP_GAP){
             // a swing coiled BEHIND the camera gets a longer tell, so off-screen hits stay fair
-            e.wu = t.windup * (!t.ranged && !e.converted && behindCamera(g.position) ? ENGAGE.rearWindup : 1);
+            e.wu = t.windup * (!t.ranged && !e.converted && behindCamera(g.position) ? ENGAGE.rearWindup : 1) * (e.converted ? 1 : diffTellMul());   // DIFFICULTY: longer tells on Padawan
             e.state = 'windup'; e.st = e.wu; telegraphWindup(e);
             // a duellist picks its line, and whether this one is a feint, a held strike or the start of a string; a plain
             // trooper may hold or feint (tactics.js); a line trooper plans a double-tap or a held aim

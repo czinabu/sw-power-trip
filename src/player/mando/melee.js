@@ -16,6 +16,8 @@ import { damageBoss } from '../../boss/boss.js';
 import { spawnHitSpark, spawnGroundShock } from '../../fx/vfx.js';
 import { inkSprite, sparks, puff, clashFlash, thrust } from '../../fx/ink.js';
 import { tutEvent } from '../../game/tutor-bus.js';
+import { masteryXp } from '../../game/progression.js';
+import { diffWindow } from '../../data/difficulty.js';
 import { mandoShielding } from './weapons.js';
 
 const DOWNED = { stagger: 1, knockdown: 1, getup: 1 };
@@ -31,12 +33,12 @@ export function mandoMelee(){
   if (player.meleeT > 0){
     // mid-string, a blow about to land on you takes priority: the press raises the vambrace instead (the shield
     // already covers you, so behind it the press just queues the next cut)
-    if (!shielded && !(player.catchLockT > 0) && incoming()){ player.catchT = M.catchWindow; player.meleeQueued = false; return; }
+    if (!shielded && !(player.catchLockT > 0) && incoming()){ player.catchT = M.catchWindow + diffWindow(); player.meleeQueued = false; return; }
     // a press late in the recovery queues the next beat of the string (early mashing is ignored)
     if (player.meleeT < player.meleeMax * 0.55) player.meleeQueued = true;
     return;
   }
-  if (!shielded && !(player.catchLockT > 0)) player.catchT = M.catchWindow;   // anything that lands in the next instant gets CAUGHT
+  if (!shielded && !(player.catchLockT > 0)) player.catchT = M.catchWindow + diffWindow();   // anything that lands in the next instant gets CAUGHT
   const down = takedownTarget(shielded ? M.guard.takedownReach : 0);
   if (down){ takedown(down); return; }
   if (shielded){ guardStrike(); return; }
@@ -147,6 +149,7 @@ function landStrike(B){
 export function mandoCatch(fromPos){
   player.catchT = 0;
   tutEvent('catch');
+  masteryXp('catch');
   player.meleeT = player.meleeMax = 0.3; player.meleeKind = 'catch'; player.meleeQueued = false;
   const pp = playerPos();
   TMP.subVectors(fromPos, pp); TMP.y = 0; if (TMP.lengthSq() > 0.001) TMP.normalize(); else TMP.copy(fwd());

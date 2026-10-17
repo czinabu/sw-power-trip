@@ -8,7 +8,7 @@ import { AE } from '../audio/engine.js';
 import { shared, G, player } from '../state.js';
 import { applySaberGrip } from '../player/model/weapons.js';
 import { setHero } from '../player/hero.js';
-import { startLevel } from '../game/flow.js';
+import { startLevel, retryLevel, retryIsBoss } from '../game/flow.js';
 import { startEndless } from '../game/survival.js';
 import { startTutorial, skipStep, setTrainingExit, trainingDone } from '../game/tutorial.js';
 import { closeProgress } from './store-ui.js';
@@ -42,7 +42,7 @@ export function setOverlayState(state){
   } else if (state === 'pause'){
     go.textContent = 'RESUME'; sub.textContent = 'PAUSED';
   } else if (state === 'dead'){
-    go.textContent = G.endless ? 'NEW SURVIVAL RUN' : 'RETRY THIS LEVEL';
+    go.textContent = G.endless ? 'NEW SURVIVAL RUN' : retryIsBoss() ? 'RETRY THE BOSS' : 'RETRY THIS LEVEL';
     sub.textContent = '';   // the run summary's own title carries the moment
   } else if (state === 'victory'){
     go.textContent = 'PLAY AGAIN';
@@ -63,7 +63,7 @@ function beginPlay(){
     if (G.modeSel === 'endless') startEndless(); else if (G.modeSel === 'training') startTutorial(); else startLevel(0);
   } else if (G.mode === 'dead'){
     G.mode = 'play'; G.slowmo = 1;
-    if (G.endless) startEndless(); else if (G.training) startTutorial(); else startLevel(G.levelIdx);   // survival retry = a fresh survival run
+    if (G.endless) startEndless(); else if (G.training) startTutorial(); else retryLevel();   // survival retry = a fresh survival run
   } else if (G.mode === 'play'){
     overlay.style.display = 'none';  // resume from pause
   }
