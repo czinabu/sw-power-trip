@@ -18,7 +18,7 @@ import { segBlockedBySolids, clampToArena, collideSolids } from '../world/collis
 import { hurtPlayer } from '../player/damage.js';
 import { enemyDmgScale } from '../game/survival.js';
 import { ENGAGE } from '../data/enemies.js';
-import { updateDirector, usesToken, dropToken, rangedSlotFree, behindCamera } from './director.js';
+import { updateDirector, usesToken, dropToken, claimToken, rangedSlotFree, behindCamera } from './director.js';
 import { updateNav, navSteer, navClass, navClearance } from './nav.js';
 import { DUEL } from '../data/duel.js';
 import { diffTellMul } from '../data/difficulty.js';
@@ -106,15 +106,15 @@ export function updateEnemies(dt){
           if (hd > 0.5){ g.position.x += hx / hd * e.spd * 0.7 * dt; g.position.z += hz / hd * e.spd * 0.7 * dt; g.rotation.y = Math.atan2(hx, hz); }
           break;
         }
-        // DUELLING — a foe that just turned your blade answers at once, outside the turn queue (duel.js)
+        // DUELLING — a foe that just turned your blade answers at once (duel.js), if a turn is free for it
         if (e.counterQueued && tgtPos && !e.converted){
           e.counterQueued = false;
-          if (dist < t.range + 1.2){ e.counterAt = G.gt; quickStrike(e, DUEL.counterWindup); break; }
+          if (dist < t.range + 1.2 && claimToken(e)){ e.counterAt = G.gt; quickStrike(e, DUEL.counterWindup); break; }
         }
         // a trooper that FEINTED comes again straight away, fast (tactics.js)
         if (e.feintAgain && tgtPos && !e.converted){
           e.feintAgain = false;
-          if (dist < t.range + 0.8){
+          if (dist < t.range + 0.8 && claimToken(e)){
             e.state = 'windup'; e.wu = e.st = TROOP_MELEE.feintWindup; e.plan = null; e.troop = null;
             telegraphWindup(e); G.lastMeleeWindupT = G.gt;
             break;
