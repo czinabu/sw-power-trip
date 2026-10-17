@@ -81,6 +81,9 @@ export function updateEnemies(dt){
 
     // pick a target: the player, or — for mind-tricked units — their old allies
     let tgtPos = pp, tgtEnemy = null, tgtBoss = false;
+    // a MISSION foe with a goal (game/mission.js: the ramp during the hold) marches on it, and only turns on the hero
+    // when the hero is in its way (within goal.aggro). At the goal it stays and attacks what's there.
+    if (e.goal && !e.converted && Math.hypot(pp.x - g.position.x, pp.z - g.position.z) > e.goal.aggro) tgtPos = e.goal.pos;
     if (e.converted){
       const tt = hostileTargetFor(e);
       if (tt){ tgtPos = tt.pos; tgtEnemy = tt.enemy; tgtBoss = tt.boss; }

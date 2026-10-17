@@ -16,7 +16,7 @@ import { closeProgress } from './store-ui.js';
 import { DIFFS } from '../data/difficulty.js';
 import { renderControls } from './controls.js';
 import { svgIcon } from './icons.js';
-import './roadmap.js';
+import { setRoadmap } from './roadmap.js';
 
 /* ============================================================
    INPUT
@@ -95,13 +95,18 @@ function setModeSel(m){
     return;
   }
   G.modeSel = m;
-  for (const k of ['campaign', 'endless', 'training', 'mission']) document.getElementById('mode-' + k).classList.toggle('sel', m === k);
+  for (const k of ['campaign', 'endless', 'training']) document.getElementById('mode-' + k).classList.toggle('sel', m === k);
   if (_ovState === 'menu') setOverlayState('menu');   // headline + button follow the mode
 }
 document.getElementById('mode-campaign').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setModeSel('campaign'); });
 document.getElementById('mode-endless').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setModeSel('endless'); });
 document.getElementById('mode-training').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setModeSel('training'); });
-document.getElementById('mode-mission').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setModeSel('mission'); });
+// EXPERIMENTAL (in the EXTRAS panel): the story mission launches straight from its card
+document.getElementById('xp-mission-go').addEventListener('click', (e) => {
+  e.stopPropagation(); audioInit(); setRoadmap(false);
+  G.modeSel = 'mission'; if (_ovState === 'menu') setOverlayState('menu');
+  launch();
+});
 refreshSurvivalLock();
 // TRAINING marks which heroes have finished it
 function refreshTrainingMark(){
@@ -310,6 +315,7 @@ function goHome(){
   startLevel(0);   // sweep the battlefield and reset the hero + kit, exactly as a fresh campaign would
   G.mode = 'menu'; G.paused = false; G.slowmo = 1; G.slowmoT = 0; G.hitstop = 0;
   overlay.style.display = 'flex';
+  if (G.modeSel === 'mission') setModeSel('campaign');   // the experimental mission isn't a menu pick: back to the campaign
   refreshSurvivalLock(); refreshTrainingMark(); refreshMissionMark();
   setOverlayState('menu');
   overlay.scrollTop = 0;

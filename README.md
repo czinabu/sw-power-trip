@@ -73,7 +73,7 @@ Each file starts with a one-line description. Balance changes usually only touch
 
 **Campaign** — 3 authored arenas on the road to the Sith (Holy City of Jedha, Mustafar Forge, Throne of Exegol), 4 waves each escalating to an end-boss (Darth Vexis for the Jedi, The Iron Magistrate for the Mando)
 
-**Story** — The Last Evacuation, a mission at a hidden mountain refuge in three objectives: guard the transport's ramp while the younglings (or foundlings) file aboard (officers call in the reinforcements, so drop them first), the transport lifts off, slice three Imperial uplinks, then a one-on-one duel with the Inquisitor. Dying restarts the objective you fell on. Missions are data (`data/missions.js`) built from reusable objective pieces (`game/objectives.js`: zones, consoles, timers, the objective HUD line).
+**Story (experimental, under EXTRAS on the menu)** — The Last Evacuation, a mission at a hidden mountain refuge in three objectives: guard the transport's ramp while the younglings (or foundlings) file aboard (officers call in the reinforcements, so drop them first), the transport lifts off, slice three Imperial uplinks, then a one-on-one duel with the Inquisitor. Dying restarts the objective you fell on. Missions are data (`data/missions.js`) built from reusable objective pieces (`game/objectives.js`: zones, consoles, timers, the objective HUD line).
 
 **Survival mode** — unlocked after beating the campaign as both heroes. Endless escalating waves, 8 wave mutators, Warbringer mid-boss every 10 waves, arena rotation, repeatable power-ups, roguelite boon picks each wave
 
