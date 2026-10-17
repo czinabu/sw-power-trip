@@ -29,5 +29,8 @@ export const HITBOX = {
   magna:   parts({ hx: 0.45, y1: 1.98 }, { y1: 2.33, hx: 0.16 }, { hx: 0.3 }),       // magnaguard
   acolyte: parts({ hx: 0.5, hz: 0.3 }, { y1: 2.44 }, { hx: 0.36, hz: 0.3 }),         // acolyte (cloak flares at the knee)
   riot:    parts({ hx: 0.62, hz: 0.48 }, { y1: 2.36 }, { y0: 0, y1: 0.8, hx: 0.3, hz: 0.3 }),   // phalanx + riot shield
+  officer: parts({ hx: 0.46 }, { y1: 2.38 }),                                        // officer
+  grenadier: parts({ hx: 0.52, hz: 0.32 }, { y1: 2.36 }),                            // grenadier (bandolier, pack)
+  lancer:  parts({ hx: 0.5, hz: 0.3 }, { y1: 2.44 }),                                // lancer (crest, cape)
   b1:      parts({ y0: 0.8, y1: 1.72, hx: 0.4, hz: 0.3 }, { y0: 1.72, y1: 2.19, hx: 0.12, hz: 0.3 }, { y1: 0.8, hx: 0.2, hz: 0.15 }),  // bomber droid
 };

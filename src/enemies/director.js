@@ -6,6 +6,8 @@ import { rand } from '../utils.js';
 import { G, enemies } from '../state.js';
 import { fwd, playerPos } from '../player/helpers.js';
 import { navDist, navClass } from './nav.js';
+import { GRENADE } from '../data/tactics.js';
+import { assignApproach } from './tactics.js';
 
 // hostile melee foes that take turns (bombers rush regardless; the Warbringer runs its own leap pattern)
 export const usesToken = e => !e.converted && !e.dead && !e.t.ranged && !e.t.bomber && !e.warbringer;
@@ -44,7 +46,7 @@ export function updateDirector(dt){
   const free = meleeSlots() - held;
   if (free <= 0 || !waiting.length) return;
   waiting.sort((a, b) => a.d - b.d);
-  for (let i = 0; i < free && i < waiting.length; i++){ waiting[i].e.token = true; waiting[i].e.tokenT = 0; }
+  for (let i = 0; i < free && i < waiting.length; i++){ waiting[i].e.token = true; waiting[i].e.tokenT = 0; assignApproach(waiting[i].e); }
 }
 
 export function dropToken(e, rest){
@@ -53,12 +55,17 @@ export function dropToken(e, rest){
 }
 
 // a ranged foe may start a wind-up only while fewer than its class's slots (more late in the run) are already
-// aiming: blasters and jet troopers share one pool, marksmen have their own
-export function rangedSlotFree(sniper){
+// aiming: blasters, jet troopers and officers share one pool, marksmen and grenadiers each have their own
+const fireClass = t => t.sniper ? 'sniper' : t.grenade ? 'grenade' : 'line';
+export function rangedSlotFree(t){
+  const c = fireClass(t);
   let n = 0;
-  for (const e of enemies) if (!e.dead && !e.converted && e.t.ranged && !!e.t.sniper === !!sniper && e.state === 'windup') n++;
+  for (const e of enemies) if (!e.dead && !e.converted && e.t.ranged && e.state === 'windup' && fireClass(e.t) === c) n++;
   const late = (G.waveTotal || 0) >= ENGAGE.lateAt;
-  return n < (sniper ? (late ? ENGAGE.sniperSlotsLate : ENGAGE.sniperSlots) : (late ? ENGAGE.rangedSlotsLate : ENGAGE.rangedSlots));
+  const cap = c === 'sniper' ? (late ? ENGAGE.sniperSlotsLate : ENGAGE.sniperSlots)
+    : c === 'grenade' ? (late ? GRENADE.slotsLate : GRENADE.slots)
+    : (late ? ENGAGE.rangedSlotsLate : ENGAGE.rangedSlots);
+  return n < cap;
 }
 
 // is this spot behind the camera? swings wound up there get a longer, fairer tell

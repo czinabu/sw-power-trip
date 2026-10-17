@@ -75,3 +75,32 @@ Open the game with `?hitbox` in the URL to draw every foe's hitbox as a wirefram
 
 `window.GAME.nav` exposes the grid (`NAV`), `navSteer` and `navDist` in the dev console. `NAV.dist[0]` is the
 trooper field and `NAV.dist[1]` the big-body field: walking distance to the hero per cell, row by row from −half.
+
+## Tactics and squad roles
+
+The data is `src/data/tactics.js`; the code is `src/enemies/tactics.js` (plus `src/enemies/grenades.js`). `ai.js` calls
+into it at the same points it calls `duel.js`. `window.GAME.tactics` exposes the tables in the dev console.
+
+![The officer, the grenadier and the purge lancer](enemy-ai/new-enemies.jpg)
+
+- **The ramp:** every trick below scales with run depth (`RAMP`): about a third of its chance on wave 1, all of it by
+  wave 9 (campaign waves add up across levels; survival uses the survival wave), times the difficulty.
+- **Rank-and-file feints and held swings:** purge troopers and sentinels have `feint` and `delay` in their duel profile
+  with `ramp: true`. Brutes and lancers (no duel profile) use `TROOP_MELEE`: a held swing hangs and trembles at the apex,
+  a feint checks the swing, settles back, then comes again fast.
+- **Blaster fire:** line troopers (blasters, jet troopers) sometimes fire a double-tap (a second bolt 0.16s behind) or
+  hold their aim a beat longer (`TROOP_FIRE`).
+- **Pincers:** when a second foe takes an attack token while another holder closes from the same side, it swings wide
+  to come in from an angle off the first (`PINCER`). Rear wind-ups still get the longer tell.
+- **Officer:** hangs back with a sidearm and calls an order every 6 to 9 seconds with you in sight (one order on the
+  field at a time). The arm goes up and the call shows over its head for 0.7s; a hit in that window cuts it off.
+  *Volley*: every line trooper near it and in range aims on the same beat and fires together. *Flank*: for 7 seconds
+  every token holder swings wide around you. An officer's death makes the troops within 13 units falter for 1.3s.
+- **Grenadier:** lobs a thermal detonator over cover onto where you're heading (`GRENADE`). The ring at the landing spot
+  appears as it leaves the hand and fills as the fuse burns. The blast can't be blocked or parried; dash through it or
+  get out. A stray one flinches the squad; a Jedi's Force Push sends live ones back into them for real damage.
+  Grenadiers have their own fire slots, so they don't crowd out the blaster line.
+- **Purge lancer:** an electro-pike gap-closer. From 5 to 12 units away, in front of the camera and in sight, it plants
+  and marks a line on the ground at you (`LUNGE`). The line tracks you, turns white and locks at 70% of the tell, then
+  it dashes down it. A held block can't stop the point: step off the line, dash, or parry (it staggers). A miss
+  overshoots into a long recovery. One lancer lunges at a time, and one waiting its turn in the ring doesn't.

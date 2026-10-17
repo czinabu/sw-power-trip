@@ -160,6 +160,15 @@ const HELMETS = {
     k.add(loft([{ y:-0.04, w:0.17, d:0.1, z:0.12 }, { y:0.1, w:0.15, d:0.08, z:0.13 }], chamfer(0.4)), 'armor', h);
     k.glow(new THREE.BoxGeometry(0.2, 0.02, 0.01), t.eye, h, [0, 0.18, 0.168], [0,0,0], { tag: 'eye' });
   },
+  // IMPERIAL OFFICER: a bare face under a peaked cap, the cap badge lit (the tell that swells as it aims or calls)
+  officer(k, h, t){
+    k.add(loft([{ y:-0.03, w:0.18, d:0.2 }, { y:0.12, w:0.22, d:0.24 }, { y:0.25, w:0.22, d:0.24 }], HEAD), 'skin', h);
+    k.add(block(0.17, 0.025, 0.03, 0.3), 'black', h, [0, 0.16, 0.115], [0,0,0], { outline: false });   // the brow's shadow
+    k.add(block(0.08, 0.018, 0.02, 0.3), 'black', h, [0, 0.06, 0.118], [0,0,0], { outline: false });   // a thin mouth
+    k.add(loft([{ y:0.22, w:0.25, d:0.27 }, { y:0.33, w:0.3, d:0.32 }, { y:0.38, w:0.29, d:0.31 }], chamfer(0.3)), 'armor', h);   // crown
+    k.add(loft([{ y:0, w:0.23, d:0.12, z:0.12 }, { y:0.025, w:0.23, d:0.12, z:0.12 }], chamfer(0.5)), 'black', h, [0, 0.22, 0.03]);   // brim
+    k.glow(new THREE.BoxGeometry(0.06, 0.04, 0.01), t.eye, h, [0, 0.31, 0.162], [0,0,0], { tag: 'eye' });
+  },
   // SCOUT TROOPER: big brow visor jutting forward, a long breather snout
   scout(k, h, t){
     k.add(loft([{ y:0.0, w:0.24, d:0.25 }, { y:0.14, w:0.27, d:0.28 }, { y:0.3, w:0.26, d:0.28 }, { y:0.38, w:0.14, d:0.17 }], HEAD), 'armor', h);
@@ -197,6 +206,24 @@ function weaponArm(k, t, w){
     k.add(block(0.03, 0.08, 0.03, 0.3), 'gun', grip, [0, 0.04, 0.045], [0,0,0], { outline: false });
     k.glow(new THREE.CylinderGeometry(0.022, 0.016, 1.12, 8), 0xffffff, grip, [0, -0.72, 0]);
     k.glow(new THREE.CylinderGeometry(0.06, 0.045, 1.16, 8), t.eye, grip, [0, -0.72, 0], [0,0,0], { opacity: 0.55 });
+  } else if (t.weapon === 'pistol'){
+    // a sidearm, its barrel down the line of the forearm (the arm levels it to fire)
+    k.add(block(0.055, 0.3, 0.09, 0.3), 'gun', grip, [0, -0.17, 0.02]);
+    k.add(loft([{ y:0, w:0.04, d:0.04 }, { y:0.12, w:0.035, d:0.035 }], ngon(8, PI/8)), 'gun', grip, [0, -0.32, 0.03], [PI, 0, 0]);
+    k.add(block(0.045, 0.06, 0.13, 0.3), 'gun', grip, [0, -0.02, -0.04], [0.3, 0, 0]);
+  } else if (t.weapon === 'deto'){
+    // a thermal detonator cupped in the throwing hand
+    k.add(new THREE.SphereGeometry(0.11, 10, 8), 'metal', grip, [0, -0.06, 0.04]);
+    k.glow(new THREE.BoxGeometry(0.06, 0.02, 0.01), t.eye, grip, [0, -0.06, 0.15]);
+  } else if (t.weapon === 'pike'){
+    // electro-pike: a long haft carried point-forward, a leaf blade and a crackling collar behind it
+    const pk = k.group(grip, [0, 0, 0], [-1.1, 0, 0]);
+    k.add(loft([{ y:-1.5, w:0.05, d:0.05 }, { y:0.6, w:0.05, d:0.05 }], ngon(6)), 'gun', pk);
+    k.add(block(0.08, 0.1, 0.08, 0.35), 'metal', pk, [0, 0.62, 0]);
+    k.add(loft([{ y:0, w:0.09, d:0.09 }, { y:0.1, w:0.075, d:0.075 }], ngon(6)), 'metal', pk, [0, -1.52, 0], [PI, 0, 0]);
+    k.add(plate([[-0.06,0],[0.06,0],[0.04,-0.3],[0,-0.38],[-0.04,-0.3]], 0.03, 0.008), 'metal', pk, [0, -1.6, 0], [0, PI/2, 0]);
+    k.glow(new THREE.TorusGeometry(0.07, 0.016, 5, 12), t.eye, pk, [0, -1.44, 0], [PI/2, 0, 0], { opacity: 0.85 });
+    k.glow(new THREE.BoxGeometry(0.008, 0.3, 0.015), t.eye, pk, [0, -1.78, 0.03]);
   } else {
     // vibro-maul: a long haft and a two-faced hammer head with glowing power cells
     k.add(loft([{ y:-1.15, w:0.07, d:0.07 }, { y:0.12, w:0.065, d:0.065 }], ngon(6)), 'leather', grip);
@@ -363,6 +390,46 @@ export const MODELS = {
     k.glow(new THREE.SphereGeometry(0.17, 12, 10), t.eye, k.root, [0, 1.5, 0.2], [0,0,0], { unique: true, tag: 'bombCore' });
     for (const a of [0, PI/2]) k.add(new THREE.TorusGeometry(0.19, 0.022, 5, 12), 'metal', k.root, [0, 1.5, 0.2], [0, a, 0], { outline: false });
     k.add(block(0.5, 0.05, 0.06, 0.3), 'leather', k.root, [0, 1.5, 0.12], [0, 0, 0.5], { outline: false });
+  },
+  // IMPERIAL OFFICER — a grey tunic, belt and rank plaque, a peaked cap, one hand behind its back and a sidearm in the
+  // other (officer). No armour: the one you can drop fast.
+  officer(k, t){
+    const w = 0.94;
+    legs(k, w, { shin: 'cloth', boot: 'black' }); hips(k, w); torso(k, w, { box: false, pack: false });
+    k.add(loft([{ y:1.03, w:0.42*w, d:0.29 }, { y:1.1, w:0.42*w, d:0.29 }], SHIELD), 'black');   // belt
+    k.add(block(0.05, 0.04, 0.03, 0.3), 'metal', k.root, [0, 1.065, 0.15], [0,0,0], { outline: false });
+    k.add(block(0.13, 0.055, 0.02, 0.3), 'black', k.root, [0.15*w, 1.66, 0.185], [0,0,0], { outline: false });   // rank plaque
+    for (let i = 0; i < 3; i++) k.glow(new THREE.BoxGeometry(0.022, 0.022, 0.01), i ? 0x4a8cff : 0xff3a2a, k.root, [0.11*w + i*0.035, 1.66 - (i % 2)*0.012, 0.197]);
+    for (const x of [-0.12, -0.16]) k.add(loft([{ y:0, w:0.025, d:0.025 }, { y:0.07, w:0.025, d:0.025 }], ngon(6)), 'metal', k.root, [x*w, 1.64, 0.18], [0,0,0], { outline: false });   // code cylinders
+    k.add(loft([{ y:1.86, w:0.27, d:0.22 }, { y:1.95, w:0.22, d:0.18 }], chamfer(0.45)), 'armor2');   // the high collar
+    sideArm(k, w, -1, [0.35, 0, 0.0], { bend: -1.2 });   // hand tucked at the small of its back
+    weaponArm(k, t, w);
+    helmet(k, 'officer', t);
+  },
+  // GRENADIER — a field trooper in khaki plates, a bandolier of detonators across the chest and one in hand (grenadier)
+  grenadier(k, t){
+    const w = 1.04;
+    legs(k, w); hips(k, w); torso(k, w); pauldrons(k, w, 'armor2', 0.95);
+    k.add(plate([[-0.05,0.3],[0.05,0.3],[0.05,-0.3],[-0.05,-0.3]], 0.02, 0.006), 'leather', k.root, [0, 1.56, 0.19], [0, 0, 0.62], { outline: false });   // bandolier
+    for (let i = 0; i < 4; i++){
+      const a = -0.25 + i * 0.17;
+      k.add(new THREE.SphereGeometry(0.055, 8, 6), 'metal', k.root, [-0.14 + i*0.1, 1.38 + i*0.12, 0.215 + 0.01*a]);
+      k.glow(new THREE.BoxGeometry(0.03, 0.012, 0.01), t.eye, k.root, [-0.14 + i*0.1, 1.38 + i*0.12, 0.27]);
+    }
+    for (const s of [-1, 1]) k.add(new THREE.SphereGeometry(0.08, 8, 6), 'metal', k.root, [0.13*s, 1.32, -0.33]);   // spares on the pack
+    sideArm(k, w, -1, [-0.2, 0, 0.1]);
+    weaponArm(k, t, w);
+    helmet(k, 'storm', t);
+  },
+  // PURGE LANCER — a lean purge trooper in a short cape, an electro-pike carried point-forward, a finned crest (lancer)
+  lancer(k, t){
+    const w = 0.98;
+    legs(k, w); hips(k, w); torso(k, w, { box: false }); pauldrons(k, w, 'armor2', 1.0);
+    k.add(plate([[-0.28,0],[0.28,0],[0.32,-0.9],[0,-1.0],[-0.32,-0.9]], 0.014, 0.004), 'cloth', k.root, [0, 1.86, -0.22], [0.1, 0, 0], { outline: false });   // short cape
+    sideArm(k, w, -1, [-0.55, 0, 0.0], { bend: -0.9 });   // the off hand forward, on the haft line
+    weaponArm(k, t, w);
+    const h = helmet(k, 'purge', t);
+    for (const s of [-1, 1]) k.add(shard(0.04, 0.22, 0.12), 'armor2', h, [0.07*s, 0.42, -0.02], [-0.4, 0, 0.25*s]);
   },
   // SCOUT SNIPER — scout helm, camo poncho, a long DLT-19x (sniper)
   scout(k, t){

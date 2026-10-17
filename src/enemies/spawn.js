@@ -31,6 +31,9 @@ const TYPE_TIPS = {
   brute:   ['BRUTE', 'A wall of muscle — too heavy to stagger lightly. Parry its swing, or floor it with a heavy blow.'],
   duelist: ['MAGNAGUARD', 'A duellist: the pale arc shows the side it guards. Cut in from the OTHER side, kick (E) to break its guard, and parry its strike.'],
   acolyte: ['SITH ACOLYTE', 'A trained saber duellist. It feints, strings cuts, deflects blaster fire and binds blades. Read its guard, break it, punish the opening.'],
+  officer: ['IMPERIAL OFFICER', 'It calls VOLLEYS and FLANKS for its squad. Hit it while its arm is up to cut the order off, and drop it to make its troops falter.'],
+  grenadier: ['GRENADIER', 'It lobs detonators over cover. The ring is where it lands: get out before it fills. A Jedi can PUSH one back.'],
+  lancer:  ['PURGE LANCER', 'From range it marks a line and LUNGES down it. Step off the line as it locks, or parry the point. A miss leaves it wide open.'],
   flyer:   ['JET TROOPER', 'It hovers out of saber reach. Pull or shove it down to bust its jetpack, blast it out of the sky, or deflect its fire.'],
 };
 function maybeTip(typeName){
