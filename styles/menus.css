@@ -181,3 +181,9 @@
   .ctl .tips{grid-template-columns:1fr}
   #runsummary .rs-grid .rs-stat{flex-basis:calc((100% - 8px) / 2)!important}
 }
+/* first campaign: the offer to train first swaps in for the action row, like the leave-run confirm */
+#trainconfirm{display:none;flex-direction:column;align-items:flex-start;gap:12px;margin-top:28px;padding:16px 22px;cursor:default;
+  border:1px solid rgba(255,210,74,.45);border-radius:var(--r-lg);background:rgba(30,24,8,.72);animation:rise .2s var(--ease)}
+#overlay.asktrain #trainconfirm{display:flex}
+#overlay.asktrain .ov-actions{display:none}
+#skipBtn{display:none}

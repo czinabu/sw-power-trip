@@ -18,6 +18,7 @@ import { damageBoss, bossStun, bossStagger } from '../../boss/boss.js';
 import { cancelSwing } from './combat.js';
 import { spawnPushWave, spawnGroundShock } from '../../fx/vfx.js';
 import { inkSprite, sparks, motes, dustRing, barrierMaterial, bindBarrier } from '../../fx/ink.js';
+import { tutEvent } from '../../game/tutor-bus.js';
 
 /* trigger the off-hand reaching gesture used by every Force power */
 // a Jedi power's Force cost after the survival cost cuts (ATTUNEMENT, DEEP RESERVES, FORCE NEXUS) — the same
@@ -58,6 +59,7 @@ export function forcePush(){
     const falloff = 1 - (d / A.range) * 0.5;
     damageEnemy(e, A.dmg, TMP.clone(), A.knock * falloff);
     pushed++;
+    tutEvent('pushHit', e);
   }
   // launch barrels
   for (const b of barrels){

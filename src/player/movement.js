@@ -13,6 +13,7 @@ import { STEP_UP } from '../world/collision.js';
 import { flipStyle, launchFlip } from './anim/agility.js';
 import { MOVE } from '../data/movement.js';
 import { tryVault, findLedge, startMantle, requestRoll, hangClimb } from './parkour.js';
+import { tutEvent } from '../game/tutor-bus.js';
 
 /* MOMENTUM in a chain of moves: each move sends you where it says, instead of piling its push on top of whatever the
    last move left. The run's momentum (moveVel) and the impulses (vel) are steered together. */
@@ -56,6 +57,7 @@ export function forceDash(){
   player.force -= A.cost;   // the dash spends Force
   player.cds.dash = A.cd * (stance().dashCd || 1) * player.up.dashCdMult;
   player.dashT = A.time; player.dashStartT = G.gt;   // PERFECT DODGE reads the dash's start (player/damage.js)
+  tutEvent('dash');
   const dir = V3(0,0,0);
   if (keys['w']) dir.add(fwd());
   if (keys['s']) dir.sub(fwd());
@@ -151,6 +153,7 @@ export function doJump(){
     player.airLeft--;
     player.force = Math.max(0, player.force - DJUMP_FORCE);   // the double jump spends Force
     player.doubleJumped = true;        // arms the aerial Force Slam
+    tutEvent('doubleJump');
     player.vy = CFG.player.jumpVel * 1.35;   // a big, epic Force-leap on the second jump
     // the form's second-jump move, facing the way you're looking: Ataru's twisting front flip, Niman's layout,
     // Djem So's flipless Force leap (data/agility.js); slowed to hang with the big Force-leap arc

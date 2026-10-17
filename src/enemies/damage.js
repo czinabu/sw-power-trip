@@ -16,6 +16,7 @@ import { addStreak } from '../player/damage.js';
 import { gainXp, killBonus } from '../game/progression.js';
 import { ENGAGE } from '../data/enemies.js';
 import { dropToken } from './director.js';
+import { tutEvent } from '../game/tutor-bus.js';
 
 /* opts.launch === false: a blow with no rocket behind it (the Mandalorian's fists, knee and blade). It never floors or
    throws a live foe (the caller staggers or shoves it), and a foe it kills crumples where it stands instead of flying. */
@@ -83,8 +84,10 @@ export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick, opts){
     floater(p, Math.round(dmg), e.hp <= 0 ? '#ffd24a' : '#bfe8ff');
     S.impact(cp, power);   // voiced by what landed it: saber burn, blaster pop, or a thump
   }
+  if (e.sparring && e.hp < 1) e.hp = 1;   // TRAINING: a sparring partner takes the blow but never falls
   if (e.hp <= 0){
     e.dead = true; e.state = 'ragdoll'; e.st = 0;
+    tutEvent('kill', e);
     if (blownUp) flyerBlowUp(e);
     if (e.t.bomber && !e._blew) bomberExplode(e);   // a SABOTEUR killed before its fuse still goes off — don't kill it point-blank
     const d = knockDir ? knockDir.clone().setY(0) : fwd();

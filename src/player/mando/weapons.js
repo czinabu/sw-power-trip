@@ -20,6 +20,7 @@ import { tryAttack } from '../jedi/combat.js';
 import { updateDark } from './darksaber.js';
 import { spawnHitSpark } from '../../fx/vfx.js';
 import { muzzleFlash, inkSprite, sparks, puff, screenAngle } from '../../fx/ink.js';
+import { tutEvent } from '../../game/tutor-bus.js';
 
 /* ============================================================
    MANDALORIAN — jetpack, dual blasters, flamethrower, wrist rockets
@@ -84,6 +85,7 @@ export function switchWeapon(name){
 export function startReload(){
   if (mandoWeapon().melee || player.heat <= 0.02 || player.overheat) return;
   player.heat = 0; player.ventT = 0.45; player.fireCd = Math.max(player.fireCd, 0.45);
+  tutEvent('vent');
   sfx(300, 0.12, 'square', 0.05, 90); sfx(140, 0.1, 'triangle', 0.05, 60); floater(playerPos(), 'VENT', '#9cc8e8');
 }
 // HEAT — fired shots add heat; it only starts bleeding off after a short COOL-DELAY (so spraying climbs

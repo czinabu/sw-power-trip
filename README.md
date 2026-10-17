@@ -35,8 +35,8 @@ src/
     mando/           weapons, gadgets, darksaber
   enemies/           meshes, elites, special moves, spawning, damage, AI, pathing (nav.js), attack turns (director.js), blaster bolts (see docs/enemy-ai.md)
   boss/              boss lightning FX and the boss itself
-  world/             arena builder, arenas/ (temple, foundry, plains layouts), Ink bake, painted skies/floors, backdrops, atmosphere, collision, hazards (see docs/world-guidelines.md)
-  game/              level/wave flow, survival mode, progression, boons, end-of-run summary
+  world/             arena builder, arenas/ (temple, foundry, plains layouts; hall and forge for training), Ink bake, painted skies/floors, backdrops, atmosphere, collision, hazards (see docs/world-guidelines.md)
+  game/              level/wave flow, survival mode, training (tutorial.js), progression, boons, end-of-run summary
   ui/                banners, threat markers, HUD, store overlay, menus, controls (How to Play data)
 ```
 
@@ -56,6 +56,8 @@ Each file starts with a one-line description. Balance changes usually only touch
 
 **Changing movement and combat feel:** grounded movement and parkour (air control, fall weight, landing stagger and roll, mantle/vault reach, ledge hang, wall-run, sprint and slide, turn rate and pivots) the gait (step length, foot lift, hip bob, acceleration lean; `GAIT`) and standing footwork (when a foot steps; `FOOTING`) are tuned in `src/data/movement.js`; the code lives in `src/player/parkour.js` and `locomotion.js`. The run and jump are shaped by motion capture (`src/data/mocap.js`, made by `tools/mocap/convert.mjs`; `?mocap=0` turns it off; see docs/animation-guidelines.md). Parry/block strictness, swing arcs, lunge reach, hit flinch, perfect dodge, blade clashes and lock-on are in `CFG.player` (`src/data/config.js`); lock-on lives in `src/player/lockon.js`. How sword-armed foes duel back (guards, posture, feints, delayed strikes, strings, counters, saber locks) and the Mandalorian's close-quarters kit are tuned in `src/data/duel.js`; the code is `src/enemies/duel.js` and `src/player/mando/melee.js` (see docs/enemy-ai.md).
 
+**Changing the tutorial:** each hero's lessons are data in `src/data/tutorial.js`: the teacher's line, the keys, what counts as done (a move that worked, a spot to reach, foes to beat) and what to set up. A lesson counts moves the game reports through `src/game/tutor-bus.js` (`tutEvent('parry')` and so on), so a new kind of lesson needs one `tutEvent` call where that move succeeds. The same file holds the one-line drills shown when a new ability unlocks in a real run.
+
 **Live tweaking:** `window.GAME` in the browser console exposes the config tables and most game functions.
 
 ## Features
@@ -63,6 +65,8 @@ Each file starts with a one-line description. Balance changes usually only touch
 **Two playable heroes:**
 - **Jedi** — three lightsaber stances (Ataru / Niman / Djem So), parry & riposte combat, Force powers (Push, Pull, Slam, Repulse, Judgement, Barrier, Saber Throw, Mend), a Force Focus flow meter that rewards aggressive play
 - **Mandalorian** — jetpack flight with momentum/boost/dive/hover, dual blasters + disruptor rifle + darksaber, flamethrower, wrist rockets, whistling birds, grappling hook, jetpack missile, gauntlet shield, and a close-quarters kit on E (jab, cross, knee, vibroblade string; vambrace catch; jet charge; dive kick; takedowns)
+
+**Training** — a short tutorial for each hero in its own place (the Jedi training hall, the Armorer's forge). The Battlemaster or the Armorer teaches the starting kit one move at a time, and each lesson only passes when the move actually works. New abilities earned later get a one-line drill when they unlock.
 
 **Campaign** — 3 authored arenas on the road to the Sith (Holy City of Jedha, Mustafar Forge, Throne of Exegol), 4 waves each escalating to an end-boss (Darth Vexis for the Jedi, The Iron Magistrate for the Mando)
 

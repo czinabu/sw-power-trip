@@ -9,6 +9,7 @@ import { shared, G, solids, keys, player } from '../state.js';
 import { fwd, rightV, playerPos } from './helpers.js';
 import { launchFlip } from './anim/agility.js';
 import { STEP_UP } from '../world/collision.js';
+import { tutEvent } from '../game/tutor-bus.js';
 
 const smooth = k => k * k * (3 - 2 * k);
 const easeOut = k => 1 - (1 - k) * (1 - k);
@@ -61,6 +62,7 @@ export function startMantle(pp, ledge, vault){
                         : { t: 0, dur, pitch: 0.55, legs: 'tuck', arms: 'tuck', side: 1, ease: 'twirl' };
   }
   burst(V3(ledge.x, ledge.top + 0.05, ledge.z), 0x9a9288, 4, 2.5, 1.5, 0.8);
+  tutEvent(up <= MOVE.vaultHeight ? 'vault' : 'climb');   // over something low counts as a vault, whatever the run-up
   S.jump();
 }
 
@@ -160,6 +162,7 @@ export function trySlide(){
   const hs = Math.hypot(player.moveVel.x, player.moveVel.z);
   if (hs < MOVE.slideMinSpeed) return;
   player.slideT = MOVE.slideTime;
+  tutEvent('slide');
   player.moveVel.multiplyScalar((hs + MOVE.slideBoost) / hs);
   player.sprinting = false;
   player.flip = { t: 0, dur: MOVE.slideTime, pitch: -0.3, drop: 0.5, legs: 'kneeslide', arms: null, side: 1, ease: 'twirl' };
@@ -247,6 +250,7 @@ export function updateWallRun(dt, pp){
   const dir = Math.sign(-n.z * vx + n.x * vz) || 1;          // which way along the face
   player.wallRun = { t: 0, nx: n.x, nz: n.z, dir };
   player.wallRunUsed = true;
+  tutEvent('wallrun');
   player.vy = MOVE.wallRunLift;   // the feet catch the wall: a small, fixed lift (not the jump's full rise)
   S.dash();
 }
@@ -277,6 +281,7 @@ export function requestRoll(pp){
 
 function landingRoll(){
   player.rollReqT = -9; player.landStagT = 0;
+  tutEvent('roll');
   const f = fwd();
   let dx = player.moveVel.x + player.vel.x, dz = player.moveVel.z + player.vel.z;
   if (dx * dx + dz * dz < 1){ dx = f.x; dz = f.z; }

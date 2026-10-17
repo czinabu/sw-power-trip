@@ -84,6 +84,11 @@ export function updateEnemies(dt){
       case 'chase': {
         if (tgtPos) g.rotation.y = Math.atan2(tx, tz);
         if (e.stunT > 0) break;   // reeling from a saber hit — no step, no swing this beat
+        if (e.dummy){             // TRAINING target: it stands and takes it, and walks back to its post when knocked off it
+          const hx = e.home.x - g.position.x, hz = e.home.z - g.position.z, hd = Math.hypot(hx, hz);
+          if (hd > 0.5){ g.position.x += hx / hd * e.spd * 0.7 * dt; g.position.z += hz / hd * e.spd * 0.7 * dt; g.rotation.y = Math.atan2(hx, hz); }
+          break;
+        }
         // DUELLING — a foe that just turned your blade answers at once, outside the turn queue (duel.js)
         if (e.counterQueued && tgtPos && !e.converted){
           e.counterQueued = false;
@@ -210,7 +215,7 @@ export function updateEnemies(dt){
           mx = ux - uz * e.unstickSide * 1.4; mz = uz + ux * e.unstickSide * 1.4;
         }
         const ml = Math.hypot(mx, mz) || 1;
-        const esp = e.spd * paceMul * (G.mut === 'berserk' ? 1.3 : 1);   // BERSERK mutator: enemies surge in faster
+        const esp = e.rooted ? 0 : e.spd * paceMul * (G.mut === 'berserk' ? 1.3 : 1);   // BERSERK mutator: enemies surge in faster · a ROOTED training foe holds its spot
         g.position.x += (mx/ml) * esp * dt;
         g.position.z += (mz/ml) * esp * dt;
         // remember where this step started, to check after collision whether it went anywhere (out of the scrum only:

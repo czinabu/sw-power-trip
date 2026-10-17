@@ -23,6 +23,7 @@ import { diffDmgMul } from '../data/difficulty.js';
 import { DUEL } from '../data/duel.js';
 import { startLock } from '../enemies/duel.js';
 import { mandoCatch } from './mando/melee.js';
+import { tutEvent } from '../game/tutor-bus.js';
 
 const MELEE_REACH_UP = 1.7;   // a melee foe can't strike you if you're perched higher than this above their feet
 /* PERFECT DODGE — a blow that arrives in the first instant of a dash: time slows, the dash is refunded and (Jedi)
@@ -46,6 +47,7 @@ export function perfectDodge(fromPos){
   floater(pp, 'PERFECT DODGE', '#9fe6ff');
   sfx(1400, 0.1, 'sine', 0.05, 700); sfx(300, 0.25, 'sine', 0.06, 150);
   if (G.stats) G.stats.perfectDodges = (G.stats.perfectDodges || 0) + 1;
+  tutEvent('perfectDodge');
   return true;
 }
 
@@ -156,6 +158,7 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
         S.parry(fp);   // a bright ringing clash
         if (G.stats) G.stats.parries++;
         addFocus(FOCUS.gainParry);   // a perfect parry is the biggest FOCUS spike
+        tutEvent('parry');
         return 'parried';
       }
       if (player.blockHeld && pierce){
@@ -218,6 +221,8 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
     v.style.opacity = '1';
     setTimeout(()=>{ v.style.opacity = '0'; }, 120);
   }
+  // TRAINING — nobody dies in the training grounds: the teacher pulls you back up
+  if (G.training && player.hp < 1){ player.hp = maxHp() * 0.4; floater(playerPos(), 'AGAIN', '#ffe27a'); }
   if (player.hp <= 0 && G.mode === 'play'){
     // PHOENIX boon — cheat death once per run: revive at half vitality and blow the field back
     if (player.phoenixReady){

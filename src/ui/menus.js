@@ -10,6 +10,7 @@ import { applySaberGrip } from '../player/model/weapons.js';
 import { setHero } from '../player/hero.js';
 import { startLevel } from '../game/flow.js';
 import { startEndless } from '../game/survival.js';
+import { startTutorial, skipStep, setTrainingExit, trainingDone } from '../game/tutorial.js';
 import { closeProgress } from './store-ui.js';
 import { DIFFS } from '../data/difficulty.js';
 import { renderControls } from './controls.js';
@@ -30,11 +31,14 @@ export function setOverlayState(state){
   overlay.classList.add('st-' + state);
   document.body.classList.toggle('in-menu', state === 'menu');
   document.getElementById('banner').style.opacity = '0';   // the overlay carries the message; don't let a banner ghost through it
+  overlay.classList.remove('asktrain');
   document.getElementById('restartBtn').style.display = state === 'menu' ? 'none' : 'inline-flex';
+  document.getElementById('restartBtn').textContent = G.training ? '↻ RESTART TRAINING' : '↻ RESTART RUN';
+  document.getElementById('skipBtn').style.display = state === 'pause' && G.training ? 'inline-flex' : 'none';
   const go = document.getElementById('goText'), sub = document.getElementById('ovsub');
   if (state === 'menu'){
-    go.textContent = G.modeSel === 'endless' ? 'BEGIN SURVIVAL' : 'BEGIN CAMPAIGN';
-    sub.textContent = G.modeSel === 'endless' ? 'HOW LONG CAN YOU LAST?' : 'CHOOSE YOUR LEGEND';
+    go.textContent = G.modeSel === 'endless' ? 'BEGIN SURVIVAL' : G.modeSel === 'training' ? 'BEGIN TRAINING' : 'BEGIN CAMPAIGN';
+    sub.textContent = G.modeSel === 'endless' ? 'HOW LONG CAN YOU LAST?' : G.modeSel === 'training' ? 'LEARN THE WAYS OF YOUR ORDER' : 'CHOOSE YOUR LEGEND';
   } else if (state === 'pause'){
     go.textContent = 'RESUME'; sub.textContent = 'PAUSED';
   } else if (state === 'dead'){
@@ -56,10 +60,10 @@ function beginPlay(){
   if (G.modeSel === 'endless' && !survivalUnlocked()) G.modeSel = 'campaign';   // safety — never launch a locked mode
   if (G.mode === 'menu' || G.mode === 'victory'){
     G.mode = 'play'; G.slowmo = 1;
-    if (G.modeSel === 'endless') startEndless(); else startLevel(0);
+    if (G.modeSel === 'endless') startEndless(); else if (G.modeSel === 'training') startTutorial(); else startLevel(0);
   } else if (G.mode === 'dead'){
     G.mode = 'play'; G.slowmo = 1;
-    if (G.endless) startEndless(); else startLevel(G.levelIdx);   // survival retry = a fresh survival run
+    if (G.endless) startEndless(); else if (G.training) startTutorial(); else startLevel(G.levelIdx);   // survival retry = a fresh survival run
   } else if (G.mode === 'play'){
     overlay.style.display = 'none';  // resume from pause
   }
@@ -90,13 +94,26 @@ function setModeSel(m){
     return;
   }
   G.modeSel = m;
-  document.getElementById('mode-campaign').classList.toggle('sel', m === 'campaign');
-  document.getElementById('mode-endless').classList.toggle('sel', m === 'endless');
+  for (const k of ['campaign', 'endless', 'training']) document.getElementById('mode-' + k).classList.toggle('sel', m === k);
   if (_ovState === 'menu') setOverlayState('menu');   // headline + button follow the mode
 }
 document.getElementById('mode-campaign').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setModeSel('campaign'); });
 document.getElementById('mode-endless').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setModeSel('endless'); });
+document.getElementById('mode-training').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setModeSel('training'); });
 refreshSurvivalLock();
+// TRAINING marks which heroes have finished it
+function refreshTrainingMark(){
+  const md = document.querySelector('#mode-training .md'); if (!md) return;
+  const j = trainingDone('jedi'), m = trainingDone('mando');
+  md.innerHTML = (j || m) ? 'learn the moves · Jedi ' + (j ? '<span class="ok">✓</span>' : '–') + ' Mando ' + (m ? '<span class="ok">✓</span>' : '–')
+                          : 'learn your hero\'s moves';
+}
+refreshTrainingMark();
+// FIRST CAMPAIGN — once, a hero who hasn't trained (or beaten the campaign) is offered the training grounds first
+function shouldOfferTraining(){
+  if (_ovState !== 'menu' || G.modeSel !== 'campaign' || trainingDone(G.hero)) return false;
+  try { return localStorage.getItem('sw_asktrain') !== '1' && localStorage.getItem('sw_camp_' + G.hero) !== '1'; } catch(e){ return false; }
+}
 function setDiff(d){
   G.diff = d; try { localStorage.setItem('sw_diff', d); } catch(e){}
   for (const k in DIFFS) document.getElementById('diff-' + k).classList.toggle('sel', k === d);
@@ -191,7 +208,18 @@ document.addEventListener('click', (e) => {
 }, true);
 overlay.addEventListener('click', (e) => {
   // only the primary button or empty backdrop launches/resumes: a stray click on a label or setting shouldn't
-  if (e.target.closest('#settingsrow, #runsummary, #setup, #homeconfirm, .ov-foot')) return;
+  if (e.target.closest('#settingsrow, #runsummary, #setup, #homeconfirm, #trainconfirm, .ov-foot')) return;
+  if (shouldOfferTraining()){
+    try { localStorage.setItem('sw_asktrain', '1'); } catch(err){}
+    overlay.classList.add('asktrain');
+    return;
+  }
+  launch();
+});
+document.getElementById('trainYes').addEventListener('click', (e) => { e.stopPropagation(); overlay.classList.remove('asktrain'); setModeSel('training'); launch(); });
+document.getElementById('trainNo').addEventListener('click', (e) => { e.stopPropagation(); overlay.classList.remove('asktrain'); launch(); });
+// take the pointer lock and start (or resume) play; where the lock never works, play unlocked
+function launch(){
   audioInit();
   requestLock();
   setTimeout(() => {
@@ -205,7 +233,7 @@ overlay.addEventListener('click', (e) => {
     shared.lockFallback = true;   // pointer lock never worked on this page (e.g. an embedded preview) — play unlocked
     beginPlay();
   }, 350);
-});
+}
 // POINTER LOCK — newer browsers return a promise that rejects on refusal; swallow it (the overlay handles the outcome)
 function requestLock(){
   try { const p = renderer.domElement.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch(e){}
@@ -247,7 +275,7 @@ function restartRun(){
   G.skillSelect = false;
   G.mode = 'play'; G.slowmo = 1; G.paused = false;
   document.body.classList.remove('in-menu'); setHowTo(false);
-  if (G.endless) startEndless(); else startLevel(0);   // a survival run restarts as survival, not the campaign
+  if (G.endless) startEndless(); else if (G.training) startTutorial(); else startLevel(0);   // a survival run restarts as survival, not the campaign
   if (!shared.lockFallback) requestLock();
 }
 document.getElementById('restartBtn').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); restartRun(); });
@@ -262,10 +290,17 @@ function goHome(){
   startLevel(0);   // sweep the battlefield and reset the hero + kit, exactly as a fresh campaign would
   G.mode = 'menu'; G.paused = false; G.slowmo = 1; G.slowmoT = 0; G.hitstop = 0;
   overlay.style.display = 'flex';
-  refreshSurvivalLock();
+  refreshSurvivalLock(); refreshTrainingMark();
   setOverlayState('menu');
   overlay.scrollTop = 0;
 }
+// finishing the training grounds hands you back to the menu, with the campaign picked
+setTrainingExit(() => {
+  if (document.pointerLockElement) document.exitPointerLock();
+  setModeSel('campaign');
+  goHome();
+});
+document.getElementById('skipBtn').addEventListener('click', () => skipStep());   // and the overlay click resumes play
 document.getElementById('homeBtn').addEventListener('click', (e) => {
   e.stopPropagation(); audioInit();
   if (_ovState === 'pause') overlay.classList.add('confirming'); else goHome();

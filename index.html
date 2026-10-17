@@ -96,6 +96,7 @@
 
   <div id="bosswrap"><div id="bossname"></div><div id="bossbarbg"><div id="bossbar"></div></div></div>
   <div id="banner"><div id="bannerk"></div><h1 id="bannerh"></h1><p id="bannerp"></p></div>
+  <div id="tutor"><div class="tt-who"></div><div class="tt-say"></div><div class="tt-do"><span class="tt-keys"></span><span class="tt-task"></span><span class="tt-count"></span></div></div>
   <div id="xh"></div>
   <div id="lockbar"><div class="lb-k">SABER LOCK</div><div class="lb-track"><div class="lb-mid"></div><div class="lb-fill"></div></div><div class="lb-hint"><b>LMB</b> drive &nbsp;·&nbsp; <b>E</b> kick &nbsp;·&nbsp; <b>F</b> shove</div></div>
   <div id="reticle"><span class="ring"></span><span class="rl t"></span><span class="rl r"></span><span class="rl b"></span><span class="rl l"></span><span class="dot"></span></div>
@@ -152,6 +153,7 @@
           <div id="modeselect">
             <div class="modeopt brk sel" id="mode-campaign"><span class="mt">CAMPAIGN</span><span class="md">3 levels and a boss finale</span></div>
             <div class="modeopt brk" id="mode-endless"><span class="mt">SURVIVAL</span><span class="md">endless waves, chase a high score</span></div>
+            <div class="modeopt brk" id="mode-training"><span class="mt">TRAINING</span><span class="md">learn your hero's moves</span></div>
           </div>
         </div>
         <div class="setup-col">
@@ -166,10 +168,18 @@
     </section>
     <div class="ov-actions">
       <div class="btn primary go" id="goText">BEGIN</div>
+      <div class="btn" id="skipBtn">SKIP LESSON</div>
       <div class="btn" id="restartBtn">↻ RESTART RUN</div>
       <div class="btn" id="homeBtn">MAIN MENU</div>
       <div class="btn" id="ctltoggle">HOW TO PLAY</div>
       <div class="btn" id="rmtoggle">ROADMAP</div>
+    </div>
+    <div id="trainconfirm">
+      <div class="hc-q" id="trainq">New to this? The training grounds teach every move in a few minutes.</div>
+      <div class="hc-row">
+        <div class="btn primary" id="trainYes">TRAIN FIRST</div>
+        <div class="btn" id="trainNo">START THE CAMPAIGN</div>
+      </div>
     </div>
     <div id="homeconfirm">
       <div class="hc-q">Leave this run? Your progress in it will be lost.</div>

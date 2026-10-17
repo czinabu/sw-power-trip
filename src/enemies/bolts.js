@@ -21,6 +21,7 @@ import { hurtPlayer } from '../player/damage.js';
 import { deflectAnim } from '../player/jedi/combat.js';
 import { deflectPlayerBolt } from './duel.js';
 import { sweepHit, headPos } from './bodyshape.js';
+import { tutEvent } from '../game/tutor-bus.js';
 
 /* ============================================================
    PROJECTILES — blaster bolts & boss orbs
@@ -113,6 +114,7 @@ export function updateBolts(dt){
           screenFlash('radial-gradient(ellipse at center, rgba(255,230,150,.4), transparent 65%)', 0.7, 0.28);
           S.parry(b.mesh.position); floater(pp, 'PARRY!', '#ffe27a'); if (G.stats) G.stats.parries++;
         } else { clashFlash(b.mesh.position.clone(), stance().blade, false); S.deflect(b.mesh.position); floater(pp, 'DEFLECT', '#7fd4ff'); if (G.stats) G.stats.deflects++; }
+        tutEvent('deflect');
         addFocus(parried ? FOCUS.gainParry : FOCUS.gainDeflect);   // deflecting fire feeds the flow
       } else if (d < 2.5 && shielding){
         // GAUNTLET SHIELD — catch the bolt on the disc and HURL it back at the nearest threat. Costs stamina per catch.
@@ -127,6 +129,7 @@ export function updateBolts(dt){
         clashFlash(b.mesh.position.clone(), 0x6fd0ff, false);
         G.shake = Math.max(G.shake, 0.12); G.hitstop = Math.max(G.hitstop, 0.02);
         S.shieldHit(b.mesh.position); S.deflect(b.mesh.position); floater(pp, 'DEFLECT', '#7fd4ff'); if (G.stats) G.stats.deflects++;
+        tutEvent('shieldReflect');
       } else if (d < 2.2 && blocking){
         // absorbed on the guard — costs stamina, no reflection
         deflectAnim(b.mesh.position);
@@ -164,6 +167,7 @@ export function updateBolts(dt){
             const hp = headPos(e, HIT);
             spawnHitSpark(V3(hp.x, hp.y + 0.1, hp.z), 0xffd24a, 1.5);
             floater(V3(hp.x, hp.y + 0.45, hp.z), 'HEADSHOT', '#ffd24a');
+            if (b.playerShot) tutEvent('headshot');
             sfx(1900, 0.08, 'square', 0.05, 420); S.blastHit(b.mesh.position, 1.4); G.hitstop = Math.max(G.hitstop, 0.04); G.shake = Math.max(G.shake, 0.18);
           }
           damageEnemy(e, dmg, b.dir, 6); flinchEnemy(e, b.dir, 0.4); kill = true;   // bolts make foes recoil
