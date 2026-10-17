@@ -186,7 +186,14 @@ export function fireTrigger(){
 function mandoBraced(){ return G.hero === 'mando' && player.blockHeld; }
 // The SINGLE-blaster GAUNTLET SHIELD — the one source of truth for "is the beskar energy shield up". Single + RMB
 // only (Dual bracing is offensive, Darksaber uses the saber guard). Computed fresh so it's valid in the air too.
-export function mandoShielding(){ return G.hero === 'mando' && player.weapon === 'single' && !mandoWeapon().melee && player.blockHeld; }
+// SHIELD OR FIRE — aiming in raises the shield, but pulling the trigger drops it for blaster ADS: it stays down while
+// LMB is held and for SHIELD_RETURN after the last shot, so you can't soak and shoot at once. An overheated gun
+// can't fire, so holding the trigger then doesn't lower it (shield up while the coils vent).
+export const SHIELD_RETURN = 0.5;   // seconds after the last shot before the shield comes back up
+export function mandoShielding(){
+  if (G.hero !== 'mando' || player.weapon !== 'single' || mandoWeapon().melee || !player.blockHeld) return false;
+  return !(player.shieldDropT > 0) && !(player.trigHeld && !player.overheat);
+}
 function fireBlaster(W){
   player.aiming = 0.7;
   const aim = mandoAimPoint();
@@ -221,6 +228,7 @@ function fireBlaster(W){
   G.shake = Math.max(G.shake, W.dual ? 0.06 : 0.15);
   if (W.dual) S.blasterDual(); else S.blaster();
   player.fireCd = W.fireCd / (player.up.fireRate || 1);
+  if (player.weapon === 'single') player.shieldDropT = SHIELD_RETURN;   // a shot drops the shield (see mandoShielding)
   addHeat(W);   // energy cap — overheats if you don't pace your fire
 }
 function fireRifle(W){
@@ -351,6 +359,7 @@ export function updateMandoCombat(dt, f, r){
     player.aimOff.x += (tox - player.aimOff.x) * Math.min(1, dt*5);
     player.aimOff.y += (toy - player.aimOff.y) * Math.min(1, dt*5); }
   updateReload(dt);
+  if (player.shieldDropT > 0) player.shieldDropT -= dt;
   if (player.firing && player.darkT <= 0) firePistols();   // auto weapons spray while held
   updateFlame(dt);
   updateDark(dt);

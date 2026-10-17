@@ -24,6 +24,7 @@ import { DUEL } from '../data/duel.js';
 import { startLock } from '../enemies/duel.js';
 import { mandoCatch } from './mando/melee.js';
 import { tutEvent } from '../game/tutor-bus.js';
+import { mandoShielding } from './mando/weapons.js';
 
 const MELEE_REACH_UP = 1.7;   // a melee foe can't strike you if you're perched higher than this above their feet
 /* PERFECT DODGE — a blow that arrives in the first instant of a dash: time slows, the dash is refunded and (Jedi)
@@ -108,7 +109,7 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
     if (TMP.lengthSq() < 0.001 || TMP.normalize().dot(fwd()) > -0.2){ mandoCatch(fromPos); return 'parried'; }
   }
   if (G.hero === 'mando' && player.weapon !== 'darksaber'){
-    if (!silent && !pierce && player.blockHeld && player.weapon === 'single' && fromPos){
+    if (!silent && !pierce && mandoShielding() && fromPos){
       TMP.subVectors(fromPos, playerPos()); TMP.y = 0;
       if (TMP.lengthSq() < 0.001 || TMP.normalize().dot(fwd()) > -0.25){
         const pp = playerPos(), cpp = V3(pp.x + fwd().x*0.55, 1.5, pp.z + fwd().z*0.55);

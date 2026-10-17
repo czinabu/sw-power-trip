@@ -56,7 +56,7 @@ function beginPlay(){
   if (G.stats){ G.stats._ended = false; G.stats.summary = null; }
   document.getElementById('runsummary').style.display = 'none';
   document.body.classList.remove('in-menu');
-  setHowTo(false);
+  setHowTo(false); setSettings(false);
   if (G.modeSel === 'endless' && !survivalUnlocked()) G.modeSel = 'campaign';   // safety — never launch a locked mode
   if (G.mode === 'menu' || G.mode === 'victory'){
     G.mode = 'play'; G.slowmo = 1;
@@ -137,7 +137,7 @@ export function setSaberGrip(grip){
 }
 setSaberGrip(localStorage.getItem('sw_sabergrip') || 'regular');
 document.getElementById('gripctl').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setSaberGrip(G.saberGrip === 'reverse' ? 'regular' : 'reverse'); });
-// SETTINGS — mouse sensitivity + master volume sliders. stopPropagation on both click & pointerdown so dragging
+// SETTINGS sliders — mouse sensitivity + master volume. stopPropagation on both click & pointerdown so dragging
 // the thumb never bubbles into the overlay's click-to-resume/launch handler.
 function setMouseSens(v){
   G.mouseSens = Math.max(0.4, Math.min(2.2, v));
@@ -190,6 +190,16 @@ howto.addEventListener('click', (e) => {
   else if (e.target === howto) setHowTo(false);   // click the backdrop to close
 });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && howto.classList.contains('open')) setHowTo(false); });
+// SETTINGS — every option lives in this panel so the main menu and pause screen stay clean; it opens from either
+const settings = document.getElementById('settings');
+function setSettings(open){ settings.classList.toggle('open', open); }
+document.getElementById('settoggle').addEventListener('click', (e) => { e.stopPropagation(); setSettings(true); });
+document.getElementById('setclose').addEventListener('click', (e) => { e.stopPropagation(); setSettings(false); });
+settings.addEventListener('click', (e) => {
+  e.stopPropagation();   // changing a setting must never launch or resume the game
+  if (e.target === settings) setSettings(false);   // click the backdrop to close
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && settings.classList.contains('open')) setSettings(false); });
 setOverlayState('menu');
 
 // UI SOUND — a soft tick when the pointer lands on something you can pick, a firmer blip when you pick it
@@ -208,7 +218,7 @@ document.addEventListener('click', (e) => {
 }, true);
 overlay.addEventListener('click', (e) => {
   // only the primary button or empty backdrop launches/resumes: a stray click on a label or setting shouldn't
-  if (e.target.closest('#settingsrow, #runsummary, #setup, #homeconfirm, #trainconfirm, .ov-foot')) return;
+  if (e.target.closest('#runsummary, #setup, #homeconfirm, #trainconfirm, .ov-foot')) return;
   if (shouldOfferTraining()){
     try { localStorage.setItem('sw_asktrain', '1'); } catch(err){}
     overlay.classList.add('asktrain');
@@ -274,7 +284,7 @@ function restartRun(){
   document.getElementById('skilltree').style.display = 'none';
   G.skillSelect = false;
   G.mode = 'play'; G.slowmo = 1; G.paused = false;
-  document.body.classList.remove('in-menu'); setHowTo(false);
+  document.body.classList.remove('in-menu'); setHowTo(false); setSettings(false);
   if (G.endless) startEndless(); else if (G.training) startTutorial(); else startLevel(0);   // a survival run restarts as survival, not the campaign
   if (!shared.lockFallback) requestLock();
 }

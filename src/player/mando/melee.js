@@ -1,5 +1,5 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
-// The Mandalorian's close-quarters kit on E: a four-beat string, the jet charge, the dive kick, the vambrace catch and takedowns.
+// The Mandalorian's close-quarters kit on E: a four-beat string, shield and blade, the jet charge, the dive kick, the vambrace catch and takedowns.
 
 import { MANDO_MELEE as M, DUEL } from '../../data/duel.js';
 import { sfx, S } from '../../audio/sfx.js';
@@ -7,6 +7,7 @@ import { V3, rand, clamp, TMP } from '../../utils.js';
 import { burst } from '../../fx/particles.js';
 import { floater, screenFlash } from '../../fx/floaters.js';
 import { shared, G, enemies, keys, player } from '../../state.js';
+import { CFG } from '../../data/config.js';
 import { fwd, playerPos } from '../helpers.js';
 import { damageEnemy, flinchEnemy, staggerEnemy } from '../../enemies/damage.js';
 import { duelDefend, guardImpact, isGuarding, lockKick } from '../../enemies/duel.js';
@@ -15,6 +16,7 @@ import { damageBoss } from '../../boss/boss.js';
 import { spawnHitSpark, spawnGroundShock } from '../../fx/vfx.js';
 import { inkSprite, sparks, puff, clashFlash, thrust } from '../../fx/ink.js';
 import { tutEvent } from '../../game/tutor-bus.js';
+import { mandoShielding } from './weapons.js';
 
 const DOWNED = { stagger: 1, knockdown: 1, getup: 1 };
 const NO_LAUNCH = { launch: false }, KNEE = { launch: false, fold: 1 };   // a knee doubles the foe over
@@ -25,16 +27,19 @@ export function mandoMelee(){
   if (G.mode !== 'play' || G.hero !== 'mando' || player.darkT > 0 || player.mendT > 0) return;
   if (player.saberLock){ lockKick(); return; }
   if (player.charge || player.dive) return;
+  const shielded = player.grounded && mandoShielding();   // behind the gauntlet shield: E cuts with the vibroblade
   if (player.meleeT > 0){
-    // mid-string, a blow about to land on you takes priority: the press raises the vambrace instead
-    if (!(player.catchLockT > 0) && incoming()){ player.catchT = M.catchWindow; player.meleeQueued = false; return; }
+    // mid-string, a blow about to land on you takes priority: the press raises the vambrace instead (the shield
+    // already covers you, so behind it the press just queues the next cut)
+    if (!shielded && !(player.catchLockT > 0) && incoming()){ player.catchT = M.catchWindow; player.meleeQueued = false; return; }
     // a press late in the recovery queues the next beat of the string (early mashing is ignored)
     if (player.meleeT < player.meleeMax * 0.55) player.meleeQueued = true;
     return;
   }
-  if (!(player.catchLockT > 0)) player.catchT = M.catchWindow;   // anything that lands in the next instant gets CAUGHT
-  const down = takedownTarget();
+  if (!shielded && !(player.catchLockT > 0)) player.catchT = M.catchWindow;   // anything that lands in the next instant gets CAUGHT
+  const down = takedownTarget(shielded ? M.guard.takedownReach : 0);
   if (down){ takedown(down); return; }
+  if (shielded){ guardStrike(); return; }
   if (!player.grounded){ if (diveKick()) return; }
   else if (keys['w'] && G.gt - (player.lastCharge ?? -9) > M.charge.cd && player.jet >= M.charge.fuel){
     const t = chargeTarget();
@@ -67,32 +72,65 @@ function strike(){
   player.meleePending = B;
   S.jump(); sfx(B.heavy ? 140 : 230, 0.08, 'square', 0.04, 60);   // the whoosh of the throw
 }
+/* ---------------- shield and blade: hack, backhand, bash (E with the shield up) ---------------- */
+function guardStrike(){
+  const S_ = M.guard.string, n = S_.length;
+  const linked = G.gt - (player.meleeEndAt ?? -9) < M.combo && GUARD_BEAT[player.meleeKind] && (player.punchStep ?? -1) < n - 1;
+  const step = linked ? player.punchStep + 1 : 0;
+  const B = S_[step];
+  if (player.stam < B.stam){   // the same stamina the shield soaks with: swing it dry and the guard goes with it
+    if (G.gt - (player.lastWinded ?? -9) > 0.6){ player.lastWinded = G.gt; floater(playerPos(), 'WINDED', '#ffaa66'); }
+    return;
+  }
+  player.stam -= B.stam; player.stamDelay = CFG.player.stamDelay;
+  player.punchStep = step;
+  player.meleeT = player.meleeMax = B.recover; player.meleeKind = B.name; player.meleeSkip = 0;
+  player.vel.addScaledVector(fwd(), B.lunge);
+  player.meleePending = B;
+  if (B.name === 'bash'){ S.jump(); sfx(120, 0.1, 'square', 0.05, 50); }
+  else sfx(900, 0.07, 'sawtooth', 0.03, 300);   // the vibroblade's hum whipping through the air
+}
+const GUARD_BEAT = Object.fromEntries(M.guard.string.map(b => [b.name, true]));
 function landStrike(B){
   const f = fwd(), pp = playerPos(), dmg = B.dmg * (player.up.dmg || 1);
-  const cosLim = Math.cos(M.arc);
+  const reach = B.reach ?? M.reach, cosLim = Math.cos(B.arc ?? M.arc);
+  const guardBeat = GUARD_BEAT[B.name], cut = guardBeat && B.name !== 'bash';
   let hit = 0, turned = 0;
   for (const e of enemies){
     if (!live(e)) continue;
     TMP.subVectors(e.group.position, pp); const dy = TMP.y; TMP.y = 0;
     // the fist has to reach the body: arm's length plus the step the strike carries in
-    if (TMP.length() - bodyRadius(e) > M.reach + B.lunge / 9 || Math.abs(dy) > 2.2) continue;
+    if (TMP.length() - bodyRadius(e) > reach + B.lunge / 9 || Math.abs(dy) > 2.2) continue;
     if (TMP.lengthSq() > 0.001 && TMP.normalize().dot(f) < cosLim) continue;
-    const dres = duelDefend(e, B.line, B.heavy ? 'punchHeavy' : 'punch', B.heavy);
+    const away = TMP.lengthSq() > 0.001 ? TMP.clone() : f.clone();   // shoved straight back off the arc, not all one way
+    if (B.name === 'bash' && isGuarding(e)) guardImpact(e, M.guard.posture);
+    const dres = duelDefend(e, B.line, cut ? 'cut' : B.heavy ? 'punchHeavy' : 'punch', B.heavy);
     if (dres === 'block' || dres === 'dodge'){ turned++; continue; }
-    damageEnemy(e, dmg, f.clone(), B.knock, B.heavy, false, B.name === 'knee' ? KNEE : NO_LAUNCH);   // fists rock a foe, they don't launch it
+    damageEnemy(e, dmg, away, B.knock, B.heavy, false, B.name === 'knee' ? KNEE : NO_LAUNCH);   // fists rock a foe, they don't launch it
     if (!e.dead){
-      if (B.stagger) staggerEnemy(e, f.x, f.z, 'VIBROBLADE');
-      else flinchEnemy(e, f, B.shove);
+      // the bash staggers light foes for a takedown; a brute only gets rocked
+      if (B.stagger && !(B.name === 'bash' && e.t.heavy)) staggerEnemy(e, away.x, away.z, B.name === 'bash' ? 'BASHED' : 'VIBROBLADE');
+      else flinchEnemy(e, away, B.shove);
     }
     hit++;
   }
-  if (shared.boss && shared.boss.hp > 0 && shared.boss.group.position.distanceTo(pp) < M.reach + B.lunge / 9 + 0.9){ damageBoss(dmg * 0.6); hit++; }
+  if (shared.boss && shared.boss.hp > 0 && shared.boss.group.position.distanceTo(pp) < reach + B.lunge / 9 + 0.9){ damageBoss(dmg * 0.6); hit++; }
   const ip = V3(pp.x + f.x * 1.4, B.name === 'knee' ? 1.1 : 1.5, pp.z + f.z * 1.4);
+  if (cut){   // the vibroblade's arc reads whether it connects or not: a wide violet sweep across the front
+    // a flat crescent round the Mando at waist height, centred on where he faces (the ring's arc sits on its local +y)
+    inkSprite({ pos: V3(pp.x, pp.y + 1.1, pp.z), normal: V3(0, 1, 0), shape: 'ring', inner: 0.82, arc: B.arc, color: 0xc9a6ff,
+                size: [(reach + 0.7) * 2, (reach + 0.7) * 2], life: 0.16, steps: 2, coreW: 0.3, inkW: 0.25,
+                rot: Math.atan2(-f.x, -f.z) });
+  }
+  if (hit && B.name === 'bash') tutEvent('bash');
   if (hit){
     G.hitstop = Math.max(G.hitstop, B.heavy ? 0.08 : 0.04);
     G.shake = Math.max(G.shake, B.heavy ? 0.5 : 0.28);
-    spawnHitSpark(ip, B.name === 'blade' ? 0xc9a6ff : 0xffd28a, B.heavy ? 1.5 : 0.9);
-    sparks(ip, B.name === 'blade' ? 0xc9a6ff : 0xffe7b0, B.heavy ? 8 : 5, 11, { dir: f, cone: 0.6, life: 0.24 });
+    const violet = B.name === 'blade' || cut, blue = B.name === 'bash';
+    spawnHitSpark(ip, violet ? 0xc9a6ff : blue ? 0x9fe6ff : 0xffd28a, B.heavy ? 1.5 : 0.9);
+    sparks(ip, violet ? 0xc9a6ff : blue ? 0x9fe6ff : 0xffe7b0, B.heavy ? 8 : 5, 11, { dir: f, cone: cut ? 1.1 : 0.6, life: 0.24 });
+    if (cut){ sfx(1800, 0.08, 'square', 0.04, 720); }
+    if (blue){ player.shieldFlash = Math.max(player.shieldFlash || 0, 0.3); sfx(1100, 0.08, 'square', 0.05, 500); }   // the disc flares on the bash
     if (B.name === 'blade'){   // the wrist VIBROBLADE: a sharp violet slash arc and a ringing edge
       inkSprite({ pos: ip, shape: 'ring', inner: 0.86, arc: 1.1, color: 0xc9a6ff, size: [1.6, 2.6], life: 0.14, steps: 2, coreW: 0.3, inkW: 0.25,
                   rot: Math.PI * (0.35 + Math.random() * 0.3) });
@@ -125,14 +163,14 @@ export function mandoCatch(fromPos){
 }
 
 /* ---------------- takedown: finish anything reeling or floored ---------------- */
-function takedownTarget(){
+function takedownTarget(extra){
   const pp = playerPos(), f = fwd();
   let best = null, bd = 1e9;
   for (const e of enemies){
     if (!live(e) || !DOWNED[e.state]) continue;
     TMP.subVectors(e.group.position, pp); const dy = Math.abs(TMP.y); TMP.y = 0;
     const d = TMP.length();
-    if (d - bodyRadius(e) > M.takedown.range || dy > 1.8) continue;
+    if (d - bodyRadius(e) > M.takedown.range + extra || dy > 1.8) continue;
     if (d > 1.4 && TMP.normalize().dot(f) < 0.3) continue;
     if (d < bd){ bd = d; best = e; }
   }

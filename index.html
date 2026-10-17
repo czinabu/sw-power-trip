@@ -171,6 +171,7 @@
       <div class="btn" id="skipBtn">SKIP LESSON</div>
       <div class="btn" id="restartBtn">↻ RESTART RUN</div>
       <div class="btn" id="homeBtn">MAIN MENU</div>
+      <div class="btn" id="settoggle">SETTINGS</div>
       <div class="btn" id="ctltoggle">HOW TO PLAY</div>
       <div class="btn" id="rmtoggle">ROADMAP</div>
     </div>
@@ -188,23 +189,34 @@
         <div class="btn" id="homeNo">KEEP PLAYING</div>
       </div>
     </div>
-    <div id="settingsrow">
-      <div class="setpill" id="fsctl" title="Fill the whole screen">FULLSCREEN<span class="setval" id="fsval">OFF</span></div>
-      <div class="setpill" id="gfxctl">GRAPHICS<span class="setval" id="gfxval">HIGH</span><span class="gfxhint">P</span></div>
-      <div class="setpill" id="swingctl" title="Mirror which way your directional saber cuts sweep">SWING<span class="setval" id="swingval">NORMAL</span></div>
-      <div class="setpill" id="gripctl" title="Hold the lightsaber in a regular or reverse grip">GRIP<span class="setval" id="gripval">REGULAR</span><span class="gfxhint">G</span></div>
-      <label class="setpill" title="How hard the screen shakes on hits and explosions">SHAKE<input type="range" id="shakesl" min="0" max="1.5" step="0.05" value="1"><span class="setval" id="shakeval">100%</span></label>
-      <label class="setpill">SENSITIVITY<input type="range" id="senssl" min="0.4" max="2.2" step="0.05" value="1"><span class="setval" id="sensval">1.0×</span></label>
-      <label class="setpill">VOLUME<input type="range" id="volsl" min="0" max="1" step="0.05" value="1"><span class="setval" id="volval">100%</span></label>
-      <label class="setpill">MUSIC<input type="range" id="mussl" min="0" max="1" step="0.05" value="0.8"><span class="setval" id="musval">80%</span></label>
-      <label class="setpill">EFFECTS<input type="range" id="fxsl" min="0" max="1" step="0.05" value="1"><span class="setval" id="fxval">100%</span></label>
-    </div>
     <div class="ov-foot">Press <kbd>Esc</kbd> to pause · <kbd>M</kbd> music on/off · <kbd>P</kbd> graphics quality</div>
   </div>
   <div id="howto">
     <div class="howto-panel">
       <div class="howto-head"><div class="howto-title">HOW TO PLAY</div><div class="howto-hero" id="howtohero"></div><div class="howto-x" id="howtoclose">✕</div></div>
       <div class="ctl" id="ctl"></div>
+    </div>
+  </div>
+  <div id="settings">
+    <div class="howto-panel">
+      <div class="howto-head"><div class="howto-title">SETTINGS</div><div class="howto-x" id="setclose">✕</div></div>
+      <div class="set-grid">
+        <div class="set-grp"><h4>DISPLAY</h4>
+          <div class="setpill" id="fsctl" title="Fill the whole screen">FULLSCREEN<span class="setval" id="fsval">OFF</span></div>
+          <div class="setpill" id="gfxctl">GRAPHICS<span class="setval" id="gfxval">HIGH</span><span class="gfxhint">P</span></div>
+          <label class="setpill" title="How hard the screen shakes on hits and explosions">SHAKE<input type="range" id="shakesl" min="0" max="1.5" step="0.05" value="1"><span class="setval" id="shakeval">100%</span></label>
+        </div>
+        <div class="set-grp"><h4>AUDIO</h4>
+          <label class="setpill">VOLUME<input type="range" id="volsl" min="0" max="1" step="0.05" value="1"><span class="setval" id="volval">100%</span></label>
+          <label class="setpill">MUSIC<input type="range" id="mussl" min="0" max="1" step="0.05" value="0.8"><span class="setval" id="musval">80%</span></label>
+          <label class="setpill">EFFECTS<input type="range" id="fxsl" min="0" max="1" step="0.05" value="1"><span class="setval" id="fxval">100%</span></label>
+        </div>
+        <div class="set-grp"><h4>CONTROLS</h4>
+          <label class="setpill">SENSITIVITY<input type="range" id="senssl" min="0.4" max="2.2" step="0.05" value="1"><span class="setval" id="sensval">1.0×</span></label>
+          <div class="setpill" id="swingctl" title="Mirror which way your directional saber cuts sweep">SWING<span class="setval" id="swingval">NORMAL</span></div>
+          <div class="setpill" id="gripctl" title="Hold the lightsaber in a regular or reverse grip">GRIP<span class="setval" id="gripval">REGULAR</span><span class="gfxhint">G</span></div>
+        </div>
+      </div>
     </div>
   </div>
   <div id="roadmap">

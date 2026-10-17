@@ -16,7 +16,7 @@ import { damageBoss } from '../boss/boss.js';
 import { FOCUS, addFocus } from '../player/jedi/focus.js';
 import { spawnHitSpark, spawnParryFlash } from '../fx/vfx.js';
 import { boltImpact, clashFlash } from '../fx/ink.js';
-import { mandoWeapon, boltDamage, hitMarker } from '../player/mando/weapons.js';
+import { mandoWeapon, mandoShielding, boltDamage, hitMarker } from '../player/mando/weapons.js';
 import { hurtPlayer } from '../player/damage.js';
 import { deflectAnim } from '../player/jedi/combat.js';
 import { deflectPlayerBolt } from './duel.js';
@@ -83,8 +83,7 @@ export function updateBolts(dt){
       const parried = near && facing && player.parryT > 0;
       // SINGLE-BLASTER GAUNTLET SHIELD — a held energy shield that REFLECTS frontal bolts back (not just absorbs).
       // Each deflect spends stamina; run dry and the shield can't hold a bolt (it bleeds through, soaked by the beskar).
-      const shielding = near && facing && G.hero === 'mando' && player.weapon === 'single' && !mandoWeapon().melee
-                        && player.blockHeld && player.stam > 0;
+      const shielding = near && facing && mandoShielding() && player.stam > 0;   // dropped while the blaster fires
       // bolt-ABSORB (no reflect) is the other defensive guard — Jedi (any stance) or the Mando DARKSABER. DUAL/DISRUPTOR
       // bracing is offensive-only and lets bolts straight through.
       const blocking = near && facing && player.blockHeld && player.stam > 0 && (G.hero !== 'mando' || player.weapon === 'darksaber');

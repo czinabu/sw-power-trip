@@ -64,7 +64,7 @@ Each file starts with a one-line description. Balance changes usually only touch
 
 **Two playable heroes:**
 - **Jedi** — three lightsaber stances (Ataru / Niman / Djem So), parry & riposte combat, Force powers (Push, Pull, Slam, Repulse, Judgement, Barrier, Saber Throw, Mend), a Force Focus flow meter that rewards aggressive play
-- **Mandalorian** — jetpack flight with momentum/boost/dive/hover, dual blasters + disruptor rifle + darksaber, flamethrower, wrist rockets, whistling birds, grappling hook, jetpack missile, gauntlet shield, and a close-quarters kit on E (jab, cross, knee, vibroblade string; vambrace catch; jet charge; dive kick; takedowns)
+- **Mandalorian** — jetpack flight with momentum/boost/dive/hover, dual blasters + disruptor rifle + darksaber, flamethrower, wrist rockets, whistling birds, grappling hook, jetpack missile, gauntlet shield, and a close-quarters kit on E (jab, cross, knee, vibroblade string; shield and blade behind the gauntlet shield; vambrace catch; jet charge; dive kick; takedowns)
 
 **Training** — a short tutorial for each hero in its own place (the Jedi training hall, the Armorer's forge). The Battlemaster or the Armorer teaches the starting kit one move at a time, and each lesson only passes when the move actually works. New abilities earned later get a one-line drill when they unlock.
 

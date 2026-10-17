@@ -17,6 +17,7 @@ import { DARK_DUR } from './mando/darksaber.js';
 import { FORM_OF, FOOTWORK } from '../data/poses.js';
 import { pistolPose, riflePose, rifleLowered, restGun } from './anim/guns.js';
 import { MIRROR } from './model/rig.js';
+import { solveArm } from './anim/ik.js';
 import { saberPose, guardPose, swingPose, deflectPose, applySaberPose, releaseSaberPose, airGuard } from './anim/saber.js';
 import { advanceGait, gaitLegs, gaitHipOffset, releaseGait } from './anim/gait.js';
 import { MOCAP_ON, MOCAP_LAND_T, mocapLand, mocapAirLegs, airPhase, mocapCut } from './anim/mocap.js';
@@ -439,13 +440,37 @@ const easeInOut = t => t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t + 2, 2) / 2;
 /* A THROWN BLOW in four beats, over seconds since the press: a short CHAMBER that loads it (→ -1), a SNAP that
    accelerates into the target and arrives at full extension exactly on the contact frame (→ +1, when melee.js lands
    the hit), a HOLD on the impact, then the RECOVERY home (→ 0). Real strikes are fast out and slower back. */
-const BLOW_CONTACT = { ...Object.fromEntries(MANDO_MELEE.string.map(b => [b.name, b.contact])), takedown: 0.12, catch: 0.04, charge: 0, dive: 0 };
+const BLOW_CONTACT = { ...Object.fromEntries([...MANDO_MELEE.string, ...MANDO_MELEE.guard.string].map(b => [b.name, b.contact])), takedown: 0.12, catch: 0.04, charge: 0, dive: 0 };
+const HACK_T = new THREE.Vector3(), HACK_POLE = new THREE.Vector3(0.6, -0.8, -0.1).normalize();
+const BLADE_OUT = { blade: 1, takedown: 1, hackA: 1, hackB: 1 };   // the beats that spring the wrist vibroblade
 function blowCurve(age, c, dur){
   const w = c * 0.55, hold = 0.05;
   if (age < w) return -Math.sin((age / w) * Math.PI / 2);
   if (age < c){ const t = (age - w) / (c - w); return -1 + 2 * t * t; }
   if (age < c + hold) return 1;
   return 1 - easeInOut(clamp((age - c - hold) / Math.max(0.05, dur - c - hold), 0, 1));
+}
+
+/* the WRIST VIBROBLADE: a short beskar blade that springs from the right vambrace along the forearm and past the
+   fist for the blade beats (the cut that ends the string, takedowns, and every cut of shield and blade) */
+function wristBlade(dt, R, out){
+  let b = player.wristBlade;
+  if (!b && !out) return;
+  if (!b || b.parent !== R.armR.el){
+    const g = new THREE.Group();
+    // flat side-on to the sweep, so both its edges cut; the violet sliver behind the steel is the humming edge
+    const steel = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.5, 0.014), new THREE.MeshStandardMaterial({ color: 0xaab4bc, metalness: 0.85, roughness: 0.3 }));
+    const edge = new THREE.Mesh(new THREE.BoxGeometry(0.066, 0.5, 0.006),
+      new THREE.MeshBasicMaterial({ color: 0xc9a6ff, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false }));
+    steel.position.y = edge.position.y = -0.25;   // grows down the forearm from the mount
+    g.add(steel, edge);
+    g.position.set(0.055, -0.12, 0);   // outer side of the forearm, a hand's width below the elbow
+    R.armR.el.add(g);
+    player.wristBlade = b = g; g.userData.k = 0;
+  }
+  const k = b.userData.k += ((out ? 1 : 0) - b.userData.k) * Math.min(1, dt * (out ? 40 : 10));
+  b.visible = k > 0.02;
+  b.scale.set(1, Math.max(0.01, k), 1);
 }
 
 function animateForceCast(dt, dr, R){
@@ -626,6 +651,8 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
   // CLOSE QUARTERS (E, player/mando/melee.js) — each beat of the kit has its own body: a left jab, a right cross, a
   // rising knee, the vibroblade slash, the shoulder-first jet charge, the boot-first dive, the vambrace catch
   if (!(player.meleeT > 0)) R.torso.rotation.x = dr(R.torso.rotation.x, 0, 12);   // settle a knee/charge/dive hunch
+  wristBlade(dt, R, player.meleeT > 0 && BLADE_OUT[player.meleeKind]);
+  player.bashOut = 0;
   if (player.meleeT > 0){
     const dur = player.meleeMax || 0.32, age = dur - player.meleeT + (player.meleeSkip || 0);
     const mk = clamp(age / dur, 0, 1);                                       // 0→1 through the move
@@ -665,6 +692,30 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
       R.torso.rotation.x = dr(R.torso.rotation.x, ld * 0.12, 24);
       R.torso.position.z = dr(R.torso.position.z, ld * (kind === 'takedown' ? 0.42 : 0.3), snap);
       vis.position.y = dr(vis.position.y, -0.08 * ld, 26);   // sinks into the cut
+    } else if (kind === 'hackA' || kind === 'hackB'){
+      // SHIELD AND BLADE: the gun hand carves a flat cut out from behind the disc while the shield arm holds its
+      // guard. hackA is the forehand (wound out right, ripped across to the left), hackB the backhand that answers it
+      // the fist is IK'd round a flat arc at chest height (chest space: + x is his right, + z ahead), so the blade
+      // springing past it carves level through the front rank; the arm reaches out straight through the middle
+      const sweep = clamp(v >= 0 && age > c ? 1 + (1 - v) * 0.2 : (v + 1) / 2, 0, 1.2);
+      const s = kind === 'hackA' ? 1 : -1, mid = Math.sin(Math.min(1, sweep) * Math.PI);
+      const from = s > 0 ? 1.35 : -0.95, to = s > 0 ? -0.95 : 1.35, a = from + (to - from) * sweep;
+      const rad = 0.38 + mid * 0.22;
+      solveArm(R.armR, HACK_T.set(0.1 + Math.sin(a) * rad, 0.24 - mid * 0.04, 0.08 + Math.cos(a) * rad), HACK_POLE);
+      R.armR.wr.quaternion.identity();
+      R.torso.rotation.y = dr(R.torso.rotation.y, s * (0.4 - sweep * 0.8), snap);
+      R.torso.position.z = dr(R.torso.position.z, ld * 0.18, snap);
+      vis.position.y = dr(vis.position.y, -0.06 * ld, 26);
+    } else if (kind === 'bash'){
+      // the shield arm drives the disc out into the front rank, the left shoulder and the body's weight behind it
+      R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -1.5 - ld * 0.1, snap);
+      R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, 0.25 - ld * 0.2, snap);
+      R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -1.6 + ld * 1.25 - ch * 0.15, snap);
+      R.torso.position.z = dr(R.torso.position.z, ld * 0.42 - ch * 0.1, snap);
+      R.torso.rotation.y = dr(R.torso.rotation.y, ld * 0.35 - ch * 0.2, snap);
+      R.torso.rotation.x = dr(R.torso.rotation.x, ld * 0.1, 24);
+      vis.position.y = dr(vis.position.y, -0.06 * ld, 26);
+      player.bashOut = ld;
     } else if (kind === 'charge'){
       R.torso.rotation.y = dr(R.torso.rotation.y, -0.55, 18);
       R.torso.position.z = dr(R.torso.position.z, 0.3, 18);
@@ -701,7 +752,9 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
   // === SINGLE-BLASTER GAUNTLET SHIELD — projected energy disc on the left forearm. Driven here (not in the
   // grounded branch) so it holds whether you're standing OR flying. Flares on a catch; warns amber when stamina
   // runs low (the shield can't deflect once it's dry).
+  const wasShielding = player.isShielding;
   player.isShielding = mandoShielding();
+  if (player.isShielding && !wasShielding) player.shieldFlash = Math.max(player.shieldFlash || 0, 0.1);   // the disc pops up as it re-forms
   player.shieldFlash = Math.max(0, (player.shieldFlash || 0) - dt * 3.2);
   if (player.isShielding){
     if (!player.shieldMesh){
@@ -723,6 +776,7 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
       sg.position.set(-0.12, 1.5, 0.95);   // gauntlet side, out in front of the chest
     }
     const sg = player.shieldMesh;
+    sg.position.z = 0.95 + (player.bashOut || 0) * 0.45;   // the bash throws the disc out ahead of the arm
     const flare = player.shieldFlash, shimmer = 0.05 * Math.sin(G.gt * 9);
     sg.scale.setScalar(SHIELD_SIZE * (1 + flare * 1.5));
     const lowStam = player.stam < CFG.player.maxStam * 0.18;   // shield failing — out of juice to deflect

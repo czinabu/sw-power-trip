@@ -150,6 +150,9 @@ export function updateHud(){
       setText(braceEl.querySelector('.an'), W.melee ? 'GUARD' : W.twoHand ? 'SCOPE' : player.weapon === 'single' ? 'SHIELD' : 'BRACE');
       braceEl.classList.toggle('nofp', player.weapon === 'single' && player.blockHeld && player.stam <= 0);
     }
+    // E chip: behind the raised shield, E cuts with the vibroblade instead of punching
+    const meleeEl = document.getElementById('ab-melee');
+    if (meleeEl) setText(meleeEl.querySelector('.an'), player.isShielding ? 'BLADE' : 'PUNCH');
     // cooldown / fuel-gated abilities
     const cdab = [['ab-rocket','rocket',abil('rocket').cost],['ab-deto','deto',abil('deto').cost],
                   ['ab-birds','birds',abil('birds').cost],['ab-grapple','grapple',abil('grapple').cost],

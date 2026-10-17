@@ -89,7 +89,7 @@ export const player = {
   cds: { push:0, slam:0, throw:0, dash:0, pull:0, judge:0, repulse:0, barrier:0, mend:0, rocket:0, flame:0, dark:0, birds:0, deto:0, grapple:0, missile:0, bacta:0 },
   saberPivot: null, saberHand: null, arcMesh: null, blade: null, rig: null,
   // mando
-  fireCd: 0, firePistol: 1, firing: false, jetActive: false, mandoParts: null, pistols: null, lockOn: false,
+  fireCd: 0, firePistol: 1, firing: false, trigHeld: false, shieldDropT: 0, jetActive: false, mandoParts: null, pistols: null, lockOn: false,
   darkT: 0, darkApplied: false, darksaberMesh: null, darkLight: null,
   weapon: 'single', heat: 0, overheat: false, ventT: 0, heatDelay: 0, grappleActive: null,
   zoom: false, aiming: 0, recoilKick: 0,

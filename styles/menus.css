@@ -66,6 +66,10 @@
 /* actions */
 .ov-actions{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;margin-top:28px}
 #overlay.st-menu .ov-actions{justify-content:flex-start}
+/* menu column: BEGIN gets the full width, settings / help / roadmap share an even row under it */
+#overlay.st-menu .ov-actions .btn{box-sizing:border-box}
+#overlay.st-menu .ov-actions .go{flex:1 0 100%}
+#overlay.st-menu .ov-actions .btn:not(.go){flex:1}
 #overlay .go{animation:none}
 #restartBtn{display:none;color:#ffcfa0;border-color:rgba(200,120,60,.45)}
 #restartBtn:hover{border-color:#ffb060;color:#ffe2c4}
@@ -79,9 +83,6 @@
 .hc-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
 #homeYes{color:#ffcfa0;border-color:rgba(200,120,60,.6)}
 #homeYes:hover{border-color:#ffb060;color:#ffe2c4}
-/* settings: one tidy row of pills */
-#settingsrow{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:22px}
-#overlay.st-menu #settingsrow{justify-content:flex-start}
 #overlay.st-menu .ov-foot{text-align:left}
 .setpill{display:flex;align-items:center;gap:9px;font:600 13px/1 var(--font-ui);letter-spacing:1.5px;color:var(--ink-dim);
   background:rgba(8,18,33,.7);border:1px solid var(--edge);border-radius:var(--r-chip);padding:8px 16px;
@@ -114,6 +115,15 @@
 .howto-x{margin-left:auto;pointer-events:auto;cursor:pointer;width:32px;height:32px;display:flex;align-items:center;justify-content:center;
   border-radius:8px;border:1px solid var(--edge);color:var(--ink-dim);font-size:15px}
 .howto-x:hover{color:var(--ink);border-color:var(--edge-lit)}
+/* ---------- SETTINGS: same panel as HOW TO PLAY, reachable from the main menu and pause; one column of rows per group ---------- */
+#settings{position:fixed;inset:0;z-index:25;display:none;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;
+  background:rgba(1,4,10,.72);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);cursor:default}
+#settings.open{display:flex}
+.set-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.set-grp{display:flex;flex-direction:column;gap:6px;background:rgba(255,255,255,.025);border:1px solid var(--edge);border-radius:var(--r-lg);padding:12px 14px}
+.set-grp h4{margin:0 0 4px;font-size:14px;letter-spacing:2.1px;color:var(--accent);font-weight:700}
+.set-grp .setpill{border-radius:var(--r);padding:10px 12px}
+.set-grp .setpill>:first-child{margin-left:auto}   /* label on the left, control and value pushed to the right */
 /* ---------- ROADMAP: same panel as HOW TO PLAY, a card per phase (data/roadmap.js) ---------- */
 #roadmap{position:fixed;inset:0;z-index:25;display:none;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;
   background:rgba(1,4,10,.72);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);cursor:default}
@@ -173,11 +183,10 @@
   .herocard{padding:14px 16px 12px}
   .herocard .hd{font-size:13px}
   .ov-actions{margin-top:20px}
-  #settingsrow{margin-top:16px}
 }
 @media (max-width:760px){
   #heroselect,.setup-row{grid-template-columns:1fr}
-  .ctl,.rm-list{grid-template-columns:1fr}
+  .ctl,.rm-list,.set-grid{grid-template-columns:1fr}
   .ctl .tips{grid-template-columns:1fr}
   #runsummary .rs-grid .rs-stat{flex-basis:calc((100% - 8px) / 2)!important}
 }

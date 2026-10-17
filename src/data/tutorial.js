@@ -9,7 +9,7 @@
 //   sec    starts a new section: its name is shown as a banner when the step begins
 //   say    the teacher's line · keys: keycaps ('/' and '+' stay as separators, '·' splits groups) · do: the task
 //   ev     a training event to count (game/tutor-bus.js): doubleJump dash slide vault climb roll wallrun finisher parry
-//          deflect perfectDodge cancel pushHit kill headshot vent shieldReflect catch charge takedown
+//          deflect perfectDodge cancel pushHit kill headshot vent shieldReflect catch charge takedown bash rocketHit
 //   of     with ev 'kill': only foes of this type count
 //   poll   a held state to time instead, in seconds: glide sprint boost · or 'forms' (count the saber forms used)
 //   reach  [x, z, top?]: get there, standing on a surface that high if given (a beacon marks it) · mark: [x, z, y?] a
@@ -125,6 +125,10 @@ export const TRAINING = {
     { say: 'Strike until it reels. Then end it.',
       keys: 'E E E E · E', do: 'Stagger the target with the full string, then take it down', ev: 'takedown', need: 1, respawn: true,
       spawn: [{ type: 'grunt', at: [0, -4], dummy: true, sparring: true }] },
+
+    { say: 'Keep the shield up and the blade does the work. Cut, cut, then drive the beskar into them.',
+      keys: 'HOLD RMB + E · E · E', do: 'Behind the shield, cut twice and land the shield bash', ev: 'bash', need: 1, respawn: true,
+      spawn: [[-0.8, -5], [0.8, -5]].map(at => ({ type: 'grunt', at, dummy: true, sparring: true })) },
 
     { sec: 'GADGETS', say: 'The wrist rocket does not kill. It puts a crowd on its back, and gives you the opening.',
       keys: 'Q', do: 'Knock down the group with a rocket', ev: 'rocketHit', need: 3, respawn: true,
