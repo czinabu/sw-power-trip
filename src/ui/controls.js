@@ -12,12 +12,13 @@ const CONTROLS = {
       ['HOLD SPACE', 'Force leap and glide', 'Spends Force'],
       ['SHIFT', 'Dash', 'A dodge-flip with brief invulnerability; dash just as a blow lands for a perfect dodge'],
       ['HOLD SHIFT + W', 'Sprint', 'Burns stamina; turns wide'],
-      ['Q', 'Slide', 'Out of a sprint; ducks blaster fire'],
+      ['Q', 'Slide', 'Out of a sprint; ducks blaster fire · attack out of it to sweep foes off their feet'],
     ]},
     { title: 'PARKOUR', rows: [
       ['W + SPACE', 'Vault / climb', 'Run and jump at low cover to vault it; jump at a ledge to pull up'],
       ['A / D', 'Ledge hang', 'Catch a high lip to hang; A/D shimmy, W or SPACE climbs, S drops'],
       ['W', 'Wall-run', 'Jump alongside a tall wall at speed; SPACE kicks off it'],
+      ['FLOW', 'Parkour pays', 'Every vault, climb, slide, wall-run and roll refunds Force; chain different moves for more, and the cut right after one hits harder'],
       ['SHIFT', 'Landing roll', 'Just before a hard landing, or you stagger'],
     ]},
     { title: 'FIGHT', rows: [
@@ -47,6 +48,8 @@ const CONTROLS = {
       ['HOLD SPACE', 'Jetpack thrust', 'Hover and climb; burns fuel'],
       ['HOLD SHIFT', 'Boost in the air', 'Look down to dive'],
       ['SHIFT', 'Dodge on the ground'],
+      ['C', 'Slide', 'Out of a run; ducks blaster fire and steadies your aim'],
+      ['FLOW', 'Parkour pays', 'Vaults, climbs and slides refuel the jetpack; shots right after one hit harder'],
     ]},
     { title: 'FIGHT', rows: [
       ['LMB', 'Fire', 'Headshots deal far more damage'],

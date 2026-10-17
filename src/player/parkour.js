@@ -1,10 +1,13 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
-// Parkour: ledge mantle and vault, the Jedi wall-run, and the landing roll / hard-landing stagger.
+// Parkour: ledge mantle and vault, the slide, the Jedi wall-run, the landing roll / hard-landing stagger, and FLOW
+// (parkour refunds Force / jet fuel and sets up a harder next blow).
 
 import { MOVE } from '../data/movement.js';
+import { CFG } from '../data/config.js';
 import { S } from '../audio/sfx.js';
 import { V3, clamp } from '../utils.js';
 import { burst } from '../fx/particles.js';
+import { floater } from '../fx/floaters.js';
 import { shared, G, solids, keys, player } from '../state.js';
 import { fwd, rightV, playerPos } from './helpers.js';
 import { launchFlip } from './anim/agility.js';
@@ -47,6 +50,34 @@ export function findLedge(pp, dir, minUp, maxUp){
   return best;
 }
 
+/* FLOW — a parkour move refunds a little Force (Jedi) or jet fuel (Mando), more when it chains off a different one,
+   and opens a MOMENTUM window for the next blow (momentumStrike / momentumShot). */
+export function flowLink(kind){
+  const F = MOVE.flow, last = player.flowLast || {};
+  const fresh = G.gt - (last[kind] ?? -99) >= F.sameCd;
+  last[kind] = G.gt; player.flowLast = last;
+  player.momentum = { kind, until: G.gt + Math.max(F.strikeWindow, kind === 'slide' ? MOVE.slideTime + 0.2 : 0) };
+  if (!fresh) return;
+  player.flowN = G.gt - (player.flowT ?? -99) < F.window && player.flowKind !== kind ? (player.flowN || 0) + 1 : 1;
+  player.flowT = G.gt; player.flowKind = kind;
+  const pay = F.refund * (player.flowN > 1 ? F.chainMul : 1);
+  if (G.hero === 'mando') player.jet = Math.min(player.jetMax, player.jet + pay * F.fuelMul);
+  else player.force = Math.min(CFG.player.maxForce, player.force + pay);
+  if (player.flowN > 1) floater(playerPos(), 'FLOW ×' + player.flowN, '#9fe0c8');
+}
+// The cut struck out of a parkour move: spends the window and says which move it came from (null if none).
+export function momentumStrike(){
+  const m = player.momentum;
+  if (!m || G.gt > m.until) return null;
+  player.momentum = null;
+  return m.kind;
+}
+// The Mando's shots: every bolt fired inside the window hits harder (it isn't spent per shot).
+export function momentumShot(){
+  const m = player.momentum;
+  return m && G.gt <= m.until ? MOVE.flow.shotDmg : 1;
+}
+
 /* MANTLE / VAULT — a scripted pull-up onto `ledge`. Vaults keep their running speed on the far side of the move. */
 export function startMantle(pp, ledge, vault){
   const up = ledge.top - pp.y;
@@ -63,6 +94,7 @@ export function startMantle(pp, ledge, vault){
   }
   burst(V3(ledge.x, ledge.top + 0.05, ledge.z), 0x9a9288, 4, 2.5, 1.5, 0.8);
   tutEvent(up <= MOVE.vaultHeight ? 'vault' : 'climb');   // over something low counts as a vault, whatever the run-up
+  flowLink(up <= MOVE.vaultHeight ? 'vault' : 'climb');
   S.jump();
 }
 
@@ -156,16 +188,20 @@ export function updateHang(dt, pp){
   return true;
 }
 
-/* SLIDE (Jedi) — Q out of a sprint: drop low and skid, keeping the run's speed and ducking under blaster fire. */
+/* SLIDE — Q out of a sprint (Jedi) or C out of a run (Mando): drop low and skid, keeping the run's speed and ducking
+   under blaster fire. A cut out of it is a sweep that floors what it hits; the Mando keeps firing, steady and harder. */
 export function trySlide(){
-  if (G.hero === 'mando' || !player.grounded || player.slideT > 0 || player.mantle || player.hang || G.mode !== 'play') return;
+  if (!player.grounded || player.slideT > 0 || player.mantle || player.hang || G.mode !== 'play') return;
+  if (G.hero === 'mando' && (player.dashT > 0 || player.meleeT > 0 || player.stabT > 0)) return;
   const hs = Math.hypot(player.moveVel.x, player.moveVel.z);
-  if (hs < MOVE.slideMinSpeed) return;
+  if (hs < (G.hero === 'mando' ? MOVE.mandoSlideMinSpeed : MOVE.slideMinSpeed)) return;
   player.slideT = MOVE.slideTime;
   tutEvent('slide');
+  flowLink('slide');
   player.moveVel.multiplyScalar((hs + MOVE.slideBoost) / hs);
   player.sprinting = false;
-  player.flip = { t: 0, dur: MOVE.slideTime, pitch: -0.3, drop: 0.5, legs: 'kneeslide', arms: null, side: 1, ease: 'twirl' };
+  // the Jedi's knee slide is a flip pose; the Mando's reuses his thruster-dodge skid (anim/agility.js)
+  if (G.hero !== 'mando') player.flip = { t: 0, dur: MOVE.slideTime, pitch: -0.3, drop: 0.5, legs: 'kneeslide', arms: null, side: 1, ease: 'twirl' };
   const pp = playerPos();
   burst(V3(pp.x, 0.15, pp.z), 0x9a9288, 8, 4, 1, 0.9);
   S.dash();
@@ -251,6 +287,7 @@ export function updateWallRun(dt, pp){
   player.wallRun = { t: 0, nx: n.x, nz: n.z, dir };
   player.wallRunUsed = true;
   tutEvent('wallrun');
+  flowLink('wallrun');
   player.vy = MOVE.wallRunLift;   // the feet catch the wall: a small, fixed lift (not the jump's full rise)
   S.dash();
 }
@@ -282,6 +319,7 @@ export function requestRoll(pp){
 function landingRoll(){
   player.rollReqT = -9; player.landStagT = 0;
   tutEvent('roll');
+  flowLink('roll');
   const f = fwd();
   let dx = player.moveVel.x + player.vel.x, dz = player.moveVel.z + player.vel.z;
   if (dx * dx + dz * dz < 1){ dx = f.x; dz = f.z; }

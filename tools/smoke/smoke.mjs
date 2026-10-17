@@ -18,7 +18,7 @@ const REAL_LIMIT_MS = 150000;   // headless WebGL is slow; give up on a hero aft
 // each hero's moves, pressed in turn during the fight (keys from engine/input.js)
 const MOVES = {
   jedi:  ['e', 'f', 'shift', ' ', 'c', '2', 'q', '3', 'g', '1'],
-  mando: ['e', 'q', 'shift', ' ', 'f', '2', 'r', '1', 'e', 'e'],
+  mando: ['e', 'q', 'shift', ' ', 'f', 'c', '2', 'r', '1', 'e', 'e'],
 };
 
 if (!existsSync(path.join(root, 'dist/index.html'))){ console.error('dist/index.html missing: run `npm run build` first'); process.exit(1); }

@@ -137,6 +137,7 @@ document.addEventListener('keydown', (e) => {
       if (k === 'x'){ if (G.unlocked.slam) jetSlam(); else if (G.unlocked.grapple) grappleHook(); }                 // MID: jetpack SLAM or GRAPPLE
       if (k === 'v'){ if (G.unlocked.birds) whistlingBirds(); else if (G.unlocked.deto) thermalDetonator(); }       // LATE: BIRDS or DETONATOR
       if (k === 'z') mandoJetMissile();
+      if (k === 'c' && !e.repeat) trySlide();          // SLIDE out of a run (parkour.js)
       if (k === 'e' && !e.repeat) mandoMelee();   // close quarters: string, catch, charge, dive kick, takedown (melee.js)
       if (k === 'h' && !e.repeat) bactaStim();        // bacta stim self-heal (store unlock)
       if (k === 'r' && !e.repeat) startReload();

@@ -221,9 +221,10 @@ export function mandoAgilityPost(dt, dr, vis, R, f, r){
   const M = MANDO_AGILITY;
   if (player.slamming) poseLegs(R, dr, LEGS.tuck, 0.6, 14);
   slamLanding(dt, dr, R, M.slam.kneel, 0);
-  if (player.grounded && player.dashT > 0 && !player.slamming){
-    // DODGE — the jets shove him: he drops, the lead leg reaches into the slide and the trail leg skids
-    const vx = player.vel.x, vz = player.vel.z, sp = Math.hypot(vx, vz) || 1;
+  if (player.grounded && (player.dashT > 0 || player.slideT > 0) && !player.slamming){
+    // DODGE (or a C SLIDE out of a run) — he drops, the lead leg reaches into the slide and the trail leg skids
+    const vx = player.vel.x + (player.slideT > 0 ? player.moveVel.x : 0), vz = player.vel.z + (player.slideT > 0 ? player.moveVel.z : 0);
+    const sp = Math.hypot(vx, vz) || 1;
     const vF = (vx*f.x + vz*f.z) / sp, vR = (vx*r.x + vz*r.z) / sp;
     const w = clamp(sp / 12, 0, 1);
     const side = Math.abs(vR) > Math.abs(vF);
