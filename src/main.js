@@ -33,6 +33,9 @@ import { spawnEnemy } from './enemies/spawn.js';
 import { damageEnemy } from './enemies/damage.js';
 import { updateEnemies } from './enemies/ai.js';
 import { updateBolts, updateOrbs } from './enemies/bolts.js';
+import { updateGrenades, grenades, pushGrenades } from './enemies/grenades.js';
+import { RAMP, TROOP_MELEE, TROOP_FIRE, PINCER, ORDERS, GRENADE, LUNGE } from './data/tactics.js';
+import { tacticsRamp } from './enemies/tactics.js';
 import './boss/light.js';
 import { updateVents, updateBarrels, hazardContains, updateHazardZones } from './world/hazards.js';
 import { spawnBoss, damageBoss, bossStagger, updateBoss, updateRings } from './boss/boss.js';
@@ -105,6 +108,7 @@ function tick(){
     }
     updateEnemies(dt);
     updateBolts(dt);
+    updateGrenades(dt);
     updateOrbs(dt);
     updateBoss(dt);
     updateRings(dt);
@@ -144,4 +148,5 @@ window.GAME = { CFG, ENEMY_TYPES, LEVELS, BOSS_CFG, BOSS_MANDO, STANCES, SKILLS,
   hitMarker, spawnBlasterBolt, mandoWeapon, updateBolts, updateHud,
   hazardZones, updateHazardZones, hazardContains, setOverlayState, nav: { NAV, buildNav, updateNav, navSteer, navDist },
   duel: { DUEL, DUEL_PROFILES, MANDO_MELEE, LOCK, startLock, endLock, duelDefend },
+  tactics: { RAMP, TROOP_MELEE, TROOP_FIRE, PINCER, ORDERS, GRENADE, LUNGE, tacticsRamp, grenades, pushGrenades },
   get boss(){ return shared.boss; }, get saberProj(){ return shared.saberProj; } };

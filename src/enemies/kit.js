@@ -27,6 +27,7 @@ export const NPC_MATERIALS = {
   metal:   { c: 0x8a929c, r: 0.3, m: 0.85 },  // bare metal: blades, rings, droid frame
   gun:     { c: 0x16191e, r: 0.4, m: 0.6 },   // blaster bodies
   leather: { c: 0x2a2018, r: 0.8 },
+  skin:    { c: 0x9c7a62, r: 0.75 },         // a bare face (the officer under its cap)
   cloth:   { c: 0x4a3f33, r: 0.95, side: THREE.DoubleSide },
 };
 

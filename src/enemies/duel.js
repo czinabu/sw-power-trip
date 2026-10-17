@@ -17,6 +17,7 @@ import { staggerEnemy, damageEnemy, flinchEnemy } from './damage.js';
 import { hurtPlayer } from '../player/damage.js';
 import { enemyDmgScale } from '../game/survival.js';
 import { showBanner } from '../ui/banners.js';
+import { tacticsRamp } from './tactics.js';
 
 const LINES = ['L', 'R', 'H'];
 const GUARDING = { chase: 1, recover: 1 };
@@ -164,8 +165,9 @@ export function planAttack(e, quick){
   const plan = { side: sides[(Math.random() * sides.length) | 0], feint: false, hold: 0, chain: 0, thrust: false };
   if (!quick){
     plan.thrust = Math.random() < p.thrust * m;
-    plan.feint = !plan.thrust && Math.random() < p.feint * m;
-    plan.hold = Math.random() < p.delay * m ? rand(DUEL.delayHold[0], DUEL.delayHold[1]) : 0;
+    const r = p.ramp ? tacticsRamp() : 1;   // the rank and file pick up their tricks as the run deepens (tactics.js)
+    plan.feint = !plan.thrust && Math.random() < p.feint * m * r;
+    plan.hold = Math.random() < p.delay * m * r ? rand(DUEL.delayHold[0], DUEL.delayHold[1]) : 0;
     plan.chain = p.chain ? (Math.random() * (p.chain + 1)) | 0 : 0;
   }
   if (plan.thrust){ plan.side = 'T'; plan.chain = 0; thrustTell(e); }

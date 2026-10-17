@@ -39,6 +39,21 @@ export const ENEMY_TYPES = {
   // then fires one hard, fast shot. Break line-of-sight behind cover, dash as it fires, or close the gap to spoil it.
   sniper:  { hp: 40,  speed: 4.0, dmg: 32, range: 32,  windup: 1.5,  recover: 1.7,
              scale: 1.0,  color: 0x3f5640, eye: 0xff2a2a, model: 'scout', cloth: 0x4a5236, ranged: true, boltSpeed: 64, sniper: true, score: 3 },
+  // IMPERIAL OFFICER — the squad leader. Hangs back behind the line with a sidearm and calls ORDERS (see data/tactics.js):
+  // VOLLEY (every blaster near it aims at once and fires together) and FLANK (the next attackers come in from your
+  // sides). Kill it and the troops around it FALTER. Squishy: the priority target in any wave it leads.
+  officer: { hp: 60,  speed: 5.0, dmg: 9,  range: 18,  windup: 0.62, recover: 1.3, standoff: 15,
+             scale: 1.0,  color: 0x4f5652, eye: 0xffc040, model: 'officer', cloth: 0x2a2e2c, ranged: true, boltSpeed: 22, weapon: 'pistol', officer: true, score: 4 },
+  // GRENADIER — lobs THERMAL DETONATORS over cover onto where you stand. A ring marks the landing spot the moment it
+  // throws, and fills as the fuse burns: step out of it. Cover doesn't save you; moving does. A Jedi can PUSH a live
+  // detonator back into the squad.
+  grenadier: { hp: 58, speed: 4.8, dmg: 26, range: 21,  windup: 0.85, recover: 2.3,
+             scale: 1.0,  color: 0x6d6a5a, eye: 0xff8a2a, model: 'grenadier', weapon: 'deto', ranged: true, grenade: true, blastR: 3.6, fuse: 1.15, score: 3 },
+  // PURGE LANCER — an electro-pike gap-closer. From mid range it plants its feet, marks a LINE on the ground at you and
+  // LUNGES down it. The line locks late: sidestep or dash out of it, or parry the point (a held block can't stop it).
+  // A lancer that misses overshoots and stands wide open. Close in, it fights like a plain pikeman.
+  lancer:  { hp: 88,  speed: 6.0, dmg: 21, range: 3.3,  windup: 0.5,  recover: 0.7,  swing: 0.16,
+             scale: 1.04, color: 0x3a3440, eye: 0x7ad8ff, model: 'lancer', cloth: 0x231f28, ranged: false, weapon: 'pike', lancer: true, score: 3 },
 };
 
 /* ---------- ELITE MODIFIERS — variety on top of the base types ----------

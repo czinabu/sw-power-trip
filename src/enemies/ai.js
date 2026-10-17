@@ -6,7 +6,7 @@ import { scene, camera } from '../engine/renderer.js';
 import { sfx, S } from '../audio/sfx.js';
 import { V3, rand, clamp, TMP, dampToward } from '../utils.js';
 import { burst } from '../fx/particles.js';
-import { G, enemies, solids } from '../state.js';
+import { G, enemies, solids, player } from '../state.js';
 import { MELEE_WINDUP_GAP } from '../data/mando.js';
 import { playerPos } from '../player/helpers.js';
 import { bomberExplode, updateAimLine, warbringerSlam, breakJetpack } from './specials.js';
@@ -23,10 +23,24 @@ import { updateNav, navSteer, navClass, navClearance } from './nav.js';
 import { DUEL } from '../data/duel.js';
 import { diffTellMul } from '../data/difficulty.js';
 import { updateDuel, cleanupDuel, planAttack, quickStrike, windupPose, strikePose, maybeFeint, chainNext, updateSaberLock } from './duel.js';
+import { TROOP_MELEE, TROOP_FIRE, GRENADE } from '../data/tactics.js';
+import { tickTactics, planTroopMelee, troopFeint, holdTremble, planShot, approachSteer, tryOrder, updateOrder, tryLunge, updateLungeWind,
+  updateLunge, dropLungeLine, cleanupTactics } from './tactics.js';
+import { throwGrenade } from './grenades.js';
 
 const NAV_EVERY = 0.1;      // seconds between a foe's route checks (the field itself refreshes in nav.js)
 const STUCK_AFTER = 0.5;    // window (s) over which a chasing foe must make headway, or it sidesteps to work itself free
-const steer = { x: 0, z: 0 };
+const steer = { x: 0, z: 0 }, appr = { x: 0, z: 0 };
+
+// a ranged foe lets fly at its target's TORSO including height — so a foe on a ledge gets shot AT, and bolts arc up to
+// reach you (rather than skimming the ground and hitting you on top by accident). spread jitters a burst's later shots
+function fireAt(e, tgtPos, spread){
+  const g = e.group, t = e.t;
+  const muzzle = V3(g.position.x, g.position.y+1.5, g.position.z);
+  const aimDir = V3(tgtPos.x, tgtPos.y + 1.4, tgtPos.z).sub(muzzle).normalize();
+  if (spread){ aimDir.x += rand(-spread, spread); aimDir.y += rand(-spread, spread) * 0.5; aimDir.z += rand(-spread, spread); aimDir.normalize(); }
+  fireBolt(muzzle, aimDir, t.boltSpeed * (G.mut === 'marksmen' ? 1.4 : 1), (e.converted ? t.dmg * CFG.convertDmgMult : t.dmg) * enemyDmgScale(), e.converted);
+}
 
 /* is there real cover between a melee foe and its target, tall enough that a swing can't reach over it? A solid the
    target is standing ON doesn't count (the high-ground rule in hurtPlayer handles that) */
@@ -36,7 +50,8 @@ function wallBetween(ax, az, b){
   return b.y < c.h - 0.5;
 }
 
-const NO_REACT = { ragdoll: 1, knockdown: 1, getup: 1, fade: 1, spawn: 1, lock: 1 };   // states that own the whole body
+const NO_REACT = { ragdoll: 1, knockdown: 1, getup: 1, fade: 1, spawn: 1, lock: 1, lunge: 1 };   // states that own the whole body
+const LUNGING = { lungewind: 1, lunge: 1 };
 export function updateEnemies(dt){
   const pp = playerPos();
   updateNav(dt, pp);    // refresh the flow field toward the player (nav.js)
@@ -60,6 +75,7 @@ export function updateEnemies(dt){
       g.userData.bodyMat.emissiveIntensity = 0.9 + Math.sin(G.gt*10)*0.3;
     } else if (e.state !== 'windup') g.userData.bodyMat.emissiveIntensity = 0;
     if (e.hitCd > 0) e.hitCd -= dt;
+    if (e.t.officer || e.t.lancer) tickTactics(e, dt);   // order / lunge cooldowns (tactics.js)
     if (e.stunT > 0) e.stunT -= dt;
     if (e.aimLine && e.state !== 'windup') e.aimLine.visible = false;   // the marksman's beam only shows while charging
 
@@ -95,6 +111,19 @@ export function updateEnemies(dt){
           e.counterQueued = false;
           if (dist < t.range + 1.2){ e.counterAt = G.gt; quickStrike(e, DUEL.counterWindup); break; }
         }
+        // a trooper that FEINTED comes again straight away, fast (tactics.js)
+        if (e.feintAgain && tgtPos && !e.converted){
+          e.feintAgain = false;
+          if (dist < t.range + 0.8){
+            e.state = 'windup'; e.wu = e.st = TROOP_MELEE.feintWindup; e.plan = null; e.troop = null;
+            telegraphWindup(e); G.lastMeleeWindupT = G.gt;
+            break;
+          }
+        }
+        // OFFICER — calls a volley or a flank with you in sight (tactics.js) · LANCER — plants and lunges from mid range
+        if (t.officer && tgtPos && tryOrder(e, dt, dist, tgtPos)) break;
+        // (a lancer circling in the ring waits its turn like the rest: it lunges with a token, or to close from afar)
+        if (t.lancer && tgtPos && (e.token || dist > t.range + ENGAGE.ringPad + 1) && tryLunge(e, dt, dist, tgtPos)) break;
         // WARBRINGER mid-boss — periodically LEAPS and quakes the ground where you stand (dash/jump it)
         if (e.warbringer && !e.converted && dist > 4.5 && dist < 17 && (e.leapCd = (e.leapCd || 3) - dt) <= 0){
           e.state = 'leapwind'; e.st = 0.55;
@@ -116,6 +145,8 @@ export function updateEnemies(dt){
           }
           if (!e.navDirect){ pathing = true; wx = e.navX; wz = e.navZ; }
         }
+        // PINCER — a token holder sent wide comes at you from an angle off the others (tactics.js)
+        if (!pathing && e.appr && tgtPos && approachSteer(e, dt, tgtPos, dist, appr)){ wx = appr.x; wz = appr.z; }
         let mx = wx, mz = wz;
         // separation from other enemies
         for (const o of enemies){
@@ -139,7 +170,7 @@ export function updateEnemies(dt){
           mz = tz*radial + tx*e.circle*side + sepZ;
           if (dist < ring + 3) paceMul = ENGAGE.stalkSpeed;   // a wary prowl near the fight, a run to rejoin it
         }
-        const keepR = t.sniper ? 12 : t.range * 0.7;                   // snipers hold a fixed standoff, not full 32u
+        const keepR = t.standoff || (t.sniper ? 12 : t.range * 0.7);   // snipers & officers hold a fixed standoff
         // COVER — ranged ground troops (not flyers, who stay airborne by design; not converted allies) check LOS to
         // their target each frame. No clear shot → steer toward the near side of whatever's in the way and hold
         // there (peek) instead of standing exposed in the open. ANTI-TURTLE: after 3s with no shot, give up hiding
@@ -147,7 +178,7 @@ export function updateEnemies(dt){
         let exposed = true;
         if (t.ranged && !t.fly && !e.converted){
           exposed = !segBlockedBySolids(g.position.x, g.position.z, tgtPos.x, tgtPos.z);
-          e.hideT = exposed ? 0 : (e.hideT || 0) + dt;
+          e.hideT = (exposed || t.grenade) ? 0 : (e.hideT || 0) + dt;   // a grenadier is happy to lob from cover
         }
         // out of firing range there's nothing to hide from yet: advance. Once a trooper gives up hiding it commits to
         // flanking for a few seconds instead of ducking back behind the first wall it passes
@@ -228,19 +259,22 @@ export function updateEnemies(dt){
           if (t.bomber){ e.state = 'fuse'; e.st = t.fuse; sfx(880, 0.08, 'square', 0.05, 880); }   // light the fuse
           // COVER GATE: a hidden ranged ground trooper won't commit to a windup it can't land — it just keeps
           // peeking (cover-seeking movement above) until exposed or the anti-turtle valve kicks in.
-          else if (t.ranged && !t.fly && !e.converted && !exposed){ /* no clear shot — keep peeking, or flank for one */ }
+          else if (t.ranged && !t.fly && !e.converted && !exposed && !t.grenade){ /* no clear shot — keep peeking, or flank for one */ }
           // a melee foe on the far side of tall cover doesn't swing at the wall — it keeps routing around
           else if (!t.ranged && !e.converted && wallBetween(g.position.x, g.position.z, tgtPos)){ /* go around */ }
           // RANGED SLOTS: only a few troopers aim at once, so a firing line staggers its shots
-          else if (t.ranged && !e.converted && !rangedSlotFree(t.sniper)){ /* hold — sidestep and wait */ }
+          else if (t.ranged && !e.converted && !rangedSlotFree(t)){ /* hold — sidestep and wait */ }
           // MELEE WINDUP STAGGER: hostile (non-converted) melee foes share a cooldown so a crowd doesn't all coil &
           // swing at once — ranged/converted foes are unaffected (already standoff/ally-targeted, not a swarm problem).
           else if (t.ranged || e.converted || G.gt - (G.lastMeleeWindupT ?? -9) >= MELEE_WINDUP_GAP){
             // a swing coiled BEHIND the camera gets a longer tell, so off-screen hits stay fair
             e.wu = t.windup * (!t.ranged && !e.converted && behindCamera(g.position) ? ENGAGE.rearWindup : 1) * (e.converted ? 1 : diffTellMul());   // DIFFICULTY: longer tells on Padawan
             e.state = 'windup'; e.st = e.wu; telegraphWindup(e);
-            // a duellist picks its line, and whether this one is a feint, a held strike or the start of a string
-            if (e.dp && !t.ranged && !e.converted) planAttack(e); else e.plan = null;
+            // a duellist picks its line, and whether this one is a feint, a held strike or the start of a string; a plain
+            // trooper may hold or feint (tactics.js); a line trooper plans a double-tap or a held aim
+            e.troop = null; e.volley = false;
+            if (e.dp && !t.ranged && !e.converted) planAttack(e);
+            else { e.plan = null; if (t.ranged) planShot(e); else planTroopMelee(e); }
             if (!t.ranged && !e.converted) G.lastMeleeWindupT = G.gt;
           }
           // else: another melee foe just committed to a swing — hold in chase this frame and retry next frame
@@ -265,8 +299,9 @@ export function updateEnemies(dt){
         const heavy = !!t.heavy;
         g.userData.bodyMat.emissive.setHex(e.converted ? 0x33cc55 : (e.plan && e.plan.side === 'T') ? 0xfff0e0 : 0xff2a18);
         // (a held strike's extra beat sits at the apex: the coil completes over the base wind-up, then waits)
-        const wk = e.plan ? clamp((e.wu - Math.max(e.st,0)) / (e.wuBase || e.wu), 0, 1) : 1 - Math.max(e.st,0)/(e.wu || t.windup);
+        const wk = (e.plan || e.troop) ? clamp((e.wu - Math.max(e.st,0)) / (e.wuBase || e.wu), 0, 1) : 1 - Math.max(e.st,0)/(e.wu || t.windup);
         if (e.plan && maybeFeint(e, wk)) break;   // a FEINT: it snaps to the other side and comes in fast
+        if (e.troop && troopFeint(e, wk)) break;  // a trooper's feint: it checks the swing, then comes again fast
         // anticipation: COIL hard and fast, then hold at the apex (a readable pause before the blow)
         const coil = Math.pow(wk, 0.5);
         g.userData.bodyMat.emissiveIntensity = (0.4 + coil * coil * 2.4) + Math.sin(G.gt*30)*0.25*coil;   // pulsing charge
@@ -280,10 +315,14 @@ export function updateEnemies(dt){
         else if (g.userData.staff){
           g.userData.staff.rotation.z = 0.5 - coil * 2.9;
           g.userData.staff.rotation.x = 0.3 + coil * 0.9;
+        } else if (g.userData.weaponArm && t.officer){
+          g.userData.weaponArm.rotation.x = -0.35 - coil * 1.15;   // the officer levels its sidearm
+          g.userData.weaponArm.rotation.z = coil * -0.1;
         } else if (g.userData.weaponArm){
-          g.userData.weaponArm.rotation.x = -0.35 - coil * (heavy ? 2.7 : 2.1);   // brute hauls the maul way overhead
+          g.userData.weaponArm.rotation.x = -0.35 - coil * (heavy ? 2.7 : 2.1);   // brute hauls the maul way overhead (a grenadier: the throw)
           g.userData.weaponArm.rotation.z = coil * (heavy ? 0.9 : 0.6);
         }
+        holdTremble(e, wk);   // a held swing shakes at the apex
         // charging embers stream off the weapon near the apex
         if (coil > 0.6 && Math.random() < (heavy ? 0.5 : 0.32))
           burst(V3(g.position.x + tx*0.3, g.position.y + (heavy?3.0:2.3), g.position.z + tz*0.3), heavy ? 0xff5522 : t.eye, 1, 3, 4, 0.7);
@@ -292,13 +331,17 @@ export function updateEnemies(dt){
           updateAimLine(e, V3(g.position.x, g.position.y+1.4, g.position.z), V3(tgtPos.x, tgtPos.y+1.4, tgtPos.z), wk);
         if (e.st <= 0){
           if (t.ranged){
-            if (tgtPos){
-              // aim at the target's TORSO including height — so a foe on a ledge gets shot AT, and bolts
-              // arc up to reach you (rather than skimming the ground and hitting you on top by accident)
-              const muzzle = V3(g.position.x, g.position.y+1.5, g.position.z);
-              const aimDir = V3(tgtPos.x, tgtPos.y + 1.4, tgtPos.z).sub(muzzle).normalize();
-              fireBolt(muzzle, aimDir, t.boltSpeed * (G.mut === 'marksmen' ? 1.4 : 1), (e.converted ? t.dmg * CFG.convertDmgMult : t.dmg) * enemyDmgScale(), e.converted);
+            if (tgtPos && t.grenade){
+              // GRENADIER — lob a detonator where the target will be (a little lead, a little scatter)
+              const v = e.converted ? null : player.vel, L = GRENADE.lead, sc = GRENADE.scatter;
+              const at = V3(tgtPos.x + (v ? v.x * L : 0) + rand(-sc, sc), 0, tgtPos.z + (v ? v.z * L : 0) + rand(-sc, sc));
+              throwGrenade(e, V3(g.position.x + tx*0.4, g.position.y + 2.2, g.position.z + tz*0.4), at, e.converted);
+              if (g.userData.weaponArm) g.userData.weaponArm.rotation.x = 0.5;   // the arm follows through
+            } else if (tgtPos){
+              fireAt(e, tgtPos, 0);
+              if (e.burstPlan){ e.burstLeft = e.burstPlan; e.burstT = TROOP_FIRE.burstGap; }   // a double-tap: one more behind it
             }
+            e.volley = false;
             if (!e.dead){ e.state = 'recover'; e.st = t.recover; }
             g.userData.bodyMat.emissiveIntensity = 0;
           } else {
@@ -363,6 +406,10 @@ export function updateEnemies(dt){
         break;
       }
       case 'recover':
+        if (e.burstLeft > 0 && (e.burstT -= dt) <= 0){   // the double-tap's second bolt
+          e.burstLeft--; e.burstT = TROOP_FIRE.burstGap;
+          if (tgtPos && !e.dead) fireAt(e, tgtPos, TROOP_FIRE.burstSpread);
+        }
         if (!e.dp || dist >= DUEL.guardRange) easeWeaponHome(g, dt);   // (a duellist settles into its guard instead: duel.js)
         g.rotation.x = dampToward(g.rotation.x, 0, dt, 10);
         if (g.userData.eye) g.userData.eye.scale.copy(g.userData.eyeBase);
@@ -405,6 +452,15 @@ export function updateEnemies(dt){
         break;
       }
       case 'lock':   // blade to blade with the hero: duel.js drives the bind
+        break;
+      case 'order':      // OFFICER — arm up, calling it (tactics.js)
+        updateOrder(e, dt, tx, tz);
+        break;
+      case 'lungewind':  // LANCER — planted, marking the line (tactics.js)
+        if (tgtPos) updateLungeWind(e, dt, tgtPos); else e.state = 'chase';
+        break;
+      case 'lunge':
+        updateLunge(e, dt, pp);
         break;
       case 'stasis':
         if (e.st <= 0){
@@ -475,10 +531,11 @@ export function updateEnemies(dt){
       case 'fade':
         g.scale.multiplyScalar(Math.max(0.01, 1 - dt*2.2));
         g.position.y -= dt * 0.6;
-        if (e.st <= 0){ cleanupDuel(e); if (e.aimLine){ scene.remove(e.aimLine); e.aimLine = null; } if (e.hpBar){ scene.remove(e.hpBar); e.hpBar = null; } scene.remove(g); enemies.splice(i,1); }
+        if (e.st <= 0){ cleanupDuel(e); cleanupTactics(e); if (e.aimLine){ scene.remove(e.aimLine); e.aimLine = null; } if (e.hpBar){ scene.remove(e.hpBar); e.hpBar = null; } scene.remove(g); enemies.splice(i,1); }
         break;
     }
     if (e.dp && !e.dead) updateDuel(e, dt, dist);   // guard, posture, the guard arc (duel.js)
+    if (e.lungeLine && e.lungeLine.visible && !LUNGING[e.state]) dropLungeLine(e);   // knocked out of a lunge: the line goes
     // ranged-hit recoil — a quick backward flinch that reads as "I felt that"
     if (e.flinch > 0){
       e.flinch -= dt;

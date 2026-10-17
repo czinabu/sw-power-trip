@@ -2,6 +2,8 @@
 // Level and wave flow: startLevel, startWave, updateFlow, ability unlock gates.
 
 import { cleanupDuel, endLock } from '../enemies/duel.js';
+import { cleanupTactics } from '../enemies/tactics.js';
+import { clearGrenades } from '../enemies/grenades.js';
 import { resetMandoMelee } from '../player/mando/melee.js';
 import { CFG } from '../data/config.js';
 import { LEVELS } from '../data/levels.js';
@@ -43,11 +45,13 @@ export function startLevel(idx, opts){
   G.training = !!(opts && opts.training);
   const L = (opts && opts.level) || LEVELS[idx];
   // clear battlefield
-  for (const e of enemies){ scene.remove(e.group); cleanupDuel(e); }
+  for (const e of enemies){ scene.remove(e.group); cleanupDuel(e); cleanupTactics(e); }
   enemies.length = 0;
   endLock();
   for (const b of bolts) scene.remove(b.mesh);
   bolts.length = 0;
+  clearGrenades();
+  G.flankUntil = 0; G.orderBusy = 0;
   for (const o of orbs) scene.remove(o.mesh);
   orbs.length = 0;
   for (const r of rings) scene.remove(r.mesh);
