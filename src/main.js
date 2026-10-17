@@ -77,6 +77,7 @@ import './ui/banners.js';
 import './ui/threats.js';
 import { updateHud } from './ui/hud.js';
 import { setOverlayState } from './ui/menus.js';
+import { showcaseActive, renderShowcase, leaveShowcase } from './ui/showcase.js';
 import './data/difficulty.js';
 import './engine/input.js';
 import { updateCamera } from './engine/camera.js';
@@ -135,7 +136,8 @@ function tick(){
   updateCamera(dt);
   MUSIC.updateState();   // adaptive score follows the fight (menu → combat → boss surge → victory/death)
   updateAudio(rawDt);    // saber hum, jetpack, flamethrower, ambience, muffle
-  composer.render();
+  // the title screen draws its own stage (painted backdrop + the hero on a turntable) instead of the arena
+  if (showcaseActive()) renderShowcase(rawDt); else { leaveShowcase(); composer.render(); }
 }
 tick();
 

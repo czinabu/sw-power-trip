@@ -10,7 +10,7 @@ import { SAMPLE_LOOKS } from './model/appearance.js';
 
 // the hero look (appearance.js). Dev overrides: ?style=shard|ink|forged  ?look=<a SAMPLE_LOOKS name>
 const params = new URLSearchParams(location.search);
-const LOOK = { ...(SAMPLE_LOOKS[params.get('look')] || {}), ...(params.get('style') ? { style: params.get('style') } : {}) };
+export const LOOK = { ...(SAMPLE_LOOKS[params.get('look')] || {}), ...(params.get('style') ? { style: params.get('style') } : {}) };
 
 function buildPlayer(){
   const g = player.group;
