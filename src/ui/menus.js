@@ -114,7 +114,7 @@ refreshTrainingMark();
 // STORY MISSION marks which heroes have won it
 function refreshMissionMark(){
   const md = document.querySelector('#mode-mission .md'); if (!md) return;
-  const j = missionDone('temple', 'jedi'), m = missionDone('temple', 'mando');
+  const j = missionDone('refuge', 'jedi'), m = missionDone('refuge', 'mando');
   md.innerHTML = (j || m) ? 'the last evacuation · Jedi ' + (j ? '<span class="ok">✓</span>' : '–') + ' Mando ' + (m ? '<span class="ok">✓</span>' : '–')
                           : 'hold, sabotage, then a duel';
 }

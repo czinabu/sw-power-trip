@@ -22,6 +22,7 @@ export const shared = {
   arenaLayout: 'temple',   // which authored layout is up (temple | foundry | plains) — picks the ambience, reverb and music palette
   ambient: null,   // drifting embers / ash / dust
   templeBrazier: null,
+  refugeShip: null,   // the story mission's transport (world/arenas/refuge.js), animated by game/mission.js
   levelPhase: 'idle',   // idle | between | fighting | bossfight | training | mission
   phaseT: 0,
   lockFallback: false,   // pointer lock unavailable (e.g. embedded preview) — play with plain mouse-move look

@@ -238,9 +238,32 @@ export const TRAINING_WORLDS = {
   },
 };
 
+/* STORY MISSIONS — the mission arenas (data/missions.js) keep one look whatever WORLD is picked */
+export const MISSION_WORLDS = {
+  refuge: {   // the hidden refuge: a valley floor under the peaks at dusk, the transport's lights on the pad
+    sky: { top: 0x2c3c66, horizon: 0xe8a878, below: 0x8a7a7c, bands: 7, stars: 40,
+      sun: { el: 0.08, color: 0xffd0a0, halo: 0xff9a70, size: 26 },
+      clouds: { color: 0xe0a890, under: 0x8a6670, count: 12, lo: 0.4, hi: 0.85 },
+      ridges: [{ color: 0x5a6078, h: 0.22, rough: 0.14, spiky: 0.6, seed: 21 }, { color: 0x484c62, h: 0.12, rough: 0.1, spiky: 0.4, seed: 5 }] },
+    fog: 0xa89098, fogStart: 0.75, fogEnd: 3.0,
+    light: { sun: 0xffd0a8, sunI: 1.7, dir: [-24, 30, 30], hemiSky: 0xb0bce0, hemiGround: 0x4a4440, fill: 0.8, rim: 0xffa880, rimI: 0.5 },
+    floor: { kind: 'flagstone', base: 0x8a8478, seed: 9 },
+    outer: 0x6e6862,
+    pal: { stone: 0x9a968e, stoneD: 0x726e68, metal: 0x6a727e, imperial: 0x3a3e46, stripe: 0xd9a43a, crate: 0x8a7458, lamp: 0xffc070 },
+    backdrop: [
+      { kind: 'cliffs', count: 20, r: [1.8, 2.5], h: [18, 36], w: 0.3, color: 0x8a8898, color2: 0x7a7a8c },
+      { kind: 'destroyer', az: -1.2, r: 2.3, y: 26, scale: 1.0, color: 0x8a8c96, color2: 0x767884, glow: 0x9ad8ff },
+    ],
+    ambient: { kind: 'dust', color: 0xffe0c8, count: 110, size: 0.26 },
+    beats: { fog: 0xc08870, fill: 1.05, tint: 0xffc8a0 },
+    sound: 'temple',
+  },
+};
+
 /* the theme for a level (by its layout), or null for unthemed/procedural arenas */
 export function themeFor(L){
   if (TRAINING_WORLDS[L.layout]) return TRAINING_WORLDS[L.layout];
+  if (MISSION_WORLDS[L.layout]) return MISSION_WORLDS[L.layout];
   const d = WORLD_DIRECTIONS[WORLD];
   return (d && L.layout && d[L.layout]) || null;
 }

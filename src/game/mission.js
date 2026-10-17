@@ -9,13 +9,15 @@ import { MUSIC } from '../audio/music.js';
 import { V3 } from '../utils.js';
 import { burst } from '../fx/particles.js';
 import { floater } from '../fx/floaters.js';
-import { shared, G, enemies, player } from '../state.js';
+import { shared, G, enemies, player, solids } from '../state.js';
 import { CFG } from '../data/config.js';
 import { playerPos, maxHp } from '../player/helpers.js';
 import { spawnEnemy, makeBossBar } from '../enemies/spawn.js';
 import { cleanupDuel } from '../enemies/duel.js';
 import { cleanupTactics } from '../enemies/tactics.js';
 import { findClearSpawn } from '../world/collision.js';
+import { buildNav } from '../enemies/nav.js';
+import { makeEvacuee } from '../world/arenas/refuge.js';
 import { startLevel, queueSpawn, checkUnlocks } from './flow.js';
 import { endRun } from './summary.js';
 import { showBanner } from '../ui/banners.js';
@@ -25,25 +27,30 @@ import { showPanel, hidePanel, makeBeacon, makeConsole, setMarkerColor, pulseMar
 import { MISSIONS, MISSION_VOICE, MISSION_COLOR } from '../data/missions.js';
 
 const RED = 0xff4a3a, GREEN = 0x7bffae;
-const M = { on: false, def: null, i: 0, o: null, s: null, markers: [], panelT: 0, waitT: 0, endT: 0, won: false };
+const M = { on: false, def: null, i: 0, o: null, s: null, markers: [], props: [], fx: [], panelT: 0, waitT: 0, endT: 0, won: false };
 
 export function missionDone(id, hero){ try { return localStorage.getItem('sw_mission_' + id + '_' + hero) === '1'; } catch(e){ return false; } }
 
 // start a mission from the top, or (retry) from the objective you fell on
-export function startMission(id = 'temple', fromObjective = 0){
+export function startMission(id = 'refuge', fromObjective = 0){
   const def = MISSIONS[id];
   clearMission();
   startLevel(0, { level: def.level, mission: true });   // fresh hero, kit and stats, on the mission's arena
   G.waveTotal = def.kit; checkUnlocks();                 // a mid-run kit: forms, Force jump / jetpack boosters, dual blasters
-  Object.assign(M, { on: true, def, i: fromObjective, o: null, s: null, panelT: 0, endT: 0, won: false });
+  Object.assign(M, { on: true, def, i: fromObjective, o: null, s: null, fx: [], panelT: 0, endT: 0, won: false });
+  if (def.start){ playerPos().set(def.start[0], 0, def.start[1]); G.yaw = player.faceYaw = def.start[2] || 0; }
+  // retrying past the evacuation: the transport has already gone
+  if (def.objectives.slice(0, fromObjective).some(o => o.kind === 'hold' && o.evacuees)) shipGone();
   // the opening banner (startLevel's) gets its moment before the first objective begins
   M.waitT = 2.8;
   setObjectiveHud({ kicker: 'MISSION · ' + def.title, title: def.objectives[fromObjective].title, status: 'STAND READY', frac: null });
 }
-export function retryMission(){ startMission(M.def ? M.def.id : 'temple', M.def ? M.i : 0); }
+export function retryMission(){ startMission(M.def ? M.def.id : 'refuge', M.def ? M.i : 0); }
 function clearMission(){
   for (const m of M.markers) removeMarker(m);
   M.markers = [];
+  for (const p of M.props) scene.remove(p);
+  M.props = []; M.fx = [];
   if (M.on) hidePanel();
   M.on = false;
   setObjectiveHud(null);
@@ -86,6 +93,7 @@ const KINDS = {
     begin(o, s){
       s.prog = 0; s.pulse = 0; s.pulseT = 2.5;
       M.markers.push(s.zone = makeBeacon(o.at[0], o.at[1], 0, MISSION_COLOR[G.hero], o.r / 0.9));
+      if (o.evacuees) beginEvacuees(o.evacuees, s);
     },
     update(o, s, dt){
       const officers = enemies.some(e => !e.dead && !e.converted && e.type === 'officer');
@@ -100,16 +108,19 @@ const KINDS = {
       const inZone = heroIn(o.at[0], o.at[1], o.r), foes = hostilesIn(o.at[0], o.at[1], o.r);
       const rate = inZone ? 1 : foes ? 0 : o.awayRate;
       s.prog += dt * rate;
+      if (s.kids) updateEvacuees(o.evacuees, s, dt, Math.min(1, s.prog / o.time), rate);
       setMarkerColor(s.zone, rate === 0 ? RED : MISSION_COLOR[G.hero]);
       s.zone.userData.beam.visible = !inZone;   // the column guides you back; standing in it, it would only fill the screen
       pulseMarker(s.zone, dt, G.gt);
       const total = alive ? ' · ' + alive + ' HOSTILE' + (alive === 1 ? '' : 'S') : '';
+      const who = o.evacuees ? o.evacuees.name[G.hero] + ' ABOARD ' + s.aboard + ' / ' + o.evacuees.count : 'EVACUATING';
       setObjectiveHud({ kicker: 'MISSION · ' + M.def.title, title: o.title, frac: s.prog / o.time,
-        status: (rate === 0 ? 'OVERRUN: RETAKE THE PAD' : inZone ? 'EVACUATING ' + mmss(o.time - s.prog) : 'PAD UNGUARDED ' + mmss(o.time - s.prog)) + total,
+        status: (rate === 0 ? 'OVERRUN: RETAKE THE RAMP' : inZone ? who + ' · ' + mmss(o.time - s.prog) : 'RAMP UNGUARDED ' + mmss(o.time - s.prog)) + total,
         warn: rate === 0 });
       if (s.prog >= o.time){
-        showBanner('TRANSPORT AWAY', 'The gunship sweeps the courtyard as it climbs.', 2.4);
+        showBanner('TRANSPORT AWAY', 'Its guns clear the field as it climbs.', 2.4);
         G.shake = Math.max(G.shake, 0.6);
+        if (shared.refugeShip) liftOff();
         return true;
       }
     },
@@ -178,6 +189,75 @@ const KINDS = {
   },
 };
 
+/* ============================================================
+   THE EVACUATION — the evacuees file from the shelter to the ramp as the hold's progress climbs, and the transport
+   lifts off when it's done
+   ============================================================ */
+function pathPoint(P, d){
+  for (let i = 0; i < P.length - 1; i++){
+    const [ax, az] = P[i], [bx, bz] = P[i+1], len = Math.hypot(bx - ax, bz - az);
+    if (d <= len || i === P.length - 2){ const t = Math.min(1, Math.max(0, d / len)); return [ax + (bx - ax)*t, az + (bz - az)*t, Math.atan2(bx - ax, bz - az)]; }
+    d -= len;
+  }
+}
+function beginEvacuees(ev, s){
+  s.path = ev.path; s.len = 0;
+  for (let i = 0; i < ev.path.length - 1; i++) s.len += Math.hypot(ev.path[i+1][0] - ev.path[i][0], ev.path[i+1][1] - ev.path[i][1]);
+  s.aboard = 0;
+  s.kids = [];
+  for (let i = 0; i < ev.count; i++){
+    const m = makeEvacuee(G.hero === 'mando' ? 'foundling' : 'youngling', i);
+    scene.add(m); M.props.push(m);
+    // the head of the line is already at the ramp; the rest queue back toward the shelter door
+    s.kids.push({ m, d: s.len - i * ev.spacing - ev.spacing, ph: Math.random() * 6 });
+  }
+}
+function updateEvacuees(ev, s, dt, frac, rate){
+  const boarded = frac * ev.count;
+  s.aboard = Math.min(ev.count, Math.floor(boarded + 1e-6));
+  s.kids.forEach((k, i) => {
+    const want = s.len - (i - boarded) * ev.spacing - ev.spacing;   // where this one's place in the line has moved to
+    const step = Math.min(Math.max(0, want - k.d), dt * ev.speed);
+    k.d += step;
+    const out = k.d > 0 && k.d < s.len;
+    k.m.visible = out;
+    if (!out) return;
+    const [x, z, yaw] = pathPoint(s.path, k.d);
+    const walking = step > dt * 0.1;
+    k.ph += dt * (walking ? 11 : rate === 0 ? 20 : 2);
+    k.m.position.set(x, (walking ? Math.abs(Math.sin(k.ph)) * 0.06 : 0) + (k.d > s.len - 3 ? (k.d - (s.len - 3)) * 0.33 : 0), z);
+    k.m.rotation.set(rate === 0 && !walking ? 0.25 : 0, yaw, rate === 0 && !walking ? Math.sin(k.ph) * 0.05 : 0);   // huddled and trembling while the ramp is overrun
+  });
+}
+// the transport raises its ramp, climbs and is gone (the field is open where it stood)
+function liftOff(){
+  const sh = shared.refugeShip;
+  dropShipSolid();
+  for (const p of M.props) scene.remove(p);   // everyone is aboard
+  M.props = [];
+  let t = 0;
+  const y0 = sh.group.position.y, z0 = sh.group.position.z;
+  M.fx.push(dt => {
+    t += dt;
+    sh.ramp.rotation.x = -0.36 + Math.min(1, t / 1.0) * 1.7;
+    if (t > 1){
+      const u = t - 1;
+      sh.group.position.y = y0 + u * u * 2.2;
+      sh.group.position.z = z0 + Math.max(0, u - 1.5) * u * 3;
+      sh.group.rotation.x = -Math.min(0.25, Math.max(0, u - 1) * 0.12);
+      sh.glow.color.setHex(u % 0.2 < 0.1 ? 0xbfe8ff : 0x8ad0ff);
+      if (u < 1.2 && Math.random() < 0.5) burst(V3(sh.group.position.x + (Math.random() - 0.5) * 6, 0.3, z0 - 5), 0xcfc0a8, 2, 5, 2, 0.8);
+    }
+    if (t > 8){ sh.group.visible = false; return false; }
+    return true;
+  });
+}
+function dropShipSolid(){
+  const sh = shared.refugeShip, i = sh ? solids.indexOf(sh.solid) : -1;
+  if (i >= 0){ solids.splice(i, 1); buildNav(); }
+}
+function shipGone(){ if (shared.refugeShip){ dropShipSolid(); shared.refugeShip.group.visible = false; } }
+
 // the duel's opponent: an existing duellist, scaled up into a champion with its own bar and a sharper profile
 function spawnInquisitor(o){
   const e = fieldSpawn(o.foe, o.at[0], o.at[1]);
@@ -233,12 +313,18 @@ function missionComplete(){
 export function updateMission(dt){
   if (!M.on) return;
   if (!G.mission){ clearMission(); return; }   // left the mission (main menu, another mode)
+  M.fx = M.fx.filter(f => f(dt));
   if (M.panelT > 0 && (M.panelT -= dt) <= 0) hidePanel();
   if (M.won){ if ((M.endT -= dt) <= 0){ M.won = false; missionComplete(); } return; }
   if (M.waitT > 0){ if ((M.waitT -= dt) <= 0) beginObjective(); return; }
   if (M.o && KINDS[M.o.kind].update(M.o, M.s, dt)) completeObjective();
 }
 // dev console / smoke test: count the current objective as done
-export function skipObjective(){ if (M.on && M.o){ completeObjective(); return true; } return false; }
+export function skipObjective(){
+  if (!M.on || !M.o) return false;
+  if (M.o.kind === 'hold') M.s.prog = M.o.time;   // let the hold finish its own way (the transport lifts off)
+  else completeObjective();
+  return true;
+}
 // how far through the mission (the atmosphere's mood follows it)
 export function missionProgress(){ return M.on ? M.i / Math.max(1, M.def.objectives.length - 1) : 0; }
