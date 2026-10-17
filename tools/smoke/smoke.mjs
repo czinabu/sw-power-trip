@@ -36,7 +36,8 @@ for (const hero of ['jedi', 'mando']){
     Element.prototype.requestPointerLock = function(){ return Promise.reject(new DOMException('smoke test', 'NotSupportedError')); };
   });
   page.on('pageerror', e => errors.push('page error: ' + (e.stack || e.message)));
-  page.on('console', m => { if (m.type() === 'error') errors.push('console error: ' + m.text()); });
+  const log = [];
+  page.on('console', m => { log.push(m.type() + ': ' + m.text()); if (m.type() === 'error') errors.push('console error: ' + m.text()); });
 
   const t0 = Date.now();
   let result;
@@ -45,10 +46,22 @@ for (const hero of ['jedi', 'mando']){
     await page.waitForFunction(() => window.GAME && window.GAME.G, null, { timeout: 30000 });
     await page.click('#hero-' + hero);
     await page.click('#mode-campaign');
-    await page.click('#goText');
-    await page.waitForFunction(() => GAME.G.mode === 'play' && !GAME.G.paused, null, { timeout: 15000 })
-      .catch(async e => { throw new Error(e.message + ' waiting to start play; state: ' + await page.evaluate(() =>
-        JSON.stringify({ mode: GAME.G.mode, paused: GAME.G.paused, overlay: document.getElementById('ovsub')?.textContent }))); });
+    // BEGIN, then give the game a few seconds to drop into the fight; click again if it's still on the menu
+    let started = false;
+    for (let i = 0; i < 5 && !started; i++){
+      await page.click('#goText');
+      started = await page.waitForFunction(() => GAME.G.mode === 'play' && !GAME.G.paused, null, { timeout: 3000 }).then(() => true, () => false);
+    }
+    if (!started){
+      const st = await page.evaluate(() => {
+        const b = document.getElementById('goText').getBoundingClientRect();
+        const hit = document.elementFromPoint(b.x + b.width / 2, b.y + b.height / 2);
+        return JSON.stringify({ mode: GAME.G.mode, paused: GAME.G.paused, overlay: document.getElementById('ovsub')?.textContent,
+          lock: document.pointerLockElement ? 'locked' : 'none', button: [b.x, b.y, b.width, b.height].map(Math.round),
+          hit: hit && (hit.id || hit.className || hit.tagName) });
+      });
+      throw new Error('never left the menu; state: ' + st + '\n' + log.slice(-15).join('\n'));
+    }
     await page.evaluate(() => { window.__frames = 0; const f = () => { window.__frames++; requestAnimationFrame(f); }; requestAnimationFrame(f); });
 
     const startGt = await page.evaluate(() => GAME.G.gt);
@@ -108,7 +121,7 @@ for (const hero of ['jedi', 'mando']){
     if (!result.kills && !result.hurt) problems.push('the hero never hit anything');
   }
   console.log(`${problems.length ? 'FAIL' : 'ok  '} ${hero.padEnd(5)} ${JSON.stringify(result || {})} (${((Date.now() - t0) / 1000).toFixed(0)}s)`);
-  for (const p of problems) console.log('     ' + p.split('\n').slice(0, 6).join('\n     '));
+  for (const p of problems) console.log('     ' + p.split('\n').slice(0, 20).join('\n     '));
   if (problems.length) failed = true;
 }
 
