@@ -56,8 +56,9 @@ for (const [hero, mode] of [['jedi', 'campaign'], ['mando', 'campaign'], ['jedi'
     // BEGIN, then give the game a few seconds to drop into the fight; click again if it's still on the menu
     let started = false;
     for (let i = 0; i < 5 && !started; i++){
-      if (await page.isVisible('#goText')) await page.click('#goText');
-      if (await page.isVisible('#trainNo')) await page.click('#trainNo');   // first run asks about training: go straight to the campaign
+      // the menu can close between the visibility check and the click (a launch already under way), so never wait long
+      if (await page.isVisible('#goText')) await page.click('#goText', { timeout: 2000 }).catch(() => {});
+      if (await page.isVisible('#trainNo')) await page.click('#trainNo', { timeout: 2000 }).catch(() => {});   // first run asks about training: go straight to the campaign
       started = await page.waitForFunction(() => GAME.G.mode === 'play' && !GAME.G.paused, null, { timeout: 3000 }).then(() => true, () => false);
     }
     if (!started){
