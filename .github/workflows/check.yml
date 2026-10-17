@@ -21,3 +21,9 @@ jobs:
       - run: npm run build
       - run: npx playwright install --with-deps chromium
       - run: npm run smoke
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-screens
+          path: smoke-*.png
+          if-no-files-found: ignore
