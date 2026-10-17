@@ -135,8 +135,8 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
       }
     }
   }
-  // defense: hold RMB to BLOCK (absorb only); a freshly-timed RMB CLICK opens the parry window
-  else if (!silent && (player.blockHeld || player.parryT > 0) && fromPos){
+  // defense: hold RMB to BLOCK (absorb only); a freshly-timed RMB CLICK opens the parry window (a blast can't be parried)
+  else if (!silent && !(opts && opts.blast) && (player.blockHeld || player.parryT > 0) && fromPos){
     TMP.subVectors(fromPos, playerPos()); TMP.y = 0;
     if (TMP.lengthSq() > 0.001 && TMP.normalize().dot(fwd()) > 0.1){
       const pp = playerPos();

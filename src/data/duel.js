@@ -18,10 +18,11 @@
      dodge    chance it steps back out of a cut it sees coming instead of blocking
      deflect  chance it bats a blaster bolt back at the shooter (saber users only)
      lock     a cut that meets its strike mid-arc becomes a SABER LOCK instead of a plain clash
-     push     how hard it drives a saber lock (balance per second) */
+     push     how hard it drives a saber lock (balance per second)
+     ramp     feint and delay grow with run depth (data/tactics.js RAMP): the rank and file learn tricks as the run goes on */
 export const DUEL_PROFILES = {
-  grunt:   { block: 0.18, posture: 40,  feint: 0,    delay: 0.15, chain: 0, counter: 0.15, thrust: 0,    dodge: 0 },
-  phalanx: { block: 0,    posture: 60,  feint: 0,    delay: 0.2,  chain: 1, counter: 0.3,  thrust: 0,    dodge: 0 },
+  grunt:   { block: 0.18, posture: 40,  feint: 0.2,  delay: 0.3,  chain: 0, counter: 0.15, thrust: 0,    dodge: 0, ramp: true },
+  phalanx: { block: 0,    posture: 60,  feint: 0.15, delay: 0.35, chain: 1, counter: 0.3,  thrust: 0,    dodge: 0, ramp: true },
   duelist: { block: 0.55, posture: 70,  feint: 0.25, delay: 0.25, chain: 1, counter: 0.45, thrust: 0.1,  dodge: 0.1, lock: true, push: 0.38 },
   acolyte: { block: 0.72, posture: 95,  feint: 0.3,  delay: 0.3,  chain: 2, counter: 0.6,  thrust: 0.15, dodge: 0.2, deflect: 0.75, lock: true, push: 0.5 },
 };

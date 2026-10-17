@@ -17,6 +17,7 @@ import { gainXp, killBonus } from '../game/progression.js';
 import { ENGAGE } from '../data/enemies.js';
 import { dropToken } from './director.js';
 import { tutEvent } from '../game/tutor-bus.js';
+import { officerDown } from './tactics.js';
 
 /* opts.launch === false: a blow with no rocket behind it (the Mandalorian's fists, knee and blade). It never floors or
    throws a live foe (the caller staggers or shoves it), and a foe it kills crumples where it stands instead of flying. */
@@ -90,6 +91,7 @@ export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick, opts){
     tutEvent('kill', e);
     if (blownUp) flyerBlowUp(e);
     if (e.t.bomber && !e._blew) bomberExplode(e);   // a SABOTEUR killed before its fuse still goes off — don't kill it point-blank
+    if (e.t.officer) officerDown(e);   // an OFFICER down: the squad around it falters (tactics.js)
     const d = knockDir ? knockDir.clone().setY(0) : fwd();
     if (opts && opts.launch === false){   // folds up and drops: a step back with the blow, then onto its back
       e.crumple = true;
@@ -164,7 +166,7 @@ export function flinchEnemy(e, dir, push){
   e.flinch = Math.max(e.flinch || 0, heavy ? 0.08 : 0.15);
   const d = dir.clone().setY(0); if (d.lengthSq() > 0.0001){ d.normalize(); e.flinchDir = d; e.group.position.addScaledVector(d, push * (heavy ? 0.22 : 1)); }
   // hammering a lightly-armored foe mid-wind-up can stagger the swing right out of them
-  if (!heavy && (e.state === 'windup' || e.state === 'strike') && Math.random() < 0.5){ e.state = 'recover'; e.st = 0.3; easeWeaponHome(e.group, 0.016); }
+  if (!heavy && (e.state === 'windup' || e.state === 'strike' || e.state === 'order' || e.state === 'lungewind') && Math.random() < 0.5){ e.state = 'recover'; e.st = 0.3; e.volley = false; easeWeaponHome(e.group, 0.016); }
 }
 // a clean saber hit knocks a light foe out of its wind-up, so striking first wins the exchange instead of trading.
 // POISE: each foe yields at most once per ENGAGE.poise seconds, so poking buys time but can't stun-lock a crowd.
@@ -178,7 +180,7 @@ export function interruptEnemy(e, dir, heavyBlow){
     if (dir){ const d = dir.clone().setY(0); if (d.lengthSq() > 0.0001) e.flinchDir = d.normalize(); }
     return false;
   }
-  if (!(e.state === 'windup' || (e.state === 'strike' && !e.struck))) return false;
+  if (!(e.state === 'windup' || e.state === 'order' || e.state === 'lungewind' || (e.state === 'strike' && !e.struck))) return false;   // an officer's call and a lancer's tell can be cut off too
   if ((e.t.staff || (e.dp && e.dp.lock) || (e.t.shield && !e.shieldBroken)) && !heavyBlow) return false;
   if (G.gt < (e.poiseT || 0)) return false;
   e.poiseT = G.gt + ENGAGE.poise;

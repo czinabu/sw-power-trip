@@ -19,6 +19,7 @@ import { cancelSwing } from './combat.js';
 import { spawnPushWave, spawnGroundShock } from '../../fx/vfx.js';
 import { inkSprite, sparks, motes, dustRing, barrierMaterial, bindBarrier } from '../../fx/ink.js';
 import { tutEvent } from '../../game/tutor-bus.js';
+import { pushGrenades } from '../../enemies/grenades.js';
 
 /* trigger the off-hand reaching gesture used by every Force power */
 // a Jedi power's Force cost after the survival cost cuts (ATTUNEMENT, DEEP RESERVES, FORCE NEXUS) — the same
@@ -79,6 +80,8 @@ export function forcePush(){
       b.friendly = true; b.dir.negate(); b.dmg = 20; b.mesh.material.color.setHex(0x66ccff);
     }
   }
+  // live THERMAL DETONATORS in the cone fly back at the squad that threw them
+  if (pushGrenades(pp, f, A.range, cosLim)) floater(pp, 'RETURNED', '#7fd4ff');
   // PUSH the Sith's force lightning back into him
   if (shared.boss && shared.boss.hp > 0 && shared.boss.lightT > 0){
     TMP.subVectors(shared.boss.group.position, pp); TMP.y = 0;

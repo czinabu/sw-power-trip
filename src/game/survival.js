@@ -13,6 +13,9 @@ import { floater } from '../fx/floaters.js';
 import { shared, G, enemies, bolts, player } from '../state.js';
 import { playerPos, maxHp } from '../player/helpers.js';
 import { makeBossBar, spawnEnemy } from '../enemies/spawn.js';
+import { cleanupDuel } from '../enemies/duel.js';
+import { cleanupTactics } from '../enemies/tactics.js';
+import { clearGrenades } from '../enemies/grenades.js';
 import { findClearSpawn, edgeSpawn } from '../world/collision.js';
 import { buildArena } from '../world/arena.js';
 import { startLevel, checkUnlocks } from './flow.js';
@@ -52,9 +55,12 @@ export function genEndlessWave(n){
     bomber:  n >= 6 ? 0.3 + (n-5)*0.07 : 0,    // saboteurs harass from wave 6
     sniper:  n >= 7 ? 0.25 + (n-6)*0.06 : 0,   // marksmen pick at you from wave 7
     acolyte: n >= 6 ? 0.2 + (n-5)*0.05 : 0,    // Sith acolytes, the saber duellists, from wave 6
+    officer: n >= 4 ? 0.2 + (n-3)*0.03 : 0,    // officers lead the squads from wave 4 (orders, falter on death)
+    lancer:  n >= 5 ? 0.3 + (n-4)*0.06 : 0,    // electro-pike lungers from wave 5
+    grenadier: n >= 6 ? 0.25 + (n-5)*0.05 : 0, // detonators over cover from wave 6
   };
   if (G.mut === 'swarm')    w.grunt *= 2.3;
-  if (G.mut === 'marksmen'){ w.blaster *= 2.2; w.flyer *= 1.9; w.sniper *= 2.4; }
+  if (G.mut === 'marksmen'){ w.blaster *= 2.2; w.flyer *= 1.9; w.sniper *= 2.4; w.officer *= 1.8; }
   if (G.mut === 'skyfall')   w.flyer = (w.flyer || 0.5) * 3.2;
   const types = Object.keys(w).filter(t => w[t] > 0);
   let sum = 0; for (const t of types) sum += w[t];
@@ -103,8 +109,9 @@ export function startEndless(){
 }
 // rebuild the arena in place at a milestone — clear the field, build, recentre the player (NO run reset)
 function rotateEndlessArena(L){
-  for (const e of enemies) scene.remove(e.group); enemies.length = 0;
+  for (const e of enemies){ scene.remove(e.group); cleanupDuel(e); cleanupTactics(e); } enemies.length = 0;
   for (const b of bolts) scene.remove(b.mesh); bolts.length = 0;
+  clearGrenades();
   G.spawnQueue.length = 0;
   buildArena(L);
   { const spot = findClearSpawn(0, shared.arenaHalf*0.42, CFG.player.radius + 1.0); playerPos().set(spot.x, 0, spot.z); }
