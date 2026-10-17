@@ -29,7 +29,12 @@ for (const hero of ['jedi', 'mando']){
   const errors = [];
   // small window on the LOW preset: headless Chromium draws WebGL in software, and this keeps it at a usable frame rate
   const page = await browser.newPage({ viewport: { width: 480, height: 270 } });
-  await page.addInitScript(() => { try { localStorage.setItem('jpt_quality', 'low'); } catch(e){} });
+  await page.addInitScript(() => {
+    try { localStorage.setItem('jpt_quality', 'low'); } catch(e){}
+    // headless pointer lock grants or refuses at random from run to run; refuse it every time so the game takes its
+    // unlocked fallback (the embedded-preview path) and the run always starts the same way
+    Element.prototype.requestPointerLock = function(){ return Promise.reject(new DOMException('smoke test', 'NotSupportedError')); };
+  });
   page.on('pageerror', e => errors.push('page error: ' + (e.stack || e.message)));
   page.on('console', m => { if (m.type() === 'error') errors.push('console error: ' + m.text()); });
 
@@ -41,7 +46,9 @@ for (const hero of ['jedi', 'mando']){
     await page.click('#hero-' + hero);
     await page.click('#mode-campaign');
     await page.click('#goText');
-    await page.waitForFunction(() => GAME.G.mode === 'play' && !GAME.G.paused, null, { timeout: 15000 });
+    await page.waitForFunction(() => GAME.G.mode === 'play' && !GAME.G.paused, null, { timeout: 15000 })
+      .catch(async e => { throw new Error(e.message + ' waiting to start play; state: ' + await page.evaluate(() =>
+        JSON.stringify({ mode: GAME.G.mode, paused: GAME.G.paused, overlay: document.getElementById('ovsub')?.textContent }))); });
     await page.evaluate(() => { window.__frames = 0; const f = () => { window.__frames++; requestAnimationFrame(f); }; requestAnimationFrame(f); });
 
     const startGt = await page.evaluate(() => GAME.G.gt);
