@@ -19,6 +19,7 @@ export const REFUGE_SPOTS = {
   ramp: [[0, 13.0], [0, 16.0]],                                      // foot of the ramp, then the hatch
   path: [[-19.2, 10.5], [-13, 10], [-6, 11.2], [-1.2, 12.4]],        // shelter door → foot of the ramp
   uplinks: [[-23, -6], [23, -2], [5, -23]],
+  wall: { z: 4.5, gap: 9.5 },   // the barricade line across the field: open only for |x| < gap
 };
 
 export function buildRefugeArena(L){
@@ -68,10 +69,22 @@ export function buildRefugeArena(L){
     K.deco(new THREE.SphereGeometry(0.2, 8, 6), red, mx, 10.6, mz);
   }
 
+  // ---- the BARRICADE LINE — blast walls across the field either side of the ramp approach, out to the valley sides,
+  // so from the south the only way to the ship is the gap in the middle (where the hero holds) ----
+  { const W = REFUGE_SPOTS.wall, half = L.arena / 2;
+    for (const sx of [-1, 1]){
+      const x0 = W.gap, x1 = half + 0.5, cx = sx * (x0 + x1) / 2, hx = (x1 - x0) / 2;
+      K.box(cx, W.z, hx, 0.5, 2.6, imp);
+      K.deco(new THREE.BoxGeometry(hx * 2 + 0.05, 0.12, 1.05), stripe, cx, 2.62, W.z);
+      for (let x = x0 + 2; x < x1 - 1; x += 4.5) K.deco(new THREE.BoxGeometry(0.4, 2.7, 1.2), metal, sx * x, 1.35, W.z);   // buttresses
+      K.column(sx * x0, W.z, 0.6, 3.4, imp, { wallKick: false, seg: 8, taper: 1 });                                       // the gate posts
+      K.deco(new THREE.SphereGeometry(0.22, 8, 6), warm, sx * x0, 3.6, W.z);
+    } }
+
   // ---- COVER on the field — supply crates and low stone walls in a loose ring, the middle left open ----
   for (let i = 0; i < 9; i++){
     const a = (i / 9) * Math.PI*2 + 0.2, r = 12 + R()*5, [x, z] = at(a, r);
-    if (z > 8 && Math.abs(x) < 12) continue;   // keep the ramp approach and the youngling path clear
+    if (z > REFUGE_SPOTS.wall.z - 2.5) continue;   // south of the barricade only: the ramp side stays clear for the line
     if (i % 3 === 0){ const ax = R() < 0.5; K.box(x, z, ax ? 2.4 : 0.35, ax ? 0.35 : 2.4, 1.3, stone); }   // low wall
     else { K.box(x, z, 0.8, 0.8, 1.1, crate); if (R() < 0.6) K.box(x + 1.3, z + 0.3, 0.6, 0.6, 0.8, crate); }
   }

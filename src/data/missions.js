@@ -4,7 +4,8 @@
 // A mission is a level (an arena to build, like data/levels.js) plus a list of objectives run in order. Dying puts you
 // back at the start of the objective you fell on. `kit` is how far into a run your gear is (the stage the automatic
 // unlocks in data/store.js check against), so a mission plays with a mid-run kit instead of the bare starting one.
-// `start` is [x, z, yaw] where the hero stands when it begins (yaw 0 faces north, +z).
+// `start` is [x, z, yaw] where the hero stands when it begins (yaw 0 faces north, +z). `grant` is the abilities each
+// hero gets on top (G.unlocked keys; one from a fork pair, data/store.js). Foes are as tough as a run's first wave.
 //
 // Objective kinds and their fields
 //   hold      stand by a spot until a timer runs out
@@ -12,6 +13,8 @@
 //               the zone and no foe is in it (in it: full speed; a foe in it while you're out: it stalls)
 //               pulses: reinforcement groups { type: count }, sent in turn · every: [with an officer alive, without]
 //               seconds between pulses (officers call them in, so drop the officers) · cap: most foes on the field
+//               from: [a0, a1] the arc of the edge they arrive from (radians, 0 = east, -π/2 = south) · aggro: a foe
+//               marches on the zone and only fights you when you're this close to it
 //               evacuees: { count, path: [[x, z]…] (from their shelter to the ship's hatch), spacing, speed, name } the
 //               people being saved, filing aboard as the timer runs (they stop and huddle while it stalls)
 //   sabotage  reach each console and stay on it to slice it
@@ -36,6 +39,7 @@ export const MISSIONS = {
              arena: 64, floor: 0x8a8478, fog: 0xa89098, sky: 0x2c3c66, layout: 'refuge', waves: [], hazards: {} },
     start: [0, 2, 0],   // south of the ramp, looking at the transport and the line filing aboard
     kit: 4,
+    grant: { jedi: ['throw', 'slam'], mando: ['grapple', 'birds'] },
     objectives: [
       { kind: 'hold', title: 'HOLD THE RAMP',
         say: { jedi: 'The younglings are boarding. Nothing reaches that ramp until the transport is sealed.',
@@ -44,9 +48,9 @@ export const MISSIONS = {
         at: [0, 9], r: 6, time: 75, awayRate: 0.5,
         evacuees: { count: 16, spacing: 1.2, speed: 2.2, name: { jedi: 'YOUNGLINGS', mando: 'FOUNDLINGS' },
                     path: [...REFUGE_SPOTS.path, ...REFUGE_SPOTS.ramp] },
-        pulses: [ { grunt: 3, blaster: 1, officer: 1 }, { grunt: 2, blaster: 2, grenadier: 1 }, { grunt: 3, lancer: 1, officer: 1 },
-                  { grunt: 2, blaster: 2, duelist: 1 }, { grunt: 3, grenadier: 1, lancer: 1, officer: 1 } ],
-        every: [8, 13], cap: 12 },
+        pulses: [ { grunt: 2, blaster: 1 }, { grunt: 2, officer: 1 }, { grunt: 2, blaster: 1, grenadier: 1 },
+                  { grunt: 2, lancer: 1 }, { grunt: 2, blaster: 1, officer: 1 }, { grunt: 1, duelist: 1, blaster: 1 } ],
+        every: [9, 14], cap: 7, from: [-Math.PI + 0.35, -0.35], aggro: 8 },
 
       { kind: 'sabotage', title: 'SLICE THE UPLINKS',
         say: { jedi: 'They are calling down a bombardment on the refuge. Silence their uplinks before it falls.',
@@ -56,13 +60,13 @@ export const MISSIONS = {
                     { at: REFUGE_SPOTS.uplinks[1], guards: { lancer: 1, grunt: 2 } },
                     { at: REFUGE_SPOTS.uplinks[2], guards: { grenadier: 1, blaster: 1, officer: 1 } } ],
         time: 4, r: 2.2, hitLoss: 1.2,
-        trickle: { every: 14, cap: 6, group: { grunt: 2, blaster: 1 } } },
+        trickle: { every: 16, cap: 5, group: { grunt: 2, blaster: 1 } } },
 
       { kind: 'duel', title: 'DEFEAT THE INQUISITOR',
         say: { jedi: 'The Inquisitor has come for you, not the refuge. Read the blade, not the mask.',
                mando: 'A hunter of Jedi. It turns a blaster bolt with ease. Close the distance and break it.' },
         task: { jedi: 'Win the duel', mando: 'Win the duel' },
-        foe: 'acolyte', name: 'THE INQUISITOR', hp: 6, dmg: 1.25, scale: 1.18, tint: 0xa01a22, at: [0, -6],
+        foe: 'acolyte', name: 'THE INQUISITOR', hp: 5, dmg: 1.25, scale: 1.18, tint: 0xa01a22, at: [0, -6],
         duel: { block: 0.78, posture: 170, feint: 0.35, chain: 2, counter: 0.6 },
         rage: 0.5, rageDuel: { feint: 0.5, delay: 0.4, chain: 3, thrust: 0.25 } },
     ],

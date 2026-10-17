@@ -36,7 +36,9 @@ export function startMission(id = 'refuge', fromObjective = 0){
   const def = MISSIONS[id];
   clearMission();
   startLevel(0, { level: def.level, mission: true });   // fresh hero, kit and stats, on the mission's arena
+  for (const k of (def.grant && def.grant[G.hero]) || []) G.unlocked[k] = true;
   G.waveTotal = def.kit; checkUnlocks();                 // a mid-run kit: forms, Force jump / jetpack boosters, dual blasters
+  G.waveTotal = 0;   // ...but foes as tough as the first wave (HP and elite odds climb with waveTotal)
   Object.assign(M, { on: true, def, i: fromObjective, o: null, s: null, fx: [], panelT: 0, endT: 0, won: false });
   if (def.start){ playerPos().set(def.start[0], 0, def.start[1]); G.yaw = player.faceYaw = def.start[2] || 0; }
   // retrying past the evacuation: the transport has already gone
@@ -63,7 +65,13 @@ function fieldSpawn(type, x, z){
   spawnEnemy(type, V3(s.x, 0, s.z));
   return enemies[enemies.length - 1];
 }
-function queueGroup(g){ for (const t in g) for (let n = 0; n < g[t]; n++) queueSpawn(t); }
+function queueGroup(g, opts){ for (const t in g) for (let n = 0; n < g[t]; n++) queueSpawn(t, opts); }
+// a clear spot on the edge ring, within an arc of it
+function arcSpawn(a0, a1){
+  const a = a0 + Math.random() * (a1 - a0), r = shared.arenaHalf * (0.74 + Math.random() * 0.14);
+  const s = findClearSpawn(Math.cos(a) * r, Math.sin(a) * r, 0.9);
+  return V3(s.x, 0, s.z);
+}
 // sweep what's left of the field (between objectives) without counting it as kills
 function sweepField(){
   for (const e of enemies){
@@ -101,7 +109,8 @@ const KINDS = {
       if ((s.pulseT -= dt) <= 0){
         s.pulseT = o.every[officers ? 0 : 1];
         if (alive < o.cap){
-          queueGroup(o.pulses[s.pulse++ % o.pulses.length]);
+          const goal = { pos: V3(o.at[0], 0, o.at[1]), aggro: o.aggro };   // they come for the ramp, not for you
+          queueGroup(o.pulses[s.pulse++ % o.pulses.length], { at: o.from && (() => arcSpawn(o.from[0], o.from[1])), then: e => { if (e) e.goal = goal; } });
           if (s.pulse > 1) showBanner('', officers ? 'AN OFFICER CALLS IN REINFORCEMENTS' : 'REINFORCEMENTS', 1.4);
         }
       }
@@ -121,6 +130,7 @@ const KINDS = {
         showBanner('TRANSPORT AWAY', 'Its guns clear the field as it climbs.', 2.4);
         G.shake = Math.max(G.shake, 0.6);
         if (shared.refugeShip) liftOff();
+        for (const e of enemies) e.goal = null;
         return true;
       }
     },

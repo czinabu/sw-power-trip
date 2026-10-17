@@ -47,7 +47,9 @@ for (const [hero, mode] of [['jedi', 'campaign'], ['mando', 'campaign'], ['jedi'
     await page.goto(page_url);
     await page.waitForFunction(() => window.GAME && window.GAME.G, null, { timeout: 30000 });
     await page.click('#hero-' + hero);
-    await page.click('#mode-' + mode);
+    // the story mission lives in the EXTRAS panel (experimental) and launches from its own PLAY button
+    if (mode === 'mission'){ await page.click('#rmtoggle'); await page.click('#xp-mission-go'); }
+    else await page.click('#mode-' + mode);
     // BEGIN, then give the game a few seconds to drop into the fight; click again if it's still on the menu
     let started = false;
     for (let i = 0; i < 5 && !started; i++){

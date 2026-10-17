@@ -33,8 +33,9 @@ import { diffBossCheckpoint } from '../data/difficulty.js';
 /* ============================================================
    LEVEL / WAVE FLOW
    ============================================================ */
-export function queueSpawn(typeName){
-  G.spawnQueue.push({ type: typeName, t: G.spawnQueue.length * 0.22 });
+// opts.at() picks where it arrives (default: anywhere on the edge ring) · opts.then(e) is handed the new foe
+export function queueSpawn(typeName, opts){
+  G.spawnQueue.push({ type: typeName, t: G.spawnQueue.length * 0.22, at: opts && opts.at, then: opts && opts.then });
 }
 
 // opts.level runs another level definition in place of LEVELS[idx] (the training grounds, game/tutorial.js; a story
@@ -238,7 +239,8 @@ export function updateFlow(dt){
     if (s.t <= 0){
       if (s.type === 'warbringer') spawnChampion();   // a campaign mid-boss — picks its own arena-edge spot
       else {
-        spawnEnemy(s.type, edgeSpawn(0.75, 0.92, 0.8));   // a clear spot on the edge ring (never inside cover or a hazard)
+        spawnEnemy(s.type, s.at ? s.at() : edgeSpawn(0.75, 0.92, 0.8));   // a clear spot on the edge ring (never inside cover or a hazard)
+        if (s.then) s.then(enemies[enemies.length - 1]);
       }
       G.spawnQueue.splice(i,1);
     }
