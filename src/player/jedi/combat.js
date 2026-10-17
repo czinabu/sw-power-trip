@@ -20,6 +20,8 @@ import { bodyRadius } from './bladehit.js';
 import { inReach } from '../../enemies/bodyshape.js';
 import { tutEvent } from '../../game/tutor-bus.js';
 import { masteryXp } from '../../game/progression.js';
+import { momentumStrike } from '../parkour.js';
+import { MOVE } from '../../data/movement.js';
 
 /* COMBO RHYTHM — fractions of a swing. A press before `open` is too early (and costs this link its flow); a single
    press from `open` on links in rhythm, and the next cut leaves at `at` (just after the follow-through). */
@@ -31,7 +33,7 @@ export function tryAttack(flow = false){
     if (G.gt - (player.lastWinded || -9) > 0.5){ player.lastWinded = G.gt; floater(playerPos(), 'NO BLADE', '#bfe8ff'); sfx(220, 0.06, 'sine', 0.04, 160); }
     return;
   }
-  if (G.mode !== 'play' || player.blockHeld || player.judgeT > 0 || player.mendT > 0 || player.swingLock > 0 || player.mantle || player.hang || player.flinchT > 0 || player.slideT > 0) return;
+  if (G.mode !== 'play' || player.blockHeld || player.judgeT > 0 || player.mendT > 0 || player.swingLock > 0 || player.mantle || player.hang || player.flinchT > 0) return;
   // input buffering, but ONLY in the back half of the current swing — early mashing is ignored so
   // the combo flows on rhythm instead of spraying three swings off one frantic burst of clicks.
   // A press in the back half queues the next cut. If that was the ONLY press this swing (no early click), the
@@ -57,6 +59,9 @@ export function tryAttack(flow = false){
     player.stamDelay = CFG.player.stamDelay;
   }
   player.comboStep = step;
+  // a cut out of a SLIDE ends the skid in a low sweep (parkour.js); any cut struck out of a parkour move carries its momentum
+  if (player.slideT > 0){ player.slideT = 0; if (G.hero !== 'mando') player.flip = null; }
+  const mom = momentumStrike();
   // slightly longer arcs read as deliberate sword strokes rather than a twitchy flurry
   const dur = (step === 2 ? 0.52 : 0.4) / (st.speed * (player.up.atkSpeed || 1));
   player.atkT = dur;
@@ -88,7 +93,7 @@ export function tryAttack(flow = false){
   // the riposte is spent on THIS cut (it lands on whatever the blade meets first; see applySwingDamage)
   const cancelRip = ripNow && !!player.cancelRiposte;
   if (ripNow){ player.riposteT = 0; player.cancelRiposte = false; }
-  player.swing = { t: 0, applied: false, step, dur, pat, dir: dirKey, back: backStrike, riposte: ripNow, cancelRip, flow };
+  player.swing = { t: 0, applied: false, step, dur, pat, dir: dirKey, back: backStrike, riposte: ripNow, cancelRip, flow, mom };
   player.deflectAnim = null;   // a cut takes the blade over from any catch in progress
   // cinematic lunge toward nearest target in view — STRONG's finisher lunges harder; a RIPOSTE drives in hardest
   const lunge = ripNow ? 2.0 : ((step === 2 && st.finisherLunge) ? st.finisherLunge : st.lunge);
@@ -113,6 +118,7 @@ export function tryAttack(flow = false){
 // drag in locomotion.js), but laid along the swing so the body drives through the strike with the lead foot
 // (locomotion.js moves it, anim/footing.js steps the feet). In the air it stays a shove.
 const GROUND_DRAG = 9;
+const MOM_LABEL = { slide: 'SLIDE CUT', wallrun: 'WALL STRIKE', vault: 'VAULT STRIKE', climb: 'LEDGE STRIKE', roll: 'ROLL STRIKE' };
 function stepIntoCut(dir, impulse){
   if (player.grounded && player.swing){
     player.swing.travel = { x: dir.x * impulse / GROUND_DRAG, z: dir.z * impulse / GROUND_DRAG, done: 0 };
@@ -182,6 +188,9 @@ export function applySwingDamage(step, only){
     screenFlash('radial-gradient(ellipse at center, rgba(255,255,255,.45), rgba(255,210,90,.1) 55%, transparent 72%)', 0.85, 0.32);
     S.riposte(); sfx(140, 0.22, 'sawtooth', 0.14, 50);
   }
+  // MOMENTUM — a cut out of a vault, climb, slide, wall-run or landing roll lands harder (data/movement.js MOVE.flow)
+  const mom = sw0 && sw0.mom;
+  if (mom){ dmg *= MOVE.flow.strikeDmg; knock *= MOVE.flow.strikeKnock; }
   // FAST cleaves wide through crowds; STRONG is a narrow, focused blow. FAST's finisher fans ~10% wider still.
   const radius = (finisher ? CFG.player.hitRadius + 1 : CFG.player.hitRadius) * (st.radiusMult || 1)
                  * (finisher && st.finisherArc ? st.finisherArc : 1);
@@ -219,6 +228,7 @@ export function applySwingDamage(step, only){
       damageEnemy(e, dmg * (e.t.heavy ? st.heavyDmg : 1), f.clone(), knock, finisher);
       foesHit++;
       if (!riposte && !e.dead) interruptEnemy(e, f, finisher || st.form === 'djemso' || isDark);   // striking first beats a wind-up
+      if (mom === 'slide' && !riposte && !e.dead) staggerEnemy(e, f.x, f.z);   // a SLIDE CUT sweeps the legs out
       if (riposte && !e.dead) staggerEnemy(e, f.x, f.z);   // a RIPOSTE floors what it answers — a true counter, wide open after
       // BESKAR EDGE — a heavy darksaber hit can DISARM/stagger a staff-wielding duelist
       if (isDark && (finisher || e.t.staff) && e.t.staff && !e.dead && Math.random() < (finisher ? 0.5 : 0.18)){
@@ -240,6 +250,7 @@ export function applySwingDamage(step, only){
     player.queuedAtk = false; player.comboStep = 2;
   }
   if (hits > 0){
+    if (mom && !sw0.momFx){ sw0.momFx = true; floater(playerPos(), MOM_LABEL[mom] || 'MOMENTUM', '#9fe0c8'); }
     G.shake = Math.max(G.shake, finisher ? 0.5 : 0.2);
     addFocus(finisher ? FOCUS.gainFin : FOCUS.gainHit);   // FORCE FOCUS — clean bladework builds the flow
     // UNLEASHED (max focus): every cut releases a Force shockwave that cleaves & knocks the surrounding crowd

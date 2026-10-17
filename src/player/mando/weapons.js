@@ -21,6 +21,7 @@ import { updateDark } from './darksaber.js';
 import { spawnHitSpark } from '../../fx/vfx.js';
 import { muzzleFlash, inkSprite, sparks, puff, screenAngle } from '../../fx/ink.js';
 import { tutEvent } from '../../game/tutor-bus.js';
+import { momentumShot } from '../parkour.js';
 
 /* ============================================================
    MANDALORIAN — jetpack, dual blasters, flamethrower, wrist rockets
@@ -203,8 +204,9 @@ function fireBlaster(W){
   const steadyAim = mandoBraced() && !player.boosting;
   const hsp = Math.hypot(player.moveVel.x + player.vel.x, player.moveVel.z + player.vel.z);
   const spd01 = clamp(hsp / (MANDO.airSpeedMax || 22), 0, 1);
-  const inacc = spd01 * 0.7 + (player.boosting ? 1.0 : (!player.grounded && !player.hovering ? 0.35 : 0));
-  const dmg = W.dmg * (steadyAim ? (W.braceDmg || 1) : 1) * player.up.dmg;
+  // a SLIDE is a steady firing line (parkour.js): no speed bloom, and shots out of any parkour move hit harder
+  const inacc = player.slideT > 0 ? 0 : spd01 * 0.7 + (player.boosting ? 1.0 : (!player.grounded && !player.hovering ? 0.35 : 0));
+  const dmg = W.dmg * (steadyAim ? (W.braceDmg || 1) : 1) * player.up.dmg * momentumShot();
   const foMin = steadyAim ? Math.min(1, (W.foMin || 1) + 0.25) : W.foMin;   // bracing stretches effective range
   const baseSpread = steadyAim ? W.braceSpread : W.hipSpread;
   const spread = baseSpread + (steadyAim ? inacc * 0.003 : inacc * 0.028);   // boosting blooms the cone hard

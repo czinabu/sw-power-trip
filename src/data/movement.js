@@ -47,6 +47,13 @@ export const MOVE = {
   sprintAccel: 0.55,    // steering while sprinting is heavier (accel multiplier)
   sprintTurn: 4.2,      // max body turn rate while sprinting (rad/s)
   slideTime: 0.62, slideBoost: 2.5, slideDrag: 1.6, slideMinSpeed: 7.5,
+  mandoSlideMinSpeed: 5.5,   // the Mando has no sprint: C slides him out of a plain run
+  // FLOW: parkour pays for flight. Each move (vault, climb, slide, wall-run, landing roll) refunds Force (Jedi) or jet
+  // fuel (Mando); a different move inside `window` chains and pays `chainMul` more. The same move again within
+  // `sameCd` pays nothing (no farming one crate). Each also opens a MOMENTUM window: the next saber cut lands
+  // `strikeDmg` harder (a slide cut floors what it hits), and the Mando's shots hit `shotDmg` harder while it lasts.
+  flow: { window: 2.0, refund: 6, chainMul: 1.5, fuelMul: 1.6, sameCd: 2.5,
+          strikeWindow: 0.7, strikeDmg: 1.4, strikeKnock: 1.3, shotDmg: 1.25 },
   // turning weight: the Jedi's body turns at a capped rate instead of snapping
   turnRate: 10,         // rad/s roaming
   combatTurnRate: 16,   // rad/s squared up in combat
