@@ -143,8 +143,13 @@ export function updateCamera(dt){
   clear(camera.position);
   // Mando aims a bit ABOVE its own head height; while DIVING the look target drops so the camera follows the dive angle
   const diveLook = (G.hero === 'mando' && player.boosting) ? clamp(player.vy * 0.06, -2.0, 0) : 0;
-  const ahead = C.lookAhead;
-  camera.lookAt(tx + f.x*ahead + rv.x*ots, ty + C.lookUp + (G.hero === 'mando' ? 0.3 : 0) + diveLook + aimRise, tz + f.z*ahead + rv.z*ots);
+  // LOOKING DOWN — the lens climbs overhead, and aiming far past the hero from up there drops them off the bottom of the
+  // screen. As the view tips over, draw the aim point back in toward the hero and down toward the waist, so they stay
+  // in frame
+  let td = clamp((G.pitch - C.topDownFrom) / (1.2 - C.topDownFrom), 0, 1);
+  td = td*td*(3 - 2*td);
+  const ahead = C.lookAhead * (1 - td * C.topDownAhead);
+  camera.lookAt(tx + f.x*ahead + rv.x*ots, ty + C.lookUp + (G.hero === 'mando' ? 0.3 : 0) + diveLook + aimRise - td * C.topDownDrop, tz + f.z*ahead + rv.z*ots);
   // camera ROLL into a strafe — subtle for the Jedi; a pronounced Max-Payne bank for the boosting Mando, but
   // damped right down while AIMING so the shot stays readable.
   const strafe = vx * (-f.z) + vz * f.x;

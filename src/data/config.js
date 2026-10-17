@@ -64,6 +64,9 @@ export const CFG = {
     shoulder: 0.75,           // Jedi lens sits this far right of the spine, so the foe ahead is never hidden behind you
     lookAhead: 5,             // the lens aims this far past the hero...
     lookUp: -0.15,            // ...and this high over the pivot (a hair under it keeps the hero's boots in frame)
+    topDownFrom: 0.45,        // past this pitch (radians, looking down) the aim point starts drawing in toward the hero...
+    topDownAhead: 0.5,        // ...losing up to this share of the look-ahead at the steepest pitch...
+    topDownDrop: 0.5,         // ...and sinking this far, so a hero seen from overhead sits in frame, not off the bottom edge
     baseDist: 5.4,            // resting follow distance (was 8.2)
     calmDist: 0.6,            // between waves / nothing nearby: ease back a touch so an empty arena never feels cramped
     crowdRadius: 10,          // enemies inside this range count toward the crowd pull-back
