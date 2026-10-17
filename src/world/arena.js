@@ -19,6 +19,7 @@ import { buildFoundryArena } from './arenas/foundry.js';
 import { buildPlainsArena } from './arenas/plains.js';
 import { buildHallArena } from './arenas/hall.js';
 import { buildForgeArena } from './arenas/forge.js';
+import { buildRefugeArena } from './arenas/refuge.js';
 import { buildNav } from '../enemies/nav.js';
 
 /* ============================================================
@@ -92,6 +93,7 @@ export function buildArena(L){
   else if (L.layout === 'plains'){ buildPlainsArena(LP); }
   else if (L.layout === 'hall'){ buildHallArena(LP); }
   else if (L.layout === 'forge'){ buildForgeArena(LP); }
+  else if (L.layout === 'refuge'){ buildRefugeArena(LP); }
   else {
   // pick a spot at least `gap` clear of every other obstacle so cover stays SPREAD OUT — clustered obstacles
   // form walls that trap the enemy AI. Returns null if no open spot is found (so we just place fewer).
