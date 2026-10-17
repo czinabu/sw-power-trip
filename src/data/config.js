@@ -77,9 +77,9 @@ export const CFG = {
     crowdLift: 0.5,           // and the lens rises up to this much so the pack reads over the hero's shoulders
     bossDist: 2.4,            // boss fights sit further back...
     bossNear: 3.4,            // ...and further still (up to this) while the boss is right on top of you
-    shake: 0.32,              // screen-shake strength (trauma² — small hits stay subtle, big ones land hard)
-    shakeRoll: 0.035,         // max roll (radians) at full trauma
-    hitKick: 0.42,            // the lens is knocked away from whatever hit you
+    shake: 0.19,              // screen-shake strength at 100% on the SHAKE slider (trauma² — small hits stay subtle, big ones land hard)
+    shakeRoll: 0.02,          // max roll (radians) at full trauma
+    hitKick: 0.28,            // the lens is knocked away from whatever hit you
     impactFov: 3.5,           // FOV punch-in on heavy hitstop / slow-mo beats
     sway: 0.035,              // idle handheld drift (0 to disable)
   },
