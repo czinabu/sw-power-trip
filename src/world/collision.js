@@ -61,6 +61,7 @@ export function collideSolids(pos, radius, climb){
       const dx = pos.x - nx, dz = pos.z - nz, d2 = dx*dx + dz*dz;
       if (!((insideX && insideZ) || d2 < radius*radius)) continue;
       if (climb && pos.y >= top - STEP_UP){ if (top > support) support = top; continue; }
+      if (pos.y >= top) continue;   // feet already clear of the top (jumping off it): nothing to push out of
       if (insideX && insideZ){   // deep inside — eject through the nearest face
         const dl = pos.x - minX, dr = maxX - pos.x, db = pos.z - minZ, df = maxZ - pos.z;
         const m = Math.min(dl, dr, db, df);
@@ -74,6 +75,7 @@ export function collideSolids(pos, radius, climb){
       const dx = pos.x - c.x, dz = pos.z - c.z, d = Math.hypot(dx, dz), rr = c.r + radius;
       if (d >= rr) continue;
       if (climb && pos.y >= top - STEP_UP){ if (top > support) support = top; continue; }
+      if (pos.y >= top) continue;
       if (d > 0.001){ const push = rr - d; pos.x += dx/d*push; pos.z += dz/d*push; }
     }
   }
