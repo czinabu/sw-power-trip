@@ -32,6 +32,18 @@ tokens) is unchanged by this and lives in `src/data/enemies.js` (`ENEMY_TYPES`, 
 - **Ranged troopers:** out of range they advance along the field. In range with no shot they hide behind cover and
   peek; after 3s they flank for 4s to find a clear shot instead of firing into the wall.
 
+## Attack turns
+
+Melee foes take turns, the way Arkham and Fallen Order fights work (`ENGAGE` in `src/data/enemies.js`,
+`src/enemies/director.js`).
+
+- At most **two** melee foes hold an attack token at once (Padawan: one). Deeper waves and survival don't add more.
+- Everyone else stalks a ring `ringPad` beyond its reach, circling with its guard up, and never swings from there.
+- When a turn ends (the holder swings, is staggered or floored, dies, or gives up after `tokenHold`), the next foe
+  closest by walking distance steps in after a short `handoff` beat (0.9s Padawan, 0.55s Knight, 0.3s Master).
+- Ripostes and a feint's real follow-up need a turn too: with both slots taken, the foe backs off instead.
+- Bombers, the Warbringer and ranged foes aren't in the queue; ranged foes have their own firing slots.
+
 ## Duelling
 
 Sword-armed foes with a profile in `DUEL_PROFILES` (`src/data/duel.js`) fight like duellists. The code is
@@ -48,7 +60,7 @@ frame per living duellist.
 - **Offence:** each swing is planned when it starts: its line (shown by the wind-up pose), whether it is a feint (it
   switches side at `DUEL.feintAt` and comes in fast, so a reflex parry whiffs), a held strike (waits at the apex), a
   thrust (white tell; a held block can't stop it, parry or dodge), and how many cuts follow in the string.
-- **Counter:** a foe that turns a blow may answer at once, outside the attack-token queue.
+- **Counter:** a foe that turns a blow may answer at once, but only if it holds or can take a free attack turn.
 - **Saber lock:** your cut meeting a duellist's strike mid-arc binds the blades (`LOCK`). Mash LMB to drive through, or
   break it with a kick (stamina) or a Force push (Force). Win and the foe reels with your riposte ready; lose and its
   blade gets through.

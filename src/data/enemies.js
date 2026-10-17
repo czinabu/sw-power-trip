@@ -67,24 +67,24 @@ export const ELITES = {
 };
 
 /* ---------- ENGAGEMENT — how many foes press the attack at once ----------
-   Melee foes take turns: only `meleeSlots` of them hold an ATTACK TOKEN and close in to swing. The rest stalk a
-   ring just outside reach, circling and feinting, until a token frees up (a holder swings, is staggered, floored,
-   or dies). This keeps a crowd dangerous but readable, so parries and combos have room to land.
-   Ranged foes share `rangedSlots` so a firing line staggers its shots instead of one wall of bolts. */
+   ATTACK TURNS (Arkham / Fallen Order style): melee foes take turns, and never more than TWO swing at you at once.
+   Only `meleeSlots` of them hold an ATTACK TOKEN and close in to swing. The rest stalk a ring well outside reach,
+   circling and squaring up, until a token frees up (a holder swings, is staggered, floored, or dies); then, after a
+   short `handoff` beat, the closest one steps in. A crowd becomes a string of duels, so feints, holds and parries
+   are the fight. Even a riposte or a feint's follow-up needs a turn. Ranged foes share `rangedSlots` so a firing
+   line staggers its shots instead of one wall of bolts. */
 export const ENGAGE = {
-  meleeSlots: 2,            // melee attackers at once (early run)
-  meleeSlotsLate: 3,        // ...from `lateAt` cumulative waves on (campaign: Exegol)
-  lateAt: 8,
-  survivalSlotEvery: 10,    // survival adds one more melee slot every N waves (up to `maxSlots`)
-  maxSlots: 5,
-  diffSlots: { padawan: -1, knight: 0, master: 1 },
+  meleeSlots: { padawan: 1, knight: 2, master: 2 },   // melee attackers at once, by difficulty (deeper runs don't add more)
+  maxSlots: 2,              // hard cap, whatever the mode
+  handoff: { padawan: 0.9, knight: 0.55, master: 0.3 },   // after a turn ends, the next foe waits this long (s) to step in
+  lateAt: 8,                // ranged pools below grow from this many cumulative waves on (campaign: Exegol)
   rangedSlots: 2,           // blaster / jet trooper wind-ups at once
   rangedSlotsLate: 3,       // ...from `lateAt` on
   sniperSlots: 1,           // marksmen charging a shot at once (one laser sight to read and dodge)
   sniperSlotsLate: 2,
   tokenHold: 3.2,           // a holder that hasn't swung by now gives the token back (stuck behind cover, kited)
   tokenRest: [0.6, 1.2],    // after swinging, a foe waits this long (s) before it can take a token again
-  ringPad: 2.4,             // stalkers hold this far beyond their weapon reach
+  ringPad: 3.2,             // stalkers hold this far beyond their weapon reach
   stalkSpeed: 0.55,         // fraction of run speed while circling
   rearWindup: 1.35,         // a swing wound up BEHIND the camera takes this much longer (off-screen fairness)
   strafe: 0.7,              // ranged ground troopers sidestep this hard between shots

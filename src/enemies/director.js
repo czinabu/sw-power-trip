@@ -14,19 +14,19 @@ export const usesToken = e => !e.converted && !e.dead && !e.t.ranged && !e.t.bom
 const ACTIVE = { windup: 1, strike: 1 };
 const LOST = { stagger: 1, knockdown: 1, getup: 1, ragdoll: 1, stasis: 1, fade: 1 };
 
+// ATTACK TURNS: one or two melee foes at a time, by difficulty, never more
 export function meleeSlots(){
-  const late = (G.waveTotal || 0) >= ENGAGE.lateAt;
-  let n = late ? ENGAGE.meleeSlotsLate : ENGAGE.meleeSlots;
-  if (G.endless) n += Math.floor((G.endlessWave || 0) / ENGAGE.survivalSlotEvery);
-  n += ENGAGE.diffSlots[G.diff] || 0;
-  return Math.max(1, Math.min(ENGAGE.maxSlots, n));
+  return Math.max(1, Math.min(ENGAGE.maxSlots, ENGAGE.meleeSlots[G.diff] ?? ENGAGE.meleeSlots.knight));
 }
+const handoff = () => ENGAGE.handoff[G.diff] ?? ENGAGE.handoff.knight;
+let held = 0, gapUntil = 0;   // tokens held this frame · no new turn is handed out before this game time
 
 // once per frame, before the AI runs: drop tokens from foes that can't use them, then hand free ones to the
 // closest waiting foes
 export function updateDirector(dt){
   const pp = playerPos();
-  let held = 0;
+  held = 0;
+  if (gapUntil > G.gt + 5) gapUntil = 0;   // the clock restarted with a new run
   const waiting = [];
   for (const e of enemies){
     if (e.tokenRest > 0) e.tokenRest -= dt;
@@ -44,14 +44,27 @@ export function updateDirector(dt){
     }
   }
   const free = meleeSlots() - held;
-  if (free <= 0 || !waiting.length) return;
+  if (free <= 0 || !waiting.length || G.gt < gapUntil) return;
   waiting.sort((a, b) => a.d - b.d);
-  for (let i = 0; i < free && i < waiting.length; i++){ waiting[i].e.token = true; waiting[i].e.tokenT = 0; assignApproach(waiting[i].e); }
+  // one foe steps in per beat, so two free slots still fill one after the other
+  grant(waiting[0].e);
+  if (free > 1) gapUntil = G.gt + handoff() * 0.5;
 }
+function grant(e){ e.token = true; e.tokenT = 0; held++; assignApproach(e); }
 
 export function dropToken(e, rest){
   e.token = false; e.tokenT = 0;
   if (rest) e.tokenRest = rand(ENGAGE.tokenRest[0], ENGAGE.tokenRest[1]);
+  gapUntil = G.gt + handoff();   // a breath before the next one steps in
+}
+
+// a swing that comes outside the queue (a riposte, a feint's real follow-up) still needs a turn: keep the one this
+// foe holds, or take a free one at once. False means the slots are full and it backs off instead
+export function claimToken(e){
+  if (e.token) return true;
+  if (!usesToken(e) || held >= meleeSlots()) return false;
+  grant(e);
+  return true;
 }
 
 // a ranged foe may start a wind-up only while fewer than its class's slots (more late in the run) are already

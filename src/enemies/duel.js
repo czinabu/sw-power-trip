@@ -183,7 +183,7 @@ function thrustTell(e){
   burst(V3(g.position.x, 1.8, g.position.z), 0xffffff, 8, 5, 3, 0.8);
   sfx(1400, 0.22, 'sawtooth', 0.04, 2600);
 }
-// a quick strike outside the token queue: the answer to a blocked cut, or a riposte after a dodge
+// a quick strike out of turn order: the answer to a blocked cut, or a riposte after a dodge (it still needs a free turn: ai.js)
 export function quickStrike(e, wind){
   e.state = 'windup'; e.wu = wind; e.st = wind;
   planAttack(e, true);
