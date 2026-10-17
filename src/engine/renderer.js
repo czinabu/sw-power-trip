@@ -24,7 +24,8 @@ export const camera = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, 0.
 
 /* bloom post-processing — sabers, bolts and embers glow */
 export const composer = new EffectComposer(renderer);
-composer.addPass(new RenderPass(scene, camera));
+export const renderPass = new RenderPass(scene, camera);
+composer.addPass(renderPass);
 export const bloomPass = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.82, 0.55, 0.78);
 composer.addPass(bloomPass);
 composer.addPass(new OutputPass());

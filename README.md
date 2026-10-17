@@ -40,7 +40,7 @@ src/
   boss/              boss lightning FX and the boss itself
   world/             arena builder, arenas/ (temple, foundry, plains layouts; hall and forge for training; refuge for the story mission), Ink bake, painted skies/floors, backdrops, atmosphere, collision, hazards (see docs/world-guidelines.md)
   game/              level/wave flow, survival mode, training (tutorial.js), story missions (mission.js, objectives.js), progression, boons, end-of-run summary
-  ui/                banners, threat markers, HUD, store overlay, menus, controls (How to Play data)
+  ui/                banners, threat markers, HUD, store overlay, menus, the title screen's hero turntable (showcase.js), controls (How to Play data)
 ```
 
 Each file starts with a one-line description. Balance changes usually only touch `src/data/`.
