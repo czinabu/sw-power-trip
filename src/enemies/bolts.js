@@ -22,6 +22,7 @@ import { deflectAnim } from '../player/jedi/combat.js';
 import { deflectPlayerBolt } from './duel.js';
 import { sweepHit, headPos } from './bodyshape.js';
 import { tutEvent } from '../game/tutor-bus.js';
+import { masteryXp } from '../game/progression.js';
 
 /* ============================================================
    PROJECTILES — blaster bolts & boss orbs
@@ -111,7 +112,7 @@ export function updateBolts(dt){
           G.slowmo = Math.min(G.slowmo, 0.4); G.slowmoT = Math.max(G.slowmoT, 0.12);
           spawnParryFlash(V3(b.mesh.position.x, b.mesh.position.y, b.mesh.position.z), 0xffd24a);
           screenFlash('radial-gradient(ellipse at center, rgba(255,230,150,.4), transparent 65%)', 0.7, 0.28);
-          S.parry(b.mesh.position); floater(pp, 'PARRY!', '#ffe27a'); if (G.stats) G.stats.parries++;
+          S.parry(b.mesh.position); floater(pp, 'PARRY!', '#ffe27a'); if (G.stats) G.stats.parries++; masteryXp('boltParry');
         } else { clashFlash(b.mesh.position.clone(), stance().blade, false); S.deflect(b.mesh.position); floater(pp, 'DEFLECT', '#7fd4ff'); if (G.stats) G.stats.deflects++; }
         tutEvent('deflect');
         addFocus(parried ? FOCUS.gainParry : FOCUS.gainDeflect);   // deflecting fire feeds the flow

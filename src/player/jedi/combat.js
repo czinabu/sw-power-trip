@@ -19,6 +19,7 @@ import { cutLine, duelDefend, isGuarding, guardImpact } from '../../enemies/duel
 import { bodyRadius } from './bladehit.js';
 import { inReach } from '../../enemies/bodyshape.js';
 import { tutEvent } from '../../game/tutor-bus.js';
+import { masteryXp } from '../../game/progression.js';
 
 /* COMBO RHYTHM — fractions of a swing. A press before `open` is too early (and costs this link its flow); a single
    press from `open` on links in rhythm, and the next cut leaves at `at` (just after the follow-through). */
@@ -168,6 +169,7 @@ export function applySwingDamage(step, only){
   }
   if (riposte && !sw0.ripFx){
     sw0.ripFx = true;   // the flash and the sting play once, on the first thing the riposte meets
+    masteryXp('riposte');
     const cancelRip = !!sw0.cancelRip;
     const rp = playerPos();
     floater(rp, cancelRip ? 'COUNTER-RIPOSTE!' : 'RIPOSTE!', '#ffd24a');

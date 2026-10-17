@@ -22,10 +22,11 @@ import { spawnBoss } from '../boss/boss.js';
 import { findClearSpawn, edgeSpawn } from '../world/collision.js';
 import { buildArena } from '../world/arena.js';
 import { spawnChampion, startEndlessWave, endlessWaveCleared } from './survival.js';
-import { gainXp, applyJetTier } from './progression.js';
+import { applyJetTier, payWaveClear } from './progression.js';
 import { MANDO_AUTO, JEDI_AUTO } from '../data/store.js';
 import { openSkillTree } from '../ui/store-ui.js';
 import { showBanner } from '../ui/banners.js';
+import { diffBossCheckpoint } from '../data/difficulty.js';
 
 /* ============================================================
    LEVEL / WAVE FLOW
@@ -34,7 +35,8 @@ export function queueSpawn(typeName){
   G.spawnQueue.push({ type: typeName, t: G.spawnQueue.length * 0.22 });
 }
 
-// opts.level runs another level definition in place of LEVELS[idx] (the training grounds, game/tutorial.js)
+// opts.level runs another level definition in place of LEVELS[idx] (the training grounds, game/tutorial.js);
+// opts.retry restarts the level from its checkpoint after a death (see the CHECKPOINT note below)
 export function startLevel(idx, opts){
   G.levelIdx = idx;
   G.endless = false; G.mut = null;   // campaign — never in survival mode (startEndless re-flags after this)
@@ -126,15 +128,29 @@ export function startLevel(idx, opts){
     player.skills = {};
     G.skillPoints = 0; G.skillSpent = 0;
     // RUN STATS — drive the end-of-run summary + score. Reset only on a fresh campaign (idx 0).
-    G.stats = { kills: 0, dmgTaken: 0, parries: 0, deflects: 0, shotsFired: 0, shotsHit: 0, bestStreak: 0, bossKilled: false, startGt: G.gt, summary: null };
+    G.stats = { kills: 0, dmgTaken: 0, parries: 0, deflects: 0, perfectDodges: 0, flawless: 0, cleanWaves: 0, shotsFired: 0, shotsHit: 0, bestStreak: 0, bossKilled: false, startGt: G.gt, summary: null };
   }
+  /* CHECKPOINT — a retry puts the run back where the level began: the same wave count, so the army isn't tougher
+     and more elite for every death (enemy HP and elite odds climb with waveTotal). Died to the boss on Padawan or
+     Knight → the retry goes straight to the boss instead of replaying all four waves. */
+  const cp = G.checkpoint, retry = !!(opts && opts.retry) && !G.training && cp && cp.idx === idx;
+  const bossRetry = retry && cp.boss;
+  if (retry) G.waveTotal = bossRetry ? cp.bossWaveTotal : cp.waveTotal;
+  else if (!G.training) G.checkpoint = { idx, waveTotal: G.waveTotal, boss: false };
   applyJetTier();   // size the jetpack to the current booster tier
   document.getElementById('xpval').textContent = (G.xp || 0);
   checkUnlocks();
   shared.levelPhase = G.training ? 'training' : 'between'; shared.phaseT = 2.6;   // training runs its own lessons, no waves
   { const [lvl, place] = L.name.split('—').map(t => t.trim());   // 'LEVEL 1 — TEMPLE STEPS' → tag + headline
     showBanner(place || lvl, L.sub, 2.6, place ? { kicker: lvl } : null); }
+  if (bossRetry){
+    G.wave = L.waves.length; shared.levelPhase = 'bossfight';
+    setTimeout(()=>{ if (G.mode === 'play' && G.levelIdx === idx && shared.levelPhase === 'bossfight' && !shared.boss) spawnBoss(); }, 2600);
+  }
 }
+// after a death: restart this level from its checkpoint (the boss itself, if that's what killed you)
+export function retryLevel(){ startLevel(G.levelIdx, { retry: true }); }
+export function retryIsBoss(){ return !!(G.checkpoint && G.checkpoint.boss && G.checkpoint.idx === G.levelIdx && !G.endless && !G.training); }
 
 /* ---------- HUD chip sync + AUTOMATIC unlocks (weapons/stances/jetpack) ---------- */
 // [unlock-key, chip-id] — 'slam' uses ab-mslam to avoid colliding with the Jedi ab-slam.
@@ -201,6 +217,7 @@ export function startWave(){
     G.spawnQueue.push({ type: list[i], t });
   }
   shared.levelPhase = 'fighting';
+  G.waveHits = 0; G.waveDmg = 0;   // how cleanly this wave is fought (payWaveClear)
   G.waveTotal++;   // cumulative wave count drives Mando ability unlocks
   showBanner('', 'WAVE ' + (G.wave+1) + ' / ' + L.waves.length, 1.5);
   MUSIC.waveSting();
@@ -236,7 +253,7 @@ export function updateFlow(dt){
       if (G.endless){ endlessWaveCleared(); return; }   // survival has its own clear/escalation path
       G.wave++;
       MUSIC.clearSting();
-      gainXp(140 + (G.waveTotal + 1) * 28);   // WAVE CLEAR — the main XP source, scales as the run deepens
+      payWaveClear(140 + (G.waveTotal + 1) * 28);   // WAVE CLEAR — the main XP source (more for a clean wave), scales as the run deepens
       // a real second wind on each wave clear — a meaningful patch-up + a Force / jetpack top-off
       if (player.hp > 0 && player.hp < maxHp()){
         const healed = Math.min(maxHp() - player.hp, Math.round(maxHp() * ((player.boon && player.boon.secwind) ? 0.68 : 0.38)));   // SECOND WIND boon heals extra
@@ -253,6 +270,7 @@ export function updateFlow(dt){
         openSkillTree();   // choose an upgrade before the next wave
       } else if (L.boss){
         shared.levelPhase = 'bossfight';
+        if (G.checkpoint){ G.checkpoint.boss = diffBossCheckpoint(); G.checkpoint.bossWaveTotal = G.waveTotal; }
         showBanner('', '...something approaches.', 2.4);
         setTimeout(()=>{ if (G.mode === 'play' && !shared.boss) spawnBoss(); }, 2400);
       } else {

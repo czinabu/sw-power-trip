@@ -2,15 +2,16 @@
 // XP, skill and store helpers, survival power-up purchases.
 
 import { S } from '../audio/sfx.js';
-import { clamp } from '../utils.js';
+import { V3, clamp } from '../utils.js';
 import { burst } from '../fx/particles.js';
 import { floater } from '../fx/floaters.js';
 import { G, player } from '../state.js';
-import { playerPos } from '../player/helpers.js';
+import { playerPos, maxHp } from '../player/helpers.js';
 import { TIER_REQ, TIER_NAME, SKILLS, TIER_NAME_MANDO, MANDO_SKILLS } from '../data/skills.js';
 import { MANDO_STORE, JEDI_STORE } from '../data/store.js';
 import { masterySet, masteryRank } from '../data/mastery.js';
 import { renderProgress } from '../ui/store-ui.js';
+import { MASTERY_XP } from '../data/difficulty.js';
 
 export function skillSet(){ return G.hero === 'mando' ? MANDO_SKILLS : SKILLS; }
 export function tierName(t){ return (G.hero === 'mando' ? TIER_NAME_MANDO : TIER_NAME)[t]; }
@@ -32,6 +33,22 @@ export function gainXp(n){
 }
 // kill-streak XP multiplier — 1× cold, ramping to 3× on a hot streak (rewards aggressive play)
 export function killBonus(){ return 1 + clamp((G.streak || 0) * 0.12, 0, 2); }
+// MASTERY XP — a parry, perfect dodge, clash, catch or riposte pays a small bounty on the spot (×1–3 on a streak)
+export function masteryXp(kind){
+  if (G.training || !MASTERY_XP[kind]) return;
+  gainXp(MASTERY_XP[kind] * killBonus());
+}
+// WAVE CLEAR — the wave's XP, plus a bonus share of it when the wave was fought cleanly (no hit taken, or little)
+export function payWaveClear(clearXp){
+  gainXp(clearXp);
+  const flawless = !(G.waveHits > 0), clean = !flawless && (G.waveDmg || 0) < maxHp() * MASTERY_XP.cleanHp;
+  if (G.training || !(flawless || clean)) return;
+  const bonus = Math.round(clearXp * (flawless ? MASTERY_XP.flawless : MASTERY_XP.clean));
+  gainXp(bonus);
+  if (G.stats) G.stats[flawless ? 'flawless' : 'cleanWaves']++;
+  const pp = playerPos();
+  floater(V3(pp.x, 2.4, pp.z), (flawless ? 'FLAWLESS' : 'CLEAN') + ' WAVE  +' + bonus + ' XP', flawless ? '#ffd24a' : '#8fe0ff');
+}
 // abilities open by TIER, gated by how deep into the run you are (waveTotal) — so power arrives in waves
 const STORE_TIER_STAGE = { 1: 0, 2: 1, 3: 3, 4: 6, 5: 8 };   // waveTotal each tier opens — earlier = snappier pacing
 function storeTierOpen(tier){ return (G.waveTotal || 0) >= (STORE_TIER_STAGE[tier] || 0); }
