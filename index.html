@@ -116,7 +116,7 @@
     </header>
     <div id="runsummary"></div>
     <section id="setup">
-      <div class="sec-label">HERO</div>
+      <div class="sec-label">HERO<span class="cz-open" id="cztoggle" title="Change how your hero looks">CUSTOMIZE</span></div>
       <div id="heroselect">
         <div class="herocard brk sel" id="hero-jedi">
           <svg class="hi" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="gj" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#7fe3ff"/><stop offset="1" stop-color="#e9fbff"/></linearGradient></defs>
@@ -165,6 +165,16 @@
           </div>
         </div>
       </div>
+    </section>
+    <section id="customizer">
+      <div class="cz-tabs" id="czhero"><span data-h="jedi">JEDI</span><span data-h="mando">MANDALORIAN</span></div>
+      <div class="cz-rows" id="czrows"></div>
+      <div class="cz-actions">
+        <div class="btn" id="czrandom">RANDOMIZE</div>
+        <div class="btn" id="czreset">RESET</div>
+        <div class="btn primary" id="czdone">DONE</div>
+      </div>
+      <div class="cz-hint">Drag the stand to turn your hero · <kbd>Esc</kbd> done</div>
     </section>
     <div class="ov-actions">
       <div class="btn primary go" id="goText">BEGIN</div>
