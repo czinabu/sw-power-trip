@@ -37,12 +37,14 @@ export function queueSpawn(typeName){
   G.spawnQueue.push({ type: typeName, t: G.spawnQueue.length * 0.22 });
 }
 
-// opts.level runs another level definition in place of LEVELS[idx] (the training grounds, game/tutorial.js);
+// opts.level runs another level definition in place of LEVELS[idx] (the training grounds, game/tutorial.js; a story
+// mission, game/mission.js, which also passes opts.mission);
 // opts.retry restarts the level from its checkpoint after a death (see the CHECKPOINT note below)
 export function startLevel(idx, opts){
   G.levelIdx = idx;
   G.endless = false; G.mut = null;   // campaign — never in survival mode (startEndless re-flags after this)
   G.training = !!(opts && opts.training);
+  G.mission = !!(opts && opts.mission);
   const L = (opts && opts.level) || LEVELS[idx];
   // clear battlefield
   for (const e of enemies){ scene.remove(e.group); cleanupDuel(e); cleanupTactics(e); }
@@ -137,14 +139,14 @@ export function startLevel(idx, opts){
   /* CHECKPOINT — a retry puts the run back where the level began: the same wave count, so the army isn't tougher
      and more elite for every death (enemy HP and elite odds climb with waveTotal). Died to the boss on Padawan or
      Knight → the retry goes straight to the boss instead of replaying all four waves. */
-  const cp = G.checkpoint, retry = !!(opts && opts.retry) && !G.training && cp && cp.idx === idx;
+  const cp = G.checkpoint, retry = !!(opts && opts.retry) && !G.training && !G.mission && cp && cp.idx === idx;
   const bossRetry = retry && cp.boss;
   if (retry) G.waveTotal = bossRetry ? cp.bossWaveTotal : cp.waveTotal;
-  else if (!G.training) G.checkpoint = { idx, waveTotal: G.waveTotal, boss: false };
+  else if (!G.training && !G.mission) G.checkpoint = { idx, waveTotal: G.waveTotal, boss: false };
   applyJetTier();   // size the jetpack to the current booster tier
   document.getElementById('xpval').textContent = (G.xp || 0);
   checkUnlocks();
-  shared.levelPhase = G.training ? 'training' : 'between'; shared.phaseT = 2.6;   // training runs its own lessons, no waves
+  shared.levelPhase = G.training ? 'training' : G.mission ? 'mission' : 'between'; shared.phaseT = 2.6;   // training and missions run their own steps, no waves
   { const [lvl, place] = L.name.split('—').map(t => t.trim());   // 'LEVEL 1 — TEMPLE STEPS' → tag + headline
     showBanner(place || lvl, L.sub, 2.6, place ? { kicker: lvl } : null); }
   if (bossRetry){
@@ -154,7 +156,7 @@ export function startLevel(idx, opts){
 }
 // after a death: restart this level from its checkpoint (the boss itself, if that's what killed you)
 export function retryLevel(){ startLevel(G.levelIdx, { retry: true }); }
-export function retryIsBoss(){ return !!(G.checkpoint && G.checkpoint.boss && G.checkpoint.idx === G.levelIdx && !G.endless && !G.training); }
+export function retryIsBoss(){ return !!(G.checkpoint && G.checkpoint.boss && G.checkpoint.idx === G.levelIdx && !G.endless && !G.training && !G.mission); }
 
 /* ---------- HUD chip sync + AUTOMATIC unlocks (weapons/stances/jetpack) ---------- */
 // [unlock-key, chip-id] — 'slam' uses ab-mslam to avoid colliding with the Jedi ab-slam.
@@ -189,14 +191,14 @@ export function checkUnlocks(bannerDelay){
     syncMandoChips();
   } else {
     for (const u of JEDI_AUTO){
-      const reached = G.endless ? ((G.waveTotal || 0) >= u.stage)
+      const reached = (G.endless || G.mission) ? ((G.waveTotal || 0) >= u.stage)
                                 : (G.levelIdx > u.level || (G.levelIdx === u.level && G.wave >= u.wave));
       if (reached && !u.has()){ u.grant(); announce.push(u); }
     }
     syncJediChips();
     setStanceHud();
   }
-  if (G.training) return;   // the training grounds teach the starting kit; no unlock fanfare
+  if (G.training || G.mission) return;   // the training grounds teach the starting kit, a mission hands out its kit up front: no fanfare
   announce.forEach((u, i) => {
     setTimeout(() => { if (G.mode !== 'play') return;
       showBanner(u.name, /^HOLD /.test(u.hud) ? '' : 'PRESS', 3.0, { kicker: 'UNLOCKED', key: u.hud });

@@ -28,6 +28,7 @@ import { mandoMelee } from '../player/mando/melee.js';
 import { lockPress, lockKick, lockPush } from '../enemies/duel.js';
 import { mandoWeapon, switchWeapon, startReload, fireTrigger, mandoFlame } from '../player/mando/weapons.js';
 import { startLevel, retryLevel } from '../game/flow.js';
+import { startMission, retryMission } from '../game/mission.js';
 import { showBanner } from '../ui/banners.js';
 import { overlay, setSaberGrip } from '../ui/menus.js';
 import { tutEvent } from '../game/tutor-bus.js';
@@ -170,7 +171,8 @@ document.addEventListener('keydown', (e) => {
     G.mode = 'play'; G.slowmo = 1;
     overlay.style.display = 'none';
     document.getElementById('banner').style.opacity = '0';
-    if (again) startLevel(0); else retryLevel();
+    if (G.mission){ if (again) startMission(); else retryMission(); }
+    else if (again) startLevel(0); else retryLevel();
     try { const p = renderer.domElement.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch(e){}
   }
 });

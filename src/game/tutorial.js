@@ -1,7 +1,6 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
 // TRAINING: runs the tutorial (data/tutorial.js) step by step, and the short unlock drills in a real run.
 
-import * as THREE from 'three';
 import { scene } from '../engine/renderer.js';
 import { sfx, S } from '../audio/sfx.js';
 import { MUSIC } from '../audio/music.js';
@@ -16,53 +15,11 @@ import { startLevel, queueSpawn } from './flow.js';
 import { applyJetTier } from './progression.js';
 import { showBanner } from '../ui/banners.js';
 import { setTutListener } from './tutor-bus.js';
+import { showPanel, setPanelCount as setCount, hidePanel, makeBeacon, removeMarker, pulseMarker } from './objectives.js';
 import { TRAINING, TRAINING_LEVELS, TEACHER, BEACON, TRAINING_DONE, DRILLS } from '../data/tutorial.js';
 
-/* ============================================================
-   THE TEACHER'S PANEL — the line in character, then the plain task with its keys and a count
-   ============================================================ */
-const panel = document.getElementById('tutor');
-const el = (sel) => panel.querySelector(sel);
-function keycaps(keys){
-  if (!keys) return '';
-  return keys.split(' · ').map(g => g.split(' ').map(k => (k === '/' || k === '+') ? '<span>' + k + '</span>' : '<kbd>' + k + '</kbd>').join(''))
-    .join('<span class="then">then</span>');
-}
-function showPanel(who, say, keys, task, opts = {}){
-  el('.tt-who').textContent = who;
-  el('.tt-say').textContent = say;
-  el('.tt-keys').innerHTML = keycaps(keys);
-  el('.tt-task').textContent = task || '';
-  el('.tt-count').textContent = opts.count || '';
-  panel.classList.toggle('done', !!opts.done);
-  panel.classList.toggle('drill', !!opts.drill);
-  panel.classList.add('on');
-}
-function setCount(text, done){
-  el('.tt-count').textContent = text;
-  panel.classList.toggle('done', !!done);
-}
-function hidePanel(){ panel.classList.remove('on', 'done', 'drill'); }
-
-/* ============================================================
-   BEACONS — a column of light over a spot to reach (or just to head for)
-   ============================================================ */
-function makeBeacon(x, z, y, color){
-  const g = new THREE.Group();
-  const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 14, 16, 1, true),
-    new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.16, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }));
-  beam.position.y = 7;
-  const ring = new THREE.Mesh(new THREE.RingGeometry(0.9, 1.15, 32),
-    new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.8, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }));
-  ring.rotation.x = -Math.PI/2; ring.position.y = 0.06;
-  g.add(beam, ring);
-  g.position.set(x, y || 0, z);
-  g.userData.ring = ring;
-  scene.add(g);
-  return g;
-}
 function clearBeacons(){
-  for (const b of T.beacons){ scene.remove(b); b.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); }); }
+  for (const b of T.beacons) removeMarker(b);
   T.beacons = [];
 }
 
@@ -194,7 +151,7 @@ function updateLesson(dt){
   const s = step();
   if (!s || T.done) return;
   const pp = playerPos();
-  for (const b of T.beacons){ b.userData.ring.rotation.z += dt * 1.5; b.userData.ring.material.opacity = 0.55 + Math.sin(G.gt * 4) * 0.25; }
+  for (const b of T.beacons) pulseMarker(b, dt, G.gt);
   if (s.reach){
     const [x, z, y] = s.reach;
     if (Math.hypot(pp.x - x, pp.z - z) < (y ? 2.2 : 1.6) && (!y || pp.y > y - 0.6)) completeStep(false);
