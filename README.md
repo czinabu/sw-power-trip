@@ -10,7 +10,10 @@ Needs [Node.js](https://nodejs.org/) 22 or newer.
 npm install        # once
 npm run dev        # play at the printed localhost URL; reloads instantly as you edit
 npm run build      # writes dist/index.html, one self-contained file you can double-click or share
+npm run smoke      # after a build: plays both heroes headlessly for a short fight, fails on any error
 ```
+
+Every pull request runs the build and the smoke test automatically (`.github/workflows/check.yml`); a red check means the game failed to build or threw an error mid-fight. The first run needs the test browser once: `npx playwright install chromium`.
 
 Opening `index.html` directly does not work (browsers block module imports from `file://`); use `npm run dev`, or open the built `dist/index.html`.
 
