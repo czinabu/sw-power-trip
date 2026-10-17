@@ -171,6 +171,7 @@
       <div class="btn" id="skipBtn">SKIP LESSON</div>
       <div class="btn" id="restartBtn">↻ RESTART RUN</div>
       <div class="btn" id="homeBtn">MAIN MENU</div>
+      <div class="btn fsctl" id="fsBtn" title="Fill the whole screen">FULLSCREEN <span class="fsval">OFF</span></div>
       <div class="btn" id="settoggle">SETTINGS</div>
       <div class="btn" id="ctltoggle">HOW TO PLAY</div>
       <div class="btn" id="rmtoggle">EXTRAS</div>
@@ -189,7 +190,7 @@
         <div class="btn" id="homeNo">KEEP PLAYING</div>
       </div>
     </div>
-    <div class="ov-foot">Press <kbd>Esc</kbd> to pause · <kbd>M</kbd> music on/off · <kbd>P</kbd> graphics quality</div>
+    <div class="ov-foot">Press <kbd>Esc</kbd> to pause · <kbd>Enter</kbd> to resume · <kbd>M</kbd> music on/off · <kbd>P</kbd> graphics quality</div>
   </div>
   <div id="howto">
     <div class="howto-panel">
@@ -202,7 +203,7 @@
       <div class="howto-head"><div class="howto-title">SETTINGS</div><div class="howto-x" id="setclose">✕</div></div>
       <div class="set-grid">
         <div class="set-grp"><h4>DISPLAY</h4>
-          <div class="setpill" id="fsctl" title="Fill the whole screen">FULLSCREEN<span class="setval" id="fsval">OFF</span></div>
+          <div class="setpill fsctl" title="Fill the whole screen">FULLSCREEN<span class="setval fsval">OFF</span></div>
           <div class="setpill" id="gfxctl">GRAPHICS<span class="setval" id="gfxval">HIGH</span><span class="gfxhint">P</span></div>
           <label class="setpill" title="How hard the screen shakes on hits and explosions">SHAKE<input type="range" id="shakesl" min="0" max="1.5" step="0.05" value="1"><span class="setval" id="shakeval">100%</span></label>
         </div>

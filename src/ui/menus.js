@@ -17,6 +17,7 @@ import { DIFFS } from '../data/difficulty.js';
 import { renderControls } from './controls.js';
 import { svgIcon } from './icons.js';
 import { setRoadmap } from './roadmap.js';
+import { enterFullscreenIfWanted, escapeIsOurs } from './fullscreen.js';
 
 /* ============================================================
    INPUT
@@ -247,6 +248,7 @@ document.getElementById('trainNo').addEventListener('click', (e) => { e.stopProp
 function launch(){
   audioInit();
   requestLock();
+  enterFullscreenIfWanted();   // after the lock request: entering fullscreen uses up the click's user gesture
   setTimeout(() => {
     if (document.pointerLockElement === renderer.domElement) return;
     if (shared.lockWorked){
@@ -272,6 +274,23 @@ document.addEventListener('pointerlockerror', () => {
   setOverlayState('pause');
   if (shared.lockWorked) document.getElementById('ovsub').textContent = 'CLICK RESUME TO LOCK THE CURSOR';
 });
+// PAUSE KEYS — Enter resumes from the pause screen in every browser. Where Esc is locked to the game (fullscreen in
+// Chrome / Edge, see fullscreen.js) a quick Esc pauses and resumes too, so closing the pause screen with Esc no longer
+// drops you out of fullscreen. Runs in the capture phase so it sees the screen before Esc closes a panel on top of it.
+const panelOpen = () => howto.classList.contains('open') || settings.classList.contains('open') ||
+  document.getElementById('roadmap').classList.contains('open') || overlay.classList.contains('confirming') || overlay.classList.contains('asktrain');
+window.addEventListener('keydown', (e) => {
+  if (e.repeat || (e.key !== 'Escape' && e.key !== 'Enter')) return;
+  const esc = e.key === 'Escape';
+  if (esc && !escapeIsOurs()) return;   // the browser owns Esc here (pointer lock / fullscreen exit)
+  if (esc) e.preventDefault();
+  const shown = overlay.style.display === 'flex';
+  if (shown && _ovState === 'pause' && G.mode === 'play' && !panelOpen()){ e.preventDefault(); launch(); return; }
+  if (esc && !shown && G.mode === 'play' && !G.skillSelect){
+    if (document.pointerLockElement) document.exitPointerLock();   // pointerlockchange shows the pause screen
+    else if (shared.lockFallback){ overlay.style.display = 'flex'; G.paused = true; setOverlayState('pause'); }
+  }
+}, true);
 // in the unlocked fallback, keep offering the real lock: a click on the game takes it if the browser now allows it
 renderer.domElement.addEventListener('mousedown', () => { if (shared.lockFallback && G.mode === 'play') requestLock(); });
 document.addEventListener('pointerlockchange', () => {
@@ -334,25 +353,7 @@ document.getElementById('homeBtn').addEventListener('click', (e) => {
 document.getElementById('homeYes').addEventListener('click', (e) => { e.stopPropagation(); goHome(); });
 document.getElementById('homeNo').addEventListener('click', (e) => { e.stopPropagation(); overlay.classList.remove('confirming'); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && overlay.classList.contains('confirming')) overlay.classList.remove('confirming'); });
-// FULLSCREEN — the whole page goes fullscreen (HUD and menus are DOM over the canvas). Esc while playing still just
-// pauses: the browser spends the first Esc on the pointer lock and only a second one leaves fullscreen.
-const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement;
-function syncFullscreen(){ document.getElementById('fsval').textContent = fsEl() ? 'ON' : 'OFF'; }
-function toggleFullscreen(){
-  const root = document.documentElement;
-  try {
-    if (fsEl()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
-    else {
-      const p = (root.requestFullscreen || root.webkitRequestFullscreen).call(root, { navigationUI: 'hide' });
-      if (p && p.catch) p.catch(() => {});
-    }
-  } catch(err){}
-}
-if (!(document.fullscreenEnabled || document.webkitFullscreenEnabled)) document.getElementById('fsctl').style.display = 'none';
-document.getElementById('fsctl').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); toggleFullscreen(); });
-document.addEventListener('fullscreenchange', syncFullscreen);
-document.addEventListener('webkitfullscreenchange', syncFullscreen);
-syncFullscreen();
+document.querySelectorAll('.fsctl').forEach((el) => el.addEventListener('click', audioInit));   // fullscreen.js does the toggling
 document.getElementById('continueBtn').addEventListener('click', (e) => { e.stopPropagation(); closeProgress(); });
 // GRAPHICS selector on the overlay — cycle quality without resuming/launching (stop the click bubbling to the overlay)
 document.getElementById('gfxctl').addEventListener('click', (e) => { e.stopPropagation(); cycleQuality(); });

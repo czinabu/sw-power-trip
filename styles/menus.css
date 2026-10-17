@@ -66,10 +66,10 @@
 /* actions */
 .ov-actions{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;margin-top:28px}
 #overlay.st-menu .ov-actions{justify-content:flex-start}
-/* menu column: BEGIN gets the full width, settings / help / roadmap share an even row under it */
+/* menu column: BEGIN gets the full width, fullscreen / settings / help / extras share a row under it */
 #overlay.st-menu .ov-actions .btn{box-sizing:border-box}
 #overlay.st-menu .ov-actions .go{flex:1 0 100%}
-#overlay.st-menu .ov-actions .btn:not(.go){flex:1}
+#overlay.st-menu .ov-actions .btn:not(.go){flex:1 0 auto;white-space:nowrap}   /* grow to fill the row, wrap whole buttons rather than their labels */
 #overlay .go{animation:none}
 #restartBtn{display:none;color:#ffcfa0;border-color:rgba(200,120,60,.45)}
 #restartBtn:hover{border-color:#ffb060;color:#ffe2c4}
@@ -205,3 +205,5 @@
 #overlay.asktrain #trainconfirm{display:flex}
 #overlay.asktrain .ov-actions{display:none}
 #skipBtn{display:none}
+#fsBtn .fsval{color:var(--accent);margin-left:4px}
+#overlay.st-dead #fsBtn, #overlay.st-victory #fsBtn{display:none}   /* main menu and pause only; Settings has it everywhere */
