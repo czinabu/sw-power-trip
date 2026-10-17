@@ -27,6 +27,7 @@ import { showBanner } from '../ui/banners.js';
 // Enemy DAMAGE scaling — campaign is UNTOUCHED (returns 1); survival ramps damage as waves climb (HP already scales
 // via enemyHpScale). The Frenzy mutator stacks on top. Applied wherever an enemy deals damage.
 export function enemyDmgScale(){
+  if (G.training) return 0.5;   // the training grounds: sparring partners pull their blows
   if (!G.endless) return 1;
   const n = G.endlessWave || 0;
   // COMPOUNDS past wave ~5 so a late-game mistake actually hurts even through stacked Vitality / damage-reduction.

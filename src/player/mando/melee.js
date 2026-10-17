@@ -15,6 +15,7 @@ import { bodyRadius } from '../jedi/bladehit.js';
 import { damageBoss } from '../../boss/boss.js';
 import { spawnHitSpark, spawnGroundShock } from '../../fx/vfx.js';
 import { inkSprite, sparks, puff, clashFlash, thrust } from '../../fx/ink.js';
+import { tutEvent } from '../../game/tutor-bus.js';
 import { mandoShielding } from './weapons.js';
 
 const DOWNED = { stagger: 1, knockdown: 1, getup: 1 };
@@ -121,6 +122,7 @@ function landStrike(B){
                 size: [(reach + 0.7) * 2, (reach + 0.7) * 2], life: 0.16, steps: 2, coreW: 0.3, inkW: 0.25,
                 rot: Math.atan2(-f.x, -f.z) });
   }
+  if (hit && B.name === 'bash') tutEvent('bash');
   if (hit){
     G.hitstop = Math.max(G.hitstop, B.heavy ? 0.08 : 0.04);
     G.shake = Math.max(G.shake, B.heavy ? 0.5 : 0.28);
@@ -144,6 +146,7 @@ function landStrike(B){
 /* ---------------- the vambrace catch (called by hurtPlayer when a blow lands inside the window) ---------------- */
 export function mandoCatch(fromPos){
   player.catchT = 0;
+  tutEvent('catch');
   player.meleeT = player.meleeMax = 0.3; player.meleeKind = 'catch'; player.meleeQueued = false;
   const pp = playerPos();
   TMP.subVectors(fromPos, pp); TMP.y = 0; if (TMP.lengthSq() > 0.001) TMP.normalize(); else TMP.copy(fwd());
@@ -178,6 +181,7 @@ function takedown(e){
   TMP.subVectors(g.position, pp); TMP.y = 0; const d = TMP.length() || 1; TMP.divideScalar(d);
   const dir = TMP.clone();
   player.meleeT = player.meleeMax = 0.55; player.meleeKind = 'takedown'; player.punchStep = -1; player.meleeQueued = false;
+  tutEvent('takedown');
   player.vel.addScaledVector(dir, Math.max(0, d - 1.2) * 9);   // close the last step
   const big = e.t.heavy || e.warbringer || e.champion;
   const dmg = (M.takedown.dmg + (big ? 0 : (e.maxHp || e.hp) * M.takedown.maxFrac)) * (player.up.dmg || 1);
@@ -210,6 +214,7 @@ function chargeTarget(){
 function jetCharge(e){
   const C = M.charge;
   player.jet -= C.fuel; player.lastCharge = G.gt;
+  tutEvent('charge');
   player.charge = { e, t: 0.45 };
   player.meleeT = player.meleeMax = 0.5; player.meleeKind = 'charge'; player.punchStep = -1;
   S.jetIgnite(); S.dash(); sfx(180, 0.25, 'sawtooth', 0.05, 90);

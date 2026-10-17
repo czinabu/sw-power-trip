@@ -237,3 +237,27 @@ body.mando #stancebox,body.mando #xh,body.mando #fcmeter{display:none!important}
 #lockbar .lb-fill{position:absolute;left:50%;top:-5px;width:6px;height:18px;margin-left:-3px;border-radius:3px;background:#fff;box-shadow:0 0 12px #ffe6b0,0 0 4px #fff}
 #lockbar .lb-hint{margin-top:8px;font-size:11px;letter-spacing:1.5px;color:var(--ink-soft)}
 #lockbar .lb-hint b{color:var(--ink)}
+
+/* ---------- TRAINING: the teacher's panel (game/tutorial.js) — their line in character, then the task ---------- */
+#tutor{position:fixed;left:50%;top:13%;transform:translate(-50%,-8px);width:min(620px,calc(100vw - 32px));padding:12px 18px 13px;box-sizing:border-box;
+  border:1px solid var(--edge-mid);border-left:3px solid var(--gold);border-radius:var(--r-lg);background:linear-gradient(90deg,rgba(6,14,26,.86),rgba(6,14,26,.7));
+  box-shadow:0 8px 28px rgba(0,0,0,.45);opacity:0;transition:opacity .3s,transform .3s;pointer-events:none}
+#tutor.on{opacity:1;transform:translate(-50%,0)}
+#tutor .tt-who{font:700 12px/1 var(--font-ui);letter-spacing:2.6px;color:var(--gold);margin-bottom:6px}
+#tutor .tt-say{font:italic 500 17px/1.35 var(--font-body);color:var(--ink);text-shadow:0 1px 6px rgba(0,0,0,.8)}
+#tutor .tt-say::before{content:'\201C'}
+#tutor .tt-say::after{content:'\201D'}
+#tutor .tt-do{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;margin-top:9px;padding-top:8px;border-top:1px solid var(--edge)}
+#tutor .tt-do:has(.tt-keys:empty):has(.tt-task:empty):has(.tt-count:empty){display:none}
+#tutor .tt-keys{display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap}
+#tutor .tt-keys:empty{display:none}
+#tutor .tt-keys kbd{font-size:12px;height:24px;min-width:24px;color:var(--gold);border-color:rgba(255,210,90,.6)}
+#tutor .tt-keys span{font:700 13px/1 var(--font-ui);color:var(--ink-dim)}
+#tutor .tt-keys .then{font:600 11px/1 var(--font-ui);letter-spacing:1.5px;color:var(--ink-dim);text-transform:uppercase;margin:0 3px}
+#tutor .tt-task{font:600 15px/1.25 var(--font-ui);letter-spacing:1px;color:var(--ink-soft);flex:1;min-width:160px}
+#tutor .tt-count{font:700 15px/1 var(--font-ui);letter-spacing:1.5px;color:var(--ink);margin-left:auto}
+#tutor.done{border-left-color:var(--xp)}
+#tutor.done .tt-count{color:var(--xp)}
+#tutor.drill{top:auto;bottom:86px}
+@media (max-width:700px){ #tutor{top:10%} #tutor .tt-say{font-size:15px} }
+body.training #xpmeter{display:none !important}   /* nothing to buy in training */

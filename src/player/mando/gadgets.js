@@ -19,6 +19,7 @@ import { explosion, inkSprite, sparks, puff, motes, muzzleFlash, screenAngle, du
 import { mandoAimPoint, aCost } from './weapons.js';
 import { abil } from '../../data/mastery.js';
 import { sweepHit, distToBody, chestPos } from '../../enemies/bodyshape.js';
+import { tutEvent } from '../../game/tutor-bus.js';
 
 // BACTA STIM (H) — the Mando's mirror of Force Mend: a quick injector channel that restores the same big chunk of
 // vitality (reuses the mendT channel + mendComplete). Steep Force + long cooldown; locked against HUNTER'S CREED.
@@ -71,7 +72,7 @@ function rocketExplode(pos, big){
   for (const e of enemies){
     if (e.dead || e.converted || e.state === 'spawn') continue;
     const d = distToBody(e, pos);   // the blast reaches the body, not just the feet
-    if (d < radius){ const kd = TMP.subVectors(e.group.position, pos).setY(0).normalize().clone(); damageEnemy(e, A.dmg * (1 - d/radius*0.4) * dmgMul, kd, A.knock); flinchEnemy(e, kd, big ? 0.9 : 0.6); }
+    if (d < radius){ const kd = TMP.subVectors(e.group.position, pos).setY(0).normalize().clone(); damageEnemy(e, A.dmg * (1 - d/radius*0.4) * dmgMul, kd, A.knock); flinchEnemy(e, kd, big ? 0.9 : 0.6); if (!big) tutEvent('rocketHit', e); }
   }
   if (shared.boss && shared.boss.hp > 0 && shared.boss.group.position.distanceTo(pos) < radius + 1){
     damageBoss(A.dmg * dmgMul);
@@ -325,6 +326,7 @@ export function mandoBoostDash(){
   const A = MANDO.boostDash;
   if (G.mode !== 'play' || !player.grounded || player.cds.dash > 0 || player.jet < A.fuel) return;
   player.cds.dash = A.cd; player.dashT = A.time; player.dashStartT = G.gt;   // i-frames (+ the perfect-dodge clock)
+  tutEvent('dash');
   player.jet = Math.max(0, player.jet - A.fuel);
   const dir = V3(0,0,0);
   if (keys['w']) dir.add(fwd());

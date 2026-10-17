@@ -17,6 +17,8 @@ import { applyAtmosphere, clearAtmosphere } from './atmosphere.js';
 import { buildTempleArena } from './arenas/temple.js';
 import { buildFoundryArena } from './arenas/foundry.js';
 import { buildPlainsArena } from './arenas/plains.js';
+import { buildHallArena } from './arenas/hall.js';
+import { buildForgeArena } from './arenas/forge.js';
 import { buildNav } from '../enemies/nav.js';
 
 /* ============================================================
@@ -32,11 +34,11 @@ export function buildArena(L){
   scene.add(shared.arenaGroup);
   resetCamBlockers();
   shared.arenaHalf = L.arena / 2;
-  shared.arenaLayout = L.layout || 'temple';
   shared.ambient = null;
   shared.templeBrazier = null;   // cleared each rebuild; the temple layout re-assigns it (so we never flicker a stale mesh)
 
   const T = themeFor(L);
+  shared.arenaLayout = (T && T.sound) || L.layout || 'temple';   // the training grounds borrow a campaign arena's sound
   setHazardStyle(T && (T.hazards || {}));
   if (T) buildWorld(L, T);
   else {
@@ -88,6 +90,8 @@ export function buildArena(L){
   if (L.layout === 'temple'){ buildTempleArena(LP); }
   else if (L.layout === 'foundry'){ buildFoundryArena(LP); }
   else if (L.layout === 'plains'){ buildPlainsArena(LP); }
+  else if (L.layout === 'hall'){ buildHallArena(LP); }
+  else if (L.layout === 'forge'){ buildForgeArena(LP); }
   else {
   // pick a spot at least `gap` clear of every other obstacle so cover stays SPREAD OUT — clustered obstacles
   // form walls that trap the enemy AI. Returns null if no open spot is found (so we just place fewer).

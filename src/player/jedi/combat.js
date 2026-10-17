@@ -18,6 +18,7 @@ import { DUEL } from '../../data/duel.js';
 import { cutLine, duelDefend, isGuarding, guardImpact } from '../../enemies/duel.js';
 import { bodyRadius } from './bladehit.js';
 import { inReach } from '../../enemies/bodyshape.js';
+import { tutEvent } from '../../game/tutor-bus.js';
 
 /* COMBO RHYTHM — fractions of a swing. A press before `open` is too early (and costs this link its flow); a single
    press from `open` on links in rhythm, and the next cut leaves at `at` (just after the follow-through). */
@@ -204,6 +205,7 @@ export function applySwingDamage(step, only){
     }
     if (fn() !== false) hits++;
   };
+  let foesHit = 0;
   for (const e of enemies){
     if (e.dead || e.converted || e.state === 'spawn') continue;
     tryHit(e.group.position, () => {
@@ -213,6 +215,7 @@ export function applySwingDamage(step, only){
         if (dres === 'block' || dres === 'dodge'){ turned++; return false; }
       }
       damageEnemy(e, dmg * (e.t.heavy ? st.heavyDmg : 1), f.clone(), knock, finisher);
+      foesHit++;
       if (!riposte && !e.dead) interruptEnemy(e, f, finisher || st.form === 'djemso' || isDark);   // striking first beats a wind-up
       if (riposte && !e.dead) staggerEnemy(e, f.x, f.z);   // a RIPOSTE floors what it answers — a true counter, wide open after
       // BESKAR EDGE — a heavy darksaber hit can DISARM/stagger a staff-wielding duelist
@@ -221,6 +224,7 @@ export function applySwingDamage(step, only){
       }
     }, e);
   }
+  if (finisher && foesHit) tutEvent('finisher');
   if (shared.boss && shared.boss.hp > 0) tryHit(shared.boss.group.position, () => damageBoss(dmg * st.heavyDmg), shared.boss);
   for (let i = barrels.length-1; i >= 0; i--){
     const b = barrels[i];

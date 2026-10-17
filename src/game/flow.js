@@ -34,10 +34,12 @@ export function queueSpawn(typeName){
   G.spawnQueue.push({ type: typeName, t: G.spawnQueue.length * 0.22 });
 }
 
-export function startLevel(idx){
+// opts.level runs another level definition in place of LEVELS[idx] (the training grounds, game/tutorial.js)
+export function startLevel(idx, opts){
   G.levelIdx = idx;
   G.endless = false; G.mut = null;   // campaign — never in survival mode (startEndless re-flags after this)
-  const L = LEVELS[idx];
+  G.training = !!(opts && opts.training);
+  const L = (opts && opts.level) || LEVELS[idx];
   // clear battlefield
   for (const e of enemies){ scene.remove(e.group); cleanupDuel(e); }
   enemies.length = 0;
@@ -129,7 +131,7 @@ export function startLevel(idx){
   applyJetTier();   // size the jetpack to the current booster tier
   document.getElementById('xpval').textContent = (G.xp || 0);
   checkUnlocks();
-  shared.levelPhase = 'between'; shared.phaseT = 2.6;
+  shared.levelPhase = G.training ? 'training' : 'between'; shared.phaseT = 2.6;   // training runs its own lessons, no waves
   { const [lvl, place] = L.name.split('—').map(t => t.trim());   // 'LEVEL 1 — TEMPLE STEPS' → tag + headline
     showBanner(place || lvl, L.sub, 2.6, place ? { kicker: lvl } : null); }
 }
@@ -174,6 +176,7 @@ export function checkUnlocks(bannerDelay){
     syncJediChips();
     setStanceHud();
   }
+  if (G.training) return;   // the training grounds teach the starting kit; no unlock fanfare
   announce.forEach((u, i) => {
     setTimeout(() => { if (G.mode !== 'play') return;
       showBanner(u.name, /^HOLD /.test(u.hud) ? '' : 'PRESS', 3.0, { kicker: 'UNLOCKED', key: u.hud });

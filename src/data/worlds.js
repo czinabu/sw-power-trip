@@ -197,8 +197,50 @@ export function setWorld(name){ if (WORLD_DIRECTIONS[name]) WORLD = name; }
 // preview another direction without editing code: open the game with ?world=siege (or worlds / frozen)
 try { const q = new URLSearchParams(location.search).get('world'); if (q) setWorld(q); } catch(e){}
 
+/* TRAINING GROUNDS — the two tutorial arenas (data/tutorial.js) keep one look whatever WORLD is picked */
+export const TRAINING_WORLDS = {
+  hall: {   // the Jedi training hall: an open terrace high on the temple mountain, at dawn
+    sky: { top: 0x35609e, horizon: 0xf0d2b0, below: 0xa8a0a0, bands: 7, stars: 12,
+      sun: { el: 0.14, color: 0xfff0d0, halo: 0xffd0a0, size: 24 },
+      clouds: { color: 0xf6dcc4, under: 0xb09098, count: 12, lo: 0.3, hi: 0.7 },
+      ridges: [{ color: 0x8a8ca4, h: 0.16, rough: 0.12, spiky: 0.5, seed: 4 }, { color: 0x6c7088, h: 0.08, rough: 0.08, seed: 11 }] },
+    fog: 0xc4b8c0, fogStart: 0.75, fogEnd: 3.0,
+    light: { sun: 0xffe6c4, sunI: 1.7, dir: [-20, 34, 30], hemiSky: 0xbcd0f0, hemiGround: 0x5a5660, fill: 0.78, rim: 0x9ad8ff, rimI: 0.5 },
+    floor: { kind: 'flagstone', base: 0x9a948a, seed: 6 },
+    outer: 0x8a8480,
+    pal: { stone: 0xb4b0a6, stoneD: 0x88847c, trim: 0xd8c48a, kyber: 0x5ad2ff },
+    backdrop: [
+      { kind: 'cliffs', count: 16, r: [1.5, 2.3], h: [10, 22], w: 0.32, color: 0x8a8ca0, color2: 0x7a7c92, skip: [[-1.6, 0.4]] },
+      { kind: 'temple', az: -1.6, r: 2.3, scale: 1.2, color: 0xb0aaa4, color2: 0xc4beb6, glow: 0x9ad8ff },
+      { kind: 'crystals', count: 7, r: [1.15, 1.3], h: [3, 6], color: 0x8ad8ff, glow: 0x3aa8ff, skip: [[-1.6, 0.5]] },
+    ],
+    ambient: { kind: 'dust', color: 0xfff0d8, count: 110, size: 0.26 },
+    beats: { fog: 0xc8b0b0, fill: 1.0, tint: 0xffe0c0 },
+    sound: 'temple',
+  },
+  forge: {   // the Armorer's forge: the covert's yard in a canyon, at night, lit by the hearth
+    sky: { top: 0x060814, horizon: 0x5a2c1c, below: 0x1a1210, bands: 6, stars: 80,
+      sun: { el: 0.5, color: 0xe0d8d0, size: 14, kind: 'moon' },
+      clouds: { color: 0x3a2a2a, under: 0x1a1214, count: 10, lo: 0.4, hi: 0.9 },
+      ridges: [{ color: 0x24181a, h: 0.14, rough: 0.1, spiky: 0.3, seed: 15 }] },
+    fog: 0x3a2420, fogStart: 0.72, fogEnd: 2.9,
+    light: { sun: 0xffc090, sunI: 1.75, dir: [22, 40, -26], hemiSky: 0xc08a70, hemiGround: 0x2a1a16, fill: 0.95, rim: 0xff8a40, rimI: 0.6 },
+    floor: { kind: 'deck', base: 0x55504c, stripe: 0xd9a43a, seed: 12 },
+    outer: 0x2a2220,
+    pal: { metal: 0x606870, metalD: 0x30343a, beskar: 0xb0b8c0, sand: 0x806a52, stripe: 0xd9a43a, molten: 0xff7a1e, beacon: 0xff8a3a },
+    backdrop: [
+      { kind: 'cliffs', count: 18, r: [1.4, 2.1], h: [14, 26], w: 0.34, color: 0x3a2a26, color2: 0x2e2220 },
+      { kind: 'stacks', count: 3, r: [1.5, 1.7], h: [16, 22], color: 0x2e2a2c, band: 0xd9a43a, glow: 0xff8a2a, smoke: 0x4a3a38 },
+    ],
+    ambient: { kind: 'embers', color: 0xff8a3a, count: 150 },
+    beats: { fog: 0x5a2a1a, fill: 1.05, tint: 0xff8a50 },
+    sound: 'foundry',
+  },
+};
+
 /* the theme for a level (by its layout), or null for unthemed/procedural arenas */
 export function themeFor(L){
+  if (TRAINING_WORLDS[L.layout]) return TRAINING_WORLDS[L.layout];
   const d = WORLD_DIRECTIONS[WORLD];
   return (d && L.layout && d[L.layout]) || null;
 }

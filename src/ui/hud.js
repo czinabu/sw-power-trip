@@ -15,6 +15,7 @@ import { nextStoreGoal } from '../game/progression.js';
 import { updateBoonStrip } from '../game/boons.js';
 import { renderThreats } from './threats.js';
 import { svgIcon, SLOT_ICON } from './icons.js';
+import { trainingProgress } from '../game/tutorial.js';
 
 // give every power slot its icon once (key badge top-left, icon centre, name below)
 for (const id in SLOT_ICON){ const el = document.getElementById(id); if (el) el.querySelector('.key').insertAdjacentHTML('afterend', svgIcon(SLOT_ICON[id])); }
@@ -117,7 +118,11 @@ export function updateHud(){
   const total = alive + G.spawnQueue.length;
   // run progress: where you are · which wave · what's left
   const hostiles = total > 0 ? '<span class="wi-h">' + total + ' HOSTILE' + (total === 1 ? '' : 'S') + ' REMAIN</span>' : '';
-  if (G.endless){
+  document.body.classList.toggle('training', !!G.training);
+  if (G.training){
+    const tp = trainingProgress();
+    setHtml($('waveinfo'), '<span class="wi-l">TRAINING · ' + tp.place + '</span><span class="wi-w">LESSON ' + tp.lesson + ' / ' + tp.total + '</span>');
+  } else if (G.endless){
     const mut = G.mut ? MUTATORS.find(m => m.id === G.mut) : null;
     setHtml($('waveinfo'), '<span class="wi-l">SURVIVAL</span><span class="wi-w">WAVE ' + G.endlessWave + '</span>' + hostiles +
       (mut ? '<span class="wi-h"><span class="wi-mut" style="color:' + mut.col + '">' + mut.name + '</span></span>' : ''));

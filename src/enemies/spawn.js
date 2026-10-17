@@ -38,7 +38,7 @@ function maybeTip(typeName){
   if (G.seenTypes[typeName]) return;
   G.seenTypes[typeName] = true;
   const tip = TYPE_TIPS[typeName];
-  if (tip && G.mode === 'play') showBanner(tip[0], tip[1], 3.0);
+  if (tip && G.mode === 'play' && !G.training) showBanner(tip[0], tip[1], 3.0);   // in training the teacher explains it
 }
 export function spawnEnemy(typeName, pos){
   const t = ENEMY_TYPES[typeName];

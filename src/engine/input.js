@@ -30,6 +30,7 @@ import { mandoWeapon, switchWeapon, startReload, fireTrigger, mandoFlame } from 
 import { startLevel } from '../game/flow.js';
 import { showBanner } from '../ui/banners.js';
 import { overlay, setSaberGrip } from '../ui/menus.js';
+import { tutEvent } from '../game/tutor-bus.js';
 
 const inputActive = () => document.pointerLockElement === renderer.domElement || (shared.lockFallback && G.mode === 'play');
 document.addEventListener('mousemove', (e) => {
@@ -70,6 +71,7 @@ document.addEventListener('mousedown', (e) => {
       if (G.gt - player.lastWinded > 0.5){ player.lastWinded = G.gt; floater(playerPos(), 'GUARD BROKEN', '#ff6a3a'); sfx(120, 0.12, 'square', 0.06, 70); }
     } else {
       const cancelled = cancelSwing();   // RMB interrupts a swing at any point — feint straight into the guard
+      if (cancelled) tutEvent('cancel');
       // HOLD = block (absorb only). Each fresh CLICK opens a brief, timed DEFLECT/PARRY window —
       // land it on an incoming bolt or a melee strike to send it back / stagger the attacker.
       player.blockHeld = true;
