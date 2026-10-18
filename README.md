@@ -30,7 +30,7 @@ src/
   utils.js           math helpers
   data/              tuning tables: config, movement, stances, enemies, levels, bosses, mando, skills, store, mastery, boons, mutators, difficulty, worlds (arena looks)
   engine/            renderer + post-processing, graphics quality, input, camera
-  audio/             mixer + voice builder (engine.js), sound bank (sfx.js), adaptive per-world score (music.js), loops + ambience (director.js)
+  audio/             mixer + voice builder (engine.js), sound bank (sfx.js), adaptive orchestral score with hero themes and mission cues (music.js), loops + ambience (director.js)
   fx/                particles, floating text, VFX lights, saber trail, one-shot VFX, ambient embers
   player/            hero swap, movement, parkour, damage, updatePlayer (update.js), animation
     model/           hero models: rig + sockets, outfit slots (jedi.js, mando.js), weapons, render styles, looks
