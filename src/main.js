@@ -153,4 +153,4 @@ window.GAME = { CFG, ENEMY_TYPES, LEVELS, BOSS_CFG, BOSS_MANDO, STANCES, SKILLS,
   hazardZones, updateHazardZones, hazardContains, setOverlayState, nav: { NAV, buildNav, updateNav, navSteer, navDist },
   duel: { DUEL, DUEL_PROFILES, MANDO_MELEE, LOCK, startLock, endLock, duelDefend },
   tactics: { RAMP, TROOP_MELEE, TROOP_FIRE, PINCER, ORDERS, GRENADE, LUNGE, tacticsRamp, grenades, pushGrenades },
-  get boss(){ return shared.boss; }, get saberProj(){ return shared.saberProj; } };
+  get boss(){ return shared.boss; }, get saberProj(){ return shared.saberProj; }, get darkProj(){ return shared.darkProj; } };

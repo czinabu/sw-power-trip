@@ -224,9 +224,9 @@ export const DRILLS = {
     slam:       { say: 'Drop from the sky and shake the ground.', key: 'X', use: ['flag', 'slamming'] },
     birds:      { say: 'Whistling Birds. Let them sing.', key: 'V', use: ['cd', 'birds'] },
     deto:       { say: 'A thermal detonator does not miss twice.', key: 'V', use: ['cd', 'deto'] },
-    bacta:      { say: 'Bacta. Stay in the fight.', key: 'H', use: ['cd', 'bacta'] },
+    bacta:      { say: 'Bacta. Stay in the fight.', key: 'G', use: ['cd', 'bacta'] },
     jetmissile: { say: 'The jetpack carries a missile. Use it well.', key: 'Z', use: ['cd', 'missile'] },
-    darksaber:  { say: 'The Darksaber. It is not the blade that is strong, but the one who wields it.', key: '3', use: ['weapon', 'darksaber'] },
+    darksaber:  { say: 'The Darksaber. It is not the blade that is strong, but the one who wields it. Throw it, and your line will bring it home.', key: '3 · RMB + LMB', use: ['weapon', 'darksaber'] },
     disruptor:  { say: 'The disruptor. One shot, nothing left.', key: '3', use: ['weapon', 'disruptor'] },
   },
 };

@@ -24,6 +24,7 @@ import {
   bactaStim, mandoRocket, mandoJetMissile, whistlingBirds, thermalDetonator, grappleHook, jetSlam,
   mandoBoostDash
 } from '../player/mando/gadgets.js';
+import { darksaberThrow } from '../player/mando/darksaber.js';
 import { mandoMelee } from '../player/mando/melee.js';
 import { lockPress, lockKick, lockPush } from '../enemies/duel.js';
 import { mandoWeapon, switchWeapon, startReload, fireTrigger, mandoFlame } from '../player/mando/weapons.js';
@@ -46,6 +47,8 @@ document.addEventListener('mousedown', (e) => {
   if (player.saberLock){ if (e.button === 0) lockPress(); return; }   // blades bound: LMB drives (enemies/duel.js)
   if (G.hero === 'mando'){
     if (e.button === 0){
+      // LMB while guarding with the Darksaber hurls it; the grappling line reels it back (player/mando/darksaber.js)
+      if (player.weapon === 'darksaber' && player.blockHeld){ darksaberThrow(); return; }
       const W = mandoWeapon();
       player.trigHeld = true;                        // single: a held trigger keeps the shield down
       if (W.fire === 'auto') player.firing = true;   // dual: hold to spray
@@ -54,6 +57,7 @@ document.addEventListener('mousedown', (e) => {
     if (e.button === 2){
       if (mandoWeapon().twoHand) player.zoom = true;  // disruptor: raise the scope (only then is it a rifle)
       else if (player.weapon === 'darksaber'){
+        if (shared.darkProj) return;   // the blade is out on the line: nothing in hand to guard with
         // DARKSABER guards & PARRIES like a lightsaber — RMB interrupts a swing at any point into the guard
         cancelSwing();
         player.blockHeld = true; player.blockT = 0;
@@ -139,7 +143,7 @@ document.addEventListener('keydown', (e) => {
       if (k === 'z') mandoJetMissile();
       if (k === 'c' && !e.repeat) trySlide();          // SLIDE out of a run (parkour.js)
       if (k === 'e' && !e.repeat) mandoMelee();   // close quarters: string, catch, charge, dive kick, takedown (melee.js)
-      if (k === 'h' && !e.repeat) bactaStim();        // bacta stim self-heal (store unlock)
+      if (k === 'g' && !e.repeat) bactaStim();        // bacta stim self-heal (store unlock) — G sits right beside F, in reach of WASD
       if (k === 'r' && !e.repeat) startReload();
       if (k === '1') switchWeapon('single');
       if (k === '2') switchWeapon('dual');
