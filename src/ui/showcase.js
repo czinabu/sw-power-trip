@@ -8,7 +8,7 @@ import { G } from '../state.js';
 import { buildHeroModel } from '../player/model/index.js';
 import { applySaberGrip } from '../player/model/weapons.js';
 import { settleCloth, stepCloth } from '../player/model/cloth.js';
-import { LOOK } from '../player/mesh.js';
+import { lookOf, loadPicks, disposeTree } from '../player/mesh.js';
 
 const HERO_X = 0.72;     // where the figure stands across the screen (0 = left edge, 1 = right)
 const TURN = 0.32;       // turntable speed, rad/s
@@ -126,12 +126,22 @@ beam.position.y = PED_H + 2.1; stage.add(beam);
 
 /* the figure: its own copy of the hero model (both outfits on one rig, like the player) */
 const fig = { group: new THREE.Group() };
-fig.group.add(buildHeroModel(fig, LOOK));
 fig.group.position.y = PED_H;
 table.add(fig.group);
-fig.blade.light.intensity = 2.2;   // the saber's real light floods a close-up; keep it low so the model reads
-const R = fig.rig;
-const hipsY = R.hips.position.y;
+let R, hipsY;
+function build(picks){
+  if (fig.vis){ fig.group.remove(fig.vis); disposeTree(fig.vis); }
+  fig.group.add(buildHeroModel(fig, lookOf(picks)));
+  fig.blade.light.intensity = 2.2;   // the saber's real light floods a close-up; keep it low so the model reads
+  R = fig.rig;
+  hipsY = R.hips.position.y;
+}
+build(loadPicks());
+// the customizer restyles the figure on the stand as each option is picked
+export function restyleShowcase(picks){
+  build(picks);
+  if (shown) dress(shown);
+}
 
 let shown = null;   // hero currently on the stand
 function dress(hero){
@@ -251,12 +261,16 @@ paintAll();
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(paintAll);   // the hero name needs the display font
 
 /* ---------- framing ---------- */
+let camZ = 9.4;
+let focus = 0, focusTo = 0;   // 0 = the whole stand, 1 = closer on the figure (while customizing)
+export function focusShowcase(on){ focusTo = on ? 1 : 0; }
+export function spinShowcase(rad){ spin += rad; }   // drag to turn the stand
 function frame(){
   const w = innerWidth, h = innerHeight;
   cam.aspect = w / h;
   // shift the view so the stand sits at HERO_X instead of mid-screen; on narrow screens pull it back a little
   cam.setViewOffset(w, h, -(HERO_X - 0.5) * w, 0, w, h);
-  cam.position.z = w / h < 1.3 ? 10.8 : 9.4;
+  camZ = w / h < 1.3 ? 10.8 : 9.4;
   cam.updateProjectionMatrix();
   bgMat.uniforms.aspect.value = w / h;
 }
@@ -296,6 +310,10 @@ export function renderShowcase(dt){
       bgMat.uniforms.rayA.value.copy(bgMat.uniforms.rayB.value);
     }
   }
+  focus += (focusTo - focus) * Math.min(1, dt * 4);
+  const f = focus * focus * (3 - 2 * focus);
+  cam.position.set(0, 1.9 + f * 0.12, camZ * (1 - f * 0.32));
+  cam.lookAt(0, 1.3 + f * 0.25, 0);
   spin += (TURN + boost) * dt;
   table.rotation.y = spin;
   // a slow breath and a small weight shift, so the figure on display isn't a statue

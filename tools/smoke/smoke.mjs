@@ -1,6 +1,7 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
 // SMOKE TEST — boots the BUILT game (dist/index.html) in headless Chromium and plays each hero for a short scripted
-// fight: walk in, turn toward the nearest foe, attack and fire off the hero's moves. Then one story mission run, which
+// fight in a random look from the character customizer: walk in, turn toward the nearest foe, attack and fire off the
+// hero's moves. Then one story mission run, which
 // skips ahead through its objectives so the hold, the sabotage and the duel all get set up and played. Fails on any page error or
 // console error, or if the fight never gets going (no frames, no enemies, nothing hit).
 //   npm run build && npm run smoke            (SMOKE_SECONDS=… sets the game time per hero, default 20)
@@ -47,6 +48,8 @@ for (const [hero, mode] of [['jedi', 'campaign'], ['mando', 'campaign'], ['jedi'
     await page.goto(page_url);
     await page.waitForFunction(() => window.GAME && window.GAME.G, null, { timeout: 30000 });
     await page.click('#hero-' + hero);
+    // restyle the hero in the customizer first, so the fight runs on a rebuilt player model
+    if (mode === 'campaign'){ await page.click('#cztoggle'); await page.click('#czrandom'); await page.click('#czdone'); }
     // the story mission lives in the EXTRAS panel (experimental) and launches from its own PLAY button
     if (mode === 'mission'){ await page.click('#rmtoggle'); await page.click('#xp-mission-go'); }
     else await page.click('#mode-' + mode);

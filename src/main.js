@@ -78,6 +78,7 @@ import './ui/threats.js';
 import { updateHud } from './ui/hud.js';
 import { setOverlayState } from './ui/menus.js';
 import { showcaseActive, renderShowcase, leaveShowcase } from './ui/showcase.js';
+import './ui/customizer.js';
 import './data/difficulty.js';
 import './engine/input.js';
 import { updateCamera } from './engine/camera.js';
