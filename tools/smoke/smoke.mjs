@@ -74,7 +74,7 @@ for (const [hero, mode] of [['jedi', 'campaign'], ['mando', 'campaign'], ['jedi'
 
     const startGt = await page.evaluate(() => GAME.G.gt);
     await page.keyboard.down('w');
-    let step = 0, skips = 0;
+    let step = 0, skips = 0, everHit = false;   // a mission skips past (and clears) earlier foes, so remember any hit
     for (;;){
       const s = await page.evaluate(() => {
         const { G, player, enemies } = GAME;
@@ -93,8 +93,10 @@ for (const [hero, mode] of [['jedi', 'campaign'], ['mando', 'campaign'], ['jedi'
         }
         if (best) G.yaw = Math.atan2(best.group.position.x - p.x, best.group.position.z - p.z);
         G.pitch = 0.1;
-        return { gt: G.gt, mode: G.mode, near: bd, enemies: enemies.length };
+        return { gt: G.gt, mode: G.mode, near: bd, enemies: enemies.length,
+                 hit: (G.stats && G.stats.kills) > 0 || enemies.some(e => e.maxHp && e.hp < e.maxHp) };
       });
+      everHit = everHit || s.hit;
       if (s.gt - startGt >= GAME_SECONDS || s.mode !== 'play' || Date.now() - t0 > REAL_LIMIT_MS) break;
       // a mission: a few seconds of each objective, then on to the next (the duel plays out to the end of the run)
       if (mode === 'mission' && skips < 2 && s.gt - startGt > GAME_SECONDS * 0.25 * (skips + 1)){
@@ -118,6 +120,7 @@ for (const [hero, mode] of [['jedi', 'campaign'], ['mando', 'campaign'], ['jedi'
                objective: document.getElementById('waveinfo').textContent };
     }, startGt);
     if (mode === 'mission') result.skips = skips;
+    result.everHit = everHit;
   } catch (e){
     errors.push('script: ' + e.message);
   }
@@ -133,7 +136,7 @@ for (const [hero, mode] of [['jedi', 'campaign'], ['mando', 'campaign'], ['jedi'
     if (result.mode !== 'play' && !(mode === 'mission' && result.mode === 'victory')) problems.push(`left play mode (mode: ${result.mode})`);
     if (mode === 'mission' && !/INQUISITOR/.test(result.objective)) problems.push('the mission never reached its duel');
     if (!result.enemies && !result.kills) problems.push('no enemies ever spawned');
-    if (!result.kills && !result.hurt) problems.push('the hero never hit anything');
+    if (!result.kills && !result.hurt && !result.everHit) problems.push('the hero never hit anything');
   }
   console.log(`${problems.length ? 'FAIL' : 'ok  '} ${(hero + (mode === 'campaign' ? '' : ' ' + mode)).padEnd(13)} ${JSON.stringify(result || {})} (${((Date.now() - t0) / 1000).toFixed(0)}s)`);
   for (const p of problems) console.log('     ' + p.split('\n').slice(0, 20).join('\n     '));
