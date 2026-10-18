@@ -128,6 +128,7 @@ export const CUES = {
 // intensity per game state, before a cue raises or caps it
 const BASE = { menu: 0.16, lull: 0.3, combat: 0.62, heavy: 0.84, boss: 1.0, victory: 0.2, dead: 0.0 };
 const FIGHTING = new Set(['lull', 'combat', 'heavy', 'boss']);
+const LEVEL = 0.15;   // the score's level on the music bus: the orchestra is denser than the old synth score, so it sits lower
 
 export const MUSIC = (function(){
   let bus=null, comp=null, delay=null, timer=null, started=false;
@@ -156,7 +157,15 @@ export const MUSIC = (function(){
     g.gain.setValueAtTime(peak, t + Math.max(a, dur - rel));
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
   }
-  function out(node, send){ node.connect(bus); if (send){ const s = AC().createGain(); s.gain.value = send; node.connect(s); s.connect(delay); s.connect(AE.roomIn); } }
+  // every note's last node goes to the bus (and the echo and the room, by `send`); once the note is over it's
+  // disconnected, so finished voices drop out of the graph instead of waiting on garbage collection
+  const done = [];
+  function out(node, send, end){ node.connect(bus); let s = null;
+    if (send){ s = AC().createGain(); s.gain.value = send; node.connect(s); s.connect(delay); s.connect(AE.roomIn); }
+    done.push({ node, s, end: end + 0.1 }); }
+  function sweep(now){ let k = 0;
+    for (const d of done){ if (d.end < now){ d.node.disconnect(); if (d.s) d.s.disconnect(); } else done[k++] = d; }
+    done.length = k; }
   function osc(type, f, t, dur, det){ const o = AC().createOscillator(); o.type = type; o.frequency.value = f; if (det) o.detune.value = det; o.start(t); o.stop(t + dur + 0.05); return o; }
   function lp(f, q){ const F = AC().createBiquadFilter(); F.type = 'lowpass'; F.frequency.value = f; if (q) F.Q.value = q; return F; }
   function vibrato(t, dur, depth, delay){ const v = osc('sine', 4.8 + Math.random() * 0.8, t, dur), vg = AC().createGain();
@@ -169,53 +178,54 @@ export const MUSIC = (function(){
     env(g, t, o.gain || 0.08, o.attack || 0.01, dur);
     let n = s; if (o.filter){ const F = lp(o.filter); s.connect(F); n = F; }
     if (o.vib) vibrato(t, dur, o.vib, 0.05).connect(s.detune);
-    n.connect(g); out(g, o.send);
+    n.connect(g); out(g, o.send, t + dur);
   }
-  // a string section: four detuned saws sharing one slow vibrato, swelling in and holding
-  function strings(t, f, dur, gain, bright){
-    const F = lp(bright, 0.5), g = AC().createGain(); hold(g, t, gain * 0.55, Math.min(0.7, dur * 0.3), dur, 0.6);
-    const vg = vibrato(t, dur, 9, 0);
-    for (const det of [-11, -3, 4, 12]){ const o = osc('sawtooth', f, t, dur, det); vg.connect(o.detune); o.connect(F); }
-    F.connect(g); out(g, 0.55);
+  // a string section: detuned saws swelling in and holding (thin: two saws, for a doubling). The detune spread is the
+  // ensemble's shimmer; no vibrato, since modulating an oscillator's pitch costs Chrome a per-sample computation
+  function strings(t, f, dur, gain, bright, thin){
+    const F = lp(bright, 0.5), g = AC().createGain(); hold(g, t, gain * (thin ? 0.8 : 0.6), Math.min(0.7, dur * 0.3), dur, 0.6);
+    for (const det of thin ? [-8, 8] : [-11, 1, 12]) osc('sawtooth', f, t, dur, det).connect(F);
+    F.connect(g); out(g, 0.55, t + dur);
   }
   // spiccato: a short bowed stroke, the ostinato's voice (low = the cellos, darker and drier)
   function spic(t, f, dur, gain, low){
     const F = lp(low ? 1800 : 3600, 1), g = AC().createGain(); env(g, t, gain, 0.006, Math.max(0.12, dur));
     F.frequency.setValueAtTime(low ? 1800 : 3600, t); F.frequency.exponentialRampToValueAtTime(low ? 500 : 1200, t + 0.15);
     osc('sawtooth', f, t, dur, -6).connect(F); osc('sawtooth', f, t, dur, 6).connect(F);
-    F.connect(g); out(g, low ? 0.2 : 0.35);
+    F.connect(g); out(g, low ? 0.2 : 0.35, t + Math.max(0.12, dur));
   }
-  // a choir: saws with vibrato through three "ah" formants
+  // a choir: saws with vibrato, mixed, through three "ah" formants
   function choir(t, f, dur, gain){
-    const g = AC().createGain(); hold(g, t, gain, Math.min(0.6, dur * 0.35), dur, 0.6);
+    const g = AC().createGain(), mix = AC().createGain(); hold(g, t, gain * 1.7, Math.min(0.6, dur * 0.35), dur, 0.6);
     const vg = vibrato(t, dur, 14, 0);
-    for (const det of [-9, 0, 9]){ const o = osc('sawtooth', f, t, dur, det); vg.connect(o.detune);
-      for (const [ff, q, k] of [[730, 6, 1], [1090, 7, 0.55], [2440, 8, 0.2]]){
-        const B = AC().createBiquadFilter(); B.type = 'bandpass'; B.frequency.value = ff; B.Q.value = q;
-        const kg = AC().createGain(); kg.gain.value = k; o.connect(B); B.connect(kg); kg.connect(g); } }
-    out(g, 0.6);
+    for (const det of [-9, 0, 9]){ const o = osc('sawtooth', f, t, dur, det); vg.connect(o.detune); o.connect(mix); }
+    for (const [ff, q, k] of [[730, 6, 1], [1090, 7, 0.55], [2440, 8, 0.2]]){
+      const B = AC().createBiquadFilter(); B.type = 'bandpass'; B.frequency.value = ff; B.Q.value = q;
+      const kg = AC().createGain(); kg.gain.value = k; mix.connect(B); B.connect(kg); kg.connect(g); }
+    out(g, 0.6, t + dur);
   }
   // a plucked string (the harp, the Jedha oud): bright attack that closes down fast
   function pluck(t, f, dur, gain){
     const F = lp(4200, 2), g = AC().createGain(); env(g, t, gain, 0.004, Math.max(0.25, dur));
     F.frequency.setValueAtTime(4200, t); F.frequency.exponentialRampToValueAtTime(500, t + 0.25);
     osc('sawtooth', f, t, dur).connect(F); osc('triangle', f * 2, t, dur, 4).connect(F);
-    F.connect(g); out(g, 0.45);
+    F.connect(g); out(g, 0.45, t + Math.max(0.25, dur));
   }
-  // a French horn section: warm, the filter blooms on the attack, vibrato arrives late on a held note
+  // a French horn section: warm, the filter blooms on the attack
   function horn(t, f, dur, gain, bright){ bright = bright || 1;
     const F = lp(380 * bright, 0.8), g = AC().createGain(); hold(g, t, gain, 0.07, dur, 0.18);
-    F.frequency.setValueAtTime(380 * bright, t); F.frequency.linearRampToValueAtTime(1500 * bright, t + 0.1); F.frequency.setTargetAtTime(1000 * bright, t + 0.12, 0.3);
-    const vg = vibrato(t, dur, 8, 0.3);
-    for (const [type, det] of [['sawtooth', -5], ['sawtooth', 6], ['triangle', 0]]){ const o = osc(type, f, t, dur, det); vg.connect(o.detune); o.connect(F); }
-    F.connect(g); out(g, 0.5);
+    F.frequency.setValueAtTime(380 * bright, t); F.frequency.linearRampToValueAtTime(1500 * bright, t + 0.1); F.frequency.exponentialRampToValueAtTime(1000 * bright, t + 0.5);
+    osc('sawtooth', f, t, dur, -5).connect(F); osc('sawtooth', f, t, dur, 6).connect(F); osc('triangle', f, t, dur).connect(F);
+    F.connect(g); out(g, 0.5, t + dur);
   }
-  // trumpets: brighter and quicker, each note scoops up into pitch
+  // trumpets: brighter and quicker than the horns, the filter snaps open on the attack
+  // (no pitch scoop: see strings; and every filter sweep ends, since a filter whose cutoff is still moving is
+  // recomputed every sample)
   function trumpet(t, f, dur, gain){
-    const F = lp(900, 1.2), g = AC().createGain(); hold(g, t, gain, 0.03, dur, 0.12);
-    F.frequency.setValueAtTime(900, t); F.frequency.linearRampToValueAtTime(4200, t + 0.05); F.frequency.setTargetAtTime(2600, t + 0.06, 0.25);
-    for (const det of [-4, 5]){ const o = osc('sawtooth', f, t, dur, det); o.detune.setValueAtTime(det - 40, t); o.detune.linearRampToValueAtTime(det, t + 0.05); o.connect(F); }
-    F.connect(g); out(g, 0.4);
+    const F = lp(900, 1.2), g = AC().createGain(); hold(g, t, gain, 0.025, dur, 0.12);
+    F.frequency.setValueAtTime(900, t); F.frequency.linearRampToValueAtTime(4600, t + 0.04); F.frequency.exponentialRampToValueAtTime(2600, t + 0.35);
+    osc('sawtooth', f, t, dur, -4).connect(F); osc('sawtooth', f, t, dur, 5).connect(F);
+    F.connect(g); out(g, 0.4, t + dur);
   }
   // low brass: trombones and tuba, blared and driven (the stabs)
   function lowBrass(t, f, dur, gain){
@@ -223,14 +233,14 @@ export const MUSIC = (function(){
     pre.gain.value = 0.35; w.curve = GRIT; env(g, t, gain, 0.03, dur);
     F.frequency.setValueAtTime(250, t); F.frequency.exponentialRampToValueAtTime(1800, t + 0.05); F.frequency.exponentialRampToValueAtTime(700, t + 0.35);
     osc('sawtooth', f, t, dur, -6).connect(F); osc('sawtooth', f, t, dur, 6).connect(F); osc('square', f / 2, t, dur).connect(F);
-    F.connect(pre); pre.connect(w); w.connect(g); out(g, 0.35);
+    F.connect(pre); pre.connect(w); w.connect(g); out(g, 0.35, t + dur);
   }
   function bassNote(t, f, dur, gain, grit){
     const F = lp(260 + intensity * 600, 3), g = AC().createGain(); env(g, t, gain, 0.005, dur);
     osc('sawtooth', f, t, dur).connect(F); osc('sine', f, t, dur).connect(g);
     let n = F;
     if (grit){ const w = AC().createWaveShaper(); w.curve = GRIT; F.connect(w); n = w; }
-    n.connect(g); out(g, 0);
+    n.connect(g); out(g, 0, t + dur);
   }
   const INSTR = { flute: (t, f, d, g) => voice(t, f, d, { type: 'triangle', gain: g, attack: 0.05, filter: 2600, send: 0.6, vib: 14 }),
                   pluck, horn: (t, f, d, g) => horn(t, f / 2, d, g * 0.8), choir: (t, f, d, g) => choir(t, f, d, g * 0.9) };
@@ -240,12 +250,12 @@ export const MUSIC = (function(){
     const s = AC().createBufferSource(); s.buffer = AE.noise.white;
     const F = AC().createBiquadFilter(); F.type = type; F.frequency.value = f; if (q) F.Q.value = q;
     const g = AC().createGain(); g.gain.setValueAtTime(amp, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    s.connect(F); F.connect(g); out(g, 0.12); s.start(t, Math.random()); s.stop(t + dur + 0.02);
+    s.connect(F); F.connect(g); out(g, 0.12, t + dur); s.start(t, Math.random()); s.stop(t + dur + 0.02);
   }
   function kick(t, amp, f0, f1, dur){ const o = AC().createOscillator(), g = AC().createGain();
     o.frequency.setValueAtTime(f0 || 132, t); o.frequency.exponentialRampToValueAtTime(f1 || 45, t + 0.12);
     g.gain.setValueAtTime(amp, t); g.gain.exponentialRampToValueAtTime(0.0001, t + (dur || 0.2));
-    o.connect(g); out(g, 0); o.start(t); o.stop(t + (dur || 0.2) + 0.02); }
+    o.connect(g); out(g, 0, t + (dur || 0.2)); o.start(t); o.stop(t + (dur || 0.2) + 0.02); }
   function taiko(t, amp){ kick(t, amp, 110, 48, 0.45); noiseHit(t, amp * 0.35, 'lowpass', 420, 0, 0.22); }
   function frame(t, amp){ kick(t, amp * 0.6, 200, 95, 0.16); noiseHit(t, amp * 0.25, 'bandpass', 900, 1.2, 0.08); }
   // a tuned timpani: the pitch settles onto the note, an inharmonic overtone on top, a felt-mallet thud
@@ -255,7 +265,7 @@ export const MUSIC = (function(){
     o2.type = 'triangle'; o2.frequency.value = f * 1.51;
     g.gain.setValueAtTime(amp, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.5);
     g2.gain.setValueAtTime(0.3, t); g2.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
-    o.connect(g); o2.connect(g2); g2.connect(g); out(g, 0.3);
+    o.connect(g); o2.connect(g2); g2.connect(g); out(g, 0.3, t + 1.55);
     o.start(t); o2.start(t); o.stop(t + 1.55); o2.stop(t + 0.5);
     noiseHit(t, amp * 0.4, 'lowpass', 350, 0, 0.1);
   }
@@ -264,23 +274,23 @@ export const MUSIC = (function(){
     const s = AC().createBufferSource(); s.buffer = AE.noise.white;
     const F = AC().createBiquadFilter(); F.type = 'highpass'; F.frequency.value = 3500;
     const g = AC().createGain(); g.gain.setValueAtTime(amp, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 2.4);
-    s.connect(F); F.connect(g); out(g, 0.5); s.start(t, Math.random()); s.stop(t + 2.5);
+    s.connect(F); F.connect(g); out(g, 0.5, t + 2.5); s.start(t, Math.random()); s.stop(t + 2.5);
   }
   function metal(t, amp, f){ const o = AC().createOscillator(), m = AC().createOscillator(), mg = AC().createGain(), g = AC().createGain();
     o.frequency.value = f; m.frequency.value = f * 1.53; mg.gain.setValueAtTime(f * 3, t); mg.gain.exponentialRampToValueAtTime(f * 0.05, t + 0.8);
-    m.connect(mg); mg.connect(o.frequency); env(g, t, amp, 0.002, 0.9); o.connect(g); out(g, 0.5); o.start(t); m.start(t); o.stop(t + 1); m.stop(t + 1); }
+    m.connect(mg); mg.connect(o.frequency); env(g, t, amp, 0.002, 0.9); o.connect(g); out(g, 0.5, t + 1); o.start(t); m.start(t); o.stop(t + 1); m.stop(t + 1); }
   function swell(t, amp, dur){ // a cymbal/gong swell into a hit
     const s = AC().createBufferSource(); s.buffer = AE.noise.white;
     const F = AC().createBiquadFilter(); F.type = 'highpass'; F.frequency.value = 5000;
     const g = AC().createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(amp, t + dur); g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.6);
-    s.connect(F); F.connect(g); out(g, 0.4); s.start(t); s.stop(t + dur + 0.7); }
+    s.connect(F); F.connect(g); out(g, 0.4, t + dur + 0.7); s.start(t); s.stop(t + dur + 0.7); }
   // a rising band of noise over a bar (the slicing tension)
   function riser(t, dur, amp){
     const s = AC().createBufferSource(); s.buffer = AE.noise.white;
     const F = AC().createBiquadFilter(); F.type = 'bandpass'; F.Q.value = 4;
     F.frequency.setValueAtTime(400, t); F.frequency.exponentialRampToValueAtTime(3200, t + dur);
     const g = AC().createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(amp, t + dur * 0.92); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    s.connect(F); F.connect(g); out(g, 0.4); s.start(t, Math.random()); s.stop(t + dur + 0.05); }
+    s.connect(F); F.connect(g); out(g, 0.4, t + dur); s.start(t, Math.random()); s.stop(t + dur + 0.05); }
 
   function drum(kind, t, I){
     const K = pal.kit;
@@ -300,7 +310,7 @@ export const MUSIC = (function(){
 
   /* ---------- the string ostinatos (see CUES.ost) ---------- */
   const DRIVE = [0,12,7,12, 0,12,7,12, 0,12,7,12, 0,12,10,12];
-  function ostinato(kind, t, P, inBar, I, sd){
+  function ostinato(kind, t, P, inBar, I, sd, under){
     if (I < 0.3) return;
     const low = nf(P.bass + 12);
     if (kind === 'arp'){
@@ -312,7 +322,8 @@ export const MUSIC = (function(){
     } else if (kind === 'gallop'){   // 3-3-2: accents on 1, the "and" of 2 and 4 of every half bar
       const acc = inBar % 8 === 0 || inBar % 8 === 3 || inBar % 8 === 6;
       if (acc) spic(t, low, sd * 1.6, 0.03 + I * 0.03, true);
-      else if (I > 0.7) spic(t, low, sd * 0.8, 0.01 + I * 0.01, true);
+      if (under) return;   // under the world's arpeggio: just the accents
+      if (!acc && I > 0.7) spic(t, low, sd * 0.8, 0.01 + I * 0.01, true);
       if (acc && I > 0.6) spic(t, low * 2, sd * 1.2, 0.012 + I * 0.01);
     } else if (kind === 'drive'){
       spic(t, nf(P.bass + 12 + DRIVE[inBar]), sd * 0.9, (inBar % 4 === 0 ? 0.03 : 0.018) + I * 0.015, true);
@@ -346,7 +357,7 @@ export const MUSIC = (function(){
       const withChoir = pal.pad === 'choir' || (C && C.choir) || (heroic && I > 0.7);
       for (const c of P.chord){
         strings(t, nf(c), bd, 0.014 + I * 0.024, 800 + I * 2200);
-        if (I > 0.55 || heroic) strings(t, nf(c + 12), bd, 0.004 + I * 0.012, 1600 + I * 2600);   // the violins an octave up
+        if (I > 0.7 || heroic) strings(t, nf(c + 12), bd, 0.004 + I * 0.012, 1600 + I * 2600, true);   // the violins an octave up
         if (withChoir) choir(t, nf(c), bd, 0.008 + I * 0.016);
       }
       voice(t, nf(P.bass - 12), bd, { type: 'sine', gain: 0.05 + I * 0.05, attack: 0.3, filter: 380 });   // sub drone
@@ -364,7 +375,7 @@ export const MUSIC = (function(){
     // ostinato: the cue's, or the world's own arpeggio with galloping cellos under it once the fight is heavy
     const ost = (C && C.ost) || 'arp';
     ostinato(ost, t, P, inBar, I, sd);
-    if (ost === 'arp' && I > 0.8) ostinato('gallop', t, P, inBar, I, sd);
+    if (ost === 'arp' && I > 0.8) ostinato('gallop', t, P, inBar, I, sd, true);
     // drums
     if (I > 0.36 && pal.kick.includes(inBar) && (I > 0.8 || inBar === 0 || inBar === 8 || pal.kit !== 'rock')) drum('kick', t, I);
     if (I > 0.6 && pal.snare.includes(inBar)) drum('snare', t, I);
@@ -389,6 +400,7 @@ export const MUSIC = (function(){
     }
   }
   function loop(){ if (!AC() || !started) return;
+    sweep(AC().currentTime);
     if (nextTime < AC().currentTime) nextTime = AC().currentTime + 0.05;   // fell behind (tab throttled): resync, no catch-up burst
     while (nextTime < AC().currentTime + 0.12){
       if (step % 16 === 0) barTop();
@@ -407,7 +419,7 @@ export const MUSIC = (function(){
       delay = AC().createDelay(); delay.delayTime.value = 0.27; const fb = AC().createGain(); fb.gain.value = 0.33; const wet = AC().createGain(); wet.gain.value = 0.25;
       delay.connect(fb); fb.connect(delay); delay.connect(wet); wet.connect(comp);
       started = true; nextTime = AC().currentTime + 0.08; step = 0;
-      bus.gain.setTargetAtTime(enabled ? 0.2 : 0.0001, AC().currentTime, 1.2);   // fade in
+      bus.gain.setTargetAtTime(enabled ? LEVEL : 0.0001, AC().currentTime, 1.2);   // fade in
       timer = setInterval(loop, 25);
     },
     setPalette(name){ want = PALETTES[name] ? name : 'refuge'; },   // a world with no palette of its own marches to the refuge's
@@ -422,7 +434,7 @@ export const MUSIC = (function(){
       else if (s === 'dead') this.deathSting();
     },
     setEnabled(on){ enabled = on; try { localStorage.setItem('sw_music', on ? '1' : '0'); } catch(e){}
-      if (bus) bus.gain.setTargetAtTime(on ? 0.2 : 0.0001, AC().currentTime, 0.3); },
+      if (bus) bus.gain.setTargetAtTime(on ? LEVEL : 0.0001, AC().currentTime, 0.3); },
     toggle(){ this.setEnabled(!enabled); return enabled; },
     isOn(){ return enabled; },
     ok(){ return !!(AC() && bus && enabled); },
