@@ -114,6 +114,7 @@ function countText(s){
   if (s.reach || s.clear) return '';
   if (s.course) return Math.min(T.cp, s.course.length) + ' / ' + s.course.length;
   if (s.poll === 'refuel') return T.lowSeen ? 'NOW LAND' : Math.round(player.jet / player.jetMax * 100) + '% FUEL';
+  if (s.poll === 'single') return '';
   if (s.poll && s.poll !== 'forms') return Math.min(100, Math.round(T.count / s.need * 100)) + '%';
   return Math.min(T.count, s.need) + ' / ' + s.need;
 }
