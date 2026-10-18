@@ -43,16 +43,16 @@ function cdSlot(id, key, cost){
   if (cost != null) el.classList.toggle('nofp', left <= 0 && player.force < cost * (player.up.abilityCostMul || 1));   // the price the cast actually charges
 }
 
-// MANDO weapon slots: 1 blaster · 2 dual · 3 the signature weapon (Disruptor or Darksaber, whichever you took)
+// MANDO weapon slots: 1 blaster · 2 dual · 3 the signature weapon (Disruptor or Darksaber, whichever you took) · 4 holstered
 function renderWeaponSlots(){
   const sig = player.up.darksaber ? 'darksaber' : 'disruptor';
-  const slots = [['1','single'],['2','dual'],['3',sig]];
+  const slots = [['1','single'],['2','dual'],['3',sig],['4','fists']];
   let key = player.weapon;
   for (const [, w] of slots) key += weaponUnlocked(w) ? '1' : '0';
   const wrap = $('wslots'); if (wrap._k === key + sig) return;
   wrap._k = key + sig;
   wrap.innerHTML = slots.map(([k, w]) => {
-    const own = weaponUnlocked(w), nm = own ? MANDO_WEAPONS[w].name : 'LOCKED';
+    const own = weaponUnlocked(w), nm = own ? (w === 'fists' ? 'HOLSTER' : MANDO_WEAPONS[w].name) : 'LOCKED';
     return '<span class="wslot' + (player.weapon === w ? ' on' : '') + (own ? '' : ' lock') + '"><span class="kc">' + k + '</span>' + nm + '</span>';
   }).join('');
 }
@@ -139,6 +139,10 @@ export function updateHud(){
     setHtml($('waveinfo'), '<span class="wi-l">LEVEL ' + (G.levelIdx + 1) + ' · ' + place + '</span><span class="wi-w">' + wave + '</span>' +
       (shared.boss ? '' : hostiles));
   }
+  if (G.hero !== 'mando'){   // holstered (4): LMB is a Force strike and RMB a ward instead of saber and block
+    setText($('ab-atk').querySelector('.an'), player.holstered ? 'FORCE STRIKE' : 'SABER');
+    setText($('ab-block').querySelector('.an'), player.holstered ? 'WARD' : 'BLOCK');
+  }
   if (G.hero === 'mando'){
     // weapon + ammo readout
     const W = mandoWeapon();
@@ -153,7 +157,7 @@ export function updateHud(){
     // offensive brace; the Darksaber GUARDS; the Disruptor SCOPES. Flag the shield when it's out of stamina to deflect.
     const braceEl = document.getElementById('ab-brace');
     if (braceEl){
-      setText(braceEl.querySelector('.an'), W.melee ? 'GUARD' : W.twoHand ? 'SCOPE' : player.weapon === 'single' ? 'SHIELD' : 'BRACE');
+      setText(braceEl.querySelector('.an'), W.fire === 'fists' ? 'BRACE' : W.melee ? 'GUARD' : W.twoHand ? 'SCOPE' : player.weapon === 'single' ? 'SHIELD' : 'BRACE');
       braceEl.classList.toggle('nofp', player.weapon === 'single' && player.blockHeld && player.stam <= 0);
     }
     // E chip: behind the raised shield, E cuts with the vibroblade instead of punching

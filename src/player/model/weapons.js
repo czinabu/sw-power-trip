@@ -80,7 +80,7 @@ export const WEAPON_MODELS = {
       const glow = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1.3, 0.02), glowMat(0x9a5cff, 0.4)); glow.position.y = 0.72;
       const light = new THREE.PointLight(0x9a6cff, 6, 7); light.position.y = 0.7;
       g.add(glow, edge, blade, light);
-      return { group: g, light };
+      return { group: g, light, blades: [glow, edge, blade] };
     },
   },
 };
@@ -124,5 +124,5 @@ export function mountLoadout(R, S, player){
 
   const dark = mountWeapon(R, S, 'darksaber');
   dark.group.visible = false;
-  player.darksaberMesh = dark.group; player.darkLight = dark.light;
+  player.darksaberMesh = dark.group; player.darkLight = dark.light; player.darkBlades = dark.blades;
 }

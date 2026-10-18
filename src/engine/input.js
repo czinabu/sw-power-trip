@@ -33,6 +33,8 @@ import { showBanner } from '../ui/banners.js';
 import { overlay, setSaberGrip } from '../ui/menus.js';
 import { tutEvent } from '../game/tutor-bus.js';
 import { diffWindow } from '../data/difficulty.js';
+import { toggleHolster } from '../player/holster.js';
+import { forceStrike } from '../player/jedi/palm.js';
 
 const inputActive = () => document.pointerLockElement === renderer.domElement || (shared.lockFallback && G.mode === 'play');
 document.addEventListener('mousemove', (e) => {
@@ -63,9 +65,10 @@ document.addEventListener('mousedown', (e) => {
     return;
   }
   if (e.button === 1){ e.preventDefault(); toggleLock(); return; }   // middle mouse: soft lock-on (Jedi)
-  // LMB while guarding (RMB held) hurls the saber; otherwise it's a normal swing
+  // LMB while guarding (RMB held) hurls the saber; otherwise it's a normal swing (holstered: a Force strike)
   if (e.button === 0){
-    if (player.blockHeld && G.unlocked.throw) saberThrow();
+    if (player.holstered) forceStrike();
+    else if (player.blockHeld && G.unlocked.throw) saberThrow();
     else tryAttack();
   }
   if (e.button === 2 && G.mode === 'play'){
@@ -128,6 +131,7 @@ document.addEventListener('keydown', (e) => {
   if (k === 'p' && !e.repeat){ cycleQuality(); return; }   // graphics quality — works anywhere
   if (k === 'm' && !e.repeat){ audioInit(); const on = MUSIC.toggle(); showBanner('', '♪ MUSIC ' + (on ? 'ON' : 'OFF'), 1.0); return; }   // music on/off (persists)
   if (k === ' ' && !e.repeat) doJump();
+  if (k === '4' && !e.repeat) toggleHolster();   // HOLSTER: the Jedi fights with the Force alone, the Mando with fists and gadgets (player/holster.js)
   if (G.hero === 'mando'){
     if (k === 'shift') mandoBoostDash();                 // jetpack boost-dash (no Force)
     if (G.mode === 'play'){
@@ -141,7 +145,7 @@ document.addEventListener('keydown', (e) => {
       if (k === 'e' && !e.repeat) mandoMelee();   // close quarters: string, catch, charge, dive kick, takedown (melee.js)
       if (k === 'h' && !e.repeat) bactaStim();        // bacta stim self-heal (store unlock)
       if (k === 'r' && !e.repeat) startReload();
-      if (k === '1') switchWeapon('single');
+      if (k === '1') switchWeapon('single');   // (from holstered, 1 / 2 / 3 draw that weapon)
       if (k === '2') switchWeapon('dual');
       // 3 = the SIGNATURE WEAPON — Disruptor OR Darksaber (mutually exclusive; you own exactly one after the wave-7 fork)
       if (k === '3') switchWeapon(player.up.darksaber ? 'darksaber' : 'disruptor');

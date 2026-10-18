@@ -30,6 +30,7 @@ const CONTROLS = {
       ['T / MMB', 'Lock on', 'Keeps one foe framed; press again to release'],
       ['1 / 2 / 3', 'Saber form', 'Or the mouse wheel'],
       ['G', 'Switch grip', 'Regular or reverse; swings hit the same either way'],
+      ['4', 'Holster saber', 'Fight with the Force alone: LMB throws palm strikes (every third is a burst), RMB wards, and Force refills faster · 4 again draws'],
       ['RMB + SPACE', 'Evasive leap', 'Jump while blocking to vault clear'],
     ]},
     { title: 'FORCE POWERS', rows: [
@@ -61,6 +62,7 @@ const CONTROLS = {
       ['RMB + E', 'Shield and blade', 'Single blaster: vibroblade cuts and a shield bash with the shield kept up · costs stamina'],
       ['E', 'Takedown', 'On a staggered or floored foe: finish it'],
       ['1 / 2 / 3', 'Switch weapon', 'Or the mouse wheel'],
+      ['4', 'Holster', 'Fight with fists and gadgets: LMB throws the close-quarters string, RMB braces, and gadget power refills faster · 4 or 1 / 2 / 3 draws'],
     ]},
     { title: 'GADGETS', rows: [
       ['F', 'Flamethrower', 'Unlocks after wave 2'],
