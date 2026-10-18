@@ -10,6 +10,7 @@ import { arenaKit, seeded, at } from './kit.js';
      · the CRATE ROW on the west lane: low beskar crates (under vaultHeight) to hop over;
      · the LOOKOUT on the south-east: the three-tier overwatch gantry, the jetpack's first climb;
      · the FIRING LINE on the south lane: a low sandbag wall to shoot over at the targets beyond it;
+     · the SLIDE GATE on the north lane: a low bar to slide under (the agility course starts here);
      · ingot racks and quench tanks round the edge for the read of a workshop.
    The player spawns north (0, +11), facing the forge. */
 export const FORGE_SPOTS = {
@@ -17,6 +18,7 @@ export const FORGE_SPOTS = {
   crates: { x: -11, z: [4, -1] },
   lookout: [10, -12],   // gantry base; the deck (7.7) sits at +3.6, +2.6 from it
   line: { z: -8.5, hx: 7 },
+  gate: [-7, 11],       // the slide gate on the north lane (the agility course's first stop)
 };
 
 export function buildForgeArena(L){
@@ -54,6 +56,9 @@ export function buildForgeArena(L){
   { const F = FORGE_SPOTS.line;
     K.box(0, F.z, F.hx, 0.45, 0.95, sand, { climbable: false });
     for (let i = 0; i < 9; i++) K.deco(new THREE.CapsuleGeometry(0.28, 1.1, 2, 6), sand, -F.hx + 0.8 + i * (F.hx*2 - 1.6) / 8, 1.05, F.z, 0, 0, Math.PI/2); }
+
+  // ---- the SLIDE GATE — a low hazard-striped bar across the north lane ----
+  K.slideGate(FORGE_SPOTS.gate[0], FORGE_SPOTS.gate[1], 1.6, metalD, stripe);
 
   // ---- INGOT RACKS and QUENCH TANKS round the edge (all solid, none in a lane) ----
   for (let i = 0; i < 8; i++){

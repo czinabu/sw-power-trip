@@ -107,7 +107,9 @@ Each file starts with a one-line description. Balance changes usually only touch
 | LMB | Saber combo (direction follows WASD) |
 | RMB | Block / Parry (timed click) |
 | Space | Jump / Hold for Force Leap |
-| Shift | Dash-flip |
+| Q | Dash-flip (any direction; also the landing roll) |
+| Shift + W | Sprint |
+| C (sprinting) | Force slide |
 | 1/2/3 | Switch stance |
 | F | Force Push |
 | C | Force Pull |

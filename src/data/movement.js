@@ -16,11 +16,11 @@ export const MOVE = {
   maxFall: 30,          // terminal fall speed
   coyote: 0.1,          // seconds after running off a ledge that a jump still counts as a ground jump
   jumpBuffer: 0.13,     // a jump pressed this close before landing fires on touchdown
-  // landings: past `staggerImpact` (m/s) the knees buckle; a roll (SHIFT just before touchdown) converts it to speed
+  // landings: past `staggerImpact` (m/s) the knees buckle; a roll (Q just before touchdown) converts it to speed
   staggerImpact: 22.5,  // a plain jump lands ~12, a full double jump ~21; a drop past ~6 m buckles
   staggerMin: 0.16, staggerMax: 0.5, staggerSpan: 12,   // stagger seconds, ramped over `staggerSpan` m/s past the threshold
   staggerMove: 0.3,     // movement multiplier while staggered
-  rollWindow: 0.3,      // SHIFT this close before touchdown (or just after) rolls
+  rollWindow: 0.3,      // Q (the dash key) this close before touchdown (or just after) rolls
   rollTime: 0.48, rollSpeed: 9.5, rollIframes: 0.22,
   // mantle / vault: catch a ledge you jump at, or vault low cover you run into with a jump
   reach: 2.35,          // highest ledge (above the feet) the hands can catch
@@ -41,12 +41,16 @@ export const MOVE = {
   shimmySpeed: 1.8,     // A/D along the face
   hangClimbHold: 0.22,  // hold W this long (or tap SPACE) to pull up; S lets go
   hangClimbTime: 0.5,
-  // sprint and slide (Jedi): hold SHIFT with W to sprint; Q mid-sprint drops into a slide
+  // sprint and slide (Jedi): hold SHIFT with W to sprint; C mid-sprint is the FORCE SLIDE
   sprintMul: 1.42,      // top speed while sprinting
   sprintStam: 15,       // stamina per second
   sprintAccel: 0.55,    // steering while sprinting is heavier (accel multiplier)
   sprintTurn: 4.2,      // max body turn rate while sprinting (rad/s)
   slideTime: 0.62, slideBoost: 2.5, slideDrag: 1.6, slideMinSpeed: 7.5,
+  // FORCE SLIDE (Jedi): where the dash (Q) is a short hop any way you like with a moment of invulnerability, the slide
+  // is the long way forward. The Force carries the skid about twice as far as the old slide, it still ducks blaster
+  // fire, and it knocks over the troops it runs into (`bowl`, metres ahead of the hips). No invulnerability to blades.
+  forceSlideTime: 0.95, forceSlideBoost: 6.5, forceSlideDrag: 0.75, bowl: 1.4,
   mandoSlideMinSpeed: 5.5,   // the Mando has no sprint: C slides him out of a plain run
   // FLOW: parkour pays for flight. Each move (vault, climb, slide, wall-run, landing roll) refunds Force (Jedi) or jet
   // fuel (Mando); a different move inside `window` chains and pays `chainMul` more. The same move again within

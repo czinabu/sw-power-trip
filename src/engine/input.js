@@ -147,12 +147,13 @@ document.addEventListener('keydown', (e) => {
       if (k === '3') switchWeapon(player.up.darksaber ? 'darksaber' : 'disruptor');
     }
   } else {
-    // SHIFT with W on the ground SPRINTS (held; locomotion.js reads it); any other SHIFT is the dash (or a landing roll)
-    if (k === 'shift' && !e.repeat && !(keys['w'] && player.grounded && !player.blockHeld && !(player.landStagT > 0))) forceDash();
-    if (k === 'q' && !e.repeat) trySlide();            // SLIDE out of a sprint
+    // SHIFT only ever SPRINTS (held with W; locomotion.js reads it). The dash has its own key, Q, so a sprint never
+    // turns into a dash by accident: Q dashes any way you're pressing (or rolls out of a hard landing)
+    if (k === 'q' && !e.repeat) forceDash();
     if (k === 't' && !e.repeat) toggleLock();          // soft lock-on
     if (k === 'f'){ if (!(player.saberLock && lockPush())) forcePush(); }   // in a saber lock: a point-blank shove that breaks it
-    if (k === 'c') forcePull();
+    // C out of a sprint is the FORCE SLIDE (parkour.js), the same key the Mando slides on; any other C is the Pull
+    if (k === 'c'){ if (player.sprinting && player.grounded){ if (!e.repeat) trySlide(); } else forcePull(); }
     if (k === 'e' && !e.repeat){ if (player.saberLock) lockKick(); else forceKick(); }   // FRONT KICK — always-available melee, shares 'E' with the Mando's punch
     if (k === 'v') forceBarrier();     // Force Barrier — the defensive bubble (its fork-sibling SABER THROW is RMB+LMB)
     // ADAPTIVE FORK KEYS — each either/or pair shares ONE bind (you only ever own one of the pair).

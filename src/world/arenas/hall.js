@@ -14,6 +14,7 @@ import { arenaKit, seeded, at } from './kit.js';
        reach, so it teaches the ledge catch and climb. Its north face is sheer, and the drop off the top (past the
        ~5.9 m where a landing buckles) teaches the roll;
      · the RUNNING WALL on the east lane: a long, tall face to wall-run along and kick off;
+     · the SLIDE GATE on the north lane: a low bar to Force-slide under (the agility course starts here);
      · a ring of slender columns and kyber braziers for the read of a hall, too thin to run on.
    The player spawns north (0, +11), facing the circle. */
 export const HALL_SPOTS = {
@@ -23,6 +24,7 @@ export const HALL_SPOTS = {
   tower: [[-10.6, -16, 2.4, 2.0], [-14.2, -16, 4.9, 1.6], [-17.4, -16, 7.4, 1.6]],   // x, z, top, half-width (all 2.0 deep)
   towerDrop: [-17.4, -11],                 // the floor below the top's sheer north face
   wall: { x: 14, z: 0, hz: 6.5, h: 5 },
+  gate: [-8, 11],                          // the slide gate on the north lane (the agility course's first stop)
 };
 
 export function buildHallArena(L){
@@ -67,12 +69,16 @@ export function buildHallArena(L){
   for (let i = 0; i < 10; i++){
     const a = (i / 10) * Math.PI*2 + Math.PI/10, [x, z] = at(a, 18.5);
     if (z < -12 && x < -5) continue;                                                           // the tower's side
+    if (x < -12 && z < 0) continue;                                                            // the run-out below the tower's drop: a roll carries you this way
     if (Math.abs(x - HALL_SPOTS.wall.x) < 5 && Math.abs(z) < 9) continue;                      // behind the wall
     const h = 8 + R()*1.5;
     K.column(x, z, 0.65, h, stone, { taper: 0.9 });
     K.deco(new THREE.BoxGeometry(1.8, 0.35, 1.8), stoneD, x, 0.17, z);
     K.deco(new THREE.BoxGeometry(2.0, 0.4, 2.0), stoneD, x, h - 0.2, z);
   }
+  // ---- the SLIDE GATE — a low kyber-lit bar across the north lane ----
+  K.slideGate(HALL_SPOTS.gate[0], HALL_SPOTS.gate[1], 1.6, trim, glow);
+
   for (const [x, z] of [[-6.5, 9], [6.5, 9], [-6.5, -9], [6.5, -9]]){
     K.column(x, z, 0.4, 1.1, stoneD, { wallKick: false, seg: 8 });
     K.deco(new THREE.CylinderGeometry(0.55, 0.35, 0.25, 10), trim, x, 1.2, z);
