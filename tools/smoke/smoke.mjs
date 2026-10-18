@@ -98,8 +98,9 @@ for (const [hero, mode, mission] of [['jedi', 'campaign'], ['mando', 'campaign']
         return { gt: G.gt, mode: G.mode, near: bd, enemies: enemies.length };
       });
       if (s.gt - startGt >= GAME_SECONDS || s.mode !== 'play' || Date.now() - t0 > REAL_LIMIT_MS) break;
-      // a mission: a few seconds of each objective, then on to the next (the duel plays out to the end of the run)
-      if (mode === 'mission' && skips < 2 && s.gt - startGt > GAME_SECONDS * 0.25 * (skips + 1)){
+      // a mission: a few seconds of each objective, then on to the next (the duel plays out to the end of the run, so it
+      // gets the bigger share: on a slow runner it takes a while for the duellist to arrive and close in)
+      if (mode === 'mission' && skips < 2 && s.gt - startGt > GAME_SECONDS * 0.18 * (skips + 1)){
         if (await page.evaluate(() => GAME.skipObjective())) skips++;
       }
       // attack: a click (saber swing / blaster shot), and a move every few steps
