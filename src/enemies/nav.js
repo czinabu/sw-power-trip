@@ -25,7 +25,7 @@ const LINE_PAD = 0.12;                  // straight-line moves keep this much mo
 const INF = 1e9;
 
 const nav = {
-  n: 0, half: 0, ox: 0,                 // cells per side, arena half-size, grid origin (−half)
+  n: 0, nz: 0, half: 0, halfZ: 0, ox: 0, oz: 0,   // cells across (x) and along (z), arena half-sizes, grid origin (−half)
   clear: null,                          // Float32Array clearance per cell
   hz: null,                             // Int16Array: hazard index + 1 per cell (0 = none); vents come after zones
   dist: [null, null],                   // Float32Array walking distance to the player, per class
@@ -34,8 +34,10 @@ const nav = {
 };
 
 const cellOf = v => Math.floor((v - nav.ox) / CS);
+const cellOfZ = v => Math.floor((v - nav.oz) / CS);
 const centre = i => nav.ox + (i + 0.5) * CS;
-const inGrid = (ix, iz) => ix >= 0 && iz >= 0 && ix < nav.n && iz < nav.n;
+const centreZ = i => nav.oz + (i + 0.5) * CS;
+const inGrid = (ix, iz) => ix >= 0 && iz >= 0 && ix < nav.n && iz < nav.nz;
 
 /* distance from a point to the nearest real solid (0 inside one) */
 function clearanceAt(x, z){
@@ -54,19 +56,19 @@ function clearanceAt(x, z){
 
 /* call after an arena is built (solids, hazard zones and vents are all in place) */
 export function buildNav(){
-  nav.half = shared.arenaHalf;
-  nav.ox = -nav.half;
-  nav.n = Math.ceil((nav.half * 2) / CS);
-  const N = nav.n * nav.n;
+  nav.half = shared.arenaHalf; nav.halfZ = shared.arenaHalfZ || shared.arenaHalf;   // a long arena (the pursuit route) is deeper than it is wide
+  nav.ox = -nav.half; nav.oz = -nav.halfZ;
+  nav.n = Math.ceil((nav.half * 2) / CS); nav.nz = Math.ceil((nav.halfZ * 2) / CS);
+  const N = nav.n * nav.nz;
   nav.clear = new Float32Array(N);
   nav.hz = new Int16Array(N);
   nav.dist = [new Float32Array(N).fill(INF), new Float32Array(N).fill(INF)];
   nav.done = new Uint8Array(N);
   nav.heap = new Int32Array(N * 9 + 64);   // room for every relaxation (stale entries stay queued)
-  const edge = nav.half - 1;   // clampToArena keeps bodies inside this square
-  for (let iz = 0; iz < nav.n; iz++) for (let ix = 0; ix < nav.n; ix++){
-    const x = centre(ix), z = centre(iz), k = iz * nav.n + ix;
-    nav.clear[k] = (Math.abs(x) > edge || Math.abs(z) > edge) ? 0 : clearanceAt(x, z);
+  const edge = nav.half - 1, edgeZ = nav.halfZ - 1;   // clampToArena keeps bodies inside this rectangle
+  for (let iz = 0; iz < nav.nz; iz++) for (let ix = 0; ix < nav.n; ix++){
+    const x = centre(ix), z = centreZ(iz), k = iz * nav.n + ix;
+    nav.clear[k] = (Math.abs(x) > edge || Math.abs(z) > edgeZ) ? 0 : clearanceAt(x, z);
     let h = 0;
     for (let i = 0; i < hazardZones.length && !h; i++) if (hazardContains(hazardZones[i], x, z)) h = i + 1;
     for (let i = 0; i < vents.length && !h; i++){
@@ -75,6 +77,8 @@ export function buildNav(){
     }
     nav.hz[k] = h;
   }
+  // a long route (the pursuit) is mostly far behind or far ahead: fill only this far out, so a refresh stays cheap
+  nav.range = nav.halfZ > nav.half * 1.5 ? 70 : INF;
   nav.t = 0; nav.primed = false;
 }
 
@@ -120,7 +124,7 @@ function fillField(cls, px, pz, hot){
   d.fill(INF);
   nav.heapN = 0;
   // seed every open cell near the player (they may be on a crate or the gantry, whose own cells are closed)
-  const pcx = cellOf(px), pcz = cellOf(pz);
+  const pcx = cellOf(px), pcz = cellOfZ(pz);
   for (const R of [1.6, 4, 8]){
     const rc = Math.ceil(R / CS);
     for (let dz = -rc; dz <= rc; dz++) for (let dx = -rc; dx <= rc; dx++){
@@ -128,7 +132,7 @@ function fillField(cls, px, pz, hot){
       if (!inGrid(ix, iz)) continue;
       const k = iz*n + ix;
       if (C[k] < need) continue;
-      const g = Math.hypot(centre(ix) - px, centre(iz) - pz);
+      const g = Math.hypot(centre(ix) - px, centreZ(iz) - pz);
       if (g > R || g >= d[k]) continue;
       d[k] = g; push(d, k);
     }
@@ -141,9 +145,10 @@ function fillField(cls, px, pz, hot){
     if (done[k]) continue;   // a stale queue entry
     done[k] = 1;
     const ix = k % n, iz = (k - ix) / n, dk = d[k];
+    if (dk > nav.range) continue;   // a long arena only fills the stretch around the player
     for (let q = 0; q < 8; q++){
       const ox = NBX[q], oz = NBZ[q], jx = ix + ox, jz = iz + oz;
-      if (jx < 0 || jz < 0 || jx >= n || jz >= n) continue;
+      if (jx < 0 || jz < 0 || jx >= n || jz >= nav.nz) continue;
       const j = k + oz*n + ox;
       if (C[j] < need || done[j]) continue;
       if (q >= 4 && (C[k + ox] < need || C[k + oz*n] < need)) continue;   // no cutting a corner
@@ -168,7 +173,7 @@ function hotTable(){
 /* once per frame from updateEnemies: refresh one size's field on a short timer (the two sizes take turns, so each
    is at most ~0.25s old and no frame pays for both) */
 export function updateNav(dt, pp){
-  if (!nav.n || nav.half !== shared.arenaHalf) buildNav();
+  if (!nav.n || nav.half !== shared.arenaHalf || nav.halfZ !== (shared.arenaHalfZ || shared.arenaHalf)) buildNav();
   nav.t -= dt;
   if (nav.t > 0) return;
   nav.t = REBUILD;
@@ -183,10 +188,10 @@ export const navClass = radius => radius > BIG_RADIUS ? 1 : 0;
 /* is this exact point open for a body of this class (and not on a live hazard)? Clearance is stored at cell centres,
    so take off the distance to the centre: a straight line then never grazes a corner the cell grid rounds away */
 function openPoint(cls, x, z){
-  const ix = cellOf(x), iz = cellOf(z);
+  const ix = cellOf(x), iz = cellOfZ(z);
   if (!inGrid(ix, iz)) return false;
   const k = iz*nav.n + ix;
-  if (nav.clear[k] - Math.hypot(x - centre(ix), z - centre(iz)) < CLASSES[cls] + LINE_PAD) return false;
+  if (nav.clear[k] - Math.hypot(x - centre(ix), z - centreZ(iz)) < CLASSES[cls] + LINE_PAD) return false;
   return !(nav.hz[k] && nav.hotNow && nav.hotNow[nav.hz[k]]);
 }
 
@@ -206,7 +211,7 @@ export function navLineClear(ax, az, bx, bz, cls, short = 0){
 /* walking distance to the player from here (falls back to Infinity off the field) */
 export function navDist(x, z, cls){
   if (!nav.n) return Infinity;
-  const ix = clamp(cellOf(x), 0, nav.n - 1), iz = clamp(cellOf(z), 0, nav.n - 1);
+  const ix = clamp(cellOf(x), 0, nav.n - 1), iz = clamp(cellOfZ(z), 0, nav.nz - 1);
   const d = nav.dist[cls][iz*nav.n + ix];
   return d >= INF ? Infinity : d;
 }
@@ -221,7 +226,7 @@ export function navSteer(x, z, px, pz, cls, out){
     return true;
   }
   const d = nav.dist[cls], n = nav.n;
-  let ix = clamp(cellOf(x), 0, n - 1), iz = clamp(cellOf(z), 0, n - 1);
+  let ix = clamp(cellOf(x), 0, n - 1), iz = clamp(cellOfZ(z), 0, nav.nz - 1);
   // standing in a closed cell (pressed against cover, or knocked onto a crate)? start from the best open neighbour
   if (d[iz*n + ix] >= INF){
     let best = INF, bx = ix, bz = iz;
@@ -237,12 +242,12 @@ export function navSteer(x, z, px, pz, cls, out){
       out.x = dx / l; out.z = dz / l;
       return true;
     }
-    const tx = centre(bx) - x, tz = centre(bz) - z, l = Math.hypot(tx, tz) || 1;
+    const tx = centre(bx) - x, tz = centreZ(bz) - z, l = Math.hypot(tx, tz) || 1;
     out.x = tx / l; out.z = tz / l;
     return false;
   }
   // walk downhill up to 10 cells, then aim at the farthest one still reachable in a straight line
-  let cx = ix, cz = iz, aimX = centre(ix), aimZ = centre(iz);
+  let cx = ix, cz = iz, aimX = centre(ix), aimZ = centreZ(iz);
   for (let s = 0; s < 10; s++){
     let best = d[cz*n + cx], nx = -1, nz = -1;
     for (const [ox, oz] of NB){
@@ -253,7 +258,7 @@ export function navSteer(x, z, px, pz, cls, out){
     }
     if (nx < 0) break;
     cx = nx; cz = nz;
-    const wx = centre(cx), wz = centre(cz);
+    const wx = centre(cx), wz = centreZ(cz);
     if (s > 0 && !navLineClear(x, z, wx, wz, cls)) break;
     aimX = wx; aimZ = wz;
   }
@@ -266,7 +271,7 @@ export function navSteer(x, z, px, pz, cls, out){
 /* open space around a point (for picking which way to sidestep) */
 export function navClearance(x, z){
   if (!nav.n) return 99;
-  const ix = cellOf(x), iz = cellOf(z);
+  const ix = cellOf(x), iz = cellOfZ(z);
   return inGrid(ix, iz) ? nav.clear[iz*nav.n + ix] : 0;
 }
 

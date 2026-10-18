@@ -247,11 +247,11 @@ export function wallBeside(pp, range){
     if (d < bestD){ bestD = d; best = V3(nx, 0, nz); }
   }
   if (best) return best;
-  const h = shared.arenaHalf - 1;
+  const h = shared.arenaHalf - 1, hz = shared.arenaHalfZ - 1;
   if (pp.x >  h - range) return V3(-1, 0, 0);
   if (pp.x < -h + range) return V3( 1, 0, 0);
-  if (pp.z >  h - range) return V3( 0, 0, -1);
-  if (pp.z < -h + range) return V3( 0, 0,  1);
+  if (pp.z >  hz - range) return V3( 0, 0, -1);
+  if (pp.z < -hz + range) return V3( 0, 0,  1);
   return null;
 }
 

@@ -4,9 +4,10 @@
 // touches gameplay.
 
 import * as THREE from 'three';
-import { renderer, scene, hemi, sun, rim } from '../engine/renderer.js';
+import { renderer, scene, camera, hemi, sun, rim } from '../engine/renderer.js';
 import { rand, clamp } from '../utils.js';
 import { shared, G } from '../state.js';
+import { playerPos } from '../player/helpers.js';
 import { LEVELS } from '../data/levels.js';
 import { thunder } from '../audio/director.js';
 import { missionProgress } from '../game/mission.js';
@@ -48,6 +49,11 @@ export function applyAtmosphere(T, L, sky){
   sun.color.setHex(lt.sun); sun.intensity = lt.sunI;
   const d = lt.dir || [30, 50, 20];
   sun.position.set(d[0], d[1], d[2]);
+  // a long arena (the pursuit route) is far bigger than the sun's shadow box: the light and its box follow the hero
+  // there, and the sky dome follows the camera. Everywhere else the light is fixed over the middle, as before
+  A.dir = d; A.long = (L.arenaZ || L.arena) > L.arena;
+  if (!sun.target.parent) scene.add(sun.target);
+  sun.target.position.set(0, 0, 0);
   hemi.color.setHex(lt.hemiSky); hemi.groundColor.setHex(lt.hemiGround); hemi.intensity = lt.fill;
   rim.color.setHex(lt.rim ?? 0x5a7fd8); rim.intensity = lt.rimI ?? 0.5;
   A.T = T; A.sky = sky; A.p = 0; A.flash = 0; A.bolt = 0; A.half = L.arena / 2;
@@ -58,7 +64,7 @@ export function applyAtmosphere(T, L, sky){
 }
 
 /* an unthemed arena: stop driving the lights */
-export function clearAtmosphere(){ A.T = null; A.sky = null; A.strike = null; }
+export function clearAtmosphere(){ A.T = null; A.sky = null; A.strike = null; A.long = false; sun.target.position.set(0, 0, 0); }
 
 /* how far into this level's fight we are, 0 (first wave) → 1 (final wave / boss) */
 function progress(){
@@ -99,6 +105,12 @@ export function updateAtmosphere(dt){
     }
   }
   hemi.intensity = fill;
+  if (A.long){
+    const p = playerPos(), sx = Math.round(p.x / 4) * 4, sz = Math.round(p.z / 4) * 4;   // in steps, so shadow edges don't crawl
+    sun.target.position.set(sx, 0, sz);
+    sun.position.set(sx + A.dir[0], A.dir[1], sz + A.dir[2]);
+    if (A.sky) A.sky.position.set(camera.position.x, 0, camera.position.z);
+  }
   if (A.sky){
     A.sky.material.color.setScalar(skyK);
     if (b.tint != null){ _c.setHex(b.tint); A.sky.material.color.lerp(_c.multiplyScalar(skyK), A.p * 0.6); }

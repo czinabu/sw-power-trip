@@ -23,10 +23,21 @@
 //   duel      one opponent, one on one
 //               foe: the enemy type it's built from · name · hp, dmg: multipliers on that type · scale · tint
 //               duel: overrides of its duelling profile (data/duel.js) · rage: at this fraction of hp it presses harder
-//               (rageDuel: the profile then) · at: [x, z] where it lands
+//               (rageDuel: the profile then) · at: [x, z] where it lands · quarry: true fights the mission's quarry
+//               where it stopped running instead (its name and look come from the mission's `quarry`)
+//   pursuit   chase the quarry along one leg of its route (the arena's spots) without losing it
+//               leg: which leg · sight: how far you can see it (m; walls block the view) · lost: seconds out of
+//               sight before it gets away (the objective restarts) · pace: [[gap m, speed m/s]…] how fast it runs for
+//               how far ahead of you it is (it eases off when you fall behind and sprints when you close in)
+//               shove: how close you can get before it throws you back and breaks away · the route itself is the
+//               mission's `route` (one polyline per leg) and who runs it is its `quarry`
+//               ambush: [{ at: [x, z] (fires as the quarry runs past here), spots: [[x, z]…], group: { type: count } }]
+//               foes stepping out of doorways to slow you down · start: [x, z, yaw] where a retry of this leg begins
 // Every objective has `title` (the HUD line), and `say` / `task` per hero: the voice's line and the plain instruction.
+// Any field can differ per hero: put the hero's version under `hero: { jedi: {…}, mando: {…} }`.
 
 import { REFUGE_SPOTS } from '../world/arenas/refuge.js';
+import { PURSUIT_SPOTS } from '../world/arenas/pursuit.js';
 
 export const MISSION_VOICE = { jedi: 'THE BATTLEMASTER', mando: 'THE ARMORER' };
 export const MISSION_COLOR = { jedi: 0x5ad2ff, mando: 0xffa040 };
@@ -35,6 +46,7 @@ export const MISSIONS = {
   refuge: {
     id: 'refuge',
     title: 'THE LAST EVACUATION',
+    blurb: 'hold, sabotage, then a duel',   // the line under its card in EXTRAS
     level: { name: 'MISSION — THE HIDDEN REFUGE', sub: 'The Empire has found the refuge. The last transport is still loading.',
              arena: 64, floor: 0x8a8478, fog: 0xa89098, sky: 0x2c3c66, layout: 'refuge', waves: [], hazards: {} },
     start: [0, 2, 0],   // south of the ramp, looking at the transport and the line filing aboard
@@ -72,5 +84,56 @@ export const MISSIONS = {
     ],
     done: { jedi: 'The younglings are safe and the refuge still stands. Well fought.',
             mando: 'The foundlings are safe. The hunter is not. This is the Way.' },
+  },
+
+  pursuit: {
+    id: 'pursuit',
+    title: 'THE LONG CHASE',
+    blurb: 'run it down before it reaches its ship',
+    level: { name: 'MISSION — THE SPACEPORT AT KHEL DAR', sub: 'It knows where the refuge went. Do not let it reach its ship.',
+             arena: 56, arenaZ: 320, floor: 0xb49470, fog: 0xd8a878, sky: 0x3a5c92, layout: 'pursuit', waves: [], hazards: {} },
+    start: PURSUIT_SPOTS.start,   // the south end of the town, the quarry already running up the market street
+    route: PURSUIT_SPOTS.legs,     // the quarry's line through the town, one polyline per pursuit leg
+    kit: 4,
+    grant: { jedi: ['throw', 'slam'], mando: ['grapple', 'birds'] },
+    // who you are chasing (built from an enemy type, like the refuge's duel)
+    quarry: { jedi: { foe: 'acolyte', name: 'THE SEVENTH BLADE', kicker: 'INQUISITOR', tint: 0xa01a22, scale: 1.15 },
+              mando: { foe: 'duelist', name: 'VX-7', kicker: 'BOUNTY · ASSASSIN DROID', tint: 0x4a5a6a, scale: 1.12 } },
+    objectives: [
+      { kind: 'pursuit', leg: 0,
+        title: { jedi: 'CHASE THE INQUISITOR', mando: 'CHASE THE BOUNTY' },
+        say: { jedi: 'The Inquisitor carries the refuge\'s new coordinates. Keep it in sight. Over the stalls, not around them.',
+               mando: 'The droid has the foundlings\' trail in its memory core. Run it down. Use the jetpack, use the walls.' },
+        task: { jedi: 'Keep the Inquisitor in sight', mando: 'Keep the bounty in sight' },
+        sight: 42, lost: 6, shove: 3.0,
+        pace: [[-6, 11.5], [6, 10.5], [14, 8.4], [24, 7.0], [36, 4.5]],
+        ambush: [ { at: [0, -114], spots: [[-3, -101], [3, -101], [0, -99]], group: { grunt: 2, blaster: 1 } },
+                  { at: [-19, -80], spots: [[-19, -60], [-17, -57], [-21, -55]], group: { grunt: 2, lancer: 1 } },
+                  { at: [-6, -44], spots: [[10, -40], [13, -48], [20, -44]], group: { grunt: 1, blaster: 2 } },
+                  { at: [18, -30], spots: [[14, 0], [22, 0], [18, 4]], group: { grunt: 2, officer: 1 } } ] },
+
+      { kind: 'pursuit', leg: 1, start: PURSUIT_SPOTS.checkpoint,
+        title: { jedi: 'CHASE THE INQUISITOR', mando: 'CHASE THE BOUNTY' },
+        say: { jedi: 'It is making for the docks. The causeway is faster, if you can clear the gaps.',
+               mando: 'It\'s heading for the docking bay. Take the causeway. Don\'t lose it in the hangars.' },
+        task: { jedi: 'Keep the Inquisitor in sight', mando: 'Keep the bounty in sight' },
+        sight: 42, lost: 6, shove: 3.0,
+        pace: [[-6, 11.5], [6, 10.5], [14, 8.6], [24, 7.2], [36, 4.5]],
+        ambush: [ { at: [-16, 27], spots: [[-12, 44], [-10, 50], [-13, 54]], group: { blaster: 2, grunt: 1 } },
+                  { at: [-20, 58], spots: [[-11, 70], [-14, 74], [-9, 66]], group: { grunt: 2, grenadier: 1 } },
+                  { at: [-6, 83], spots: [[10, 86], [6, 80], [20, 86]], group: { grunt: 2, lancer: 1, blaster: 1 } },
+                  { at: [17.5, 98], spots: [[17.5, 114], [15, 119], [20, 121]], group: { grunt: 2, blaster: 1 } } ] },
+
+      { kind: 'duel', quarry: true, title: { jedi: 'DEFEAT THE INQUISITOR', mando: 'BRING IN THE BOUNTY' },
+        say: { jedi: 'Its ship is clamped down. Nowhere left to run. Read the blade, not the mask.',
+               mando: 'Docking clamps are locked. It has to come through you. Watch the staff, and break its guard.' },
+        task: { jedi: 'Win the duel', mando: 'Win the duel' },
+        hp: 4.5, dmg: 1.2,
+        duel: { block: 0.75, posture: 160, feint: 0.4, chain: 2, counter: 0.55 },
+        rage: 0.5, rageDuel: { feint: 0.5, delay: 0.4, chain: 3, thrust: 0.25 },
+        hero: { mando: { hp: 5, duel: { block: 0.7, posture: 150, feint: 0.3, chain: 2, counter: 0.5 } } } },
+    ],
+    done: { jedi: 'The coordinates die with it. The younglings stay hidden. Well run, and well fought.',
+            mando: 'The trail is wiped and the bounty is claimed. The foundlings stay hidden. This is the Way.' },
   },
 };
