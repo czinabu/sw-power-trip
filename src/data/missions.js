@@ -25,6 +25,8 @@
 //               duel: overrides of its duelling profile (data/duel.js) · rage: at this fraction of hp it presses harder
 //               (rageDuel: the profile then) · at: [x, z] where it lands
 // Every objective has `title` (the HUD line), and `say` / `task` per hero: the voice's line and the plain instruction.
+// `music` (optional) picks the score's cue for it (audio/music.js CUES: defend, infiltrate, duel, chase, battle…);
+// by default each kind plays its own (hold: defend, sabotage: infiltrate, duel: duel).
 
 import { REFUGE_SPOTS } from '../world/arenas/refuge.js';
 

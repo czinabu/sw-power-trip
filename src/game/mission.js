@@ -55,6 +55,7 @@ function clearMission(){
   M.props = []; M.fx = [];
   if (M.on) hidePanel();
   M.on = false;
+  MUSIC.setCue(null);
   setObjectiveHud(null);
 }
 export function endMission(){ if (M.on || M.markers.length) clearMission(); }
@@ -96,8 +97,12 @@ function patchUp(){
 /* ============================================================
    OBJECTIVES — each kind has a begin and an update
    ============================================================ */
+/* Each kind also names the music CUE it plays (audio/music.js CUES; an objective's `music` field overrides it) and
+   music(o, s) reports how it's going: { urgency 0..1, danger, focus }. */
 const KINDS = {
   hold: {
+    cue: 'defend',
+    music: (o, s) => ({ urgency: s.prog / o.time, danger: s.rate === 0, focus: s.inZone }),
     begin(o, s){
       s.prog = 0; s.pulse = 0; s.pulseT = 2.5;
       M.markers.push(s.zone = makeBeacon(o.at[0], o.at[1], 0, MISSION_COLOR[G.hero], o.r / 0.9));
@@ -116,7 +121,7 @@ const KINDS = {
       }
       const inZone = heroIn(o.at[0], o.at[1], o.r), foes = hostilesIn(o.at[0], o.at[1], o.r);
       const rate = inZone ? 1 : foes ? 0 : o.awayRate;
-      s.prog += dt * rate;
+      s.prog += dt * rate; s.rate = rate; s.inZone = inZone;
       if (s.kids) updateEvacuees(o.evacuees, s, dt, Math.min(1, s.prog / o.time), rate);
       setMarkerColor(s.zone, rate === 0 ? RED : MISSION_COLOR[G.hero]);
       s.zone.userData.beam.visible = !inZone;   // the column guides you back; standing in it, it would only fill the screen
@@ -137,6 +142,8 @@ const KINDS = {
   },
 
   sabotage: {
+    cue: 'infiltrate',
+    music: (o, s) => ({ urgency: s.cons.reduce((a, c) => a + (c.done ? 1 : c.prog / o.time), 0) / s.cons.length, focus: !!s.at }),
     begin(o, s){
       s.cons = o.consoles.map(c => {
         const spot = findClearSpawn(c.at[0], c.at[1], 1.4);
@@ -168,7 +175,7 @@ const KINDS = {
           floater(V3(c.x, 1.8, c.z), 'UPLINK DOWN', '#7bffae');
         }
       }
-      const n = s.cons.length;
+      const n = s.cons.length; s.at = at;
       setObjectiveHud({ kicker: 'MISSION · ' + M.def.title, title: o.title,
         frac: at ? at.prog / o.time : (n - left) / n,
         status: at ? 'SLICING… STAY ON THE CONSOLE' : (n - left) + ' / ' + n + ' UPLINKS DOWN' });
@@ -177,6 +184,9 @@ const KINDS = {
   },
 
   duel: {
+    cue: 'duel',
+    // the rage is tense until the foe is nearly beaten; then the hero's theme takes over
+    music: (o, s) => { const e = s.foe, u = e ? 1 - Math.max(0, e.hp) / e.maxHp : 0; return { urgency: u, danger: s.raged && u < 0.75, focus: !!e }; },
     begin(o, s){
       sweepField();
       s.foe = null; s.dropT = 2.4; s.raged = false;
@@ -295,7 +305,7 @@ function beginObjective(){
 function completeObjective(){
   for (const m of M.markers) removeMarker(m);
   M.markers = [];
-  MUSIC.clearSting();
+  MUSIC.objectiveSting();
   M.o = null;
   if (M.i + 1 >= M.def.objectives.length){ M.endT = 2.4; M.won = true; return; }
   if (M.def.objectives[M.i + 1].kind !== 'duel') sweepField();
@@ -326,8 +336,11 @@ export function updateMission(dt){
   M.fx = M.fx.filter(f => f(dt));
   if (M.panelT > 0 && (M.panelT -= dt) <= 0) hidePanel();
   if (M.won){ if ((M.endT -= dt) <= 0){ M.won = false; missionComplete(); } return; }
-  if (M.waitT > 0){ if ((M.waitT -= dt) <= 0) beginObjective(); return; }
-  if (M.o && KINDS[M.o.kind].update(M.o, M.s, dt)) completeObjective();
+  if (M.waitT > 0){ MUSIC.setCue('regroup'); if ((M.waitT -= dt) <= 0) beginObjective(); return; }
+  if (!M.o) return;
+  const K = KINDS[M.o.kind];
+  if (K.update(M.o, M.s, dt)) completeObjective();
+  else MUSIC.setCue(M.o.music || K.cue || 'battle', K.music && K.music(M.o, M.s));   // the score follows the objective
 }
 // dev console / smoke test: count the current objective as done
 export function skipObjective(){
