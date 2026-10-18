@@ -56,9 +56,11 @@ for (const [hero, mode] of [['jedi', 'campaign'], ['mando', 'campaign'], ['jedi'
     // BEGIN, then give the game a few seconds to drop into the fight; click again if it's still on the menu
     let started = false;
     for (let i = 0; i < 5 && !started; i++){
-      // the menu can close between the visibility check and the click (a launch already under way), so never wait long
-      if (await page.isVisible('#goText')) await page.click('#goText', { timeout: 2000 }).catch(() => {});
-      if (await page.isVisible('#trainNo')) await page.click('#trainNo', { timeout: 2000 }).catch(() => {});   // first run asks about training: go straight to the campaign
+      // a button can hide between the visibility check and the click (the run starts on its own): a short click that
+      // gives up quietly instead of Playwright's 30 s wait for an element that is gone for good
+      const tap = async sel => { if (await page.isVisible(sel)) await page.click(sel, { timeout: 1500 }).catch(() => {}); };
+      await tap('#goText');
+      await tap('#trainNo');   // first run asks about training: go straight to the campaign
       started = await page.waitForFunction(() => GAME.G.mode === 'play' && !GAME.G.paused, null, { timeout: 3000 }).then(() => true, () => false);
     }
     if (!started){

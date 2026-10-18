@@ -58,12 +58,12 @@ export const MANDO_STORE = [
   // SUSTAIN — a self-heal stim. Mutually exclusive with HUNTER'S CREED (heal-per-kill): pick ONE sustain path.
   // Cost dropped 200→150 (Pass 55b) to match its tier-2 siblings (grapple/mslam both 150) — it was priced ABOVE
   // its peers despite competing against a FREE skill-tree pick (Hunter's Creed costs no XP at all), a real value gap.
-  { id:'bacta',   tier:2, stage:5, cost:150, avail:()=>!player.up.lifesteal, ico:'✚', nm:'BACTA STIM', ds:'Channel a fast self-heal (+30% vit) · H · LOCKS Hunter\'s Creed',
+  { id:'bacta',   tier:2, stage:5, cost:150, avail:()=>!player.up.lifesteal, ico:'✚', nm:'BACTA STIM', ds:'Channel a fast self-heal (+30% vit) · G · LOCKS Hunter\'s Creed',
     owned:()=>!!G.unlocked.bacta, buy(){ G.unlocked.bacta = true; } },
   // SIGNATURE WEAPON fork (after wave 7) — the major identity choice. Both bind to key 3 (mutually exclusive).
   { id:'disruptor', tier:4, stage:6, cost:0, fork:'mainwpn', ico:'⌖', nm:'DISRUPTOR RIFLE', ds:'Scoped sniper (RMB) · spear melee · key 3 · LOCKS the Darksaber',
     owned:()=>!!G.unlocked.disruptor, buy(){ G.unlocked.disruptor = true; switchWeapon('disruptor'); } },
-  { id:'darksaber', tier:4, stage:6, cost:0, fork:'mainwpn', dark:true, ico:'🗡', nm:'THE DARKSABER', ds:'Heavy beskar blade — devastating but slow · key 3 · LOCKS the Disruptor',
+  { id:'darksaber', tier:4, stage:6, cost:0, fork:'mainwpn', dark:true, ico:'🗡', nm:'THE DARKSABER', ds:'Heavy beskar blade — devastating but slow · key 3 · RMB+LMB throws it, the grappling line reels it back · LOCKS the Disruptor',
     owned:()=>!!player.up.darksaber, buy(){ player.up.darksaber = true; G.unlocked.dark = true; switchWeapon('darksaber'); } },
   // LATE fork (after wave 8) — whistling birds OR thermal detonator
   { id:'birds',   tier:3, stage:7, cost:250, fork:'m_late', ico:'✺', nm:'WHISTLING BIRDS', ds:'Homing micro-missile swarm · V',

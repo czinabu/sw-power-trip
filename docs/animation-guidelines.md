@@ -70,7 +70,7 @@ body move for each lives in `src/data/agility.js` and is posed by `src/player/an
 
 | Move | IV · Ataru | VI · Niman | V · Djem So |
 |---|---|---|---|
-| Dash (Shift) | butterfly twist to the side, tuck flips forward/back | a smooth spin dodge, arms open | no spin: a low, driven slide, hips sunk |
+| Dash (Q) | butterfly twist to the side, tuck flips forward/back | a smooth spin dodge, arms open | no spin: a low, driven slide, hips sunk |
 | Tap jump | tucks and turns a full twist | knee drive, tuck, reach | a short, heavy hop |
 | Double jump | front flip with a full twist | clean layout front flip | flipless Force leap, blade cocked overhead |
 | Guard + jump evade | back layout full, twisting handspring, no-hands aerial | single back/front/side flips, open arms | tight, heavy tucks, blade held high |
@@ -83,7 +83,7 @@ Knees bend with **+x** on the knee joint (the shin folds back); −x hyperextend
 Flips turn about the centre of mass, not the feet. A flip is described by turns about the body's axes (somer, twist,
 roll, spin) plus a leg shape (tuck, pike, layout, split, slide, kneeslide) and an air guard for the saber hand(s).
 
-The sprint slide (Q) is a real knee slide: the hips sit almost to the floor in the first fifth of it, the lead leg
+The Force slide (C out of a sprint) is a real knee slide: the hips sit almost to the floor in the first fifth of it, the lead leg
 reaches out along the ground, the trail shin folds under, and the body leans back over it, rising out at the end
 (`kneeslide` in `anim/agility.js`; there's no slide in the capture library, so this one is authored).
 
