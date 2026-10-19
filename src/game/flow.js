@@ -29,6 +29,7 @@ import { MANDO_AUTO, JEDI_AUTO } from '../data/store.js';
 import { openSkillTree } from '../ui/store-ui.js';
 import { showBanner } from '../ui/banners.js';
 import { diffBossCheckpoint } from '../data/difficulty.js';
+import { catchDarksaber } from '../player/mando/darksaber.js';
 
 /* ============================================================
    LEVEL / WAVE FLOW
@@ -72,6 +73,7 @@ export function startLevel(idx, opts){
   player.slamming = false;
   player.doubleJumped = false;
   player.firing = false; player.trigHeld = false; player.shieldDropT = 0; player.fireCd = 0; player.flaming = false; player.jetActive = false; player.boosting = false; player.meleeT = 0; player.lockOn = false;
+  catchDarksaber(true);   // a thrown Darksaber goes back in the hand before the next fight
   player.darkT = 0; player.darkApplied = false; if (player.darksaberMesh) player.darksaberMesh.visible = false;
   player.zoom = false; player.aiming = 0; player.recoilKick = 0; player.stabT = 0; player.heat = 0; player.overheat = false; player.ventT = 0;
   player.jet = player.jetMax;
@@ -163,7 +165,7 @@ export function retryIsBoss(){ return !!(G.checkpoint && G.checkpoint.boss && G.
 // [unlock-key, chip-id] — 'slam' uses ab-mslam to avoid colliding with the Jedi ab-slam.
 // Abilities are PURCHASED in the XP store; these just reveal the matching HUD chip once owned.
 const MANDO_GATED = [['grapple','ab-grapple'],['flame','ab-flame'],['rocket','ab-rocket'],['birds','ab-birds'],
-                     ['deto','ab-deto'],['slam','ab-mslam'],['dark','ab-dark'],['jetmissile','ab-missile'],['bacta','ab-bacta']];
+                     ['deto','ab-deto'],['slam','ab-mslam'],['dark','ab-dark'],['dark','ab-dthrow'],['jetmissile','ab-missile'],['bacta','ab-bacta']];
 const JEDI_GATED  = [['slam','ab-slam'],['throw','ab-throw'],['pull','ab-pull'],['judge','ab-judge'],
                      ['repulse','ab-repulse'],['barrier','ab-barrier'],['mend','ab-mend']];
 export function syncMandoChips(){   // reveal exactly the ability chips the Mando owns

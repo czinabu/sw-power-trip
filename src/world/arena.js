@@ -20,6 +20,7 @@ import { buildPlainsArena } from './arenas/plains.js';
 import { buildHallArena } from './arenas/hall.js';
 import { buildForgeArena } from './arenas/forge.js';
 import { buildRefugeArena } from './arenas/refuge.js';
+import { buildPursuitArena } from './arenas/pursuit.js';
 import { buildNav } from '../enemies/nav.js';
 
 /* ============================================================
@@ -35,6 +36,7 @@ export function buildArena(L){
   scene.add(shared.arenaGroup);
   resetCamBlockers();
   shared.arenaHalf = L.arena / 2;
+  shared.arenaHalfZ = (L.arenaZ || L.arena) / 2;   // L.arenaZ: a long arena, deeper north–south than it is wide
   shared.ambient = null;
   shared.templeBrazier = null;   // cleared each rebuild; the temple layout re-assigns it (so we never flicker a stale mesh)
 
@@ -94,6 +96,7 @@ export function buildArena(L){
   else if (L.layout === 'hall'){ buildHallArena(LP); }
   else if (L.layout === 'forge'){ buildForgeArena(LP); }
   else if (L.layout === 'refuge'){ buildRefugeArena(LP); }
+  else if (L.layout === 'pursuit'){ buildPursuitArena(LP); }
   else {
   // pick a spot at least `gap` clear of every other obstacle so cover stays SPREAD OUT — clustered obstacles
   // form walls that trap the enemy AI. Returns null if no open spot is found (so we just place fewer).
@@ -190,26 +193,30 @@ function disposeArena(g){
 function buildWorld(L, T){
   const lt = T.light, sunSpec = T.sky.sun && { ...T.sky.sun, az: T.sky.sun.az ?? Math.atan2(lt.dir[2], lt.dir[0]) };
   const tx = painted(T, () => ({ sky: paintSky({ ...T.sky, sun: sunSpec }), floor: paintFloor(T.floor) }));
-  const sky = new THREE.Mesh(new THREE.SphereGeometry(L.arena*1.7, 32, 16),
+  const W = L.arena, D = L.arenaZ || L.arena, long = D > W;
+  // a long arena's dome rides along with the camera (atmosphere.js), so it never has to reach past the far plane
+  const sky = new THREE.Mesh(new THREE.SphereGeometry(long ? 300 : L.arena*1.7, 32, 16),
     new THREE.MeshBasicMaterial({ map: tx.sky, side: THREE.BackSide, fog: false }));
   sky.userData.noBake = true;
   shared.arenaGroup.add(sky);
   applyAtmosphere(T, L, sky);
 
   const floorTex = tx.floor;
-  floorTex.repeat.set(L.arena/9, L.arena/9);
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(L.arena, L.arena, 8, 8), toon(0xffffff, { map: floorTex }));
+  floorTex.repeat.set(W/9, D/9);
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(W, D, 8, long ? 40 : 8), toon(0xffffff, { map: floorTex }));
   floor.rotation.x = -Math.PI/2; floor.receiveShadow = true; floor.userData.noBake = true;
   shared.arenaGroup.add(floor);
   // the ground past the edge: a plain ring (no outline), a hair lower so the floor always wins where they overlap
-  const outer = new THREE.Mesh(new THREE.RingGeometry(L.arena*0.5, L.arena*1.7, 48, 1), toon(T.outer ?? T.floor.base));
+  const outer = new THREE.Mesh(new THREE.RingGeometry(W*0.5, Math.max(W, D)*1.2, 48, 1), toon(T.outer ?? T.floor.base));
   outer.rotation.x = -Math.PI/2; outer.position.y = -0.04; outer.receiveShadow = true; outer.userData.noBake = true;
   shared.arenaGroup.add(outer);
-  // a dark ink line marks the playable edge (the same square the movement clamp uses)
+  // a dark ink line marks the playable edge (the same square the movement clamp uses; a long arena is walled in instead)
+  if (!long){
   const edge = new THREE.Mesh(new THREE.RingGeometry(L.arena*0.5 - 0.12, L.arena*0.5 + 0.12, 4, 1, Math.PI/4),
     new THREE.MeshBasicMaterial({ color: 0x07060a, transparent: true, opacity: 0.35 }));
   edge.rotation.x = -Math.PI/2; edge.rotation.z = 0; edge.scale.setScalar(Math.SQRT2); edge.position.y = 0.02;
   shared.arenaGroup.add(edge);
+  }
 
   const back = buildBackdrop(T.backdrop, L.arena/2, T.seed || 1);
   shared.arenaGroup.add(back);

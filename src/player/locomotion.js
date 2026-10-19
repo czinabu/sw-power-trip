@@ -14,7 +14,7 @@ import { spawnGroundShock } from '../fx/vfx.js';
 import { clampToArena, collideSolids } from '../world/collision.js';
 import { mandoSlamImpact } from './mando/gadgets.js';
 import { MOVE } from '../data/movement.js';
-import { updateMantle, tryAutoMantle, updateWallRun, landingImpact, updateHang } from './parkour.js';
+import { updateMantle, tryAutoMantle, updateWallRun, landingImpact, updateHang, updateForceSlide } from './parkour.js';
 import { doJump } from './movement.js';
 
 // Horizontal movement: WASD steering on the ground (or Mando air momentum), plus lunge/dash impulse velocity.
@@ -73,8 +73,9 @@ export function updateMovement(dt, pp, st, f, r){
     // a ledge pull-up / vault / hang owns the body (parkour.js)
   } else if (player.slideT > 0 && player.grounded){
     // SLIDE — no steering: the skid carries the run's speed and bleeds it off
-    player.moveVel.multiplyScalar(Math.max(0, 1 - dt * MOVE.slideDrag));
+    player.moveVel.multiplyScalar(Math.max(0, 1 - dt * (G.hero === 'mando' ? MOVE.slideDrag : MOVE.forceSlideDrag)));
     pp.addScaledVector(player.moveVel, dt);
+    updateForceSlide(pp);
   } else {
     // GROUND (or Jedi): steer toward the input direction at the stance's acceleration. Speed BUILDS, and planting to
     // stop or turn back against your momentum brakes harder. In the AIR the jump keeps its takeoff momentum: WASD

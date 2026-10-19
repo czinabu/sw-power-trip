@@ -6,15 +6,23 @@ import { CFG } from '../data/config.js';
 import { scene } from '../engine/renderer.js';
 import { player } from '../state.js';
 import { buildHeroModel } from './model/index.js';
-import { SAMPLE_LOOKS } from './model/appearance.js';
+import { SAMPLE_LOOKS, mergeLook } from './model/appearance.js';
+import { lookFromPicks } from '../data/customize.js';
 
-// the hero look (appearance.js). Dev overrides: ?style=shard|ink|forged  ?look=<a SAMPLE_LOOKS name>
+/* the hero look: the player's customizer picks (saved in localStorage), with dev overrides on top:
+   ?style=shard|ink|forged  ?look=<a SAMPLE_LOOKS name> */
 const params = new URLSearchParams(location.search);
-export const LOOK = { ...(SAMPLE_LOOKS[params.get('look')] || {}), ...(params.get('style') ? { style: params.get('style') } : {}) };
+const DEV_LOOK = { ...(SAMPLE_LOOKS[params.get('look')] || {}), ...(params.get('style') ? { style: params.get('style') } : {}) };
+const PICKS_KEY = 'sw_look';
+export function loadPicks(){
+  try { const p = JSON.parse(localStorage.getItem(PICKS_KEY)); return p && typeof p === 'object' ? p : {}; } catch(e){ return {}; }
+}
+export function savePicks(picks){ try { localStorage.setItem(PICKS_KEY, JSON.stringify(picks)); } catch(e){} }
+export const lookOf = (picks) => mergeLook(lookFromPicks(picks), DEV_LOOK);
 
 function buildPlayer(){
   const g = player.group;
-  g.add(buildHeroModel(player, LOOK));   // everything visual lives in player.vis so flips/leans don't move the root
+  g.add(buildHeroModel(player, lookOf(loadPicks())));   // everything visual lives in player.vis so flips/leans don't move the root
 
   // swing arc flash — centred on the FORWARD direction (thetaStart shifted by -90°), not the player's left
   const arc = new THREE.Mesh(new THREE.RingGeometry(0.9, CFG.player.hitRadius, 26, 1, -Math.PI/2 - 1.2, 2.4),
@@ -27,3 +35,21 @@ function buildPlayer(){
   scene.add(g);
 }
 buildPlayer();
+
+/* restyle the player to new customizer picks (from the menu, between runs): swap the model under player.group for a
+   fresh build and drop the pieces the animation adds to the old rig on demand, so they grow back on the new one */
+export function rebuildPlayerModel(picks){
+  const g = player.group, old = player.vis;
+  g.remove(old);
+  disposeTree(old);
+  for (const k of ['wristBlade', 'shieldMesh']){ if (player[k]){ player[k].removeFromParent(); disposeTree(player[k]); } player[k] = null; }
+  player._footing = null; player._legIK = null;
+  g.add(buildHeroModel(player, lookOf(picks)));
+}
+
+export function disposeTree(root){
+  root.traverse(o => {
+    if (o.geometry) o.geometry.dispose();
+    if (o.material) for (const m of [].concat(o.material)) m.dispose();
+  });
+}

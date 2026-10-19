@@ -1,6 +1,9 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
 // SMOKE TEST — boots the BUILT game (dist/index.html) in headless Chromium and plays each hero for a short scripted
-// fight: walk in, turn toward the nearest foe, attack and fire off the hero's moves. Then one story mission run, which
+// fight: walk in, turn toward the nearest foe, attack and fire off the hero's moves. Then each story mission once, skipping
+// ahead through its objectives so every one (the hold, the sabotage, the chase legs, the duels) gets set up and played. Fails on any page error or
+// fight in a random look from the character customizer: walk in, turn toward the nearest foe, attack and fire off the
+// hero's moves. Then one story mission run, which
 // skips ahead through its objectives so the hold, the sabotage and the duel all get set up and played. Fails on any page error or
 // console error, or if the fight never gets going (no frames, no enemies, nothing hit).
 //   npm run build && npm run smoke            (SMOKE_SECONDS=… sets the game time per hero, default 20)
@@ -26,8 +29,11 @@ if (!existsSync(path.join(root, 'dist/index.html'))){ console.error('dist/index.
 const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--autoplay-policy=no-user-gesture-required'] });
 let failed = false;
 
-// [hero, menu mode]
-for (const [hero, mode] of [['jedi', 'campaign'], ['mando', 'campaign'], ['jedi', 'mission']]){
+// a mission run passes once its last objective (a duel) is up: the HUD line then names the opponent
+const DUEL_LINE = { refuge: /INQUISITOR/, pursuit: /VX-7|SEVENTH BLADE/ };
+// [hero, menu mode, story mission]
+for (const [hero, mode, mission] of [['jedi', 'campaign'], ['mando', 'campaign'], ['jedi', 'mission', 'refuge'], ['mando', 'mission', 'pursuit']]){
+  const label = hero + (mode === 'campaign' ? '' : ' ' + mission);
   const errors = [];
   // small window on the LOW preset: headless Chromium draws WebGL in software, and this keeps it at a usable frame rate
   const page = await browser.newPage({ viewport: { width: 480, height: 270 } });
@@ -47,8 +53,10 @@ for (const [hero, mode] of [['jedi', 'campaign'], ['mando', 'campaign'], ['jedi'
     await page.goto(page_url);
     await page.waitForFunction(() => window.GAME && window.GAME.G, null, { timeout: 30000 });
     await page.click('#hero-' + hero);
+    // restyle the hero in the customizer first, so the fight runs on a rebuilt player model
+    if (mode === 'campaign'){ await page.click('#cztoggle'); await page.click('#czrandom'); await page.click('#czdone'); }
     // the story mission lives in the EXTRAS panel (experimental) and launches from its own PLAY button
-    if (mode === 'mission'){ await page.click('#rmtoggle'); await page.click('#xp-mission-go'); }
+    if (mode === 'mission'){ await page.click('#rmtoggle'); await page.click(`#xp-${mission} [data-mission]`); }
     else await page.click('#mode-' + mode);
     // BEGIN, then give the game a few seconds to drop into the fight; click again if it's still on the menu
     let started = false;
@@ -56,6 +64,13 @@ for (const [hero, mode] of [['jedi', 'campaign'], ['mando', 'campaign'], ['jedi'
       // short timeouts: the overlay can hide between the visibility check and the click (the mission's PLAY starts it on its own)
       if (await page.isVisible('#goText')) await page.click('#goText', { timeout: 2000 }).catch(() => {});
       if (await page.isVisible('#trainNo')) await page.click('#trainNo', { timeout: 2000 }).catch(() => {});   // first run asks about training: go straight to the campaign
+      if (await page.isVisible('#goText')) await page.click('#goText', { timeout: 3000 }).catch(() => {});   // (a long arena may still be building: the menu can close mid-click)
+      if (await page.isVisible('#trainNo')) await page.click('#trainNo');   // first run asks about training: go straight to the campaign
+      // a button can hide between the visibility check and the click (the run starts on its own): a short click that
+      // gives up quietly instead of Playwright's 30 s wait for an element that is gone for good
+      const tap = async sel => { if (await page.isVisible(sel)) await page.click(sel, { timeout: 1500 }).catch(() => {}); };
+      await tap('#goText');
+      await tap('#trainNo');   // first run asks about training: go straight to the campaign
       started = await page.waitForFunction(() => GAME.G.mode === 'play' && !GAME.G.paused, null, { timeout: 3000 }).then(() => true, () => false);
     }
     if (!started){
@@ -67,7 +82,7 @@ for (const [hero, mode] of [['jedi', 'campaign'], ['mando', 'campaign'], ['jedi'
           lock: document.pointerLockElement ? 'locked' : 'none', button: [b.x, b.y, b.width, b.height].map(Math.round),
           hit: hit && (hit.id || hit.className || hit.tagName), overlayShown: ov.style.display, overlayClass: ov.className, training: GAME.G.training, modeSel: GAME.G.modeSel });
       });
-      await page.screenshot({ path: path.join(root, `smoke-${hero}-${mode}.png`) }).catch(() => {});
+      await page.screenshot({ path: path.join(root, `smoke-${label.replace(' ', '-')}.png`) }).catch(() => {});
       throw new Error('never left the menu; state: ' + st + '\n' + log.slice(-15).join('\n'));
     }
     await page.evaluate(() => { window.__frames = 0; const f = () => { window.__frames++; requestAnimationFrame(f); }; requestAnimationFrame(f); });
@@ -96,8 +111,9 @@ for (const [hero, mode] of [['jedi', 'campaign'], ['mando', 'campaign'], ['jedi'
         return { gt: G.gt, mode: G.mode, near: bd, enemies: enemies.length };
       });
       if (s.gt - startGt >= GAME_SECONDS || s.mode !== 'play' || Date.now() - t0 > REAL_LIMIT_MS) break;
-      // a mission: a few seconds of each objective, then on to the next (the duel plays out to the end of the run)
-      if (mode === 'mission' && skips < 2 && s.gt - startGt > GAME_SECONDS * 0.25 * (skips + 1)){
+      // a mission: a few seconds of each objective, then on to the next (the duel plays out to the end of the run, so it
+      // gets the bigger share: on a slow runner it takes a while for the duellist to arrive and close in)
+      if (mode === 'mission' && skips < 2 && s.gt - startGt > GAME_SECONDS * 0.18 * (skips + 1)){
         if (await page.evaluate(() => GAME.skipObjective())) skips++;
       }
       // attack: a click (saber swing / blaster shot), and a move every few steps
@@ -131,11 +147,11 @@ for (const [hero, mode] of [['jedi', 'campaign'], ['mando', 'campaign'], ['jedi'
     if (result.frames < 30) problems.push(`only ${result.frames} frames rendered`);
     if (result.gameSeconds < GAME_SECONDS * 0.5) problems.push(`game only advanced ${result.gameSeconds}s`);
     if (result.mode !== 'play' && !(mode === 'mission' && result.mode === 'victory')) problems.push(`left play mode (mode: ${result.mode})`);
-    if (mode === 'mission' && !/INQUISITOR/.test(result.objective)) problems.push('the mission never reached its duel');
+    if (mode === 'mission' && !DUEL_LINE[mission].test(result.objective)) problems.push('the mission never reached its duel');
     if (!result.enemies && !result.kills) problems.push('no enemies ever spawned');
     if (!result.kills && !result.hurt) problems.push('the hero never hit anything');
   }
-  console.log(`${problems.length ? 'FAIL' : 'ok  '} ${(hero + (mode === 'campaign' ? '' : ' ' + mode)).padEnd(13)} ${JSON.stringify(result || {})} (${((Date.now() - t0) / 1000).toFixed(0)}s)`);
+  console.log(`${problems.length ? 'FAIL' : 'ok  '} ${label.padEnd(14)} ${JSON.stringify(result || {})} (${((Date.now() - t0) / 1000).toFixed(0)}s)`);
   for (const p of problems) console.log('     ' + p.split('\n').slice(0, 20).join('\n     '));
   if (problems.length) failed = true;
 }

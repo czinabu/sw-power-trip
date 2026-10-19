@@ -57,7 +57,14 @@ export function arenaKit(){
     solids.push({ x, z, hx: alongX ? len/2 : rad, hz: alongX ? rad : len/2, h: rad*1.6, box: true, climbable: true });
     return m;
   };
-  return { box, column, deco, gantry, rubble };
+  /* a SLIDE GATE for the training courses: two posts and a low bar across a lane running along x (the bar spans z).
+     The bar is only a picture, not a solid (collision boxes stand on the floor): game/tutorial.js counts the gate
+     only when you pass it sliding. */
+  const slideGate = (x, z, span, post, bar) => {
+    for (const s of [-1, 1]) column(x, z + s * span, 0.18, 1.7, post, { wallKick: false, seg: 8, taper: 1 });
+    deco(new THREE.BoxGeometry(0.22, 0.22, span * 2), bar, x, 1.15, z);
+  };
+  return { box, column, deco, gantry, rubble, slideGate };
 }
 
 /* polar → x,z (angle 0 = +x, π/2 = +z, the side the player spawns on) */

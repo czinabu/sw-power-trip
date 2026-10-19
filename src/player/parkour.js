@@ -8,7 +8,8 @@ import { S } from '../audio/sfx.js';
 import { V3, clamp } from '../utils.js';
 import { burst } from '../fx/particles.js';
 import { floater } from '../fx/floaters.js';
-import { shared, G, solids, keys, player } from '../state.js';
+import { shared, G, solids, keys, player, enemies } from '../state.js';
+import { staggerEnemy } from '../enemies/damage.js';
 import { fwd, rightV, playerPos } from './helpers.js';
 import { launchFlip } from './anim/agility.js';
 import { STEP_UP } from '../world/collision.js';
@@ -188,23 +189,43 @@ export function updateHang(dt, pp){
   return true;
 }
 
-/* SLIDE — Q out of a sprint (Jedi) or C out of a run (Mando): drop low and skid, keeping the run's speed and ducking
-   under blaster fire. A cut out of it is a sweep that floors what it hits; the Mando keeps firing, steady and harder. */
+/* SLIDE — C out of a sprint (Jedi) or out of a run (Mando): drop low and skid, keeping the run's speed and ducking
+   under blaster fire. A cut out of it is a sweep that floors what it hits; the Mando keeps firing, steady and harder.
+   The Jedi's is the FORCE SLIDE: the Force drives it much farther, and it bowls over the troops in its way. */
 export function trySlide(){
   if (!player.grounded || player.slideT > 0 || player.mantle || player.hang || G.mode !== 'play') return;
   if (G.hero === 'mando' && (player.dashT > 0 || player.meleeT > 0 || player.stabT > 0)) return;
   const hs = Math.hypot(player.moveVel.x, player.moveVel.z);
   if (hs < (G.hero === 'mando' ? MOVE.mandoSlideMinSpeed : MOVE.slideMinSpeed)) return;
-  player.slideT = MOVE.slideTime;
+  const jedi = G.hero !== 'mando';
+  player.slideT = jedi ? MOVE.forceSlideTime : MOVE.slideTime;
+  player.slideBowled = jedi ? new Set() : null;
   tutEvent('slide');
   flowLink('slide');
-  player.moveVel.multiplyScalar((hs + MOVE.slideBoost) / hs);
+  player.moveVel.multiplyScalar((hs + (jedi ? MOVE.forceSlideBoost : MOVE.slideBoost)) / hs);
   player.sprinting = false;
   // the Jedi's knee slide is a flip pose; the Mando's reuses his thruster-dodge skid (anim/agility.js)
-  if (G.hero !== 'mando') player.flip = { t: 0, dur: MOVE.slideTime, pitch: -0.3, drop: 0.5, legs: 'kneeslide', arms: null, side: 1, ease: 'twirl' };
+  if (jedi) player.flip = { t: 0, dur: MOVE.forceSlideTime, pitch: -0.3, drop: 0.5, legs: 'kneeslide', arms: null, side: 1, ease: 'twirl' };
   const pp = playerPos();
-  burst(V3(pp.x, 0.15, pp.z), 0x9a9288, 8, 4, 1, 0.9);
+  burst(V3(pp.x, 0.15, pp.z), jedi ? 0x88ddff : 0x9a9288, jedi ? 12 : 8, 4, 1, 0.9);
   S.dash();
+}
+// Every frame of a Force slide: anything standing just ahead of the hips is knocked off its feet, once per slide
+export function updateForceSlide(pp){
+  if (!player.slideBowled || !(player.slideT > 0)) return;
+  const vx = player.moveVel.x, vz = player.moveVel.z, sp = Math.hypot(vx, vz);
+  if (sp < 1) return;
+  const dx = vx / sp, dz = vz / sp;
+  for (const e of enemies){
+    if (e.dead || e.converted || player.slideBowled.has(e)) continue;
+    const ox = e.group.position.x - pp.x, oz = e.group.position.z - pp.z;
+    const ahead = ox * dx + oz * dz, side = Math.abs(ox * dz - oz * dx);
+    if (ahead < -0.3 || ahead > MOVE.bowl || side > 0.9) continue;
+    player.slideBowled.add(e);
+    if (e.t && e.t.heavy) continue;   // a brute just takes the knock: there's no sweeping it off its feet
+    staggerEnemy(e, dx, dz, 'BOWLED OVER');
+    burst(V3(e.group.position.x, 0.5, e.group.position.z), 0x88ddff, 8, 4, 2, 0.7);
+  }
 }
 
 /* VAULT — a jump pressed while running at low cover goes up and over it in one move. */
@@ -247,11 +268,11 @@ export function wallBeside(pp, range){
     if (d < bestD){ bestD = d; best = V3(nx, 0, nz); }
   }
   if (best) return best;
-  const h = shared.arenaHalf - 1;
+  const h = shared.arenaHalf - 1, hz = shared.arenaHalfZ - 1;
   if (pp.x >  h - range) return V3(-1, 0, 0);
   if (pp.x < -h + range) return V3( 1, 0, 0);
-  if (pp.z >  h - range) return V3( 0, 0, -1);
-  if (pp.z < -h + range) return V3( 0, 0,  1);
+  if (pp.z >  hz - range) return V3( 0, 0, -1);
+  if (pp.z < -hz + range) return V3( 0, 0,  1);
   return null;
 }
 
@@ -306,7 +327,7 @@ export function landingImpact(impact){
   return false;
 }
 
-/* SHIFT in the air near the ground (or during the first instant of a stagger) asks for a roll instead of a dash. */
+/* The dash key (Q) in the air near the ground (or during the first instant of a stagger) asks for a roll instead of a dash. */
 export function requestRoll(pp){
   if (G.hero === 'mando') return false;
   if (player.landStagT > 0 && G.gt - (player.landStagAt ?? -9) < MOVE.rollWindow * 0.6){ landingRoll(); return true; }

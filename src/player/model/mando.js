@@ -63,30 +63,17 @@ export const MANDO_PARTS = {
     pauldrons(R, k){ arms(R, k, true); },
     // no shoulder armour, for a lighter scout look
     bare(R, k){ arms(R, k, false); },
+    // layered war pauldrons on both shoulders, accent on both
+    heavy(R, k){ arms(R, k, 'heavy'); },
   },
 
   helmet: {
-    // T-visor, chiseled dome, comm caps, rangefinder stalk
-    tvisor(R, k){
-      const helm = k.group(R.head);
-      k.add(loft([{ y:-0.1, w:0.12, d:0.12 }, { y:0.04, w:0.11, d:0.11 }], ngon(6, Math.PI/6)), 'suit', helm);
-      k.add(loft([
-        { y:0.0,  w:0.205, d:0.225, z:0.005 },
-        { y:0.07, w:0.215, d:0.235, z:0.005 },
-        { y:0.2,  w:0.235, d:0.25 },
-        { y:0.3,  w:0.222, d:0.24, z:-0.005 },
-        { y:0.36, w:0.165, d:0.19, z:-0.01 },
-        { y:0.385,w:0.08,  d:0.1,  z:-0.01 },
-      ], HEAD), 'beskar', helm);
-      k.add(plate([[-0.098,0.026],[0.098,0.026],[0.104,-0.01],[0.026,-0.02],[-0.026,-0.02],[-0.104,-0.01]], 0.02, 0.003), 'visor', helm, [0, 0.205, 0.121], [0, 0, 0], { outline: false });
-      k.add(plate([[-0.024,0],[0.024,0],[0.019,-0.11],[-0.019,-0.11]], 0.02, 0.003), 'visor', helm, [0, 0.192, 0.12], [0.07, 0, 0], { outline: false });
-      k.add(block(0.13, 0.05, 0.07, 0.4), 'beskar2', helm, [0, 0.03, 0.08]);   // chin guard
-      for (const sx of [-1, 1]) k.add(block(0.03, 0.07, 0.075, 0.35), 'suit', helm, [0.118*sx, 0.15, 0.0]);
-      const fin = k.group(helm, [-0.13, 0.25, 0.01], [0, 0, 0.22]);
-      k.add(block(0.016, 0.17, 0.024, 0.3), 'suit', fin, [0, 0.085, 0]);
-      k.add(shard(0.03, 0.05, 0.03), 'accent', fin, [0, 0.17, 0]);
-      k.seam(new THREE.BoxGeometry(0.17, 0.006, 0.006), SEAM_COOL, helm, [0, 0.205, 0.134]);
-    },
+    // T-visor, chiseled dome, comm caps, rangefinder stalk (Boba, Din)
+    tvisor(R, k){ helmet(R, k, { rangefinder: true }); },
+    // the same bucket without the stalk
+    clean(R, k){ helmet(R, k, {}); },
+    // a raised crest along the dome and swept cheek guards (Death Watch)
+    crest(R, k){ helmet(R, k, { crest: true, cheeks: true }); },
   },
 
   cape: {
@@ -167,6 +154,38 @@ function capeHem(R, k, { top, bottom, drop, dip }){
     } });
 }
 
+/* the bucket: dome, T-visor and chin guard, then the optional rangefinder stalk, crest and cheek guards */
+function helmet(R, k, { rangefinder, crest, cheeks }){
+  const helm = k.group(R.head);
+  k.add(loft([{ y:-0.1, w:0.12, d:0.12 }, { y:0.04, w:0.11, d:0.11 }], ngon(6, Math.PI/6)), 'suit', helm);
+  k.add(loft([
+    { y:0.0,  w:0.205, d:0.225, z:0.005 },
+    { y:0.07, w:0.215, d:0.235, z:0.005 },
+    { y:0.2,  w:0.235, d:0.25 },
+    { y:0.3,  w:0.222, d:0.24, z:-0.005 },
+    { y:0.36, w:0.165, d:0.19, z:-0.01 },
+    { y:0.385,w:0.08,  d:0.1,  z:-0.01 },
+  ], HEAD), 'beskar', helm);
+  k.add(plate([[-0.098,0.026],[0.098,0.026],[0.104,-0.01],[0.026,-0.02],[-0.026,-0.02],[-0.104,-0.01]], 0.02, 0.003), 'visor', helm, [0, 0.205, 0.121], [0, 0, 0], { outline: false });
+  k.add(plate([[-0.024,0],[0.024,0],[0.019,-0.11],[-0.019,-0.11]], 0.02, 0.003), 'visor', helm, [0, 0.192, 0.12], [0.07, 0, 0], { outline: false });
+  k.add(block(0.13, 0.05, 0.07, 0.4), 'beskar2', helm, [0, 0.03, 0.08]);   // chin guard
+  for (const sx of [-1, 1]) k.add(block(0.03, 0.07, 0.075, 0.35), 'suit', helm, [0.118*sx, 0.15, 0.0]);
+  k.seam(new THREE.BoxGeometry(0.17, 0.006, 0.006), SEAM_COOL, helm, [0, 0.205, 0.134]);
+  if (rangefinder){
+    const fin = k.group(helm, [-0.13, 0.25, 0.01], [0, 0, 0.22]);
+    k.add(block(0.016, 0.17, 0.024, 0.3), 'suit', fin, [0, 0.085, 0]);
+    k.add(shard(0.03, 0.05, 0.03), 'accent', fin, [0, 0.17, 0]);
+  }
+  if (crest){
+    // a fin from brow to nape in the accent colour, tallest over the crown
+    k.add(plate([[-0.15,-0.02],[0.12,-0.02],[0.09,0.04],[-0.02,0.075],[-0.12,0.05]], 0.045, 0.012), 'accent', helm, [0, 0.36, 0.0], [0, -Math.PI/2, 0]);
+  }
+  if (cheeks) for (const sx of [-1, 1]){
+    // swept plates over the jaw, angled back like a Death Watch bucket's
+    k.add(plate([[0,0.06],[0.07,0.05],[0.09,-0.04],[0.02,-0.07],[-0.02,-0.02]], 0.02, 0.006), 'beskar2', helm, [0.108*sx, 0.07, 0.04], [0, sx * (Math.PI/2 - 0.25), 0]);
+  }
+}
+
 function arms(R, k, pauldrons){
   for (const A of [R.armL, R.armR]){
     const s = A.side;
@@ -174,7 +193,11 @@ function arms(R, k, pauldrons){
       ...seg(0.34, [[-0.18,0.14,0.14],[0.06,0.15,0.15],[0.5,0.125,0.125],[1,0.1,0.105]]),
       ...seg(0.3, [[0.5,0.095,0.095],[1,0.08,0.08]], 0.34),
     ], { bones: [A.sh, A.el], at: [0.34], blend: 0.05, profile: chamfer(0.4) });
-    if (pauldrons) k.add(loft([{ y:-0.06, w:0.21, d:0.2 }, { y:0.03, w:0.2, d:0.19 }, { y:0.08, w:0.13, d:0.15 }], chamfer(0.42)),
+    if (pauldrons === 'heavy'){
+      // two overlapping plates: a broad cap and a lame below it
+      k.add(loft([{ y:-0.07, w:0.25, d:0.23 }, { y:0.03, w:0.24, d:0.22 }, { y:0.1, w:0.15, d:0.17 }], chamfer(0.42)), 'accent', A.sh, [0.04*s, 0.045, 0], [0, 0, -0.36*s]);
+      k.add(loft([{ y:-0.04, w:0.2, d:0.2 }, { y:0.03, w:0.19, d:0.19 }], chamfer(0.42)), 'beskar', A.sh, [0.07*s, -0.07, 0], [0, 0, -0.42*s]);
+    } else if (pauldrons) k.add(loft([{ y:-0.06, w:0.21, d:0.2 }, { y:0.03, w:0.2, d:0.19 }, { y:0.08, w:0.13, d:0.15 }], chamfer(0.42)),
       s > 0 ? 'accent' : 'beskar', A.sh, [0.025*s, 0.035, 0], [0, 0, -0.32*s]);
     k.add(limb(0.24, [[0,0.11,0.105],[0.6,0.115,0.11],[1,0.098,0.095]], KEEL), 'beskar2', A.el, [0, -0.04, 0]);
     k.add(plate([[-0.04,0],[0.04,0],[0.045,-0.12],[-0.045,-0.12]], 0.02, 0.006), 'beskar', A.el, [0, -0.08, 0.058]);

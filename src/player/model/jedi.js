@@ -1,5 +1,5 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
-// The Jedi outfit, split into SLOTS (legs, waist, torso, head, arms). Each slot has named variants; the look in
+// The Jedi outfit, split into SLOTS (legs, waist, torso, head, hair, arms). Each slot has named variants; the look in
 // appearance.js picks one per slot. A character creator only has to change that look object and rebuild.
 //
 // Add a variant: write a function (R, k) => { ...k.add(...) } under the slot below, then name it in a look.
@@ -94,6 +94,37 @@ export const JEDI_PARTS = {
     },
   },
 
+  hair: {
+    // none: the bare scalp (Mace Windu)
+    bald(){},
+    // close-cropped: a thin cap over the crown, no ink line so it reads as stubble
+    buzz(R, k){ cap(R, k, 0.004, { outline: false }); },
+    // short and full, swept back from a high hairline
+    short(R, k){ cap(R, k, 0.014); },
+    // short sides with a knot tied on the crown
+    topknot(R, k){
+      cap(R, k, 0.008);
+      k.add(loft([{ y:-0.035, w:0.07, d:0.07 }, { y:0.0, w:0.095, d:0.095 }, { y:0.04, w:0.08, d:0.08 }, { y:0.06, w:0.03, d:0.03 }], ngon(8, Math.PI/8)), 'hair', R.head, [0, 0.37, -0.05], [-0.35, 0, 0]);
+      k.add(block(0.08, 0.02, 0.05, 0.3), k.mat('leather'), R.head, [0, 0.345, -0.04], [-0.35, 0, 0]);   // the tie
+    },
+    // shoulder-length, falling behind the ears to the nape
+    long(R, k){
+      cap(R, k, 0.016);
+      k.add(loft([
+        { y:-0.1, w:0.2, d:0.07, z:-0.085 }, { y:0.02, w:0.235, d:0.1, z:-0.08 },
+        { y:0.16, w:0.25, d:0.15, z:-0.06 }, { y:0.26, w:0.23, d:0.17, z:-0.05 },
+      ], chamfer(0.45)), 'hair', R.head);
+      for (const sx of [-1, 1]) k.add(loft([{ y:0.02, w:0.03, d:0.07 }, { y:0.24, w:0.04, d:0.12 }], chamfer(0.4)), 'hair', R.head, [0.112*sx, 0, -0.03]);
+    },
+    // a Padawan's crop with the learner's braid hanging behind the right ear
+    braid(R, k){
+      cap(R, k, 0.004, { outline: false });
+      const b = k.group(R.head, [0.1, 0.2, -0.05], [0, 0, 0.12]);
+      for (let i = 0; i < 6; i++) k.add(block(0.026, 0.045, 0.026, 0.45), 'hair', b, [0, -i * 0.04, 0.003 * i], [0.1 * (i % 2 ? 1 : -1), 0, 0]);
+      k.add(shard(0.022, 0.04, 0.022), 'hair', b, [0, -0.25, 0.02], [Math.PI, 0, 0]);
+    },
+  },
+
   arms: {
     // tunic sleeves flaring at the forearm, leather bracers, blocky hands
     sleeves(R, k){
@@ -145,7 +176,20 @@ function face(R, k){
     k.add(block(0.03, 0.055, 0.045, 0.4), 'skin', R.head, [0.105*sx, 0.15, -0.005]);
     k.add(block(0.034, 0.012, 0.01, 0.2), 'hair', R.head, [0.042*sx, 0.168, 0.112], [0, 0, -0.18*sx], { outline: false });
   }
-  k.add(block(0.06, 0.014, 0.01, 0.3), 'hair', R.head, [0, 0.085, 0.112], [0, 0, 0], { outline: false });   // set mouth
+  k.add(block(0.06, 0.014, 0.01, 0.3), k.mat('skin', { shade: 0.45 }), R.head, [0, 0.085, 0.112], [0, 0, 0], { outline: false });   // set mouth
+}
+
+/* hair over the crown and back of the skull, `lift` proud of it. The low rings sit back on the head so the hairline
+   rises at the forehead and the face stays clear; the ears and brow stay bare */
+function cap(R, k, lift, o){
+  const L = lift * 2;
+  k.add(loft([
+    { y:0.15, w:0.2 + L, d:0.17 + L, z:-0.045 },
+    { y:0.21, w:0.218 + L, d:0.214 + L, z:-0.022 },
+    { y:0.26, w:0.208 + L, d:0.232 + L, z:-0.005 },
+    { y:0.3,  w:0.17 + L, d:0.194 + L, z:-0.01 },
+    { y:0.33 + lift, w:0.08, d:0.1, z:-0.01 },
+  ], HEAD), 'hair', R.head, [0, 0, 0], [0, 0, 0], o);
 }
 
 // a blocky fist + thumb on the wrist joint (shared with the Mando, who wears gloves)

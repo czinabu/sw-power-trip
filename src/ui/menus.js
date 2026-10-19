@@ -11,7 +11,8 @@ import { setHero } from '../player/hero.js';
 import { startLevel, retryLevel, retryIsBoss } from '../game/flow.js';
 import { startEndless } from '../game/survival.js';
 import { startTutorial, skipStep, setTrainingExit, trainingDone } from '../game/tutorial.js';
-import { startMission, retryMission, missionDone } from '../game/mission.js';
+import { startMission, retryMission, missionDone, missionTitle } from '../game/mission.js';
+import { MISSIONS } from '../data/missions.js';
 import { closeProgress } from './store-ui.js';
 import { DIFFS } from '../data/difficulty.js';
 import { renderControls } from './controls.js';
@@ -40,7 +41,7 @@ export function setOverlayState(state){
   const go = document.getElementById('goText'), sub = document.getElementById('ovsub');
   if (state === 'menu'){
     go.textContent = G.modeSel === 'endless' ? 'BEGIN SURVIVAL' : G.modeSel === 'training' ? 'BEGIN TRAINING' : G.modeSel === 'mission' ? 'BEGIN MISSION' : 'BEGIN CAMPAIGN';
-    sub.textContent = G.modeSel === 'endless' ? 'HOW LONG CAN YOU LAST?' : G.modeSel === 'training' ? 'LEARN THE WAYS OF YOUR ORDER' : G.modeSel === 'mission' ? 'THE LAST EVACUATION' : 'CHOOSE YOUR LEGEND';
+    sub.textContent = G.modeSel === 'endless' ? 'HOW LONG CAN YOU LAST?' : G.modeSel === 'training' ? 'LEARN THE WAYS OF YOUR ORDER' : G.modeSel === 'mission' ? missionTitle(G.missionId) : 'CHOOSE YOUR LEGEND';
   } else if (state === 'pause'){
     go.textContent = 'RESUME'; sub.textContent = 'PAUSED';
   } else if (state === 'dead'){
@@ -62,7 +63,7 @@ function beginPlay(){
   if (G.modeSel === 'endless' && !survivalUnlocked()) G.modeSel = 'campaign';   // safety — never launch a locked mode
   if (G.mode === 'menu' || G.mode === 'victory'){
     G.mode = 'play'; G.slowmo = 1;
-    if (G.modeSel === 'endless') startEndless(); else if (G.modeSel === 'training') startTutorial(); else if (G.modeSel === 'mission') startMission(); else startLevel(0);
+    if (G.modeSel === 'endless') startEndless(); else if (G.modeSel === 'training') startTutorial(); else if (G.modeSel === 'mission') startMission(G.missionId); else startLevel(0);
   } else if (G.mode === 'dead'){
     G.mode = 'play'; G.slowmo = 1;
     if (G.endless) startEndless(); else if (G.training) startTutorial(); else if (G.mission) retryMission(); else retryLevel();   // survival retry = a fresh survival run
@@ -102,10 +103,15 @@ function setModeSel(m){
 document.getElementById('mode-campaign').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setModeSel('campaign'); });
 document.getElementById('mode-endless').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setModeSel('endless'); });
 document.getElementById('mode-training').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setModeSel('training'); });
-// EXPERIMENTAL (in the EXTRAS panel): the story mission launches straight from its card
-document.getElementById('xp-mission-go').addEventListener('click', (e) => {
+// EXPERIMENTAL (in the EXTRAS panel): one card per story mission (data/missions.js), each launching straight in
+document.getElementById('xplist').innerHTML = Object.values(MISSIONS).map(m =>
+  `<div class="xp-card" id="xp-${m.id}">
+    <div class="xp-text"><span class="mt">STORY · ${m.title}</span><span class="md"></span><span class="xp-note">Work in progress: balance and the map are still changing.</span></div>
+    <div class="btn primary" data-mission="${m.id}">PLAY</div>
+  </div>`).join('');
+for (const b of document.querySelectorAll('#xplist [data-mission]')) b.addEventListener('click', (e) => {
   e.stopPropagation(); audioInit(); setRoadmap(false);
-  G.modeSel = 'mission'; if (_ovState === 'menu') setOverlayState('menu');
+  G.modeSel = 'mission'; G.missionId = b.dataset.mission; if (_ovState === 'menu') setOverlayState('menu');
   launch();
 });
 refreshSurvivalLock();
@@ -117,12 +123,13 @@ function refreshTrainingMark(){
                           : 'learn your hero\'s moves';
 }
 refreshTrainingMark();
-// STORY MISSION marks which heroes have won it
+// STORY MISSIONS mark which heroes have won them
 function refreshMissionMark(){
-  const md = document.querySelector('#mode-mission .md'); if (!md) return;
-  const j = missionDone('refuge', 'jedi'), m = missionDone('refuge', 'mando');
-  md.innerHTML = (j || m) ? 'the last evacuation · Jedi ' + (j ? '<span class="ok">✓</span>' : '–') + ' Mando ' + (m ? '<span class="ok">✓</span>' : '–')
-                          : 'hold, sabotage, then a duel';
+  for (const id in MISSIONS){
+    const md = document.querySelector('#xp-' + id + ' .md'); if (!md) continue;
+    const j = missionDone(id, 'jedi'), m = missionDone(id, 'mando');
+    md.innerHTML = MISSIONS[id].blurb + ((j || m) ? ' · Jedi ' + (j ? '<span class="ok">✓</span>' : '–') + ' Mando ' + (m ? '<span class="ok">✓</span>' : '–') : '');
+  }
 }
 refreshMissionMark();
 // FIRST CAMPAIGN — once, a hero who hasn't trained (or beaten the campaign) is offered the training grounds first
@@ -219,7 +226,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && settings
 setOverlayState('menu');
 
 // UI SOUND — a soft tick when the pointer lands on something you can pick, a firmer blip when you pick it
-const UI_PICK = '.herocard, .modeopt, .btn, .setpill, .card, .howto-hero span, .howto-x';
+const UI_PICK = '.herocard, .modeopt, .btn, .setpill, .card, .howto-hero span, .howto-x, .cz-open, .cz-sw, .cz-chip, .cz-tabs span';
 let _hoverEl = null;
 document.addEventListener('pointerover', (e) => {
   const el = e.target.closest(UI_PICK);
@@ -234,7 +241,8 @@ document.addEventListener('click', (e) => {
 }, true);
 overlay.addEventListener('click', (e) => {
   // only the primary button or empty backdrop launches/resumes: a stray click on a label or setting shouldn't
-  if (e.target.closest('#runsummary, #setup, #homeconfirm, #trainconfirm, .ov-foot')) return;
+  if (e.target.closest('#runsummary, #setup, #customizer, #homeconfirm, #trainconfirm, .ov-foot')) return;
+  if (overlay.classList.contains('customizing')) return;   // the stage turns the hero while customizing (ui/customizer.js)
   if (shouldOfferTraining()){
     try { localStorage.setItem('sw_asktrain', '1'); } catch(err){}
     overlay.classList.add('asktrain');
@@ -319,7 +327,7 @@ function restartRun(){
   G.skillSelect = false;
   G.mode = 'play'; G.slowmo = 1; G.paused = false;
   document.body.classList.remove('in-menu'); setHowTo(false); setSettings(false);
-  if (G.endless) startEndless(); else if (G.training) startTutorial(); else if (G.mission) startMission(); else startLevel(0);   // a survival run restarts as survival, not the campaign
+  if (G.endless) startEndless(); else if (G.training) startTutorial(); else if (G.mission) startMission(G.missionId); else startLevel(0);   // a survival run restarts as survival, not the campaign
   if (!shared.lockFallback) requestLock();
 }
 document.getElementById('restartBtn').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); restartRun(); });
