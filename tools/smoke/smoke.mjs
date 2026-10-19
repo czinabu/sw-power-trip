@@ -38,7 +38,7 @@ for (const [hero, mode, mission] of [['jedi', 'campaign'], ['mando', 'campaign']
   // small window on the LOW preset: headless Chromium draws WebGL in software, and this keeps it at a usable frame rate
   const page = await browser.newPage({ viewport: { width: 480, height: 270 } });
   await page.addInitScript(() => {
-    try { localStorage.setItem('jpt_quality', 'low'); } catch(e){}
+    try { localStorage.setItem('jpt_quality', 'low'); localStorage.setItem('sw_fullscreen', '0'); } catch(e){}   // fullscreen has its own check below
     // headless pointer lock grants or refuses at random from run to run; refuse it every time so the game takes its
     // unlocked fallback (the embedded-preview path) and the run always starts the same way
     Element.prototype.requestPointerLock = function(){ return Promise.reject(new DOMException('smoke test', 'NotSupportedError')); };
@@ -61,6 +61,9 @@ for (const [hero, mode, mission] of [['jedi', 'campaign'], ['mando', 'campaign']
     // BEGIN, then give the game a few seconds to drop into the fight; click again if it's still on the menu
     let started = false;
     for (let i = 0; i < 5 && !started; i++){
+      // short timeouts: the overlay can hide between the visibility check and the click (the mission's PLAY starts it on its own)
+      if (await page.isVisible('#goText')) await page.click('#goText', { timeout: 2000 }).catch(() => {});
+      if (await page.isVisible('#trainNo')) await page.click('#trainNo', { timeout: 2000 }).catch(() => {});   // first run asks about training: go straight to the campaign
       if (await page.isVisible('#goText')) await page.click('#goText', { timeout: 3000 }).catch(() => {});   // (a long arena may still be building: the menu can close mid-click)
       if (await page.isVisible('#trainNo')) await page.click('#trainNo');   // first run asks about training: go straight to the campaign
       // a button can hide between the visibility check and the click (the run starts on its own): a short click that
@@ -150,6 +153,31 @@ for (const [hero, mode, mission] of [['jedi', 'campaign'], ['mando', 'campaign']
   }
   console.log(`${problems.length ? 'FAIL' : 'ok  '} ${label.padEnd(14)} ${JSON.stringify(result || {})} (${((Date.now() - t0) / 1000).toFixed(0)}s)`);
   for (const p of problems) console.log('     ' + p.split('\n').slice(0, 20).join('\n     '));
+  if (problems.length) failed = true;
+}
+
+// FULLSCREEN — on by default: the first click takes the page fullscreen, and the menu toggle turns it off (and stays off)
+{
+  const page = await browser.newPage({ viewport: { width: 480, height: 270 } });
+  const problems = [];
+  page.on('pageerror', e => problems.push('page error: ' + e.message));
+  try {
+    await page.goto(page_url);
+    await page.waitForFunction(() => window.GAME && window.GAME.G, null, { timeout: 30000 });
+    await page.click('#hero-mando');
+    const on = await page.waitForFunction(() => !!document.fullscreenElement, null, { timeout: 3000 }).then(() => true, () => false);
+    if (!on) problems.push('the first click did not go fullscreen');
+    else if (!await page.waitForFunction(() => document.querySelector('#fsBtn .fsval').textContent === 'ON', null, { timeout: 2000 }).then(() => true, () => false))
+      problems.push('menu toggle does not say ON in fullscreen');
+    await page.click('#fsBtn');
+    const off = await page.waitForFunction(() => !document.fullscreenElement, null, { timeout: 3000 }).then(() => true, () => false);
+    if (!off) problems.push('the menu toggle did not leave fullscreen');
+    if (await page.evaluate(() => localStorage.getItem('sw_fullscreen')) !== '0') problems.push('turning fullscreen off was not remembered');
+    if (await page.evaluate(() => GAME.G.mode) !== 'menu') problems.push('the fullscreen toggle launched the game');
+  } catch (e){ problems.push('script: ' + e.message); }
+  await page.close();
+  console.log(`${problems.length ? 'FAIL' : 'ok  '} fullscreen`);
+  for (const p of problems) console.log('     ' + p);
   if (problems.length) failed = true;
 }
 
