@@ -78,6 +78,7 @@ import './ui/threats.js';
 import { updateHud } from './ui/hud.js';
 import { setOverlayState } from './ui/menus.js';
 import { showcaseActive, renderShowcase, leaveShowcase } from './ui/showcase.js';
+import './ui/customizer.js';
 import './data/difficulty.js';
 import './engine/input.js';
 import { updateCamera } from './engine/camera.js';
@@ -153,4 +154,4 @@ window.GAME = { CFG, ENEMY_TYPES, LEVELS, BOSS_CFG, BOSS_MANDO, STANCES, SKILLS,
   hazardZones, updateHazardZones, hazardContains, setOverlayState, nav: { NAV, buildNav, updateNav, navSteer, navDist },
   duel: { DUEL, DUEL_PROFILES, MANDO_MELEE, LOCK, startLock, endLock, duelDefend },
   tactics: { RAMP, TROOP_MELEE, TROOP_FIRE, PINCER, ORDERS, GRENADE, LUNGE, tacticsRamp, grenades, pushGrenades },
-  get boss(){ return shared.boss; }, get saberProj(){ return shared.saberProj; } };
+  get boss(){ return shared.boss; }, get saberProj(){ return shared.saberProj; }, get darkProj(){ return shared.darkProj; } };

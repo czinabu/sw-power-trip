@@ -225,7 +225,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && settings
 setOverlayState('menu');
 
 // UI SOUND — a soft tick when the pointer lands on something you can pick, a firmer blip when you pick it
-const UI_PICK = '.herocard, .modeopt, .btn, .setpill, .card, .howto-hero span, .howto-x';
+const UI_PICK = '.herocard, .modeopt, .btn, .setpill, .card, .howto-hero span, .howto-x, .cz-open, .cz-sw, .cz-chip, .cz-tabs span';
 let _hoverEl = null;
 document.addEventListener('pointerover', (e) => {
   const el = e.target.closest(UI_PICK);
@@ -240,7 +240,8 @@ document.addEventListener('click', (e) => {
 }, true);
 overlay.addEventListener('click', (e) => {
   // only the primary button or empty backdrop launches/resumes: a stray click on a label or setting shouldn't
-  if (e.target.closest('#runsummary, #setup, #homeconfirm, #trainconfirm, .ov-foot')) return;
+  if (e.target.closest('#runsummary, #setup, #customizer, #homeconfirm, #trainconfirm, .ov-foot')) return;
+  if (overlay.classList.contains('customizing')) return;   // the stage turns the hero while customizing (ui/customizer.js)
   if (shouldOfferTraining()){
     try { localStorage.setItem('sw_asktrain', '1'); } catch(err){}
     overlay.classList.add('asktrain');

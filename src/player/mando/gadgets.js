@@ -21,7 +21,7 @@ import { abil } from '../../data/mastery.js';
 import { sweepHit, distToBody, chestPos } from '../../enemies/bodyshape.js';
 import { tutEvent } from '../../game/tutor-bus.js';
 
-// BACTA STIM (H) — the Mando's mirror of Force Mend: a quick injector channel that restores the same big chunk of
+// BACTA STIM (G) — the Mando's mirror of Force Mend: a quick injector channel that restores the same big chunk of
 // vitality (reuses the mendT channel + mendComplete). Steep Force + long cooldown; locked against HUNTER'S CREED.
 export function bactaStim(){
   const A = abil('bacta');
@@ -188,7 +188,7 @@ export function updateBirds(dt){
   }
 }
 
-/* ===== THERMAL DETONATOR — a sticky grenade that arms, then blows (G) ===== */
+/* ===== THERMAL DETONATOR — a sticky grenade that arms, then blows (V) ===== */
 export function thermalDetonator(){
   const A = abil('deto');
   if (!G.unlocked.deto || player.cds.deto > 0 || player.force < aCost(A.cost)) return;

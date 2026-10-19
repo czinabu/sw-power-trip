@@ -237,6 +237,7 @@ export function applySwingDamage(step, only){
     }, e);
   }
   if (finisher && foesHit) tutEvent('finisher');
+  if (foesHit && sw0 && sw0.dir !== 'neutral') tutEvent('cutHit', { dir: sw0.dir });   // which key picked the cut that landed (the training's cut lesson)
   if (shared.boss && shared.boss.hp > 0) tryHit(shared.boss.group.position, () => damageBoss(dmg * st.heavyDmg), shared.boss);
   for (let i = barrels.length-1; i >= 0; i--){
     const b = barrels[i];

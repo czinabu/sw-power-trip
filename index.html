@@ -74,7 +74,7 @@
       <div class="ab hint m-ab" id="ab-boost"><span class="key">SHIFT</span><span class="an">BOOST</span></div>
     </div>
     <div id="abilities">
-      <div class="ab slot j-ab" id="ab-dash"><span class="key">SHIFT</span><span class="an">DASH</span><span class="cdt"></span></div>
+      <div class="ab slot j-ab" id="ab-dash"><span class="key">Q</span><span class="an">DASH</span><span class="cdt"></span></div>
       <div class="ab slot j-ab" id="ab-push"><span class="key">F</span><span class="an">PUSH</span><span class="cdt"></span></div>
       <div class="ab slot j-ab" id="ab-pull" style="display:none"><span class="key">C</span><span class="an">PULL</span><span class="cdt"></span></div>
       <div class="ab slot j-ab" id="ab-slam" style="display:none"><span class="key">X</span><span class="an">SLAM</span><span class="cdt"></span></div>
@@ -89,8 +89,9 @@
       <div class="ab slot m-ab" id="ab-mslam" style="display:none"><span class="key">X</span><span class="an">SLAM</span><span class="cdt"></span></div>
       <div class="ab slot m-ab" id="ab-deto" style="display:none"><span class="key">V</span><span class="an">DETONATOR</span><span class="cdt"></span></div>
       <div class="ab slot m-ab" id="ab-birds" style="display:none"><span class="key">V</span><span class="an">BIRDS</span><span class="cdt"></span></div>
+      <div class="ab slot m-ab" id="ab-dthrow" style="display:none"><span class="key">RMB+LMB</span><span class="an">THROW</span><span class="cdt"></span></div>
       <div class="ab slot m-ab" id="ab-missile" style="display:none"><span class="key">Z</span><span class="an">MISSILE</span><span class="cdt"></span></div>
-      <div class="ab slot m-ab" id="ab-bacta" style="display:none"><span class="key">H</span><span class="an">BACTA</span><span class="cdt"></span></div>
+      <div class="ab slot m-ab" id="ab-bacta" style="display:none"><span class="key">G</span><span class="an">BACTA</span><span class="cdt"></span></div>
     </div>
   </div>
 
@@ -116,7 +117,7 @@
     </header>
     <div id="runsummary"></div>
     <section id="setup">
-      <div class="sec-label">HERO</div>
+      <div class="sec-label">HERO<span class="cz-open" id="cztoggle" title="Change how your hero looks">CUSTOMIZE</span></div>
       <div id="heroselect">
         <div class="herocard brk sel" id="hero-jedi">
           <svg class="hi" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="gj" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#7fe3ff"/><stop offset="1" stop-color="#e9fbff"/></linearGradient></defs>
@@ -165,6 +166,16 @@
           </div>
         </div>
       </div>
+    </section>
+    <section id="customizer">
+      <div class="cz-tabs" id="czhero"><span data-h="jedi">JEDI</span><span data-h="mando">MANDALORIAN</span></div>
+      <div class="cz-rows" id="czrows"></div>
+      <div class="cz-actions">
+        <div class="btn" id="czrandom">RANDOMIZE</div>
+        <div class="btn" id="czreset">RESET</div>
+        <div class="btn primary" id="czdone">DONE</div>
+      </div>
+      <div class="cz-hint">Drag the stand to turn your hero · <kbd>Esc</kbd> done</div>
     </section>
     <div class="ov-actions">
       <div class="btn primary go" id="goText">BEGIN</div>

@@ -35,6 +35,8 @@
 //               foes stepping out of doorways to slow you down · start: [x, z, yaw] where a retry of this leg begins
 // Every objective has `title` (the HUD line), and `say` / `task` per hero: the voice's line and the plain instruction.
 // Any field can differ per hero: put the hero's version under `hero: { jedi: {…}, mando: {…} }`.
+// `music` (optional) picks the score's cue for it (audio/music.js CUES: defend, infiltrate, duel, chase, battle…);
+// by default each kind plays its own (hold: defend, sabotage: infiltrate, duel: duel).
 
 import { REFUGE_SPOTS } from '../world/arenas/refuge.js';
 import { PURSUIT_SPOTS } from '../world/arenas/pursuit.js';

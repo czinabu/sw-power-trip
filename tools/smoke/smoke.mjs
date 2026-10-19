@@ -2,6 +2,9 @@
 // SMOKE TEST — boots the BUILT game (dist/index.html) in headless Chromium and plays each hero for a short scripted
 // fight: walk in, turn toward the nearest foe, attack and fire off the hero's moves. Then each story mission once, skipping
 // ahead through its objectives so every one (the hold, the sabotage, the chase legs, the duels) gets set up and played. Fails on any page error or
+// fight in a random look from the character customizer: walk in, turn toward the nearest foe, attack and fire off the
+// hero's moves. Then one story mission run, which
+// skips ahead through its objectives so the hold, the sabotage and the duel all get set up and played. Fails on any page error or
 // console error, or if the fight never gets going (no frames, no enemies, nothing hit).
 //   npm run build && npm run smoke            (SMOKE_SECONDS=… sets the game time per hero, default 20)
 
@@ -50,6 +53,8 @@ for (const [hero, mode, mission] of [['jedi', 'campaign'], ['mando', 'campaign']
     await page.goto(page_url);
     await page.waitForFunction(() => window.GAME && window.GAME.G, null, { timeout: 30000 });
     await page.click('#hero-' + hero);
+    // restyle the hero in the customizer first, so the fight runs on a rebuilt player model
+    if (mode === 'campaign'){ await page.click('#cztoggle'); await page.click('#czrandom'); await page.click('#czdone'); }
     // the story mission lives in the EXTRAS panel (experimental) and launches from its own PLAY button
     if (mode === 'mission'){ await page.click('#rmtoggle'); await page.click(`#xp-${mission} [data-mission]`); }
     else await page.click('#mode-' + mode);
@@ -58,6 +63,11 @@ for (const [hero, mode, mission] of [['jedi', 'campaign'], ['mando', 'campaign']
     for (let i = 0; i < 5 && !started; i++){
       if (await page.isVisible('#goText')) await page.click('#goText', { timeout: 3000 }).catch(() => {});   // (a long arena may still be building: the menu can close mid-click)
       if (await page.isVisible('#trainNo')) await page.click('#trainNo');   // first run asks about training: go straight to the campaign
+      // a button can hide between the visibility check and the click (the run starts on its own): a short click that
+      // gives up quietly instead of Playwright's 30 s wait for an element that is gone for good
+      const tap = async sel => { if (await page.isVisible(sel)) await page.click(sel, { timeout: 1500 }).catch(() => {}); };
+      await tap('#goText');
+      await tap('#trainNo');   // first run asks about training: go straight to the campaign
       started = await page.waitForFunction(() => GAME.G.mode === 'play' && !GAME.G.paused, null, { timeout: 3000 }).then(() => true, () => false);
     }
     if (!started){
