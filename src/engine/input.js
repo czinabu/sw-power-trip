@@ -129,6 +129,7 @@ document.addEventListener('contextmenu', (e) => e.preventDefault());
 document.addEventListener('keydown', (e) => {
   const k = e.key.toLowerCase();
   keys[k] = true;
+  if (k === 'alt') e.preventDefault();   // ALT is the slide: keep the browser from grabbing it for its menu bar
   if (k === 'p' && !e.repeat){ cycleQuality(); return; }   // graphics quality — works anywhere
   if (k === 'm' && !e.repeat){ audioInit(); const on = MUSIC.toggle(); showBanner('', '♪ MUSIC ' + (on ? 'ON' : 'OFF'), 1.0); return; }   // music on/off (persists)
   if (k === ' ' && !e.repeat) doJump();
@@ -141,7 +142,7 @@ document.addEventListener('keydown', (e) => {
       if (k === 'x'){ if (G.unlocked.slam) jetSlam(); else if (G.unlocked.grapple) grappleHook(); }                 // MID: jetpack SLAM or GRAPPLE
       if (k === 'v'){ if (G.unlocked.birds) whistlingBirds(); else if (G.unlocked.deto) thermalDetonator(); }       // LATE: BIRDS or DETONATOR
       if (k === 'z') mandoJetMissile();
-      if (k === 'c' && !e.repeat) trySlide();          // SLIDE out of a run (parkour.js)
+      if ((k === 'c' || k === 'alt') && !e.repeat) trySlide();   // SLIDE out of a run (parkour.js): ALT, the Jedi's slide key, or C
       if (k === 'e' && !e.repeat) mandoMelee();   // close quarters: string, catch, charge, dive kick, takedown (melee.js)
       if (k === 'g' && !e.repeat) bactaStim();        // bacta stim self-heal (store unlock) — G sits right beside F, in reach of WASD
       if (k === 'r' && !e.repeat) startReload();
@@ -151,13 +152,17 @@ document.addEventListener('keydown', (e) => {
       if (k === '3') switchWeapon(player.up.darksaber ? 'darksaber' : 'disruptor');
     }
   } else {
-    // SHIFT only ever SPRINTS (held with W; locomotion.js reads it). The dash has its own key, Q, so a sprint never
-    // turns into a dash by accident: Q dashes any way you're pressing (or rolls out of a hard landing)
-    if (k === 'q' && !e.repeat) forceDash();
+    // SHIFT dashes any way you're pressing (or rolls out of a hard landing). Sprinting has its own key: Q toggles it
+    // between sprint and walk (locomotion.js runs it). ALT out of a sprint slides.
+    if (k === 'shift' && !e.repeat) forceDash();
+    if (k === 'q' && !e.repeat && G.mode === 'play'){
+      player.sprintOn = !player.sprintOn;
+      showBanner('', player.sprintOn ? 'SPRINT' : 'WALK', 0.6);
+    }
+    if (k === 'alt' && !e.repeat) trySlide();          // the FORCE SLIDE out of a sprint (parkour.js)
     if (k === 't' && !e.repeat) toggleLock();          // soft lock-on
     if (k === 'f'){ if (!(player.saberLock && lockPush())) forcePush(); }   // in a saber lock: a point-blank shove that breaks it
-    // C out of a sprint is the FORCE SLIDE (parkour.js), the same key the Mando slides on; any other C is the Pull
-    if (k === 'c'){ if (player.sprinting && player.grounded){ if (!e.repeat) trySlide(); } else forcePull(); }
+    if (k === 'c') forcePull();
     if (k === 'e' && !e.repeat){ if (player.saberLock) lockKick(); else forceKick(); }   // FRONT KICK — always-available melee, shares 'E' with the Mando's punch
     if (k === 'v') forceBarrier();     // Force Barrier — the defensive bubble (its fork-sibling SABER THROW is RMB+LMB)
     // ADAPTIVE FORK KEYS — each either/or pair shares ONE bind (you only ever own one of the pair).
@@ -182,4 +187,4 @@ document.addEventListener('keydown', (e) => {
     try { const p = renderer.domElement.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch(e){}
   }
 });
-document.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
+document.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; if (e.key === 'Alt') e.preventDefault(); });

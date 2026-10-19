@@ -189,7 +189,7 @@ export function updateHang(dt, pp){
   return true;
 }
 
-/* SLIDE — C out of a sprint (Jedi) or out of a run (Mando): drop low and skid, keeping the run's speed and ducking
+/* SLIDE — ALT out of a sprint (Jedi) or out of a run (Mando, who can also use C): drop low and skid, keeping the run's speed and ducking
    under blaster fire. A cut out of it is a sweep that floors what it hits; the Mando keeps firing, steady and harder.
    The Jedi's is the FORCE SLIDE: the Force drives it much farther, and it bowls over the troops in its way. */
 export function trySlide(){
@@ -327,7 +327,7 @@ export function landingImpact(impact){
   return false;
 }
 
-/* The dash key (Q) in the air near the ground (or during the first instant of a stagger) asks for a roll instead of a dash. */
+/* The dash key (SHIFT) in the air near the ground (or during the first instant of a stagger) asks for a roll instead of a dash. */
 export function requestRoll(pp){
   if (G.hero === 'mando') return false;
   if (player.landStagT > 0 && G.gt - (player.landStagAt ?? -9) < MOVE.rollWindow * 0.6){ landingRoll(); return true; }

@@ -37,9 +37,10 @@ export function updateMovement(dt, pp, st, f, r){
   if (keys['d']) want.add(r);
   if (keys['a']) want.sub(r);
   const moving = want.lengthSq() > 0.01;
-  // SPRINT (Jedi) — SHIFT held with W on the ground: faster, heavier to steer, and it burns stamina while it lasts
+  // SPRINT (Jedi) — Q toggles between sprint and walk; with the sprint on, running forward (W) on the ground sprints:
+  // faster, heavier to steer, and it burns stamina (out of stamina it falls back to a run until it recovers)
   const wasSprinting = player.sprinting;
-  player.sprinting = G.hero !== 'mando' && !!keys['shift'] && !!keys['w'] && (player.grounded || wasSprinting)
+  player.sprinting = G.hero !== 'mando' && !!player.sprintOn && !!keys['w'] && (player.grounded || wasSprinting)
                      && !player.blockHeld && player.atkT <= 0 && !player.exhausted && player.stam > 1 && !(player.flinchT > 0)
                      && !(player.landStagT > 0) && !(player.slideT > 0) && !player.mantle && !player.hang;
   if (player.sprinting && player.grounded){

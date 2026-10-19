@@ -111,9 +111,9 @@ Missions are data (`data/missions.js`) built from reusable objective pieces (`ga
 | LMB | Saber combo (direction follows WASD) |
 | RMB | Block / Parry (timed click) |
 | Space | Jump / Hold for Force Leap |
-| Q | Dash-flip (any direction; also the landing roll) |
-| Shift + W | Sprint |
-| C (sprinting) | Force slide |
+| Shift | Dash-flip (any direction; also the landing roll) |
+| Q | Sprint / walk toggle |
+| Left Alt (sprinting) | Force slide |
 | 1/2/3 | Switch stance |
 | F | Force Push |
 | C | Force Pull |

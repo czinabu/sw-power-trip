@@ -103,7 +103,7 @@ export function startLevel(idx, opts){
   player.parryT = 0; player.parryLockT = 0;
   player.riposteT = 0;
   player.mantle = null; player.wallRun = null; player.wallRunUsed = false; player.landStagT = 0;   // parkour state
-  player.hang = null; player.slideT = 0; player.sprinting = false; player.pivotT = 0; player.flinchT = 0;
+  player.hang = null; player.slideT = 0; player.sprinting = false; player.sprintOn = false; player.pivotT = 0; player.flinchT = 0;
   player.lockTarget = null;
   resetMandoMelee();
   player.judgeT = 0;
