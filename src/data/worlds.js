@@ -258,6 +258,25 @@ export const MISSION_WORLDS = {
     beats: { fog: 0xc08870, fill: 1.05, tint: 0xffc8a0 },
     sound: 'temple',
   },
+  pursuit: {   // the spaceport at Khel Dar: a sandstone port town in the late-afternoon sun, a Star Destroyer over the docks
+    sky: { top: 0x3a5c92, horizon: 0xf0b070, below: 0xb08a62, bands: 7, stars: 0,
+      sun: { el: 0.16, color: 0xffe0a0, halo: 0xffb070, size: 22 },
+      clouds: { color: 0xf0c898, under: 0xb08868, count: 9, lo: 0.5, hi: 0.85 },
+      ridges: [{ color: 0xc09060, h: 0.08, rough: 0.05, seed: 7 }, { color: 0xa47a52, h: 0.05, rough: 0.07, seed: 2 }] },
+    fog: 0xd8a878, fogStart: 0.9, fogEnd: 3.4,
+    light: { sun: 0xffdcb0, sunI: 1.75, dir: [-22, 34, 18], hemiSky: 0xbcd0f0, hemiGround: 0x7a5a3a, fill: 0.8, rim: 0xffc890, rimI: 0.5 },
+    floor: { kind: 'flagstone', base: 0xb49470, seed: 17 },
+    outer: 0xb08a5e,
+    pal: { wall: 0xc8a67c, wallD: 0xa8845c, trim: 0x8a6440, roof: 0x7a5236, metal: 0x6a727e, imperial: 0x3a3e46, stripe: 0xd9a43a,
+           crate: 0x8a7458, cloth: [0xb8402a, 0x2a6a8a, 0xd8a03a, 0x5a7a3a], lamp: 0xffc070, glass: 0x2a4a6a },
+    backdrop: [
+      // the Empire's ship hangs over the docks at the end of the run: the place the quarry is running for
+      { kind: 'destroyer', az: Math.PI/2, r: 5.2, y: 34, scale: 1.1, color: 0x8a8c96, color2: 0x767884, glow: 0x9ad8ff },
+    ],
+    ambient: { kind: 'dust', color: 0xffe2b0, count: 420, size: 0.3 },
+    beats: { fog: 0xd08a5a, fill: 1.06, tint: 0xffa070 },
+    sound: 'temple',
+  },
 };
 
 /* the theme for a level (by its layout), or null for unthemed/procedural arenas */

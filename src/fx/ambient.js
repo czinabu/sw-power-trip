@@ -17,7 +17,7 @@ export function buildAmbient(L){
   for (let i = 0; i < N; i++){
     pos[i*3]   = rand(-shared.arenaHalf, shared.arenaHalf);
     pos[i*3+1] = rand(0.2, 11);
-    pos[i*3+2] = rand(-shared.arenaHalf, shared.arenaHalf);
+    pos[i*3+2] = rand(-shared.arenaHalfZ, shared.arenaHalfZ);
     vel[i] = (fall ? -1 : 1) * rand(0.2, 0.9) * (am.kind === 'dust' ? 0.3 : 1);
   }
   const geo = new THREE.BufferGeometry();
@@ -39,7 +39,7 @@ export function updateAmbient(dt){
   for (let i = 0; i < a.count; i++){
     let y = a.getY(i) + shared.ambient.vel[i]*dt;
     if (y < 0.1) y = 9;   // falling snow / ash wraps back to the top
-    if (y > 9){ y = 0.2; a.setX(i, rand(-shared.arenaHalf, shared.arenaHalf)); a.setZ(i, rand(-shared.arenaHalf, shared.arenaHalf)); }
+    if (y > 9){ y = 0.2; a.setX(i, rand(-shared.arenaHalf, shared.arenaHalf)); a.setZ(i, rand(-shared.arenaHalfZ, shared.arenaHalfZ)); }
     a.setY(i, y);
     a.setX(i, a.getX(i) + Math.sin(shared.ambient.t*0.8 + i)*dt*0.3);
   }

@@ -38,7 +38,7 @@ src/
     mando/           weapons, gadgets, darksaber
   enemies/           meshes, elites, special moves, spawning, damage, AI, pathing (nav.js), attack turns (director.js), blaster bolts (see docs/enemy-ai.md)
   boss/              boss lightning FX and the boss itself
-  world/             arena builder, arenas/ (temple, foundry, plains layouts; hall and forge for training; refuge for the story mission), Ink bake, painted skies/floors, backdrops, atmosphere, collision, hazards (see docs/world-guidelines.md)
+  world/             arena builder, arenas/ (temple, foundry, plains layouts; hall and forge for training; refuge and pursuit for the story missions), Ink bake, painted skies/floors, backdrops, atmosphere, collision, hazards (see docs/world-guidelines.md)
   game/              level/wave flow, survival mode, training (tutorial.js), story missions (mission.js, objectives.js), progression, boons, end-of-run summary
   ui/                banners, threat markers, HUD, store overlay, menus, the title screen's hero turntable (showcase.js), controls (How to Play data)
 ```
@@ -73,7 +73,11 @@ Each file starts with a one-line description. Balance changes usually only touch
 
 **Campaign** — 3 authored arenas on the road to the Sith (Holy City of Jedha, Mustafar Forge, Throne of Exegol), 4 waves each escalating to an end-boss (Darth Vexis for the Jedi, The Iron Magistrate for the Mando)
 
-**Story (experimental, under EXTRAS on the menu)** — The Last Evacuation, a mission at a hidden mountain refuge in three objectives: guard the transport's ramp while the younglings (or foundlings) file aboard (officers call in the reinforcements, so drop them first), the transport lifts off, slice three Imperial uplinks, then a one-on-one duel with the Inquisitor. Dying restarts the objective you fell on. Missions are data (`data/missions.js`) built from reusable objective pieces (`game/objectives.js`: zones, consoles, timers, the objective HUD line).
+**Story (experimental, under EXTRAS on the menu)** — The Last Evacuation, a mission at a hidden mountain refuge in three objectives: guard the transport's ramp while the younglings (or foundlings) file aboard (officers call in the reinforcements, so drop them first), the transport lifts off, slice three Imperial uplinks, then a one-on-one duel with the Inquisitor. Dying restarts the objective you fell on.
+
+**The Long Chase** (also under EXTRAS) runs down a fleeing quarry (an Inquisitor for the Jedi, an assassin droid bounty for the Mando) through the spaceport at Khel Dar: one long, narrow street that snakes through a sandstone port town to the docking bay. Keep it in sight (lose it for six seconds and it gets away), cross the market stalls, alley fence, terraces and causeway gaps with the parkour flow, get past the troops it calls out of the doorways, then duel it when it's cornered at its ship. The run has a checkpoint at the plaza.
+
+Missions are data (`data/missions.js`) built from reusable objective pieces (`game/objectives.js`: zones, consoles, timers, the objective HUD line). An arena can be long instead of square (`arenaZ` in its level: the pursuit route is 56 × 320); bounds, enemy pathing, the shadow box and the sky all follow it.
 
 **Survival mode** — unlocked after beating the campaign as both heroes. Endless escalating waves, 8 wave mutators, Warbringer mid-boss every 10 waves, arena rotation, repeatable power-ups, roguelite boon picks each wave
 
