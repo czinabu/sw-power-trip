@@ -11,12 +11,14 @@ import { setHero } from '../player/hero.js';
 import { startLevel, retryLevel, retryIsBoss } from '../game/flow.js';
 import { startEndless } from '../game/survival.js';
 import { startTutorial, skipStep, setTrainingExit, trainingDone } from '../game/tutorial.js';
-import { startMission, retryMission, missionDone } from '../game/mission.js';
+import { startMission, retryMission, missionDone, missionTitle } from '../game/mission.js';
+import { MISSIONS } from '../data/missions.js';
 import { closeProgress } from './store-ui.js';
 import { DIFFS } from '../data/difficulty.js';
 import { renderControls } from './controls.js';
 import { svgIcon } from './icons.js';
 import { setRoadmap } from './roadmap.js';
+import { enterFullscreenIfWanted, escapeIsOurs } from './fullscreen.js';
 
 /* ============================================================
    INPUT
@@ -39,7 +41,7 @@ export function setOverlayState(state){
   const go = document.getElementById('goText'), sub = document.getElementById('ovsub');
   if (state === 'menu'){
     go.textContent = G.modeSel === 'endless' ? 'BEGIN SURVIVAL' : G.modeSel === 'training' ? 'BEGIN TRAINING' : G.modeSel === 'mission' ? 'BEGIN MISSION' : 'BEGIN CAMPAIGN';
-    sub.textContent = G.modeSel === 'endless' ? 'HOW LONG CAN YOU LAST?' : G.modeSel === 'training' ? 'LEARN THE WAYS OF YOUR ORDER' : G.modeSel === 'mission' ? 'THE LAST EVACUATION' : 'CHOOSE YOUR LEGEND';
+    sub.textContent = G.modeSel === 'endless' ? 'HOW LONG CAN YOU LAST?' : G.modeSel === 'training' ? 'LEARN THE WAYS OF YOUR ORDER' : G.modeSel === 'mission' ? missionTitle(G.missionId) : 'CHOOSE YOUR LEGEND';
   } else if (state === 'pause'){
     go.textContent = 'RESUME'; sub.textContent = 'PAUSED';
   } else if (state === 'dead'){
@@ -61,7 +63,7 @@ function beginPlay(){
   if (G.modeSel === 'endless' && !survivalUnlocked()) G.modeSel = 'campaign';   // safety — never launch a locked mode
   if (G.mode === 'menu' || G.mode === 'victory'){
     G.mode = 'play'; G.slowmo = 1;
-    if (G.modeSel === 'endless') startEndless(); else if (G.modeSel === 'training') startTutorial(); else if (G.modeSel === 'mission') startMission(); else startLevel(0);
+    if (G.modeSel === 'endless') startEndless(); else if (G.modeSel === 'training') startTutorial(); else if (G.modeSel === 'mission') startMission(G.missionId); else startLevel(0);
   } else if (G.mode === 'dead'){
     G.mode = 'play'; G.slowmo = 1;
     if (G.endless) startEndless(); else if (G.training) startTutorial(); else if (G.mission) retryMission(); else retryLevel();   // survival retry = a fresh survival run
@@ -101,10 +103,15 @@ function setModeSel(m){
 document.getElementById('mode-campaign').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setModeSel('campaign'); });
 document.getElementById('mode-endless').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setModeSel('endless'); });
 document.getElementById('mode-training').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setModeSel('training'); });
-// EXPERIMENTAL (in the EXTRAS panel): the story mission launches straight from its card
-document.getElementById('xp-mission-go').addEventListener('click', (e) => {
+// EXPERIMENTAL (in the EXTRAS panel): one card per story mission (data/missions.js), each launching straight in
+document.getElementById('xplist').innerHTML = Object.values(MISSIONS).map(m =>
+  `<div class="xp-card" id="xp-${m.id}">
+    <div class="xp-text"><span class="mt">STORY · ${m.title}</span><span class="md"></span><span class="xp-note">Work in progress: balance and the map are still changing.</span></div>
+    <div class="btn primary" data-mission="${m.id}">PLAY</div>
+  </div>`).join('');
+for (const b of document.querySelectorAll('#xplist [data-mission]')) b.addEventListener('click', (e) => {
   e.stopPropagation(); audioInit(); setRoadmap(false);
-  G.modeSel = 'mission'; if (_ovState === 'menu') setOverlayState('menu');
+  G.modeSel = 'mission'; G.missionId = b.dataset.mission; if (_ovState === 'menu') setOverlayState('menu');
   launch();
 });
 refreshSurvivalLock();
@@ -116,12 +123,13 @@ function refreshTrainingMark(){
                           : 'learn your hero\'s moves';
 }
 refreshTrainingMark();
-// STORY MISSION marks which heroes have won it
+// STORY MISSIONS mark which heroes have won them
 function refreshMissionMark(){
-  const md = document.querySelector('#mode-mission .md'); if (!md) return;
-  const j = missionDone('refuge', 'jedi'), m = missionDone('refuge', 'mando');
-  md.innerHTML = (j || m) ? 'the last evacuation · Jedi ' + (j ? '<span class="ok">✓</span>' : '–') + ' Mando ' + (m ? '<span class="ok">✓</span>' : '–')
-                          : 'hold, sabotage, then a duel';
+  for (const id in MISSIONS){
+    const md = document.querySelector('#xp-' + id + ' .md'); if (!md) continue;
+    const j = missionDone(id, 'jedi'), m = missionDone(id, 'mando');
+    md.innerHTML = MISSIONS[id].blurb + ((j || m) ? ' · Jedi ' + (j ? '<span class="ok">✓</span>' : '–') + ' Mando ' + (m ? '<span class="ok">✓</span>' : '–') : '');
+  }
 }
 refreshMissionMark();
 // FIRST CAMPAIGN — once, a hero who hasn't trained (or beaten the campaign) is offered the training grounds first
@@ -218,7 +226,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && settings
 setOverlayState('menu');
 
 // UI SOUND — a soft tick when the pointer lands on something you can pick, a firmer blip when you pick it
-const UI_PICK = '.herocard, .modeopt, .btn, .setpill, .card, .howto-hero span, .howto-x';
+const UI_PICK = '.herocard, .modeopt, .btn, .setpill, .card, .howto-hero span, .howto-x, .cz-open, .cz-sw, .cz-chip, .cz-tabs span';
 let _hoverEl = null;
 document.addEventListener('pointerover', (e) => {
   const el = e.target.closest(UI_PICK);
@@ -233,7 +241,8 @@ document.addEventListener('click', (e) => {
 }, true);
 overlay.addEventListener('click', (e) => {
   // only the primary button or empty backdrop launches/resumes: a stray click on a label or setting shouldn't
-  if (e.target.closest('#runsummary, #setup, #homeconfirm, #trainconfirm, .ov-foot')) return;
+  if (e.target.closest('#runsummary, #setup, #customizer, #homeconfirm, #trainconfirm, .ov-foot')) return;
+  if (overlay.classList.contains('customizing')) return;   // the stage turns the hero while customizing (ui/customizer.js)
   if (shouldOfferTraining()){
     try { localStorage.setItem('sw_asktrain', '1'); } catch(err){}
     overlay.classList.add('asktrain');
@@ -247,6 +256,7 @@ document.getElementById('trainNo').addEventListener('click', (e) => { e.stopProp
 function launch(){
   audioInit();
   requestLock();
+  enterFullscreenIfWanted();   // after the lock request: entering fullscreen uses up the click's user gesture
   setTimeout(() => {
     if (document.pointerLockElement === renderer.domElement) return;
     if (shared.lockWorked){
@@ -272,6 +282,23 @@ document.addEventListener('pointerlockerror', () => {
   setOverlayState('pause');
   if (shared.lockWorked) document.getElementById('ovsub').textContent = 'CLICK RESUME TO LOCK THE CURSOR';
 });
+// PAUSE KEYS — Enter resumes from the pause screen in every browser. Where Esc is locked to the game (fullscreen in
+// Chrome / Edge, see fullscreen.js) a quick Esc pauses and resumes too, so closing the pause screen with Esc no longer
+// drops you out of fullscreen. Runs in the capture phase so it sees the screen before Esc closes a panel on top of it.
+const panelOpen = () => howto.classList.contains('open') || settings.classList.contains('open') ||
+  document.getElementById('roadmap').classList.contains('open') || overlay.classList.contains('confirming') || overlay.classList.contains('asktrain');
+window.addEventListener('keydown', (e) => {
+  if (e.repeat || (e.key !== 'Escape' && e.key !== 'Enter')) return;
+  const esc = e.key === 'Escape';
+  if (esc && !escapeIsOurs()) return;   // the browser owns Esc here (pointer lock / fullscreen exit)
+  if (esc) e.preventDefault();
+  const shown = overlay.style.display === 'flex';
+  if (shown && _ovState === 'pause' && G.mode === 'play' && !panelOpen()){ e.preventDefault(); launch(); return; }
+  if (esc && !shown && G.mode === 'play' && !G.skillSelect){
+    if (document.pointerLockElement) document.exitPointerLock();   // pointerlockchange shows the pause screen
+    else if (shared.lockFallback){ overlay.style.display = 'flex'; G.paused = true; setOverlayState('pause'); }
+  }
+}, true);
 // in the unlocked fallback, keep offering the real lock: a click on the game takes it if the browser now allows it
 renderer.domElement.addEventListener('mousedown', () => { if (shared.lockFallback && G.mode === 'play') requestLock(); });
 document.addEventListener('pointerlockchange', () => {
@@ -300,7 +327,7 @@ function restartRun(){
   G.skillSelect = false;
   G.mode = 'play'; G.slowmo = 1; G.paused = false;
   document.body.classList.remove('in-menu'); setHowTo(false); setSettings(false);
-  if (G.endless) startEndless(); else if (G.training) startTutorial(); else if (G.mission) startMission(); else startLevel(0);   // a survival run restarts as survival, not the campaign
+  if (G.endless) startEndless(); else if (G.training) startTutorial(); else if (G.mission) startMission(G.missionId); else startLevel(0);   // a survival run restarts as survival, not the campaign
   if (!shared.lockFallback) requestLock();
 }
 document.getElementById('restartBtn').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); restartRun(); });
@@ -334,25 +361,7 @@ document.getElementById('homeBtn').addEventListener('click', (e) => {
 document.getElementById('homeYes').addEventListener('click', (e) => { e.stopPropagation(); goHome(); });
 document.getElementById('homeNo').addEventListener('click', (e) => { e.stopPropagation(); overlay.classList.remove('confirming'); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && overlay.classList.contains('confirming')) overlay.classList.remove('confirming'); });
-// FULLSCREEN — the whole page goes fullscreen (HUD and menus are DOM over the canvas). Esc while playing still just
-// pauses: the browser spends the first Esc on the pointer lock and only a second one leaves fullscreen.
-const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement;
-function syncFullscreen(){ document.getElementById('fsval').textContent = fsEl() ? 'ON' : 'OFF'; }
-function toggleFullscreen(){
-  const root = document.documentElement;
-  try {
-    if (fsEl()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
-    else {
-      const p = (root.requestFullscreen || root.webkitRequestFullscreen).call(root, { navigationUI: 'hide' });
-      if (p && p.catch) p.catch(() => {});
-    }
-  } catch(err){}
-}
-if (!(document.fullscreenEnabled || document.webkitFullscreenEnabled)) document.getElementById('fsctl').style.display = 'none';
-document.getElementById('fsctl').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); toggleFullscreen(); });
-document.addEventListener('fullscreenchange', syncFullscreen);
-document.addEventListener('webkitfullscreenchange', syncFullscreen);
-syncFullscreen();
+document.querySelectorAll('.fsctl').forEach((el) => el.addEventListener('click', audioInit));   // fullscreen.js does the toggling
 document.getElementById('continueBtn').addEventListener('click', (e) => { e.stopPropagation(); closeProgress(); });
 // GRAPHICS selector on the overlay — cycle quality without resuming/launching (stop the click bubbling to the overlay)
 document.getElementById('gfxctl').addEventListener('click', (e) => { e.stopPropagation(); cycleQuality(); });

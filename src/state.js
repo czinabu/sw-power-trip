@@ -20,6 +20,7 @@ export const shared = {
   _grappleLine: null,
   arenaGroup: new THREE.Group(),
   arenaHalf: 20,
+  arenaHalfZ: 20,   // half the depth (north–south): the same as arenaHalf except on a long arena (L.arenaZ, the pursuit route)
   arenaLayout: 'temple',   // which authored layout is up (temple | foundry | plains) — picks the ambience, reverb and music palette
   ambient: null,   // drifting embers / ash / dust
   templeBrazier: null,
@@ -52,6 +53,7 @@ export const G = {
   hero: 'jedi',          // 'jedi' (saber/Force) or 'mando' (jetpack/blasters) — chosen on the menu
   // SURVIVAL / ENDLESS mode
   modeSel: 'campaign',   // menu pick: 'campaign' | 'endless' | 'training' | 'mission'
+  missionId: 'refuge',   // which story mission (data/missions.js) the EXTRAS panel launched
   endless: false,        // true while a survival run is active
   training: false,       // true while the tutorial runs (game/tutorial.js)
   mission: false,        // true while a story mission runs (game/mission.js)

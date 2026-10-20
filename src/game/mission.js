@@ -1,5 +1,6 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
-// STORY MISSIONS: runs a mission (data/missions.js) objective by objective: hold a spot, slice consoles, win a duel.
+// STORY MISSIONS: runs a mission (data/missions.js) objective by objective: hold a spot, slice consoles, chase a quarry,
+// win a duel.
 // Built from the objective kit (game/objectives.js) so later modes can reuse the same pieces.
 
 import * as THREE from 'three';
@@ -12,6 +13,9 @@ import { floater } from '../fx/floaters.js';
 import { shared, G, enemies, player, solids } from '../state.js';
 import { CFG } from '../data/config.js';
 import { playerPos, maxHp } from '../player/helpers.js';
+import { hurtPlayer } from '../player/damage.js';
+import { ENEMY_TYPES } from '../data/enemies.js';
+import { buildEnemyMesh } from '../enemies/mesh.js';
 import { spawnEnemy, makeBossBar } from '../enemies/spawn.js';
 import { cleanupDuel } from '../enemies/duel.js';
 import { cleanupTactics } from '../enemies/tactics.js';
@@ -27,32 +31,43 @@ import { showPanel, hidePanel, makeBeacon, makeConsole, setMarkerColor, pulseMar
 import { MISSIONS, MISSION_VOICE, MISSION_COLOR } from '../data/missions.js';
 
 const RED = 0xff4a3a, GREEN = 0x7bffae;
-const M = { on: false, def: null, i: 0, o: null, s: null, markers: [], props: [], fx: [], panelT: 0, waitT: 0, endT: 0, won: false };
+const M = { on: false, def: null, i: 0, o: null, s: null, markers: [], props: [], fx: [], panelT: 0, waitT: 0, endT: 0, won: false,
+            failT: 0, quarry: null };
+
+// an objective as this hero plays it: its `hero` overrides laid over it, and per-hero words picked
+function forHero(o){
+  const h = o.hero && o.hero[G.hero], r = h ? { ...o, ...h } : { ...o };
+  if (r.title && typeof r.title === 'object') r.title = r.title[G.hero];
+  return r;
+}
 
 export function missionDone(id, hero){ try { return localStorage.getItem('sw_mission_' + id + '_' + hero) === '1'; } catch(e){ return false; } }
 
 // start a mission from the top, or (retry) from the objective you fell on
 export function startMission(id = 'refuge', fromObjective = 0){
-  const def = MISSIONS[id];
+  const def = MISSIONS[id] || MISSIONS.refuge;
   clearMission();
   startLevel(0, { level: def.level, mission: true });   // fresh hero, kit and stats, on the mission's arena
   for (const k of (def.grant && def.grant[G.hero]) || []) G.unlocked[k] = true;
   G.waveTotal = def.kit; checkUnlocks();                 // a mid-run kit: forms, Force jump / jetpack boosters, dual blasters
   G.waveTotal = 0;   // ...but foes as tough as the first wave (HP and elite odds climb with waveTotal)
-  Object.assign(M, { on: true, def, i: fromObjective, o: null, s: null, fx: [], panelT: 0, endT: 0, won: false });
-  if (def.start){ playerPos().set(def.start[0], 0, def.start[1]); G.yaw = player.faceYaw = def.start[2] || 0; }
+  Object.assign(M, { on: true, def, i: fromObjective, o: null, s: null, fx: [], panelT: 0, endT: 0, won: false, failT: 0, quarry: null });
+  const st = (fromObjective && def.objectives[fromObjective].start) || def.start;   // a retry may begin further along
+  if (st){ playerPos().set(st[0], 0, st[1]); G.yaw = player.faceYaw = st[2] || 0; }
+  if (def.quarry) placeQuarry(def.objectives[fromObjective]);
   // retrying past the evacuation: the transport has already gone
   if (def.objectives.slice(0, fromObjective).some(o => o.kind === 'hold' && o.evacuees)) shipGone();
   // the opening banner (startLevel's) gets its moment before the first objective begins
   M.waitT = 2.8;
-  setObjectiveHud({ kicker: 'MISSION · ' + def.title, title: def.objectives[fromObjective].title, status: 'STAND READY', frac: null });
+  setObjectiveHud({ kicker: 'MISSION · ' + def.title, title: forHero(def.objectives[fromObjective]).title, status: 'STAND READY', frac: null });
 }
-export function retryMission(){ startMission(M.def ? M.def.id : 'refuge', M.def ? M.i : 0); }
+export function retryMission(){ startMission(M.def ? M.def.id : (G.missionId || 'refuge'), M.def ? M.i : 0); }
+export function missionTitle(id){ return (MISSIONS[id] || MISSIONS.refuge).title; }
 function clearMission(){
   for (const m of M.markers) removeMarker(m);
   M.markers = [];
   for (const p of M.props) scene.remove(p);
-  M.props = []; M.fx = [];
+  M.props = []; M.fx = []; M.quarry = null;
   if (M.on) hidePanel();
   M.on = false;
   MUSIC.setCue(null);
@@ -183,19 +198,79 @@ const KINDS = {
     },
   },
 
+  pursuit: {
+    begin(o, s){
+      s.P = legPath(o.leg);
+      s.d = 0; s.y = M.quarry.g.position.y; s.vy = 0; s.yaw = M.quarry.g.rotation.y;
+      s.lostT = 0; s.seen = true; s.shoveCd = 1.5; s.burstT = 0; s.sweepT = 0;
+      s.amb = (o.ambush || []).map(a => ({ ...a, d: projectPath(s.P, a.at[0], a.at[1]), fired: false }));
+      M.markers.push(s.last = makeBeacon(0, 0, 0, RED, 1.2)); s.last.visible = false;   // where it was last seen
+      placeOnPath(s, M.quarry);
+    },
+    update(o, s, dt){
+      const q = M.quarry, pp = playerPos(), qp = q.g.position;
+      const pd = projectPath(s.P, pp.x, pp.z), gap = s.d - pd;
+      // it runs at the pace the gap calls for: easing off when you fall behind, flat out when you close in
+      let spd = paceAt(o.pace, gap);
+      if (s.burstT > 0){ s.burstT -= dt; spd = Math.max(spd, 12.5); }
+      s.d = Math.min(s.P.len, s.d + spd * dt);
+      placeOnPath(s, q, dt, spd);
+      // can you see it: close enough, and nothing taller than the line of sight in between
+      const dist = Math.hypot(qp.x - pp.x, qp.y - pp.y, qp.z - pp.z);
+      const seen = dist < o.sight && !sightBlocked(pp.x, pp.y + 1.5, pp.z, qp.x, qp.y + 1.4, qp.z);
+      if (!seen && s.seen){ s.last.position.set(qp.x, 0, qp.z); s.last.visible = true; }
+      if (seen) s.last.visible = false;
+      s.seen = seen;
+      s.lostT = seen ? Math.max(0, s.lostT - dt * 2) : s.lostT + dt;
+      q.tag.visible = seen;
+      if (s.last.visible) pulseMarker(s.last, dt, G.gt);
+      if (s.lostT >= o.lost){ quarryEscaped(); return; }
+      // too close: it throws you back and breaks away
+      if ((s.shoveCd -= dt) <= 0 && seen && dist < o.shove){ shove(q, s); }
+      // troops step out to cover its run as it passes their doorway
+      for (const a of s.amb){
+        if (a.fired || s.d < a.d) continue;
+        a.fired = true;
+        if (hostilesAlive() + G.spawnQueue.length > 9) continue;
+        let k = 0;
+        queueGroup(a.group, { at: () => { const [x, z] = a.spots[k++ % a.spots.length], c = findClearSpawn(x, z, 0.9); return V3(c.x, 0, c.z); } });
+        showBanner('', o.ambushLine || (q.def.name + ' CALLS FOR COVER'), 1.4);
+      }
+      // foes left far behind stop counting (they'd never catch up, and the route is long)
+      if ((s.sweepT -= dt) <= 0){
+        s.sweepT = 0.5;
+        for (let i = enemies.length - 1; i >= 0; i--){
+          const e = enemies[i];
+          if (e.dead || projectPath(s.P, e.group.position.x, e.group.position.z) > pd - 40) continue;
+          dropFoe(e); enemies.splice(i, 1);
+        }
+      }
+      setObjectiveHud({ kicker: 'MISSION · ' + M.def.title, title: o.title, frac: s.d / s.P.len,
+        status: seen ? q.def.name + ' IN SIGHT · ' + Math.round(dist) + ' M' : 'OUT OF SIGHT · FIND IT ' + Math.max(0, o.lost - s.lostT).toFixed(1) + 'S',
+        warn: !seen });
+      if (s.d >= s.P.len){
+        q.tag.visible = false;
+        if (o.leg < M.def.route.length - 1) showBanner('CHECKPOINT', 'Still on its heels. Keep going.', 2.0);
+        return true;
+      }
+    },
+  },
+
   duel: {
     cue: 'duel',
     // the rage is tense until the foe is nearly beaten; then the hero's theme takes over
     music: (o, s) => { const e = s.foe, u = e ? 1 - Math.max(0, e.hp) / e.maxHp : 0; return { urgency: u, danger: s.raged && u < 0.75, focus: !!e }; },
     begin(o, s){
       sweepField();
-      s.foe = null; s.dropT = 2.4; s.raged = false;
-      showBanner('', 'The troops fall back. Something walks through them.', 2.4);
+      if (o.quarry) o.name = M.def.quarry[G.hero].name;   // (o is this run's copy: forHero)
+      s.foe = null; s.dropT = o.quarry ? 1.6 : 2.4; s.raged = false;
+      if (o.quarry){ const q = M.def.quarry[G.hero]; showBanner(q.name, 'Nowhere left to run.', 2.0, { kicker: 'CORNERED' }); }
+      else showBanner('', 'The troops fall back. Something walks through them.', 2.4);
     },
     update(o, s, dt){
       if (!s.foe){
         if ((s.dropT -= dt) > 0) return;
-        s.foe = spawnInquisitor(o);
+        s.foe = o.quarry ? spawnQuarryFoe(o) : spawnInquisitor(o);
       }
       const e = s.foe, gone = e.dead || !enemies.includes(e);
       if (!s.raged && !gone && e.hp <= e.maxHp * o.rage){
@@ -278,9 +353,145 @@ function dropShipSolid(){
 }
 function shipGone(){ if (shared.refugeShip){ dropShipSolid(); shared.refugeShip.group.visible = false; } }
 
+/* ============================================================
+   THE QUARRY — who you chase in a pursuit: an enemy model run along the route's legs (data/missions.js `route`), not
+   a fighting foe until it turns to duel at the end. Its feet follow the ground under it, it vaults low cover, and
+   the stretches marked 'leap' are jumped. A red marker over it shows while you can see it.
+   ============================================================ */
+function legPath(i){
+  const pts = M.def.route[i], cum = [0];
+  for (let k = 1; k < pts.length; k++) cum.push(cum[k-1] + Math.hypot(pts[k][0] - pts[k-1][0], pts[k][1] - pts[k-1][1]));
+  return { pts, cum, len: cum[cum.length - 1] };
+}
+// how far along the leg is the point nearest (x, z)
+function projectPath(P, x, z){
+  let best = Infinity, at = 0;
+  for (let k = 0; k < P.pts.length - 1; k++){
+    const [ax, az] = P.pts[k], [bx, bz] = P.pts[k+1], dx = bx - ax, dz = bz - az, l2 = dx*dx + dz*dz || 1;
+    const t = Math.max(0, Math.min(1, ((x - ax)*dx + (z - az)*dz) / l2)), d = Math.hypot(ax + dx*t - x, az + dz*t - z);
+    if (d < best){ best = d; at = P.cum[k] + t * (P.cum[k+1] - P.cum[k]); }
+  }
+  return at;
+}
+function paceAt(pace, gap){
+  if (gap <= pace[0][0]) return pace[0][1];
+  for (let k = 1; k < pace.length; k++) if (gap < pace[k][0]){ const [g0, s0] = pace[k-1], [g1, s1] = pace[k]; return s0 + (s1 - s0) * (gap - g0) / (g1 - g0); }
+  return pace[pace.length - 1][1];
+}
+// the top of whatever low cover is under (x, z): what the quarry's feet stand on (taller solids it never runs into)
+function supportAt(x, z){
+  let top = 0;
+  for (const c of solids){
+    if (c.h > 3.2 || c.h <= top) continue;
+    if (c.box ? (Math.abs(x - c.x) < c.hx + 0.25 && Math.abs(z - c.z) < c.hz + 0.25) : Math.hypot(x - c.x, z - c.z) < c.r + 0.25) top = c.h;
+  }
+  return top;
+}
+// is the line between two eyes blocked by a solid taller than the line where it crosses?
+function sightBlocked(ax, ay, az, bx, by, bz){
+  const dx = bx - ax, dz = bz - az, l2 = dx*dx + dz*dz || 1;
+  for (const c of solids){
+    if (c.h < Math.min(ay, by)) continue;
+    let t = null;
+    if (c.box){   // slab test against the footprint, shrunk a touch so a glancing corner doesn't count
+      let t0 = 0, t1 = 1;
+      for (const [o, d, lo, hi] of [[ax, dx, c.x - c.hx + 0.15, c.x + c.hx - 0.15], [az, dz, c.z - c.hz + 0.15, c.z + c.hz - 0.15]]){
+        if (Math.abs(d) < 1e-6){ if (o < lo || o > hi){ t0 = 2; break; } continue; }
+        let u0 = (lo - o) / d, u1 = (hi - o) / d; if (u0 > u1){ const w = u0; u0 = u1; u1 = w; }
+        t0 = Math.max(t0, u0); t1 = Math.min(t1, u1);
+      }
+      if (t0 <= t1) t = t0;
+    } else {
+      const u = Math.max(0, Math.min(1, ((c.x - ax)*dx + (c.z - az)*dz) / l2));
+      if (Math.hypot(ax + dx*u - c.x, az + dz*u - c.z) < c.r * 0.85) t = u;
+    }
+    if (t !== null && c.h > ay + (by - ay) * t) return true;
+  }
+  return false;
+}
+function makeQuarry(){
+  const q = M.def.quarry[G.hero];
+  const g = buildEnemyMesh(ENEMY_TYPES[q.foe]);
+  g.scale.multiplyScalar(q.scale || 1);
+  g.userData.bodyMat.color.lerp(new THREE.Color(q.tint), 0.5);
+  const tag = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.6, 4),
+    new THREE.MeshBasicMaterial({ color: RED, depthTest: false, transparent: true, opacity: 0.9, toneMapped: false }));
+  tag.rotation.x = Math.PI; tag.renderOrder = 998; tag.visible = false;
+  scene.add(g, tag); M.props.push(g, tag);
+  return { g, tag, def: q, ph: 0 };
+}
+// on (re)start: the quarry waits at the start of the leg you begin on, or where the run ended if you begin at the duel
+function placeQuarry(o0){
+  M.quarry = makeQuarry();
+  const leg = o0.kind === 'pursuit' ? o0.leg : M.def.route.length - 1;
+  const s = { P: legPath(leg), d: 0, y: 0, vy: 0 };
+  if (o0.kind !== 'pursuit') s.d = s.P.len;
+  placeOnPath(s, M.quarry);
+}
+// stand the quarry at s.d along its leg (dt > 0: moving at spd, so its feet ease over cover and it leans into the run)
+function placeOnPath(s, q, dt = 0, spd = 0){
+  const P = s.P, d = Math.min(s.d, P.len - 1e-4);
+  let k = 0; while (k < P.pts.length - 2 && d > P.cum[k+1]) k++;
+  const a = P.pts[k], b = P.pts[k+1], L = P.cum[k+1] - P.cum[k] || 1, t = (d - P.cum[k]) / L;
+  const x = a[0] + (b[0] - a[0]) * t, z = a[1] + (b[1] - a[1]) * t, dir = Math.atan2(b[0] - a[0], b[1] - a[1]);
+  let y;
+  if (b[2] === 'leap'){   // a jump: an arc from the ground at one end to the ground at the other
+    const y0 = supportAt(a[0], a[1]), y1 = supportAt(b[0], b[1]);
+    y = y0 + (y1 - y0) * t + 4 * (0.6 + 0.12 * L) * t * (1 - t); s.vy = 0;
+  } else {
+    const ax = x + Math.sin(dir) * 0.6, az = z + Math.cos(dir) * 0.6, sup = Math.max(supportAt(x, z), supportAt(ax, az));
+    if (!dt || sup >= s.y){ y = dt ? Math.min(sup, s.y + dt * 12) : sup; s.vy = 0; }   // up onto it in a hop
+    else { s.vy -= 30 * dt; y = Math.max(sup, s.y + s.vy * dt); if (y <= sup) s.vy = 0; }   // off it under gravity
+  }
+  s.y = y;
+  const g = q.g, running = spd > 0.5;
+  q.ph += dt * (running ? spd * 1.6 : 2);
+  s.yaw = dt ? s.yaw + Math.atan2(Math.sin(dir - s.yaw), Math.cos(dir - s.yaw)) * Math.min(1, dt * 10) : dir;
+  g.position.set(x, y + (running && y <= supportAt(x, z) + 0.01 ? Math.abs(Math.sin(q.ph)) * 0.1 : 0), z);
+  g.rotation.set(running ? Math.min(0.35, spd * 0.028) : 0, s.yaw, 0);
+  q.tag.position.set(x, y + 2.7 * (q.def.scale || 1) + Math.sin(G.gt * 5) * 0.12, z);
+}
+// standing still: turn to face the hero
+function faceHero(q, dt){
+  const p = playerPos(), g = q.g, want = Math.atan2(p.x - g.position.x, p.z - g.position.z);
+  g.rotation.y += Math.atan2(Math.sin(want - g.rotation.y), Math.cos(want - g.rotation.y)) * Math.min(1, dt * 5);
+  g.rotation.x = 0;
+}
+function shove(q, s){
+  const qp = q.g.position, pp = playerPos(), dx = pp.x - qp.x, dz = pp.z - qp.z, l = Math.hypot(dx, dz) || 1;
+  hurtPlayer(6, V3(qp.x, 1, qp.z), false, false);
+  player.vel.x += dx / l * 13; player.vel.z += dz / l * 13; player.vel.y = Math.max(player.vel.y, 5);
+  burst(V3(qp.x, 1.2, qp.z), q.def.tint, 18, 9, 3, 0.9);
+  G.shake = Math.max(G.shake, 0.5);
+  floater(V3(pp.x, 1.8, pp.z), G.hero === 'mando' ? 'SHOCK BLAST' : 'FORCE SHOVE', '#ff9a8a');
+  s.burstT = 1.4; s.shoveCd = 4;
+}
+function quarryEscaped(){
+  const q = M.quarry.def;
+  showBanner(q.name + ' GOT AWAY', 'Back to where the chase began.', 2.6, { kicker: 'MISSION FAILED' });
+  S.uiDeny();
+  M.failT = 2.8;
+}
+// take one foe off the field without counting it as a kill
+function dropFoe(e){
+  scene.remove(e.group); cleanupDuel(e); cleanupTactics(e);
+  if (e.hpBar) scene.remove(e.hpBar);
+  if (e.aimLine) scene.remove(e.aimLine);
+}
+// the quarry stops running and fights: a champion of its type, standing where it stopped
+function spawnQuarryFoe(o){
+  const q = M.def.quarry[G.hero], p = M.quarry.g.position;
+  const e = spawnInquisitor({ ...o, foe: q.foe, name: q.name, scale: q.scale, tint: q.tint }, [p.x, p.z],
+    { kicker: q.kicker, line: G.hero === 'mando' ? 'The hunt ends here.' : 'One blade. No one else.' });
+  e.state = 'chase'; e.st = 0; e.group.position.y = 0; e.group.rotation.y = M.quarry.g.rotation.y;   // no rise from the ground: it was already here
+  scene.remove(M.quarry.g, M.quarry.tag);
+  M.quarry = null;
+  return e;
+}
+
 // the duel's opponent: an existing duellist, scaled up into a champion with its own bar and a sharper profile
-function spawnInquisitor(o){
-  const e = fieldSpawn(o.foe, o.at[0], o.at[1]);
+function spawnInquisitor(o, at = o.at, opts = {}){
+  const e = fieldSpawn(o.foe, at[0], at[1]);
   e.champion = true;
   e.hp = e.maxHp = Math.round(e.hp * o.hp);
   e.t = { ...e.t, dmg: e.t.dmg * o.dmg, score: 20 };   // a copy: never mutate the shared type
@@ -290,13 +501,13 @@ function spawnInquisitor(o){
   makeBossBar(e);
   burst(V3(e.group.position.x, 1.2, e.group.position.z), o.tint, 24, 8, 5, 1);
   G.shake = Math.max(G.shake, 0.7);
-  showBanner(o.name, 'One blade. No one else.', 2.4, { kicker: 'DUEL' });
+  showBanner(o.name, opts.line || 'One blade. No one else.', 2.4, { kicker: opts.kicker || 'DUEL' });
   S.roar(e.group.position); MUSIC.waveSting();
   return e;
 }
 
 function beginObjective(){
-  const o = M.def.objectives[M.i];
+  const o = forHero(M.def.objectives[M.i]);
   M.o = o; M.s = {};
   showBanner(o.title, '', 2.0, { kicker: 'OBJECTIVE ' + (M.i + 1) + ' / ' + M.def.objectives.length });
   say(o);
@@ -335,6 +546,8 @@ export function updateMission(dt){
   if (!G.mission){ clearMission(); return; }   // left the mission (main menu, another mode)
   M.fx = M.fx.filter(f => f(dt));
   if (M.panelT > 0 && (M.panelT -= dt) <= 0) hidePanel();
+  if (M.failT > 0){ if ((M.failT -= dt) <= 0) startMission(M.def.id, M.i); return; }   // it got away: this leg again
+  if (M.quarry && !(M.o && M.o.kind === 'pursuit')) faceHero(M.quarry, dt);   // between legs it stops and looks back
   if (M.won){ if ((M.endT -= dt) <= 0){ M.won = false; missionComplete(); } return; }
   if (M.waitT > 0){ MUSIC.setCue('regroup'); if ((M.waitT -= dt) <= 0) beginObjective(); return; }
   if (!M.o) return;
@@ -346,8 +559,17 @@ export function updateMission(dt){
 export function skipObjective(){
   if (!M.on || !M.o) return false;
   if (M.o.kind === 'hold') M.s.prog = M.o.time;   // let the hold finish its own way (the transport lifts off)
+  else if (M.o.kind === 'pursuit'){   // it reaches the end of the leg, with you on its heels
+    const S = M.s;
+    S.d = S.P.len; placeOnPath(S, M.quarry);
+    const k = S.P.pts.length - 1, [ax, az] = S.P.pts[k - 1], [bx, bz] = S.P.pts[k], l = Math.hypot(bx - ax, bz - az) || 1, t = Math.max(0, 1 - 8 / l);
+    playerPos().set(ax + (bx - ax) * t, 0, az + (bz - az) * t);
+    completeObjective();
+  }
   else completeObjective();
   return true;
 }
+// dev console / tests: the running mission's state (the quarry, the current objective's state)
+export const missionState = () => M;
 // how far through the mission (the atmosphere's mood follows it)
 export function missionProgress(){ return M.on ? M.i / Math.max(1, M.def.objectives.length - 1) : 0; }

@@ -185,10 +185,10 @@ function nearbyWallNormal(){
       if (d > 0.001 && d < c.r + 1.35) return V3(dx/d, 0, dz/d);
     }
   }
-  const h = shared.arenaHalf - 1;
+  const h = shared.arenaHalf - 1, hz = shared.arenaHalfZ - 1;
   if (pp.x >  h - 1.4) return V3(-1, 0, 0);
   if (pp.x < -(h - 1.4)) return V3( 1, 0, 0);
-  if (pp.z >  h - 1.4) return V3( 0, 0, -1);
-  if (pp.z < -(h - 1.4)) return V3( 0, 0,  1);
+  if (pp.z >  hz - 1.4) return V3( 0, 0, -1);
+  if (pp.z < -(hz - 1.4)) return V3( 0, 0,  1);
   return null;
 }

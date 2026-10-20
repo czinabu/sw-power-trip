@@ -26,7 +26,7 @@ export function segBlockedBySolids(ax, az, bx, bz){
 }
 
 export function clampToArena(pos, vel, enemy){
-  const h = shared.arenaHalf - 1;
+  const h = shared.arenaHalf - 1, hz = shared.arenaHalfZ - 1;
   if (Math.abs(pos.x) > h){
     if (vel && Math.abs(vel.x) > 10){
       burst(pos, 0x99bbdd, 6, 5, 4);
@@ -35,13 +35,13 @@ export function clampToArena(pos, vel, enemy){
     }
     pos.x = clamp(pos.x, -h, h);
   }
-  if (Math.abs(pos.z) > h){
+  if (Math.abs(pos.z) > hz){
     if (vel && Math.abs(vel.z) > 10){
       burst(pos, 0x99bbdd, 6, 5, 4);
       if (enemy && !enemy.dead) damageEnemy(enemy, 20, V3(0,0,-Math.sign(pos.z)), 4);
       vel.z *= -0.4;
     }
-    pos.z = clamp(pos.z, -h, h);
+    pos.z = clamp(pos.z, -hz, hz);
   }
 }
 

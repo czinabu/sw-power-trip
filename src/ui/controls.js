@@ -10,16 +10,16 @@ const CONTROLS = {
       ['MOUSE', 'Look'],
       ['SPACE', 'Jump', 'Tap again in the air to double-jump'],
       ['HOLD SPACE', 'Force leap and glide', 'Spends Force'],
-      ['Q', 'Dash', 'A short dodge-flip any way you press, with brief invulnerability; dash just as a blow lands for a perfect dodge'],
-      ['HOLD SHIFT + W', 'Sprint', 'Burns stamina; turns wide'],
-      ['C', 'Force slide', 'Out of a sprint: a long skid forward that ducks blaster fire and bowls troops over · attack out of it to sweep'],
+      ['SHIFT', 'Dash', 'A short dodge-flip any way you press, with brief invulnerability; dash just as a blow lands for a perfect dodge'],
+      ['Q', 'Sprint / walk', 'Switches between sprint and walk; sprinting burns stamina and turns wide'],
+      ['ALT', 'Force slide', 'Out of a sprint: a long skid forward that ducks blaster fire and bowls troops over · attack out of it to sweep'],
     ]},
     { title: 'PARKOUR', rows: [
       ['SPACE', 'Vault / climb', 'Press it right in front of low cover while running at it to vault over in one move; jump at a ledge to pull up'],
       ['A / D', 'Ledge hang', 'Catch a high lip to hang; A/D shimmy, W or SPACE climbs, S drops'],
       ['W', 'Wall-run', 'Jump alongside a tall wall at speed; SPACE kicks off it'],
       ['FLOW', 'Parkour pays', 'Every vault, climb, slide, wall-run and roll refunds Force; chain different moves for more, and the cut right after one hits harder'],
-      ['Q', 'Landing roll', 'Just before a hard landing, or you stagger'],
+      ['SHIFT', 'Landing roll', 'Just before a hard landing, or you stagger'],
     ]},
     { title: 'FIGHT', rows: [
       ['LMB', 'Saber combo', 'The key you hold picks the cut: A / D sweep sideways, W chops overhead, S whirls behind you; every third is a finisher'],
@@ -35,7 +35,7 @@ const CONTROLS = {
     ]},
     { title: 'FORCE POWERS', rows: [
       ['F', 'Push', 'From the start'],
-      ['C', 'Pull', 'Unlocks after wave 2 (C while sprinting is the Force slide)'],
+      ['C', 'Pull', 'Unlocks after wave 2'],
       ['V', 'Barrier', 'Earned with XP · or Saber Throw (RMB + LMB)'],
       ['X', 'Slam', 'Earned with XP · or Mend, a self-heal'],
       ['R', 'Judgement', 'Earned with XP · or Repulse'],
@@ -49,7 +49,7 @@ const CONTROLS = {
       ['HOLD SPACE', 'Jetpack thrust', 'Hover and climb; burns fuel'],
       ['HOLD SHIFT', 'Boost in the air', 'Look down to dive'],
       ['SHIFT', 'Dodge on the ground'],
-      ['C', 'Slide', 'Out of a run; ducks blaster fire and steadies your aim'],
+      ['ALT / C', 'Slide', 'Out of a run; ducks blaster fire and steadies your aim'],
       ['FLOW', 'Parkour pays', 'Vaults, climbs and slides refuel the jetpack; shots right after one hit harder'],
     ]},
     { title: 'FIGHT', rows: [

@@ -5,8 +5,8 @@
 export const ROADMAP = [
   { title: 'Polish the core game', status: 'now',
     items: ['Combat, camera and movement feel', 'Menus, HUD and upgrade screens', 'Balance across all three levels'] },
-  { title: 'Missions', status: 'next',
-    items: ['Hold the line: defend a point until time runs out', 'Sabotage: destroy targets under fire', 'Extraction: reach the landing zone and survive', 'A Missions mode beside Campaign and Survival'] },
+  { title: 'Missions', status: 'now',
+    items: ['Playable above: The Last Evacuation', 'Playable above: The Long Chase', 'Extraction: reach the landing zone and survive', 'A Missions mode beside Campaign and Survival'] },
   { title: 'Squad-ready', status: 'next',
     items: ['Gamepad support', 'Revive downed allies', 'Upgrade picks that don\'t pause the fight'] },
   { title: 'Online co-op', status: 'later',

@@ -60,7 +60,7 @@ import './world/arenas/foundry.js';
 import './world/arenas/plains.js';
 import { queueSpawn, startLevel, checkUnlocks, startWave, updateFlow } from './game/flow.js';
 import { startTutorial, updateTutorial, skipStep, trainingProgress } from './game/tutorial.js';
-import { startMission, updateMission, skipObjective } from './game/mission.js';
+import { startMission, updateMission, skipObjective, missionState } from './game/mission.js';
 import {
   enemyDmgScale, genEndlessWave, spawnChampion, startEndless, startEndlessWave
 } from './game/survival.js';
@@ -78,6 +78,7 @@ import './ui/threats.js';
 import { updateHud } from './ui/hud.js';
 import { setOverlayState } from './ui/menus.js';
 import { showcaseActive, renderShowcase, leaveShowcase } from './ui/showcase.js';
+import './ui/customizer.js';
 import './data/difficulty.js';
 import './engine/input.js';
 import { updateCamera } from './engine/camera.js';
@@ -143,7 +144,7 @@ tick();
 
 /* expose configs + API for live tweaking and future edits (dev console) */
 window.GAME = { CFG, ENEMY_TYPES, LEVELS, BOSS_CFG, BOSS_MANDO, STANCES, SKILLS, MANDO, MANDO_WEAPONS, G, enemies, player, pillars, solids, rockets, bolts,
-  startLevel, startWave, spawnEnemy, startTutorial, startMission, skipObjective, skipStep, trainingProgress, spawnBoss, queueSpawn, checkUnlocks, switchStance, setHero,
+  startLevel, startWave, spawnEnemy, startTutorial, startMission, skipObjective, missionState, skipStep, trainingProgress, spawnBoss, queueSpawn, checkUnlocks, switchStance, setHero,
   openSkillTree, damageEnemy, damageBoss, updateHud, nextStoreGoal, enemyHpScale, eliteChance, ELITES, cycleQuality, forceBarrier, forceMend, updatePlayer, updateEnemies, updateBolts, endRun, updateFlow, startEndless, startEndlessWave, genEndlessWave, MUTATORS, ENDLESS_POWERS, buyPower, keys, camera,
   tryAttack, castGesture, forcePush, forceSlam, forceRepulse, stance, applySwingDamage, spawnChampion, startWave, bomberExplode, MUSIC, audioInit,
   spawnBoss, updateBoss, bossStagger, BOSS_CFG, BOSS_MANDO, rings,
