@@ -50,7 +50,7 @@ function wallBetween(ax, az, b){
   return b.y < c.h - 0.5;
 }
 
-const NO_REACT = { ragdoll: 1, knockdown: 1, getup: 1, fade: 1, spawn: 1, lock: 1, lunge: 1 };   // states that own the whole body
+const NO_REACT = { ragdoll: 1, knockdown: 1, getup: 1, fade: 1, spawn: 1, lock: 1, lunge: 1, grasped: 1 };   // states that own the whole body
 const LUNGING = { lungewind: 1, lunge: 1 };
 export function updateEnemies(dt){
   const pp = playerPos();
@@ -70,7 +70,7 @@ export function updateEnemies(dt){
       e.flash -= dt;
       g.userData.bodyMat.emissive.setHex(0x66aaff);
       g.userData.bodyMat.emissiveIntensity = 2;
-    } else if (e.state === 'stasis'){
+    } else if (e.state === 'stasis' || e.state === 'grasped'){   // held in the Force (grasped: player/jedi/grasp.js drives the body)
       g.userData.bodyMat.emissive.setHex(0x2288ff);
       g.userData.bodyMat.emissiveIntensity = 0.9 + Math.sin(G.gt*10)*0.3;
     } else if (e.state !== 'windup') g.userData.bodyMat.emissiveIntensity = 0;
@@ -465,6 +465,7 @@ export function updateEnemies(dt){
       case 'lunge':
         updateLunge(e, dt, pp);
         break;
+      case 'grasped': break;   // the Jedi's grasp moves the body (player/jedi/grasp.js)
       case 'stasis':
         if (e.st <= 0){
           e.state = 'chase';
@@ -564,7 +565,7 @@ export function updateEnemies(dt){
     // JET TROOPER hover — drive altitude to ~1.5 above the player (so flying up never escapes it) with a gentle bob.
     // Death (ragdoll) and a knockdown are exempt, so a slain or floored flyer falls under gravity instead of the hover
     // holding it up against the knock (that fight left it skidding on its back across the arena, never shooting).
-    if (e.t.fly && !e.dead && e.state !== 'ragdoll' && e.state !== 'knockdown' && e.state !== 'fade' && e.state !== 'spawn'){
+    if (e.t.fly && !e.dead && e.state !== 'ragdoll' && e.state !== 'knockdown' && e.state !== 'fade' && e.state !== 'spawn' && e.state !== 'grasped'){
       const flyH = clamp(playerPos().y + 1.5, 2.4, 9) + Math.sin(G.gt*2 + i) * 0.22;
       g.position.y = dampToward(g.position.y, flyH, dt, 4);
       if (g.userData.thrusters){ const fl = 0.7 + Math.abs(Math.sin(G.gt*18 + i)) * 0.5; for (const th of g.userData.thrusters) th.material.opacity = fl; }
@@ -572,7 +573,7 @@ export function updateEnemies(dt){
     // grounded, living foes can't walk through solid pillars/crates — they path around (skip while airborne-knocked /
     // flying). climb=true lets them MOUNT shallow steps (the temple dais) so they pursue you up it; the support
     // height is then applied so they STAND on the surface underfoot (flat floor = 0). Tall sheer crates still block.
-    if (!e.dead && !e.t.fly && e.state !== 'ragdoll' && e.state !== 'knockdown' && e.state !== 'fade' && e.state !== 'spawn' && e.state !== 'leap'){
+    if (!e.dead && !e.t.fly && e.state !== 'ragdoll' && e.state !== 'knockdown' && e.state !== 'fade' && e.state !== 'spawn' && e.state !== 'leap' && e.state !== 'grasped'){
       const sup = collideSolids(g.position, 0.7 * (e.t.scale || 1), true);
       g.position.y = sup + Math.abs(Math.sin(G.gt*8 + i)) * 0.05;
     }
@@ -608,7 +609,7 @@ export function updateEnemies(dt){
     // SAFETY — a LIVING foe must never be stuck under the floor or pitched into a broken (side/upside-down) angle.
     if (!e.dead){
       if (g.position.y < 0) g.position.y = 0;
-      if (e.state !== 'knockdown' && e.state !== 'getup' && e.state !== 'ragdoll'){
+      if (e.state !== 'knockdown' && e.state !== 'getup' && e.state !== 'ragdoll' && e.state !== 'grasped'){
         if (g.rotation.x > 1.7 || g.rotation.x < -1.7) g.rotation.x = 0;   // not a pose any normal state uses
         if (g.rotation.z > 1.0 || g.rotation.z < -1.0) g.rotation.z = 0;
       }

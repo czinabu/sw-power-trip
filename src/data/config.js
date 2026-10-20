@@ -40,7 +40,12 @@ export const CFG = {
     pull:   { cost: 30, cd: 3.0,  range: 18, angle: 1.2 },
     // ADVANCED powers — expensive, earned as the legend grows. The mightiest eat most of the bar.
     throw:  { cost: 38, cd: 5.0,  range: 16, dmg: 22, speed: 24 },
-    slam:   { cost: 64, cd: 5.5,  radius: 10, dmg: 7, knock: 21 },   // AOE knockdown to clear breathing room, not a finisher
+    slam:   { cost: 64, cd: 5.5,  radius: 10, dmg: 7, knock: 21,      // JUMP ATTACK — the wave is an AOE knockdown for breathing room…
+              strike: 30, core: 2.6, leap: 11,                        // …the blade itself hits hard on whoever you land on; leap = ground take-off carry
+              bigWave: 0, bigScale: 1.6 },                            // bigWave (mastery rank II): a double-jump dive lands a bigScale-wider wave
+    // FORCE GRASP — hold the Pull key: after `hold` seconds the foe in your aim locks into your grasp
+    grasp:  { hold: 1.0, cost: 26, drain: 18, maxT: 5, dist: 4.2, range: 16, angle: 0.5,
+              throwSpeed: 30, throwDmg: 18, yankDmg: 4, bumpDmg: 8, bumpKnock: 20, bumpSpeed: 4.5 },
     // the late ULTIMATES are deliberately TAXING — big Force cost + long cooldown so they're a deliberate beat, never spam
     judge:  { cost: 72, cd: 12.0, range: 14, angle: 0.9, targets: 4, time: 1.3, tick: 0.12, dmg: 7 },  // chain lightning channel
     repulse:{ cost: 82, cd: 11.0, radius: 13, dmg: 30, knock: 36 },   // FORCE REPULSE — a 360° concussive blast

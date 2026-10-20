@@ -30,6 +30,7 @@ import { openSkillTree } from '../ui/store-ui.js';
 import { showBanner } from '../ui/banners.js';
 import { diffBossCheckpoint } from '../data/difficulty.js';
 import { catchDarksaber } from '../player/mando/darksaber.js';
+import { resetGrasp } from '../player/jedi/grasp.js';
 
 /* ============================================================
    LEVEL / WAVE FLOW
@@ -70,7 +71,8 @@ export function startLevel(idx, opts){
   rockets.length = 0;
   G.spawnQueue.length = 0;
   // reset transient combat state
-  player.slamming = false;
+  player.slamming = false; player.leapAtk = false; player.slamBig = false;
+  resetGrasp();
   player.doubleJumped = false;
   player.firing = false; player.trigHeld = false; player.shieldDropT = 0; player.fireCd = 0; player.flaming = false; player.jetActive = false; player.boosting = false; player.meleeT = 0; player.lockOn = false;
   catchDarksaber(true);   // a thrown Darksaber goes back in the hand before the next fight

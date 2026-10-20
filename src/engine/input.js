@@ -19,6 +19,7 @@ import {
 } from '../player/jedi/force.js';
 import { forceDash, doJump } from '../player/movement.js';
 import { trySlide } from '../player/parkour.js';
+import { pullPress, pullRelease, graspThrow, graspDrop } from '../player/jedi/grasp.js';
 import { toggleLock } from '../player/lockon.js';
 import {
   bactaStim, mandoRocket, mandoJetMissile, whistlingBirds, thermalDetonator, grappleHook, jetSlam,
@@ -159,14 +160,14 @@ document.addEventListener('keydown', (e) => {
       player.sprintOn = !player.sprintOn;
       showBanner('', player.sprintOn ? 'SPRINT' : 'WALK', 0.6);
     }
-    if (k === 'alt' && !e.repeat) trySlide();          // the FORCE SLIDE out of a sprint (parkour.js)
+    if (k === 'alt' && !e.repeat && !graspDrop()) trySlide();   // the FORCE SLIDE out of a sprint (parkour.js); holding a foe, it drops them
     if (k === 't' && !e.repeat) toggleLock();          // soft lock-on
-    if (k === 'f'){ if (!(player.saberLock && lockPush())) forcePush(); }   // in a saber lock: a point-blank shove that breaks it
-    if (k === 'c') forcePull();
+    if (k === 'f'){ if (!(player.saberLock && lockPush()) && !graspThrow()) forcePush(); }   // in a saber lock: a point-blank shove that breaks it
+    if (k === 'c' && !e.repeat) pullPress();   // tap = Force Pull on release; hold 1s = Force GRASP (grasp.js)
     if (k === 'e' && !e.repeat){ if (player.saberLock) lockKick(); else forceKick(); }   // FRONT KICK — always-available melee, shares 'E' with the Mando's punch
     if (k === 'v') forceBarrier();     // Force Barrier — the defensive bubble (its fork-sibling SABER THROW is RMB+LMB)
     // ADAPTIVE FORK KEYS — each either/or pair shares ONE bind (you only ever own one of the pair).
-    if (k === 'x'){ if (G.unlocked.slam) forceSlam(); else if (G.unlocked.mend) forceMend(); }                         // UTIL: force SLAM or MEND
+    if (k === 'x'){ if (G.unlocked.slam) forceSlam(); else if (G.unlocked.mend) forceMend(); }                         // UTIL: JUMP ATTACK or MEND
     if (k === 'r' && G.mode === 'play'){ if (G.unlocked.judge) forceJudgement(); else if (G.unlocked.repulse) forceRepulse(); }   // ULT: JUDGEMENT or REPULSE ('R' still restarts when dead/victory below)
     if (k === 'g' && !e.repeat && G.mode === 'play'){   // GRIP — flip between a regular and a reverse (Shien) saber grip mid-fight
       setSaberGrip(G.saberGrip === 'reverse' ? 'regular' : 'reverse');
@@ -187,4 +188,4 @@ document.addEventListener('keydown', (e) => {
     try { const p = renderer.domElement.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch(e){}
   }
 });
-document.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; if (e.key === 'Alt') e.preventDefault(); });
+document.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; if (e.key.toLowerCase() === 'c' && G.hero !== 'mando') pullRelease(); if (e.key === 'Alt') e.preventDefault(); });

@@ -76,7 +76,7 @@ export const MANDO_STORE = [
 ];
 /* JEDI ability arc — a steady, power-ASCENDING climb across the run:
    I  SIDEARM (early, cheap) — a real DEFENCE-vs-OFFENCE fork (this is where Force Barrier lives)
-   II SUSTAIN (mid) — Force Slam (an aerial knockdown) OR Force Mend (a self-heal)
+   II SUSTAIN (mid) — Jump Attack (a leaping shockwave strike) OR Force Mend (a self-heal)
    III ASCENSION (late) — your ULTIMATE: the two mightiest powers, mutually exclusive
    FINAL (latest, priciest) — a capstone that supercharges whichever ultimate you took.
    Costs climb with power so the strongest tools are unmistakably end-game rewards. */
@@ -87,7 +87,7 @@ export const JEDI_STORE = [
   { id:'barrier', tier:1, stage:2, cost:90,  fork:'j_arm', ico:'⛨', nm:'FORCE BARRIER', ds:'Bubble: knockback on cast, −damage &amp; bolt-deflect, then a parting shove · V',
     owned:()=>!!G.unlocked.barrier, buy(){ G.unlocked.barrier = true; } },
   // II — SUSTAIN fork (after wave 5): clear breathing room with an AOE knockdown, OR knit your wounds. Offense vs sustain.
-  { id:'jslam',   tier:2, stage:4, cost:170, fork:'j_util', ico:'▼', nm:'FORCE SLAM', ds:'Aerial shockwave knockdown · X',
+  { id:'jslam',   tier:2, stage:4, cost:170, fork:'j_util', ico:'▼', nm:'JUMP ATTACK', ds:'Leap and drive the blade down in a shockwave · X',
     owned:()=>!!G.unlocked.slam,    buy(){ G.unlocked.slam = true; } },
   { id:'mend',    tier:2, stage:4, cost:170, fork:'j_util', avail:()=>!player.up.lifesteal, ico:'✚', nm:'FORCE MEND', ds:'Channel a big self-heal (+30% vit) · X · LOCKS Vampiric Blade',
     owned:()=>!!G.unlocked.mend,    buy(){ G.unlocked.mend = true; } },

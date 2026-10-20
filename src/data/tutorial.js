@@ -203,14 +203,14 @@ export const TRAINING_DONE = {
    ['flag', f] player[f] turns on · none: a passive gain, the line just shows for a moment */
 export const DRILLS = {
   jedi: {
-    pull:    { say: 'What you push away, you may also draw near.', key: 'C', use: ['cd', 'pull'] },
+    pull:    { say: 'What you push away, you may also draw near. Hold it, and you hold them.', key: 'C', use: ['cd', 'pull'] },
     fast:    { say: 'Ataru, the form of the acrobat. Strike from everywhere at once.', key: '1', use: ['stance', 'fast'] },
     strong:  { say: 'Djem So. Meet force with greater force.', key: '3', use: ['stance', 'strong'] },
     fj1:     { say: 'The Force carries you higher now.', key: 'HOLD SPACE' },
     fj2:     { say: 'Higher still. Trust it.', key: 'HOLD SPACE' },
     barrier: { say: 'Wrap yourself in the Force, and let the fire break on it.', key: 'V', use: ['cd', 'barrier'] },
     throw:   { say: 'Let the blade fly. It will come home to your hand.', key: 'RMB + LMB', use: ['cd', 'throw'] },
-    slam:    { say: 'From above, bring the Force down like a hammer.', key: 'X', use: ['cd', 'slam'] },
+    slam:    { say: 'Leap, and bring the blade down like a hammer.', key: 'X', use: ['cd', 'slam'] },
     mend:    { say: 'The Force mends what it touches. Even you.', key: 'X', use: ['cd', 'mend'] },
     judge:   { say: 'Judgement. Let them answer for what they have done.', key: 'R', use: ['cd', 'judge'] },
     repulse: { say: 'Gather the Force inward, then release it all.', key: 'R', use: ['cd', 'repulse'] },
