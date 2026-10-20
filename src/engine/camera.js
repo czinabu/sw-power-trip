@@ -5,7 +5,7 @@ import { camera } from './renderer.js';
 import { clamp, TMP } from '../utils.js';
 import { shared, G, player, enemies } from '../state.js';
 import { fwd, rightV, playerPos, stance } from '../player/helpers.js';
-import { cameraClearance } from '../world/camblock.js';
+import { cameraClearance, updatePropFade } from '../world/camblock.js';
 import { CFG } from '../data/config.js';
 
 /* ============================================================
@@ -102,8 +102,9 @@ export function updateCamera(dt){
   const lensFloor = pp.y + C.minLensY, aimRise = Math.max(0, lensFloor - TMP.y);
   if (TMP.y < lensFloor) TMP.y = lensFloor;
   if (TMP.y < 0.4) TMP.y = 0.4;
-  // never park the lens inside a prop (inside one, its ink hull fills the screen black): pull in along the line from
-  // the hero's head. The head, not the look-ahead point, because running at a wall puts the look-ahead inside it
+  // never park the lens INSIDE a prop (inside one, its ink hull fills the screen black): pull in along the line from
+  // the hero's head. The head, not the look-ahead point, because running at a wall puts the look-ahead inside it.
+  // Props merely in the way don't move the lens: they fade (below)
   const hx = pp.x, hz = pp.z;
   const clear = v => { const k = cameraClearance(hx, ty, hz, v.x, v.y, v.z); if (k < 1) v.set(hx + (v.x - hx)*k, ty + (v.y - ty)*k, hz + (v.z - hz)*k); };
   clear(TMP);
@@ -141,6 +142,8 @@ export function updateCamera(dt){
   // ...or into a prop: the lag, shake, hit kick and sway all move the lens after the check above, so check where it
   // actually ended up
   clear(camera.position);
+  // SEE-THROUGH — a prop standing between the lens and the hero turns slightly see-through (world/camblock.js, ink.js)
+  updatePropFade(camera.position, pp.x, pp.y, pp.z, dt);
   // Mando aims a bit ABOVE its own head height; while DIVING the look target drops so the camera follows the dive angle
   const diveLook = (G.hero === 'mando' && player.boosting) ? clamp(player.vy * 0.06, -2.0, 0) : 0;
   // LOOKING DOWN — the lens climbs overhead, and aiming far past the hero from up there drops them off the bottom of the

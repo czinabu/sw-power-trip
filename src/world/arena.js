@@ -12,7 +12,7 @@ import { themeFor } from '../data/worlds.js';
 import { paintSky, paintFloor } from './paint.js';
 import { buildBackdrop } from './backdrop.js';
 import { bakeArena, toon } from './ink.js';
-import { resetCamBlockers, addCamBlockers } from './camblock.js';
+import { resetCamBlockers } from './camblock.js';
 import { applyAtmosphere, clearAtmosphere } from './atmosphere.js';
 import { buildTempleArena } from './arenas/temple.js';
 import { buildFoundryArena } from './arenas/foundry.js';
@@ -174,7 +174,6 @@ export function buildArena(L){
     }
   }
   buildNav();   // the enemy pathing grid follows the new layout (enemies/nav.js)
-  addCamBlockers(shared.arenaGroup);   // record the props' shapes for the follow-cam before they're merged away
   // INK: cel-shade every static prop and merge them into a handful of draw calls (glows and hazards stay live)
   if (T) shared.arenaBake = bakeArena(shared.arenaGroup, T.ink ?? 0.045);
 }
@@ -220,6 +219,5 @@ function buildWorld(L, T){
 
   const back = buildBackdrop(T.backdrop, L.arena/2, T.seed || 1);
   shared.arenaGroup.add(back);
-  addCamBlockers(back);   // the backdrop sits just past the edge, where a pulled-back camera can reach it
   bakeArena(back, T.inkFar ?? 0.16);
 }
