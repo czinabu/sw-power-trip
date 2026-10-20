@@ -33,6 +33,10 @@
 //               mission's `route` (one polyline per leg) and who runs it is its `quarry`
 //               ambush: [{ at: [x, z] (fires as the quarry runs past here), spots: [[x, z]…], group: { type: count } }]
 //               foes stepping out of doorways to slow you down · start: [x, z, yaw] where a retry of this leg begins
+//               standoff: [{ at: [x, z], spots, group, line }] it stops here to cut through a sealed way and its guard
+//               (group, at spots) holds you off; it runs on once they're down · clash: { dmg, time, every } catch it on
+//               open ground and it turns to fight until you've taken dmg (a fraction of its hp) off it or `time` runs
+//               out, then breaks away; again no sooner than `every` seconds. The wounds carry into the quarry duel.
 // Every objective has `title` (the HUD line), and `say` / `task` per hero: the voice's line and the plain instruction.
 // Any field can differ per hero: put the hero's version under `hero: { jedi: {…}, mando: {…} }`.
 // `music` (optional) picks the score's cue for it (audio/music.js CUES: defend, infiltrate, duel, chase, battle…);
@@ -109,10 +113,11 @@ export const MISSIONS = {
         task: { jedi: 'Keep the Inquisitor in sight', mando: 'Keep the bounty in sight' },
         sight: 42, lost: 6, shove: 3.0,
         pace: [[-6, 11.5], [6, 10.5], [14, 8.4], [24, 7.0], [36, 4.5]],
+        clash: { dmg: 0.12, time: 12, every: 9 },
         ambush: [ { at: [0, -114], spots: [[-3, -101], [3, -101], [0, -99]], group: { grunt: 2, blaster: 1 } },
-                  { at: [-19, -80], spots: [[-19, -60], [-17, -57], [-21, -55]], group: { grunt: 2, lancer: 1 } },
-                  { at: [-6, -44], spots: [[10, -40], [13, -48], [20, -44]], group: { grunt: 1, blaster: 2 } },
-                  { at: [18, -30], spots: [[14, 0], [22, 0], [18, 4]], group: { grunt: 2, officer: 1 } } ] },
+                  { at: [-6, -44], spots: [[10, -40], [13, -48], [20, -44]], group: { grunt: 1, blaster: 2 } } ],
+        standoff: [ { at: [-19, -50], spots: [[-19, -58], [-16.5, -60], [-21.5, -60], [-19, -63]], group: { grunt: 2, lancer: 1, blaster: 1 } },
+                    { at: [18, -21], spots: [[16, -29], [20, -29], [18, -33], [15, -35]], group: { grunt: 2, officer: 1, blaster: 1 } } ] },
 
       { kind: 'pursuit', leg: 1, start: PURSUIT_SPOTS.checkpoint,
         title: { jedi: 'CHASE THE INQUISITOR', mando: 'CHASE THE BOUNTY' },
@@ -121,10 +126,11 @@ export const MISSIONS = {
         task: { jedi: 'Keep the Inquisitor in sight', mando: 'Keep the bounty in sight' },
         sight: 42, lost: 6, shove: 3.0,
         pace: [[-6, 11.5], [6, 10.5], [14, 8.6], [24, 7.2], [36, 4.5]],
+        clash: { dmg: 0.12, time: 12, every: 9 },
         ambush: [ { at: [-16, 27], spots: [[-12, 44], [-10, 50], [-13, 54]], group: { blaster: 2, grunt: 1 } },
-                  { at: [-20, 58], spots: [[-11, 70], [-14, 74], [-9, 66]], group: { grunt: 2, grenadier: 1 } },
-                  { at: [-6, 83], spots: [[10, 86], [6, 80], [20, 86]], group: { grunt: 2, lancer: 1, blaster: 1 } },
-                  { at: [17.5, 98], spots: [[17.5, 114], [15, 119], [20, 121]], group: { grunt: 2, blaster: 1 } } ] },
+                  { at: [-20, 58], spots: [[-11, 70], [-14, 74], [-9, 66]], group: { grunt: 2, grenadier: 1 } } ],
+        standoff: [ { at: [4, 83], spots: [[-6, 83], [-4, 86], [-4, 80], [-8, 85]], group: { grunt: 2, lancer: 1, blaster: 1 } },
+                    { at: [17.5, 113], spots: [[17.5, 104], [16.5, 100], [18.5, 100], [17.5, 96]], group: { grunt: 2, grenadier: 1, blaster: 1 } } ] },
 
       { kind: 'duel', quarry: true, title: { jedi: 'DEFEAT THE INQUISITOR', mando: 'BRING IN THE BOUNTY' },
         say: { jedi: 'Its ship is clamped down. Nowhere left to run. Read the blade, not the mask.',
