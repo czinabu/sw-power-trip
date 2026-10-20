@@ -21,6 +21,8 @@ import { buildHallArena } from './arenas/hall.js';
 import { buildForgeArena } from './arenas/forge.js';
 import { buildRefugeArena } from './arenas/refuge.js';
 import { buildPursuitArena } from './arenas/pursuit.js';
+import { buildDojoArena } from './arenas/dojo.js';
+import { buildThroneArena } from './arenas/throne.js';
 import { buildNav } from '../enemies/nav.js';
 
 /* ============================================================
@@ -38,6 +40,7 @@ export function buildArena(L){
   shared.arenaHalf = L.arena / 2;
   shared.arenaHalfZ = (L.arenaZ || L.arena) / 2;   // L.arenaZ: a long arena, deeper north–south than it is wide
   shared.ambient = null;
+  shared.dojoRemotes = null;      // the sandbox room's hovering remotes (world/arenas/dojo.js)
   shared.templeBrazier = null;   // cleared each rebuild; the temple layout re-assigns it (so we never flicker a stale mesh)
 
   const T = themeFor(L);
@@ -97,6 +100,8 @@ export function buildArena(L){
   else if (L.layout === 'forge'){ buildForgeArena(LP); }
   else if (L.layout === 'refuge'){ buildRefugeArena(LP); }
   else if (L.layout === 'pursuit'){ buildPursuitArena(LP); }
+  else if (L.layout === 'dojo'){ buildDojoArena(LP); }
+  else if (L.layout === 'throne'){ buildThroneArena(LP); }
   else {
   // pick a spot at least `gap` clear of every other obstacle so cover stays SPREAD OUT — clustered obstacles
   // form walls that trap the enemy AI. Returns null if no open spot is found (so we just place fewer).

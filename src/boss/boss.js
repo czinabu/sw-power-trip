@@ -435,7 +435,8 @@ export function updateBoss(dt){
         shared.boss = null;
         document.getElementById('bosswrap').style.display = 'none';
         G.slowmo = 1;
-        victory();
+        if (G.sandbox) showBanner('', 'BOSS DEFEATED', 1.6);   // the training room: no victory screen, just the floor back
+        else victory();
         return;
       }
       break;

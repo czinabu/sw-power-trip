@@ -25,7 +25,7 @@ export const shared = {
   ambient: null,   // drifting embers / ash / dust
   templeBrazier: null,
   refugeShip: null,   // the story mission's transport (world/arenas/refuge.js), animated by game/mission.js
-  levelPhase: 'idle',   // idle | between | fighting | bossfight | training | mission
+  levelPhase: 'idle',   // idle | between | fighting | bossfight | training | mission | sandbox
   phaseT: 0,
   lockFallback: false,   // pointer lock unavailable (e.g. embedded preview) — play with plain mouse-move look
   lockWorked: false,     // pointer lock has succeeded at least once, so a refusal is transient (Esc cooldown), not unsupported
@@ -52,11 +52,14 @@ export const G = {
   stance: 'medium', stanceCd: 0,
   hero: 'jedi',          // 'jedi' (saber/Force) or 'mando' (jetpack/blasters) — chosen on the menu
   // SURVIVAL / ENDLESS mode
-  modeSel: 'campaign',   // menu pick: 'campaign' | 'endless' | 'training' | 'mission'
+  modeSel: 'campaign',   // menu pick: 'campaign' | 'endless' | 'training' | 'mission' | 'sandbox'
   missionId: 'refuge',   // which story mission (data/missions.js) the EXTRAS panel launched
   endless: false,        // true while a survival run is active
   training: false,       // true while the tutorial runs (game/tutorial.js)
   mission: false,        // true while a story mission runs (game/mission.js)
+  sandbox: false,        // true while the sandbox runs (game/sandbox.js)
+  sandboxGod: false,     // the sandbox's god mode: the hero can't fall
+  forceElite: false,     // set while the sandbox spawns its ELITE foes
   endlessWave: 0,        // current survival wave (1-based)
   mut: null,             // active wave mutator id (or null)
   arenaRot: 0,           // which authored arena the survival run is currently on

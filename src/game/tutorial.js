@@ -282,6 +282,6 @@ export function updateTutorial(dt){
     if (G.mode === 'play') updateLesson(dt);
     return;
   }
-  if (G.mode === 'play' && !G.training) updateDrills(dt);
+  if (G.mode === 'play' && !G.training && !G.sandbox) updateDrills(dt);   // (the sandbox hands out powers at will: no drills)
   else if (D.cur && G.mode !== 'play'){ D.cur = null; hidePanel(); }
 }

@@ -236,6 +236,30 @@ export const TRAINING_WORLDS = {
     beats: { fog: 0x5a2a1a, fill: 1.05, tint: 0xff8a50 },
     sound: 'foundry',
   },
+  dojo: {   // the sandbox's training room inside the temple: warm wood and cream panels under a dark ceiling, lamp-lit
+    sky: { top: 0x1a0e0a, horizon: 0x3a2218, below: 0x2a1810, bands: 5, stars: 0 },
+    fog: 0x2a1a14, fogStart: 1.4, fogEnd: 4.0, clear: 0x1a0e0a,
+    light: { sun: 0xffe2c0, sunI: 1.45, dir: [-12, 40, 18], hemiSky: 0xffd8b8, hemiGround: 0x4a2a1e, fill: 1.0, rim: 0xffc890, rimI: 0.35 },
+    floor: { kind: 'parquet', base: 0x6a3020, seed: 8 },
+    outer: 0x3a1a12,
+    pal: { wood: 0x5a2a1c, woodD: 0x3a1a12, panel: 0xcfc4ae, metal: 0x8a8a86, crest: 0x2a140e, mat: 0xe6dcc6, matHi: 0xf0e8d6, inlay: 0x6a2618 },
+    backdrop: [],
+    ambient: { kind: 'dust', color: 0xfff0d8, count: 70, size: 0.2 },
+    beats: { fog: 0x2a1a14, fill: 1.0, tint: 0xffe0c0 },
+    sound: 'temple',
+  },
+  throne: {   // the Mandalorian's sandbox: the palace throne room at Sundari, grey daylight through tall windows
+    sky: { top: 0x10161a, horizon: 0x26302e, below: 0x1a2220, bands: 5, stars: 0 },
+    fog: 0x1e2826, fogStart: 1.4, fogEnd: 4.0, clear: 0x10161a,
+    light: { sun: 0xdce8f0, sunI: 1.5, dir: [26, 30, -14], hemiSky: 0xa8c4c8, hemiGround: 0x1e2a28, fill: 0.85, rim: 0x9ad0e0, rimI: 0.4 },
+    floor: { kind: 'deck', base: 0x3a4c46, line: 0x1e2826, seed: 19 },
+    outer: 0x1a2220,
+    pal: { green: 0x4a6a60, greenD: 0x2e403a, frame: 0x1a2220, throne: 0x7a3a2a, glass: 0x9aaab2, lamp: 0xffd23a, glow: 0xe0703a },
+    backdrop: [],
+    ambient: { kind: 'dust', color: 0xe0eef0, count: 60, size: 0.18 },
+    beats: { fog: 0x1e2826, fill: 0.95, tint: 0xd0e8e0 },
+    sound: 'temple',
+  },
 };
 
 /* STORY MISSIONS — the mission arenas (data/missions.js) keep one look whatever WORLD is picked */

@@ -265,3 +265,4 @@ body.mando #stancebox,body.mando #xh,body.mando #fcmeter{display:none!important}
 #tutor.drill{top:auto;bottom:86px}
 @media (max-width:700px){ #tutor{top:10%} #tutor .tt-say{font-size:15px} }
 body.training #xpmeter{display:none !important}   /* nothing to buy in training */
+body.sandbox #xpmeter,body.sandbox #xphud{display:none !important}   /* the sandbox hands everything out */

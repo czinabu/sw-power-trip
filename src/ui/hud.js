@@ -120,6 +120,7 @@ export function updateHud(){
   // run progress: where you are · which wave · what's left
   const hostiles = total > 0 ? '<span class="wi-h">' + total + ' HOSTILE' + (total === 1 ? '' : 'S') + ' REMAIN</span>' : '';
   document.body.classList.toggle('training', !!G.training);
+  document.body.classList.toggle('sandbox', !!G.sandbox);
   if (G.training){
     const tp = trainingProgress();
     setHtml($('waveinfo'), '<span class="wi-l">TRAINING · ' + tp.place + '</span><span class="wi-w">LESSON ' + tp.lesson + ' / ' + tp.total + '</span>');
@@ -128,6 +129,9 @@ export function updateHud(){
     if (o) setHtml($('waveinfo'), '<span class="wi-l">' + o.kicker + '</span><span class="wi-w">' + o.title + '</span>' +
       '<span class="wi-h' + (o.warn ? ' warn' : '') + '">' + o.status + '</span>' +
       (o.frac != null ? '<span class="wi-bar"><i style="width:' + (clamp(o.frac, 0, 1) * 100).toFixed(1) + '%"></i></span>' : ''));
+  } else if (G.sandbox){
+    setHtml($('waveinfo'), '<span class="wi-l">SANDBOX · ' + (G.hero === 'mando' ? 'THE THRONE ROOM' : 'THE TRAINING ROOM') + '</span><span class="wi-w">PRESS B FOR FOES &amp; POWERS</span>' + hostiles +
+      (G.sandboxGod ? '<span class="wi-h">GOD MODE</span>' : ''));
   } else if (G.endless){
     const mut = G.mut ? MUTATORS.find(m => m.id === G.mut) : null;
     setHtml($('waveinfo'), '<span class="wi-l">SURVIVAL</span><span class="wi-w">WAVE ' + G.endlessWave + '</span>' + hostiles +

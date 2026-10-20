@@ -31,7 +31,7 @@ const ELITE_KEYS = Object.keys(ELITES);
 export function eliteChance(){ return clamp(((G.waveTotal || 0) - 2) * (G.endless ? 0.05 : 0.04), 0, G.endless ? 0.55 : 0.3); }   // survival floods with elites late
 const _eliteCol = new THREE.Color();
 export function applyElite(e, g){
-  if (Math.random() > (G.eliteSurge ? 0.85 : eliteChance())) return;   // survival ELITE SURGE: nearly everything comes elite
+  if (Math.random() > (G.forceElite ? 1 : G.eliteSurge ? 0.85 : eliteChance())) return;   // survival ELITE SURGE: nearly everything comes elite · the sandbox's ELITE switch: all of it
   const id = ELITE_KEYS[(Math.random()*ELITE_KEYS.length)|0];
   const m = ELITES[id];
   e.elite = id;
