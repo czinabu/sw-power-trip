@@ -86,6 +86,7 @@ export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick, opts){
     S.impact(cp, power);   // voiced by what landed it: saber burn, blaster pop, or a thump
   }
   if (e.sparring && e.hp < 1) e.hp = 1;   // TRAINING: a sparring partner takes the blow but never falls
+  if (e.hpFloor && e.hp < e.hpFloor) e.hp = e.hpFloor;   // MISSIONS: a fleeing quarry breaks away at this, it doesn't fall
   if (e.hp <= 0){
     e.dead = true; e.state = 'ragdoll'; e.st = 0;
     tutEvent('kill', e);
