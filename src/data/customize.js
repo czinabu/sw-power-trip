@@ -64,6 +64,16 @@ export const CUSTOMIZE = {
       { id: 'grey',  name: 'Grey',     set: pal({ tunic: 0x6e6a66 }) },
       { id: 'black', name: 'Black',    set: pal({ tunic: 0x2e2a28 }) },
     ] },
+    // the blade's colour: the form's own (blue / green / violet, so the colour tells the stance), or a crystal of
+    // the player's in a hue no form uses; the stance HUD and the form's effects keep their colour either way
+    { id: 'saber', label: 'LIGHTSABER', kind: 'color', options: [
+      { id: 'form',   name: 'Form colour', sw: 0x35c8ff, set: { saber: null } },
+      { id: 'yellow', name: 'Yellow',      set: { saber: 0xffd23a } },
+      { id: 'orange', name: 'Orange',      set: { saber: 0xff8a2a } },
+      { id: 'white',  name: 'White',       set: { saber: 0xf0f4ff } },
+      { id: 'red',    name: 'Red',         set: { saber: 0xff3a30 } },
+      { id: 'cyan',   name: 'Teal',        set: { saber: 0x2affe0 } },
+    ] },
     { id: 'build', label: 'BUILD', kind: 'part', options: [
       { id: 'standard', name: 'Standard', set: { build: { bulk: 1, shoulders: 1 } } },
       { id: 'lean',     name: 'Lean',     set: { build: { bulk: 0.9, shoulders: 0.94 } } },
@@ -146,4 +156,4 @@ export function lookFromPicks(picks = {}){
 }
 
 // the swatch colour for a colour option
-export const swatchOf = o => o.sw ?? Object.values(o.set.palette || {})[0];
+export const swatchOf = o => o.sw ?? o.set.saber ?? Object.values(o.set.palette || {})[0];
