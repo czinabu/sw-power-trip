@@ -8,6 +8,7 @@ import { CUSTOMIZE, pickedOption, swatchOf } from '../data/customize.js';
 import { STANCES } from '../data/stances.js';
 import { loadPicks, savePicks, rebuildPlayerModel } from '../player/mesh.js';
 import { setHero } from '../player/hero.js';
+import { bladeColor } from '../player/helpers.js';
 import { applySaberGrip } from '../player/model/weapons.js';
 import { restyleShowcase, focusShowcase, spinShowcase } from './showcase.js';
 import { overlay, setOverlayState } from './menus.js';
@@ -74,7 +75,7 @@ export function closeCustomizer(){
   rebuildPlayerModel(picks);
   applySaberGrip(player, G.saberGrip);
   const st = STANCES[G.stance];
-  if (st){ player.blade.glow.material.color.setHex(st.blade); player.blade.light.color.setHex(st.blade); }
+  if (st){ player.blade.glow.material.color.setHex(bladeColor(st)); player.blade.light.color.setHex(bladeColor(st)); }
   setHero(G.hero);
 }
 

@@ -8,7 +8,7 @@ import { burst } from '../../fx/particles.js';
 import { floater } from '../../fx/floaters.js';
 import { G, player } from '../../state.js';
 import { reigniteBlade } from '../../fx/trail.js';
-import { playerPos, stance } from '../helpers.js';
+import { playerPos, stance, bladeColor } from '../helpers.js';
 
 /* ---------- stance switching: 1/2/3 or mouse wheel ---------- */
 let _synT = 0;
@@ -31,8 +31,8 @@ export function switchStance(id, silent){
   G.stanceCd = 0.35;
   const st = STANCES[id];
   // blade re-tunes to the form
-  player.blade.glow.material.color.setHex(st.blade);
-  player.blade.light.color.setHex(st.blade);
+  player.blade.glow.material.color.setHex(bladeColor(st));
+  player.blade.light.color.setHex(bladeColor(st));
   if (!silent) reigniteBlade();   // snap-hiss: the blade retracts and re-ignites in the new form's colour
   setStanceHud();
   if (!silent){
