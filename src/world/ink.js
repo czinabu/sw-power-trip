@@ -5,6 +5,7 @@
 
 import * as THREE from 'three';
 import { mergeGeometries, mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
+import { registerProp, fadeTex, FADE_W } from './camblock.js';
 
 export const INK = 0x07060a;   // the model outline colour
 
@@ -58,16 +59,14 @@ export function inkHull(width){
   return m;
 }
 
-/* SEE-THROUGH — baked props between the lens and the hero dissolve so the hero (and the fight) stay in view, instead
-   of the camera diving in past them. Every fragment inside a soft cylinder around the line from the lens to the
-   hero's chest is dithered away (a screen-door fade: no transparency sorting against the merged arena meshes). The
-   last stretch next to the hero is spared, so a wall they stand against doesn't get a hole punched round them.
-   camera.js moves the lens/focus every frame; shadows are drawn with a separate depth material and stay whole. */
+/* SEE-THROUGH — a baked prop standing between the lens and the hero turns slightly see-through, whole and in its own
+   shape, so the hero (and the fight) stay in view instead of the camera diving in past it. Each merged vertex carries
+   its prop's id (aProp); world/camblock.js decides per frame which props are in the way and eases their entry in a
+   small fade texture, which the vertex shader reads. The fade itself is a fine screen-door dither (no transparency
+   sorting against the merged arena meshes); shadows are drawn with a separate depth material and stay whole. */
 export const SEE = {
-  cam:   { value: new THREE.Vector3() },
-  focus: { value: new THREE.Vector3() },
-  on:    { value: 0 },      // 0 until the follow-cam first runs, so nothing is cut from a stale line
-  r:     { value: 1.6 },    // cylinder radius (world units): fully clear inside 60% of it, fading out to the edge
+  tex: { value: fadeTex },
+  amt: { value: 0.55 },     // share of a fully faded prop's pixels dropped: 0 = solid, 1 = gone
 };
 const seeCache = new Map();
 /* the see-through variant of a baked arena material (cached per source material, shared across rebuilds) */
@@ -77,20 +76,14 @@ export function seeThrough(src){
   const prev = src.onBeforeCompile, key = src.customProgramCacheKey();
   m.onBeforeCompile = (sh, r) => {
     prev.call(src, sh, r);
-    sh.uniforms.uSeeCam = SEE.cam; sh.uniforms.uSeeFocus = SEE.focus; sh.uniforms.uSeeOn = SEE.on; sh.uniforms.uSeeR = SEE.r;
-    sh.vertexShader = 'varying vec3 vSeeW;\n' + sh.vertexShader
-      .replace('#include <project_vertex>', '#include <project_vertex>\n  vSeeW = (modelMatrix * vec4(transformed, 1.0)).xyz;');
-    sh.fragmentShader = 'varying vec3 vSeeW;\nuniform vec3 uSeeCam, uSeeFocus;\nuniform float uSeeOn, uSeeR;\n' + sh.fragmentShader
+    sh.uniforms.uSeeTex = SEE.tex; sh.uniforms.uSeeAmt = SEE.amt;
+    sh.vertexShader = `attribute float aProp;\nuniform sampler2D uSeeTex;\nvarying float vSee;\n` + sh.vertexShader
+      .replace('#include <project_vertex>', `#include <project_vertex>
+  int sid = int(floor(aProp + 0.5));
+  vSee = sid < 0 ? 0.0 : texelFetch(uSeeTex, ivec2(sid % ${FADE_W}, sid / ${FADE_W}), 0).r;`);
+    sh.fragmentShader = 'varying float vSee;\nuniform float uSeeAmt;\n' + sh.fragmentShader
       .replace('void main() {', `void main() {
-  if (uSeeOn > 0.5){
-    vec3 sd = uSeeFocus - uSeeCam; float sl = length(sd); vec3 sn = sd / max(sl, 1e-4);
-    vec3 sr = vSeeW - uSeeCam; float st = dot(sr, sn);
-    if (st > 0.0){
-      float sk = (1.0 - smoothstep(uSeeR * 0.6, uSeeR, length(sr - sn * st))) * clamp((sl - 0.3 - st) / 0.4, 0.0, 1.0);
-      float sdith = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))));
-      if (sk > sdith) discard;
-    }
-  }`);
+  if (vSee > 0.0 && vSee * uSeeAmt > fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))))) discard;`);
   };
   m.customProgramCacheKey = () => key + '|see';
   seeCache.set(src.uuid, m);
@@ -101,6 +94,7 @@ export function seeThrough(src){
 export function hullGeo(geo){
   const c = new THREE.BufferGeometry();
   c.setAttribute('position', geo.attributes.position);
+  if (geo.attributes.aProp) c.setAttribute('aProp', geo.attributes.aProp);   // baked: each prop's outline fades with it
   if (geo.index) c.setIndex(geo.index);
   const m = mergeVertices(c, 1e-3);
   m.computeVertexNormals();
@@ -138,6 +132,7 @@ export function bakeArena(group, width = 0.045){
     g.setIndex(sg.index ? sg.index.clone()
       : new THREE.BufferAttribute(Uint32Array.from({ length: sg.attributes.position.count }, (_, i) => i), 1));
     g.applyMatrix4(o.matrixWorld);
+    g.setAttribute('aProp', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count).fill(registerProp(o)), 1));
     const key = mat.uuid + (o.castShadow ? 's' : '') + (o.userData.noOutline || src.side === THREE.DoubleSide ? 'n' : '');
     if (!buckets.has(key)) buckets.set(key, { mat, geos: [], shadow: o.castShadow, outline: !key.endsWith('n') });
     buckets.get(key).geos.push(g);
