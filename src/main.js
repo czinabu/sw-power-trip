@@ -82,6 +82,7 @@ import './ui/customizer.js';
 import './data/difficulty.js';
 import './engine/input.js';
 import { updateCamera } from './engine/camera.js';
+import { SEE } from './world/ink.js';
 import { NAV, buildNav, updateNav, navSteer, navDist } from './enemies/nav.js';
 import { DUEL, DUEL_PROFILES, MANDO_MELEE } from './data/duel.js';
 import { LOCK, startLock, endLock, duelDefend } from './enemies/duel.js';
@@ -145,7 +146,7 @@ tick();
 /* expose configs + API for live tweaking and future edits (dev console) */
 window.GAME = { CFG, ENEMY_TYPES, LEVELS, BOSS_CFG, BOSS_MANDO, STANCES, SKILLS, MANDO, MANDO_WEAPONS, G, enemies, player, pillars, solids, rockets, bolts,
   startLevel, startWave, spawnEnemy, startTutorial, startMission, skipObjective, missionState, skipStep, trainingProgress, spawnBoss, queueSpawn, checkUnlocks, switchStance, setHero,
-  openSkillTree, damageEnemy, damageBoss, updateHud, nextStoreGoal, enemyHpScale, eliteChance, ELITES, cycleQuality, forceBarrier, forceMend, updatePlayer, updateEnemies, updateBolts, endRun, updateFlow, startEndless, startEndlessWave, genEndlessWave, MUTATORS, ENDLESS_POWERS, buyPower, keys, camera,
+  openSkillTree, damageEnemy, damageBoss, updateHud, nextStoreGoal, enemyHpScale, eliteChance, ELITES, cycleQuality, forceBarrier, forceMend, updatePlayer, updateEnemies, updateBolts, endRun, updateFlow, startEndless, startEndlessWave, genEndlessWave, MUTATORS, ENDLESS_POWERS, buyPower, keys, camera, SEE,
   tryAttack, castGesture, forcePush, forceSlam, forceRepulse, stance, applySwingDamage, spawnChampion, startWave, bomberExplode, MUSIC, audioInit,
   spawnBoss, updateBoss, bossStagger, BOSS_CFG, BOSS_MANDO, rings,
   BOONS, BOON_BY_ID, rollBoons, pickBoon, hurtPlayer, abil, MASTERY_JEDI, MASTERY_MANDO, masteryOffers, buyMastery,

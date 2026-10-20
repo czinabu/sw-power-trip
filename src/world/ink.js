@@ -58,6 +58,45 @@ export function inkHull(width){
   return m;
 }
 
+/* SEE-THROUGH — baked props between the lens and the hero dissolve so the hero (and the fight) stay in view, instead
+   of the camera diving in past them. Every fragment inside a soft cylinder around the line from the lens to the
+   hero's chest is dithered away (a screen-door fade: no transparency sorting against the merged arena meshes). The
+   last stretch next to the hero is spared, so a wall they stand against doesn't get a hole punched round them.
+   camera.js moves the lens/focus every frame; shadows are drawn with a separate depth material and stay whole. */
+export const SEE = {
+  cam:   { value: new THREE.Vector3() },
+  focus: { value: new THREE.Vector3() },
+  on:    { value: 0 },      // 0 until the follow-cam first runs, so nothing is cut from a stale line
+  r:     { value: 1.6 },    // cylinder radius (world units): fully clear inside 60% of it, fading out to the edge
+};
+const seeCache = new Map();
+/* the see-through variant of a baked arena material (cached per source material, shared across rebuilds) */
+export function seeThrough(src){
+  if (seeCache.has(src.uuid)) return seeCache.get(src.uuid);
+  const m = src.clone();
+  const prev = src.onBeforeCompile, key = src.customProgramCacheKey();
+  m.onBeforeCompile = (sh, r) => {
+    prev.call(src, sh, r);
+    sh.uniforms.uSeeCam = SEE.cam; sh.uniforms.uSeeFocus = SEE.focus; sh.uniforms.uSeeOn = SEE.on; sh.uniforms.uSeeR = SEE.r;
+    sh.vertexShader = 'varying vec3 vSeeW;\n' + sh.vertexShader
+      .replace('#include <project_vertex>', '#include <project_vertex>\n  vSeeW = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+    sh.fragmentShader = 'varying vec3 vSeeW;\nuniform vec3 uSeeCam, uSeeFocus;\nuniform float uSeeOn, uSeeR;\n' + sh.fragmentShader
+      .replace('void main() {', `void main() {
+  if (uSeeOn > 0.5){
+    vec3 sd = uSeeFocus - uSeeCam; float sl = length(sd); vec3 sn = sd / max(sl, 1e-4);
+    vec3 sr = vSeeW - uSeeCam; float st = dot(sr, sn);
+    if (st > 0.0){
+      float sk = (1.0 - smoothstep(uSeeR * 0.6, uSeeR, length(sr - sn * st))) * clamp((sl - 0.3 - st) / 0.4, 0.0, 1.0);
+      float sdith = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))));
+      if (sk > sdith) discard;
+    }
+  }`);
+  };
+  m.customProgramCacheKey = () => key + '|see';
+  seeCache.set(src.uuid, m);
+  return m;
+}
+
 /* an outline hull for any geometry: position-only, welded so the normals average across corners */
 export function hullGeo(geo){
   const c = new THREE.BufferGeometry();
@@ -115,12 +154,12 @@ export function bakeArena(group, width = 0.045){
     const merged = mergeGeometries(b.geos, false);
     for (const g of b.geos) g.dispose();
     if (!merged) continue;
-    const m = new THREE.Mesh(merged, b.mat);
+    const m = new THREE.Mesh(merged, seeThrough(b.mat));
     m.castShadow = b.shadow; m.receiveShadow = true;
     m.userData.baked = true;
     group.add(m); calls++;
     if (b.outline && width > 0){
-      const hull = new THREE.Mesh(hullGeo(merged), inkHull(width));
+      const hull = new THREE.Mesh(hullGeo(merged), seeThrough(inkHull(width)));
       hull.userData.baked = true;
       group.add(hull); calls++;
     }
