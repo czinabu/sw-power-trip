@@ -60,7 +60,7 @@ function poseBody(dt, dr, vis, planted, POSE, moving){
   // The one exception: running AWAY from the reticle he turns and runs like the Jedi does (backRun), shooting back
   // over his shoulder one-handed (anim/guns.js) instead of backpedalling square to the camera.
   const mandoAimLock = G.hero === 'mando' && (player.aiming > 0 || player.zoom || player.firing);
-  const inCombatPose = player.atkT > 0 || player.dashT > 0 || player.blockHeld || player.judgeT > 0 || player.castT > 0 || mandoAimLock;
+  const inCombatPose = player.atkT > 0 || player.dashT > 0 || player.blockHeld || player.judgeT > 0 || player.castT > 0 || player.palmT > 0 || mandoAimLock;
   const wasBackRun = player.backRun;
   player.backRun = mandoBackRun();
   if (wasBackRun && !player.backRun) player._unwindT = 0.35;   // turning back to the reticle: ease round, don't whip
@@ -418,12 +418,63 @@ function animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait){
     vis.rotation.y = dr(vis.rotation.y, 0, 12);
   } else {
     releaseSaberPose(R, dt);
+    if (G.hero !== 'mando' && player.holstered) forceHands(dr, vis, R, planted, moving, ph, inten);
   }
+}
+
+/* SABER HOLSTERED — the Jedi fights with his hands: an open, low ready with the lead (left) hand forward; RMB lifts
+   both palms into a ward; running, the arms pump with the stride; a Force strike (jedi/palm.js) drives one palm out
+   off a short hip turn, alternating hands, and the burst throws both. Plain joint poses, like the Force gestures. */
+function forceHands(dr, vis, R, planted, moving, ph, inten){
+  const P = player.palm;
+  if (P && player.palmT > 0){
+    const k = 1 - player.palmT / player.palmMax, c = P.B.contact;
+    const ext = k < c ? Math.sin((k / c) * Math.PI / 2) : 1 - (k - c) / (1 - c) * 0.85;   // out fast, back slower
+    const ch = k < c * 0.4 ? 1 - k / (c * 0.4) : 0;                                      // the brief draw-back
+    const arm = (A, out, sy) => {
+      A.sh.rotation.x = dr(A.sh.rotation.x, -0.9 - out * 0.65 + ch * 0.3, 40);
+      A.sh.rotation.y = dr(A.sh.rotation.y, sy * (0.12 + out * 0.12), 40);
+      A.el.rotation.x = dr(A.el.rotation.x, -1.6 + out * 1.5, 40);
+    };
+    const guardArm = (A) => { A.sh.rotation.x = dr(A.sh.rotation.x, -0.7, 18); A.el.rotation.x = dr(A.el.rotation.x, -1.5, 18); };
+    if (P.hand === 'both'){ arm(R.armL, ext, -1); arm(R.armR, ext, 1); }
+    else if (P.hand === 'L'){ arm(R.armL, ext, -1); guardArm(R.armR); }
+    else { arm(R.armR, ext, 1); guardArm(R.armL); }
+    const turn = P.hand === 'L' ? 1 : P.hand === 'R' ? -1 : 0;
+    R.torso.rotation.y = dr(R.torso.rotation.y, turn * 0.28 * ext, 30);
+    R.torso.position.z = dr(R.torso.position.z, ext * (P.hand === 'both' ? 0.2 : 0.12), 30);
+    vis.rotation.y = dr(vis.rotation.y, 0, 14);
+    return;
+  }
+  if (player.blockHeld){
+    // the ward: both palms up and out at chest height, turning blows and bolts on the Force
+    for (const [A, s] of [[R.armL, -1], [R.armR, 1]]){
+      A.sh.rotation.x = dr(A.sh.rotation.x, -1.35, 16);
+      A.sh.rotation.y = dr(A.sh.rotation.y, s * 0.3, 16);
+      A.el.rotation.x = dr(A.el.rotation.x, -0.45, 16);
+    }
+    vis.rotation.y = dr(vis.rotation.y, 0, 12);
+    return;
+  }
+  if (moving && !planted && player.grounded && inten > 0.5){
+    const sw = Math.sin(ph) * 0.55 * inten;   // opposite arm to the leg
+    R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, sw - 0.15, 14);  R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -0.9, 14);
+    R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -sw - 0.15, 14); R.armR.el.rotation.x = dr(R.armR.el.rotation.x, -0.9, 14);
+    R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, 0, 12); R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, 0, 12);
+    return;
+  }
+  // ready: the lead hand open and forward, the rear hand low by the hip, a faint breath in both
+  const br = Math.sin(G.gt * 1.9) * 0.03;
+  R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -0.75 + br, 10); R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, -0.2, 10);
+  R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -0.75, 10);
+  R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -0.3 - br, 10);  R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, 0.1, 10);
+  R.armR.el.rotation.x = dr(R.armR.el.rotation.x, -0.7, 10);
+  vis.rotation.y = dr(vis.rotation.y, 0, 12);
 }
 
 // the bladed weapon in hand right now (or null): the Jedi saber, or the Mando's darksaber when it's equipped
 function heldBlade(){
-  if (G.hero !== 'mando') return player.saberHand ? { node: player.saberHand, root: player.saberBladeRoot } : null;
+  if (G.hero !== 'mando') return player.saberHand && !player.holstered ? { node: player.saberHand, root: player.saberBladeRoot } : null;
   if (player.weapon === 'darksaber' && player.darksaberMesh) return { node: player.darksaberMesh, root: null };
   return null;
 }
@@ -507,7 +558,7 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
   // stay upright with the weapon still held (see the flight pose below).
   const flyingFree = !player.grounded && !player.slamming && !player.flip && !_aiming && player.boosting && _spd > 1.2 && w !== 'darksaber';
   // (aimed fire — RMB — stays on the IK aim too: the old joint-angle brace left the muzzles pointing at the sky)
-  const gunsIK = !flyingFree && player.meleeT <= 0 && player.darkT <= 0;
+  const gunsIK = !flyingFree && player.meleeT <= 0 && player.darkT <= 0 && w !== 'fists';
   if (!flyingFree){
   if (w === 'darksaber'){
     // DARKSABER: animateArms (anim/saber.js) owns both arms — heavy two-handed guards and swings
@@ -536,6 +587,16 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
     R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -0.55, 12);
     R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, 0.12, 12);
     R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -0.75, 12);
+  } else if (w === 'fists'){
+    // HOLSTERED — fists up in a guard by the chin between blows (the close-quarters beats below pose the strikes)
+    mandoAimPoint();
+    if (player.meleeT <= 0){
+      const bob = Math.sin(G.gt * 2.2) * 0.03;
+      R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -1.15 + bob, 12); R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, 0.15, 12);
+      R.armR.el.rotation.x = dr(R.armR.el.rotation.x, -1.75, 12);
+      R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -1.3 - bob, 12); R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, -0.1, 12);
+      R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -1.6, 12);
+    }
   } else if (gunsIK){
     // GUNSLINGER — blasters at the hip until he shoots, then up one-handed down the aim line; the disruptor shouldered
     const aimPt = mandoAimPoint();   // also refreshes the reticle lock state (player.lockOn)
@@ -549,11 +610,11 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
   if (!gunsIK || flyingFree || w === 'darksaber'){
     // an FK pose owns the arms: settle the guns back into their holds and the wrists square
     if (w !== 'darksaber' && player.darkT <= 0){ R.armR.wr.quaternion.slerp(_IDQ, Math.min(1, dt*12)); R.armL.wr.quaternion.slerp(_IDQ, Math.min(1, dt*12)); }
-    restGun(player.pistols.R, dt); restGun(player.pistols.L, dt);
+    if (w !== 'fists'){ restGun(player.pistols.R, dt); restGun(player.pistols.L, dt); }   // (holstered guns hang still)
     if (w !== 'darksaber' && player.darkT <= 0) R.chest.rotation.y = dr(R.chest.rotation.y, 0, 10);
   }
   // DISRUPTOR barrel: aimed by riflePose while shouldered; otherwise lies back along the forearm at rest
-  if (player.rifleMesh && !(gunsIK && twoH && (player.zoom || player.aiming > 0))){
+  if (player.rifleMesh && w !== 'fists' && !(gunsIK && twoH && (player.zoom || player.aiming > 0))){
     const out = player.zoom || player.aiming > 0 || player.stabT > 0;
     player.rifleMesh.rotation.x = dr(player.rifleMesh.rotation.x, out ? 1.15 : -0.35, 9);
     player.rifleMesh.rotation.y = dr(player.rifleMesh.rotation.y, 0, 9);

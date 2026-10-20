@@ -22,6 +22,8 @@ import { spawnHitSpark } from '../../fx/vfx.js';
 import { muzzleFlash, inkSprite, sparks, puff, screenAngle } from '../../fx/ink.js';
 import { tutEvent } from '../../game/tutor-bus.js';
 import { momentumShot } from '../parkour.js';
+import { mandoMelee } from './melee.js';
+import { syncHolster } from '../holster.js';
 
 /* ============================================================
    MANDALORIAN — jetpack, dual blasters, flamethrower, wrist rockets
@@ -66,11 +68,12 @@ export function mandoAimPoint(){
 /* ===== BLASTER WEAPONS — single / dual / disruptor, with ammo & reload ===== */
 export function aCost(base){ return base * (player.up.abilityCostMul || 1); }   // abilities start steep; upgrades drop the multiplier
 export function mandoWeapon(){ return MANDO_WEAPONS[player.weapon] || MANDO_WEAPONS.dual; }
-export function syncWeaponMesh(){   // show only the equipped weapon's mesh (or none, off-hero)
-  const m = G.hero === 'mando', w = player.weapon;
+export function syncWeaponMesh(){   // show only the equipped weapon's mesh (or none, off-hero); holstered, the one put away
+  const m = G.hero === 'mando', w = player.weapon === 'fists' ? player.drawnWeapon : player.weapon;
   if (player.pistols){ player.pistols.R.visible = m && (w === 'single' || w === 'dual'); player.pistols.L.visible = m && w === 'dual'; }
   if (player.rifleMesh) player.rifleMesh.visible = m && w === 'disruptor';
   if (player.darksaberMesh) player.darksaberMesh.visible = (m && w === 'darksaber') || !!shared.darkProj;   // a thrown blade stays seen until it's caught
+  syncHolster();   // in the hand, or on the belt / thighs / pack (player/holster.js)
 }
 export function switchWeapon(name){
   if (!MANDO_WEAPONS[name] || player.weapon === name) return;
@@ -180,6 +183,7 @@ export function fireTrigger(){
     }
     tryAttack(); return;
   }
+  if (W.fire === 'fists'){ mandoMelee(); return; }                     // HOLSTERED — the close-quarters string, same as E
   if (W.fire === 'rifle'){
     if (player.zoom){ if (!player.overheat && player.fireCd <= 0) fireRifle(W); }   // scoped → it's a rifle
     else spearStab(W);                                                              // hip → electric spear stab
