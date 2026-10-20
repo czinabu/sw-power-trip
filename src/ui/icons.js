@@ -52,5 +52,6 @@ export const SLOT_ICON = {
   'ab-dash':'dash', 'ab-push':'push', 'ab-pull':'pull', 'ab-slam':'slam', 'ab-mend':'cross', 'ab-barrier':'shield',
   'ab-throw':'cycle', 'ab-judge':'bolt', 'ab-repulse':'nova', 'ab-flame':'flame', 'ab-rocket':'rocket',
   'ab-grapple':'hook', 'ab-mslam':'slam', 'ab-deto':'deto', 'ab-birds':'burst', 'ab-missile':'comet', 'ab-bacta':'cross',
+  'ab-dthrow':'cycle',
 };
 export function icon(glyph, cls){ return GLYPH[glyph] ? svgIcon(GLYPH[glyph], cls) : glyph; }

@@ -18,6 +18,7 @@ import { hurtPlayer } from '../player/damage.js';
 import { enemyDmgScale } from '../game/survival.js';
 import { showBanner } from '../ui/banners.js';
 import { tacticsRamp } from './tactics.js';
+import { tutEvent } from '../game/tutor-bus.js';
 
 const LINES = ['L', 'R', 'H'];
 const GUARDING = { chase: 1, recover: 1 };
@@ -274,6 +275,7 @@ export function addPosture(e, amt, awayX, awayZ){
   if (e.posture < e.dp.posture) return false;
   e.posture = 0; e.lineStreak = 0; e.counterQueued = false;
   staggerEnemy(e, awayX, awayZ, 'GUARD BROKEN');
+  tutEvent('guardBreak', e);
   e.st += 0.3;   // a broken guard stays open a touch longer than a parried swing
   const g = e.group, cp = V3(g.position.x, g.position.y + 1.6, g.position.z);
   clashFlash(cp, 0xffd24a, true);

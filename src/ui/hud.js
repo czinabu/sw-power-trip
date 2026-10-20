@@ -166,7 +166,8 @@ export function updateHud(){
     // cooldown / fuel-gated abilities
     const cdab = [['ab-rocket','rocket',abil('rocket').cost],['ab-deto','deto',abil('deto').cost],
                   ['ab-birds','birds',abil('birds').cost],['ab-grapple','grapple',abil('grapple').cost],
-                  ['ab-missile','missile',abil('jetmissile').cost],['ab-bacta','bacta',abil('bacta').cost]];
+                  ['ab-missile','missile',abil('jetmissile').cost],['ab-bacta','bacta',abil('bacta').cost],
+                  ['ab-dthrow','darkThrow',MANDO.darkThrow.cost]];
     for (const [id, key, cost] of cdab) cdSlot(id, key, cost);
     document.getElementById('ab-flame').classList.toggle('nofp', player.force < 5);
     document.getElementById('ab-flame').classList.toggle('cool', !!player.flaming);

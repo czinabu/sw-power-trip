@@ -18,7 +18,7 @@ const STOW = {
   darksaber: { socket: 'belt', pos: [0, -0.04, 0],      rot: [0.25, 0, 0.18] },
   pistolR:   { socket: 'hipR', pos: [0.02, -0.1, 0.02], rot: [Math.PI / 2, 0, 0] },
   pistolL:   { socket: 'hipL', pos: [-0.02, -0.1, 0.02], rot: [Math.PI / 2, 0, 0] },
-  rifle:     { socket: 'back', pos: [0.05, 0.05, -0.2], rot: [0, Math.PI / 2, 0.75] },
+  rifle:     { socket: 'back', pos: [-0.24, -0.42, -0.3], rot: [-Math.PI / 2, 0, -0.32, 'ZXY'] },   // slung up the pack's left side, muzzle over the shoulder
 };
 const SABER_LIGHT = 8;   // the blade's PointLight at full (model/weapons.js); dimmed to 0 rather than hidden so no shader recompiles
 
@@ -33,6 +33,7 @@ function place(mesh, key){
   } else if (mesh.parent !== u.hand){
     u.hand.add(mesh);
     mesh.position.set(0, -0.04, 0);   // the grip (GRIP_Y in model/weapons.js)
+    mesh.rotation.order = 'XYZ';   // (a stowed spot may have set its own)
     if (u.restQ) mesh.quaternion.copy(u.restQ);
   }
 }
@@ -61,6 +62,7 @@ export function syncHolster(){
 export function toggleHolster(){
   if (G.mode !== 'play') return;
   if (G.hero === 'mando'){
+    if (shared.darkProj) return;   // the darksaber is out on the grappling line: catch it first
     if (player.weapon === 'fists') switchWeapon(weaponUnlocked(player.drawnWeapon) ? player.drawnWeapon : 'single');
     else {
       if (player.atkT > 0) cancelSwing();   // a darksaber swing in flight

@@ -72,7 +72,7 @@ export function syncWeaponMesh(){   // show only the equipped weapon's mesh (or 
   const m = G.hero === 'mando', w = player.weapon === 'fists' ? player.drawnWeapon : player.weapon;
   if (player.pistols){ player.pistols.R.visible = m && (w === 'single' || w === 'dual'); player.pistols.L.visible = m && w === 'dual'; }
   if (player.rifleMesh) player.rifleMesh.visible = m && w === 'disruptor';
-  if (player.darksaberMesh) player.darksaberMesh.visible = m && w === 'darksaber';
+  if (player.darksaberMesh) player.darksaberMesh.visible = (m && w === 'darksaber') || !!shared.darkProj;   // a thrown blade stays seen until it's caught
   syncHolster();   // in the hand, or on the belt / thighs / pack (player/holster.js)
 }
 export function switchWeapon(name){
@@ -176,7 +176,13 @@ export function firePistols(){
 export function fireTrigger(){
   if (G.mode !== 'play' || player.darkT > 0) return;
   const W = mandoWeapon();
-  if (W.fire === 'saber'){ tryAttack(); return; }                      // DARKSABER — full saber combo (Jedi medium-stance rig)
+  if (W.fire === 'saber'){                                              // DARKSABER — full saber combo (Jedi medium-stance rig)
+    if (shared.darkProj){   // thrown: nothing to swing until the grappling line brings it home
+      if (G.gt - (player.lastWinded || -9) > 0.5){ player.lastWinded = G.gt; floater(playerPos(), 'NO BLADE', '#c9a6ff'); sfx(220, 0.06, 'sine', 0.04, 160); }
+      return;
+    }
+    tryAttack(); return;
+  }
   if (W.fire === 'fists'){ mandoMelee(); return; }                     // HOLSTERED — the close-quarters string, same as E
   if (W.fire === 'rifle'){
     if (player.zoom){ if (!player.overheat && player.fireCd <= 0) fireRifle(W); }   // scoped → it's a rifle

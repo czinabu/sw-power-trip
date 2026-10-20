@@ -24,6 +24,7 @@ import {
   bactaStim, mandoRocket, mandoJetMissile, whistlingBirds, thermalDetonator, grappleHook, jetSlam,
   mandoBoostDash
 } from '../player/mando/gadgets.js';
+import { darksaberThrow } from '../player/mando/darksaber.js';
 import { mandoMelee } from '../player/mando/melee.js';
 import { lockPress, lockKick, lockPush } from '../enemies/duel.js';
 import { mandoWeapon, switchWeapon, startReload, fireTrigger, mandoFlame } from '../player/mando/weapons.js';
@@ -48,6 +49,8 @@ document.addEventListener('mousedown', (e) => {
   if (player.saberLock){ if (e.button === 0) lockPress(); return; }   // blades bound: LMB drives (enemies/duel.js)
   if (G.hero === 'mando'){
     if (e.button === 0){
+      // LMB while guarding with the Darksaber hurls it; the grappling line reels it back (player/mando/darksaber.js)
+      if (player.weapon === 'darksaber' && player.blockHeld){ darksaberThrow(); return; }
       const W = mandoWeapon();
       player.trigHeld = true;                        // single: a held trigger keeps the shield down
       if (W.fire === 'auto') player.firing = true;   // dual: hold to spray
@@ -56,6 +59,7 @@ document.addEventListener('mousedown', (e) => {
     if (e.button === 2){
       if (mandoWeapon().twoHand) player.zoom = true;  // disruptor: raise the scope (only then is it a rifle)
       else if (player.weapon === 'darksaber'){
+        if (shared.darkProj) return;   // the blade is out on the line: nothing in hand to guard with
         // DARKSABER guards & PARRIES like a lightsaber — RMB interrupts a swing at any point into the guard
         cancelSwing();
         player.blockHeld = true; player.blockT = 0;
@@ -143,7 +147,7 @@ document.addEventListener('keydown', (e) => {
       if (k === 'z') mandoJetMissile();
       if (k === 'c' && !e.repeat) trySlide();          // SLIDE out of a run (parkour.js)
       if (k === 'e' && !e.repeat) mandoMelee();   // close quarters: string, catch, charge, dive kick, takedown (melee.js)
-      if (k === 'h' && !e.repeat) bactaStim();        // bacta stim self-heal (store unlock)
+      if (k === 'g' && !e.repeat) bactaStim();        // bacta stim self-heal (store unlock) — G sits right beside F, in reach of WASD
       if (k === 'r' && !e.repeat) startReload();
       if (k === '1') switchWeapon('single');   // (from holstered, 1 / 2 / 3 draw that weapon)
       if (k === '2') switchWeapon('dual');
@@ -151,12 +155,13 @@ document.addEventListener('keydown', (e) => {
       if (k === '3') switchWeapon(player.up.darksaber ? 'darksaber' : 'disruptor');
     }
   } else {
-    // SHIFT with W on the ground SPRINTS (held; locomotion.js reads it); any other SHIFT is the dash (or a landing roll)
-    if (k === 'shift' && !e.repeat && !(keys['w'] && player.grounded && !player.blockHeld && !(player.landStagT > 0))) forceDash();
-    if (k === 'q' && !e.repeat) trySlide();            // SLIDE out of a sprint
+    // SHIFT only ever SPRINTS (held with W; locomotion.js reads it). The dash has its own key, Q, so a sprint never
+    // turns into a dash by accident: Q dashes any way you're pressing (or rolls out of a hard landing)
+    if (k === 'q' && !e.repeat) forceDash();
     if (k === 't' && !e.repeat) toggleLock();          // soft lock-on
     if (k === 'f'){ if (!(player.saberLock && lockPush())) forcePush(); }   // in a saber lock: a point-blank shove that breaks it
-    if (k === 'c') forcePull();
+    // C out of a sprint is the FORCE SLIDE (parkour.js), the same key the Mando slides on; any other C is the Pull
+    if (k === 'c'){ if (player.sprinting && player.grounded){ if (!e.repeat) trySlide(); } else forcePull(); }
     if (k === 'e' && !e.repeat){ if (player.saberLock) lockKick(); else forceKick(); }   // FRONT KICK — always-available melee, shares 'E' with the Mando's punch
     if (k === 'v') forceBarrier();     // Force Barrier — the defensive bubble (its fork-sibling SABER THROW is RMB+LMB)
     // ADAPTIVE FORK KEYS — each either/or pair shares ONE bind (you only ever own one of the pair).

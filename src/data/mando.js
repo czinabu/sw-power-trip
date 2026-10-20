@@ -25,12 +25,15 @@ export const MANDO = {
   // late/heavy ordnance is TAXING — long cooldowns + steep Force so the big blasts are a deliberate beat, not spam
   jetMissile: { cost: 74, cd: 14.0, speed: 30, dmg: 180, radius: 11, knock: 28 },  // Z — Boba-Fett back launcher: HUGE blast
   dark: { cost: 36, cd: 0.6, dmg: 78, range: 5.6, arc: 1.4, knock: 20 },      // DARKSABER weapon — LMB slash
+  // DARKSABER THROW (RMB + LMB, Darksaber in hand) — hurl the spinning blade, then the gauntlet's grappling line latches
+  // on and reels it home, cutting again on the way back. Every foe it touches is cut once going out and once coming back.
+  darkThrow: { cost: 30, cd: 6.0, dmg: 58, speed: 30, range: 18, latch: 0.16, reelSpeed: 40, knock: 10 },
   birds: { cost: 48, cd: 7.5, count: 6, dmg: 20, radius: 2.6, speed: 26, knock: 6 },   // V — whistling birds (homing)
-  deto:  { cost: 42, cd: 5.2, fuse: 1.15, dmg: 72, radius: 6.5, knock: 22 },           // G — thermal detonator (sticky) — THE Mando area blast (radius 5.5→6.5 as the rocket shrank)
+  deto:  { cost: 42, cd: 5.2, fuse: 1.15, dmg: 72, radius: 6.5, knock: 22 },           // V — thermal detonator (sticky) — THE Mando area blast (radius 5.5→6.5 as the rocket shrank)
   grapple: { cost: 18, cd: 1.2, range: 26, pullSpeed: 42 },                            // C — grappling hook
   slam:  { cost: 34, dmg: 46, radius: 9, knock: 24, diveVel: 34 },                     // X (air) — jetpack slam (jet fuel)
   // (the E melee kit — string, catch, charge, dive kick, takedown — is tuned in data/duel.js MANDO_MELEE)
-  // BACTA STIM (H) — the Mando's self-heal: jam a bacta injector into the gauntlet line. Mirrors the Jedi's Force
+  // BACTA STIM (G) — the Mando's self-heal: jam a bacta injector into the gauntlet line. Mirrors the Jedi's Force
   // Mend (a quick channel → a big restore). Mutually exclusive with HUNTER'S CREED (heal-per-kill) so you commit to
   // ONE sustain path. Heal amount reuses CFG.abilities.mend.heal via mendComplete(). Cooldown tightened 14→10s (Pass
   // 55b) — at 14s its total healing-per-fight didn't clearly beat just taking BESKAR PLATING's free heal-on-pickup,
