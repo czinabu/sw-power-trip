@@ -6,7 +6,7 @@ import { sfx, S } from '../../audio/sfx.js';
 import { V3, TMP } from '../../utils.js';
 import { floater } from '../../fx/floaters.js';
 import { shared, G, enemies, bolts, player } from '../../state.js';
-import { fwd, playerPos, stance } from '../helpers.js';
+import { forcePower, fwd, playerPos, stance } from '../helpers.js';
 import { damageEnemy, flinchEnemy } from '../../enemies/damage.js';
 import { damageBoss } from '../../boss/boss.js';
 import { inReach } from '../../enemies/bodyshape.js';
@@ -63,7 +63,7 @@ function landStrike(B){
     if (!inReach(e, pp, B.range, d > 1.2 ? f : null, cosLim)) continue;
     const dir = d > 0.01 ? TMP.clone().normalize() : f.clone();
     if (isGuarding(e)) guardImpact(e, B.burst ? POSTURE.burst : POSTURE.palm);   // the Force goes round a blade: it batters the guard instead
-    damageEnemy(e, B.dmg * (player.up.dmg || 1) * focusDmgMul(), dir, B.knock * (1 - d / B.range * 0.4) * (player.up.knock || 1));
+    damageEnemy(e, B.dmg * (player.up.dmg || 1) * focusDmgMul() * forcePower(), dir, B.knock * forcePower() * (1 - d / B.range * 0.4) * (player.up.knock || 1));
     flinchEnemy(e, dir, B.burst ? 1 : 0.5);
     hit++;
   }

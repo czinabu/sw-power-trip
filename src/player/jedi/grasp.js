@@ -10,7 +10,7 @@ import { S } from '../../audio/sfx.js';
 import { V3, clamp, TMP } from '../../utils.js';
 import { floater } from '../../fx/floaters.js';
 import { shared, G, enemies, player } from '../../state.js';
-import { fwd, playerPos, stance } from '../helpers.js';
+import { forcePower, fwd, playerPos, stance } from '../helpers.js';
 import { inReach } from '../../enemies/bodyshape.js';
 import { damageEnemy, staggerEnemy } from '../../enemies/damage.js';
 import { bossStagger } from '../../boss/boss.js';
@@ -80,7 +80,7 @@ export function graspThrow(){
   // a live 'ragdoll' tumbles, bowls over anything it flies into (ai.js), and gets up where it lands
   e.state = 'ragdoll'; e.st = 0;
   e.vel.copy(d).multiplyScalar(g.throwSpeed); e.vel.y = Math.max(e.vel.y, 3);
-  damageEnemy(e, g.throwDmg * (stance().powerDmg || 1), null, 0);   // the wrench of the throw itself (no launch: we set it)
+  damageEnemy(e, g.throwDmg * (stance().powerDmg || 1) * forcePower(), null, 0);   // the wrench of the throw itself (no launch: we set it)
   if (!e.dead){ e.state = 'ragdoll'; }
   floater(e.group.position, 'HURLED', '#7fd4ff');
   return true;
@@ -180,7 +180,7 @@ export function updateGrasp(dt){
         e.vel.multiplyScalar(-0.4);
         G.shake = Math.max(G.shake, 0.3);
       } else {
-        damageEnemy(o, g.bumpDmg, dir, g.bumpKnock);   // knockPow over 16: a live knockdown (damage.js)
+        damageEnemy(o, g.bumpDmg * forcePower(), dir, g.bumpKnock);   // knockPow over 16: a live knockdown (damage.js)
         floater(o.group.position, 'BOWLED', '#7fd4ff');
       }
     }
@@ -196,7 +196,7 @@ export function updateGrasp(dt){
       grp.rotation.x = 0; grp.rotation.z = 0;
       grp.position.y = Math.max(0, pp.y);
       e.vel.set(0, 0, 0);
-      damageEnemy(e, g.yankDmg, null, 0);
+      damageEnemy(e, g.yankDmg * forcePower(), null, 0);
       if (!e.dead){ staggerEnemy(e, f.x, f.z, 'YANKED!'); }
       player.swingLock = 0;
       if (player.holstered) forceStrike(); else tryAttack();   // holstered: the Force palm strike instead of the blade

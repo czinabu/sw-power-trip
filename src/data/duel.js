@@ -76,6 +76,15 @@ export const MANDO_MELEE = {
     { name: 'knee',  dmg: 18, knock: 14, line: 'H', recover: 0.4,  lunge: 5.5, shove: 0.9, contact: 0.12, heavy: true },
     { name: 'blade', dmg: 30, knock: 22, line: 'R', recover: 0.52, lunge: 6.5, shove: 0.5, contact: 0.13, heavy: true, stagger: true },
   ],
+  /* HOLSTERED (4): with his weapon put away the string becomes a brawler's — real swings, not quick shots: a lead
+     hook, a rear hook, a rising uppercut, then a wound-up overhand haymaker that staggers. Each one sweeps a wider arc
+     and reaches a little further than the armed string (`reach`, `arc`), and hits harder. */
+  fists: [
+    { name: 'hookL',    dmg: 17, knock: 10, line: 'L', recover: 0.36, lunge: 4.5, shove: 0.45, contact: 0.11, reach: 1.7, arc: 1.0 },
+    { name: 'hookR',    dmg: 19, knock: 12, line: 'R', recover: 0.38, lunge: 5,   shove: 0.55, contact: 0.12, reach: 1.7, arc: 1.0 },
+    { name: 'upper',    dmg: 22, knock: 14, line: 'H', recover: 0.42, lunge: 5,   shove: 0.9,  contact: 0.13, reach: 1.6, arc: 0.8, heavy: true },
+    { name: 'haymaker', dmg: 36, knock: 24, line: 'R', recover: 0.58, lunge: 7,   shove: 0.6,  contact: 0.17, reach: 1.85, arc: 1.05, heavy: true, stagger: true },
+  ],
   combo: 0.55,            // seconds after a strike's recovery the next press still continues the string
   reach: 1.45, arc: 0.75,   // a fist lands within arm's length (+ the step it carries) of the body, in front
   catchWindow: 0.2,       // a blow landing this soon after E is caught on the vambrace
