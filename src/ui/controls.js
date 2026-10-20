@@ -11,7 +11,7 @@ const CONTROLS = {
       ['SPACE', 'Jump', 'Tap again in the air to double-jump'],
       ['HOLD SPACE', 'Force leap and glide', 'Spends Force'],
       ['SHIFT', 'Dash', 'A short dodge-flip any way you press, with brief invulnerability; dash just as a blow lands for a perfect dodge'],
-      ['Q', 'Sprint / walk', 'Switches between sprint and walk; sprinting burns stamina and turns wide'],
+      ['Q', 'Sprint / walk', 'Switches between sprint and walk; the sprint is free but turns wide, the walk is a slow, menacing walk, fights included'],
       ['ALT', 'Force slide', 'Out of a sprint: a long skid forward that ducks blaster fire and bowls troops over · attack out of it to sweep'],
     ]},
     { title: 'PARKOUR', rows: [
