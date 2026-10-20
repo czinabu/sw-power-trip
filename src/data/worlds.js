@@ -248,6 +248,18 @@ export const TRAINING_WORLDS = {
     beats: { fog: 0x2a1a14, fill: 1.0, tint: 0xffe0c0 },
     sound: 'temple',
   },
+  throne: {   // the Mandalorian's sandbox: the palace throne room at Sundari, grey daylight through tall windows
+    sky: { top: 0x10161a, horizon: 0x26302e, below: 0x1a2220, bands: 5, stars: 0 },
+    fog: 0x1e2826, fogStart: 1.4, fogEnd: 4.0, clear: 0x10161a,
+    light: { sun: 0xdce8f0, sunI: 1.5, dir: [26, 30, -14], hemiSky: 0xa8c4c8, hemiGround: 0x1e2a28, fill: 0.85, rim: 0x9ad0e0, rimI: 0.4 },
+    floor: { kind: 'deck', base: 0x3a4c46, line: 0x1e2826, seed: 19 },
+    outer: 0x1a2220,
+    pal: { green: 0x4a6a60, greenD: 0x2e403a, frame: 0x1a2220, throne: 0x7a3a2a, glass: 0x9aaab2, lamp: 0xffd23a, glow: 0xe0703a },
+    backdrop: [],
+    ambient: { kind: 'dust', color: 0xe0eef0, count: 60, size: 0.18 },
+    beats: { fog: 0x1e2826, fill: 0.95, tint: 0xd0e8e0 },
+    sound: 'temple',
+  },
 };
 
 /* STORY MISSIONS — the mission arenas (data/missions.js) keep one look whatever WORLD is picked */

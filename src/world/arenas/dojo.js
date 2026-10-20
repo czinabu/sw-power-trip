@@ -12,7 +12,7 @@ import { toon } from '../ink.js';
      · the WALLS just past the playable edge: cream panels in dark wood frames, a rail at head height and a second at
        the gallery line, with a Jedi crest and a sealed door on the north wall;
      · two tiers of BENCHES along the east and west walls (the low seat steps up, the back tier needs a hop);
-     · a few TRAINING REMOTES hovering over the mat (decoration; game/sandbox.js bobs them, via shared.dojoRemotes).
+     · a few TRAINING REMOTES hovering high along the walls, clear of the floor (decoration; game/sandbox.js bobs them, via shared.dojoRemotes).
    The player spawns south of centre facing north, toward the crest. */
 export const DOJO = { half: 24, wallH: 12, mat: 15.5, benchZ: 13 };
 
@@ -106,13 +106,14 @@ export function buildDojoArena(L){
   const remotes = [];
   const shell = toon(pal.remote ?? 0xb8b8b2), band = toon(0x3a3a3c);
   for (let i = 0; i < 6; i++){
-    const g = new THREE.Group(), a = i / 6 * Math.PI*2 + R()*0.5, r = 6 + R()*9;
+    // they keep to the room's edge, over the benches and the corners, and well above head height: never in the fight
+    const g = new THREE.Group(), a = i / 6 * Math.PI*2 + Math.PI/6 + (R() - 0.5)*0.3, r = 19.5 + R()*2;
     g.add(new THREE.Mesh(new THREE.SphereGeometry(0.32, 14, 10), shell));
     const b = new THREE.Mesh(new THREE.TorusGeometry(0.32, 0.035, 6, 18), band); b.rotation.x = Math.PI/2; g.add(b);
     for (const s of [-1, 1]){ const p = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.2, 6), band); p.position.y = s*0.36; g.add(p); }
-    g.position.set(Math.cos(a)*r, 2.2 + R()*2.2, Math.sin(a)*r);
+    g.position.set(Math.cos(a)*r, 6.2 + R()*1.4, Math.sin(a)*r);
     g.userData = { noBake: true, base: g.position.clone(), ph: R()*6 };
-    g.traverse(o => { o.userData.noBake = true; o.castShadow = true; });
+    g.traverse(o => { o.userData.noBake = true; });
     shared.arenaGroup.add(g); remotes.push(g);
   }
   shared.dojoRemotes = remotes;

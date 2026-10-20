@@ -22,6 +22,7 @@ import { buildForgeArena } from './arenas/forge.js';
 import { buildRefugeArena } from './arenas/refuge.js';
 import { buildPursuitArena } from './arenas/pursuit.js';
 import { buildDojoArena } from './arenas/dojo.js';
+import { buildThroneArena } from './arenas/throne.js';
 import { buildNav } from '../enemies/nav.js';
 
 /* ============================================================
@@ -100,6 +101,7 @@ export function buildArena(L){
   else if (L.layout === 'refuge'){ buildRefugeArena(LP); }
   else if (L.layout === 'pursuit'){ buildPursuitArena(LP); }
   else if (L.layout === 'dojo'){ buildDojoArena(LP); }
+  else if (L.layout === 'throne'){ buildThroneArena(LP); }
   else {
   // pick a spot at least `gap` clear of every other obstacle so cover stays SPREAD OUT — clustered obstacles
   // form walls that trap the enemy AI. Returns null if no open spot is found (so we just place fewer).

@@ -38,7 +38,7 @@ src/
     mando/           weapons, gadgets, darksaber
   enemies/           meshes, elites, special moves, spawning, damage, AI, pathing (nav.js), attack turns (director.js), blaster bolts (see docs/enemy-ai.md)
   boss/              boss lightning FX and the boss itself
-  world/             arena builder, arenas/ (temple, foundry, plains layouts; hall and forge for training; refuge and pursuit for the story missions; dojo for the sandbox), Ink bake, painted skies/floors, backdrops, atmosphere, collision, hazards (see docs/world-guidelines.md)
+  world/             arena builder, arenas/ (temple, foundry, plains layouts; hall and forge for training; refuge and pursuit for the story missions; dojo and throne for the sandbox), Ink bake, painted skies/floors, backdrops, atmosphere, collision, hazards (see docs/world-guidelines.md)
   game/              level/wave flow, survival mode, training (tutorial.js), story missions (mission.js, objectives.js), the sandbox (sandbox.js), progression, boons, end-of-run summary
   ui/                banners, threat markers, HUD, store overlay, menus, the sandbox panel (sandbox-ui.js), the title screen's hero turntable (showcase.js), controls (How to Play data)
 ```
@@ -71,7 +71,7 @@ Each file starts with a one-line description. Balance changes usually only touch
 
 **Training** — a short tutorial for each hero in its own place (the Jedi training hall, the Armorer's forge). The Battlemaster or the Armorer teaches the starting kit one move at a time, and each lesson only passes when the move actually works. New abilities earned later get a one-line drill when they unlock.
 
-**Sandbox** — unlocks on the menu once the campaign has been beaten with either hero. It opens in the temple's indoor training room (a wide duelling mat with ring inlays, wood-panelled walls, viewing benches and the Jedi crest) with no waves and no clock. Press **B** for the panel: call in any enemy type (one, three or five at a time, optionally all elite or as standing dummies), the Warbringer or your hero's end-boss, switch any ability on or off (powers that share a key are a pair, one at a time), clear the floor, heal, or turn on god mode. Each hero's last kit is remembered. The lists live in `data/sandbox.js`.
+**Sandbox** — unlocks on the menu once the campaign has been beaten with either hero. The Jedi train in the temple's indoor training room (a wide duelling mat with ring inlays, wood-panelled walls, viewing benches and the Jedi crest), the Mandalorian in the palace throne room at Sundari (dark green walls of tall chamfered windows, a stepped dais and the throne before its glowing orange panel); either way there are no waves and no clock. Press **B** for the panel: call in any enemy type (one, three or five at a time, optionally all elite or as standing dummies), the Warbringer or your hero's end-boss, switch any ability on or off (powers that share a key are a pair, one at a time), clear the floor, heal, or turn on god mode. Each hero's last kit is remembered. The lists live in `data/sandbox.js`.
 
 **Campaign** — 3 authored arenas on the road to the Sith (Holy City of Jedha, Mustafar Forge, Throne of Exegol), 4 waves each escalating to an end-boss (Darth Vexis for the Jedi, The Iron Magistrate for the Mando)
 

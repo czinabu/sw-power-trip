@@ -130,7 +130,7 @@ export function updateHud(){
       '<span class="wi-h' + (o.warn ? ' warn' : '') + '">' + o.status + '</span>' +
       (o.frac != null ? '<span class="wi-bar"><i style="width:' + (clamp(o.frac, 0, 1) * 100).toFixed(1) + '%"></i></span>' : ''));
   } else if (G.sandbox){
-    setHtml($('waveinfo'), '<span class="wi-l">SANDBOX · THE TRAINING ROOM</span><span class="wi-w">PRESS B FOR FOES &amp; POWERS</span>' + hostiles +
+    setHtml($('waveinfo'), '<span class="wi-l">SANDBOX · ' + (G.hero === 'mando' ? 'THE THRONE ROOM' : 'THE TRAINING ROOM') + '</span><span class="wi-w">PRESS B FOR FOES &amp; POWERS</span>' + hostiles +
       (G.sandboxGod ? '<span class="wi-h">GOD MODE</span>' : ''));
   } else if (G.endless){
     const mut = G.mut ? MUTATORS.find(m => m.id === G.mut) : null;

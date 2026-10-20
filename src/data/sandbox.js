@@ -1,5 +1,5 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
-// SANDBOX: the training room's level, the foes its panel can call in, and every ability it can hand out or take away.
+// SANDBOX: each hero's room, the foes its panel can call in, and every ability it can hand out or take away.
 // game/sandbox.js runs the mode and ui/sandbox-ui.js draws the panel from these lists; edit freely.
 
 import { ENEMY_TYPES } from './enemies.js';
@@ -9,9 +9,12 @@ import { setStanceHud, switchStance } from '../player/jedi/stance.js';
 import { switchWeapon } from '../player/mando/weapons.js';
 import { applyJetTier } from '../game/progression.js';
 
-export const SANDBOX_LEVEL = {
-  name: 'SANDBOX — THE TRAINING ROOM', sub: 'No waves, no clock. Press B to call in foes and choose your powers.',
-  arena: 48, floor: 0x6a3020, fog: 0x2a1a14, sky: 0x1a0e0a, layout: 'dojo', waves: [], hazards: {},
+// each hero's room: the Jedi train in the temple's training room, the Mandalorian in the throne room at Sundari
+export const SANDBOX_LEVELS = {
+  jedi:  { name: 'SANDBOX — THE TRAINING ROOM', sub: 'No waves, no clock. Press B to call in foes and choose your powers.',
+           arena: 48, floor: 0x6a3020, fog: 0x2a1a14, sky: 0x1a0e0a, layout: 'dojo', waves: [], hazards: {} },
+  mando: { name: 'SANDBOX — THE THRONE ROOM', sub: 'No waves, no clock. Press B to call in foes and choose your gear.',
+           arena: 48, floor: 0x3a4c46, fog: 0x1e2826, sky: 0x10161a, layout: 'throne', waves: [], hazards: {} },
 };
 
 /* FOES — every regular enemy type (data/enemies.js) in the order the panel lists them, with the names the game

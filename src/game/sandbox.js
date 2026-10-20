@@ -1,5 +1,5 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
-// SANDBOX: the post-campaign training room. No waves and no clock: call in any foe (data/sandbox.js), switch any
+// SANDBOX: the post-campaign training room (the Jedi's temple training room, the Mandalorian's throne room). No waves and no clock: call in any foe (data/sandbox.js), switch any
 // ability on or off, clear the floor and go again. ui/sandbox-ui.js is the panel that drives it.
 
 import { scene } from '../engine/renderer.js';
@@ -17,7 +17,7 @@ import { spawnBoss } from '../boss/boss.js';
 import { spawnChampion } from './survival.js';
 import { startLevel, syncJediChips, syncMandoChips } from './flow.js';
 import { showBanner } from '../ui/banners.js';
-import { SANDBOX_LEVEL, SANDBOX_KIT } from '../data/sandbox.js';
+import { SANDBOX_LEVELS, SANDBOX_KIT } from '../data/sandbox.js';
 
 // the panel's settings: how many foes a pick calls in, whether they come elite or stand still as dummies
 // (god mode is G.sandboxGod, so player/damage.js can read it)
@@ -29,10 +29,10 @@ export function sandboxUnlocked(){
 }
 
 export function startSandbox(){
-  startLevel(0, { level: SANDBOX_LEVEL, sandbox: true });   // fresh hero and starting kit, in the training room
+  startLevel(0, { level: SANDBOX_LEVELS[G.hero] || SANDBOX_LEVELS.jedi, sandbox: true });   // fresh hero and starting kit, in the hero's room
   G.waveTotal = 0;   // foes at their base toughness (HP and elite odds climb with waveTotal)
   const s = findClearSpawn(0, -10, CFG.player.radius + 1.0);
-  playerPos().set(s.x, 0, s.z); G.yaw = player.faceYaw = 0;   // south of centre, facing the crest on the north wall
+  playerPos().set(s.x, 0, s.z); G.yaw = player.faceYaw = 0;   // south of centre, facing the north wall (the crest, or the throne)
   const kit = savedKit();
   if (kit) applyKit(kit); else sandboxKitAll(true);   // the first visit: everything (the first of each key-sharing pair)
 }
