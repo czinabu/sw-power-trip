@@ -229,6 +229,8 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
   }
   // TRAINING — nobody dies in the training grounds: the teacher pulls you back up
   if (G.training && player.hp < 1){ player.hp = maxHp() * 0.4; floater(playerPos(), 'AGAIN', '#ffe27a'); }
+  // SANDBOX god mode (game/sandbox.js): the blow lands, the hero stays up
+  if (G.sandbox && G.sandboxGod && player.hp < 1) player.hp = maxHp();
   if (player.hp <= 0 && G.mode === 'play'){
     // PHOENIX boon — cheat death once per run: revive at half vitality and blow the field back
     if (player.phoenixReady){

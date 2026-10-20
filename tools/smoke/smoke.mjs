@@ -1,11 +1,9 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
 // SMOKE TEST — boots the BUILT game (dist/index.html) in headless Chromium and plays each hero for a short scripted
-// fight: walk in, turn toward the nearest foe, attack and fire off the hero's moves. Then each story mission once, skipping
-// ahead through its objectives so every one (the hold, the sabotage, the chase legs, the duels) gets set up and played. Fails on any page error or
 // fight in a random look from the character customizer: walk in, turn toward the nearest foe, attack and fire off the
-// hero's moves. Then one story mission run, which
-// skips ahead through its objectives so the hold, the sabotage and the duel all get set up and played. Fails on any page error or
-// console error, or if the fight never gets going (no frames, no enemies, nothing hit).
+// hero's moves. Then each story mission once, skipping ahead through its objectives so every one (the hold, the sabotage,
+// the chase legs, the duels) gets set up and played, and the sandbox, with foes and a boss called in from its panel.
+// Fails on any page error or console error, or if the fight never gets going (no frames, no enemies, nothing hit).
 //   npm run build && npm run smoke            (SMOKE_SECONDS=… sets the game time per hero, default 20)
 
 import { chromium } from 'playwright';
@@ -32,17 +30,18 @@ let failed = false;
 // a mission run passes once its last objective (a duel) is up: the HUD line then names the opponent
 const DUEL_LINE = { refuge: /INQUISITOR/, pursuit: /VX-7|SEVENTH BLADE/ };
 // [hero, menu mode, story mission]
-for (const [hero, mode, mission] of [['jedi', 'campaign'], ['mando', 'campaign'], ['jedi', 'mission', 'refuge'], ['mando', 'mission', 'pursuit']]){
-  const label = hero + (mode === 'campaign' ? '' : ' ' + mission);
+for (const [hero, mode, mission] of [['jedi', 'campaign'], ['mando', 'campaign'], ['jedi', 'mission', 'refuge'], ['mando', 'mission', 'pursuit'], ['mando', 'sandbox']]){
+  const label = hero + (mode === 'campaign' ? '' : ' ' + (mission || mode));
   const errors = [];
   // small window on the LOW preset: headless Chromium draws WebGL in software, and this keeps it at a usable frame rate
   const page = await browser.newPage({ viewport: { width: 480, height: 270 } });
-  await page.addInitScript(() => {
+  await page.addInitScript(sandbox => {
+    if (sandbox) try { localStorage.setItem('sw_camp_mando', '1'); } catch(e){}   // the sandbox unlocks after a campaign win
     try { localStorage.setItem('jpt_quality', 'low'); localStorage.setItem('sw_fullscreen', '0'); } catch(e){}   // fullscreen has its own check below
     // headless pointer lock grants or refuses at random from run to run; refuse it every time so the game takes its
     // unlocked fallback (the embedded-preview path) and the run always starts the same way
     Element.prototype.requestPointerLock = function(){ return Promise.reject(new DOMException('smoke test', 'NotSupportedError')); };
-  });
+  }, mode === 'sandbox');
   page.on('pageerror', e => errors.push('page error: ' + (e.stack || e.message)));
   const log = [];
   page.on('console', m => { log.push(m.type() + ': ' + m.text()); if (m.type() === 'error') errors.push('console error: ' + m.text()); });
@@ -84,6 +83,13 @@ for (const [hero, mode, mission] of [['jedi', 'campaign'], ['mando', 'campaign']
       });
       await page.screenshot({ path: path.join(root, `smoke-${label.replace(' ', '-')}.png`) }).catch(() => {});
       throw new Error('never left the menu; state: ' + st + '\n' + log.slice(-15).join('\n'));
+    }
+    // the sandbox: call foes in from its panel (B), switch a power, then close it and fight them
+    if (mode === 'sandbox'){
+      await page.keyboard.press('b');
+      await page.click('[data-n="3"]'); await page.click('[data-foe="grunt"]'); await page.click('[data-foe="acolyte"]');
+      await page.click('[data-kit="birds"]'); await page.click('[data-foe="boss"]');
+      await page.click('#sbdone');
     }
     await page.evaluate(() => { window.__frames = 0; const f = () => { window.__frames++; requestAnimationFrame(f); }; requestAnimationFrame(f); });
 

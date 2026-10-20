@@ -155,6 +155,7 @@
             <div class="modeopt brk sel" id="mode-campaign"><span class="mt">CAMPAIGN</span><span class="md">3 levels and a boss finale</span></div>
             <div class="modeopt brk" id="mode-endless"><span class="mt">SURVIVAL</span><span class="md">endless waves, chase a high score</span></div>
             <div class="modeopt brk" id="mode-training"><span class="mt">TRAINING</span><span class="md">learn your hero's moves</span></div>
+            <div class="modeopt brk" id="mode-sandbox"><span class="mt">SANDBOX</span><span class="md">any foe, any power</span></div>
           </div>
         </div>
         <div class="setup-col">
@@ -277,6 +278,36 @@
     <span class="st-hint" id="sthint">Unspent XP and skill points carry over</span>
     <div class="btn primary" id="continueBtn">CONTINUE</div>
   </footer>
+</div>
+<div id="sandbox">
+  <div class="sb-panel">
+    <div class="howto-head"><div class="howto-title">SANDBOX</div><div class="rm-sub">Call in foes, pick your powers · <kbd>B</kbd> to close</div><div class="howto-x" id="sbclose">✕</div></div>
+    <div class="sb-cols">
+      <section class="sb-col">
+        <div class="sec-label">CALL IN FOES</div>
+        <div class="sb-opts">
+          <div class="sb-seg" id="sbcount"></div>
+          <div class="setpill" id="sbelite" title="Every foe comes with an elite trait">ELITE<span class="setval">OFF</span></div>
+          <div class="setpill" id="sbdummy" title="Foes stand still and take it">DUMMIES<span class="setval">OFF</span></div>
+        </div>
+        <div class="sb-grid" id="sbfoes"></div>
+        <div class="sb-row">
+          <div class="btn" id="sbclear">CLEAR THE FLOOR</div>
+          <div class="btn" id="sbheal">RESTORE ME</div>
+          <div class="setpill" id="sbgod" title="Take the hits but never fall">GOD MODE<span class="setval">OFF</span></div>
+        </div>
+      </section>
+      <section class="sb-col">
+        <div class="sec-label">POWERS <span class="sb-hint">Powers on the same key are a pair: one at a time</span></div>
+        <div class="sb-grid kit" id="sbkit"></div>
+        <div class="sb-row">
+          <div class="btn" id="sball">ALL</div>
+          <div class="btn" id="sbnone">STARTING KIT ONLY</div>
+        </div>
+      </section>
+    </div>
+    <div class="sb-foot"><div class="btn primary" id="sbdone">BACK TO THE FLOOR</div></div>
+  </div>
 </div>
 <div id="cine"></div>
 <div id="grain"></div>

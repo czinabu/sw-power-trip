@@ -12,6 +12,8 @@ import { startLevel, retryLevel, retryIsBoss } from '../game/flow.js';
 import { startEndless } from '../game/survival.js';
 import { startTutorial, skipStep, setTrainingExit, trainingDone } from '../game/tutorial.js';
 import { startMission, retryMission, missionDone, missionTitle } from '../game/mission.js';
+import { startSandbox, sandboxUnlocked } from '../game/sandbox.js';
+import { closeSandboxPanel } from './sandbox-ui.js';
 import { MISSIONS } from '../data/missions.js';
 import { closeProgress } from './store-ui.js';
 import { DIFFS } from '../data/difficulty.js';
@@ -40,12 +42,12 @@ export function setOverlayState(state){
   document.getElementById('skipBtn').style.display = state === 'pause' && G.training ? 'inline-flex' : 'none';
   const go = document.getElementById('goText'), sub = document.getElementById('ovsub');
   if (state === 'menu'){
-    go.textContent = G.modeSel === 'endless' ? 'BEGIN SURVIVAL' : G.modeSel === 'training' ? 'BEGIN TRAINING' : G.modeSel === 'mission' ? 'BEGIN MISSION' : 'BEGIN CAMPAIGN';
-    sub.textContent = G.modeSel === 'endless' ? 'HOW LONG CAN YOU LAST?' : G.modeSel === 'training' ? 'LEARN THE WAYS OF YOUR ORDER' : G.modeSel === 'mission' ? missionTitle(G.missionId) : 'CHOOSE YOUR LEGEND';
+    go.textContent = G.modeSel === 'endless' ? 'BEGIN SURVIVAL' : G.modeSel === 'training' ? 'BEGIN TRAINING' : G.modeSel === 'mission' ? 'BEGIN MISSION' : G.modeSel === 'sandbox' ? 'ENTER THE SANDBOX' : 'BEGIN CAMPAIGN';
+    sub.textContent = G.modeSel === 'endless' ? 'HOW LONG CAN YOU LAST?' : G.modeSel === 'training' ? 'LEARN THE WAYS OF YOUR ORDER' : G.modeSel === 'mission' ? missionTitle(G.missionId) : G.modeSel === 'sandbox' ? 'ANY FOE, ANY POWER' : 'CHOOSE YOUR LEGEND';
   } else if (state === 'pause'){
     go.textContent = 'RESUME'; sub.textContent = 'PAUSED';
   } else if (state === 'dead'){
-    go.textContent = G.endless ? 'NEW SURVIVAL RUN' : G.mission ? 'RETRY THIS OBJECTIVE' : retryIsBoss() ? 'RETRY THE BOSS' : 'RETRY THIS LEVEL';
+    go.textContent = G.endless ? 'NEW SURVIVAL RUN' : G.mission ? 'RETRY THIS OBJECTIVE' : G.sandbox ? 'BACK TO THE SANDBOX' : retryIsBoss() ? 'RETRY THE BOSS' : 'RETRY THIS LEVEL';
     sub.textContent = '';   // the run summary's own title carries the moment
   } else if (state === 'victory'){
     go.textContent = 'PLAY AGAIN';
@@ -60,13 +62,13 @@ function beginPlay(){
   document.getElementById('runsummary').style.display = 'none';
   document.body.classList.remove('in-menu');
   setHowTo(false); setSettings(false);
-  if (G.modeSel === 'endless' && !survivalUnlocked()) G.modeSel = 'campaign';   // safety — never launch a locked mode
+  if ((G.modeSel === 'endless' && !survivalUnlocked()) || (G.modeSel === 'sandbox' && !sandboxUnlocked())) G.modeSel = 'campaign';   // safety — never launch a locked mode
   if (G.mode === 'menu' || G.mode === 'victory'){
     G.mode = 'play'; G.slowmo = 1;
-    if (G.modeSel === 'endless') startEndless(); else if (G.modeSel === 'training') startTutorial(); else if (G.modeSel === 'mission') startMission(G.missionId); else startLevel(0);
+    if (G.modeSel === 'endless') startEndless(); else if (G.modeSel === 'training') startTutorial(); else if (G.modeSel === 'mission') startMission(G.missionId); else if (G.modeSel === 'sandbox') startSandbox(); else startLevel(0);
   } else if (G.mode === 'dead'){
     G.mode = 'play'; G.slowmo = 1;
-    if (G.endless) startEndless(); else if (G.training) startTutorial(); else if (G.mission) retryMission(); else retryLevel();   // survival retry = a fresh survival run
+    if (G.endless) startEndless(); else if (G.training) startTutorial(); else if (G.mission) retryMission(); else if (G.sandbox) startSandbox(); else retryLevel();   // survival retry = a fresh survival run
   } else if (G.mode === 'play'){
     overlay.style.display = 'none';  // resume from pause
   }
@@ -90,19 +92,28 @@ export function refreshSurvivalLock(){
       el.title = 'Survival unlocks once you have beaten the campaign with both heroes'; }
   }
 }
+// SANDBOX is LOCKED until the campaign has been cleared with either hero (game/sandbox.js)
+export function refreshSandboxLock(){
+  const el = document.getElementById('mode-sandbox'); if (!el) return;
+  const un = sandboxUnlocked(), md = el.querySelector('.md');
+  el.classList.toggle('locked', !un);
+  if (md) md.innerHTML = un ? 'any foe, any power' : svgIcon('lock', 'lk') + 'beat the campaign';
+  el.title = un ? '' : 'The sandbox unlocks once you have beaten the campaign with either hero';
+}
 function setModeSel(m){
-  if (m === 'endless' && !survivalUnlocked()){   // can't pick a locked mode
+  if ((m === 'endless' && !survivalUnlocked()) || (m === 'sandbox' && !sandboxUnlocked())){   // can't pick a locked mode
     S.uiDeny();
-    const el = document.getElementById('mode-endless'); el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake');
+    const el = document.getElementById('mode-' + m); el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake');
     return;
   }
   G.modeSel = m;
-  for (const k of ['campaign', 'endless', 'training']) document.getElementById('mode-' + k).classList.toggle('sel', m === k);
+  for (const k of ['campaign', 'endless', 'training', 'sandbox']) document.getElementById('mode-' + k).classList.toggle('sel', m === k);
   if (_ovState === 'menu') setOverlayState('menu');   // headline + button follow the mode
 }
 document.getElementById('mode-campaign').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setModeSel('campaign'); });
 document.getElementById('mode-endless').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setModeSel('endless'); });
 document.getElementById('mode-training').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setModeSel('training'); });
+document.getElementById('mode-sandbox').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setModeSel('sandbox'); });
 // EXPERIMENTAL (in the EXTRAS panel): one card per story mission (data/missions.js), each launching straight in
 document.getElementById('xplist').innerHTML = Object.values(MISSIONS).map(m =>
   `<div class="xp-card" id="xp-${m.id}">
@@ -114,7 +125,7 @@ for (const b of document.querySelectorAll('#xplist [data-mission]')) b.addEventL
   G.modeSel = 'mission'; G.missionId = b.dataset.mission; if (_ovState === 'menu') setOverlayState('menu');
   launch();
 });
-refreshSurvivalLock();
+refreshSurvivalLock(); refreshSandboxLock();
 // TRAINING marks which heroes have finished it
 function refreshTrainingMark(){
   const md = document.querySelector('#mode-training .md'); if (!md) return;
@@ -327,7 +338,7 @@ function restartRun(){
   G.skillSelect = false;
   G.mode = 'play'; G.slowmo = 1; G.paused = false;
   document.body.classList.remove('in-menu'); setHowTo(false); setSettings(false);
-  if (G.endless) startEndless(); else if (G.training) startTutorial(); else if (G.mission) startMission(G.missionId); else startLevel(0);   // a survival run restarts as survival, not the campaign
+  if (G.endless) startEndless(); else if (G.training) startTutorial(); else if (G.mission) startMission(G.missionId); else if (G.sandbox) startSandbox(); else startLevel(0);   // a survival run restarts as survival, not the campaign
   if (!shared.lockFallback) requestLock();
 }
 document.getElementById('restartBtn').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); restartRun(); });
@@ -335,6 +346,7 @@ document.getElementById('restartBtn').addEventListener('click', (e) => { e.stopP
 // by accident); from the fallen/victory screens the run is already over, so it goes straight there.
 function goHome(){
   overlay.classList.remove('confirming');
+  closeSandboxPanel(false);
   document.getElementById('skilltree').style.display = 'none';
   G.skillSelect = false;
   if (G.stats){ G.stats._ended = false; G.stats.summary = null; }
@@ -343,7 +355,7 @@ function goHome(){
   G.mode = 'menu'; G.paused = false; G.slowmo = 1; G.slowmoT = 0; G.hitstop = 0;
   overlay.style.display = 'flex';
   if (G.modeSel === 'mission') setModeSel('campaign');   // the experimental mission isn't a menu pick: back to the campaign
-  refreshSurvivalLock(); refreshTrainingMark(); refreshMissionMark();
+  refreshSurvivalLock(); refreshSandboxLock(); refreshTrainingMark(); refreshMissionMark();
   setOverlayState('menu');
   overlay.scrollTop = 0;
 }

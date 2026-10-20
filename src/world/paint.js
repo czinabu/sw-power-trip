@@ -105,7 +105,7 @@ function blob(x, cx, cy, len, th, R){
 }
 
 /* ---------- FLOORS ----------
-   f: { kind: flagstone|sand|basalt|deck|ash|snow|ice, base, line, hi, glow, seed }. One 512px tile = 9 world units. */
+   f: { kind: flagstone|sand|basalt|deck|parquet|ash|snow|ice, base, line, hi, glow, seed }. One 512px tile = 9 world units. */
 export function paintFloor(f){
   const N = 512;
   const c = document.createElement('canvas'); c.width = c.height = N;
@@ -179,6 +179,23 @@ export function paintFloor(f){
     x.strokeStyle = 'rgba(0,0,0,0.25)'; x.lineWidth = 2;
     for (let i = 0; i < 10; i++) { const d = crackPath(R()*N, R()*N, 2, 40); wrap(d); }
     speckle(1200, 'rgba(255,255,255,0.04)', 'rgba(0,0,0,0.08)');
+  } else if (f.kind === 'parquet'){
+    // long polished floorboards in staggered runs, each board a shade off its neighbours, with a fine grain
+    const rows = 8, h = N/rows;
+    for (let r = 0; r < rows; r++){
+      let u = -R()*N/2;
+      while (u < N){
+        const w = N/2 * (0.6 + R()*0.7), k = R();
+        x.fillStyle = css(k < 0.3 ? hi : k > 0.75 ? shade(base, 0.88) : base);
+        wrap(() => x.fillRect(u, r*h, w, h));
+        x.strokeStyle = css(line); x.lineWidth = 2.5;
+        wrap(() => x.strokeRect(u, r*h, w, h));
+        x.strokeStyle = 'rgba(0,0,0,0.12)'; x.lineWidth = 1;
+        for (let g = 0; g < 3; g++){ const gy = r*h + h*(0.25 + R()*0.5), dy = (R()-0.5)*3, u0 = u; wrap(() => { x.beginPath(); x.moveTo(u0 + 6, gy); x.lineTo(u0 + w - 6, gy + dy); x.stroke(); }); }
+        u += w;
+      }
+    }
+    speckle(700, 'rgba(255,230,200,0.05)', 'rgba(0,0,0,0.06)');
   } else if (f.kind === 'snow' || f.kind === 'ice'){
     // soft drifts as flat lighter/darker shapes; ice gets white crack lines
     for (let i = 0; i < 16; i++){ x.fillStyle = css(R() < 0.5 ? hi : shade(base, 0.93)); const px = R()*N, py = R()*N, r = 20 + R()*50, rot = R()*0.6; wrap(() => { x.beginPath(); x.ellipse(px, py, r*2, r*0.7, rot, 0, 7); x.fill(); }); }

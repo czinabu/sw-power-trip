@@ -61,6 +61,7 @@ import './world/arenas/plains.js';
 import { queueSpawn, startLevel, checkUnlocks, startWave, updateFlow } from './game/flow.js';
 import { startTutorial, updateTutorial, skipStep, trainingProgress } from './game/tutorial.js';
 import { startMission, updateMission, skipObjective, missionState } from './game/mission.js';
+import { startSandbox, updateSandbox, sandboxSpawn, sandboxClear, setSandboxKit, sandboxKitAll } from './game/sandbox.js';
 import {
   enemyDmgScale, genEndlessWave, spawnChampion, startEndless, startEndlessWave
 } from './game/survival.js';
@@ -110,6 +111,7 @@ function tick(){
       updatePlayer(dt);
       updateFlow(dt);
       updateMission(dt);
+      updateSandbox(dt);
     }
     updateEnemies(dt);
     updateBolts(dt);
@@ -145,7 +147,7 @@ tick();
 
 /* expose configs + API for live tweaking and future edits (dev console) */
 window.GAME = { CFG, ENEMY_TYPES, LEVELS, BOSS_CFG, BOSS_MANDO, STANCES, SKILLS, MANDO, MANDO_WEAPONS, G, enemies, player, pillars, solids, rockets, bolts,
-  startLevel, startWave, spawnEnemy, startTutorial, startMission, skipObjective, missionState, skipStep, trainingProgress, spawnBoss, queueSpawn, checkUnlocks, switchStance, setHero,
+  startLevel, startWave, spawnEnemy, startTutorial, startMission, skipObjective, startSandbox, sandboxSpawn, sandboxClear, setSandboxKit, sandboxKitAll, missionState, skipStep, trainingProgress, spawnBoss, queueSpawn, checkUnlocks, switchStance, setHero,
   openSkillTree, damageEnemy, damageBoss, updateHud, nextStoreGoal, enemyHpScale, eliteChance, ELITES, cycleQuality, forceBarrier, forceMend, updatePlayer, updateEnemies, updateBolts, endRun, updateFlow, startEndless, startEndlessWave, genEndlessWave, MUTATORS, ENDLESS_POWERS, buyPower, keys, camera, SEE,
   tryAttack, castGesture, forcePush, forceSlam, forceRepulse, stance, applySwingDamage, spawnChampion, startWave, bomberExplode, MUSIC, audioInit,
   spawnBoss, updateBoss, bossStagger, BOSS_CFG, BOSS_MANDO, rings,
