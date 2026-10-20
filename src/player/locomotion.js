@@ -5,7 +5,7 @@ import { CFG } from '../data/config.js';
 import { sfx, S } from '../audio/sfx.js';
 import { V3, rand, clamp, TMP } from '../utils.js';
 import { burst } from '../fx/particles.js';
-import { G, keys, player } from '../state.js';
+import { G, keys, player, enemies } from '../state.js';
 import { MANDO, JEDI_FORCE, JUMP_HOLD_THRESH, forceJumpPow } from '../data/mando.js';
 import { stance, maxHp } from './helpers.js';
 import { focusMoveMul } from './jedi/focus.js';
@@ -37,16 +37,14 @@ export function updateMovement(dt, pp, st, f, r){
   if (keys['d']) want.add(r);
   if (keys['a']) want.sub(r);
   const moving = want.lengthSq() > 0.01;
-  // SPRINT (Jedi) — Q toggles between sprint and walk; with the sprint on, running forward (W) on the ground sprints:
-  // faster, heavier to steer, and it burns stamina (out of stamina it falls back to a run until it recovers)
+  // SPRINT / WALK (Jedi) — Q toggles between them. With the sprint on, running forward (W) on the ground sprints: faster
+  // and heavier to steer. It costs nothing: stamina is the saber's (swings, blocks), not the legs'. With it off the
+  // Jedi WALKS, a real unhurried walk, while no foe is near; in a fight the walk picks up to the normal combat pace.
   const wasSprinting = player.sprinting;
   player.sprinting = G.hero !== 'mando' && !!player.sprintOn && !!keys['w'] && (player.grounded || wasSprinting)
-                     && !player.blockHeld && player.atkT <= 0 && !player.exhausted && player.stam > 1 && !(player.flinchT > 0)
+                     && !player.blockHeld && player.atkT <= 0 && !(player.flinchT > 0)
                      && !(player.landStagT > 0) && !(player.slideT > 0) && !player.mantle && !player.hang;
-  if (player.sprinting && player.grounded){
-    player.stam = Math.max(0, player.stam - MOVE.sprintStam * dt);
-    player.stamDelay = Math.max(player.stamDelay, 0.25);
-  }
+  player.walking = G.hero !== 'mando' && !player.sprintOn && player.grounded && !inFight();
   // PIVOT — reversing hard at speed plants the feet: you brake to a stop before the new direction takes
   if (player.pivotT > 0) player.pivotT -= dt;
   else if (G.hero !== 'mando' && player.grounded && moving && !(player.slideT > 0)){
@@ -82,7 +80,7 @@ export function updateMovement(dt, pp, st, f, r){
     // stop or turn back against your momentum brakes harder. In the AIR the jump keeps its takeoff momentum: WASD
     // only nudges it (no input = no steering at all), so a leap is a commitment instead of a floaty drift.
     const airborne = !player.grounded && !player.wallRun;
-    const topSpeed = CFG.player.speed * speedMul * (player.sprinting ? MOVE.sprintMul : 1);
+    const topSpeed = CFG.player.speed * speedMul * (player.sprinting ? MOVE.sprintMul : player.walking ? MOVE.walkMul : 1);
     if (moving && !(player.pivotT > 0)) want.normalize().multiplyScalar(topSpeed);
     else if (player.pivotT > 0) want.set(0, 0, 0);   // planted: kill the old momentum first
     if (!(airborne && !moving)){
@@ -111,6 +109,18 @@ export function updateMovement(dt, pp, st, f, r){
   player.vel.multiplyScalar(Math.max(0, 1 - dt*velDrag));
   if (player.kickT > 0) player.kickT -= dt;   // JEDI front-kick recovery (hero-agnostic so it always winds down)
   return moving;
+}
+
+// a fight is on: a live foe within reach of the walk, or the Jedi has just been swinging or guarding
+function inFight(){
+  if (player.atkT > 0 || player.blockHeld || G.gt - (player.lastAtkEnd ?? -9) < MOVE.walkCalm) return true;
+  const p = player.group.position, r2 = MOVE.walkFightRange * MOVE.walkFightRange;
+  for (const e of enemies){
+    if (e.dead || e.converted || e.dummy) continue;
+    const dx = e.group.position.x - p.x, dz = e.group.position.z - p.z;
+    if (dx * dx + dz * dz < r2) return true;
+  }
+  return false;
 }
 
 export function updateForceJump(dt, pp, f, r){
