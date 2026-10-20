@@ -17,6 +17,8 @@ import { updateMovement, updateForceJump, updateGravityAndLanding } from './loco
 import { updateMandoFlight } from './mando/flight.js';
 import { animatePlayer } from './animation.js';
 import { updateLockOn } from './lockon.js';
+import { holstered } from './holster.js';
+import { updateForceStrike } from './jedi/palm.js';
 
 // Per-frame player update. Each step below runs in this exact order every frame; the order matters
 // (e.g. movement feeds the jetpack, both feed gravity/landing, and the pose reads the landed state).
@@ -30,7 +32,7 @@ export function updatePlayer(dt){
   if (G.hero === 'mando'){
     updateMandoCombat(dt, f, r);
     updateMandoFlight(dt, pp, f, r);
-  }
+  } else updateForceStrike(dt);   // the holstered Force strike string (jedi/palm.js)
   updateForceJump(dt, pp, f, r);
   updateGravityAndLanding(dt, pp);
   animatePlayer(dt, pp, st, f, r, moving);
@@ -45,7 +47,7 @@ function updatePlayerMeters(dt, pp, st){
   if (player.swingLock > 0) player.swingLock -= dt;     // DJEM SO cancel — slow to swing again
   // NO Force regen while Force-gliding — otherwise regen would outpace the glide cost and the descent would be free
   if (!player.gliding)
-    player.force = clamp(player.force + CFG.player.forceRegen * (st.forceRegen || 1) * player.up.forceRegen * focusRegenMul() * (G.mut === 'windfall' ? 2 : 1) * dt, 0, CFG.player.maxForce);
+    player.force = clamp(player.force + CFG.player.forceRegen * (st.forceRegen || 1) * player.up.forceRegen * focusRegenMul() * (holstered() ? CFG.holster.regen : 1) * (G.mut === 'windfall' ? 2 : 1) * dt, 0, CFG.player.maxForce);
   if (G.gt - player.lastHurt > CFG.player.hpRegenDelay)
     player.hp = clamp(player.hp + CFG.player.hpRegen * dt, 0, maxHp());
   if (player.stamDelay > 0) player.stamDelay -= dt;

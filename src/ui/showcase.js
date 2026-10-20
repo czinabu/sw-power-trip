@@ -3,7 +3,7 @@
 // turntable on the right, instead of the live arena. Switching hero spins the turntable and swaps the figure.
 
 import * as THREE from 'three';
-import { renderer, composer, renderPass, scene, camera } from '../engine/renderer.js';
+import { renderer, composer, renderPass, scene, camera, bloomPass } from '../engine/renderer.js';
 import { G } from '../state.js';
 import { buildHeroModel } from '../player/model/index.js';
 import { applySaberGrip } from '../player/model/weapons.js';
@@ -13,6 +13,7 @@ import { lookOf, loadPicks, disposeTree } from '../player/mesh.js';
 const HERO_X = 0.72;     // where the figure stands across the screen (0 = left edge, 1 = right)
 const TURN = 0.32;       // turntable speed, rad/s
 const SWAP = 0.9;        // seconds the hero swap takes
+const STAND_BLOOM = 1.35; // bloom threshold on the stand (the arena's is lower, renderer.js)
 
 /* each hero's display: colours for the backdrop, the pedestal lights, and the pose on the stand */
 const THEMES = {
@@ -133,6 +134,8 @@ function build(picks){
   if (fig.vis){ fig.group.remove(fig.vis); disposeTree(fig.vis); }
   fig.group.add(buildHeroModel(fig, lookOf(picks)));
   fig.blade.light.intensity = 2.2;   // the saber's real light floods a close-up; keep it low so the model reads
+  const crystal = fig.look.jedi.saber;
+  if (crystal != null){ fig.blade.glow.material.color.setHex(crystal); fig.blade.light.color.setHex(crystal); }
   R = fig.rig;
   hipsY = R.hips.position.y;
 }
@@ -328,10 +331,14 @@ export function renderShowcase(dt){
   inRing.material.color.copy(accent); ticks.material.color.copy(accent);
   pool.material.color.copy(accent); pool.material.opacity = 0.45 + flare * 0.4;
   beam.material.color.copy(accent); beam.material.opacity = flare * 0.4;
-  spot.intensity = 26 + flare * 16;
+  spot.intensity = 17 + flare * 16;
   bgMat.uniforms.t.value = t; bgMat.uniforms.flare.value = flare;
   renderPass.scene = stage; renderPass.camera = cam;
+  // under the stand's spotlight a pale skin or white tunic lands near full brightness and the bloom set for
+  // sabers and bolts would halo it; on the stand only light sources (blade, rings, beam) should glow
+  const th = bloomPass.threshold; bloomPass.threshold = STAND_BLOOM;
   composer.render();
+  bloomPass.threshold = th;
   renderPass.scene = scene; renderPass.camera = camera;
 }
 export function leaveShowcase(){ warm = false; }   // the next visit re-warms (a new run builds a new arena)

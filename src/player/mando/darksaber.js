@@ -35,7 +35,7 @@ export function updateDark(dt){
   updateDarkThrow(dt);
   if (player.darkT <= 0){
     if (player.darkT !== 0) player.darkT = 0;   // never leave it slightly negative (that used to disable jetpack/flame)
-    if (player.darksaberMesh && player.weapon !== 'darksaber' && !shared.darkProj && player.darksaberMesh.visible && player.cds.dark < MANDO.dark.cd - 0.25) player.darksaberMesh.visible = false;
+    if (player.darksaberMesh && player.weapon !== 'darksaber' && !shared.darkProj && !(player.weapon === 'fists' && player.drawnWeapon === 'darksaber') && player.darksaberMesh.visible && player.cds.dark < MANDO.dark.cd - 0.25) player.darksaberMesh.visible = false;
     return;
   }
   player.darkT -= dt;

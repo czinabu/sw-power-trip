@@ -37,16 +37,14 @@ export function updateMovement(dt, pp, st, f, r){
   if (keys['d']) want.add(r);
   if (keys['a']) want.sub(r);
   const moving = want.lengthSq() > 0.01;
-  // SPRINT (Jedi) — Q toggles between sprint and walk; with the sprint on, running forward (W) on the ground sprints:
-  // faster, heavier to steer, and it burns stamina (out of stamina it falls back to a run until it recovers)
+  // SPRINT / WALK (Jedi) — Q toggles between them. With the sprint on, running forward (W) on the ground sprints: faster
+  // and heavier to steer. It costs nothing: stamina is the saber's (swings, blocks), not the legs'. With it off the
+  // Jedi WALKS, a real unhurried walk, fight or no fight: the Vader walk, cutting down whatever comes into reach.
   const wasSprinting = player.sprinting;
   player.sprinting = G.hero !== 'mando' && !!player.sprintOn && !!keys['w'] && (player.grounded || wasSprinting)
-                     && !player.blockHeld && player.atkT <= 0 && !player.exhausted && player.stam > 1 && !(player.flinchT > 0)
+                     && !player.blockHeld && player.atkT <= 0 && !(player.flinchT > 0)
                      && !(player.landStagT > 0) && !(player.slideT > 0) && !player.mantle && !player.hang;
-  if (player.sprinting && player.grounded){
-    player.stam = Math.max(0, player.stam - MOVE.sprintStam * dt);
-    player.stamDelay = Math.max(player.stamDelay, 0.25);
-  }
+  player.walking = G.hero !== 'mando' && !player.sprintOn && player.grounded;
   // PIVOT — reversing hard at speed plants the feet: you brake to a stop before the new direction takes
   if (player.pivotT > 0) player.pivotT -= dt;
   else if (G.hero !== 'mando' && player.grounded && moving && !(player.slideT > 0)){
@@ -82,7 +80,7 @@ export function updateMovement(dt, pp, st, f, r){
     // stop or turn back against your momentum brakes harder. In the AIR the jump keeps its takeoff momentum: WASD
     // only nudges it (no input = no steering at all), so a leap is a commitment instead of a floaty drift.
     const airborne = !player.grounded && !player.wallRun;
-    const topSpeed = CFG.player.speed * speedMul * (player.sprinting ? MOVE.sprintMul : 1);
+    const topSpeed = CFG.player.speed * speedMul * (player.sprinting ? MOVE.sprintMul : player.walking ? MOVE.walkMul : 1);
     if (moving && !(player.pivotT > 0)) want.normalize().multiplyScalar(topSpeed);
     else if (player.pivotT > 0) want.set(0, 0, 0);   // planted: kill the old momentum first
     if (!(airborne && !moving)){

@@ -103,7 +103,7 @@ export function updateAudio(dt){
   MUSIC.setPalette(inWorld ? layout : 'menu');
 
   // ── saber hums ──
-  const jedi = G.hero === 'jedi', darkOn = G.hero === 'mando' && player.weapon === 'darksaber';
+  const jedi = G.hero === 'jedi' && (!player.holstered || shared.saberProj), darkOn = G.hero === 'mando' && player.weapon === 'darksaber';
   const swinging = player.atkT > 0 || player.darkT > 0;
   const motion = clamp(Math.hypot(player.moveVel.x, player.moveVel.z) / 12, 0, 1);
   const thrown = jedi && shared.saberProj;

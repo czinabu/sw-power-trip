@@ -17,6 +17,7 @@ import { bossStagger } from '../../boss/boss.js';
 import { sparks, motes } from '../../fx/ink.js';
 import { castGesture, forcePull } from './force.js';
 import { tryAttack } from './combat.js';
+import { forceStrike } from './palm.js';
 
 const A = () => CFG.abilities.grasp;
 const fcost = (base) => base * (player.up.abilityCostMul || 1);
@@ -198,7 +199,7 @@ export function updateGrasp(dt){
       damageEnemy(e, g.yankDmg, null, 0);
       if (!e.dead){ staggerEnemy(e, f.x, f.z, 'YANKED!'); }
       player.swingLock = 0;
-      tryAttack();
+      if (player.holstered) forceStrike(); else tryAttack();   // holstered: the Force palm strike instead of the blade
     }
   }
 }

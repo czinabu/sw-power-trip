@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { scene } from '../engine/renderer.js';
 import { G, player } from '../state.js';
-import { stance } from '../player/helpers.js';
+import { stance, bladeColor } from '../player/helpers.js';
 import { FORM_OF } from '../data/poses.js';
 
 /* ---------- saber motion trail ----------
@@ -65,7 +65,7 @@ export function updateTrail(dt){
     trailPts.push({ b: TRB.clone(), t: TRT.clone(), age: 0 });
     if (trailPts.length > 24) trailPts.shift();
     trailCol.setHex((player.swing && player.swing.riposte) ? 0xffe27a     // a riposte cuts a brilliant GOLD arc
-      : dark ? 0xd9ccff : stance().blade);
+      : dark ? 0xd9ccff : bladeColor());
   } else tipSpeed = 0;
   if (trailPts.length < 2){ trailMesh.visible = false; return; }
   trailMesh.visible = true;

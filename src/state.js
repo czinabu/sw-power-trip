@@ -82,6 +82,7 @@ export const player = {
   stam: CFG.player.maxStam, stamDelay: 0, lastWinded: -9, exhausted: false, heartT: 0,
   blockHeld: false, blockT: 0, parryT: 0, riposteT: 0,
   castT: 0, castMax: 0.3, castKind: '', swingFlip: false,   // force-cast hand gesture + neutral swing alternator
+  holstered: false, palmT: 0, palmMax: 0, palmStep: 0, palm: null, palmQueued: false, lastPalmEnd: -9,   // Jedi saber on the belt + the Force strike string (jedi/palm.js)
   // skill-tree upgrade multipliers/bonuses (reset each new campaign)
   up: { dmg: 1, forceRegen: 1, move: 1, knock: 1, parry: 0, lifesteal: 0, hpMax: 0, dashCdMult: 1, stamRegen: 1,
         atkSpeed: 1, dr: 0, blockStam: 1, riposte: 1, parryForce: 0, tempest: false,
@@ -96,7 +97,7 @@ export const player = {
   // mando
   fireCd: 0, firePistol: 1, firing: false, trigHeld: false, shieldDropT: 0, jetActive: false, mandoParts: null, pistols: null, lockOn: false,
   darkT: 0, darkApplied: false, darksaberMesh: null, darkLight: null,
-  weapon: 'single', heat: 0, overheat: false, ventT: 0, heatDelay: 0, grappleActive: null,
+  weapon: 'single', drawnWeapon: 'single', heat: 0, overheat: false, ventT: 0, heatDelay: 0, grappleActive: null,
   zoom: false, aiming: 0, recoilKick: 0,
   jet: 100, jetMax: 100, stabT: 0,   // dedicated jetpack FUEL (separate from ability Force); disruptor stab timer
   aimOff: { x: 0, y: 0 },            // screen-space crosshair drift (free-aim like BF2 / Helldivers)

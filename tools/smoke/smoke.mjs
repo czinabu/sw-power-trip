@@ -20,8 +20,8 @@ const REAL_LIMIT_MS = 150000;   // headless WebGL is slow; give up on a hero aft
 
 // each hero's moves, pressed in turn during the fight (keys from engine/input.js)
 const MOVES = {
-  jedi:  ['e', 'f', 'shift', ' ', 'c', '2', 'q', 'Alt', '3', 'g', '1'],
-  mando: ['e', 'q', 'shift', ' ', 'f', 'c', '2', 'r', '1', 'e', 'e'],
+  jedi:  ['e', 'f', 'shift', ' ', 'c', '2', 'q', 'Alt', '3', 'g', '4', 'f', '1', '4'],
+  mando: ['e', 'q', 'shift', ' ', 'f', 'c', '2', 'r', '4', 'e', '4', '1', 'e', 'e'],
 };
 
 if (!existsSync(path.join(root, 'dist/index.html'))){ console.error('dist/index.html missing: run `npm run build` first'); process.exit(1); }
@@ -89,7 +89,7 @@ for (const [hero, mode, mission] of [['jedi', 'campaign'], ['mando', 'campaign']
 
     const startGt = await page.evaluate(() => GAME.G.gt);
     await page.keyboard.down('w');
-    let step = 0, skips = 0;
+    let step = 0, skips = 0, everHit = false;   // a mission skips past (and clears) earlier foes, so remember any hit
     for (;;){
       const s = await page.evaluate(() => {
         const { G, player, enemies } = GAME;
@@ -108,8 +108,10 @@ for (const [hero, mode, mission] of [['jedi', 'campaign'], ['mando', 'campaign']
         }
         if (best) G.yaw = Math.atan2(best.group.position.x - p.x, best.group.position.z - p.z);
         G.pitch = 0.1;
-        return { gt: G.gt, mode: G.mode, near: bd, enemies: enemies.length };
+        return { gt: G.gt, mode: G.mode, near: bd, enemies: enemies.length,
+                 hit: (G.stats && G.stats.kills) > 0 || enemies.some(e => e.maxHp && e.hp < e.maxHp) };
       });
+      everHit = everHit || s.hit;
       if (s.gt - startGt >= GAME_SECONDS || s.mode !== 'play' || Date.now() - t0 > REAL_LIMIT_MS) break;
       // a mission: a few seconds of each objective, then on to the next (the duel plays out to the end of the run, so it
       // gets the bigger share: on a slow runner it takes a while for the duellist to arrive and close in)
@@ -134,6 +136,7 @@ for (const [hero, mode, mission] of [['jedi', 'campaign'], ['mando', 'campaign']
                objective: document.getElementById('waveinfo').textContent };
     }, startGt);
     if (mode === 'mission') result.skips = skips;
+    result.everHit = everHit;
   } catch (e){
     errors.push('script: ' + e.message);
   }
@@ -149,7 +152,7 @@ for (const [hero, mode, mission] of [['jedi', 'campaign'], ['mando', 'campaign']
     if (result.mode !== 'play' && !(mode === 'mission' && result.mode === 'victory')) problems.push(`left play mode (mode: ${result.mode})`);
     if (mode === 'mission' && !DUEL_LINE[mission].test(result.objective)) problems.push('the mission never reached its duel');
     if (!result.enemies && !result.kills) problems.push('no enemies ever spawned');
-    if (!result.kills && !result.hurt) problems.push('the hero never hit anything');
+    if (!result.kills && !result.hurt && !result.everHit) problems.push('the hero never hit anything');
   }
   console.log(`${problems.length ? 'FAIL' : 'ok  '} ${label.padEnd(14)} ${JSON.stringify(result || {})} (${((Date.now() - t0) / 1000).toFixed(0)}s)`);
   for (const p of problems) console.log('     ' + p.split('\n').slice(0, 20).join('\n     '));

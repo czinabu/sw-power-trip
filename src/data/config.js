@@ -33,6 +33,19 @@ export const CFG = {
     // SOFT LOCK-ON (T / middle mouse) — the camera keeps one foe framed
     lockOn: { range: 22, keep: 28, cone: 0.55, yawPull: 7, pitch: 0.2, pitchPull: 2.5 },
   },
+  // HOLSTERED (4) — the Jedi clips the saber to his belt and fights with the Force alone; the Mando holsters his
+  // weapon and fights with his fists and gadgets. Force / gadget power refills faster while holstered (`regen`).
+  // The Jedi's LMB becomes a Force strike string: two palm strikes, then a burst. Per step: damage, reach (m),
+  // cone half-angle, knockback, stamina, and the time the strike takes (contact lands at `contact` of it).
+  holster: {
+    regen: 1.5,
+    strike: [
+      { dmg: 16, range: 4.5, angle: 0.42, knock: 7,  stamina: 8,  dur: 0.32, contact: 0.4 },
+      { dmg: 16, range: 4.5, angle: 0.42, knock: 7,  stamina: 8,  dur: 0.32, contact: 0.4 },
+      { dmg: 30, range: 6,   angle: 0.75, knock: 15, stamina: 14, dur: 0.46, contact: 0.45, burst: true },
+    ],
+    comboGap: 0.7,   // seconds after a strike in which the next press carries on the string
+  },
   abilities: {
     // BASIC powers — cheap, available from the start
     push:   { cost: 20, cd: 1.4,  range: 15, angle: 1.15, dmg: 2,  knock: 24 },   // pure UTILITY — a hard interrupting SHOVE, near-zero damage. cd 0.9→1.4: it also reflects every bolt in the cone, so it was a near-constant shield from wave 1

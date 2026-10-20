@@ -57,10 +57,12 @@ export function buildRig(){
   const armL = arm(-1), armR = arm(1);
   armL.sh.rotation.z = 0.12; armR.sh.rotation.z = -0.12;
 
-  // SOCKETS — named mount points for weapons and gear (see weapons.js). Hands are the wrists; the hip and back
-  // sockets are where a holstered or sheathed weapon will sit once weapons can be stowed.
+  // SOCKETS — named mount points for weapons and gear (see weapons.js). Hands are the wrists; the hip sockets ride
+  // the thighs (the Mando's holsters), the belt sits on the pelvis at his left (a clipped saber hilt), and the back
+  // is the jetpack mount. Holstered weapons hang here (player/holster.js).
   const hipSocket = L => { const s = G(); s.position.set(0.07 * L.side, -0.12, 0.02); L.hip.add(s); return s; };
-  const sockets = { handR: armR.wr, handL: armL.wr, back, hipL: hipSocket(legL), hipR: hipSocket(legR) };
+  const belt = G(); belt.position.set(-0.2, 0.06, 0.05); hips.add(belt);
+  const sockets = { handR: armR.wr, handL: armL.wr, back, belt, hipL: hipSocket(legL), hipR: hipSocket(legR) };
 
   return { vis, hips, torso, chest, head, back, cape, skirt, flaps, legL, legR, armL, armR, sockets };
 }

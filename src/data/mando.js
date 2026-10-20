@@ -57,6 +57,7 @@ export const MANDO_WEAPONS = {
                hipSpread: 0, braceSpread: 0, braceDmg: 1, foStart: 999, foEnd: 999, foMin: 1,
                twoHand: true, stabDmg: 38, stabCd: 0.3, stabRange: 5.2, stabStun: 2.0 },   // pinpoint sniper; else a fast electric spear
   darksaber: { name: 'DARKSABER', fire: 'saber', melee: true },                              // LMB slash; unlocked at the wave-5 fork
+  fists:     { name: 'HOLSTERED', fire: 'fists', melee: true },                              // 4: weapon holstered, LMB throws the close-quarters string (not in the wheel)
 };
 export const MANDO_WEAPON_ORDER = ['single', 'dual', 'disruptor', 'darksaber'];
 // JEDI aerial Force-control — only kicks in when you HOLD space (a tap is just a normal jump). The TAKEOFF

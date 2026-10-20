@@ -108,7 +108,7 @@ export function forceSlam(){
   const st = stance();
   const slamCost = fcost(A.cost * (st.powerCostMul || 1));
   if (!G.unlocked.slam || player.cds.slam > 0 || player.force < slamCost || G.mode !== 'play' || player.slamming || player.grounded) return false;
-  if (player.mantle || player.hang || player.saberLock || shared.saberProj) return false;
+  if (player.mantle || player.hang || player.saberLock || shared.saberProj || player.holstered) return false;
   player.force -= slamCost; player.cds.slam = A.cd * (st.cdMult || 1);
   if (player.atkT > 0) cancelSwing();   // the air swing turns into the plunge
   // a dive out of a double jump arms the big wave (rank II); read now, since landing clears doubleJumped
