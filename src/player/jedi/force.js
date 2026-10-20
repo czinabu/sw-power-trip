@@ -3,7 +3,6 @@
 
 import * as THREE from 'three';
 import { abil, healFrac } from '../../data/mastery.js';
-import { CFG } from '../../data/config.js';
 import { scene } from '../../engine/renderer.js';
 import { sfx, S } from '../../audio/sfx.js';
 import { V3, clamp, TMP } from '../../utils.js';
@@ -99,51 +98,36 @@ export function forcePush(){
   if (pushed >= 4) floater(pp, 'CROWD CLEARED', '#7fd4ff');
 }
 
-/* JUMP ATTACK — the Jedi's leaping saber strike (it took over the old Force Slam's slot, unlock and mastery).
-   X on the ground LEAPS toward where you're aiming and drives the blade down at the top of the arc; X in the air
-   drives straight down. The landing is a blade-first strike on whoever is under you plus a ground shockwave.
-   Once mastered to rank II (bigWave), a dive out of a DOUBLE JUMP lands a far bigger shockwave. */
+/* JUMP ATTACK — the Jedi's plunging saber strike (it took over the old Force Slam's unlock and mastery). Once
+   unlocked, jump at a foe and HOLD the saber button in the air: the blade comes down and the landing is a strike on
+   whoever is under you plus a ground shockwave. Once mastered to rank II (bigWave), a dive out of a DOUBLE JUMP
+   lands a far bigger shockwave. */
+const JUMP_ATK_HOLD = 0.18;   // how long the saber button is held mid-air before the swing turns into the plunge
 export function forceSlam(){
   const A = abil('jslam');
   const st = stance();
   const slamCost = fcost(A.cost * (st.powerCostMul || 1));
-  if (!G.unlocked.slam || player.cds.slam > 0 || player.force < slamCost || G.mode !== 'play' || player.slamming || player.leapAtk) return;
-  if (player.grounded && (player.landStagT > 0 || player.mantle || player.hang)) return;
+  if (!G.unlocked.slam || player.cds.slam > 0 || player.force < slamCost || G.mode !== 'play' || player.slamming || player.grounded) return false;
+  if (player.mantle || player.hang || player.saberLock || shared.saberProj) return false;
   player.force -= slamCost; player.cds.slam = A.cd * (st.cdMult || 1);
-  player.flip = null;
-  if (player.grounded){
-    // the LEAP — up and out toward the aim; updateJumpAttack turns it into the dive once the arc tops out
-    const f = fwd();
-    player.leapAtk = true;
-    player.grounded = false; player.lastJumpT = G.gt;
-    player.vy = CFG.player.jumpVel * 1.05;
-    player.vel.set(f.x * A.leap, 0, f.z * A.leap);
-    castGesture('push', 0.25);
-    S.jump(); S.dash();
-    const pp = playerPos();
-    burst(V3(pp.x, pp.y + 0.3, pp.z), stance().blade, 8, 6, 2);
-    return;
-  }
-  startDive();
-}
-function startDive(){
+  if (player.atkT > 0) cancelSwing();   // the air swing turns into the plunge
   // a dive out of a double jump arms the big wave (rank II); read now, since landing clears doubleJumped
-  player.slamBig = !!player.doubleJumped && abil('jslam').bigWave > 0;
-  player.leapAtk = false;
+  player.slamBig = !!player.doubleJumped && A.bigWave > 0;
   player.slamming = true;
   player.flip = null;
-  player.vel.multiplyScalar(0.35);       // keep a little of the leap's carry so the strike lands where you aimed
+  player.vel.multiplyScalar(0.5);        // keep some of the jump's carry so the strike lands on the foe you jumped at
   player.vy = -32;                       // drive straight down
   S.dash();
   const sp = playerPos();
   sparks(V3(sp.x, sp.y + 1.2, sp.z), stance().blade, player.slamBig ? 14 : 8, 10, { dir: V3(0, 1, 0), cone: 0.5, life: 0.25, grav: 0 });   // the air tears as you drop
+  tutEvent('jumpAttack');
+  return true;
 }
-// the leap rises, then the blade comes down: dive as soon as the arc tops out (or if the leap is cut short)
+// holding the saber button in the air for a beat starts the plunge
 export function updateJumpAttack(){
-  if (!player.leapAtk) return;
-  if (G.mode !== 'play' || player.mantle || player.hang){ player.leapAtk = false; return; }
-  if (player.grounded){ player.leapAtk = false; return; }
-  if (player.vy <= 1) startDive();
+  if (!player.atkHeld || player.grounded || player.slamming || !G.unlocked.slam) return;
+  if (G.gt - player.atkHeldT < JUMP_ATK_HOLD) return;
+  if (!forceSlam()) player.atkHeld = false;   // couldn't (cooldown, no Force): don't retry every frame for this press
 }
 export function slamImpact(){
   const A = abil('jslam'), st = stance();

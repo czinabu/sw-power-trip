@@ -15,7 +15,7 @@ import { fwd, rightV, playerPos, stance } from '../player/helpers.js';
 import { switchStance } from '../player/jedi/stance.js';
 import { tryAttack, cancelSwing, forceKick } from '../player/jedi/combat.js';
 import {
-  forcePush, forceSlam, saberThrow, forcePull, forceRepulse, forceBarrier, forceMend, forceJudgement
+  forcePush, saberThrow, forcePull, forceRepulse, forceBarrier, forceMend, forceJudgement
 } from '../player/jedi/force.js';
 import { forceDash, doJump } from '../player/movement.js';
 import { trySlide } from '../player/parkour.js';
@@ -70,6 +70,7 @@ document.addEventListener('mousedown', (e) => {
   if (e.button === 1){ e.preventDefault(); toggleLock(); return; }   // middle mouse: soft lock-on (Jedi)
   // LMB while guarding (RMB held) hurls the saber; otherwise it's a normal swing
   if (e.button === 0){
+    player.atkHeld = true; player.atkHeldT = G.gt;   // HELD in the air: the JUMP ATTACK (force.js updateJumpAttack)
     if (player.blockHeld && G.unlocked.throw) saberThrow();
     else tryAttack();
   }
@@ -108,7 +109,7 @@ document.addEventListener('mousedown', (e) => {
   }
 });
 document.addEventListener('mouseup', (e) => {
-  if (e.button === 0){ player.firing = false; player.trigHeld = false; }
+  if (e.button === 0){ player.firing = false; player.trigHeld = false; player.atkHeld = false; }
   if (e.button === 2){ player.blockHeld = false; player.zoom = false; }
 });
 document.addEventListener('wheel', (e) => {
@@ -167,7 +168,7 @@ document.addEventListener('keydown', (e) => {
     if (k === 'e' && !e.repeat){ if (player.saberLock) lockKick(); else forceKick(); }   // FRONT KICK — always-available melee, shares 'E' with the Mando's punch
     if (k === 'v') forceBarrier();     // Force Barrier — the defensive bubble (its fork-sibling SABER THROW is RMB+LMB)
     // ADAPTIVE FORK KEYS — each either/or pair shares ONE bind (you only ever own one of the pair).
-    if (k === 'x'){ if (G.unlocked.slam) forceSlam(); else if (G.unlocked.mend) forceMend(); }                         // UTIL: JUMP ATTACK or MEND
+    if (k === 'x' && G.unlocked.mend) forceMend();   // UTIL: MEND (its fork sibling, the JUMP ATTACK, is held LMB in the air)
     if (k === 'r' && G.mode === 'play'){ if (G.unlocked.judge) forceJudgement(); else if (G.unlocked.repulse) forceRepulse(); }   // ULT: JUDGEMENT or REPULSE ('R' still restarts when dead/victory below)
     if (k === 'g' && !e.repeat && G.mode === 'play'){   // GRIP — flip between a regular and a reverse (Shien) saber grip mid-fight
       setSaberGrip(G.saberGrip === 'reverse' ? 'regular' : 'reverse');

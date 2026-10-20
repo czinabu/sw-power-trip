@@ -36,7 +36,7 @@ const CONTROLS = {
       ['F', 'Push', 'From the start'],
       ['C', 'Pull · hold 1s to Grasp', 'Unlocks after wave 2 · grasped: F throws, C yanks in, Alt drops'],
       ['V', 'Barrier', 'Earned with XP · or Saber Throw (RMB + LMB)'],
-      ['X', 'Jump attack', 'Earned with XP · or Mend, a self-heal'],
+      ['Air + hold LMB', 'Jump attack', 'Earned with XP · or Mend (X), a self-heal'],
       ['R', 'Judgement', 'Earned with XP · or Repulse'],
     ]},
   ],

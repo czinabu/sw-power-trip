@@ -210,7 +210,7 @@ export const DRILLS = {
     fj2:     { say: 'Higher still. Trust it.', key: 'HOLD SPACE' },
     barrier: { say: 'Wrap yourself in the Force, and let the fire break on it.', key: 'V', use: ['cd', 'barrier'] },
     throw:   { say: 'Let the blade fly. It will come home to your hand.', key: 'RMB + LMB', use: ['cd', 'throw'] },
-    slam:    { say: 'Leap, and bring the blade down like a hammer.', key: 'X', use: ['cd', 'slam'] },
+    slam:    { say: 'Leap at them, hold the blade, and bring it down like a hammer.', key: 'JUMP + HOLD LMB', use: ['cd', 'slam'] },
     mend:    { say: 'The Force mends what it touches. Even you.', key: 'X', use: ['cd', 'mend'] },
     judge:   { say: 'Judgement. Let them answer for what they have done.', key: 'R', use: ['cd', 'judge'] },
     repulse: { say: 'Gather the Force inward, then release it all.', key: 'R', use: ['cd', 'repulse'] },

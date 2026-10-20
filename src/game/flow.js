@@ -71,7 +71,7 @@ export function startLevel(idx, opts){
   rockets.length = 0;
   G.spawnQueue.length = 0;
   // reset transient combat state
-  player.slamming = false; player.leapAtk = false; player.slamBig = false;
+  player.slamming = false; player.atkHeld = false; player.slamBig = false;
   resetGrasp();
   player.doubleJumped = false;
   player.firing = false; player.trigHeld = false; player.shieldDropT = 0; player.fireCd = 0; player.flaming = false; player.jetActive = false; player.boosting = false; player.meleeT = 0; player.lockOn = false;

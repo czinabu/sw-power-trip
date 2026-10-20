@@ -41,7 +41,7 @@ export const CFG = {
     // ADVANCED powers — expensive, earned as the legend grows. The mightiest eat most of the bar.
     throw:  { cost: 38, cd: 5.0,  range: 16, dmg: 22, speed: 24 },
     slam:   { cost: 64, cd: 5.5,  radius: 10, dmg: 7, knock: 21,      // JUMP ATTACK — the wave is an AOE knockdown for breathing room…
-              strike: 30, core: 2.6, leap: 11,                        // …the blade itself hits hard on whoever you land on; leap = ground take-off carry
+              strike: 30, core: 2.6,                                  // …the blade itself hits hard on whoever you land on
               bigWave: 0, bigScale: 1.6 },                            // bigWave (mastery rank II): a double-jump dive lands a bigScale-wider wave
     // FORCE GRASP — hold the Pull key: after `hold` seconds the foe in your aim locks into your grasp
     grasp:  { hold: 1.0, cost: 26, drain: 18, maxT: 5, dist: 4.2, range: 16, angle: 0.5,
