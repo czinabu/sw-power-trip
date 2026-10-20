@@ -1,5 +1,5 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
-// The Mandalorian's close-quarters kit on E: a four-beat string, shield and blade, the jet charge, the dive kick, the vambrace catch and takedowns.
+// The Mandalorian's close-quarters kit on E: a four-beat string (a brawler's swings when holstered), shield and blade, the jet charge, the dive kick, the vambrace catch and takedowns.
 
 import { MANDO_MELEE as M, DUEL } from '../../data/duel.js';
 import { sfx, S } from '../../audio/sfx.js';
@@ -62,10 +62,10 @@ function incoming(){
 
 /* ---------------- the string: jab, cross, knee, vibroblade ---------------- */
 function strike(){
-  const n = M.string.length;
-  const linked = G.gt - (player.meleeEndAt ?? -9) < M.combo && (player.punchStep ?? -1) < n - 1;
+  const S_ = player.weapon === 'fists' ? M.fists : M.string, n = S_.length;   // holstered: the brawler's swings
+  const linked = G.gt - (player.meleeEndAt ?? -9) < M.combo && (STRING_OF[player.meleeKind] || S_) === S_ && (player.punchStep ?? -1) < n - 1;
   const step = linked ? player.punchStep + 1 : 0;
-  const B = M.string[step];
+  const B = S_[step];
   player.punchStep = step;
   player.meleeT = player.meleeMax = B.recover; player.meleeKind = B.name; player.meleeSkip = 0;
   player.aiming = 0.3;
@@ -93,6 +93,7 @@ function guardStrike(){
   else sfx(900, 0.07, 'sawtooth', 0.03, 300);   // the vibroblade's hum whipping through the air
 }
 const GUARD_BEAT = Object.fromEntries(M.guard.string.map(b => [b.name, true]));
+const STRING_OF = Object.fromEntries([...M.string.map(b => [b.name, M.string]), ...M.fists.map(b => [b.name, M.fists])]);
 function landStrike(B){
   const f = fwd(), pp = playerPos(), dmg = B.dmg * (player.up.dmg || 1);
   const reach = B.reach ?? M.reach, cosLim = Math.cos(B.arc ?? M.arc);
@@ -111,13 +112,13 @@ function landStrike(B){
     damageEnemy(e, dmg, away, B.knock, B.heavy, false, B.name === 'knee' ? KNEE : NO_LAUNCH);   // fists rock a foe, they don't launch it
     if (!e.dead){
       // the bash staggers light foes for a takedown; a brute only gets rocked
-      if (B.stagger && !(B.name === 'bash' && e.t.heavy)) staggerEnemy(e, away.x, away.z, B.name === 'bash' ? 'BASHED' : 'VIBROBLADE');
+      if (B.stagger && !(B.name === 'bash' && e.t.heavy)) staggerEnemy(e, away.x, away.z, B.name === 'bash' ? 'BASHED' : B.name === 'haymaker' ? 'HAYMAKER' : 'VIBROBLADE');
       else flinchEnemy(e, away, B.shove);
     }
     hit++;
   }
   if (shared.boss && shared.boss.hp > 0 && shared.boss.group.position.distanceTo(pp) < reach + B.lunge / 9 + 0.9){ damageBoss(dmg * 0.6); hit++; }
-  const ip = V3(pp.x + f.x * 1.4, B.name === 'knee' ? 1.1 : 1.5, pp.z + f.z * 1.4);
+  const ip = V3(pp.x + f.x * 1.4, B.name === 'knee' ? 1.1 : B.name === 'upper' ? 1.75 : 1.5, pp.z + f.z * 1.4);
   if (cut){   // the vibroblade's arc reads whether it connects or not: a wide violet sweep across the front
     // a flat crescent round the Mando at waist height, centred on where he faces (the ring's arc sits on its local +y)
     inkSprite({ pos: V3(pp.x, pp.y + 1.1, pp.z), normal: V3(0, 1, 0), shape: 'ring', inner: 0.82, arc: B.arc, color: 0xc9a6ff,

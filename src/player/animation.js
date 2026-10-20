@@ -387,13 +387,23 @@ function animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait){
     vis.rotation.x = dr(vis.rotation.x, 0.12 - k*0.04, 12);   // hunch in, then straighten as it releases
     vis.rotation.y = dr(vis.rotation.y, 0, 12);
   } else if (G.hero !== 'mando' && player.judgeT > 0 && !player.blockHeld){
-    // left palm forward, lightning pouring from the fingers; the saber drops to a low trailing guard
+    // left palm forward, lightning pouring from the fingers; the saber drops to a low trailing guard. Holstered, both
+    // hands pour it out together, arms thrust forward and the fingers hooked (the Emperor's way)
     releaseSaberPose(R, dt);
     R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -1.5, 12);
     R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, 0.15, 12);
     R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -0.1, 12);
-    R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -0.2, 10);
-    R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, 0.4, 10);
+    if (player.holstered){
+      const sh = Math.sin(G.gt * 31) * 0.03;   // the arms shudder with the current
+      R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -1.4 + sh, 12);
+      R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -1.4 - sh, 12);
+      R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, -0.15, 12);
+      R.armR.el.rotation.x = dr(R.armR.el.rotation.x, -0.25, 12);
+      R.torso.position.z = dr(R.torso.position.z, 0.1, 10);
+    } else {
+      R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -0.2, 10);
+      R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, 0.4, 10);
+    }
     vis.rotation.y = dr(vis.rotation.y, 0, 12);
   } else if (held){
     // GUARD — each form holds its own recognizable ready guard, and its own block (data/poses.js)
@@ -422,8 +432,8 @@ function animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait){
   }
 }
 
-/* SABER HOLSTERED — the Jedi fights with his hands: an open, low ready with the lead (left) hand forward; RMB lifts
-   both palms into a ward; running, the arms pump with the stride; a Force strike (jedi/palm.js) drives one palm out
+/* SABER HOLSTERED — the Jedi fights with his hands: both palms up and open before him; every Force power is thrown
+   with both hands (animateForceCast) and the lightning poured from both; RMB lifts both palms into a ward; running, the arms pump with the stride; a Force strike (jedi/palm.js) drives one palm out
    off a short hip turn, alternating hands, and the burst throws both. Plain joint poses, like the Force gestures. */
 function forceHands(dr, vis, R, planted, moving, ph, inten){
   const P = player.palm;
@@ -463,12 +473,13 @@ function forceHands(dr, vis, R, planted, moving, ph, inten){
     R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, 0, 12); R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, 0, 12);
     return;
   }
-  // ready: the lead hand open and forward, the rear hand low by the hip, a faint breath in both
+  // ready: both hands up and open before him, palms out toward the foe, a faint breath in both (no hilt to hold:
+  // the hands ARE the weapon now)
   const br = Math.sin(G.gt * 1.9) * 0.03;
-  R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -0.75 + br, 10); R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, -0.2, 10);
-  R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -0.75, 10);
-  R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -0.3 - br, 10);  R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, 0.1, 10);
-  R.armR.el.rotation.x = dr(R.armR.el.rotation.x, -0.7, 10);
+  R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -0.95 + br, 10); R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, -0.22, 10);
+  R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -0.8, 10);
+  R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -0.85 - br, 10);  R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, 0.22, 10);
+  R.armR.el.rotation.x = dr(R.armR.el.rotation.x, -0.85, 10);
   vis.rotation.y = dr(vis.rotation.y, 0, 12);
 }
 
@@ -479,6 +490,7 @@ function heldBlade(){
   return null;
 }
 export function footwork(){
+  if (G.hero === 'mando' && player.weapon === 'fists') return FOOTWORK.brawler;
   return FOOTWORK[(G.hero === 'mando' && player.weapon === 'darksaber') ? 'darksaber' : (FORM_OF[G.stance] || 'niman')];
 }
 const _IDQ = new THREE.Quaternion();
@@ -491,7 +503,7 @@ const easeInOut = t => t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t + 2, 2) / 2;
 /* A THROWN BLOW in four beats, over seconds since the press: a short CHAMBER that loads it (→ -1), a SNAP that
    accelerates into the target and arrives at full extension exactly on the contact frame (→ +1, when melee.js lands
    the hit), a HOLD on the impact, then the RECOVERY home (→ 0). Real strikes are fast out and slower back. */
-const BLOW_CONTACT = { ...Object.fromEntries([...MANDO_MELEE.string, ...MANDO_MELEE.guard.string].map(b => [b.name, b.contact])), takedown: 0.12, catch: 0.04, charge: 0, dive: 0 };
+const BLOW_CONTACT = { ...Object.fromEntries([...MANDO_MELEE.string, ...MANDO_MELEE.fists, ...MANDO_MELEE.guard.string].map(b => [b.name, b.contact])), takedown: 0.12, catch: 0.04, charge: 0, dive: 0 };
 const HACK_T = new THREE.Vector3(), HACK_POLE = new THREE.Vector3(0.6, -0.8, -0.1).normalize();
 const BLADE_OUT = { blade: 1, takedown: 1, hackA: 1, hackB: 1 };   // the beats that spring the wrist vibroblade
 function blowCurve(age, c, dur){
@@ -535,6 +547,12 @@ function animateForceCast(dt, dr, R){
     R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -1.55, 20);
     R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, pulling ? -0.05 : 0.12, 20);
     R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -0.12 - (1 - out) * (pulling ? 1.35 : 0.18), 20);
+    if (G.hero !== 'mando' && player.holstered){
+      // saber holstered: no hilt to hold, so BOTH hands throw the power (Yoda's two open palms), a touch wider apart
+      R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -1.5, 20);
+      R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, pulling ? 0.05 : -0.08, 20);
+      R.armR.el.rotation.x = dr(R.armR.el.rotation.x, -0.15 - (1 - out) * (pulling ? 1.35 : 0.18), 20);
+    }
     const lean = player.castKind === 'push' ? 0.26 : pulling ? -0.06 : 0.16;
     R.torso.position.z = dr(R.torso.position.z, lean * pk, 18);
     R.torso.rotation.y = dr(R.torso.rotation.y, 0.16 * pk, 18);
@@ -588,14 +606,18 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
     R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, 0.12, 12);
     R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -0.75, 12);
   } else if (w === 'fists'){
-    // HOLSTERED — fists up in a guard by the chin between blows (the close-quarters beats below pose the strikes)
+    // HOLSTERED — a fighting stance between blows: side-on with the left shoulder leading, the lead fist out at eye
+    // height and the rear one tucked by the chin, bouncing on the knees (the footing comes from FOOTWORK.brawler; the
+    // close-quarters beats below pose the swings)
     mandoAimPoint();
     if (player.meleeT <= 0){
-      const bob = Math.sin(G.gt * 2.2) * 0.03;
-      R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -1.15 + bob, 12); R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, 0.15, 12);
-      R.armR.el.rotation.x = dr(R.armR.el.rotation.x, -1.75, 12);
-      R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -1.3 - bob, 12); R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, -0.1, 12);
-      R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -1.6, 12);
+      const bob = Math.sin(G.gt * 4.4) * 0.035;
+      R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -1.4 - bob, 12); R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, 0.05, 12);
+      R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -1.25, 12);
+      R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -1.1 + bob, 12); R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, 0.2, 12);
+      R.armR.el.rotation.x = dr(R.armR.el.rotation.x, -1.9, 12);
+      R.torso.rotation.y = dr(R.torso.rotation.y, 0.32, 10);   // bladed: the lead shoulder turned to the foe
+      if (player.grounded) vis.position.y = dr(vis.position.y, -0.03 + Math.abs(bob) * 0.6, 10);
     }
   } else if (gunsIK){
     // GUNSLINGER — blasters at the hip until he shoots, then up one-handed down the aim line; the disruptor shouldered
@@ -606,6 +628,7 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
     mandoAimPoint();
   }
   if (player.darkT <= 0) player._darkSw = null;
+  if (w !== 'fists' && w !== 'darksaber' && player.darkT <= 0 && !(player.meleeT > 0)) R.torso.rotation.y = dr(R.torso.rotation.y, 0, 10);   // square up out of the fighting stance
   }   // end !flyingFree (the flight pose below owns the arms during a boosted superman)
   if (!gunsIK || flyingFree || w === 'darksaber'){
     // an FK pose owns the arms: settle the guns back into their holds and the wrists square
@@ -711,7 +734,7 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
   }
   // CLOSE QUARTERS (E, player/mando/melee.js) — each beat of the kit has its own body: a left jab, a right cross, a
   // rising knee, the vibroblade slash, the shoulder-first jet charge, the boot-first dive, the vambrace catch
-  if (!(player.meleeT > 0)) R.torso.rotation.x = dr(R.torso.rotation.x, 0, 12);   // settle a knee/charge/dive hunch
+  if (!(player.meleeT > 0)) R.torso.rotation.x = dr(R.torso.rotation.x, player.weapon === 'fists' && player.grounded ? 0.1 : 0, 12);   // settle a knee/charge/dive hunch (the fighting stance keeps the chin down)
   wristBlade(dt, R, player.meleeT > 0 && BLADE_OUT[player.meleeKind]);
   player.bashOut = 0;
   if (player.meleeT > 0){
@@ -777,6 +800,41 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
       R.torso.rotation.x = dr(R.torso.rotation.x, ld * 0.1, 24);
       vis.position.y = dr(vis.position.y, -0.06 * ld, 26);
       player.bashOut = ld;
+    } else if (kind === 'hookL' || kind === 'hookR'){
+      // HOLSTERED HOOK: the elbow up level with the fist, the arm bent like a bow, swung round in a flat arc from out
+      // wide to across the front with the hips and shoulders whipping behind it (the other fist stays by the chin)
+      const s = kind === 'hookL' ? -1 : 1, A = s < 0 ? R.armL : R.armR, O = s < 0 ? R.armR : R.armL;
+      const sweep = clamp(v >= 0 && age > c ? 1 + (1 - v) * 0.15 : (v + 1) / 2, 0, 1.15);   // 0 wound out … 1 through the target
+      A.sh.rotation.x = dr(A.sh.rotation.x, -1.45 - ld * 0.12, snap);
+      A.sh.rotation.y = dr(A.sh.rotation.y, s * (0.95 - sweep * 1.45), snap);
+      A.el.rotation.x = dr(A.el.rotation.x, -1.5 + ld * 0.25, snap);
+      O.sh.rotation.x = dr(O.sh.rotation.x, -1.2, 20); O.el.rotation.x = dr(O.el.rotation.x, -1.85, 20);
+      R.torso.rotation.y = dr(R.torso.rotation.y, s * (0.5 - sweep * 1.0), snap);
+      R.torso.position.z = dr(R.torso.position.z, ld * 0.2, snap);
+      vis.position.y = dr(vis.position.y, -0.06 * ld, 26);
+    } else if (kind === 'upper'){
+      // UPPERCUT: dip the right shoulder and sink the knees, then drive up through the legs, the fist rising close to
+      // the body and up under the chin, the elbow staying bent
+      R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -0.35 + ch * 0.2 - ld * 1.75, snap);
+      R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, 0.1 - ld * 0.2, snap);
+      R.armR.el.rotation.x = dr(R.armR.el.rotation.x, -1.85 + ld * 0.55, snap);
+      R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -1.25, 20); R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -1.75, 20);
+      R.torso.rotation.y = dr(R.torso.rotation.y, 0.3 * ch - 0.25 * ld, snap);
+      R.torso.rotation.x = dr(R.torso.rotation.x, 0.22 * ch - 0.14 * ld, snap);   // hunched to load, lifting back through it
+      R.torso.position.z = dr(R.torso.position.z, ld * 0.16, snap);
+      vis.position.y = dr(vis.position.y, -0.12 * ch + 0.05 * ld, 30);
+    } else if (kind === 'haymaker'){
+      // HAYMAKER: the whole right side wound far back and up, then the fist thrown over the top and down across the
+      // body, the body turning right through it and the weight landing on the lead foot, carrying well past the target
+      const sweep = clamp(v >= 0 && age > c ? 1 + (1 - v) * 0.3 : (v + 1) / 2, 0, 1.3);
+      R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -2.1 + Math.sin(Math.min(1, sweep) * Math.PI) * 0.35 + Math.max(0, sweep - 1) * 1.2, snap);
+      R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, 1.15 - sweep * 1.7, snap);
+      R.armR.el.rotation.x = dr(R.armR.el.rotation.x, -1.7 + Math.min(1, sweep) * 1.35, snap);
+      R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -1.1 + ld * 0.4, 20); R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -1.6, 20);
+      R.torso.rotation.y = dr(R.torso.rotation.y, 0.7 - sweep * 1.25, snap);
+      R.torso.rotation.x = dr(R.torso.rotation.x, -0.1 * ch + 0.22 * ld, snap);
+      R.torso.position.z = dr(R.torso.position.z, ld * 0.38 - ch * 0.08, snap);
+      vis.position.y = dr(vis.position.y, -0.1 * ld, 26);
     } else if (kind === 'charge'){
       R.torso.rotation.y = dr(R.torso.rotation.y, -0.55, 18);
       R.torso.position.z = dr(R.torso.position.z, 0.3, 18);

@@ -30,7 +30,7 @@ const CONTROLS = {
       ['T / MMB', 'Lock on', 'Keeps one foe framed; press again to release'],
       ['1 / 2 / 3', 'Saber form', 'Or the mouse wheel'],
       ['G', 'Switch grip', 'Regular or reverse; swings hit the same either way'],
-      ['4', 'Holster saber', 'Fight with the Force alone: LMB throws palm strikes (every third is a burst), RMB wards, and Force refills faster · 4 again draws'],
+      ['4', 'Holster saber', 'Fight with the Force alone, both hands free: LMB throws palm strikes (every third is a burst), RMB wards, Force powers hit 20% harder and Force refills faster · 4 again draws'],
       ['RMB + SPACE', 'Evasive leap', 'Jump while blocking to vault clear'],
     ]},
     { title: 'FORCE POWERS', rows: [
@@ -63,7 +63,7 @@ const CONTROLS = {
       ['E', 'Takedown', 'On a staggered or floored foe: finish it'],
       ['1 / 2 / 3', 'Switch weapon', 'Or the mouse wheel'],
       ['RMB + LMB', 'Darksaber throw', 'Darksaber in hand: hurl it, and the grappling line reels it back through anything in its path'],
-      ['4', 'Holster', 'Fight with fists and gadgets: LMB throws the close-quarters string, RMB braces, and gadget power refills faster · 4 or 1 / 2 / 3 draws'],
+      ['4', 'Holster', 'Take a fighting stance with fists and gadgets: LMB / E swing hook, hook, uppercut, haymaker, RMB braces, and gadget power refills faster · 4 or 1 / 2 / 3 draws'],
     ]},
     { title: 'GADGETS', rows: [
       ['F', 'Flamethrower', 'Unlocks after wave 2'],

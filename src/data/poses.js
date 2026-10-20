@@ -19,6 +19,7 @@ export const FOOTWORK = {
   niman:     { crouch: -0.05, splay: 0.14, lead: 0.16, lean: 0.03, width: 1.08 },   // upright and easy, weight even
   djemso:    { crouch: -0.17, splay: 0.52, lead: 0.08, lean: 0.12, width: 1.3 },   // wide, rooted, square to the foe
   darksaber: { crouch: -0.2,  splay: 0.46, lead: 0.2,  lean: 0.18, width: 1.25 },    // braced against a blade that pulls
+  brawler:   { crouch: -0.15, splay: 0.24, lead: 0.36, lean: 0.12, width: 1.1 },    // the holstered Mando: knees bent, left foot leading
 };
 
 const OFF_POLE = [-0.55, -0.8, -0.25], POLE = [0.55, -0.8, -0.25];

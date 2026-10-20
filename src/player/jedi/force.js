@@ -10,7 +10,7 @@ import { burst } from '../../fx/particles.js';
 import { floater, screenFlash } from '../../fx/floaters.js';
 import { shared, G, enemies, bolts, barrels, vfx, player } from '../../state.js';
 import { flashLight } from '../../fx/lights.js';
-import { fwd, playerPos, stance, maxHp } from '../helpers.js';
+import { forcePower, fwd, playerPos, stance, maxHp } from '../helpers.js';
 import { inReach, distToBody } from '../../enemies/bodyshape.js';
 import { ensureJudgeLines } from './judgement-fx.js';
 import { damageEnemy, flinchEnemy } from '../../enemies/damage.js';
@@ -58,7 +58,7 @@ export function forcePush(){
     if (!inReach(e, pp, A.range, d > 1.5 ? f : null, cosLim)) continue;   // any of the body in the cone, not just its centre
     TMP.normalize();
     const falloff = 1 - (d / A.range) * 0.5;
-    damageEnemy(e, A.dmg, TMP.clone(), A.knock * falloff);
+    damageEnemy(e, A.dmg * forcePower(), TMP.clone(), A.knock * falloff * forcePower());
     pushed++;
     tutEvent('pushHit', e);
   }
@@ -133,7 +133,7 @@ export function slamImpact(){
   const A = abil('jslam'), st = stance();
   const big = !!player.slamBig; player.slamBig = false;
   const sc = big ? A.bigScale : 1;                        // the double-jump dive: everything about the wave is bigger
-  const radius = A.radius * sc, knock = A.knock * (big ? 1.35 : 1), dmg = A.dmg * (st.powerDmg || 1) * (big ? 1.6 : 1);
+  const radius = A.radius * sc, knock = A.knock * (big ? 1.35 : 1) * forcePower(), dmg = A.dmg * (st.powerDmg || 1) * (big ? 1.6 : 1) * forcePower();
   const strike = A.strike * (st.powerDmg || 1) * (player.up.dmg || 1);
   const pp = playerPos();
   const col = st.blade;
@@ -298,7 +298,7 @@ export function forceRepulse(){
   if (!G.unlocked.repulse || player.cds.repulse > 0 || player.force < cost || G.mode !== 'play') return;
   const up = !!player.up.repulseUp;                        // the FINAL upgrade supercharges it
   const psc = st.powerScale || 1;                          // ...but erupt with BRUTE scale
-  const radius = A.radius * (up ? 1.4 : 1) * psc, dmg = A.dmg * (up ? 1.9 : 1) * (player.up.dmg || 1), knock = A.knock * (up ? 1.35 : 1) * psc;
+  const radius = A.radius * (up ? 1.4 : 1) * psc, dmg = A.dmg * (up ? 1.9 : 1) * (player.up.dmg || 1) * forcePower(), knock = A.knock * (up ? 1.35 : 1) * psc * forcePower();
   player.force -= cost; player.cds.repulse = A.cd * (st.cdMult || 1);
   castGesture('push', 0.34);
   const pp = playerPos(), col = stance().blade;
@@ -441,7 +441,7 @@ export function updateJudgement(dt){
   }
   found.sort((a,b) => a.d - b.d);
   const up = !!player.up.judgeUp;                                  // the FINAL upgrade — STORM OF JUDGEMENT
-  const dmg = A.dmg * (stance().powerDmg || 1) * (up ? 1.9 : 1);
+  const dmg = A.dmg * (stance().powerDmg || 1) * (up ? 1.9 : 1) * forcePower();
   const maxT = A.targets + (up ? 3 : 0);
   const tpos = [];
   for (const { e } of found.slice(0, maxT)){

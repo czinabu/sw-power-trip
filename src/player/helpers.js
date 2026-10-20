@@ -13,4 +13,6 @@ export const playerPos = () => player.group.position;
 export const stance = () => (G.hero === 'mando' && player.weapon === 'darksaber') ? STANCES.darksaber : STANCES[G.stance];
 // the colour of the Jedi's blade itself: the crystal picked in the customizer, else the form's colour
 export const bladeColor = (st = STANCES[G.stance]) => player.look?.jedi?.saber ?? st.blade;
+// the Jedi's Force hits harder with the saber holstered: all his focus is on it (CFG.holster.power)
+export const forcePower = () => G.hero !== 'mando' && player.holstered ? CFG.holster.power : 1;
 export const maxHp = () => CFG.player.maxHp + (player.up.hpMax || 0);   // includes skill-tree Vitality

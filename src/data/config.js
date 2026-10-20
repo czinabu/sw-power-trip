@@ -34,11 +34,13 @@ export const CFG = {
     lockOn: { range: 22, keep: 28, cone: 0.55, yawPull: 7, pitch: 0.2, pitchPull: 2.5 },
   },
   // HOLSTERED (4) — the Jedi clips the saber to his belt and fights with the Force alone; the Mando holsters his
-  // weapon and fights with his fists and gadgets. Force / gadget power refills faster while holstered (`regen`).
+  // weapon and fights with his fists and gadgets. Force / gadget power refills faster while holstered (`regen`), and the
+  // Jedi's Force powers hit harder (`power`).
   // The Jedi's LMB becomes a Force strike string: two palm strikes, then a burst. Per step: damage, reach (m),
   // cone half-angle, knockback, stamina, and the time the strike takes (contact lands at `contact` of it).
   holster: {
     regen: 1.5,
+    power: 1.2,   // the Jedi's Force powers hit this much harder (damage and knockback) with the saber holstered
     strike: [
       { dmg: 16, range: 4.5, angle: 0.42, knock: 7,  stamina: 8,  dur: 0.32, contact: 0.4 },
       { dmg: 16, range: 4.5, angle: 0.42, knock: 7,  stamina: 8,  dur: 0.32, contact: 0.4 },
