@@ -15,10 +15,11 @@ import { fwd, rightV, playerPos, stance } from '../player/helpers.js';
 import { switchStance } from '../player/jedi/stance.js';
 import { tryAttack, cancelSwing, forceKick } from '../player/jedi/combat.js';
 import {
-  forcePush, forceSlam, saberThrow, forcePull, forceRepulse, forceBarrier, forceMend, forceJudgement
+  forcePush, saberThrow, forcePull, forceRepulse, forceBarrier, forceMend, forceJudgement
 } from '../player/jedi/force.js';
 import { forceDash, doJump } from '../player/movement.js';
 import { trySlide } from '../player/parkour.js';
+import { pullPress, pullRelease, graspThrow, graspDrop } from '../player/jedi/grasp.js';
 import { toggleLock } from '../player/lockon.js';
 import {
   bactaStim, mandoRocket, mandoJetMissile, whistlingBirds, thermalDetonator, grappleHook, jetSlam,
@@ -71,6 +72,7 @@ document.addEventListener('mousedown', (e) => {
   if (e.button === 1){ e.preventDefault(); toggleLock(); return; }   // middle mouse: soft lock-on (Jedi)
   // LMB while guarding (RMB held) hurls the saber; otherwise it's a normal swing (holstered: a Force strike)
   if (e.button === 0){
+    player.atkHeld = !player.holstered; player.atkHeldT = G.gt;   // HELD in the air with the blade out: the JUMP ATTACK (force.js updateJumpAttack)
     if (player.holstered) forceStrike();
     else if (player.blockHeld && G.unlocked.throw) saberThrow();
     else tryAttack();
@@ -110,7 +112,7 @@ document.addEventListener('mousedown', (e) => {
   }
 });
 document.addEventListener('mouseup', (e) => {
-  if (e.button === 0){ player.firing = false; player.trigHeld = false; }
+  if (e.button === 0){ player.firing = false; player.trigHeld = false; player.atkHeld = false; }
   if (e.button === 2){ player.blockHeld = false; player.zoom = false; }
 });
 document.addEventListener('wheel', (e) => {
@@ -163,14 +165,14 @@ document.addEventListener('keydown', (e) => {
       player.sprintOn = !player.sprintOn;
       showBanner('', player.sprintOn ? 'SPRINT' : 'WALK', 0.6);
     }
-    if (k === 'alt' && !e.repeat) trySlide();          // the FORCE SLIDE out of a sprint (parkour.js)
+    if (k === 'alt' && !e.repeat && !graspDrop()) trySlide();   // the FORCE SLIDE out of a sprint (parkour.js); holding a foe, it drops them
     if (k === 't' && !e.repeat) toggleLock();          // soft lock-on
-    if (k === 'f'){ if (!(player.saberLock && lockPush())) forcePush(); }   // in a saber lock: a point-blank shove that breaks it
-    if (k === 'c') forcePull();
+    if (k === 'f'){ if (!(player.saberLock && lockPush()) && !graspThrow()) forcePush(); }   // in a saber lock: a point-blank shove that breaks it
+    if (k === 'c' && !e.repeat) pullPress();   // tap = Force Pull on release; hold 1s = Force GRASP (grasp.js)
     if (k === 'e' && !e.repeat){ if (player.saberLock) lockKick(); else forceKick(); }   // FRONT KICK — always-available melee, shares 'E' with the Mando's punch
     if (k === 'v') forceBarrier();     // Force Barrier — the defensive bubble (its fork-sibling SABER THROW is RMB+LMB)
     // ADAPTIVE FORK KEYS — each either/or pair shares ONE bind (you only ever own one of the pair).
-    if (k === 'x'){ if (G.unlocked.slam) forceSlam(); else if (G.unlocked.mend) forceMend(); }                         // UTIL: force SLAM or MEND
+    if (k === 'x' && G.unlocked.mend) forceMend();   // UTIL: MEND (its fork sibling, the JUMP ATTACK, is held LMB in the air)
     if (k === 'r' && G.mode === 'play'){ if (G.unlocked.judge) forceJudgement(); else if (G.unlocked.repulse) forceRepulse(); }   // ULT: JUDGEMENT or REPULSE ('R' still restarts when dead/victory below)
     if (k === 'g' && !e.repeat && G.mode === 'play'){   // GRIP — flip between a regular and a reverse (Shien) saber grip mid-fight
       setSaberGrip(G.saberGrip === 'reverse' ? 'regular' : 'reverse');
@@ -191,4 +193,4 @@ document.addEventListener('keydown', (e) => {
     try { const p = renderer.domElement.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch(e){}
   }
 });
-document.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; if (e.key === 'Alt') e.preventDefault(); });
+document.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; if (e.key.toLowerCase() === 'c' && G.hero !== 'mando') pullRelease(); if (e.key === 'Alt') e.preventDefault(); });

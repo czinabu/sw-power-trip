@@ -10,7 +10,8 @@ import { floater, screenFlash } from '../fx/floaters.js';
 import { shared, G, player } from '../state.js';
 import { fwd, rightV, playerPos, stance, maxHp } from './helpers.js';
 import { focusRegenMul, updateFocus } from './jedi/focus.js';
-import { barrierShove, mendComplete, updateJudgement } from './jedi/force.js';
+import { barrierShove, mendComplete, updateJudgement, updateJumpAttack } from './jedi/force.js';
+import { updateGrasp } from './jedi/grasp.js';
 import { updateMandoCombat } from './mando/weapons.js';
 import { updateMovement, updateForceJump, updateGravityAndLanding } from './locomotion.js';
 import { updateMandoFlight } from './mando/flight.js';
@@ -80,6 +81,7 @@ function updatePlayerMeters(dt, pp, st){
     if (player.mendT <= 0) mendComplete();
   }
   updateJudgement(dt);
+  if (G.hero !== 'mando'){ updateJumpAttack(); updateGrasp(dt); }   // the leap into a jump attack, the Force grasp
   if (player.momentumT > 0){ player.momentumT -= dt; if (player.momentumT <= 0) player.momentumStacks = 0; }   // MOMENTUM boon decay
   updateFocus(dt);   // FORCE FOCUS meter (decay/ebb/tier-ups)
   if (player.dmgIndT > 0) player.dmgIndT -= dt * 1.6;   // THREAT — fade the directional damage arc

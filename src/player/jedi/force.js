@@ -1,5 +1,5 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
-// Force powers: push, slam, saber throw, pull, repulse, barrier, mend, judgement.
+// Force powers: push, jump attack, saber throw, pull (and the grasp, grasp.js), repulse, barrier, mend, judgement.
 
 import * as THREE from 'three';
 import { abil, healFrac } from '../../data/mastery.js';
@@ -98,52 +98,76 @@ export function forcePush(){
   if (pushed >= 4) floater(pp, 'CROWD CLEARED', '#7fd4ff');
 }
 
-let slamHintT = 0;
+/* JUMP ATTACK — the Jedi's plunging saber strike (it took over the old Force Slam's unlock and mastery). Once
+   unlocked, jump at a foe and HOLD the saber button in the air: the blade comes down and the landing is a strike on
+   whoever is under you plus a ground shockwave. Once mastered to rank II (bigWave), a dive out of a DOUBLE JUMP
+   lands a far bigger shockwave. */
+const JUMP_ATK_HOLD = 0.18;   // how long the saber button is held mid-air before the swing turns into the plunge
 export function forceSlam(){
   const A = abil('jslam');
   const st = stance();
   const slamCost = fcost(A.cost * (st.powerCostMul || 1));
-  if (!G.unlocked.slam || player.cds.slam > 0 || player.force < slamCost || G.mode !== 'play' || player.slamming) return;
-  if (player.grounded){
-    // AIRBORNE ONLY — no ground-stomp variant anymore; jump (or double-jump) first to set up the dive.
-    if (G.gt - (player.lastWinded || -9) > 0.5){ player.lastWinded = G.gt; floater(playerPos(), 'AIRBORNE ONLY', '#bfe8ff'); sfx(120, 0.1, 'square', 0.05, 70); }
-    return;
-  }
+  if (!G.unlocked.slam || player.cds.slam > 0 || player.force < slamCost || G.mode !== 'play' || player.slamming || player.grounded) return false;
+  if (player.mantle || player.hang || player.saberLock || shared.saberProj || player.holstered) return false;
   player.force -= slamCost; player.cds.slam = A.cd * (st.cdMult || 1);
-  // AERIAL DIVE-SLAM — drive straight down; the shockwave erupts on landing (a double-jump sets up the big drop)
+  if (player.atkT > 0) cancelSwing();   // the air swing turns into the plunge
+  // a dive out of a double jump arms the big wave (rank II); read now, since landing clears doubleJumped
+  player.slamBig = !!player.doubleJumped && A.bigWave > 0;
   player.slamming = true;
   player.flip = null;
-  player.vel.set(0, 0, 0);
+  player.vel.multiplyScalar(0.5);        // keep some of the jump's carry so the strike lands on the foe you jumped at
   player.vy = -32;                       // drive straight down
   S.dash();
   const sp = playerPos();
-  sparks(V3(sp.x, sp.y + 1.2, sp.z), stance().blade, 8, 10, { dir: V3(0, 1, 0), cone: 0.5, life: 0.25, grav: 0 });   // the air tears as you drop
+  sparks(V3(sp.x, sp.y + 1.2, sp.z), stance().blade, player.slamBig ? 14 : 8, 10, { dir: V3(0, 1, 0), cone: 0.5, life: 0.25, grav: 0 });   // the air tears as you drop
+  tutEvent('jumpAttack');
+  return true;
+}
+// holding the saber button in the air for a beat starts the plunge
+export function updateJumpAttack(){
+  if (!player.atkHeld || player.grounded || player.slamming || !G.unlocked.slam) return;
+  if (G.gt - player.atkHeldT < JUMP_ATK_HOLD) return;
+  if (!forceSlam()) player.atkHeld = false;   // couldn't (cooldown, no Force): don't retry every frame for this press
 }
 export function slamImpact(){
   const A = abil('jslam'), st = stance();
+  const big = !!player.slamBig; player.slamBig = false;
+  const sc = big ? A.bigScale : 1;                        // the double-jump dive: everything about the wave is bigger
+  const radius = A.radius * sc, knock = A.knock * (big ? 1.35 : 1), dmg = A.dmg * (st.powerDmg || 1) * (big ? 1.6 : 1);
+  const strike = A.strike * (st.powerDmg || 1) * (player.up.dmg || 1);
   const pp = playerPos();
   const col = st.blade;
-  S.slam(); S.boom();
-  G.shake = Math.max(G.shake, 1.35); G.hitstop = Math.max(G.hitstop, 0.1);   // a heavy CRACK of camera shake on landing
-  G.slowmo = Math.min(G.slowmo, 0.6); G.slowmoT = Math.max(G.slowmoT, 0.1);   // a brief beat on landing
-  // a clean pair of ground shockwaves — weight without the fireworks
-  spawnGroundShock(pp, col, A.radius + 3,  0.42, 0.5);    // core ring
-  spawnGroundShock(pp, col, A.radius + 9,  0.72, 0.28);   // wide trailing wave
+  S.slam(); S.boom(null, big ? 1.4 : 1);
+  G.shake = Math.max(G.shake, big ? 1.7 : 1.35); G.hitstop = Math.max(G.hitstop, big ? 0.14 : 0.1);   // a heavy CRACK of camera shake on landing
+  G.slowmo = Math.min(G.slowmo, 0.6); G.slowmoT = Math.max(G.slowmoT, big ? 0.16 : 0.1);   // a brief beat on landing
+  // a clean pair of ground shockwaves — weight without the fireworks (a third, wider one on the big wave)
+  spawnGroundShock(pp, col, radius + 3,  0.42, 0.5);    // core ring
+  spawnGroundShock(pp, col, radius + 9,  0.72, 0.28);   // wide trailing wave
+  if (big){
+    spawnGroundShock(pp, 0xffffff, radius + 14, 0.9, 0.35);
+    screenFlash('radial-gradient(ellipse at center, rgba(150,210,255,.4), transparent 60%)', 0.6, 0.3);
+    floater(pp, 'SHOCKWAVE', '#bfe8ff');
+  }
   // the impact: a cel starburst at the feet, a soft short-lived light, a ring of dust puffs and a little debris
-  inkSprite({ pos: V3(pp.x, pp.y + 0.5, pp.z), shape: 'star', points: 8, sharp: 0.15, color: col, size: [1.6, 4.4], life: 0.16, steps: 2, coreW: 0.4 });
-  flashLight(col, 5, A.radius*1.8, V3(pp.x, 1.0, pp.z), 0.3);
-  dustRing(pp, A.radius);
-  burst(V3(pp.x, 0.35, pp.z), 0x9a9a9a, 10, 9, 7, 1.1);   // tumbling debris
+  inkSprite({ pos: V3(pp.x, pp.y + 0.5, pp.z), shape: 'star', points: 8, sharp: 0.15, color: col, size: [1.6, big ? 6 : 4.4], life: 0.16, steps: 2, coreW: 0.4 });
+  flashLight(col, big ? 7 : 5, radius*1.8, V3(pp.x, 1.0, pp.z), 0.3);
+  dustRing(pp, radius);
+  burst(V3(pp.x, 0.35, pp.z), 0x9a9a9a, big ? 18 : 10, 9, 7, 1.1);   // tumbling debris
   for (const e of enemies){
     if (e.dead || e.converted || e.state === 'spawn') continue;
     TMP.subVectors(e.group.position, pp); TMP.y = 0;
-    if (!inReach(e, pp, A.radius)) continue;
-    damageEnemy(e, A.dmg * (st.powerDmg || 1), TMP.normalize().clone(), A.knock);
+    if (!inReach(e, pp, radius)) continue;
+    // the blade itself: whoever you came down on (or right beside) takes the saber strike on top of the wave
+    const hitDmg = inReach(e, pp, A.core) ? dmg + strike : dmg;
+    damageEnemy(e, hitDmg, TMP.normalize().clone(), knock);
   }
   for (const b of barrels){
-    if (b.mesh.position.distanceTo(pp) < A.radius && b.fuse < 0) b.fuse = 0.2;
+    if (b.mesh.position.distanceTo(pp) < radius && b.fuse < 0) b.fuse = 0.2;
   }
-  if (shared.boss && shared.boss.hp > 0 && shared.boss.group.position.distanceTo(pp) < A.radius) damageBoss(A.dmg * (st.powerDmg || 1));
+  if (shared.boss && shared.boss.hp > 0){
+    const bd = shared.boss.group.position.distanceTo(pp);
+    if (bd < radius) damageBoss(bd < A.core + 1.5 ? dmg + strike : dmg);
+  }
 }
 // the repulse front: a waist-high ink ring racing out from the body (driven by the VFX loop, so it respects slow-mo)
 function spawnPlayerRing(pos, maxR, color){
@@ -422,7 +446,7 @@ export function updateJudgement(dt){
   const tpos = [];
   for (const { e } of found.slice(0, maxT)){
     damageEnemy(e, dmg, null, 0);
-    if (!e.dead && !e.t.heavy && e.state !== 'ragdoll'){ e.state = 'recover'; e.st = 0.3; }   // lightning locks them up
+    if (!e.dead && !e.t.heavy && e.state !== 'ragdoll' && e.state !== 'grasped'){ e.state = 'recover'; e.st = 0.3; }   // lightning locks them up
     tpos.push(V3(e.group.position.x, 1.5, e.group.position.z));
   }
   if (tpos.length < maxT && shared.boss && shared.boss.hp > 0){
