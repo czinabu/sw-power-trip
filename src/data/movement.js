@@ -44,7 +44,7 @@ export const MOVE = {
   // sprint, walk and slide (Jedi): Q toggles between sprint and walk; ALT mid-sprint is the FORCE SLIDE. The sprint
   // is free (stamina belongs to the saber). The walk is a real walk, in a fight too.
   sprintMul: 1.42,      // top speed while sprinting
-  walkMul: 0.3,         // top speed while walking (×7.2 ≈ 2.2 m/s, under GAIT.runFrom: a true walk)
+  walkMul: 0.36,        // top speed while walking (×7.2 ≈ 2.6 m/s, just past GAIT.runFrom: still a walk)
   sprintAccel: 0.55,    // steering while sprinting is heavier (accel multiplier)
   sprintTurn: 4.2,      // max body turn rate while sprinting (rad/s)
   slideTime: 0.62, slideBoost: 2.5, slideDrag: 1.6, slideMinSpeed: 7.5,
