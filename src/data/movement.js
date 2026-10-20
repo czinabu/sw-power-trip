@@ -42,11 +42,9 @@ export const MOVE = {
   hangClimbHold: 0.22,  // hold W this long (or tap SPACE) to pull up; S lets go
   hangClimbTime: 0.5,
   // sprint, walk and slide (Jedi): Q toggles between sprint and walk; ALT mid-sprint is the FORCE SLIDE. The sprint
-  // is free (stamina belongs to the saber). The walk is a real walk away from a fight and the normal pace in one.
+  // is free (stamina belongs to the saber). The walk is a real walk, in a fight too.
   sprintMul: 1.42,      // top speed while sprinting
-  walkMul: 0.3,         // top speed while walking with no foe near (×7.2 ≈ 2.2 m/s, under GAIT.runFrom: a true walk)
-  walkFightRange: 14,   // a live foe this close (m) turns the walk into the combat pace...
-  walkCalm: 2.5,        // ...as does a swing in the last few seconds
+  walkMul: 0.3,         // top speed while walking (×7.2 ≈ 2.2 m/s, under GAIT.runFrom: a true walk)
   sprintAccel: 0.55,    // steering while sprinting is heavier (accel multiplier)
   sprintTurn: 4.2,      // max body turn rate while sprinting (rad/s)
   slideTime: 0.62, slideBoost: 2.5, slideDrag: 1.6, slideMinSpeed: 7.5,
