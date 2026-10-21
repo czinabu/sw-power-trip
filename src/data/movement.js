@@ -58,7 +58,9 @@ export const MOVE = {
   // `sameCd` pays nothing (no farming one crate). Each also opens a MOMENTUM window: the next saber cut lands
   // `strikeDmg` harder (a slide cut floors what it hits), and the Mando's shots hit `shotDmg` harder while it lasts.
   flow: { window: 2.0, refund: 6, chainMul: 1.5, fuelMul: 1.6, sameCd: 2.5,
-          strikeWindow: 0.7, strikeDmg: 1.4, strikeKnock: 1.3, shotDmg: 1.25 },
+          strikeWindow: 0.7, strikeDmg: 1.4, strikeKnock: 1.3, shotDmg: 1.25,
+          // on a story chase each move also surges the run: top speed ×surge for surgeTime s, +surgeChain per chain link
+          surge: 1.2, surgeChain: 0.06, surgeMax: 1.38, surgeTime: 1.6 },
   // turning weight: the Jedi's body turns at a capped rate instead of snapping
   turnRate: 10,         // rad/s roaming
   combatTurnRate: 16,   // rad/s squared up in combat

@@ -211,6 +211,9 @@ const KINDS = {
       s.amb = (o.ambush || []).map(a => ({ ...a, d: projectPath(s.P, a.at[0], a.at[1]), fired: false }));
       s.stand = (o.standoff || []).map(a => ({ ...a, d: projectPath(s.P, a.at[0], a.at[1]), done: false }));
       s.hold = null; s.holdT = 0; s.clash = null; s.clashT = 0; s.clashCd = o.clash ? 2 : 0;
+      s.cuts = (o.shortcuts || []).map(c => ({ ...c, beacon: makeBeacon(c.at[0], c.at[1], 0, GREEN, 1.6), told: false }));
+      for (const c of s.cuts) M.markers.push(c.beacon);
+      s.onCut = false;
       M.markers.push(s.last = makeBeacon(0, 0, 0, RED, 1.2)); s.last.visible = false;   // where it was last seen
       placeOnPath(s, M.quarry);
     },
@@ -218,12 +221,18 @@ const KINDS = {
       if (s.clash) return clashUpdate(o, s, dt);
       const q = M.quarry, pp = playerPos(), qp = q.g.position;
       const pd = projectPath(s.P, pp.x, pp.z), gap = s.d - pd;
+      G.chaseSurgeT = G.gt + 0.25;   // parkour on the run surges you forward (player/parkour.js flowLink)
+      // on a shortcut lane: off its line, cutting the corner — the clock holds while you're in it
+      const cut = s.cuts.find(c => pp.x > c.zone[0] && pp.x < c.zone[1] && pp.z > c.zone[2] && pp.z < c.zone[3]);
+      if (cut && !cut.told){ cut.told = true; showBanner('', 'SHORTCUT · CUT IT OFF', 1.2); }
+      s.onCut = !!cut;
       // a standoff: it stops to cut through a sealed way, and leaves a squad to hold you off until it's through
       if (!s.hold){ const st = s.stand.find(t => !t.done && s.d >= t.d); if (st) beginStandoff(o, s, st); }
       if (s.hold){
         s.holdT += dt;
         if (Math.random() < dt * 8) burst(V3(qp.x + Math.sin(s.yaw) * 0.9, qp.y + 1.3, qp.z + Math.cos(s.yaw) * 0.9), 0xffaa33, 3, 5, 3, 0.4);
         if (s.holdT > 1.5 && hostilesAlive() + G.spawnQueue.length === 0 || s.holdT > 40) endStandoff(s, q.def.name + ' BREAKS THROUGH');
+        else if (gap < -10) endStandoff(s, q.def.name + ' BOLTS');   // you went round its guard: it runs for it
       } else {
         // it runs at the pace the gap calls for: easing off when you fall behind, flat out when you close in
         let spd = paceAt(o.pace, gap);
@@ -237,7 +246,8 @@ const KINDS = {
       if (!seen && s.seen){ s.last.position.set(qp.x, 0, qp.z); s.last.visible = true; }
       if (seen) s.last.visible = false;
       s.seen = seen;
-      s.lostT = seen ? Math.max(0, s.lostT - dt * 2) : s.hold ? s.lostT : s.lostT + dt;   // (standing still, it can't slip away)
+      // (standing still, it can't slip away; nor can it while you're on a shortcut or out ahead of it, running it down)
+      s.lostT = seen ? Math.max(0, s.lostT - dt * 2) : s.hold || s.onCut || gap <= 0 ? s.lostT : s.lostT + dt;
       q.tag.visible = seen;
       if (s.last.visible) pulseMarker(s.last, dt, G.gt);
       if (s.lostT >= o.lost){ quarryEscaped(); return; }
@@ -266,10 +276,13 @@ const KINDS = {
           dropFoe(e); enemies.splice(i, 1);
         }
       }
+      for (const c of s.cuts) if (c.beacon.visible) pulseMarker(c.beacon, dt, G.gt);
       setObjectiveHud({ kicker: 'MISSION · ' + M.def.title, title: o.title, frac: s.d / s.P.len,
         status: s.hold ? 'CLEAR ITS GUARD · ' + (hostilesAlive() + G.spawnQueue.length) + ' LEFT'
+              : s.onCut ? 'SHORTCUT · CUT IT OFF'
+              : !seen && gap <= 0 ? 'AHEAD OF IT · CUT IT OFF'
               : seen ? q.def.name + ' IN SIGHT · ' + Math.round(dist) + ' M' : 'OUT OF SIGHT · FIND IT ' + Math.max(0, o.lost - s.lostT).toFixed(1) + 'S',
-        warn: !seen && !s.hold });
+        warn: !seen && !s.hold && !s.onCut && gap > 0 });
       if (s.d >= s.P.len){
         q.tag.visible = false;
         if (o.leg < M.def.route.length - 1) showBanner('CHECKPOINT', 'Still on its heels. Keep going.', 2.0);

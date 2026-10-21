@@ -32,9 +32,11 @@
 //               shove: how close you can get before it throws you back and breaks away · the route itself is the
 //               mission's `route` (one polyline per leg) and who runs it is its `quarry`
 //               ambush: [{ at: [x, z] (fires as the quarry runs past here), spots: [[x, z]…], group: { type: count } }]
-//               foes stepping out of doorways to slow you down · start: [x, z, yaw] where a retry of this leg begins
+//               foes stepping out of doorways (optional: the spaceport keeps its runs clear and fights only at standoffs)
+//               shortcuts: [{ zone: [x0, x1, z0, z1], at: [x, z] }] parkour lanes that cut a corner: a beacon marks the
+//               way in, and inside one the escape clock holds · start: [x, z, yaw] where a retry of this leg begins
 //               standoff: [{ at: [x, z], spots, group, line }] it stops here to cut through a sealed way and its guard
-//               (group, at spots) holds you off; it runs on once they're down · clash: { dmg, time, every } catch it on
+//               (group, at spots) holds you off; it runs on once they're down (or bolts if you get ahead of it) · clash: { dmg, time, every } catch it on
 //               open ground and it turns to fight until you've taken dmg (a fraction of its hp) off it or `time` runs
 //               out, then breaks away; again no sooner than `every` seconds. The wounds carry into the quarry duel.
 // Every objective has `title` (the HUD line), and `say` / `task` per hero: the voice's line and the plain instruction.
@@ -108,29 +110,26 @@ export const MISSIONS = {
     objectives: [
       { kind: 'pursuit', leg: 0,
         title: { jedi: 'CHASE THE INQUISITOR', mando: 'CHASE THE BOUNTY' },
-        say: { jedi: 'The Inquisitor carries the refuge\'s new coordinates. Keep it in sight. Over the stalls, not around them.',
-               mando: 'The droid has the foundlings\' trail in its memory core. Run it down. Use the jetpack, use the walls.' },
+        say: { jedi: 'The Inquisitor carries the refuge\'s new coordinates. Keep it in sight. Over the stalls, not around them, and take the lane north of the cross if you can climb it.',
+               mando: 'The droid has the foundlings\' trail in its memory core. Run it down. Use the jetpack, use the walls. The lane north of the cross cuts its corner.' },
         task: { jedi: 'Keep the Inquisitor in sight', mando: 'Keep the bounty in sight' },
         sight: 42, lost: 6, shove: 3.0,
-        pace: [[-6, 11.5], [6, 10.5], [14, 8.4], [24, 7.0], [36, 4.5]],
+        pace: [[-6, 11.5], [6, 10.2], [14, 9.0], [24, 8.2], [36, 7.4]],
         clash: { dmg: 0.12, time: 12, every: 9 },
-        ambush: [ { at: [0, -114], spots: [[-3, -101], [3, -101], [0, -99]], group: { grunt: 2, blaster: 1 } },
-                  { at: [-6, -44], spots: [[10, -40], [13, -48], [20, -44]], group: { grunt: 1, blaster: 2 } } ],
-        standoff: [ { at: [-19, -50], spots: [[-19, -58], [-16.5, -60], [-21.5, -60], [-19, -63]], group: { grunt: 2, lancer: 1, blaster: 1 } },
-                    { at: [18, -21], spots: [[16, -29], [20, -29], [18, -33], [15, -35]], group: { grunt: 2, officer: 1, blaster: 1 } } ] },
+        shortcuts: PURSUIT_SPOTS.shortcuts[0],
+        standoff: [ { at: [0, -100], spots: [[-10, -104], [10, -104], [-9, -96], [9, -96]], group: { grunt: 2, lancer: 1, blaster: 1 } },
+                    { at: [6, 6], spots: [[-6, 0], [14, 14], [-10, 14], [2, 22]], group: { grunt: 2, officer: 1, blaster: 1 } } ] },
 
       { kind: 'pursuit', leg: 1, start: PURSUIT_SPOTS.checkpoint,
         title: { jedi: 'CHASE THE INQUISITOR', mando: 'CHASE THE BOUNTY' },
-        say: { jedi: 'It is making for the docks. The causeway is faster, if you can clear the gaps.',
+        say: { jedi: 'It is making for the docks. The causeway is faster, if you can clear the gaps, and the stacks west of the hangars cut straight to the bay.',
                mando: 'It\'s heading for the docking bay. Take the causeway. Don\'t lose it in the hangars.' },
         task: { jedi: 'Keep the Inquisitor in sight', mando: 'Keep the bounty in sight' },
         sight: 42, lost: 6, shove: 3.0,
-        pace: [[-6, 11.5], [6, 10.5], [14, 8.6], [24, 7.2], [36, 4.5]],
+        pace: [[-6, 11.5], [6, 10.4], [14, 9.2], [24, 8.4], [36, 7.6]],
         clash: { dmg: 0.12, time: 12, every: 9 },
-        ambush: [ { at: [-16, 27], spots: [[-12, 44], [-10, 50], [-13, 54]], group: { blaster: 2, grunt: 1 } },
-                  { at: [-20, 58], spots: [[-11, 70], [-14, 74], [-9, 66]], group: { grunt: 2, grenadier: 1 } } ],
-        standoff: [ { at: [4, 83], spots: [[-6, 83], [-4, 86], [-4, 80], [-8, 85]], group: { grunt: 2, lancer: 1, blaster: 1 } },
-                    { at: [17.5, 113], spots: [[17.5, 104], [16.5, 100], [18.5, 100], [17.5, 96]], group: { grunt: 2, grenadier: 1, blaster: 1 } } ] },
+        shortcuts: PURSUIT_SPOTS.shortcuts[1],
+        standoff: [ { at: [4, 83], spots: [[-8, 92], [0, 92], [8, 75], [-2, 75]], group: { grunt: 2, lancer: 1, grenadier: 1, blaster: 1 } } ] },
 
       { kind: 'duel', quarry: true, title: { jedi: 'DEFEAT THE INQUISITOR', mando: 'BRING IN THE BOUNTY' },
         say: { jedi: 'Its ship is clamped down. Nowhere left to run. Read the blade, not the mask.',
