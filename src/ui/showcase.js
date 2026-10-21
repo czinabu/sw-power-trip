@@ -336,9 +336,10 @@ export function renderShowcase(dt){
   renderPass.scene = stage; renderPass.camera = cam;
   // under the stand's spotlight a pale skin or white tunic lands near full brightness and the bloom set for
   // sabers and bolts would halo it; on the stand only light sources (blade, rings, beam) should glow
-  const th = bloomPass.threshold; bloomPass.threshold = STAND_BLOOM;
+  // (and the stand keeps its own bloom strength whatever the arena behind the menu set, see setSceneGlow)
+  const th = bloomPass.threshold, st = bloomPass.strength; bloomPass.threshold = STAND_BLOOM; bloomPass.strength = 0.82;
   composer.render();
-  bloomPass.threshold = th;
+  bloomPass.threshold = th; bloomPass.strength = st;
   renderPass.scene = scene; renderPass.camera = camera;
 }
 export function leaveShowcase(){ warm = false; }   // the next visit re-warms (a new run builds a new arena)

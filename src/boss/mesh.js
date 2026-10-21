@@ -7,6 +7,7 @@
 // rotation.z) · eyes (swell on windup).
 
 import * as THREE from 'three';
+import { glow } from '../engine/renderer.js';
 import { loft, limb, plate, block, shard, chamfer, ngon, HEAD } from '../player/model/shapes.js';
 import { bakeDesign, instantiate } from '../enemies/kit.js';
 import { legs, hips, torso, pauldrons, sideArm } from '../enemies/mesh.js';
@@ -118,7 +119,7 @@ function weaponArm(k, L, kind){
   const blade = k.glow(new THREE.CylinderGeometry(0.05, 0.035, 2.1, 8), 0xffffff, hand, [0, 1.25, 0]);
   blade.material.toneMapped = true;
   k.glow(new THREE.CylinderGeometry(0.13, 0.1, 2.15, 8), L.weapon, hand, [0, 1.25, 0], [0,0,0], { opacity: 0.5 });
-  const sl = new THREE.PointLight(L.weapon, 5, 10); sl.position.y = 1.2; k.live(sl, hand);   // softer than before: cel bands blow out under a strong close light
+  const sl = new THREE.PointLight(L.weapon, 5 * glow.light, 10); sl.position.y = 1.2; k.live(sl, hand);   // softer than before: cel bands blow out under a strong close light
 }
 
 export function buildBoss(kind){
