@@ -52,13 +52,14 @@ export function mandoDive(){
     v.x = dir.x * a; v.z = dir.z * a;
   }
   player.vel.addScaledVector(dir, D.speed);
+  player.vy = D.pop; player.grounded = false; player.lastJumpT = G.gt;   // push off: a real leap
   player.dashT = Math.max(player.dashT, D.iframes);
   player.dashStartT = G.gt;   // a perfect dodge counts from the dive's start (player/damage.js)
   player.dodgeKind = 'dive'; player.dashSpent = false; player.rollAt = G.gt;
   player.cds.roll = D.time + D.cd;
   tutEvent('dash');
   // the dive's way in the body's frame: the lay-out leans that way (anim/agility.js mandoBody)
-  player.flip = { kind: 'dive', t: 0, dur: D.time, df: dir.dot(fwd()), dr: dir.dot(rightV()) };
+  player.flip = { kind: 'dive', t: 0, dur: D.maxTime, df: dir.dot(fwd()), dr: dir.dot(rightV()) };
   burst(playerPos().clone().setY(0.25), 0xb9c2cc, 6, 3, 1.5, 0.8);
   S.jump();
   return true;
