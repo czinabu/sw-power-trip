@@ -195,10 +195,11 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
   const B = GS.body && player.grounded && !player.flip ? GS.body : null, bw = B ? GS.w : 0;
   const along = hSpeed > 1e-3 ? Math.abs((tvx*Math.sin(player.faceYaw) + tvz*Math.cos(player.faceYaw)) / hSpeed) : 1;   // running, not strafing
   player._mcAlong = along;
-  R.hips.position.x = dr(R.hips.position.x, B ? B.sway * bw : 0, 20);
+  const calm = player._mcCalm = player.walking ? GAIT.walkSway : 1;   // walk mode keeps the hips level
+  R.hips.position.x = dr(R.hips.position.x, B ? B.sway * bw * calm : 0, 20);
   R.hips.position.z = dr(R.hips.position.z, B ? B.surge * bw : 0, 20);
   R.hips.rotation.x = dr(R.hips.rotation.x, (B ? B.pitch * bw : 0) + player._landPitch, 20);
-  R.hips.rotation.z = dr(R.hips.rotation.z, B ? -B.roll * bw : 0, 20);
+  R.hips.rotation.z = dr(R.hips.rotation.z, B ? -B.roll * bw * calm : 0, 20);
   if (GS.body) R.hips.rotation.y = dr(R.hips.rotation.y, B ? B.yaw * bw * along : 0, 20);   // (else anim/agility.js turns the Jedi's)
   player._legIK = null;   // set below while the feet are solved onto the floor (ankle angles per leg)
   // legs: stride + knee lift (+ knee = the shin folds back, a real knee bend); the Jedi's air, flip and dive legs come from anim/agility.js
@@ -922,7 +923,7 @@ function mocapUpper(R, g){
   if (!B || !player.grounded || player.flip) return;
   const w = g.w * (player._mcAlong ?? 1);
   const free = G.hero !== 'mando' && player.atkT <= 0 && !player.blockHeld && player.castT <= 0 && player.judgeT <= 0 ? 1 : 0;
-  const yaw = lerp(-B.yaw, B.cyaw, free) * w, roll = lerp(-B.roll, B.croll, free) * g.w;
+  const yaw = lerp(-B.yaw, B.cyaw, free) * w, roll = lerp(-B.roll, B.croll, free) * g.w * (player._mcCalm ?? 1);
   A.ty = yaw; A.tz = -roll; A.hy = -(B.yaw * w + yaw) * 0.8;
   R.torso.rotation.y += A.ty; R.torso.rotation.z += A.tz; R.head.rotation.y += A.hy;
 }

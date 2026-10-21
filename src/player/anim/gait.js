@@ -45,7 +45,8 @@ export function advanceGait(dt, speed, style){
   // the motion-captured stride (anim/mocap.js) sets the step length and the feet's time on the ground; without it
   // the procedural stride does
   const mc = MOCAP_ON ? mocapStride(speed) : null;
-  const stepWant = mc ? mc.stride / 2 * (style.amp || 1) : Math.min(GAIT.step[0] + GAIT.step[1] * speed, GAIT.step[2]) * (style.amp || 1);
+  const stepWant = (mc ? mc.stride / 2 : Math.min(GAIT.step[0] + GAIT.step[1] * speed, GAIT.step[2]))
+                   * (style.amp || 1) * (player.walking ? GAIT.walkStride : 1);
   g.step += (stepWant - g.step) * Math.min(1, dt * 6);   // eased, so a speed change doesn't jolt the foot targets
   g.cyc += speed * dt / (2 * g.step);                   // one cycle = two steps
   g.run = run;
