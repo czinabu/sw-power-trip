@@ -6,6 +6,8 @@
 //   2. bake() merges every styled mesh into one mesh per material per SLOT (a slot is a group the game animates:
 //      the weapon arm, the staff, the shield, the boss's saber hand), plus ONE ink-outline hull per slot.
 //      Glows (eyes, thrusters, the bomb core, blades) stay as their own live meshes, since the game pulses them.
+//      A BONE (k.bone, the legs) is a joint inside a slot: its meshes still merge into the slot's, rigidly skinned to it,
+//      so it bends without costing a draw call of its own.
 //   3. instantiate() builds a fresh group from the cached bake: shared geometry and materials, except the armour
 //      material ('armor' key), which every unit gets its own copy of so hit flashes and elite tints stay per unit.
 //
@@ -54,6 +56,10 @@ function makeBuilder(colors){
     group(parent = this.root, p = [0,0,0], r = [0,0,0]){
       const g = new THREE.Group(); g.position.set(...p); g.rotation.set(...r); parent.add(g); return g;
     },
+    /* a joint inside the slot it sits in (a leg's hip, knee, ankle): its meshes skin to it (see bake) */
+    bone(name, parent = this.root, p = [0,0,0], r = [0,0,0]){
+      const g = this.group(parent, p, r); g.userData.bone = name; return g;
+    },
     /* an animated group the game drives (weapon arm, staff, shield, boss hand). Its meshes bake separately. */
     slot(name, parent = this.root, p = [0,0,0], r = [0,0,0]){
       const g = this.group(parent, p, r); g.userData.slot = name; return g;
@@ -77,20 +83,45 @@ function makeBuilder(colors){
   return k;
 }
 
+// o's transform relative to `to` (through any plain groups between), as position / rotation / scale
+function relTo(o, to){
+  const position = new THREE.Vector3(), quat = new THREE.Quaternion(), scale = new THREE.Vector3();
+  (to ? new THREE.Matrix4().multiplyMatrices(_inv.copy(to.matrixWorld).invert(), o.matrixWorld) : o.matrix).decompose(position, quat, scale);
+  return { position, rotation: new THREE.Euler().setFromQuaternion(quat), scale };
+}
+
 // merge a design's scene graph into per-slot geometry
 function bake(root){
   root.updateMatrixWorld(true);
   const slots = [], index = new Map();
   const slotOf = o => { while (!o.userData.slot) o = o.parent; return o; };
+  const boneOf = o => { while (!o.userData.slot && !o.userData.bone) o = o.parent; return o; };
   const insideLive = o => { for (let p = o.parent; p; p = p.parent) if (p.userData.live) return true; return false; };
   root.traverse(o => {
     if (!o.userData.slot) return;
     const parent = o === root ? null : slotOf(o.parent);
-    const s = { name: o.userData.slot, parent: parent && parent.userData.slot,
-      position: o.position.clone(), rotation: o.rotation.clone(), scale: o.scale.clone(),
-      byKey: new Map(), hulls: [], live: [] };
+    // placed relative to its parent SLOT, through any plain groups between (the bosses' scaled-up body)
+    const s = { name: o.userData.slot, parent: parent && parent.userData.slot, ...relTo(o, parent),
+      byKey: new Map(), hulls: [], live: [], bones: [], boneIdx: new Map([[o, 0]]) };   // bone 0: the slot itself
     index.set(o, s); slots.push(s);
   });
+  // each slot's bones, parents first, placed relative to their parent bone
+  root.traverse(o => {
+    if (!o.userData.bone) return;
+    const s = index.get(slotOf(o)), up = boneOf(o.parent);
+    s.boneIdx.set(o, s.bones.length + 1);
+    s.bones.push({ name: o.userData.bone, parent: s.boneIdx.get(up), ...relTo(o, up) });
+  });
+  // rigid skinning: every vertex follows the one bone its mesh hangs from (0 = the slot)
+  const skin = (g, s, o) => {
+    if (!s.bones.length) return g;
+    const n = g.attributes.position.count, idx = new Uint16Array(n * 4), wt = new Float32Array(n * 4);
+    idx.fill(0); const b = s.boneIdx.get(boneOf(o.parent));
+    for (let i = 0; i < n; i++){ idx[i*4] = b; wt[i*4] = 1; }
+    g.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(idx, 4));
+    g.setAttribute('skinWeight', new THREE.Float32BufferAttribute(wt, 4));
+    return g;
+  };
   let hullMat = null;
   root.traverse(o => {
     if (o.userData.slot || insideLive(o)) return;   // slot groups are rebuilt; a live object's children travel with it
@@ -103,15 +134,15 @@ function bake(root){
     }
     if (!o.isMesh || !o.userData.key) return;      // plain groups, and the hulls (merged with their mesh below)
     if (!s.byKey.has(o.userData.key)) s.byKey.set(o.userData.key, { mat: o.material, geos: [] });
-    s.byKey.get(o.userData.key).geos.push(strip(o.geometry).applyMatrix4(rel));
+    s.byKey.get(o.userData.key).geos.push(skin(strip(o.geometry).applyMatrix4(rel), s, o));
     const hull = o.children.find(c => c.isMesh && !c.userData.key);
-    if (hull){ hullMat = hull.material; s.hulls.push(strip(hull.geometry).applyMatrix4(rel)); }
+    if (hull){ hullMat = hull.material; s.hulls.push(skin(strip(hull.geometry).applyMatrix4(rel), s, o)); }
   });
   for (const s of slots){
     s.meshes = [...s.byKey].map(([key, { mat, geos }]) => ({ key, mat, geo: mergeGeometries(geos) }));
     s.hull = s.hulls.length ? mergeGeometries(s.hulls) : null;
     s.hullMat = hullMat;
-    delete s.byKey; delete s.hulls;
+    delete s.byKey; delete s.hulls; delete s.boneIdx;
   }
   return slots;
 }
@@ -139,25 +170,43 @@ export function bakeDesign(id, design, colors = {}){
 export function instantiate(baked){
   const groups = new Map();
   let bodyMat = null;
-  const ud = {};
+  const ud = {}, binds = [];
   for (const s of baked.slots){
     const g = new THREE.Group();
     g.position.copy(s.position); g.rotation.copy(s.rotation); g.scale.copy(s.scale);
     groups.set(s.name, g);
     if (s.parent) groups.get(s.parent).add(g);
     if (s.name !== 'body') ud[s.name] = g;
+    // the slot's bones (plain groups: a skeleton only reads their world matrices), exposed by name like the slots
+    let bones = null;
+    if (s.bones.length){
+      bones = [g];
+      for (const b of s.bones){
+        const j = new THREE.Group();
+        j.position.copy(b.position); j.rotation.copy(b.rotation); j.scale.copy(b.scale);
+        bones[b.parent].add(j); bones.push(j); ud[b.name] = j;
+      }
+    }
+    const Mesh = (geo, m) => {
+      if (!bones) return new THREE.Mesh(geo, m);
+      const sm = new THREE.SkinnedMesh(geo, m);
+      if (!geo.boundingSphere) geo.computeBoundingSphere();
+      sm.boundingSphere = geo.boundingSphere.clone(); sm.boundingSphere.radius += 0.6;   // the rest pose's, with room for a stride
+      binds.push([sm, bones]);
+      return sm;
+    };
     for (const { key, mat, geo } of s.meshes){
       let m = mat;
       if (key === 'armor'){
         if (!bodyMat){ bodyMat = mat.clone(); bodyMat.emissive.setHex(0); bodyMat.emissiveIntensity = 0; }
         m = bodyMat;
       }
-      const mesh = new THREE.Mesh(geo, m);
+      const mesh = Mesh(geo, m);
       mesh.castShadow = true;
       g.add(mesh);
     }
     if (s.hull){
-      const h = new THREE.Mesh(s.hull, s.hullMat);
+      const h = Mesh(s.hull, s.hullMat);
       h.castShadow = false;
       g.add(h);
     }
@@ -173,6 +222,13 @@ export function instantiate(baked){
     }
   }
   const root = groups.get('body');
+  // bind the skinned meshes in the rest pose, one skeleton per slot
+  root.updateMatrixWorld(true);
+  const skels = new Map();
+  for (const [m, bones] of binds){
+    if (!skels.has(bones)) skels.set(bones, new THREE.Skeleton(bones));
+    m.bind(skels.get(bones), m.matrixWorld);
+  }
   root.userData = { ...ud, bodyMat };
   return root;
 }

@@ -16,6 +16,7 @@ import { playerPos, maxHp } from '../player/helpers.js';
 import { hurtPlayer } from '../player/damage.js';
 import { ENEMY_TYPES } from '../data/enemies.js';
 import { buildEnemyMesh } from '../enemies/mesh.js';
+import { updateLegs } from '../enemies/gait.js';
 import { spawnEnemy, makeBossBar } from '../enemies/spawn.js';
 import { cleanupDuel } from '../enemies/duel.js';
 import { cleanupTactics } from '../enemies/tactics.js';
@@ -440,7 +441,7 @@ function makeQuarry(){
     new THREE.MeshBasicMaterial({ color: RED, depthTest: false, transparent: true, opacity: 0.9, toneMapped: false }));
   tag.rotation.x = Math.PI; tag.renderOrder = 998; tag.visible = false;
   scene.add(g, tag); M.props.push(g, tag);
-  return { g, tag, def: q, ph: 0 };
+  return { g, tag, def: q };
 }
 // on (re)start: the quarry waits at the start of the leg you begin on, or where the run ended if you begin at the duel
 function placeQuarry(o0){
@@ -466,11 +467,11 @@ function placeOnPath(s, q, dt = 0, spd = 0){
     else { s.vy -= 30 * dt; y = Math.max(sup, s.y + s.vy * dt); if (y <= sup) s.vy = 0; }   // off it under gravity
   }
   s.y = y;
-  const g = q.g, running = spd > 0.5;
-  q.ph += dt * (running ? spd * 1.6 : 2);
+  const g = q.g;
   s.yaw = dt ? s.yaw + Math.atan2(Math.sin(dir - s.yaw), Math.cos(dir - s.yaw)) * Math.min(1, dt * 10) : dir;
-  g.position.set(x, y + (running && y <= supportAt(x, z) + 0.01 ? Math.abs(Math.sin(q.ph)) * 0.1 : 0), z);
-  g.rotation.set(running ? Math.min(0.35, spd * 0.028) : 0, s.yaw, 0);
+  g.position.set(x, y, z);
+  g.rotation.set(0, s.yaw, 0);
+  updateLegs(q, g, dt, b[2] === 'leap' ? 'air' : 'ground');   // its stride, lean and footing are the troopers' (enemies/gait.js)
   q.tag.position.set(x, y + 2.7 * (q.def.scale || 1) + Math.sin(G.gt * 5) * 0.12, z);
 }
 // standing still: turn to face the hero
@@ -478,6 +479,7 @@ function faceHero(q, dt){
   const p = playerPos(), g = q.g, want = Math.atan2(p.x - g.position.x, p.z - g.position.z);
   g.rotation.y += Math.atan2(Math.sin(want - g.rotation.y), Math.cos(want - g.rotation.y)) * Math.min(1, dt * 5);
   g.rotation.x = 0;
+  updateLegs(q, g, dt);
 }
 function shove(q, s){
   const qp = q.g.position, pp = playerPos(), dx = pp.x - qp.x, dz = pp.z - qp.z, l = Math.hypot(dx, dz) || 1;

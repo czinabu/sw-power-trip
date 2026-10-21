@@ -8,6 +8,7 @@
 // The hooks the game drives (ai.js, damage.js, elites.js) are the same as before:
 //   bodyMat (armour: hit flash, windup glow, elite tint) · eye + eyeBase (swells on windup) · weaponArm (sword/maul
 //   swing, pivots at the shoulder) · staff · shield + shieldMat · bombCore · thrusters[]
+// plus the legs (thighL/R, shinL/R, footL/R) and the inner body group (vis) that enemies/gait.js drives
 
 import * as THREE from 'three';
 import { loft, limb, plate, block, shard, chamfer, ngon, KEEL, SHIELD, HEAD } from '../player/model/shapes.js';
@@ -22,15 +23,27 @@ const BOOT = [[-0.075,0.035],[-0.09,-0.075],[0.16,-0.085],[0.21,-0.05],[0.1,0.0]
 /* ---------------- shared trooper body ----------------
    Ground at y 0, facing +z. The weapon arm hangs from the +x shoulder (0.42w, 1.74), as it always has. */
 
+/* Each leg is three bones that enemies/gait.js poses (the hero's planted-foot gait): the thigh hangs from the hip,
+   the shin from the knee, the boot from the ankle. They skin the body's own mesh (kit.js), so legs that move cost no
+   extra draw calls. At rest they hang straight, as the legs always stood. */
+export const LEG_E = { hipY: 0.94, kneeY: 0.46, ankY: 0.1 };
+export function legBones(k, x){
+  const n = x < 0 ? 'L' : 'R';
+  const thigh = k.bone('thigh' + n, k.root, [x, LEG_E.hipY, 0]);
+  const shin = k.bone('shin' + n, thigh, [0, LEG_E.kneeY - LEG_E.hipY, 0]);
+  const foot = k.bone('foot' + n, shin, [0, LEG_E.ankY - LEG_E.kneeY, 0]);
+  return { thigh, shin, foot };
+}
+
 export function legs(k, w, o = {}){
   const shin = o.shin || 'armor';
   for (const s of [-1, 1]){
-    const x = 0.16 * s;
-    k.add(limb(0.5, [[-0.04,0.21*w,0.22],[0.2,0.2*w,0.2],[0.8,0.15*w,0.16],[1,0.14*w,0.15]], KEEL), 'suit', k.root, [x, 0.94, 0]);
-    k.add(plate([[-0.08,0],[0.08,0],[0.085,-0.22],[0,-0.27],[-0.085,-0.22]], 0.03, 0.01), 'armor', k.root, [x, 0.9, 0.1], [-0.06, 0, 0], { scale: [w, 1, 1] });
-    k.add(block(0.15*w, 0.1, 0.15, 0.4), 'armor2', k.root, [x, 0.46, 0.035]);
-    k.add(limb(0.38, [[0,0.15*w,0.16],[0.25,0.17*w,0.18],[0.85,0.13*w,0.14],[1,0.125*w,0.135]], KEEL), shin, k.root, [x, 0.46, 0.01]);
-    k.add(plate(scalePts(BOOT, 1.15), 0.13*w, 0.014), o.boot || 'suit', k.root, [x, 0.1, 0], [0, -PI/2, 0]);
+    const L = legBones(k, 0.16 * s);
+    k.add(limb(0.5, [[-0.04,0.21*w,0.22],[0.2,0.2*w,0.2],[0.8,0.15*w,0.16],[1,0.14*w,0.15]], KEEL), 'suit', L.thigh);
+    k.add(plate([[-0.08,0],[0.08,0],[0.085,-0.22],[0,-0.27],[-0.085,-0.22]], 0.03, 0.01), 'armor', L.thigh, [0, -0.04, 0.1], [-0.06, 0, 0], { scale: [w, 1, 1] });
+    k.add(block(0.15*w, 0.1, 0.15, 0.4), 'armor2', L.shin, [0, 0, 0.035]);
+    k.add(limb(0.38, [[0,0.15*w,0.16],[0.25,0.17*w,0.18],[0.85,0.13*w,0.14],[1,0.125*w,0.135]], KEEL), shin, L.shin, [0, 0, 0.01]);
+    k.add(plate(scalePts(BOOT, 1.15), 0.13*w, 0.014), o.boot || 'suit', L.foot, [0, 0, 0], [0, -PI/2, 0]);
   }
 }
 
@@ -359,11 +372,11 @@ export const MODELS = {
   // B1 SABOTEUR DROID — a skinny battle droid with a thermal charge strapped to its chest (bomber)
   b1(k, t){
     for (const s of [-1, 1]){
-      const x = 0.13 * s;
-      k.add(limb(0.48, [[-0.03,0.09,0.09],[1,0.07,0.07]], chamfer(0.35)), 'armor', k.root, [x, 0.94, 0]);
-      k.add(block(0.1, 0.07, 0.1, 0.4), 'metal', k.root, [x, 0.46, 0]);
-      k.add(limb(0.38, [[0,0.075,0.08],[0.7,0.09,0.1],[1,0.06,0.07]], KEEL), 'armor', k.root, [x, 0.46, 0]);
-      k.add(plate([[-0.06,0.03],[-0.06,-0.06],[0.17,-0.06],[0.19,-0.03],[0.04,0.03]], 0.09, 0.008), 'armor2', k.root, [x, 0.07, 0], [0, -PI/2, 0]);
+      const L = legBones(k, 0.13 * s);
+      k.add(limb(0.48, [[-0.03,0.09,0.09],[1,0.07,0.07]], chamfer(0.35)), 'armor', L.thigh);
+      k.add(block(0.1, 0.07, 0.1, 0.4), 'metal', L.shin);
+      k.add(limb(0.38, [[0,0.075,0.08],[0.7,0.09,0.1],[1,0.06,0.07]], KEEL), 'armor', L.shin);
+      k.add(plate([[-0.06,0.03],[-0.06,-0.06],[0.17,-0.06],[0.19,-0.03],[0.04,0.03]], 0.09, 0.008), 'armor2', L.foot, [0, -0.03, 0], [0, -PI/2, 0]);
     }
     k.add(loft([{ y:0.86, w:0.32, d:0.18 }, { y:1.0, w:0.34, d:0.2 }], chamfer(0.4)), 'armor2');
     k.add(loft([{ y:1.0, w:0.06, d:0.06 }, { y:1.32, w:0.06, d:0.06 }], ngon(6)), 'metal');   // spine
@@ -448,8 +461,12 @@ export function buildEnemyMesh(t){
   const baked = bakeDesign(id, k => MODELS[t.model](k, t), {
     armor: t.color, armor2: shade(t.color, 0.62), shield: shade(t.color, 1.15), cloth: t.cloth ?? 0x3f382e,
   });
-  const g = instantiate(baked);
-  const u = g.userData;
+  // the unit's group carries its place, heading and the AI's poses; inside it `vis` takes the gait's bob, sway and
+  // lean (enemies/gait.js), so the two never fight over one transform
+  const vis = instantiate(baked), g = new THREE.Group();
+  g.add(vis);
+  const u = g.userData = vis.userData;
+  u.vis = vis;
   if (u.shield) u.shieldMat = u.shield.children[0].material;
   if (u.eye) u.eyeMat = u.eye.material || u.eye.children[0].material;
   u.eyeBase = u.eye ? u.eye.scale.clone() : new THREE.Vector3(1, 1, 1);

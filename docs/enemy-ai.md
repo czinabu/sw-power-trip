@@ -23,6 +23,21 @@ tokens) is unchanged by this and lives in `src/data/enemies.js` (`ENEMY_TYPES`, 
   surge. They are never walls: a foe still crosses when there's no other way, and Push and kicks still throw them in.
 - The flow field ignores flyers (jet troopers) and mind-tricked allies; they steer as before.
 
+## Movement
+
+Troopers move with the hero's ground handling and legs, so they read as people rather than sliding statues.
+
+- Momentum (`enemies/ai.js`, the chase): speed builds at the hero's `MOVE.accel`, stopping or turning back brakes at
+  `MOVE.brake`, and reversing hard at speed plants the feet for a pivot. The body turns at the hero's capped turn rate
+  (faster once it's in the fight). Any other state (a windup, a stagger) starts the chase again from a standstill.
+- Legs (`enemies/gait.js`): each leg is three bones (hip, knee, ankle) that skin the body's own mesh (`kit.js`
+  `k.bone`), so they add no draw calls. They play the hero's motion-captured stride from how far the unit actually
+  moved, with planted-foot locks and leg IK, so every state that moves a trooper (the chase, a lunge, a fuse run, the
+  pursuit quarry) gets real footwork. The prowl round the ring is the captured walk; the charge is a run. Standing,
+  feet stay put and step when the body moves or turns off them. Each foot stands on what is under it and the hips
+  sink to the lower one; the body bobs with the stride and leans with acceleration.
+- Jet troopers and leaps hang their legs; knockdowns, ragdolls and get-ups let them go straight.
+
 ## Behaviours
 
 - **Stuck check:** a chasing foe that covers less than a third of the ground it tried to in half a second sidesteps
