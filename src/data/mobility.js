@@ -71,8 +71,9 @@ export const MOBILITY = {
 
 /* THE MANDALORIAN. Beskar on the ground, a jetpack in the air: on his feet he fights like a soldier, and off them
    he's the most agile thing in the fight.
-   ON THE GROUND in a fight SHIFT is a COMBAT DIVE (Helldivers): he throws himself flat the way you press, hits the
-   deck on his chest plate, barrel-rolls once and gets back up. Free, a moment of invulnerability through the throw,
+   ON THE GROUND in a fight SHIFT is a COMBAT DIVE (Helldivers), the way you press, squared to the reticle: forward
+   he dives flat and somersaults over, left or right he dives over that shoulder and rolls on across, back he sits
+   into a backward somersault, then he gets back up. Free, a moment of invulnerability through the throw,
    but the get-up is his weight showing: that's the window to punish. Tap SHIFT again early in the dive for the full
    ROCKET BOOST (data/mando.js MANDO.boostDash, it spends jet fuel). Out of a fight SHIFT on the ground is the rocket
    boost straight away, as before.
