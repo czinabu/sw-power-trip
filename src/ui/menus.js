@@ -369,7 +369,7 @@ function restartRun(){
   document.getElementById('restartBtn').style.display = 'none';
   document.getElementById('banner').style.opacity = '0';
   document.getElementById('skilltree').style.display = 'none';
-  G.skillSelect = false;
+  G.skillSelect = false; G.sbMenu = false;
   G.mode = 'play'; G.slowmo = 1; G.paused = false;
   document.body.classList.remove('in-menu'); setHowTo(false); setSettings(false);
   if (G.endless) startEndless(); else if (G.training) startTutorial(); else if (G.mission) startMission(G.missionId); else if (G.sandbox) startSandbox(); else startLevel(0);   // a survival run restarts as survival, not the campaign
@@ -382,7 +382,7 @@ function goHome(){
   overlay.classList.remove('confirming');
   closeSandboxPanel(false);
   document.getElementById('skilltree').style.display = 'none';
-  G.skillSelect = false;
+  G.skillSelect = false; G.sbMenu = false;
   if (G.stats){ G.stats._ended = false; G.stats.summary = null; }
   document.getElementById('runsummary').style.display = 'none';
   startLevel(0);   // sweep the battlefield and reset the hero + kit, exactly as a fresh campaign would

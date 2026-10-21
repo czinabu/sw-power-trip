@@ -43,6 +43,7 @@ export const G = {
   mouseSens: 1,          // player preference: mouse look sensitivity multiplier
   shakeScale: 1,         // player preference: screen shake strength (0 = off, 1.5 = extra)
   fov: 60,               // player preference: resting vertical FOV in degrees (the FOV slider, 50-90)
+  sbMenu: false,         // the sandbox B panel is open (same cinematic cuts as the pause screen)
   fovPreview: false,     // the FOV slider is being adjusted: settings fade away to show the live in-game view
   levelIdx: 0, wave: 0, waveTotal: -1,   // waveTotal = cumulative waves started (drives Mando ability unlocks)
   yaw: 0, pitch: 0.22,

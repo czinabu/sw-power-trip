@@ -13,6 +13,7 @@ const isOpen = () => panel.classList.contains('open');
 
 export function openSandboxPanel(){
   if (!G.sandbox || G.mode !== 'play' || G.paused || G.skillSelect) return;
+  G.sbMenu = true;        // the camera cuts away like the pause screen
   G.skillSelect = true;   // freezes the sim and keeps the pause screen away while the cursor is free (see ui/menus.js)
   render();
   panel.classList.add('open');
@@ -21,6 +22,7 @@ export function openSandboxPanel(){
 export function closeSandboxPanel(relock = true){
   if (!isOpen()) return;
   panel.classList.remove('open');
+  G.sbMenu = false;
   G.skillSelect = false;
   if (relock && !shared.lockFallback){ try { const p = renderer.domElement.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch(e){} }
 }
