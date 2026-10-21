@@ -83,7 +83,7 @@ function poseBody(dt, dr, vis, planted, POSE, moving){
   }
   player.group.rotation.y = player.faceYaw;
 
-  if (player.slamming){
+  if (player.slamming && !player.flip){
     // --- aerial slam DIVE: a committed forward tuck plunging straight down. NO spin (vis.rotation.y stays put) so
     // it can't leave the body twisted off-axis on landing — it must come down clean & square.
     vis.rotation.x = dr(vis.rotation.x, player.slamWind > 0 ? -0.24 : slamPitch(), 12);   // arched back through the wind-up, then each form drops its own way (data/agility.js)
@@ -112,7 +112,7 @@ function poseBody(dt, dr, vis, planted, POSE, moving){
     const gs = player._gait, gm = GAIT.accelMax;
     const af = gs && player.grounded ? clamp((gs.ax*ffx + gs.az*ffz) * GAIT.accelLean, -gm, gm) : 0;
     const ar = gs && player.grounded ? clamp((gs.ax*(-ffz) + gs.az*ffx) * GAIT.accelBank, -gm, gm) : 0;
-    vis.rotation.x = dr(vis.rotation.x, lf*0.024*leanG + af + (planted ? POSE.lean : 0) + reel + plant, reel ? 22 : 9);
+    vis.rotation.x = dr(vis.rotation.x, lf*0.024*leanG + af + (planted ? POSE.lean : 0) + reel + plant + (player.airCut && player.airCut.phase === 'dash' ? 0.38 : 0), reel ? 22 : 9);   // (the aerial cut's dash drives in shoulder-first)
     // WALL-RUN — feet on the wall, body tipped out away from it (the normal in the body's own left/right)
     const wallLean = player.wallRun ? -0.5 * (player.wallRun.nx * Math.cos(player.faceYaw) - player.wallRun.nz * Math.sin(player.faceYaw)) : 0;
     vis.rotation.z = dr(vis.rotation.z, player.wallRun ? wallLean : lr*0.018*leanG + ar + reelSide, player.wallRun ? 14 : reelSide ? 22 : 9);   // bank INTO the strafe (was inverted — leaned the wrong way)

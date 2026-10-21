@@ -1,6 +1,6 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
-// The Jedi's AERIAL CUT (LMB in the air): a wind-up hang, a dash at the nearest foe ahead, a cut on contact and a
-// planted landing. The Jedi's answer to the Mando's dive kick (mando/melee.js). It is a ONE-foe strike (no wave: that's
+// The Jedi's AERIAL CUT (LMB in the air): a beat of wind-up, then a LOW, LEVEL dash at the nearest foe ahead (the run's
+// momentum carries into it), a horizontal cut on contact and a planted landing. The Jedi's answer to the Mando's dive kick (mando/melee.js). It is a ONE-foe strike (no wave: that's
 // the Jump Attack's job); only the foe it sends flying can bowl over whoever it is knocked into.
 
 import { CFG } from '../../data/config.js';
@@ -18,13 +18,14 @@ import { inkSprite, sparks } from '../../fx/ink.js';
 import { DUEL } from '../../data/duel.js';
 import { isGuarding, guardImpact } from '../../enemies/duel.js';
 import { inReach } from '../../enemies/bodyshape.js';
-import { SLAM_LAND_T } from '../anim/agility.js';
+import { SLAM_LAND_T, rushFlip } from '../anim/agility.js';
 
-/* wind: the hang with the blade cocked overhead · dash: the flight in (homes on the foe), reaching full speed over
-   `ramp` · range/cone: who it picks · reach: contact distance · stamCost: × the form's swing cost
+/* wind: the beat with the blade drawn back (longer if a flip has to finish first) · dash: the flight in (homes on the
+   foe), reaching full speed over `ramp`, skimming in at `level` above the foe's feet · range/cone: who it picks ·
+   reach: contact distance · stamCost: × the form's swing cost
    fling: the struck foe is thrown for this long, and anyone it crashes into (within flingR) takes flingDmg × the cut */
-export const AIR_CUT = { wind: 0.18, dash: 0.42, speed: 32, ramp: 0.12, range: 14, cone: 0.5, reach: 1.9,
-                         dmgMul: 1.35, knock: 26, stamCost: 1.5, minHeight: 0.6, fling: 0.45, flingR: 1.5, flingDmg: 0.35 };
+export const AIR_CUT = { wind: 0.1, dash: 0.42, speed: 30, ramp: 0.1, level: 0.5, range: 14, cone: 0.5, reach: 1.9,
+                         dmgMul: 1.35, knock: 26, stamCost: 1.5, minHeight: 0.25, fling: 0.45, flingR: 1.5, flingDmg: 0.35 };
 const ease = (x, k) => 1 - Math.pow(k, x);   // frame-rate independent blend factor
 
 const live = (e) => e && !e.dead && !e.converted && e.state !== 'spawn';
@@ -59,19 +60,22 @@ export function airCut(){
   if (player.stam < cost) return false;
   player.stam -= cost; player.stamDelay = CFG.player.stamDelay;
   player.atkT = 0; player.swing = null; player.queuedAtk = false;
-  player.flip = null; player.gliding = false;
+  player.gliding = false;
   player.airCutUsed = true;
   const tgt = pickTarget(pp);
   const f = fwd();
-  player.airCut = { phase: 'wind', t: 0, tgt, face: tgt ? Math.atan2(tgt.group.position.x - pp.x, tgt.group.position.z - pp.z) : Math.atan2(f.x, f.z) };
-  // the wind-up: the climb eases to a stall (updateAirCut) while the blade comes up overhead and the air hums
-  sparks(V3(pp.x, pp.y + 2.4, pp.z), st.blade, 6, 5, { dir: V3(0, 1, 0), cone: 0.6, life: 0.22, grav: 0 });
+  // mid-flip, the flip finishes its somersault through the wind-up instead of being dropped
+  const wind = Math.max(AIR_CUT.wind, rushFlip(AIR_CUT.wind));
+  player.airCut = { phase: 'wind', t: 0, wind, tgt, face: tgt ? Math.atan2(tgt.group.position.x - pp.x, tgt.group.position.z - pp.z) : Math.atan2(f.x, f.z) };
+  // the run's momentum carries into the dash: it becomes the impulse the dash steers
+  player.vel.x += player.moveVel.x; player.vel.z += player.moveVel.z; player.moveVel.set(0, 0, 0);
+  sparks(V3(pp.x, pp.y + 1.4, pp.z), st.blade, 6, 5, { dir: f.clone().negate(), cone: 0.6, life: 0.22, grav: 0 });   // the blade draws back
   sfx(180, 0.18, 'sawtooth', 0.04, 520); S.swing(G.stance);
   return true;
 }
 
 // the cut that lands on contact: ONE foe, the one it flew at (or, with none picked, the nearest right in front of the
-// blade). The blade comes through overhead as a finisher (the swing is the look, the hit is here).
+// blade). The blade comes through in a flat sweep (the swing is the look, the hit is here).
 function strike(pp, tgt){
   const st = stance();
   const dir = fwd();
@@ -96,10 +100,10 @@ function strike(pp, tgt){
     player.airCutFling = { e: tgt, t: AIR_CUT.fling, dir: dir.clone(), dmg: dmg * AIR_CUT.flingDmg, knock: knock * 0.5, hit: new Set([tgt]) };
     hit = true;
   }
-  // the blade comes through: an overhead finisher, picked up just past its chamber (the wind-up already raised it)
+  // the blade comes through: a flat sweep, picked up just past its chamber (the wind-up already drew it back)
   const dur = 0.5 / (st.speed * (player.up.atkSpeed || 1));
   player.comboStep = 2;
-  player.swing = { t: dur * 0.12, applied: false, step: 2, dur, pat: SWING_PATTERNS.forward, dir: 'forward', back: false,
+  player.swing = { t: dur * 0.12, applied: false, step: 2, dur, pat: SWING_PATTERNS.right, dir: 'right', back: false,
                    riposte: false, cancelRip: false, flow: false, mom: null, noHit: true };
   player.atkT = dur * 0.88;
   player.deflectAnim = null;
@@ -157,26 +161,26 @@ export function updateAirCut(dt){
   c.t += dt;
   const tgt = live(c.tgt) || (c.tgt && c.tgt === shared.boss && shared.boss.hp > 0) ? c.tgt : null;
   if (c.phase === 'wind'){
-    // the climb EASES into a hang at the top of the wind-up (no snap): vertical speed settles toward a gentle drift up,
-    // and the carry bleeds off
-    player.vy += (1.4 - player.vy) * ease(dt, 1e-4);
-    player.vel.multiplyScalar(Math.pow(0.05, dt)); player.moveVel.multiplyScalar(Math.pow(0.05, dt));
+    // the climb EASES level (no snap, no hang-and-rise) and the run keeps most of its carry
+    player.vy += (0 - player.vy) * ease(dt, 1e-4);
+    player.vel.multiplyScalar(Math.pow(0.4, dt));
     if (tgt) c.face = Math.atan2(tgt.group.position.x - pp.x, tgt.group.position.z - pp.z);
-    if (c.t < AIR_CUT.wind) return;
-    c.phase = 'dash'; c.t = 0;
+    if (c.t < c.wind) return;
+    if (player.flip){ player.flip = null; player.vis.rotation.set(0, 0, 0); player.vis.position.set(0, 0, 0); }   // (a rushed flip has landed its turn)
+    c.phase = 'dash'; c.t = 0; c.v0 = Math.hypot(player.vel.x, player.vel.z);
     S.dash(); sfx(320, 0.22, 'sawtooth', 0.05, 90);
     burst(V3(pp.x, pp.y + 1.2, pp.z), stance().blade, 8, 6, 2, 0.6);
   }
-  // DASH — fly at the foe (or straight ahead and down a little, with nothing in reach)
-  if (tgt){
-    TMP.set(tgt.group.position.x - pp.x, (tgt.group.position.y + 0.9) - (pp.y + 0.9), tgt.group.position.z - pp.z);
-    c.face = Math.atan2(TMP.x, TMP.z);
-  } else TMP.set(Math.sin(c.face), -0.35, Math.cos(c.face));
+  // DASH — a LEVEL run at the foe (or straight ahead, with nothing in reach): horizontal, skimming down to just above
+  // its feet rather than diving onto it
+  if (tgt){ TMP.set(tgt.group.position.x - pp.x, 0, tgt.group.position.z - pp.z); c.face = Math.atan2(TMP.x, TMP.z); }
+  else TMP.set(Math.sin(c.face), 0, Math.cos(c.face));
   TMP.normalize();
-  // the dash builds to full speed over `ramp` and steers into its line, rather than teleporting to it
-  const sp = AIR_CUT.speed * (0.35 + 0.65 * Math.min(1, c.t / AIR_CUT.ramp)), k = ease(dt, 1e-6);
+  // the dash builds from the speed it came in with to full over `ramp`, steering into its line rather than teleporting
+  const v0 = Math.min(c.v0 || 0, AIR_CUT.speed), sp = v0 + (AIR_CUT.speed - v0) * Math.min(1, c.t / AIR_CUT.ramp), k = ease(dt, 1e-6);
   player.vel.x += (TMP.x * sp - player.vel.x) * k; player.vel.z += (TMP.z * sp - player.vel.z) * k;
-  player.vy += (TMP.y * sp * 0.8 - player.vy) * k;
+  const lvl = (tgt ? tgt.group.position.y : (player.groundY || 0)) + AIR_CUT.level;
+  player.vy = clamp((lvl - pp.y) * 7, -14, 3);
   player.moveVel.multiplyScalar(Math.pow(0.01, dt));
   if (Math.random() < 0.8) burst(V3(pp.x, pp.y + 1.2, pp.z), stance().blade, 1, 2, 0, 0.35);   // the blade streaks the air
   const d = tgt ? Math.hypot(tgt.group.position.x - pp.x, tgt.group.position.z - pp.z) : 9;

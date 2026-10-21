@@ -50,11 +50,25 @@ export function launchFlip(fl, dir){
   return fl;
 }
 
+/* how far through its flip `fl` is. A RUSHED flip (rushFlip) runs out its remaining turn over `rush.w` instead. */
+const flipP = fl => fl.rush ? clamp(fl.rush.p0 + (1 - fl.rush.p0) * (fl.t - fl.rush.t0) / fl.rush.w, 0, 1) : clamp(fl.t / fl.dur, 0, 1);
+/* An air attack (the aerial cut, the jump attack) fired mid-flip: rather than dropping the flip (the body would unwind
+   backwards out of it, reading as the flip restarting), the flip carries on and finishes its somersault over the
+   attack's wind-up, `w` seconds plus a beat for every bit of turn left. Returns the time it takes, 0 with no flip. */
+export function rushFlip(w){
+  const fl = player.flip;
+  if (!fl || player.grounded) return 0;
+  const p0 = fl.p || 0;
+  if (p0 >= 0.97){ player.flip = null; player.vis.rotation.set(0, 0, 0); player.vis.position.set(0, 0, 0); return 0; }
+  const dur = w + 0.14 * (1 - p0);
+  fl.rush = { p0, t0: fl.t, w: dur };
+  return dur;
+}
 /* WHOLE-BODY FLIP — advance the flip and pose `vis`, rotating about the centre of mass (not the feet), so a
    somersault reads as a body turning in the air instead of a plank swinging off its heels. */
 export function flipBody(dt, vis, fl){
   fl.t += dt;
-  const p = clamp(fl.t / fl.dur, 0, 1);
+  const p = flipP(fl);
   if (p >= 1){ vis.rotation.set(0, 0, 0); vis.position.set(0, 0, 0); player.flip = null; return; }
   // the captured flip's turn (anim/mocap.js): a real flip turns slowly off the ground, whips round and eases into the
   // landing; otherwise a symmetric ease
@@ -111,24 +125,24 @@ const mixLegs = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
 export function jediAirLegs(dt, dr, R){
   const A = agilityOf();
   const fl = player.flip;
-  if (fl && !player.slamming){
+  if (fl && (!player.slamming || fl.rush)){   // (a flip rushed into a jump attack plays out through its wind-up)
     // shape opens at take-off and landing, closes through the middle; a held tuck (Djem So leap) stays closed
-    const env = fl.tuckHold ? Math.min(1, Math.sin(Math.PI * clamp(fl.t / fl.dur, 0, 1)) * 2.2) : fl.legs === 'kneeslide' ? (fl.hold || 0) : Math.pow(fl.env || 0, 0.6);
+    const env = fl.tuckHold ? Math.min(1, Math.sin(Math.PI * flipP(fl)) * 2.2) : fl.legs === 'kneeslide' ? (fl.hold || 0) : Math.pow(fl.env || 0, 0.6);
     // the captured flip's own legs where its shape is the one the style asks for (a tucked back or front flip, a
     // tucked roll, an aerial's split); a pike or layout keeps its authored shape
     const cap = !fl.tuckHold && mocapFlip(fl), legs = fl.legs || 'tuck';
     const capLegs = cap && (cap === MOCAP_MOVES.side ? legs === 'split' || legs === 'tuck' : legs === 'tuck');
     if (capLegs){
       const m = cap === MOCAP_MOVES.front ? MOCAP_MOVES.back : cap;   // (a front tuck folds like a back tuck)
-      poseLegs(R, dr, flipLegs(m, clamp(fl.t / fl.dur, 0, 1)), 1, 22);
+      poseLegs(R, dr, flipLegs(m, flipP(fl)), 1, 22);
     } else poseLegs(R, dr, mixLegs(LEGS.reach, LEGS[legs] || LEGS.tuck, env), 1, 22);
     return true;
   }
   if (player.grounded) return false;
   if (player.hang){ poseLegs(R, dr, LEGS.float, 1, 10); return true; }   // hanging: legs loose against the face
   if (player.slamming){ poseLegs(R, dr, player.slamWind > 0 ? LEGS.tuck : LEGS[A.slam.legs] || LEGS.tuck, player.slamWind > 0 ? 1 : 0.7, 14); return true; }
-  // the AERIAL CUT (jedi/aerial.js): knees tucked under the raised blade, then the lead knee drives into the dash
-  if (player.airCut && player.airCut.phase !== 'fall'){ poseLegs(R, dr, player.airCut.phase === 'wind' ? LEGS.tuck : LEGS.hurdle, 1, 18); return true; }
+  // the AERIAL CUT (jedi/aerial.js): a running stride through the wind-up, then the lead knee drives into the dash
+  if (player.airCut && player.airCut.phase !== 'fall' && !player.flip){ poseLegs(R, dr, player.airCut.phase === 'wind' ? LEGS.stride : LEGS.hurdle, 1, 18); return true; }
   if (player.gliding){
     poseLegs(R, dr, player.vy > 1 ? LEGS.hurdle : (LEGS[A.glide.legs] || LEGS.float), A.glide.legs === 'tuck' && player.vy <= 1 ? 0.75 : 1, 7);
     return true;
@@ -150,8 +164,10 @@ export function jediAirLegs(dt, dr, R){
 /* which agility guard the saber hand(s) take right now (an AIR_GUARDS key), and how quickly */
 export function jediAgilityArms(running){
   const A = agilityOf();
-  // WIND-UP — the blade raised high overhead in both hands before the aerial cut or the jump attack comes down
-  if (player.slamWind > 0 || (player.airCut && player.airCut.phase !== 'fall')) return { key: 'windup', rate: 3.2 };
+  // WIND-UP — the blade raised high overhead in both hands before the jump attack comes down; drawn back low and level
+  // for the aerial cut's dash
+  if (player.slamWind > 0) return { key: 'windup', rate: 3.2 };
+  if (player.airCut && player.airCut.phase !== 'fall') return { key: 'cock', rate: 3.2 };
   if (player.slamLandT > 0) return { key: A.slam.land, rate: 2.4 };
   if (player.slamming) return { key: A.slam.arms, rate: 2.4 };
   if (player.hang) return { key: 'hang', rate: 3 };   // both hands up on the lip
@@ -172,7 +188,7 @@ export function jediAgilityPost(dt, dr, vis, R, ctx){
     player._airSpin = { t: 0, dur: 0.56, side: player.moveVel.x * Math.cos(G.yaw) - player.moveVel.z * Math.sin(G.yaw) > 0 ? -1 : 1 };
   player._agiGrounded = player.grounded;
   if (player.flip || player.slamming || player.grounded) player._airSpin = null;
-  if (player.flip && !player.slamming) flipBody(dt, vis, player.flip);
+  if (player.flip && (!player.slamming || player.flip.rush)) flipBody(dt, vis, player.flip);
   else if (player._airSpin){
     const sp = player._airSpin; sp.t += dt;
     const p = clamp(sp.t / sp.dur, 0, 1);
