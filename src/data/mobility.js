@@ -89,10 +89,14 @@ export const MANDO_MOBILITY = {
   },
   dive: {
     speed: 13,       // m/s impulse along the dive
-    time: 0.95,      // the whole move: the throw, the flight, the skid on the plate, the get-up
-    phases: [0.28, 0.66],  // share of the move the body takes to lay out flat, and stays flat until; the rest is the get-up
-    land: 0.45,      // share of the move he's in the air before the plate hits the floor
-    lift: 0.55,      // how high the hips arc in the throw (m)
+    pop: 5.8,        // m/s up off the ground: a real leap (≈0.43 s in the air, the boots ≈0.6 m up at the top)
+    layout: 0.24,    // seconds from the push-off to laid out flat
+    airDrop: 0.4,    // share of the way down to the floor the body lies in the air (the rest comes at touchdown)
+    impact: 0.09,    // seconds for the plate to come down onto the deck at touchdown
+    skid: 0.16,      // seconds flat on the deck after touchdown
+    getup: 0.4,      // seconds to get back up off one knee
+    time: 1.0,       // the whole move, roughly (sets the gap before the next dive)
+    maxTime: 1.8,    // ...and the longest it can last (a dive off a ledge still ends)
     hips: 0.3,       // hip height lying flat (m)
     tilt: { fwd: 1.45, back: 1.3, side: 1.35, sideUp: 0.3 },   // lay-out angles (rad): face-down, on the back, on the side
     iframes: 0.32,   // invulnerable from the start for this long (a perfect dodge counts from the start)

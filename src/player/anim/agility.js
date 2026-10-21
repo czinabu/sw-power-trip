@@ -237,8 +237,9 @@ export function landingStyle(){
 
 /* ---------------- MANDO ---------------- */
 /* The Mando's whole-body moves (data/mobility.js MANDO_MOBILITY), posed about the hips and lowered to the floor:
-   DIVE — the Max Payne / Helldivers dive, the way you press: laid out flat in the air (face-down forward, on his back
-          backward, on his side left or right), down on the plate with a skid, then up off one knee. No somersaults.
+   DIVE — the Helldivers leap with a Max Payne lay-out, the way you press: off the ground and flat in the air
+          (face-down forward, on his back backward, on his side left or right), down on the plate with a skid, then up
+          off one knee. No somersaults.
    SLIDE — feet first into base: leaning back, the lead leg out straight, the other folded under, hips near the floor. */
 const smooth = k => { k = clamp(k, 0, 1); return k * k * (3 - 2 * k); };
 const DIVE_LEGS = [0.12, 0.28, 0.06, 0.45, 0.14];     // laid out behind in the throw, knees soft
@@ -248,25 +249,27 @@ const BASE_LEGS = [-0.75, 0.06, -0.05, 1.9, 0.2];      // lead leg out, trail le
 function mandoBody(dt, dr, vis, R, fl){
   fl.t += dt;
   const p = clamp(fl.t / fl.dur, 0, 1);
-  if (p >= 1 || (fl.kind === 'slide' && !(player.slideT > 0))){
+  if (fl.kind === 'dive' && !fl.landT && fl.t > 0.08 && player.grounded) fl.landT = fl.t;   // the plate hits the deck
+  const D = MANDO_MOBILITY.dive, upT = fl.landT ? fl.t - fl.landT - D.skid : -1;   // into the get-up
+  if (p >= 1 || (fl.kind === 'slide' && !(player.slideT > 0)) || (fl.kind === 'dive' && upT >= D.getup)){
     vis.rotation.set(0, 0, 0); vis.position.set(0, 0, 0); player.flip = null; return;
   }
-  let pitch = 0, bank = 0, low, lift = 0, legs, lw = 1, drop;
+  let pitch = 0, bank = 0, low, legs, lw = 1, drop;
   if (fl.kind === 'dive'){
-    // Max Payne / Helldivers: no somersaults. Squared to the reticle the whole way, he lays out flat in the air the
-    // way he dives (FORWARD face-down, BACK on his back with his boots toward the target, LEFT / RIGHT on his side,
-    // head first), comes down on the plate and skids, then gets up off one knee. One smooth curve, no snaps: the body
-    // tips over through the take-off, holds through the flight and the skid, and eases back up.
-    const D = MANDO_MOBILITY.dive, [a, b] = D.phases;
-    const flat = p < a ? smooth(p / a) : p < b ? 1 : 1 - smooth((p - b) / (1 - b));
+    // Helldivers leap, Max Payne lay-out: no somersaults. He pushes off into real air (mando/mobility.js gives the
+    // jump), squared to the reticle, and lays out flat the way he dives (FORWARD face-down, BACK on his back with his
+    // boots toward the target, LEFT / RIGHT on his side, head first), held high through the flight. When the plate
+    // hits the deck the body drops the rest of the way (the impact), skids, then gets up off one knee. Smooth curves
+    // throughout: tipping over through the take-off, the drop at touchdown, easing back up.
+    const flat = upT < 0 ? smooth(fl.t / D.layout) : 1 - smooth(upT / D.getup);
     pitch = (fl.df >= 0 ? D.tilt.fwd : D.tilt.back) * fl.df * flat;
     bank = D.tilt.side * fl.dr * flat;
     if (Math.abs(fl.dr) > Math.abs(fl.df)) pitch -= D.tilt.sideUp * Math.abs(fl.dr) * flat;   // a side dive lies a little on its back, chest to the target
-    low = flat; drop = COM - D.hips;
-    const air = clamp(p / D.land, 0, 1);
-    lift = D.lift * Math.sin(Math.PI * air) * (1 - air * 0.35);   // up off the floor, a longer fall than rise
-    legs = p < b ? (fl.df < -0.5 ? DIVE_LEGS_BACK : DIVE_LEGS) : GETUP_LEGS;
-    lw = p < b ? flat : Math.sin(Math.PI * (p - b) / (1 - b));
+    // in the air the body lies at chest height; at touchdown it comes down onto the plate
+    const hit = fl.landT ? smooth((fl.t - fl.landT) / D.impact) : 0;
+    low = flat * (D.airDrop + (1 - D.airDrop) * hit); drop = COM - D.hips;
+    legs = upT < 0 ? (fl.df < -0.5 ? DIVE_LEGS_BACK : DIVE_LEGS) : GETUP_LEGS;
+    lw = upT < 0 ? flat : Math.sin(Math.PI * clamp(upT / D.getup, 0, 1));
     // the visor stays on the target: the head counters the lay-out
     R.head.rotation.x = dr(R.head.rotation.x, -pitch * 0.55, 18);
     R.head.rotation.z = dr(R.head.rotation.z, -bank * 0.4, 18);
@@ -282,7 +285,7 @@ function mandoBody(dt, dr, vis, R, fl){
   // turn about the hips, then bring them down toward the floor
   vis.rotation.set(pitch, 0, bank);
   _v.set(0, COM, 0).applyEuler(_e.set(pitch, 0, bank));
-  vis.position.set(-_v.x, COM - _v.y - drop * low + lift, -_v.z);
+  vis.position.set(-_v.x, COM - _v.y - drop * low, -_v.z);
   poseLegs(R, dr, legs, lw, 20);
 }
 
@@ -305,7 +308,7 @@ export function mandoAgilityPost(dt, dr, vis, R, f, r){
     player._agiDrop = Math.max(player._agiDrop || 0, M.dodge.drop * w);
   }
   // a hop is an airborne stint that started without the jets; lighting them ends it
-  if (player.grounded || player.jetActive || player.hovering || player.boosting || player.slamming) player._hop = false;
+  if (player.grounded || player.jetActive || player.hovering || player.boosting || player.slamming || player.flip) player._hop = false;
   else if (player._agiGrounded) player._hop = true;
   player._agiGrounded = player.grounded;
   if (player._hop){

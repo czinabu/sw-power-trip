@@ -28,10 +28,12 @@ function stickOr(dflt){
    boost out of a fight, so in an empty sandbox or between waves the dive never showed). */
 export function mandoShift(){
   if (G.mode !== 'play' || player.mantle || player.hang) return;
-  // (a dive over uneven ground can leave the floor for a frame: that still counts as the ground)
+  // a second SHIFT just after a dive's push-off (still low over the ground) is the rocket boost
+  const redash = player.dodgeKind === 'dive' && G.gt - (player.rollAt ?? -9) < MM.dive.redash;
+  // (a slope can leave the floor for a frame: that still counts as the ground)
   const onGround = player.grounded || (G.gt - (player.lastGroundT ?? -9) < 0.12 && player.vy <= 0.5 && !player.jetActive);
-  if (!onGround){ airDodge(); return; }
-  if (!(player.dodgeKind === 'dive' && G.gt - (player.rollAt ?? -9) < MM.dive.redash)){ mandoDive(); return; }
+  if (!onGround && !redash){ airDodge(); return; }
+  if (!redash){ mandoDive(); return; }
   if (player.flip){   // the boost takes the dive (or the slide) over: back to the thruster skid
     player.flip = null; player.vis.rotation.set(0, 0, 0); player.vis.position.set(0, 0, 0);
   }
@@ -52,13 +54,14 @@ export function mandoDive(){
     v.x = dir.x * a; v.z = dir.z * a;
   }
   player.vel.addScaledVector(dir, D.speed);
+  player.vy = D.pop; player.grounded = false; player.lastJumpT = G.gt;   // push off: a real leap
   player.dashT = Math.max(player.dashT, D.iframes);
   player.dashStartT = G.gt;   // a perfect dodge counts from the dive's start (player/damage.js)
   player.dodgeKind = 'dive'; player.dashSpent = false; player.rollAt = G.gt;
   player.cds.roll = D.time + D.cd;
   tutEvent('dash');
   // the dive's way in the body's frame: the lay-out leans that way (anim/agility.js mandoBody)
-  player.flip = { kind: 'dive', t: 0, dur: D.time, df: dir.dot(fwd()), dr: dir.dot(rightV()) };
+  player.flip = { kind: 'dive', t: 0, dur: D.maxTime, df: dir.dot(fwd()), dr: dir.dot(rightV()) };
   burst(playerPos().clone().setY(0.25), 0xb9c2cc, 6, 3, 1.5, 0.8);
   S.jump();
   return true;
