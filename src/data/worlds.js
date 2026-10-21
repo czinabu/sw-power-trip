@@ -241,8 +241,9 @@ export const TRAINING_WORLDS = {
     fog: 0x2a1a14, fogStart: 1.4, fogEnd: 4.0, clear: 0x1a0e0a,
     light: { sun: 0xffe2c0, sunI: 1.45, dir: [-12, 40, 18], hemiSky: 0xffd8b8, hemiGround: 0x4a2a1e, fill: 1.0, rim: 0xffc890, rimI: 0.35 },
     floor: { kind: 'parquet', base: 0x6a3020, seed: 8 },
+    glow: 0.6,   // the pale duelling mat, not the dark parquet, fills the view: ease the bloom and blade light for it
     outer: 0x3a1a12,
-    pal: { wood: 0x5a2a1c, woodD: 0x3a1a12, panel: 0xcfc4ae, metal: 0x8a8a86, crest: 0x2a140e, mat: 0xe6dcc6, matHi: 0xf0e8d6, inlay: 0x6a2618 },
+    pal: { wood: 0x5a2a1c, woodD: 0x3a1a12, panel: 0xcfc4ae, metal: 0x8a8a86, crest: 0x2a140e, mat: 0xa8946f, matHi: 0xb6a27c, inlay: 0x6a2618 },   // mat: sanded tan, not near-white (a lit blade blew cream out)
     backdrop: [],
     ambient: { kind: 'dust', color: 0xfff0d8, count: 70, size: 0.2 },
     beats: { fog: 0x2a1a14, fill: 1.0, tint: 0xffe0c0 },
