@@ -56,11 +56,11 @@ export const SABER_GUARDS = {
   },
   // REVERSE (Shien) GRIP — blade out of the pinky side, lying back along the forearm (Ahsoka, Starkiller)
   reverse: {
-    // Ahsoka's guard: saber fist up in front of the chest, blade laid level across the body toward the off side, off
-    // hand close under it; coiled and leaning in
+    // Ahsoka's guard: saber fist up in front of the weapon-side chest, blade laid level out past the weapon side, off
+    // hand close in front of the chest; coiled and leaning in
     ataru: {
-      ready: { hand: [0.12, 0.1, 0.4], blade: [-0.98, 0.04, 0.18], twist: -0.12, lean: 0.08, pole: [0.7, -0.6, -0.3],
-               off: { hand: [-0.12, -0.02, 0.36], pole: OFF_POLE } },
+      ready: { hand: [0.2, 0.08, 0.4], blade: [0.98, 0.04, 0.18], twist: 0.12, lean: 0.08, pole: [0.5, -0.7, -0.4],
+               off: { hand: [-0.06, 0.02, 0.38], pole: OFF_POLE } },
       block: { hand: [0.16, 0.5, 0.36], blade: [-0.55, -0.75, 0.25], twist: -0.1, pole: [0.9, -0.1, -0.3],
                off: { hand: [-0.4, -0.1, 0.25], pole: OFF_POLE } },
     },
