@@ -30,7 +30,8 @@ export function updateMovement(dt, pp, st, f, r){
                    * (player.atkT > 0 && G.hero !== 'mando' ? MOVE.swingMove : 1)       // a swing plants the feet: spacing is yours to manage
                    * (player.landStagT > 0 ? MOVE.staggerMove : 1)                      // HARD LANDING — the knees are still buckled
                    * (player.flinchT > 0 ? CFG.player.flinch.move : 1)                  // HIT REACTION — reeling from a blow
-                   * (player.saberLock ? 0 : 1);                                         // SABER LOCK — feet planted in the bind
+                   * (player.saberLock ? 0 : 1)                                          // SABER LOCK — feet planted in the bind
+                   * (player.airCut && player.airCut.phase !== 'fall' ? 0 : 1);          // AERIAL CUT — the dash steers itself (jedi/aerial.js)
   const want = V3(0,0,0);
   if (keys['w']) want.add(f);
   if (keys['s']) want.sub(f);
@@ -160,7 +161,8 @@ export function updateGravityAndLanding(dt, pp){
   // gravity / landing — gentled while the Jedi is gliding (graceful arc), fully cancelled during the Mando hover.
   // A plain Jedi jump falls HARDER than it rose (no hang at the apex) and a wall-run barely loses height.
   const jediFall = G.hero !== 'mando' && !player.gliding && player.vy < 0;
-  const gMul = player.hovering ? 0 : player.wallRun ? MOVE.wallRunGravity : player.gliding ? JEDI_FORCE.riseGravity : jediFall ? MOVE.fallGravity : 1;
+  const gMul = player.hovering || (player.airCut && player.airCut.phase !== 'fall') ? 0 :   // (the aerial cut flies its own line: jedi/aerial.js)
+               player.wallRun ? MOVE.wallRunGravity : player.gliding ? JEDI_FORCE.riseGravity : jediFall ? MOVE.fallGravity : 1;
   player.vy -= CFG.player.gravity * gMul * dt;
   if (player.gliding && player.vy < -JEDI_FORCE.glideFall) player.vy = -JEDI_FORCE.glideFall;   // graceful (not floaty) descent
   if (player.vy < -MOVE.maxFall) player.vy = -MOVE.maxFall;
@@ -200,6 +202,7 @@ export function updateGravityAndLanding(dt, pp){
     if (!wasGrounded && !slammed) landingImpact(impact);
     player.grounded = true; player.airLeft = CFG.player.airJumps;
     player.doubleJumped = false; player.fjUsed = false;   // re-arm the Force-jump takeoff for the next leap
+    player.airCutUsed = false;                             // and the aerial cut (jedi/aerial.js)
     player.wallRunUsed = false; player.wallRun = null;
     player.lastGroundT = G.gt;
     // JUMP BUFFER — a jump pressed just before touchdown fires now

@@ -90,7 +90,7 @@ export const player = {
   holstered: false, palmT: 0, palmMax: 0, palmStep: 0, palm: null, palmQueued: false, lastPalmEnd: -9,   // Jedi saber on the belt + the Force strike string (jedi/palm.js)
   // skill-tree upgrade multipliers/bonuses (reset each new campaign)
   up: { dmg: 1, forceRegen: 1, move: 1, knock: 1, parry: 0, lifesteal: 0, hpMax: 0, dashCdMult: 1, stamRegen: 1,
-        atkSpeed: 1, dr: 0, blockStam: 1, riposte: 1, parryForce: 0, tempest: false,
+        atkSpeed: 1, dr: 0, blockStam: 1, riposte: 1, parryForce: 0,
         fireRate: 1, fuelEff: 1, flameDmg: 1, flameRange: 1, rocketDmg: 1, rocketR: 1, braceDR: 0, aim: 0, darksaber: false, abilityCostMul: 1 },
   skills: {},   // id → rank taken in the skill tree
   judgeT: 0, judgeTick: 0, judgeTargets: [],

@@ -52,7 +52,7 @@ export const SANDBOX_KIT = {
     { id: 'pull',      nm: 'FORCE PULL',       key: 'C',        ...flag('pull') },
     { id: 'throw',     nm: 'SABER THROW',      key: 'RMB+LMB',  ...flag('throw') },
     { id: 'barrier',   nm: 'FORCE BARRIER',    key: 'V',        ...flag('barrier') },
-    { id: 'slam',      nm: 'JUMP ATTACK',      key: 'AIR LMB',  ...flag('slam') },
+    { id: 'slam',      nm: 'JUMP ATTACK',      key: 'X',        ...flag('slam') },
     { id: 'mend',      nm: 'FORCE MEND',       key: 'X',        ...flag('mend') },
     { id: 'judge',     nm: 'FORCE JUDGEMENT',  key: 'R', slot: 'ult', ...flag('judge') },
     { id: 'repulse',   nm: 'FORCE REPULSE',    key: 'R', slot: 'ult', ...flag('repulse') },

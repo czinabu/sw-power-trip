@@ -74,8 +74,9 @@ function poseBody(dt, dr, vis, planted, POSE, moving){
     // ledge he faces the wall
     if (player.hang) face = Math.atan2(-player.hang.nx, -player.hang.nz);
     // a flip launched along the travel (anim/agility.js launchFlip) faces it fast, so the flip turns the way you go
-    const flipFace = player.flip && player.flip.face != null && !player.hang;
-    if (flipFace) face = player.flip.face;
+    // the AERIAL CUT (jedi/aerial.js) squares up to the foe it flies at, just as fast
+    const flipFace = (player.flip && player.flip.face != null && !player.hang) || (player.airCut && player.airCut.phase !== 'fall');
+    if (flipFace) face = player.airCut && player.airCut.phase !== 'fall' ? player.airCut.face : player.flip.face;
     const rate = flipFace ? 25 : player.sprinting ? MOVE.sprintTurn : inCombatPose ? MOVE.combatTurnRate : MOVE.turnRate;
     const step = wrapAngle(dampAngle(player.faceYaw, face, flipFace ? 30 : inCombatPose ? 26 : 11, dt) - player.faceYaw);
     player.faceYaw += clamp(step, -rate * dt, rate * dt);
@@ -85,7 +86,7 @@ function poseBody(dt, dr, vis, planted, POSE, moving){
   if (player.slamming){
     // --- aerial slam DIVE: a committed forward tuck plunging straight down. NO spin (vis.rotation.y stays put) so
     // it can't leave the body twisted off-axis on landing — it must come down clean & square.
-    vis.rotation.x = dr(vis.rotation.x, slamPitch(), 12);   // each form drops its own way (data/agility.js)
+    vis.rotation.x = dr(vis.rotation.x, player.slamWind > 0 ? -0.24 : slamPitch(), 12);   // arched back through the wind-up, then each form drops its own way (data/agility.js)
     vis.rotation.y = dr(vis.rotation.y, 0, 14);
     vis.rotation.z = dr(vis.rotation.z, 0, 14);
     vis.position.y = dr(vis.position.y, 0, 10);
@@ -355,9 +356,9 @@ function animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait){
     // stroke itself (not the chamber or the follow-through); the strike point still runs the swing's one-off effects
     if (held){
       const touched = sweepBlade(sw, cue.k >= ((sw.anim && sw.anim.tc) || 0.25) * 0.6 && cue.k <= 0.92);
-      if (touched && touched.length){ applySwingDamage(sw.step, touched); sw.bite = BITE.time; }
+      if (touched && touched.length && !sw.noHit){ applySwingDamage(sw.step, touched); sw.bite = BITE.time; }
     }
-    if (!sw.applied && cue.k > 0.35){ sw.applied = true; applySwingDamage(sw.step, held || sw.cutSet ? [] : undefined); }
+    if (!sw.applied && cue.k > 0.35){ sw.applied = true; applySwingDamage(sw.step, held || sw.cutSet || sw.noHit ? [] : undefined); }   // (noHit: the aerial cut struck on contact, jedi/aerial.js)
     // IN-RHYTHM LINK (Jedi): one well-timed press this swing → the next cut leaves from the follow-through
     if (player.queuedAtk && !sw.rushed && G.hero !== 'mando' && sw.applied && cue.k >= FLOW.at){
       player.atkT = 0; player.queuedAtk = false; player.lastAtkEnd = G.gt;

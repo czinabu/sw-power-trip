@@ -316,7 +316,7 @@ export function updateWallRun(dt, pp){
 /* LANDING — a hard touchdown buckles the knees for a beat (slow, no jump or dash) unless a roll was called for
    just before it. Returns true if it rolled. Called by locomotion on the frame the Jedi lands. */
 export function landingImpact(impact){
-  if (G.hero === 'mando' || player.slamming) return false;
+  if (G.hero === 'mando' || player.slamming || player.airCut) return false;   // (the aerial cut lands in its own follow-through)
   if (impact < MOVE.staggerImpact) return false;
   if (G.gt - (player.rollReqT ?? -9) < MOVE.rollWindow){ landingRoll(); return true; }
   const s = clamp((impact - MOVE.staggerImpact) / MOVE.staggerSpan, 0, 1);

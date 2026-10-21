@@ -31,6 +31,7 @@ import { showBanner } from '../ui/banners.js';
 import { diffBossCheckpoint } from '../data/difficulty.js';
 import { catchDarksaber } from '../player/mando/darksaber.js';
 import { resetGrasp } from '../player/jedi/grasp.js';
+import { resetAirCut } from '../player/jedi/aerial.js';
 
 /* ============================================================
    LEVEL / WAVE FLOW
@@ -72,7 +73,7 @@ export function startLevel(idx, opts){
   rockets.length = 0;
   G.spawnQueue.length = 0;
   // reset transient combat state
-  player.slamming = false; player.atkHeld = false; player.slamBig = false;
+  player.slamming = false; player.slamWind = 0; player.slamBig = false; resetAirCut();
   resetGrasp();
   player.doubleJumped = false;
   player.firing = false; player.trigHeld = false; player.shieldDropT = 0; player.fireCd = 0; player.flaming = false; player.jetActive = false; player.boosting = false; player.meleeT = 0; player.lockOn = false;
@@ -132,7 +133,7 @@ export function startLevel(idx, opts){
     G.xp = 0; G.xpEarned = 0; G.skillPoints = 0; G.powerLv = {}; G.mastery = {}; G.seenTypes = {};
     G.boonOffer = null; G.boonPicked = false;
     player.up = { dmg: 1, forceRegen: 1, move: 1, knock: 1, parry: 0, lifesteal: 0, hpMax: 0, dashCdMult: 1, stamRegen: 1,
-                  atkSpeed: 1, dr: 0, blockStam: 1, riposte: 1, parryForce: 0, tempest: false,
+                  atkSpeed: 1, dr: 0, blockStam: 1, riposte: 1, parryForce: 0,
                   fireRate: 1, fuelEff: 1, flameDmg: 1, flameRange: 1, rocketDmg: 1, rocketR: 1, braceDR: 0, aim: 0, darksaber: false, abilityCostMul: 1,
                   jetTier: 0, jetPow: 0.62, fjTier: 0 };
     player.boon = {}; player.boons = {}; player.momentumStacks = 0; player.momentumT = 0; player.phoenixReady = false;   // ROGUELITE BOONS

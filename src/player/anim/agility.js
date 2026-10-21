@@ -126,7 +126,9 @@ export function jediAirLegs(dt, dr, R){
   }
   if (player.grounded) return false;
   if (player.hang){ poseLegs(R, dr, LEGS.float, 1, 10); return true; }   // hanging: legs loose against the face
-  if (player.slamming){ poseLegs(R, dr, LEGS[A.slam.legs] || LEGS.tuck, 0.7, 14); return true; }
+  if (player.slamming){ poseLegs(R, dr, player.slamWind > 0 ? LEGS.tuck : LEGS[A.slam.legs] || LEGS.tuck, player.slamWind > 0 ? 1 : 0.7, 14); return true; }
+  // the AERIAL CUT (jedi/aerial.js): knees tucked under the raised blade, then the lead knee drives into the dash
+  if (player.airCut && player.airCut.phase !== 'fall'){ poseLegs(R, dr, player.airCut.phase === 'wind' ? LEGS.tuck : LEGS.hurdle, 1, 18); return true; }
   if (player.gliding){
     poseLegs(R, dr, player.vy > 1 ? LEGS.hurdle : (LEGS[A.glide.legs] || LEGS.float), A.glide.legs === 'tuck' && player.vy <= 1 ? 0.75 : 1, 7);
     return true;
@@ -148,6 +150,8 @@ export function jediAirLegs(dt, dr, R){
 /* which agility guard the saber hand(s) take right now (an AIR_GUARDS key), and how quickly */
 export function jediAgilityArms(running){
   const A = agilityOf();
+  // WIND-UP — the blade raised high overhead in both hands before the aerial cut or the jump attack comes down
+  if (player.slamWind > 0 || (player.airCut && player.airCut.phase !== 'fall')) return { key: 'windup', rate: 3.2 };
   if (player.slamLandT > 0) return { key: A.slam.land, rate: 2.4 };
   if (player.slamming) return { key: A.slam.arms, rate: 2.4 };
   if (player.hang) return { key: 'hang', rate: 3 };   // both hands up on the lip
