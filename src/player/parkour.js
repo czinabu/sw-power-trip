@@ -213,8 +213,9 @@ export function trySlide(){
   flowLink('slide');
   player.moveVel.multiplyScalar((jedi ? hs + MOVE.forceSlideBoost : Math.max(SL.speed, hs + SL.boost)) / hs);
   player.sprinting = false;
-  // the Jedi's knee slide is a flip pose; the Mando's reuses his thruster-dodge skid (anim/agility.js)
   if (jedi) player.flip = { t: 0, dur: MOVE.forceSlideTime, pitch: -0.3, drop: 0.5, legs: 'kneeslide', arms: null, side: 1, ease: 'twirl' };
+  // the Mando's goes in feet first, like sliding into base, facing the way he skids (anim/agility.js mandoBody)
+  else player.flip = { kind: 'slide', t: 0, dur: SL.time, face: Math.atan2(player.moveVel.x, player.moveVel.z) };
   const pp = playerPos();
   burst(V3(pp.x, 0.15, pp.z), jedi ? 0x88ddff : 0x9a9288, jedi ? 12 : 8, 4, 1, 0.9);
   S.dash();

@@ -71,35 +71,39 @@ export const MOBILITY = {
 
 /* THE MANDALORIAN. Beskar on the ground, a jetpack in the air: on his feet he fights like a soldier, and off them
    he's the most agile thing in the fight.
-   ON THE GROUND in a fight SHIFT is a COMBAT ROLL: free, short, a moment of invulnerability, and he comes up still
-   facing the reticle. Tap SHIFT again during the roll for the full ROCKET BOOST (data/mando.js MANDO.boostDash, it
-   spends jet fuel). Out of a fight SHIFT on the ground is the rocket boost straight away, as before.
-   IN THE AIR a SHIFT tap is an AIR DODGE: a hard sideways (or any way) thruster kick with i-frames that also stops the
-   fall for a beat. It spends one of a few JET CHARGES (refilling over time) plus a little fuel. Keep SHIFT held and it
+   ON THE GROUND in a fight SHIFT is a COMBAT DIVE (Helldivers): he throws himself flat the way you press, hits the
+   deck on his chest plate, barrel-rolls once and gets back up. Free, a moment of invulnerability through the throw,
+   but the get-up is his weight showing: that's the window to punish. Tap SHIFT again early in the dive for the full
+   ROCKET BOOST (data/mando.js MANDO.boostDash, it spends jet fuel). Out of a fight SHIFT on the ground is the rocket
+   boost straight away, as before.
+   IN THE AIR a SHIFT tap is an AIR DODGE: a straight, hard thruster kick the way you press (no flips: the pack does
+   the work) with i-frames that also stops the fall for a beat. It spends one of a few JET CHARGES (refilling over time) plus a little fuel. Keep SHIFT held and it
    becomes the directional boost (data/mando.js boostThrust). In the air he steers hard, brakes hard against his
    momentum, and the hover (RMB in the air) strafes quickly.
-   ALT / C is the TACTICAL SLIDE out of any run (bracing too): a jet-kicked skid that carries far, steers a little,
-   ducks blaster fire, keeps his aim dead steady, and launches into a long hop if you jump out of it. */
+   ALT / C is the TACTICAL SLIDE out of any run (bracing too): feet first like a runner sliding into base, leaning back
+   with the lead leg out and the other folded under. It's jet-kicked, carries far, steers a little, ducks blaster fire,
+   keeps his aim dead steady, and launches into a long hop if you jump out of it. */
 export const MANDO_MOBILITY = {
   combat: {
     range: 30,       // a gunfighter's fight starts farther out than a swordsman's (the linger is MOBILITY.combat's)
   },
-  roll: {
-    speed: 12.5,     // m/s impulse along the roll
-    time: 0.5,       // the whole roll
-    iframes: 0.26,   // invulnerable from the start for this long (a perfect dodge counts from the start)
-    cd: 0.3,         // gap after a roll before the next one
-    redash: 0.32,    // a second SHIFT this soon into a roll fires the rocket boost
+  dive: {
+    speed: 13,       // m/s impulse along the dive
+    time: 0.85,      // the whole move: the throw, the barrel roll on the deck, the get-up
+    phases: [0.3, 0.58],   // share of the move he's flying until, then rolling until; the rest is getting up
+    lift: 0.45,      // how high the throw arcs (m)
+    iframes: 0.32,   // invulnerable from the start for this long (a perfect dodge counts from the start)
+    cd: 0.25,        // gap after a dive before the next one
+    redash: 0.3,     // a second SHIFT this soon into a dive fires the rocket boost instead
   },
   airDodge: {
     speed: 21,       // m/s added to the flight momentum the way you press (no keys: backward)
     iframes: 0.24,   // invulnerable from the kick for this long
     lift: 2.5,       // the fall is stopped: vertical speed is at least this after the kick
-    fuel: 8,         // jet fuel per dodge, on top of a charge
+    fuel: 6,         // jet fuel per dodge, on top of a charge
     charges: 3,      // jet charges held
     recharge: 1.6,   // seconds to refill one charge in a fight (×0.25 out of one)
     gap: 0.22,       // seconds between two air dodges
-    rollTime: 0.42,  // a side dodge is a barrel roll this long
   },
   air: {
     accel: 1.5,      // × the WASD flight thrust (data/mando.js airAccel)
@@ -118,6 +122,7 @@ export const MANDO_MOBILITY = {
     steer: 1.6,      // rad/s the keys can bend the slide
     cd: 0.5,         // gap after a slide ends
     hop: 1.15,       // a jump out of the slide keeps its speed × this into the air
-    drop: 0.5,       // how low the hips sit (the pose)
+    lean: 0.62,      // how far back he leans into it (rad)
+    hips: 0.5,       // hip height off the floor while sliding (m)
   },
 };
