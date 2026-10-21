@@ -28,6 +28,19 @@ export const renderPass = new RenderPass(scene, camera);
 composer.addPass(renderPass);
 export const bloomPass = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.82, 0.55, 0.78);
 composer.addPass(bloomPass);
+/* SCENE GLOW — the bloom and the blade lights are tuned for a dark arena. In a bright one (pale stone, ice, snow) the
+   sunlit floor already sits near the bloom threshold, so the bloom hazes the whole view, and a blade's light lifts a
+   pale wall or floor right next to it past white into a blown-out halo. setSceneGlow eases both off as the arena
+   gets brighter: b 0 (dark, the tuned look) → 1 (bright). The blade core plus its additive glow sits well over the
+   raised threshold, so sabers keep their bloom. world/atmosphere.js sets it per arena; the menu stand (ui/showcase.js)
+   swaps in its own threshold for its frame and puts this one back. */
+export const glow = { b: 0, light: 1 };   // light: multiplier for the blade PointLights (player/model/weapons.js, boss)
+export function setSceneGlow(b){
+  glow.b = b;
+  bloomPass.threshold = 0.78 + 0.16 * b;
+  bloomPass.strength = 0.82 - 0.24 * b;
+  glow.light = 1 - 0.55 * b;
+}
 composer.addPass(new OutputPass());
 
 export const hemi = new THREE.HemisphereLight(0x8fb0d6, 0x231a16, 0.62);   // dimmer ambient → more contrast & mood

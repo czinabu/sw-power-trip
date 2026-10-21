@@ -4,10 +4,11 @@
 // touches gameplay.
 
 import * as THREE from 'three';
-import { renderer, scene, camera, hemi, sun, rim } from '../engine/renderer.js';
+import { renderer, scene, camera, hemi, sun, rim, glow, setSceneGlow } from '../engine/renderer.js';
 import { rand, clamp } from '../utils.js';
-import { shared, G } from '../state.js';
+import { shared, G, player } from '../state.js';
 import { playerPos } from '../player/helpers.js';
+import { SABER_LIGHT, DARK_LIGHT } from '../player/model/weapons.js';
 import { LEVELS } from '../data/levels.js';
 import { thunder } from '../audio/director.js';
 import { missionProgress } from '../game/mission.js';
@@ -41,6 +42,25 @@ function placeStrike(m, half){
 }
 const _c = new THREE.Color(), _d = new THREE.Color();
 
+/* how bright the arena reads, 0 (dark: lava basalt, night ash) → 1 (bright: Jedha's sunlit stone, Ilum's ice): the
+   floor's luminance under the key + fill light, the bulk of every frame. Drives the bloom and blade-light easing
+   (setSceneGlow in engine/renderer.js). A theme can pin it with `glow: 0..1`. */
+function brightness(T){
+  if (T.glow != null) return T.glow;
+  const base = T.floor && T.floor.base;
+  if (base == null) return 0;
+  _c.setHex(base);   // linear
+  const key = (0.2126 * _c.r + 0.7152 * _c.g + 0.0722 * _c.b) * (T.light.sunI + T.light.fill);
+  const t = clamp((key - 0.3) / 0.45, 0, 1);
+  return t * t * (3 - 2 * t);
+}
+function applyGlow(b){
+  setSceneGlow(b);
+  // the hero's blade lights are already built: rescale them (a stowed saber stays dark, see player/holster.js)
+  if (player.blade && player.blade.light.intensity > 0) player.blade.light.intensity = SABER_LIGHT * glow.light;
+  if (player.darkLight) player.darkLight.intensity = DARK_LIGHT * glow.light;
+}
+
 /* set lights, fog and clear colour for a theme. sky: the dome mesh (its material colour is used as a tint) */
 export function applyAtmosphere(T, L, sky){
   const lt = T.light;
@@ -61,10 +81,11 @@ export function applyAtmosphere(T, L, sky){
   if (T.storm){ A.strike = makeStrike(T.storm.color ?? 0xeae4ff); shared.arenaGroup.add(A.strike); }
   A.nextBolt = T.storm ? rand(T.storm.every[0], T.storm.every[1]) : 0;
   A.base = { fog: new THREE.Color(T.fog), fill: lt.fill, sunI: lt.sunI };
+  applyGlow(brightness(T));
 }
 
 /* an unthemed arena: stop driving the lights */
-export function clearAtmosphere(){ A.T = null; A.sky = null; A.strike = null; A.long = false; sun.target.position.set(0, 0, 0); }
+export function clearAtmosphere(){ applyGlow(0); A.T = null; A.sky = null; A.strike = null; A.long = false; sun.target.position.set(0, 0, 0); }
 
 /* how far into this level's fight we are, 0 (first wave) → 1 (final wave / boss) */
 function progress(){

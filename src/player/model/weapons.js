@@ -10,9 +10,11 @@
 
 import * as THREE from 'three';
 import { loft, plate, block, ngon, chamfer } from './shapes.js';
+import { glow } from '../../engine/renderer.js';
 
 const glowMat = (color, opacity) => new THREE.MeshBasicMaterial({ color, transparent: true, opacity, blending: THREE.AdditiveBlending, depthWrite: false });
 const GRIP_Y = -0.04;   // where the fist closes, below the wrist joint
+export const SABER_LIGHT = 8, DARK_LIGHT = 6;   // the blade PointLights at full, in a dark arena (scaled by glow.light)
 
 export const WEAPON_MODELS = {
   saber: {
@@ -29,7 +31,7 @@ export const WEAPON_MODELS = {
       blade.position.y = 0.95;
       const glow = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.06, 1.6, 8), glowMat(0x33bbff, 0.45));
       glow.position.y = 0.95;
-      const light = new THREE.PointLight(0x44bbff, 8, 9); light.position.y = 0.9;
+      const light = new THREE.PointLight(0x44bbff, SABER_LIGHT * glow.light, 9); light.position.y = 0.9;
       root.add(blade, glow, light);
       return { group: g, bladeRoot: root, blade, glow, light };
     },
@@ -78,7 +80,7 @@ export const WEAPON_MODELS = {
       blade.position.y = 0.12;
       const edge = new THREE.Mesh(new THREE.BoxGeometry(0.11, 1.24, 0.012), glowMat(0xe7dcff, 0.9)); edge.position.y = 0.72;
       const glow = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1.3, 0.02), glowMat(0x9a5cff, 0.4)); glow.position.y = 0.72;
-      const light = new THREE.PointLight(0x9a6cff, 6, 7); light.position.y = 0.7;
+      const light = new THREE.PointLight(0x9a6cff, DARK_LIGHT * glow.light, 7); light.position.y = 0.7;
       g.add(glow, edge, blade, light);
       return { group: g, light, blades: [glow, edge, blade] };
     },

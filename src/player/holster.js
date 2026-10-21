@@ -10,6 +10,8 @@ import { weaponUnlocked } from '../data/mando.js';
 import { playerPos } from './helpers.js';
 import { cancelSwing } from './jedi/combat.js';
 import { switchWeapon } from './mando/weapons.js';
+import { SABER_LIGHT } from './model/weapons.js';
+import { glow } from '../engine/renderer.js';
 
 /* Where each stowed weapon hangs: a rig socket (model/rig.js) and its position + rotation there. The hilts clip on
    upright at the left hip; the blasters drop barrel-down into the thigh holsters; the rifle rides the pack. */
@@ -20,7 +22,6 @@ const STOW = {
   pistolL:   { socket: 'hipL', pos: [-0.02, -0.1, 0.02], rot: [Math.PI / 2, 0, 0] },
   rifle:     { socket: 'back', pos: [-0.24, -0.42, -0.3], rot: [-Math.PI / 2, 0, -0.32, 'ZXY'] },   // slung up the pack's left side, muzzle over the shoulder
 };
-const SABER_LIGHT = 8;   // the blade's PointLight at full (model/weapons.js); dimmed to 0 rather than hidden so no shader recompiles
 
 /* move `mesh` into its stowed spot (key in STOW), or back into the hand it was mounted in (key null) */
 function place(mesh, key){
@@ -48,7 +49,7 @@ export function syncHolster(){
   const jediAway = G.hero !== 'mando' && !!player.holstered;
   place(player.saberHand, jediAway ? 'saber' : null);
   const B = player.blade;
-  if (B){ B.blade.visible = B.glow.visible = !jediAway; B.light.intensity = jediAway ? 0 : SABER_LIGHT; }
+  if (B){ B.blade.visible = B.glow.visible = !jediAway; B.light.intensity = jediAway ? 0 : SABER_LIGHT * glow.light; }   // dimmed to 0 rather than hidden: no shader recompiles
   const away = G.hero === 'mando' && player.weapon === 'fists', w = player.drawnWeapon;
   if (player.pistols){
     place(player.pistols.R, away && (w === 'single' || w === 'dual') ? 'pistolR' : null);
