@@ -161,7 +161,8 @@ export function updateGravityAndLanding(dt, pp){
   // gravity / landing — gentled while the Jedi is gliding (graceful arc), fully cancelled during the Mando hover.
   // A plain Jedi jump falls HARDER than it rose (no hang at the apex) and a wall-run barely loses height.
   const jediFall = G.hero !== 'mando' && !player.gliding && player.vy < 0;
-  const gMul = player.hovering ? 0 : player.wallRun ? MOVE.wallRunGravity : player.gliding ? JEDI_FORCE.riseGravity : jediFall ? MOVE.fallGravity : 1;
+  const gMul = player.hovering || (player.airCut && player.airCut.phase !== 'fall') ? 0 :   // (the aerial cut flies its own line: jedi/aerial.js)
+               player.wallRun ? MOVE.wallRunGravity : player.gliding ? JEDI_FORCE.riseGravity : jediFall ? MOVE.fallGravity : 1;
   player.vy -= CFG.player.gravity * gMul * dt;
   if (player.gliding && player.vy < -JEDI_FORCE.glideFall) player.vy = -JEDI_FORCE.glideFall;   // graceful (not floaty) descent
   if (player.vy < -MOVE.maxFall) player.vy = -MOVE.maxFall;
