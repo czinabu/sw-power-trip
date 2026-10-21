@@ -9,12 +9,12 @@ export const MANDO = {
   boltSpeed: 48, spread: 0.003,   // bolts go through the crosshair; a touch slower than before so LEADING moving targets matters
   braceDR: 0.6,                                             // beskar brace: incoming damage ×(1-this)
   // JETPACK runs on its OWN fuel (player.jet, separate from ability Force). Limited: drains fast, regen on the ground.
-  jetThrust: 46, jetMaxUp: 8.0, jetDrain: 36, jetRegen: 5, jetRegenGround: 28, fallCap: 15, jetHover: 11,   // fuel is a real commitment: barely trickles back in the air, recovers only on the ground (touch down to refuel)
+  jetThrust: 46, jetMaxUp: 8.0, jetDrain: 20, jetRegen: 7, jetRegenGround: 30, fallCap: 15, jetHover: 8,   // fuel is a real commitment: barely trickles back in the air, recovers only on the ground (touch down to refuel)
   // MOMENTUM FLIGHT. SPACE = vertical thrust (hover/climb). SHIFT (tap, airborne) = AIR DODGE (data/mobility.js); held = directional BOOST that drives
   // you where you're moving/facing and DIVES when you look down — strong forward momentum that CARRIES on release.
   airAccel: 26, airSpeed: 12, airSpeedMax: 24, airDrag: 0.55,   // gentle WASD steer · ref · momentum cap · low drift drag
   climbBase: 8.5, climbRange: 7, diveCap: 32,                   // SPACE vertical: base hover/climb + more looking up
-  boostThrust: 50, boostDrain: 30, boostDiveAccel: 40,          // SHIFT boost: horizontal thrust · fuel/s · look-down dive accel
+  boostThrust: 50, boostDrain: 20, boostDiveAccel: 40,          // SHIFT boost: horizontal thrust · fuel/s · look-down dive accel
   boostDash: { speed: 30, time: 0.30, cd: 0.6, fuel: 16 },      // ROCKET BOOST on the ground (SHIFT out of a fight, SHIFT twice in one); spends jet fuel · the roll and air dodge: data/mobility.js
   // ABILITY base costs are deliberately STEEP — upgrades (player.up.abilityCostMul) bring them down
   flame: { range: 8.5, angle: 0.5, dmg: 42, knock: 4, fuel: 52 },  // F (HELD) — flamethrower, Force/sec in a cone (drains faster now)

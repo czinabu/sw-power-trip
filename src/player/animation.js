@@ -68,7 +68,8 @@ function poseBody(dt, dr, vis, planted, POSE, moving){
   let face = G.yaw;
   if ((G.hero !== 'mando' && !inCombatPose && moving) || player.backRun)
     face = Math.atan2(player.moveVel.x, player.moveVel.z);
-  if (G.hero === 'mando') player.faceYaw = mandoTurn(face, player.backRun ? 11 : player._unwindT > 0 ? 12 : 26, dt);
+  // (the dive and the slide turn him the way they go: anim/agility.js mandoBody)
+  if (G.hero === 'mando') player.faceYaw = mandoTurn(player.flip && player.flip.face != null ? player.flip.face : face, player.flip ? 30 : player.backRun ? 11 : player._unwindT > 0 ? 12 : 26, dt);
   else {
     // TURNING WEIGHT — the Jedi eases round at a capped rate (slower still at a sprint) instead of snapping; on a
     // ledge he faces the wall

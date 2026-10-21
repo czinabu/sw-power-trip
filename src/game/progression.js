@@ -57,8 +57,8 @@ function storeTierOpen(tier){ return (G.waveTotal || 0) >= (STORE_TIER_STAGE[tie
 export function applyJetTier(){
   const t = player.up.jetTier || 0;
   player.up.jetPow = [0.5, 0.82, 1.12, 1.35][t] || 0.5;     // climb power & lift (tier 0 barely gets you off the ground)
-  player.jetMax   = [40, 72, 100, 130][t] || 40;            // fuel tank (tier 0 is a short burst)
-  player.up.jetHoverMul = [1.7, 1.15, 0.85, 0.6][t] || 1.7; // HOVER fuel burn — punishing early, efficient once upgraded
+  player.jetMax   = [70, 100, 130, 160][t] || 70;           // fuel tank (tier 0: ~3.5 s of thrust)
+  player.up.jetHoverMul = [1.3, 1.0, 0.8, 0.6][t] || 1.3; // HOVER fuel burn — punishing early, efficient once upgraded
   player.jet = Math.min(player.jetMax, Math.max(player.jet, player.jetMax * 0.6));
 }
 
