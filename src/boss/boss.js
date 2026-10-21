@@ -4,7 +4,8 @@
 import * as THREE from 'three';
 import { CFG } from '../data/config.js';
 import { LEVELS } from '../data/levels.js';
-import { BOSS_CFG, BOSS_MANDO } from '../data/bosses.js';
+import { BOSS_CFG, BOSS_MANDO, BOSS_GAIT } from '../data/bosses.js';
+import { updateLegs } from '../enemies/gait.js';
 import { scene } from '../engine/renderer.js';
 import { sfx, S } from '../audio/sfx.js';
 import { V3, rand, TMP } from '../utils.js';
@@ -35,8 +36,13 @@ export function spawnBoss(){
   const kind = mando ? 'mando' : 'sith';
   const hp = Math.round((mando ? BOSS_MANDO.hp : BOSS_CFG.hp) * diffHpMul());   // DIFFICULTY scales the boss too
   const g = buildBoss(kind);
+  g.userData.gait = { bob: BOSS_GAIT.bob, lean: BOSS_GAIT.lean, step(o, at){   // a footfall: dust and a thud near the hero
+    const p = playerPos(), d = Math.hypot(at.x - p.x, at.z - p.z);
+    if (d < BOSS_GAIT.thudRange){ G.shake = Math.max(G.shake, BOSS_GAIT.thud * (1 - d / BOSS_GAIT.thudRange * 0.6)); burst(V3(at.x, at.y + 0.1, at.z), BOSS_GAIT.dust, 3, 2, 2, 0.5); }
+  } };
   g.position.set(0, 0, -half + 6);
   scene.add(g);
+  bossMv.x = bossMv.z = bossMv.pivot = 0;
   shared.boss = {
     group: g, hp, maxHp: hp, phase: 1, kind,
     armor: mando ? BOSS_MANDO.armor : BOSS_CFG.armor,
@@ -152,6 +158,17 @@ function startLightning(){
   showBanner('', b.kind === 'mando' ? 'BLASTER BARRAGE — BRACE (RMB) to soak it or break his line of sight!' : 'FORCE LIGHTNING — raise guard (RMB) to catch it, or PUSH it back!', 1.8);
 }
 
+// the walk-up's momentum: the hero's accel / brake / pivot (data/movement.js) with the boss's weight (BOSS_GAIT)
+const bossMv = { x: 0, z: 0, pivot: 0 };
+function bossStride(wx, wz, dt){
+  const sp = Math.hypot(bossMv.x, bossMv.z), want = Math.hypot(wx, wz);
+  if (bossMv.pivot > 0) bossMv.pivot -= dt;
+  else if (sp > BOSS_GAIT.pivotMinSpeed && want > 0 && wx * bossMv.x + wz * bossMv.z < Math.cos(BOSS_GAIT.pivotAngle) * want * sp) bossMv.pivot = BOSS_GAIT.pivotTime;
+  if (bossMv.pivot > 0){ wx = wz = 0; }
+  const dx = wx - bossMv.x, dz = wz - bossMv.z, dl = Math.hypot(dx, dz);
+  const against = bossMv.pivot > 0 || wx * bossMv.x + wz * bossMv.z < 0;
+  if (dl > 1e-3){ const a = Math.min(dl, (against ? BOSS_GAIT.brake : BOSS_GAIT.accel) * dt) / dl; bossMv.x += dx * a; bossMv.z += dz * a; }
+}
 export function updateBoss(dt){
   if (!shared.boss) return;
   const g = shared.boss.group, pp = playerPos();
@@ -186,12 +203,18 @@ export function updateBoss(dt){
   const toP = TMP.subVectors(pp, g.position); toP.y = 0;
   const dist = toP.length(); toP.normalize();
   const tx = toP.x, tz = toP.z;
-  if (shared.boss.state !== 'stunned' && shared.boss.state !== 'dying')
-    g.rotation.y = Math.atan2(tx, tz);
+  const st0 = shared.boss.state, walkUp = st0 === 'intro' || st0 === 'think' || st0 === 'chase';
+  if (st0 !== 'stunned' && st0 !== 'dying'){
+    // walking up he turns at a heavy capped rate; his attacks (windups, lightning, volleys) still aim as before
+    const want = Math.atan2(tx, tz);
+    if (walkUp){ const d = Math.atan2(Math.sin(want - g.rotation.y), Math.cos(want - g.rotation.y)); g.rotation.y += Math.max(-BOSS_GAIT.turn * dt, Math.min(BOSS_GAIT.turn * dt, d)); }
+    else g.rotation.y = want;
+  }
+  if (st0 !== 'chase' && st0 !== 'intro'){ bossMv.x = bossMv.z = 0; bossMv.pivot = 0; }   // momentum belongs to the walk-up
 
   switch (shared.boss.state){
     case 'intro':
-      g.position.x += tx * 3 * dt; g.position.z += tz * 3 * dt;
+      bossStride(tx * 3, tz * 3, dt); g.position.x += bossMv.x * dt; g.position.z += bossMv.z * dt;
       if (shared.boss.st <= 0) shared.boss.state = 'think';
       break;
     case 'think': {
@@ -222,8 +245,9 @@ export function updateBoss(dt){
       break;
     }
     case 'chase':
-      g.position.x += tx * speed * dt;
-      g.position.z += tz * speed * dt;
+      bossStride(tx * speed, tz * speed, dt);
+      g.position.x += bossMv.x * dt;
+      g.position.z += bossMv.z * dt;
       if (dist < BOSS_CFG.combo.range - 0.5 || shared.boss.st <= 0) shared.boss.state = 'think';
       break;
     case 'windup': {
@@ -442,6 +466,11 @@ export function updateBoss(dt){
       }
       break;
   }
+  // LEGS — the troopers' planted-foot gait on what he actually did this frame (enemies/gait.js): a walk until phase III,
+  // a run after; jet boosts, hops and slides leave the ground; the death sequence lets them go
+  const sNow = shared.boss.state;
+  updateLegs(shared.boss, g, dt, sNow === 'dying' ? 'off' : (sNow === 'gapclose' || sNow === 'pulse' || sNow === 'retreat') ? 'air'
+    : (shared.boss.phase < 3 && (sNow === 'chase' || sNow === 'intro' || sNow === 'think')) ? 'walk' : 'ground');
   const cdRate = shared.boss.enraged ? 1.6 : 1;   // ENRAGE — abilities come off cooldown faster in phase III
   // the signature's cooldown only runs once the channel is over, so even enraged he fights between casts
   if (shared.boss.state !== 'lightning' && shared.boss.state !== 'retreat') shared.boss.lightningCd -= dt*cdRate;

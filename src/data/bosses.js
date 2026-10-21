@@ -2,6 +2,17 @@
 // BOSS_CFG (Darth Vexis) and BOSS_MANDO tuning.
 
 
+/* BOSS GAIT — the bosses move on the troopers' legs (enemies/gait.js) and the hero's ground handling (data/movement.js),
+   but they are heavy: they gather speed and brake slower, turn slower while walking up, take the stride with less bob and
+   lean, and every footfall at a stride thuds the ground. They PACE (the captured walk) until phase III, then run. */
+export const BOSS_GAIT = {
+  accel: 12, brake: 26,   // m/s² (the hero's: 22 / 46)
+  turn: 5,                // rad/s while walking up (the hero's roaming turn: 10); his attacks still aim as before
+  pivotAngle: 2.4, pivotTime: 0.3, pivotMinSpeed: 4,   // a hard reversal at speed plants the feet for a long beat
+  bob: 0.6, lean: 0.55,   // the stride's hip bob and the lean into acceleration, as a share of a trooper's
+  thudRange: 16, thud: 0.16, dust: 0xb09a7a,   // footfalls within this range (m) of the hero shake the camera
+};
+
 /* BOSS — DARTH VEXIS. Edit phases, damage, timing windows here. */
 export const BOSS_CFG = {
   name: 'DARTH VEXIS — HERALD OF THE VOID',
