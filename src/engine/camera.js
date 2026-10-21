@@ -81,7 +81,7 @@ function updatePauseCam(){
 
 export function updateCamera(dt){
   // the FOV slider wants the real gameplay camera, so the cut slideshow stands down while it's dragged
-  if (G.paused && G.mode === 'play' && !G.fovPreview){ updatePauseCam(); return; }
+  if ((G.paused || G.sbMenu) && G.mode === 'play' && !G.fovPreview){ updatePauseCam(); return; }
   if (pauseCam){
     camera.position.copy(pauseCam.pos); camera.quaternion.copy(pauseCam.quat);
     camera.fov = pauseCam.fov; camera.updateProjectionMatrix();
@@ -163,7 +163,8 @@ export function updateCamera(dt){
   clear(TMP);
   // INERTIA — the camera lags when you boost / fly fast (a weighty swoop), but snaps tight when you're AIMING
   const lagBase = (adsFly) ? 0.00002 : (G.hero === 'mando' && (player.boosting || speed > 14)) ? 0.02 : 0.00004;
-  camera.position.lerp(TMP, 1 - Math.pow(lagBase, dt));
+  // (frozen sim: dt = 0 would leave the lens stuck on the last pause cut, so the FOV preview snaps straight to the gameplay spot)
+  camera.position.lerp(TMP, G.fovPreview ? 1 : 1 - Math.pow(lagBase, dt));
   // SHAKE — trauma model: strength is shake², so chip damage barely registers and a boss slam rattles the screen.
   // Smooth noise (real time, so a hitstop freeze-frame still trembles) with a touch of roll; damped while scoped.
   const now = performance.now() / 1000;
