@@ -56,17 +56,19 @@ export const SABER_GUARDS = {
   },
   // REVERSE (Shien) GRIP — blade out of the pinky side, lying back along the forearm (Ahsoka, Starkiller)
   reverse: {
-    // Ahsoka's crouch: saber fist low and forward, blade swept back along the forearm, off hand reaching ahead
+    // Ahsoka's guard: saber fist up in front of the chest, blade laid level across the body toward the off side, off
+    // hand close under it; coiled and leaning in
     ataru: {
-      ready: { hand: [0.26, -0.32, 0.3], blade: [0.28, 0.12, -0.95], twist: -0.25, lean: 0.06, pole: [0.8, -0.3, -0.5],
-               off: { hand: [-0.2, -0.12, 0.46], pole: OFF_POLE } },
+      ready: { hand: [0.12, 0.1, 0.4], blade: [-0.98, 0.04, 0.18], twist: -0.12, lean: 0.08, pole: [0.7, -0.6, -0.3],
+               off: { hand: [-0.12, -0.02, 0.36], pole: OFF_POLE } },
       block: { hand: [0.16, 0.5, 0.36], blade: [-0.55, -0.75, 0.25], twist: -0.1, pole: [0.9, -0.1, -0.3],
                off: { hand: [-0.4, -0.1, 0.25], pole: OFF_POLE } },
     },
-    // relaxed reverse ready: fist at the belt, blade angled down and back past the leg; off palm forward
+    // Quinlan Vos' walk: saber arm loose at the side, fist by the hip, blade rising behind the arm and across the back
+    // past the off shoulder; off hand hanging easy
     niman: {
-      ready: { hand: [0.26, -0.12, 0.32], blade: [0.12, -0.5, -0.86], twist: 0.05, pole: POLE,
-               off: { hand: [-0.18, 0.0, 0.36], pole: OFF_POLE } },
+      ready: { hand: [0.3, -0.3, 0.08], blade: [-0.36, 0.78, -0.5], twist: 0.05, pole: [0.6, -0.5, -0.6],
+               off: { hand: [-0.3, -0.34, 0.1], pole: OFF_POLE } },
       // forearm raised across the centre line, blade hanging straight down to cover the body
       block: { hand: [0.06, 0.2, 0.42], blade: [0.25, -0.96, 0.12], twist: 0, lean: 0.05, pole: [0.9, -0.2, -0.3],
                off: { hand: [-0.16, 0.0, 0.38], pole: OFF_POLE } },
