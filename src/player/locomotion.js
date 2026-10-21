@@ -25,6 +25,7 @@ export function updateMovement(dt, pp, st, f, r){
                    * (player.atkT > 0 && st.moveAtk ? st.moveAtk : 1)              // ATARU keeps its feet moving mid-swing
                    * (player.atkT > 0 && st.moveAtkPenalty ? st.moveAtkPenalty : 1)    // DARKSABER crawls while committed to a swing
                    * (1 + (player.momentumStacks || 0) * 0.06)                          // MOMENTUM boon — kills build speed
+                   * (player.surgeT > G.gt ? player.surgeMul : 1)                      // CHASE SURGE — parkour on a story pursuit
                    * (player.boon && player.boon.adrenal && player.hp < maxHp()*0.35 ? 1.18 : 1)    // ADRENALINE boon — desperate burst
                    * focusMoveMul()                                                      // FORCE FOCUS — lighter on the feet in flow
                    * (player.atkT > 0 && G.hero !== 'mando' ? MOVE.swingMove : 1)       // a swing plants the feet: spacing is yours to manage

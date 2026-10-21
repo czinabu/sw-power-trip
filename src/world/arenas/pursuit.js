@@ -11,29 +11,37 @@ import { toon, inkify } from '../ink.js';
 /* THE SPACEPORT RUN (56 wide × 320 long: x −28…28, z −160…160). Not a battlefield but a ROUTE: one street that snakes
    north through the town to the docking bay, every other square metre packed with buildings. The quarry runs it a
    few seconds ahead of you; the set pieces along it are there to be crossed fast (vault, climb, slide, wall-run,
-   leap), and foes step out of doorways to slow you down. South to north:
+   leap). The running stretches are clear of troops: the fighting happens in three open squares where the quarry
+   stops to cut through a sealed way and leaves its guard (data/missions.js `standoff`), and each leg has a SHORTCUT
+   lane that only parkour gets through, cutting a corner off its line. South to north:
      LEG 1 (to the plaza)
-     · the START YARD and the MARKET STREET: stall counters and carts to vault, a barricade half-way along;
+     · the START YARD and the MARKET STREET: stall counters and carts to vault, a barricade, then the MARKET SQUARE
+       (a standoff) where the street widens before the cross;
+     · the ROOFLINE LANE (shortcut): straight north from the cross to the canal, walls and a raised run to climb;
      · the WEST CROSS, then the ALLEY: eight metres wide between sheer walls (wall-runs), a fence to clear;
      · the CANAL WALK east: a row of low barriers down the middle, open round the sides;
      · the TERRACES north: three climbable tiers up onto a high walkway (and a stair lane for foes), then a drop;
-     · the PLAZA: a fountain, planters, the checkpoint.
+     · the PLAZA: a fountain, planters, a standoff, the checkpoint.
      LEG 2 (to the docks)
      · the CAUSEWAY STREET: a raised walkway with two gaps to leap, the street below it full of troops;
-     · the HANGAR ROW east: cargo containers to climb over or weave round, fuel drums;
+     · the HANGAR ROW east (widened: a standoff): cargo containers to climb over or weave round, fuel drums;
+     · the STACK LANE (shortcut): north from the west end of the hangars straight into the docking bay;
      · the SERVICE CUT north: a narrow passage with steam vents firing in turn;
      · the DOCKING BAY: open ground round the quarry's ship, where the run ends.
    Corridors are authored as open rectangles; the buildings are generated to fill everything else. */
 const CORRIDORS = [
   [-9, 9, -159, -138],     // start yard
   [-7, 7, -140, -90],      // market street
+  [-14, 14, -112, -94],    // the market square (a standoff)
   [-25, 7, -100, -88],     // west cross
   [-23, -15, -90, -46],    // the alley
+  [-3, 2, -88, -50],       // the roofline lane (shortcut)
   [-23, 25, -50, -38],     // canal walk
   [11, 25, -40, -4],       // the terraces
   [-25, 25, -6, 30],       // the plaza
   [-25, -7, 28, 80],       // causeway street
-  [-25, 25, 76, 90],       // hangar row
+  [-25, 25, 72, 94],       // hangar row (a standoff)
+  [-24, -17, 94, 121],     // the stack lane (shortcut)
   [13, 22, 88, 124],       // the service cut
   [-26, 26, 120, 159],     // the docking bay
 ];
@@ -48,6 +56,11 @@ export const PURSUIT_SPOTS = {
      [18, -12, 'leap'], [6, 6], [0, 12]],
     [[0, 12], [-12, 24], [-20, 29], [-20, 47], [-20, 50.5, 'leap'], [-20, 61], [-20, 64.5, 'leap'], [-20, 76],
      [-19, 80, 'leap'], [-14, 83], [17, 83], [17.5, 90], [17.5, 121], [8, 130], [0, 135]],
+  ],
+  // per leg, the parkour lanes that cut a corner off the quarry's line: zone [x0, x1, z0, z1], at: the entry beacon
+  shortcuts: [
+    [{ zone: [-3, 2, -88, -50], at: [-0.5, -90] }],
+    [{ zone: [-24, -17, 94, 121], at: [-20.5, 92] }],
   ],
   checkpoint: [-2, 4, -0.7],   // where a retry of leg 2 puts the hero (x, z, yaw): the plaza
   pad: [0, 146],
@@ -181,6 +194,14 @@ export function buildPursuitArena(L){
   crates(-21.5, -82, false); crates(-17, -57, true);
   for (const z of [-80, -60]) K.deco(new THREE.CylinderGeometry(0.12, 0.12, 8, 6), metal, -22.85, 3.2, z, Math.PI/2, 0, 0);   // a pipe on the wall
 
+  // ---- THE ROOFLINE LANE (shortcut): a crate climb, a wall to mantle, a raised run along the top, a barrier to vault ----
+  crates(-2.2, -84, true);
+  K.box(-0.5, -78, 2.5, 0.3, 2.0, trim);
+  K.box(-0.5, -65, 2.5, 5, 2.2, wallD);
+  K.box(-0.5, -55, 2.5, 0.3, 1.0, imp);
+  K.deco(new THREE.BoxGeometry(5, 0.1, 0.4), stripe, -0.5, 1.02, -55);
+  for (const z of [-82, -72, -62]) K.deco(new THREE.BoxGeometry(5, 0.03, 0.9), cloth[(z / 5) & 3], -0.5, 5.2, z, 0.05, 0, 0);
+
   // ---- CANAL WALK: low barriers down the middle (vault the line), the sides open; a vaporator ----
   for (const x of [-8, 0, 8, 16]) K.box(x, -44, 0.3, 2.8, 0.95, wallD);
   K.column(-14, -40, 0.4, 5.2, metal, { wallKick: false, seg: 8 });
@@ -232,6 +253,13 @@ export function buildPursuitArena(L){
   spawnBarrel(V3(8, 0, 88)); spawnBarrel(V3(-10, 0, 78)); spawnBarrel(V3(21, 0, 78));
   for (const x of [-24.4, 24.4]) K.box(x, 83, 0.3, 0.3, 9, imp);
   K.deco(new THREE.BoxGeometry(48, 0.8, 0.8), imp, 0, 9.2, 83);
+
+  // ---- THE STACK LANE (shortcut): crates up, a wall, a raised run, a barrier, then down into the bay ----
+  crates(-22.6, 98, true);
+  K.box(-20.5, 104, 3.5, 0.3, 2.0, trim);
+  K.box(-20.5, 112, 3.5, 4, 2.3, crate);
+  K.box(-20.5, 119, 3.5, 0.3, 1.0, imp);
+  K.deco(new THREE.BoxGeometry(7, 0.1, 0.4), stripe, -20.5, 1.02, 119);
 
   // ---- THE SERVICE CUT: steam vents firing in turn down a narrow passage, pipes on the walls ----
   for (const [x, z] of [[15.6, 97], [19.4, 104], [15.6, 111], [19.4, 117]]) spawnVent(V3(x, 0, z));

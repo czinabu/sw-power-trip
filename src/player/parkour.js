@@ -1,6 +1,6 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
 // Parkour: ledge mantle and vault, the slide, the Jedi wall-run, the landing roll / hard-landing stagger, and FLOW
-// (parkour refunds Force / jet fuel and sets up a harder next blow).
+// (parkour refunds Force / jet fuel, sets up a harder next blow, and surges the run on a story chase).
 
 import { MOVE } from '../data/movement.js';
 import { CFG } from '../data/config.js';
@@ -65,6 +65,11 @@ export function flowLink(kind){
   if (G.hero === 'mando') player.jet = Math.min(player.jetMax, player.jet + pay * F.fuelMul);
   else player.force = Math.min(CFG.player.maxForce, player.force + pay);
   if (player.flowN > 1) floater(playerPos(), 'FLOW ×' + player.flowN, '#9fe0c8');
+  // on a chase (a story pursuit), each move also SURGES the run: faster for a moment, more when it chains
+  if (G.gt < (G.chaseSurgeT ?? -1)){
+    player.surgeT = G.gt + F.surgeTime;
+    player.surgeMul = Math.min(F.surgeMax, F.surge + (player.flowN - 1) * F.surgeChain);
+  }
 }
 // The cut struck out of a parkour move: spends the window and says which move it came from (null if none).
 export function momentumStrike(){
