@@ -65,10 +65,11 @@ export const SABER_GUARDS = {
                off: { hand: [-0.4, -0.1, 0.25], pole: OFF_POLE } },
     },
     // Quinlan Vos' walk: saber arm loose at the side, fist by the hip, blade rising behind the arm and across the back
-    // past the off shoulder; off hand hanging easy
+    // past the off shoulder; off hand hanging easy at rest
     niman: {
       ready: { hand: [0.3, -0.3, 0.08], blade: [-0.36, 0.78, -0.5], twist: 0.05, pole: [0.6, -0.5, -0.6],
-               off: { hand: [-0.3, -0.34, 0.1], pole: OFF_POLE } },
+               off: { hand: [-0.3, -0.34, 0.1], pole: OFF_POLE },
+               offMove: { hand: [-0.22, -0.04, 0.38], pole: OFF_POLE } },   // moving, the free hand comes up, open and ready
       // forearm raised across the centre line, blade hanging straight down to cover the body
       block: { hand: [0.06, 0.2, 0.42], blade: [0.25, -0.96, 0.12], twist: 0, lean: 0.05, pole: [0.9, -0.2, -0.3],
                off: { hand: [-0.16, 0.0, 0.38], pole: OFF_POLE } },
