@@ -23,14 +23,15 @@ function stickOr(dflt){
   return d.lengthSq() > 0.01 ? d.normalize() : dflt;
 }
 
-/* SHIFT pressed. Air: the air dodge (held on, it becomes the flight boost in mando/flight.js). Ground in a fight: the
-   combat dive, or the rocket boost on a second tap early in the dive. Ground out of a fight: the rocket boost. */
+/* SHIFT pressed. Air: the air dodge (held on, it becomes the flight boost in mando/flight.js). Ground: the combat
+   dive, or the rocket boost on a second tap early in the dive. The same in every mode, fight or no fight (it used to
+   boost out of a fight, so in an empty sandbox or between waves the dive never showed). */
 export function mandoShift(){
   if (G.mode !== 'play' || player.mantle || player.hang) return;
   // (a dive over uneven ground can leave the floor for a frame: that still counts as the ground)
   const onGround = player.grounded || (G.gt - (player.lastGroundT ?? -9) < 0.12 && player.vy <= 0.5 && !player.jetActive);
   if (!onGround){ airDodge(); return; }
-  if (inCombat() && !(player.dodgeKind === 'dive' && G.gt - (player.rollAt ?? -9) < MM.dive.redash)){ mandoDive(); return; }
+  if (!(player.dodgeKind === 'dive' && G.gt - (player.rollAt ?? -9) < MM.dive.redash)){ mandoDive(); return; }
   if (player.flip){   // the boost takes the dive (or the slide) over: back to the thruster skid
     player.flip = null; player.vis.rotation.set(0, 0, 0); player.vis.position.set(0, 0, 0);
   }
@@ -38,8 +39,8 @@ export function mandoShift(){
 }
 
 /* COMBAT DIVE — Helldivers: free, i-frames through the throw, any way you press (no keys: back, out of reach). He
-   stays squared to the reticle: forward is a dive into a somersault, left / right a dive over that shoulder into a
-   roll across, back a backward somersault, then he gets back up (the body move is anim/agility.js mandoBody). */
+   stays squared to the reticle and lays out flat the way he dives (Max Payne), lands on the plate, skids and gets
+   back up (the body move is anim/agility.js mandoBody). The gun stays on the target throughout. */
 export function mandoDive(){
   const D = MM.dive;
   if (player.cds.roll > 0 || player.meleeT > 0 || player.stabT > 0 || player.slamming) return false;
@@ -56,9 +57,8 @@ export function mandoDive(){
   player.dodgeKind = 'dive'; player.dashSpent = false; player.rollAt = G.gt;
   player.cds.roll = D.time + D.cd;
   tutEvent('dash');
-  const df = dir.dot(fwd()), drr = dir.dot(rightV());
-  const side = Math.abs(drr) > Math.abs(df) * 0.9;
-  player.flip = { kind: 'dive', t: 0, dur: D.time, dir: side ? 'side' : df >= 0 ? 'fwd' : 'back', side: drr >= 0 ? 1 : -1 };
+  // the dive's way in the body's frame: the lay-out leans that way (anim/agility.js mandoBody)
+  player.flip = { kind: 'dive', t: 0, dur: D.time, df: dir.dot(fwd()), dr: dir.dot(rightV()) };
   burst(playerPos().clone().setY(0.25), 0xb9c2cc, 6, 3, 1.5, 0.8);
   S.jump();
   return true;

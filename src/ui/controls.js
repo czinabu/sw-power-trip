@@ -49,7 +49,7 @@ const CONTROLS = {
       ['MOUSE', 'Aim'],
       ['SPACE', 'Hop', 'Run and hop at low cover to vault it; hop at a ledge to climb'],
       ['HOLD SPACE', 'Jetpack thrust', 'Hover and climb; burns fuel'],
-      ['SHIFT', 'Combat dive / rocket boost', 'In a fight, SHIFT on the ground throws you flat any way you press, then you barrel-roll and get up: free, invulnerable through the throw · tap it again early in the dive for the full rocket boost (jet fuel) · out of a fight it boosts straight away · dive just as a blow lands for a perfect dodge'],
+      ['SHIFT', 'Combat dive / rocket boost', 'On the ground SHIFT dives you flat any way you press, Max Payne style, then you get back up: free, invulnerable through the throw, and the gun stays on target · tap it again early in the dive for the full rocket boost (jet fuel) · dive just as a blow lands for a perfect dodge'],
       ['SHIFT (air)', 'Air dodge', 'A straight thruster kick any way you press, invulnerable for a moment, and it stops your fall · spends a jet charge (the pips on the slot) and a little fuel'],
       ['HOLD SHIFT', 'Boost in the air', 'Keep SHIFT held after the dodge · look down to dive'],
       ['HOLD RMB (air)', 'Hover', 'Hold your height and strafe; let go of the keys to stop dead'],

@@ -218,16 +218,16 @@ export function updateHud(){
   dashSlot();
 }
 
-/* MANDO SHIFT: what it does right now (DIVE on the ground in a fight, BOOST out of one, AIR DODGE in the air), with
+/* MANDO SHIFT: what it does right now (DIVE on the ground, AIR DODGE in the air), with
    pips for the air-dodge jet charges. */
 function mandoShiftSlot(){
   const el = $('ab-boost'); if (!el) return;
   const A = MANDO_MOBILITY.airDodge, n = player.jetCharges ?? A.charges, fight = inCombat(), air = !player.grounded;
   if (!el._chg){ el.insertAdjacentHTML('beforeend', '<span class="chg"></span>'); el._chg = el.querySelector('.chg'); }
   setHtml(el._chg, '<i class="on"></i>'.repeat(n) + '<i></i>'.repeat(Math.max(0, A.charges - n)));
-  const cool = air ? (player.jet < A.fuel || (fight && n < 1)) : fight ? player.cds.roll > 0 : (player.cds.dash > 0 || player.jet < MANDO.boostDash.fuel);
+  const cool = air ? (player.jet < A.fuel || (fight && n < 1)) : player.cds.roll > 0;
   el.classList.toggle('cool', cool);
-  setText(el.querySelector('.an'), air ? 'AIR DODGE' : fight ? 'DIVE' : 'BOOST');
+  setText(el.querySelector('.an'), air ? 'AIR DODGE' : 'DIVE');
 }
 
 /* DASH: pips for the Force dash charges, the shade showing the next one refilling. Out of a fight the dash is free:
