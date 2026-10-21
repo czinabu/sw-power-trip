@@ -71,10 +71,11 @@ export const SABER_GUARDS = {
       block: { hand: [0.06, 0.2, 0.42], blade: [0.25, -0.96, 0.12], twist: 0, lean: 0.05, pole: [0.9, -0.2, -0.3],
                off: { hand: [-0.16, 0.0, 0.38], pole: OFF_POLE } },
     },
-    // Starkiller's Shien: saber arm cocked high by the head, blade hanging down the back, off hand clawed forward
+    // Kylo Ren's trailing guard: saber arm hanging long and low out at the weapon side, blade raked down and back so
+    // the tip drags near the floor behind him; hunched forward, off hand raised out ahead, clawed
     djemso: {
-      ready: { hand: [0.3, 0.42, 0.06], blade: [0.12, -0.76, -0.64], twist: -0.3, lean: 0.1, pole: [0.9, 0.1, -0.4],
-               off: { hand: [-0.14, 0.04, 0.44], pole: OFF_POLE } },
+      ready: { hand: [0.4, -0.24, 0.12], blade: [0.62, -0.45, -0.64], twist: -0.18, lean: 0.14, pole: [0.5, -0.3, -0.8],
+               off: { hand: [-0.55, 0.15, 0.4], pole: [-0.7, -0.5, -0.3] } },
       block: { hand: [0.16, 0.26, 0.42], blade: [0.08, -1, 0.18], two: true, twist: 0, lean: 0.22, pole: [0.9, -0.1, -0.3] },
     },
     darksaber: {   // the darksaber always uses the regular hold (it's a sword, not a duelist's saber)

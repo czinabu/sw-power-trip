@@ -159,11 +159,11 @@ document.addEventListener('keydown', (e) => {
     }
   } else {
     // SHIFT dashes any way you're pressing (or rolls out of a hard landing). Sprinting has its own key: Q toggles it
-    // between sprint and walk (locomotion.js runs it). ALT out of a sprint slides.
+    // between run (the default) and walk (locomotion.js runs it). ALT out of a sprint slides.
     if (k === 'shift' && !e.repeat) forceDash();
     if (k === 'q' && !e.repeat && G.mode === 'play'){
       player.sprintOn = !player.sprintOn;
-      showBanner('', player.sprintOn ? 'SPRINT' : 'WALK', 0.6);
+      showBanner('', player.sprintOn ? 'RUN' : 'WALK', 0.6);
     }
     if (k === 'alt' && !e.repeat && !graspDrop()) trySlide();   // the FORCE SLIDE out of a sprint (parkour.js); holding a foe, it drops them
     if (k === 't' && !e.repeat) toggleLock();          // soft lock-on

@@ -52,7 +52,7 @@ export const TRAINING = {
     { say: 'A Jedi is never where the blow falls. Step aside in an instant, any way you choose.',
       keys: 'SHIFT', do: 'Dash: press SHIFT while holding any direction (or none)', ev: 'dash', need: 3 },
     { say: 'Run with your whole body.',
-      keys: 'Q · W', do: 'Sprint: press Q to switch to a sprint, then run forward (Q again walks)', poll: 'sprint', need: 1.5 },
+      keys: 'Q · W', do: 'Sprint: run forward with W (Q switches to a walk and back)', poll: 'sprint', need: 1.5 },
     { say: 'Now drop low and let the Force carry you, far past where your legs would. The dash is for dodging; the slide is for distance, and it bowls over whoever stands in the way.',
       keys: 'Q · W · ALT', do: 'Force-slide: press ALT during a sprint', ev: 'slide', need: 2 },
     { say: 'Reach for the Force as you leave the ground, and it will hold you.',
