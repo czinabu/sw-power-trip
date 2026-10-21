@@ -58,8 +58,9 @@ export const CFG = {
     slam:   { cost: 64, cd: 5.5,  radius: 10, dmg: 7, knock: 21,      // JUMP ATTACK — the wave is an AOE knockdown for breathing room…
               strike: 30, core: 2.6,                                  // …the blade itself hits hard on whoever you land on
               bigWave: 0, bigScale: 1.6 },                            // bigWave (mastery rank II): a double-jump dive lands a bigScale-wider wave
-    // FORCE GRASP — hold the Pull key: after `hold` seconds the foe in your aim locks into your grasp
-    grasp:  { hold: 1.0, cost: 26, drain: 18, maxT: 5, dist: 4.2, range: 16, angle: 0.5,
+    // FORCE GRASP — hold the Pull key: after `hold` seconds the foe in your aim locks into your grasp. DARK LORD'S GRIP
+    // (store) holds up to `multi` at once, picked in a wider `multiAngle` cone; each extra body adds multiCost to cost and drain
+    grasp:  { hold: 0.35, multi: 3, multiAngle: 0.75, multiCost: 0.5, cost: 26, drain: 18, maxT: 5, dist: 4.2, range: 16, angle: 0.5,
               throwSpeed: 30, throwDmg: 18, yankDmg: 4, bumpDmg: 8, bumpKnock: 20, bumpSpeed: 4.5 },
     // the late ULTIMATES are deliberately TAXING — big Force cost + long cooldown so they're a deliberate beat, never spam
     judge:  { cost: 72, cd: 12.0, range: 14, angle: 0.9, targets: 4, time: 1.3, tick: 0.12, dmg: 7 },  // chain lightning channel

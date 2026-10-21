@@ -50,6 +50,8 @@ export const SANDBOX_KIT = {
     { id: 'strong',    nm: 'DJEM SO',          key: '3',        ...form('strong') },
     { id: 'fj',        nm: 'FORCE JUMP II',    key: 'HOLD SPACE', has: () => (player.up.fjTier || 0) >= 2, set: (on) => { player.up.fjTier = on ? 2 : 0; } },
     { id: 'pull',      nm: 'FORCE PULL',       key: 'C',        ...flag('pull') },
+    { id: 'graspMulti', nm: "DARK LORD'S GRIP", key: 'HOLD C', needs: 'pull',
+      has: () => !!player.up.graspMulti, set: (on) => { player.up.graspMulti = on; } },
     { id: 'throw',     nm: 'SABER THROW',      key: 'RMB+LMB',  ...flag('throw') },
     { id: 'barrier',   nm: 'FORCE BARRIER',    key: 'V',        ...flag('barrier') },
     { id: 'slam',      nm: 'JUMP ATTACK',      key: 'X',        ...flag('slam') },

@@ -168,7 +168,7 @@ document.addEventListener('keydown', (e) => {
     if (k === 'alt' && !e.repeat && !graspDrop()) trySlide();   // the FORCE SLIDE out of a sprint (parkour.js); holding a foe, it drops them
     if (k === 't' && !e.repeat) toggleLock();          // soft lock-on
     if (k === 'f'){ if (!(player.saberLock && lockPush()) && !graspThrow()) forcePush(); }   // in a saber lock: a point-blank shove that breaks it
-    if (k === 'c' && !e.repeat) pullPress();   // tap = Force Pull on release; hold 1s = Force GRASP (grasp.js)
+    if (k === 'c' && !e.repeat) pullPress();   // tap = Force Pull on release; hold = Force GRASP (grasp.js)
     if (k === 'e' && !e.repeat){ if (player.saberLock) lockKick(); else forceKick(); }   // FRONT KICK — always-available melee, shares 'E' with the Mando's punch
     if (k === 'v') forceBarrier();     // Force Barrier — the defensive bubble (its fork-sibling SABER THROW is RMB+LMB)
     // ADAPTIVE FORK KEYS — each either/or pair shares ONE bind (you only ever own one of the pair).

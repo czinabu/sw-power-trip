@@ -96,6 +96,9 @@ export const JEDI_STORE = [
     owned:()=>!!G.unlocked.judge,   buy(){ G.unlocked.judge = true; } },
   { id:'repulse', tier:3, stage:6, cost:300, fork:'j_ult', ico:'❂', nm:'FORCE REPULSE', ds:'360° concussive knockback blast · R',
     owned:()=>!!G.unlocked.repulse, buy(){ G.unlocked.repulse = true; } },
+  // LATE (after wave 8) — not a fork: the Force Grasp takes several foes at once
+  { id:'graspMulti', tier:4, stage:7, cost:380, avail:()=>!!G.unlocked.pull, ico:'⟲', nm:"DARK LORD'S GRIP", ds:'Hold C to grasp up to 3 foes at once · F hurls them all',
+    owned:()=>!!player.up.graspMulti, buy(){ player.up.graspMulti = true; } },
   // FINAL (after wave 9) — supercharges whichever ULTIMATE you chose (only the matching one shows).
   { id:'judgeUp',   tier:5, stage:8, cost:620, final:true, avail:()=>!!G.unlocked.judge,   ico:'⚡', nm:'STORM OF JUDGEMENT', ds:'Judgement strikes +3 more foes, ×1.9 damage',
     owned:()=>!!player.up.judgeUp,   buy(){ player.up.judgeUp = true; } },
