@@ -28,7 +28,9 @@ export const BOSS_CFG = {
   // POSTURE: parrying an early swing only deflects it (the chain continues after `deflectGap` × windup); parrying
   // the LAST swing breaks him open for `breakTime`. Letting a chain finish leaves a shorter `whiffTime` opening.
   // vulnTime is the base length of an ability stagger (bossStagger).
-  combo: { swings: 3, windup: 0.62, dmg: 14, range: 4.4, vulnTime: 2.0, deflectGap: 0.85, breakTime: 2.2, whiffTime: 1.2 },
+  // CLASH: a cut of yours that meets one of his early blows throws him back a step; the chain resumes after
+  // `clashGap` × windup (a clash never breaks his posture: parry for that).
+  combo: { swings: 3, windup: 0.62, dmg: 14, range: 4.4, vulnTime: 2.0, deflectGap: 0.85, clashGap: 1.0, breakTime: 2.2, whiffTime: 1.2 },
   retreat: { dist: 8, time: 0.4 },   // up close with lightning ready, he slides back out of reach before casting
   lightning: { dur: 2.4, durP3: 3.6, tick: 0.28, tickDmg: 6, catchTime: 0.95,
                reflectStun: 2.5, reflectDmg: 130, cd: 6.5 },   // reflecting his storm is a huge payoff (damage × phaseResist)

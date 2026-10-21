@@ -17,6 +17,7 @@ import { inkSprite, sparks, clashFlash } from '../../fx/ink.js';
 import { DUEL } from '../../data/duel.js';
 import { cutLine, duelDefend, isGuarding, guardImpact } from '../../enemies/duel.js';
 import { bodyRadius } from './bladehit.js';
+import { bounceOff, contactPoint } from './clash.js';
 import { inReach } from '../../enemies/bodyshape.js';
 import { tutEvent } from '../../game/tutor-bus.js';
 import { masteryXp } from '../../game/progression.js';
@@ -41,7 +42,7 @@ export function tryAttack(flow = false){
   // FLOW.at) instead of waiting out the recovery. Mashing still chains, just without the flow.
   if (player.atkT > 0){
     const sw = player.swing;
-    if (!sw) return;
+    if (!sw || sw.recoil) return;   // thrown back off a blade: nothing chains out of it
     if (sw.t > sw.dur * FLOW.open) player.queuedAtk = true;
     else sw.rushed = true;
     return;
@@ -216,14 +217,17 @@ export function applySwingDamage(step, only){
     }
     if (fn() !== false) hits++;
   };
-  let foesHit = 0;
+  let foesHit = 0, blocker = null, blockAt = null;
   for (const e of enemies){
     if (e.dead || e.converted || e.state === 'spawn') continue;
     tryHit(e.group.position, () => {
       // a duellist's guard may turn it (a riposte, the answer to a parry, always lands)
+      // (a guard the blade already met on the way in has had its say: player/jedi/clash.js)
       if (!riposte && !back){
-        const dres = duelDefend(e, line, finisher ? 'finisher' : 'cut', G.stance === 'strong' || isDark);
-        if (dres === 'block' || dres === 'dodge'){ turned++; return false; }
+        const pre = sw0 && sw0.duel && sw0.duel.get(e);
+        const at = pre === undefined && only && only.length ? contactPoint(e) : undefined;
+        const dres = pre !== undefined ? pre : duelDefend(e, line, finisher ? 'finisher' : 'cut', G.stance === 'strong' || isDark, at);
+        if (dres === 'block' || dres === 'dodge'){ turned++; if (dres === 'block' && !blocker){ blocker = e; blockAt = at; } return false; }
       }
       damageEnemy(e, dmg * (e.t.heavy ? st.heavyDmg : 1), f.clone(), knock, finisher);
       foesHit++;
@@ -244,12 +248,8 @@ export function applySwingDamage(step, only){
     tryHit(b.mesh.position, () => { if (b.fuse < 0) b.fuse = 0.1; }, b);
   }
   // the blade bounced off a guard and found nothing else: it jars the arm, costs breath and breaks the string
-  if (turned && !hits){
-    const B = DUEL.bounce;
-    player.stam = Math.max(0, player.stam - B.stam); player.stamDelay = CFG.player.stamDelay;
-    player.swingLock = Math.max(player.swingLock || 0, B.lock);
-    player.queuedAtk = false; player.comboStep = 2;
-  }
+  // (a guard that turned it stops the blade where they met and throws it back: player/jedi/clash.js)
+  if (turned && !hits) bounceOff(blocker, blockAt);
   if (hits > 0){
     if (mom && !sw0.momFx){ sw0.momFx = true; floater(playerPos(), MOM_LABEL[mom] || 'MOMENTUM', '#9fe0c8'); }
     G.shake = Math.max(G.shake, finisher ? 0.5 : 0.2);

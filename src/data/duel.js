@@ -35,6 +35,11 @@ export const DUEL = {
   // POSTURE — what each kind of blow costs a guard (blocked cuts build it; posture drains back when left alone)
   posture: { cut: 14, finisher: 26, heavyMul: 1.6, kick: 45, parry: 55, punch: 12, punchHeavy: 30, charge: 50, regen: 9, regenDelay: 1.6 },
   bounce: { stam: 8, lock: 0.22 },   // a cut turned by a guard bounces off: this much stamina and a short re-swing lockout
+  /* BLADE ON BLADE (player/jedi/clash.js) — your cut meets a weapon that is READY for it (a guard, or a strike in
+     flight) where the two actually cross. reach: how close the blades must pass (m, glow included: generous on
+     purpose); recoil: seconds the swing takes to kick back off the other blade; back: how much of the swing it rewinds;
+     hitstop: the freeze on contact. The boss's blows clash too (data/bosses.js combo.clashGap). */
+  clash: { reach: 0.22, recoil: 0.17, back: 0.3, hitstop: 0.07 },
   // ENEMY OFFENCE
   feintAt: 0.7,           // a feint breaks off this far into its wind-up...
   feintRewind: 0.26,      // ...and the real strike winds up this fast from the other side

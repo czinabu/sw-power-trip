@@ -325,8 +325,17 @@ function animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait){
     // BITE — when the blade meets a body it drags for an instant (the cut has to go THROUGH something), then carries on
     const sdt = sw.bite > 0 ? dt * BITE.slow : dt;
     if (sw.bite > 0) sw.bite -= dt;
-    player.atkT -= sdt;
-    sw.t += sdt;
+    if (sw.recoil){
+      // RECOIL — the cut met a ready blade (jedi/clash.js): it runs backwards along its own arc, fast, then hands the
+      // blade back to the guard
+      const rc = sw.recoil; rc.t += dt;
+      const q = Math.min(1, rc.t / rc.dur);
+      sw.t = rc.from - rc.back * (1 - (1 - q) * (1 - q));
+      player.atkT = q < 1 ? Math.max(1e-3, rc.dur - rc.t) : 0;
+    } else {
+      player.atkT -= sdt;
+      sw.t += sdt;
+    }
     // (no blade in hand — e.g. the weapon was swapped mid-swing — just run the swing's clock out)
     const cue = held ? swingPose(R, held, grip, form, sw) : { k: Math.min(1, sw.t / sw.dur), env: 0, cut: 0, spin: 0, hop: 0, drop: 0 };
     if (held) applySaberPose(R, held, player.castT <= 0, dt);
@@ -357,12 +366,12 @@ function animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait){
     // CONTACT — the cut lands on what the blade actually sweeps through this frame (jedi/bladehit.js), during the
     // stroke itself (not the chamber or the follow-through); the strike point still runs the swing's one-off effects
     if (held){
-      const touched = sweepBlade(sw, cue.k >= ((sw.anim && sw.anim.tc) || 0.25) * 0.6 && cue.k <= 0.92);
+      const touched = sweepBlade(sw, !sw.recoil && cue.k >= ((sw.anim && sw.anim.tc) || 0.25) * 0.6 && cue.k <= 0.92);
       if (touched && touched.length && !sw.noHit){ applySwingDamage(sw.step, touched); sw.bite = BITE.time; }
     }
     if (!sw.applied && cue.k > 0.35){ sw.applied = true; applySwingDamage(sw.step, held || sw.cutSet || sw.noHit ? [] : undefined); }   // (noHit: the aerial cut struck on contact, jedi/aerial.js)
     // IN-RHYTHM LINK (Jedi): one well-timed press this swing → the next cut leaves from the follow-through
-    if (player.queuedAtk && !sw.rushed && G.hero !== 'mando' && sw.applied && cue.k >= FLOW.at){
+    if (player.queuedAtk && !sw.rushed && !sw.recoil && G.hero !== 'mando' && sw.applied && cue.k >= FLOW.at){
       player.atkT = 0; player.queuedAtk = false; player.lastAtkEnd = G.gt;
       tryAttack(true);
       if (player.atkT <= 0){ vis.rotation.y = 0; player._swingDrop = 0; }   // the link failed (winded…): settle as normal
