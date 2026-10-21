@@ -14,6 +14,7 @@ import { spawnGroundShock } from '../fx/vfx.js';
 import { clampToArena, collideSolids } from '../world/collision.js';
 import { mandoSlamImpact } from './mando/gadgets.js';
 import { MOVE } from '../data/movement.js';
+import { MANDO_MOBILITY } from '../data/mobility.js';
 import { updateMantle, tryAutoMantle, updateWallRun, landingImpact, updateHang, updateForceSlide } from './parkour.js';
 import { doJump } from './movement.js';
 import { swingMoveMul, airControlMul } from './mobility.js';
@@ -60,22 +61,41 @@ export function updateMovement(dt, pp, st, f, r){
   if (player.slideT > 0) player.slideT -= dt;
   const mandoAir = G.hero === 'mando' && !player.grounded;
   if (mandoAir){
-    // MOMENTUM FLIGHT — WASD ADDS horizontal thrust; release and the speed CARRIES (low drag). A soft cap keeps
-    // top speed sane; HOVERING (RMB) brakes hard into a steady firing platform. The SPACE look-thrust (below)
-    // adds the divey forward/vertical momentum.
-    if (moving){ want.normalize(); player.moveVel.addScaledVector(want, MANDO.airAccel * dt); }
-    const cap = player.hovering ? MANDO.airSpeed * 0.5 : MANDO.airSpeedMax;
+    // MOMENTUM FLIGHT — WASD ADDS horizontal thrust; release and the speed CARRIES (low drag). Pressing against the
+    // momentum counter-thrusts, so he turns on a dime. A soft cap keeps top speed sane; HOVERING (RMB) is a firing
+    // platform that strafes quickly and holds still when you let go. Tuning: data/mobility.js MANDO_MOBILITY.air.
+    const AM = MANDO_MOBILITY.air;
+    if (moving){
+      want.normalize();
+      let acc = MANDO.airAccel * (player.hovering ? AM.hoverAccel : AM.accel);
+      if (want.x * player.moveVel.x + want.z * player.moveVel.z < 0) acc *= AM.counter;
+      player.moveVel.addScaledVector(want, acc * dt);
+    }
+    const cap = player.hovering ? AM.hoverSpeed : MANDO.airSpeedMax;
     let hsp = Math.hypot(player.moveVel.x, player.moveVel.z);
     if (hsp > cap){ const s2 = Math.max(cap/hsp, 1 - dt*5); player.moveVel.x *= s2; player.moveVel.z *= s2; }   // ease back to the cap
-    const drag = player.hovering ? 5.0 : MANDO.airDrag;   // hover = brake to a platform; free flight = momentum carries
+    const drag = player.hovering ? (moving ? AM.hoverDrift : AM.hoverStop) : MANDO.airDrag;   // hover = a platform; free flight = momentum carries
     const k = Math.max(0, 1 - dt*drag);
     player.moveVel.x *= k; player.moveVel.z *= k;
     pp.addScaledVector(player.moveVel, dt);
   } else if (player.mantle || player.hang){
     // a ledge pull-up / vault / hang owns the body (parkour.js)
   } else if (player.slideT > 0 && player.grounded){
-    // SLIDE — no steering: the skid carries the run's speed and bleeds it off
-    player.moveVel.multiplyScalar(Math.max(0, 1 - dt * (G.hero === 'mando' ? MOVE.slideDrag : MOVE.forceSlideDrag)));
+    // SLIDE — the skid carries the run's speed and bleeds it off. The Jedi's doesn't steer; the Mando's bends a little
+    // toward the keys (data/mobility.js MANDO_MOBILITY.slide)
+    const SL = MANDO_MOBILITY.slide;
+    if (G.hero === 'mando' && moving){
+      const sp = Math.hypot(player.moveVel.x, player.moveVel.z);
+      if (sp > 0.5){
+        const cur = Math.atan2(player.moveVel.x, player.moveVel.z), tgt = Math.atan2(want.x, want.z);
+        let d = tgt - cur; d = Math.atan2(Math.sin(d), Math.cos(d));
+        if (Math.abs(d) < 2.2){   // (pulling back doesn't spin the skid round)
+          const a = cur + clamp(d, -SL.steer * dt, SL.steer * dt);
+          player.moveVel.x = Math.sin(a) * sp; player.moveVel.z = Math.cos(a) * sp;
+        }
+      }
+    }
+    player.moveVel.multiplyScalar(Math.max(0, 1 - dt * (G.hero === 'mando' ? SL.drag : MOVE.forceSlideDrag)));
     pp.addScaledVector(player.moveVel, dt);
     updateForceSlide(pp);
   } else {

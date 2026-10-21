@@ -26,7 +26,7 @@ import { startLock } from '../enemies/duel.js';
 import { mandoCatch } from './mando/melee.js';
 import { tutEvent } from '../game/tutor-bus.js';
 import { mandoShielding } from './mando/weapons.js';
-import { MOBILITY } from '../data/mobility.js';
+import { MOBILITY, MANDO_MOBILITY } from '../data/mobility.js';
 import { refundCharge, airGuardLost, airParryOk, airDamageMul, airborneInCombat, knockOutOfAir } from './mobility.js';
 
 const MELEE_REACH_UP = 1.7;   // a melee foe can't strike you if you're perched higher than this above their feet
@@ -38,7 +38,11 @@ export function perfectDodge(fromPos){
   if (G.gt - (player.dashStartT ?? -9) > P.window + diffWindow() || G.gt - (player.lastPerfectT ?? -9) < P.cd) return false;
   player.lastPerfectT = G.gt;
   G.slowmo = Math.min(G.slowmo, P.slowmo); G.slowmoT = Math.max(G.slowmoT, P.slowT);
-  if (G.hero === 'mando') player.jet = Math.min(player.jetMax, player.jet + MANDO.boostDash.fuel * P.refund);
+  if (G.hero === 'mando'){
+    player.jet = Math.min(player.jetMax, player.jet + MANDO.boostDash.fuel * P.refund);
+    if (player.dodgeKind === 'airdodge') player.jetCharges = Math.min(MANDO_MOBILITY.airDodge.charges, (player.jetCharges ?? 0) + 1);   // the charge back
+    player.cds.roll = 0; player.cds.airDodge = 0;
+  }
   else {
     // a dash or guard flip that cost a charge gets it back (and the dash its Force); a roll was free to begin with
     if (player.dashSpent){ refundCharge(); player.dashSpent = false; }

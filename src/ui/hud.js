@@ -17,7 +17,7 @@ import { renderThreats } from './threats.js';
 import { svgIcon, SLOT_ICON } from './icons.js';
 import { trainingProgress } from '../game/tutorial.js';
 import { objectiveHud } from '../game/objectives.js';
-import { MOBILITY } from '../data/mobility.js';
+import { MOBILITY, MANDO_MOBILITY } from '../data/mobility.js';
 import { maxCharges, inCombat, formMob } from '../player/mobility.js';
 
 // give every power slot its icon once (key badge top-left, icon centre, name below)
@@ -179,7 +179,7 @@ export function updateHud(){
     document.getElementById('ab-flame').classList.toggle('cool', !!player.flaming);
     document.getElementById('ab-jet').classList.toggle('nofp', player.jet < 12);    // jet FUEL low
     document.getElementById('ab-jet').classList.toggle('cool', !!player.jetActive);
-    document.getElementById('ab-boost').classList.toggle('cool', player.cds.dash > 0 || player.jet < MANDO.boostDash.fuel);
+    mandoShiftSlot();
     document.getElementById('ab-mslam').classList.toggle('nofp', player.grounded || player.jet < abil('mslam').cost);   // air-only, jet fuel
     // DYNAMIC CROSSHAIR — line gap / colour / ring react to the situation
     const rt = document.getElementById('reticle');
@@ -216,6 +216,18 @@ export function updateHud(){
                 ['ab-mend','mend',abil('mend').cost]];
   for (const [id, key, cost] of jediSlots) cdSlot(id, key, cost);
   dashSlot();
+}
+
+/* MANDO SHIFT: what it does right now (ROLL on the ground in a fight, BOOST out of one, AIR DODGE in the air), with
+   pips for the air-dodge jet charges. */
+function mandoShiftSlot(){
+  const el = $('ab-boost'); if (!el) return;
+  const A = MANDO_MOBILITY.airDodge, n = player.jetCharges ?? A.charges, fight = inCombat(), air = !player.grounded;
+  if (!el._chg){ el.insertAdjacentHTML('beforeend', '<span class="chg"></span>'); el._chg = el.querySelector('.chg'); }
+  setHtml(el._chg, '<i class="on"></i>'.repeat(n) + '<i></i>'.repeat(Math.max(0, A.charges - n)));
+  const cool = air ? (player.jet < A.fuel || (fight && n < 1)) : fight ? player.cds.roll > 0 : (player.cds.dash > 0 || player.jet < MANDO.boostDash.fuel);
+  el.classList.toggle('cool', cool);
+  setText(el.querySelector('.an'), air ? 'AIR DODGE' : fight ? 'ROLL' : 'BOOST');
 }
 
 /* DASH: pips for the Force dash charges, the shade showing the next one refilling. Out of a fight the dash is free:

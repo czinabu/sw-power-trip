@@ -14,7 +14,7 @@ import { flipStyle, launchFlip } from './anim/agility.js';
 import { MOVE } from '../data/movement.js';
 import { tryVault, findLedge, startMantle, requestRoll, hangClimb } from './parkour.js';
 import { tutEvent } from '../game/tutor-bus.js';
-import { MOBILITY } from '../data/mobility.js';
+import { MOBILITY, MANDO_MOBILITY } from '../data/mobility.js';
 import { inCombat, formMob, groundRoll, rollRedash, spendCharge, airborneInCombat } from './mobility.js';
 
 /* MOMENTUM in a chain of moves: each move sends you where it says, instead of piling its push on top of whatever the
@@ -97,7 +97,11 @@ export function doJump(){
   if (onGround && !player.blockHeld && tryVault(playerPos())) return;   // running at low cover: up and over it
   if (G.hero === 'mando'){
     // a ground hop to kick off the ground; sustained flight is HOLD SPACE (jetpack in updatePlayer)
-    if (onGround){ player.vy = CFG.player.jumpVel * 0.9; player.grounded = false; player.lastJumpT = G.gt; S.jump(); }
+    if (onGround){
+      // out of a slide: a long, low hop that keeps the slide's speed (data/mobility.js MANDO_MOBILITY.slide.hop)
+      if (player.slideT > 0){ player.moveVel.multiplyScalar(MANDO_MOBILITY.slide.hop); player.slideT = 0; }
+      player.vy = CFG.player.jumpVel * 0.9; player.grounded = false; player.lastJumpT = G.gt; S.jump();
+    }
     return;
   }
   if (player.landStagT > 0) return;   // knees still buckled from a hard landing

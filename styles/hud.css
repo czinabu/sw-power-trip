@@ -100,6 +100,9 @@ body.mando #fpbar{background:linear-gradient(90deg,#d98a2b,#ffd9a0)}
 .ab.hint .key{font:700 10px/1 var(--font-ui);letter-spacing:0.5px;color:var(--ink);padding:3px 5px;border-radius:4px;
   border:1px solid var(--edge-mid);background:rgba(10,22,38,.7)}
 .ab.hint.cool{opacity:.4}
+.ab.hint .chg{display:flex;gap:2px}
+.ab.hint .chg i{width:5px;height:5px;border-radius:50%;border:1px solid var(--accent)}
+.ab.hint .chg i.on{background:var(--accent);box-shadow:0 0 4px var(--accent)}
 .ab.hint.nofp{color:var(--danger-soft)}
 .ab.hint.nofp .key{border-color:rgba(255,120,90,.7);color:var(--danger-soft)}
 /* powers: square slots with a cooldown sweep */
