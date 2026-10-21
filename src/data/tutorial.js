@@ -11,6 +11,7 @@
 //   ev     a training event to count (game/tutor-bus.js): doubleJump dash slide vault climb roll wallrun finisher parry
 //          deflect perfectDodge cancel pushHit kill headshot vent shieldReflect catch charge takedown bash rocketHit
 //          cutHit (data.dir: which key picked a cut that landed) guardBreak (a duellist's guard shattered)
+//   alt    a second event that also passes the step (sparDown: a sparring partner beaten to its last sliver)
 //   of     with ev 'kill': only foes of this type count · stance / weapon: only while in that saber form / loadout
 //   uniq   count each different value of this event field once (cutHit 'dir': three different cuts)
 //   poll   a held state to time instead, in seconds: glide sprint boost single · or 'forms' (count the saber forms used)
@@ -111,11 +112,11 @@ export const TRAINING = {
       keys: '3 · LMB', do: 'In Djem So, bring down the armored brute', ev: 'kill', of: 'brute', stance: 'strong', need: 1, respawn: true,
       spawn: [{ type: 'brute', at: [0, -4], dummy: true }] },
 
-    { sec: 'THE DUEL', say: 'A Magnaguard guards one side at a time, and the pale arc beside it shows which. Strike where it is not, and keep pressing until the guard gives.',
-      keys: 'W + LMB · A / D + LMB · E', do: 'Arc on a side? Hold W and cut. Arc on top? Hold A or D and cut. A kick (E) cracks any guard. Break its guard',
-      ev: 'guardBreak', need: 1, spawn: [{ type: 'duelist', at: [0, -6], sparring: true }] },
-    { say: 'Each time the guard breaks, it stands open for a breath. Strike then. If your blades bind, drive through.',
-      keys: 'LMB · E', do: 'Defeat the Magnaguard (blades locked: hammer LMB)', ev: 'kill', of: 'duelist', need: 1,
+    { sec: 'THE DUEL', say: 'A Magnaguard blocks one side at a time. The pale arc shows which. Kick through its guard, or cut where the arc is not.',
+      keys: 'E · W / A / D + LMB', do: 'Break its guard: kick it (E) twice in a row',
+      ev: 'guardBreak', alt: 'sparDown', need: 1, spawn: [{ type: 'duelist', at: [0, -6], sparring: true }] },
+    { say: 'When the guard breaks, it reels. Strike then. If your blades lock, mash LMB.',
+      keys: 'E · LMB', do: 'Defeat the Magnaguard', ev: 'kill', of: 'duelist', need: 1,
       spawn: [{ type: 'duelist', at: [0, -6] }] },
 
     { sec: 'THE TRIAL', say: 'No more lessons. Troopers first. Use your forms, the Force and your feet.',

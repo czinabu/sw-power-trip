@@ -418,6 +418,7 @@ function winLock(label, knock){
   e.state = 'recover';
   staggerEnemy(e, dx / dl, dz / dl, label);
   e.st += 0.4; e.posture = 0;
+  tutEvent('guardBreak', e);   // winning the bind breaks its guard too
   if (knock) damageEnemy(e, 8, V3(dx / dl, 0, dz / dl), knock);
   player.riposteT = CFG.player.riposteTime + 0.3;
   const cp = lockPoint();

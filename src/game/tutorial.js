@@ -124,7 +124,7 @@ function onEvent(name, data){
   if (!s) return;
   // a course checkpoint that asks for a move (vault the blocks, roll the drop) is armed by doing it on the way there
   if (s.course){ const cp = s.course[T.cp]; if (cp && cp.after === name) T.cpAfter = true; return; }
-  if (s.ev !== name) return;
+  if (s.ev !== name && s.alt !== name) return;   // `alt`: a second way to pass the lesson
   if (s.of && (!data || data.type !== s.of)) return;
   if (s.stance && G.stance !== s.stance) return;      // only counts in the form the lesson is about
   if (s.weapon && player.weapon !== s.weapon) return;  // ... or with the loadout it's about
