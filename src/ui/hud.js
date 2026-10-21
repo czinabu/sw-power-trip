@@ -161,7 +161,7 @@ export function updateHud(){
     // offensive brace; the Darksaber GUARDS; the Disruptor SCOPES. Flag the shield when it's out of stamina to deflect.
     const braceEl = document.getElementById('ab-brace');
     if (braceEl){
-      setText(braceEl.querySelector('.an'), W.fire === 'fists' ? 'BRACE' : W.melee ? 'GUARD' : W.twoHand ? 'SCOPE' : player.weapon === 'single' ? 'SHIELD' : 'BRACE');
+      setText(braceEl.querySelector('.an'), W.fire === 'fists' ? 'SHIELD' : W.melee ? 'GUARD' : W.twoHand ? 'SCOPE' : player.weapon === 'single' ? 'SHIELD' : 'BRACE');
       braceEl.classList.toggle('nofp', player.weapon === 'single' && player.blockHeld && player.stam <= 0);
     }
     // E chip: behind the raised shield, E cuts with the vibroblade instead of punching
