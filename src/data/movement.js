@@ -41,10 +41,10 @@ export const MOVE = {
   shimmySpeed: 1.8,     // A/D along the face
   hangClimbHold: 0.22,  // hold W this long (or tap SPACE) to pull up; S lets go
   hangClimbTime: 0.5,
-  // sprint, walk and slide (Jedi): Q toggles between sprint and walk; ALT mid-sprint is the FORCE SLIDE. The sprint
-  // is free (stamina belongs to the saber). The walk is a real walk, in a fight too.
+  // sprint, walk and slide (Jedi): Q toggles between run (the default, forward sprints) and walk; ALT mid-sprint is the
+  // FORCE SLIDE. The sprint is free (stamina belongs to the saber). The walk is a real walk, in a fight too.
   sprintMul: 1.42,      // top speed while sprinting
-  walkMul: 0.36,        // top speed while walking (×7.2 ≈ 2.6 m/s, just past GAIT.runFrom: still a walk)
+  walkMul: 0.42,        // top speed while walking (×7.2 ≈ 3.0 m/s: a brisk pace, still a walk, see GAIT.walkStride)
   sprintAccel: 0.55,    // steering while sprinting is heavier (accel multiplier)
   sprintTurn: 4.2,      // max body turn rate while sprinting (rad/s)
   slideTime: 0.62, slideBoost: 2.5, slideDrag: 1.6, slideMinSpeed: 7.5,
@@ -82,9 +82,10 @@ export const GAIT = {
   // uneven ground: each foot stands on what is under it; the hips sink to let the lower foot reach
   reachDown: 0.35,      // furthest (m) a foot reaches below the body's support (past an edge it hangs)
   hipSink: 0.8,         // share of the lower foot's drop the hips sink by
-  // walk mode (Q): a composed, menacing walk; longer, slower strides and the hips and shoulders kept level instead of
+  // walk mode (Q): a brisk, menacing PACE, not a stroll. The captured walk is kept (never the jog it would blend into
+  // at this speed) and sped up with quicker steps as much as longer ones; the hips and shoulders stay level instead of
   // rocking side to side over each foot
-  walkStride: 1.3,      // step length multiplier while walking (same speed, fewer steps)
+  walkStride: 1.0,      // step length multiplier while walking (above 1: fewer, longer steps; below: quicker ones)
   walkSway: 0.3,        // share of the stride's side-to-side hip sway and roll kept while walking
   accelLean: 0.014, accelBank: 0.011, accelMax: 0.2, accelSmooth: 9,
 };

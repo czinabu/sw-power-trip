@@ -41,12 +41,14 @@ const blend = (W, get, p) => W.reduce((s, [c, w]) => s + at(get(c), p) * w, 0);
 /* The stride for this speed: length (metres per cycle, two steps) and each foot's share of the cycle on the ground.
    Past the fastest clip a runner quickens rather than lengthens: the stride grows a little, the cadence takes the
    rest, and each foot spends less of the cycle on the ground (so the stance still fits under the leg). Below the
-   slowest clip the steps shorten and slow. */
-export function mocapStride(speed){
-  const W = weights(speed);
+   slowest clip the steps shorten and slow. `walk` (walk mode) holds to the walk clip at any speed: a brisk pace
+   lengthens and quickens the steps evenly and keeps both feet down for a moment, instead of breaking into a jog. */
+export function mocapStride(speed, walk){
+  const W = walk ? [[CLIPS[0], 1]] : weights(speed);
   const natural = W.reduce((s, [c, w]) => s + c.speed * w, 0) * LEG_M;
   let stride = W.reduce((s, [c, w]) => s + c.stride * w, 0) * LEG_M, dutyK = 1;
-  if (speed > natural){ stride *= Math.pow(speed / natural, 0.25); dutyK = Math.pow(natural / speed, 0.8); }
+  if (walk && speed > natural) stride *= Math.pow(speed / natural, 0.5);
+  else if (speed > natural){ stride *= Math.pow(speed / natural, 0.25); dutyK = Math.pow(natural / speed, 0.8); }
   else if (speed > 0.05) stride *= Math.pow(Math.max(speed, 0.3) / natural, 0.55);
   return {
     W, stride,

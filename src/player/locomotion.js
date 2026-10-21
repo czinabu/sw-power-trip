@@ -38,9 +38,9 @@ export function updateMovement(dt, pp, st, f, r){
   if (keys['d']) want.add(r);
   if (keys['a']) want.sub(r);
   const moving = want.lengthSq() > 0.01;
-  // SPRINT / WALK (Jedi) — Q toggles between them. With the sprint on, running forward (W) on the ground sprints: faster
-  // and heavier to steer. It costs nothing: stamina is the saber's (swings, blocks), not the legs'. With it off the
-  // Jedi WALKS, a real unhurried walk, fight or no fight: the Vader walk, cutting down whatever comes into reach.
+  // RUN / WALK (Jedi) — Q toggles between them; every life starts in RUN. Running forward (W) on the ground sprints:
+  // faster and heavier to steer. It costs nothing: stamina is the saber's (swings, blocks), not the legs'. In WALK the
+  // Jedi paces, a brisk purposeful walk, fight or no fight: the Vader walk, cutting down whatever comes into reach.
   const wasSprinting = player.sprinting;
   player.sprinting = G.hero !== 'mando' && !!player.sprintOn && !!keys['w'] && (player.grounded || wasSprinting)
                      && !player.blockHeld && player.atkT <= 0 && !(player.flinchT > 0)
