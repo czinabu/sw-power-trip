@@ -38,8 +38,8 @@ export function mandoShift(){
 }
 
 /* COMBAT DIVE — Helldivers: free, i-frames through the throw, any way you press (no keys: back, out of reach). He
-   turns to the dive, throws himself flat, lands on his chest plate, barrel-rolls once on the deck and gets back up
-   (the body move is anim/agility.js mandoBody). */
+   stays squared to the reticle: forward is a dive into a somersault, left / right a dive over that shoulder into a
+   roll across, back a backward somersault, then he gets back up (the body move is anim/agility.js mandoBody). */
 export function mandoDive(){
   const D = MM.dive;
   if (player.cds.roll > 0 || player.meleeT > 0 || player.stabT > 0 || player.slamming) return false;
@@ -56,7 +56,9 @@ export function mandoDive(){
   player.dodgeKind = 'dive'; player.dashSpent = false; player.rollAt = G.gt;
   player.cds.roll = D.time + D.cd;
   tutEvent('dash');
-  player.flip = { kind: 'dive', t: 0, dur: D.time, face: Math.atan2(dir.x, dir.z), side: dir.dot(rightV()) >= 0 ? 1 : -1 };
+  const df = dir.dot(fwd()), drr = dir.dot(rightV());
+  const side = Math.abs(drr) > Math.abs(df) * 0.9;
+  player.flip = { kind: 'dive', t: 0, dur: D.time, dir: side ? 'side' : df >= 0 ? 'fwd' : 'back', side: drr >= 0 ? 1 : -1 };
   burst(playerPos().clone().setY(0.25), 0xb9c2cc, 6, 3, 1.5, 0.8);
   S.jump();
   return true;
