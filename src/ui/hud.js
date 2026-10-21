@@ -15,7 +15,8 @@ import { nextStoreGoal } from '../game/progression.js';
 import { updateBoonStrip } from '../game/boons.js';
 import { renderThreats } from './threats.js';
 import { svgIcon, SLOT_ICON } from './icons.js';
-import { trainingProgress } from '../game/tutorial.js';
+import { trainingProgress, trainingChecklist } from '../game/tutorial.js';
+import { missionChecklist } from '../game/mission.js';
 import { objectiveHud } from '../game/objectives.js';
 import { MOBILITY, MANDO_MOBILITY } from '../data/mobility.js';
 import { maxCharges, inCombat, formMob } from '../player/mobility.js';
@@ -27,6 +28,18 @@ for (const id in SLOT_ICON){ const el = document.getElementById(id); if (el) el.
 function setText(el, v){ if (el._t !== v){ el._t = v; el.textContent = v; } }
 function setHtml(el, v){ if (el._h !== v){ el._h = v; el.innerHTML = v; } }
 const $ = (id) => document.getElementById(id);
+
+// top-right objectives checklist (training lessons, mission objectives): a window of up to 7 rows around the current one
+function renderChecklist(c){
+  const el = $('objlist');
+  if (!c){ el.classList.remove('on'); return; }
+  const cur = Math.max(0, c.items.findIndex(i => i.now)), n = c.items.length;
+  const from = Math.max(0, Math.min(cur - 2, n - 7)), rows = c.items.slice(from, from + 7);
+  el.classList.add('on');
+  setHtml(el, '<div class="ol-h">' + c.title + '</div>' + rows.map(i =>
+    '<div class="ol-i' + (i.done ? ' done' : i.now ? ' now' : '') + '"><b>' + (i.done ? '✓' : i.now ? '▶' : '○') + '</b><span>' + i.text + '</span></div>').join('') +
+    (n > 7 ? '<div class="ol-n">' + c.items.filter(i => i.done).length + ' / ' + n + ' DONE</div>' : ''));
+}
 
 /* ABILITY COOLDOWNS — the slot shades over and counts down while a power recharges. The full length is learned from
    the moment the timer jumps up (so stance / upgrade cooldown multipliers are reflected without duplicating them). */
@@ -145,6 +158,7 @@ export function updateHud(){
     setHtml($('waveinfo'), '<span class="wi-l">LEVEL ' + (G.levelIdx + 1) + ' · ' + place + '</span><span class="wi-w">' + wave + '</span>' +
       (shared.boss ? '' : hostiles));
   }
+  renderChecklist(G.mode === 'play' && !G.sandbox ? (G.training ? trainingChecklist() : G.mission ? missionChecklist() : null) : null);
   if (G.hero !== 'mando'){   // holstered (4): LMB is a Force strike and RMB a ward instead of saber and block
     setText($('ab-atk').querySelector('.an'), player.holstered ? 'FORCE STRIKE' : 'SABER');
     setText($('ab-block').querySelector('.an'), player.holstered ? 'WARD' : 'BLOCK');
