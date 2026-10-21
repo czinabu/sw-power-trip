@@ -35,7 +35,57 @@ function baseFov(C){
   return Math.max(f, 2 * Math.atan(Math.tan(h / 2) / a) * 180 / Math.PI);
 }
 
+// PAUSE CUTS — behind the pause screen the lens leaves the follow rig and cuts between a few fixed shots of the hero
+// in their current setting, each held still with a slow push-in. Angles are relative to the way the hero faces;
+// [angle off the facing (rad), distance, lens height, aim height]
+const PAUSE_SHOTS = [
+  [ 0.6, 5.0, 1.4, 1.1],    // three-quarter, at chest height
+  [ 1.57, 6.5, 2.2, 1.0],   // side-on, mid shot
+  [-2.6, 10, 6.5, 0.6],     // high and wide over the shoulder, the whole setting
+  [-0.5, 3.4, 0.6, 1.5],    // low front angle, looking up
+  [ 0.15, 7.5, 3.4, 0.9],   // wide from the front
+];
+const PAUSE_HOLD = 4.5, PAUSE_PUSH = 0.06;   // seconds per shot; how much closer the lens creeps over a hold
+let pauseCam = null;
+function updatePauseCam(){
+  const now = performance.now() / 1000, pp = playerPos();
+  if (!pauseCam){
+    // remember the live view so resuming drops straight back into it (no swoop in from the last shot)
+    pauseCam = { pos: camera.position.clone(), quat: camera.quaternion.clone(), fov: camera.fov, shot: -1, at: 0,
+                 yaw: G.yaw, last: now, x: pp.x, y: pp.y, z: pp.z };
+  }
+  const P = pauseCam;
+  if (P.shot < 0 || now - P.at > PAUSE_HOLD){
+    // next shot whose view of the hero isn't walled off by a prop; try each in turn, keep the least blocked
+    let pick = -1, bestK = -1;
+    for (let i = 1; i <= PAUSE_SHOTS.length; i++){
+      const j = (P.shot + i + PAUSE_SHOTS.length) % PAUSE_SHOTS.length, [a, dist, h] = PAUSE_SHOTS[j];
+      const k = cameraClearance(P.x, P.y + 1.2, P.z, P.x + Math.sin(P.yaw + a)*dist, P.y + h, P.z + Math.cos(P.yaw + a)*dist);
+      if (k > 0.85){ pick = j; break; }
+      if (k > bestK){ bestK = k; pick = j; }
+    }
+    P.shot = pick; P.at = now;
+  }
+  const [a, dist, h, look] = PAUSE_SHOTS[P.shot];
+  const t = Math.min(1, (now - P.at) / PAUSE_HOLD), d = dist * (1 - PAUSE_PUSH * t);
+  TMP.set(P.x + Math.sin(P.yaw + a)*d, Math.max(0.4, P.y + h), P.z + Math.cos(P.yaw + a)*d);
+  const k = cameraClearance(P.x, P.y + 1.2, P.z, TMP.x, TMP.y, TMP.z);
+  if (k < 1) TMP.set(P.x + (TMP.x - P.x)*k, P.y + 1.2 + (TMP.y - P.y - 1.2)*k, P.z + (TMP.z - P.z)*k);
+  camera.position.copy(TMP);
+  camera.lookAt(P.x, P.y + look, P.z);
+  const fov = baseFov(CFG.camera);
+  if (Math.abs(camera.fov - fov) > 0.02){ camera.fov = fov; camera.updateProjectionMatrix(); }
+  updatePropFade(camera.position, P.x, P.y, P.z, Math.min(0.05, now - P.last));   // real time: the sim's dt is 0 here
+  P.last = now;
+}
+
 export function updateCamera(dt){
+  if (G.paused && G.mode === 'play'){ updatePauseCam(); return; }
+  if (pauseCam){
+    camera.position.copy(pauseCam.pos); camera.quaternion.copy(pauseCam.quat);
+    camera.fov = pauseCam.fov; camera.updateProjectionMatrix();
+    pauseCam = null;
+  }
   const C = CFG.camera;
   const pp = playerPos();
   const f = fwd();
