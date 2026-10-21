@@ -319,13 +319,14 @@ export function mandoSlamImpact(){
   for (const b of barrels){ if (b.mesh.position.distanceTo(pp) < A.radius && b.fuse < 0) b.fuse = 0.15; }
 }
 
-/* ===== BOOST DASH (ground) / AIR THRUST-DODGE (in flight) — SHIFT, spends jetpack fuel ===== */
-export function mandoBoostDash(){
-  // SHIFT on the GROUND = a quick thruster DODGE (i-frames). In the AIR, SHIFT is a HELD directional boost
-  // (handled per-frame in updatePlayer) — so this only fires a dodge when grounded.
+/* ===== ROCKET BOOST (ground) — spends jetpack fuel ===== */
+export function mandoBoostDash(onGround = player.grounded){
+  // the ROCKET BOOST on the ground: a long thruster shove with i-frames. SHIFT out of a fight, or a second SHIFT
+  // mid-roll in one (mando/mobility.js mandoShift). In the AIR, SHIFT is the air dodge, and held, the flight boost.
   const A = MANDO.boostDash;
-  if (G.mode !== 'play' || !player.grounded || player.cds.dash > 0 || player.jet < A.fuel) return;
+  if (G.mode !== 'play' || !onGround || player.cds.dash > 0 || player.jet < A.fuel) return;
   player.cds.dash = A.cd; player.dashT = A.time; player.dashStartT = G.gt;   // i-frames (+ the perfect-dodge clock)
+  player.dodgeKind = 'boost'; player.slideT = 0;
   tutEvent('dash');
   player.jet = Math.max(0, player.jet - A.fuel);
   const dir = V3(0,0,0);

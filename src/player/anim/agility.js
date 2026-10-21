@@ -10,6 +10,7 @@ import { AGILITY, MANDO_AGILITY } from '../../data/agility.js';
 import { FORM_OF } from '../../data/poses.js';
 import { MOCAP_ON, mocapAirLegs, airPhase, mocapFlip, flipTurn, flipLegs } from './mocap.js';
 import { MOCAP_MOVES } from '../../data/mocap.js';
+import { MANDO_MOBILITY } from '../../data/mobility.js';
 
 const TAU = Math.PI * 2;
 const COM = 1.12;   // centre of mass above the feet in the hero group's space (rig hips × model scale): flips turn here
@@ -235,21 +236,28 @@ export function landingStyle(){
 }
 
 /* ---------------- MANDO ---------------- */
-/* After the Mando pose: the ground dodge becomes a thruster-shoved slide, a hop tucks the knees, ignition snaps the
-   legs together under the pack, and a jet slam drops into a three-point landing. Arms stay with the weapon code. */
+/* After the Mando pose: the combat roll and the air dodge's barrel roll turn the whole body (flipBody, knees tucked),
+   the rocket boost and the slide become a thruster-shoved skid, a hop tucks the knees, ignition snaps the legs
+   together under the pack, and a jet slam drops into a three-point landing. Arms stay with the weapon code. */
 export function mandoAgilityPost(dt, dr, vis, R, f, r){
   const M = MANDO_AGILITY;
+  if (player.flip && !player.slamming){
+    flipBody(dt, vis, player.flip);
+    if (player.flip) poseLegs(R, dr, LEGS.tuck, player.flip.hold ?? 1, 20);
+  }
   if (player.slamming) poseLegs(R, dr, LEGS.tuck, 0.6, 14);
   slamLanding(dt, dr, R, M.slam.kneel, 0);
-  if (player.grounded && (player.dashT > 0 || player.slideT > 0) && !player.slamming){
-    // DODGE (or a C SLIDE out of a run) — he drops, the lead leg reaches into the slide and the trail leg skids
+  if (player.grounded && (player.dashT > 0 || player.slideT > 0) && !player.slamming && !player.flip){
+    // BOOST (or the ALT / C SLIDE) — he drops, the lead leg reaches into the slide and the trail leg skids. The slide
+    // sits much lower: under the fire, the gun still level.
     const vx = player.vel.x + (player.slideT > 0 ? player.moveVel.x : 0), vz = player.vel.z + (player.slideT > 0 ? player.moveVel.z : 0);
     const sp = Math.hypot(vx, vz) || 1;
     const vF = (vx*f.x + vz*f.z) / sp, vR = (vx*r.x + vz*r.z) / sp;
-    const w = clamp(sp / 12, 0, 1);
+    const sliding = player.slideT > 0;
+    const w = clamp(sp / (sliding ? 6 : 12), 0, 1);
     const side = Math.abs(vR) > Math.abs(vF);
     poseLegs(R, dr, side ? [-0.5, 0.95, 0.35, 0.3, 0.42] : (vF >= 0 ? LEGS.slide : [0.35, 0.3, -0.85, 1.0, 0.2]), w, 22);
-    player._agiDrop = Math.max(player._agiDrop || 0, M.dodge.drop * w);
+    player._agiDrop = Math.max(player._agiDrop || 0, (sliding ? MANDO_MOBILITY.slide.drop : M.dodge.drop) * w);
   }
   // a hop is an airborne stint that started without the jets; lighting them ends it
   if (player.grounded || player.jetActive || player.hovering || player.boosting || player.slamming) player._hop = false;

@@ -23,9 +23,9 @@ import { trySlide } from '../player/parkour.js';
 import { pullPress, pullRelease, graspThrow, graspDrop } from '../player/jedi/grasp.js';
 import { toggleLock } from '../player/lockon.js';
 import {
-  bactaStim, mandoRocket, mandoJetMissile, whistlingBirds, thermalDetonator, grappleHook, jetSlam,
-  mandoBoostDash
+  bactaStim, mandoRocket, mandoJetMissile, whistlingBirds, thermalDetonator, grappleHook, jetSlam
 } from '../player/mando/gadgets.js';
+import { mandoShift } from '../player/mando/mobility.js';
 import { darksaberThrow } from '../player/mando/darksaber.js';
 import { mandoMelee } from '../player/mando/melee.js';
 import { lockPress, lockKick, lockPush } from '../enemies/duel.js';
@@ -142,7 +142,7 @@ document.addEventListener('keydown', (e) => {
   if (k === ' ' && !e.repeat) doJump();
   if (k === '4' && !e.repeat) toggleHolster();   // HOLSTER: the Jedi fights with the Force alone, the Mando with fists and gadgets (player/holster.js)
   if (G.hero === 'mando'){
-    if (k === 'shift') mandoBoostDash();                 // jetpack boost-dash (no Force)
+    if (k === 'shift' && !e.repeat) mandoShift();        // combat roll / rocket boost / air dodge (mando/mobility.js); held in the air it boosts
     if (G.mode === 'play'){
       if (k === 'f') mandoFlame();
       if (k === 'q') mandoRocket();

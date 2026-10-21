@@ -47,12 +47,11 @@ export const MOVE = {
   walkMul: 0.42,        // top speed while walking (×7.2 ≈ 3.0 m/s: a brisk pace, still a walk, see GAIT.walkStride)
   sprintAccel: 0.55,    // steering while sprinting is heavier (accel multiplier)
   sprintTurn: 4.2,      // max body turn rate while sprinting (rad/s)
-  slideTime: 0.62, slideBoost: 2.5, slideDrag: 1.6, slideMinSpeed: 7.5,
+  slideTime: 0.62, slideMinSpeed: 7.5,   // (the momentum window after a slide; the Mando's slide is data/mobility.js MANDO_MOBILITY.slide)
   // FORCE SLIDE (Jedi): where the dash (SHIFT) is a short hop any way you like with a moment of invulnerability, the slide
   // is the long way forward. The Force carries the skid about twice as far as the old slide, it still ducks blaster
   // fire, and it knocks over the troops it runs into (`bowl`, metres ahead of the hips). No invulnerability to blades.
   forceSlideTime: 0.95, forceSlideBoost: 6.5, forceSlideDrag: 0.75, bowl: 1.4,
-  mandoSlideMinSpeed: 5.5,   // the Mando has no sprint: ALT (or C) slides him out of a plain run
   // FLOW: parkour pays for flight. Each move (vault, climb, slide, wall-run, landing roll) refunds Force (Jedi) or jet
   // fuel (Mando); a different move inside `window` chains and pays `chainMul` more. The same move again within
   // `sameCd` pays nothing (no farming one crate). Each also opens a MOMENTUM window: the next saber cut lands

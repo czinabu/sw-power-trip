@@ -3,6 +3,7 @@
 // (parkour refunds Force / jet fuel, sets up a harder next blow, and surges the run on a story chase).
 
 import { MOVE } from '../data/movement.js';
+import { MANDO_MOBILITY } from '../data/mobility.js';
 import { CFG } from '../data/config.js';
 import { S } from '../audio/sfx.js';
 import { V3, clamp } from '../utils.js';
@@ -194,20 +195,23 @@ export function updateHang(dt, pp){
   return true;
 }
 
-/* SLIDE — ALT out of a sprint (Jedi) or out of a run (Mando, who can also use C): drop low and skid, keeping the run's speed and ducking
-   under blaster fire. A cut out of it is a sweep that floors what it hits; the Mando keeps firing, steady and harder.
-   The Jedi's is the FORCE SLIDE: the Force drives it much farther, and it bowls over the troops in its way. */
+/* SLIDE — ALT out of a sprint (Jedi) or out of any run (Mando, who can also use C): drop low and skid, keeping the
+   run's speed and ducking under blaster fire. A cut out of it is a sweep that floors what it hits.
+   The Jedi's is the FORCE SLIDE: the Force drives it much farther, and it bowls over the troops in its way.
+   The Mando's is the TACTICAL SLIDE (data/mobility.js MANDO_MOBILITY.slide): a jet-kicked skid that starts from any
+   run, braced too, carries far, steers a little, keeps his aim dead steady, and a jump out of it is a long hop. */
 export function trySlide(){
   if (!player.grounded || player.slideT > 0 || player.mantle || player.hang || G.mode !== 'play') return;
-  if (G.hero === 'mando' && (player.dashT > 0 || player.meleeT > 0 || player.stabT > 0)) return;
+  const jedi = G.hero !== 'mando', SL = MANDO_MOBILITY.slide;
+  if (!jedi && (player.dashT > 0 || player.meleeT > 0 || player.stabT > 0 || player.cds.slide > 0)) return;
   const hs = Math.hypot(player.moveVel.x, player.moveVel.z);
-  if (hs < (G.hero === 'mando' ? MOVE.mandoSlideMinSpeed : MOVE.slideMinSpeed)) return;
-  const jedi = G.hero !== 'mando';
-  player.slideT = jedi ? MOVE.forceSlideTime : MOVE.slideTime;
+  if (hs < (jedi ? MOVE.slideMinSpeed : SL.minSpeed)) return;
+  player.slideT = jedi ? MOVE.forceSlideTime : SL.time;
   player.slideBowled = jedi ? new Set() : null;
+  if (!jedi) player.cds.slide = SL.time + SL.cd;
   tutEvent('slide');
   flowLink('slide');
-  player.moveVel.multiplyScalar((hs + (jedi ? MOVE.forceSlideBoost : MOVE.slideBoost)) / hs);
+  player.moveVel.multiplyScalar((jedi ? hs + MOVE.forceSlideBoost : Math.max(SL.speed, hs + SL.boost)) / hs);
   player.sprinting = false;
   // the Jedi's knee slide is a flip pose; the Mando's reuses his thruster-dodge skid (anim/agility.js)
   if (jedi) player.flip = { t: 0, dur: MOVE.forceSlideTime, pitch: -0.3, drop: 0.5, legs: 'kneeslide', arms: null, side: 1, ease: 'twirl' };

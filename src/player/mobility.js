@@ -2,7 +2,7 @@
 // Jedi combat mobility (data/mobility.js): whether you're in a fight, the ground roll, Force dash charges, and what
 // being in the air costs you mid-fight.
 
-import { MOBILITY } from '../data/mobility.js';
+import { MOBILITY, MANDO_MOBILITY } from '../data/mobility.js';
 import { MOVE } from '../data/movement.js';
 import { V3 } from '../utils.js';
 import { burst } from '../fx/particles.js';
@@ -18,17 +18,18 @@ import { tutEvent } from '../game/tutor-bus.js';
 export const formMob = () => MOBILITY.forms[formNow()] || MOBILITY.forms.niman;
 
 /* IN COMBAT — a live foe within range, the boss up, or a blow taken or landed in the last few seconds. Sparring
-   partners in the training grounds count too (the dodge lessons are fought). Cached per frame. */
+   partners in the training grounds count too (the dodge lessons are fought). The Mando's fight starts farther out
+   (MANDO_MOBILITY.combat.range). Cached per frame. */
 let _cT = -1, _c = false;
 export function inCombat(){
   if (G.gt === _cT) return _c;
   _cT = G.gt;
   const C = MOBILITY.combat;
   _c = false;
-  if (G.hero === 'mando') return _c;
   if (shared.boss && shared.boss.hp > 0) return (_c = true);
   if (G.gt - (player.lastHurt ?? -9) < C.linger || G.gt - (player.lastStrikeT ?? -9) < C.linger) return (_c = true);
-  const pp = playerPos(), r2 = C.range * C.range;
+  const range = G.hero === 'mando' ? MANDO_MOBILITY.combat.range : C.range;
+  const pp = playerPos(), r2 = range * range;
   for (const e of enemies){
     if (e.dead || e.converted || e.state === 'spawn') continue;
     const dx = e.group.position.x - pp.x, dz = e.group.position.z - pp.z;
