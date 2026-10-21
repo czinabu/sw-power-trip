@@ -29,7 +29,7 @@ const TYPE_TIPS = {
   bomber:  ['SABOTEUR', 'It rushes, then DETONATES — and blows on death. Kill it at range, PUSH it off, or DASH clear.'],
   sniper:  ['MARKSMAN', 'A laser marks you as it charges a hard shot. Break line of sight, DASH as it fires, or close in.'],
   brute:   ['BRUTE', 'A wall of muscle — too heavy to stagger lightly. Parry its swing, or floor it with a heavy blow.'],
-  duelist: ['MAGNAGUARD', 'A duellist: the pale arc shows the side it guards. Cut in from the OTHER side, kick (E) to break its guard, and parry its strike.'],
+  duelist: ['MAGNAGUARD', 'The pale arc shows the side it blocks. Cut the other side, or kick (E) twice to break its guard, then strike.'],
   acolyte: ['SITH ACOLYTE', 'A trained saber duellist. It feints, strings cuts, deflects blaster fire and binds blades. Read its guard, break it, punish the opening.'],
   officer: ['IMPERIAL OFFICER', 'It calls VOLLEYS and FLANKS for its squad. Hit it while its arm is up to cut the order off, and drop it to make its troops falter.'],
   grenadier: ['GRENADIER', 'It lobs detonators over cover. The ring is where it lands: get out before it fills. A Jedi can PUSH one back.'],
