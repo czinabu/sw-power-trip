@@ -80,7 +80,57 @@ export function guardPose(dt, R, held, grip, form, blocking, sway, over = null, 
   }
   saberPose.twist += ((g.twist || 0) - saberPose.twist) * Math.min(1, dt * 9 * rate);
   saberPose.lean += ((g.lean || 0) - saberPose.lean) * Math.min(1, dt * 10 * rate);
+  applyTwirl(dt);
   return { torso: g.torso || 0 };
+}
+
+/* TWIRL — switching form or grip spins the saber round the wrist out at the weapon side, clear of the body: the hand
+   comes out in front of the weapon shoulder and the blade wheels tip-forward in a plane tilted out away from the hero,
+   then settles into the new guard. Switching again mid-spin keeps the same wheel turning, so flicking back and forth
+   reads as one long flourish. */
+const TWIRL_TIME = 0.5, TWIRL_RATE = 24;   // seconds one switch spins for; wheel speed (rad/s): about two turns
+const TWIRL_HAND = new THREE.Vector3(0.46, 0.16, 0.34), TWIRL_OUT = 0.45;   // TWIRL_OUT tilts the wheel's plane out
+const twirl = { t: 0, w: 0, ang: 0 };
+export function startTwirl(){
+  // a fresh spin starts the wheel where the blade already points, so it doesn't jump
+  if (twirl.w === 0) twirl.ang = Math.atan2(saberPose.blade.z, saberPose.blade.y);
+  twirl.t = TWIRL_TIME;
+}
+function applyTwirl(dt){
+  twirl.t = Math.max(0, twirl.t - dt);
+  twirl.w += ((twirl.t > 0 ? 1 : 0) - twirl.w) * Math.min(1, dt * (twirl.t > 0 ? 14 : 8));
+  if (twirl.w < 0.01){ twirl.w = 0; return; }
+  twirl.ang += dt * TWIRL_RATE;
+  saberPose.hand.lerp(TWIRL_HAND, twirl.w);
+  slerpDir(saberPose.blade, _t.set(TWIRL_OUT, Math.cos(twirl.ang), Math.sin(twirl.ang)).normalize(), twirl.w, saberPose.blade);
+}
+
+/* KEEP CLEAR — the blade never passes through the hero. The body is an upright elliptic column in chest space (a
+   narrower one for the head); a hand inside it is pushed out, and a blade crossing it is turned out around the hand
+   by how deep its deepest point sits. Runs on every pose (guards, cuts, twirls, the blends between them). */
+const BODY_RX = 0.28, BODY_RZ = 0.2, BODY_LO = -1.5, BODY_TOP = 0.36, HEAD_R = 0.16, HEAD_TOP = 0.7, BLADE_LEN = 1.55;
+const _n = new THREE.Vector3(), _w = new THREE.Vector3(), _s = new THREE.Vector3(), _ch = new THREE.Vector3(), _cd = new THREE.Vector3();
+// how deep a point sits inside the body (0 = outside), with the way out (level) in _n
+function depth(p){
+  if (p.y < BODY_LO || p.y > HEAD_TOP) return 0;
+  const head = p.y > BODY_TOP, rx = head ? HEAD_R : BODY_RX, rz = head ? HEAD_R : BODY_RZ;
+  const q = Math.hypot(p.x / rx, p.z / rz);
+  if (q >= 1) return 0;
+  if (q < 1e-4) _n.set(0, 0, 1); else _n.set(p.x / (rx * rx), 0, p.z / (rz * rz)).normalize();
+  return (1 - q) * Math.min(rx, rz);
+}
+function keepClear(h, d){
+  const dh = depth(h);
+  if (dh > 0) h.addScaledVector(_n, dh);
+  for (let it = 0; it < 6; it++){
+    let worst = 0, ws = 0;
+    for (let s = 0.15; s <= BLADE_LEN; s += 0.1){
+      const dp = depth(_s.copy(h).addScaledVector(d, s));
+      if (dp > worst){ worst = dp; ws = s; _w.copy(_n); }
+    }
+    if (!worst) break;
+    d.addScaledVector(_w, worst / ws).normalize();
+  }
 }
 
 /* SWING — evaluate the keyframed cut at the swing's progress. Returns body cues for the caller (envelope, spin,
@@ -109,6 +159,7 @@ export function swingPose(R, held, grip, form, sw){
     const G0 = (GUARDS[grip] && GUARDS[grip][form]) || GUARDS.regular.niman;
     sw.anim.rest = G0.ready;
   }
+  twirl.t = twirl.w = 0;   // a cut takes the blade out of any twirl
   const A = sw.anim, [C, S, F] = A.keys;
   const k = Math.min(1, sw.t / sw.dur);
   // COIL — the blade settles into the chamber and HANGS there for a beat before it snaps through (a riposte, already
@@ -213,9 +264,10 @@ export function deflectPose(dt, R, held, grip, form, d){
 /* Solve the live pose onto the rig: weapon arm by IK, blade aimed, off hand on the hilt (two-handed) or free. */
 export function applySaberPose(R, held, offFree = true){
   R.chest.rotation.y = saberPose.twist;
-  solveArm(R.armR, saberPose.hand, saberPose.pole);
+  keepClear(_ch.copy(saberPose.hand), _cd.copy(saberPose.blade));
+  solveArm(R.armR, _ch, saberPose.pole);
   R.armR.wr.updateWorldMatrix(true, false);
-  aimHeld(R.chest, R.armR.wr, held.node, bladeAxis(held, _ax), saberPose.blade, 0.4);
+  aimHeld(R.chest, R.armR.wr, held.node, bladeAxis(held, _ax), _cd, 0.4);
   if (!offFree) return;
   // off hand: blend between its own target and the pommel end of the hilt
   bladeAxis(held, _ax).multiplyScalar(-0.15);

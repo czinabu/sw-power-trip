@@ -34,6 +34,7 @@ import { startLevel, retryLevel } from '../game/flow.js';
 import { startMission, retryMission } from '../game/mission.js';
 import { showBanner } from '../ui/banners.js';
 import { overlay, setSaberGrip } from '../ui/menus.js';
+import { startTwirl } from '../player/anim/saber.js';
 import { tutEvent } from '../game/tutor-bus.js';
 import { diffWindow } from '../data/difficulty.js';
 import { toggleHolster } from '../player/holster.js';
@@ -176,6 +177,7 @@ document.addEventListener('keydown', (e) => {
     if (k === 'r' && G.mode === 'play'){ if (G.unlocked.judge) forceJudgement(); else if (G.unlocked.repulse) forceRepulse(); }   // ULT: JUDGEMENT or REPULSE ('R' still restarts when dead/victory below)
     if (k === 'g' && !e.repeat && G.mode === 'play'){   // GRIP — flip between a regular and a reverse (Shien) saber grip mid-fight
       setSaberGrip(G.saberGrip === 'reverse' ? 'regular' : 'reverse');
+      startTwirl();   // the grip changes with a spin of the saber round the wrist
       showBanner('', G.saberGrip === 'reverse' ? 'REVERSE GRIP' : 'REGULAR GRIP', 0.8);
       sfx(520, 0.06, 'triangle', 0.04, 760);
     }
