@@ -2,7 +2,7 @@
 // updateEnemies(): per-frame enemy AI.
 
 import { CFG } from '../data/config.js';
-import { scene, camera } from '../engine/renderer.js';
+import { camera } from '../engine/renderer.js';
 import { sfx, S } from '../audio/sfx.js';
 import { V3, rand, clamp, TMP, dampToward } from '../utils.js';
 import { burst } from '../fx/particles.js';
@@ -22,10 +22,11 @@ import { updateDirector, usesToken, dropToken, claimToken, rangedSlotFree, behin
 import { updateNav, navSteer, navClass, navClearance } from './nav.js';
 import { DUEL } from '../data/duel.js';
 import { diffTellMul } from '../data/difficulty.js';
-import { updateDuel, cleanupDuel, planAttack, quickStrike, windupPose, strikePose, maybeFeint, chainNext, updateSaberLock } from './duel.js';
+import { updateDuel, planAttack, quickStrike, windupPose, strikePose, maybeFeint, chainNext, updateSaberLock } from './duel.js';
 import { TROOP_MELEE, TROOP_FIRE, GRENADE } from '../data/tactics.js';
 import { tickTactics, planTroopMelee, troopFeint, holdTremble, planShot, approachSteer, tryOrder, updateOrder, tryLunge, updateLungeWind,
-  updateLunge, dropLungeLine, cleanupTactics } from './tactics.js';
+  updateLunge, dropLungeLine } from './tactics.js';
+import { removeEnemy } from './cleanup.js';
 import { throwGrenade } from './grenades.js';
 import { updateLegs } from './gait.js';
 import { MOVE } from '../data/movement.js';
@@ -558,10 +559,11 @@ export function updateEnemies(dt){
       case 'fade':
         g.scale.multiplyScalar(Math.max(0.01, 1 - dt*2.2));
         g.position.y -= dt * 0.6;
-        if (e.st <= 0){ cleanupDuel(e); cleanupTactics(e); if (e.aimLine){ scene.remove(e.aimLine); e.aimLine = null; } if (e.hpBar){ scene.remove(e.hpBar); e.hpBar = null; } scene.remove(g); enemies.splice(i,1); }
+        if (e.st <= 0){ removeEnemy(e); enemies.splice(i,1); }
         break;
     }
     if (e.dp && !e.dead) updateDuel(e, dt, dist);   // guard, posture, the guard arc (duel.js)
+    else if (e.postBar) e.postBar.visible = false;  // the dead don't keep a posture bar up through the ragdoll
     if (e.lungeLine && e.lungeLine.visible && !LUNGING[e.state]) dropLungeLine(e);   // knocked out of a lunge: the line goes
     // ranged-hit recoil — a quick backward flinch that reads as "I felt that"
     if (e.flinch > 0){

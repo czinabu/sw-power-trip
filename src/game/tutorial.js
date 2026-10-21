@@ -1,7 +1,6 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
 // TRAINING: runs the tutorial (data/tutorial.js) step by step, and the short unlock drills in a real run.
 
-import { scene } from '../engine/renderer.js';
 import { sfx, S } from '../audio/sfx.js';
 import { MUSIC } from '../audio/music.js';
 import { V3 } from '../utils.js';
@@ -12,7 +11,7 @@ import { CFG } from '../data/config.js';
 import { floater } from '../fx/floaters.js';
 import { setStanceHud } from '../player/jedi/stance.js';
 import { spawnEnemy } from '../enemies/spawn.js';
-import { cleanupDuel } from '../enemies/duel.js';
+import { removeEnemy } from '../enemies/cleanup.js';
 import { startLevel, queueSpawn } from './flow.js';
 import { applyJetTier } from './progression.js';
 import { showBanner } from '../ui/banners.js';
@@ -104,8 +103,7 @@ function clearSpawned(){
     const e = sp.e, i = enemies.indexOf(e);
     if (i < 0) continue;
     if (!e.dead) burst(V3(e.group.position.x, 1.2, e.group.position.z), BEACON[T.hero], 10, 4, 3, 0.8);
-    scene.remove(e.group); cleanupDuel(e);
-    if (e.hpBar) scene.remove(e.hpBar);
+    removeEnemy(e);
     enemies.splice(i, 1);
   }
   T.spawned = [];
@@ -225,7 +223,7 @@ function updateLesson(dt){
       if (!sp.e.dead) continue;
       if ((sp.downT += dt) > 1.2){
         const i = enemies.indexOf(sp.e);
-        if (i >= 0){ scene.remove(sp.e.group); cleanupDuel(sp.e); enemies.splice(i, 1); }
+        if (i >= 0){ removeEnemy(sp.e); enemies.splice(i, 1); }
         sp.e = spawnFoe(sp.spec); sp.downT = 0;
       }
     }

@@ -10,8 +10,7 @@ import { shared, G, enemies, player } from '../state.js';
 import { CFG } from '../data/config.js';
 import { playerPos, maxHp } from '../player/helpers.js';
 import { spawnEnemy } from '../enemies/spawn.js';
-import { cleanupDuel } from '../enemies/duel.js';
-import { cleanupTactics } from '../enemies/tactics.js';
+import { removeEnemy } from '../enemies/cleanup.js';
 import { findClearSpawn } from '../world/collision.js';
 import { spawnBoss } from '../boss/boss.js';
 import { spawnChampion } from './survival.js';
@@ -108,9 +107,7 @@ export function setSandboxDummy(on){
 export function sandboxClear(){
   for (const e of enemies){
     if (!e.dead) burst(V3(e.group.position.x, 1.2, e.group.position.z), 0xffd28a, 10, 4, 3, 0.8);
-    scene.remove(e.group); cleanupDuel(e); cleanupTactics(e);
-    if (e.hpBar) scene.remove(e.hpBar);
-    if (e.aimLine) scene.remove(e.aimLine);
+    removeEnemy(e);
   }
   enemies.length = 0;
   G.spawnQueue.length = 0;

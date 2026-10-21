@@ -18,6 +18,7 @@ import { ENGAGE } from '../data/enemies.js';
 import { dropToken } from './director.js';
 import { tutEvent } from '../game/tutor-bus.js';
 import { officerDown } from './tactics.js';
+import { hideIndicators } from './cleanup.js';
 
 /* opts.launch === false: a blow with no rocket behind it (the Mandalorian's fists, knee and blade). It never floors or
    throws a live foe (the caller staggers or shoves it), and a foe it kills crumples where it stands instead of flying. */
@@ -89,6 +90,7 @@ export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick, opts){
   if (e.hpFloor && e.hp < e.hpFloor) e.hp = e.hpFloor;   // MISSIONS: a fleeing quarry breaks away at this, it doesn't fall
   if (e.hp <= 0){
     e.dead = true; e.state = 'ragdoll'; e.st = 0;
+    hideIndicators(e);   // bars, laser sight, lunge line: gone with the life, not a frame later (cleanup.js)
     tutEvent('kill', e);
     if (blownUp) flyerBlowUp(e);
     if (e.t.bomber && !e._blew) bomberExplode(e);   // a SABOTEUR killed before its fuse still goes off — don't kill it point-blank

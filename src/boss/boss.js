@@ -24,6 +24,7 @@ import { gainXp } from '../game/progression.js';
 import { victory } from '../game/summary.js';
 import { showBanner } from '../ui/banners.js';
 import { diffHpMul } from '../data/difficulty.js';
+import { hideIndicators } from '../enemies/cleanup.js';
 
 /* ============================================================
    BOSS — DARTH VEXIS
@@ -132,7 +133,7 @@ function killBoss(){
   G.slowmo = 0.35; G.slowmoT = Math.max(G.slowmoT, 0.6); G.shake = 1.2;
   // the fight is OVER — clear his summoned minions, pending spawns, shockwaves and lingering bolts
   G.spawnQueue.length = 0;
-  for (const e of enemies){ if (!e.dead){ e.dead = true; e.state = 'fade'; e.st = 0.6; } }
+  for (const e of enemies){ if (!e.dead){ e.dead = true; e.state = 'fade'; e.st = 0.6; hideIndicators(e); } }
   for (const r of rings) scene.remove(r.mesh); rings.length = 0;
   for (let i = bolts.length-1; i >= 0; i--){ if (!bolts[i].friendly){ scene.remove(bolts[i].mesh); bolts.splice(i,1); } }
   showBanner(shared.boss.kind === 'mando' ? 'THE MAGISTRATE FALLS' : 'THE VOID RECLAIMS ITS HERALD', '', 3);
