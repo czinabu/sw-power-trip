@@ -8,9 +8,9 @@ import { SWING_PATTERNS } from '../../data/stances.js';
 import { sfx, S } from '../../audio/sfx.js';
 import { V3, clamp, TMP } from '../../utils.js';
 import { burst } from '../../fx/particles.js';
-import { shared, G, enemies, player } from '../../state.js';
+import { shared, G, enemies, keys, player } from '../../state.js';
 import { fwd, playerPos, stance } from '../helpers.js';
-import { damageEnemy, staggerEnemy, flinchEnemy } from '../../enemies/damage.js';
+import { damageEnemy, flinchEnemy } from '../../enemies/damage.js';
 import { damageBoss } from '../../boss/boss.js';
 import { focusDmgMul, addFocus, FOCUS } from './focus.js';
 import { spawnHitSpark } from '../../fx/vfx.js';
@@ -23,9 +23,13 @@ import { SLAM_LAND_T, rushFlip } from '../anim/agility.js';
 /* wind: the beat with the blade drawn back (longer if a flip has to finish first) · dash: the flight in (homes on the
    foe), reaching full speed over `ramp`, skimming in at `level` above the foe's feet · range/cone: who it picks ·
    reach: contact distance · stamCost: × the form's swing cost
+   COST — forceCost and a cooldown, plus `recover`: after the landing the blade is slow to swing again, so a whiffed or
+   spammed cut leaves you open. dmgMul × the finisher's damage: a strong opener, not a one-shot (a grunt survives it).
+   minFwd: it only fires carrying forward momentum (W held and moving that way); a standing hop is a plain air swing.
    fling: the struck foe is thrown for this long, and anyone it crashes into (within flingR) takes flingDmg × the cut */
-export const AIR_CUT = { wind: 0.1, dash: 0.42, speed: 30, ramp: 0.1, level: 0.5, range: 14, cone: 0.5, reach: 1.9,
-                         dmgMul: 1.35, knock: 26, stamCost: 1.5, minHeight: 0.25, fling: 0.45, flingR: 1.5, flingDmg: 0.35 };
+export const AIR_CUT = { wind: 0.1, dash: 0.26, speed: 19, ramp: 0.12, level: 0.5, range: 7, cone: 0.6, reach: 1.9,
+                         dmgMul: 0.75, knock: 18, stamCost: 1.5, forceCost: 14, cd: 3, recover: 0.4, minFwd: 3,
+                         minHeight: 0.25, fling: 0.35, flingR: 1.4, flingDmg: 0.3 };
 const ease = (x, k) => 1 - Math.pow(k, x);   // frame-rate independent blend factor
 
 const live = (e) => e && !e.dead && !e.converted && e.state !== 'spawn';
@@ -56,9 +60,13 @@ export function airCut(){
       || player.judgeT > 0 || player.mendT > 0 || player.blockHeld) return false;
   const pp = playerPos();
   if (player.vy <= 0 && pp.y - (player.groundY || 0) < AIR_CUT.minHeight) return false;   // about to land: just swing
-  const st = stance(), cost = st.stamina * AIR_CUT.stamCost;
-  if (player.stam < cost) return false;
+  // only out of a forward run or leap: W held, and actually carrying speed the way you face
+  const f0 = fwd();
+  if (!keys['w'] || (player.vel.x + player.moveVel.x) * f0.x + (player.vel.z + player.moveVel.z) * f0.z < AIR_CUT.minFwd) return false;
+  const st = stance(), cost = st.stamina * AIR_CUT.stamCost, fcost = AIR_CUT.forceCost * (player.up.abilityCostMul || 1);
+  if (player.cds.airCut > 0 || player.stam < cost || player.force < fcost) return false;   // (not ready: the press is a plain air swing)
   player.stam -= cost; player.stamDelay = CFG.player.stamDelay;
+  player.force -= fcost; player.cds.airCut = AIR_CUT.cd;
   player.atkT = 0; player.swing = null; player.queuedAtk = false;
   player.gliding = false;
   player.airCutUsed = true;
@@ -95,7 +103,7 @@ function strike(pp, tgt){
   else if (tgt){
     if (isGuarding(tgt)) guardImpact(tgt, DUEL.posture.charge);   // the weight of the fall cracks a guard
     damageEnemy(tgt, dmg * (tgt.t.heavy ? st.heavyDmg : 1), dir.clone(), knock, true);
-    if (!tgt.dead) staggerEnemy(tgt, dir.x, dir.z);
+    if (!tgt.dead) flinchEnemy(tgt, dir, 0.7);   // rocked back, not floored: you still have to finish it
     // the foe goes flying the way the cut was travelling: anyone it crashes into goes down with it
     player.airCutFling = { e: tgt, t: AIR_CUT.fling, dir: dir.clone(), dmg: dmg * AIR_CUT.flingDmg, knock: knock * 0.5, hit: new Set([tgt]) };
     hit = true;
@@ -151,7 +159,8 @@ export function updateAirCut(dt){
     // FOLLOW-THROUGH — down on one knee with the blade planted, a puff of dust (no wave: that's the Jump Attack)
     player.airCut = null;
     player.slamLandT = SLAM_LAND_T;
-    player.moveVel.multiplyScalar(0.4); player.vel.multiplyScalar(0.4);
+    player.swingLock = Math.max(player.swingLock || 0, AIR_CUT.recover);   // RECOVERY — up off the knee before the next cut
+    player.moveVel.multiplyScalar(0.15); player.vel.multiplyScalar(0.15);   // plant: no skating on out of it
     burst(V3(pp.x, pp.y + 0.2, pp.z), 0xb9c2cc, 8, 4, 2, 0.8);
     G.shake = Math.max(G.shake, 0.25); player.landDip = Math.max(player.landDip || 0, 0.16);
     S.land(0.7);
@@ -163,7 +172,7 @@ export function updateAirCut(dt){
   if (c.phase === 'wind'){
     // the climb EASES level (no snap, no hang-and-rise) and the run keeps most of its carry
     player.vy += (0 - player.vy) * ease(dt, 1e-4);
-    player.vel.multiplyScalar(Math.pow(0.4, dt));
+    player.vel.multiplyScalar(Math.pow(0.25, dt));
     if (tgt) c.face = Math.atan2(tgt.group.position.x - pp.x, tgt.group.position.z - pp.z);
     if (c.t < c.wind) return;
     if (player.flip){ player.flip = null; player.vis.rotation.set(0, 0, 0); player.vis.position.set(0, 0, 0); }   // (a rushed flip has landed its turn)
@@ -188,8 +197,8 @@ export function updateAirCut(dt){
   if (!(near || (player.grounded && !tgt) || c.t >= AIR_CUT.dash)) return;   // (with a foe picked, a low dash skims the ground to reach it)
   // CONTACT — the cut, then the fall into the landing
   strike(pp, tgt);
-  player.vel.multiplyScalar(0.3);   // carry a little through the cut, then gravity takes the fall
-  player.vy = player.grounded ? 0 : Math.min(player.vy * 0.4, -1.5);
+  player.vel.multiplyScalar(0.15);   // the cut stops the lunge; a little carry, then gravity takes the fall
+  player.vy = player.grounded ? 0 : Math.min(player.vy * 0.4, -3);
   c.phase = 'fall';
 }
 

@@ -26,7 +26,7 @@ const CONTROLS = {
       ['HOLD RMB', 'Block', 'Soaks most of a blow; heavy hits drain stamina'],
       ['TAP RMB', 'Parry and deflect', 'Time it as a blow or bolt lands; a missed parry can\'t be retried for a moment'],
       ['E', 'Kick', 'Shoves a foe back and cracks a duellist\'s guard'],
-      ['AIR + LMB', 'Aerial cut', 'Winds up in the air, dashes at the foe ahead and cuts through · once per jump'],
+      ['W + AIR + LMB', 'Aerial cut', 'Leaping forward: a short lunge and a cut at the foe ahead · costs Force, 3s cooldown · a standing jump just swings'],
       ['LMB', 'Saber lock', 'Blades bound: mash to drive through · E kicks out · F shoves'],
       ['T / MMB', 'Lock on', 'Keeps one foe framed; press again to release'],
       ['1 / 2 / 3', 'Saber form', 'Or the mouse wheel'],
