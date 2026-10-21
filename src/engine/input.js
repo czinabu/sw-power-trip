@@ -133,6 +133,7 @@ document.addEventListener('wheel', (e) => {
 }, { passive: false });
 document.addEventListener('contextmenu', (e) => e.preventDefault());
 document.addEventListener('keydown', (e) => {
+  if (e.target && e.target.tagName === 'INPUT' && e.target.type !== 'range') return;   // typing in a text box (the co-op room code) is not play
   const k = e.key.toLowerCase();
   keys[k] = true;
   if (k === 'alt') e.preventDefault();   // ALT is the slide: keep the browser from grabbing it for its menu bar

@@ -38,6 +38,7 @@ src/
     mando/           weapons, gadgets, darksaber
   enemies/           meshes, elites, special moves, spawning, damage, AI, pathing (nav.js), attack turns (director.js), blaster bolts (see docs/enemy-ai.md)
   boss/              boss lightning FX and the boss itself
+  net/               online co-op: room-code connection over WebRTC (session.js) and the partner's ghost hero (ghost.js); see below
   world/             arena builder, arenas/ (temple, foundry, plains layouts; hall and forge for training; refuge and pursuit for the story missions; dojo and throne for the sandbox), Ink bake, painted skies/floors, backdrops, atmosphere, collision, hazards (see docs/world-guidelines.md)
   game/              level/wave flow, survival mode, training (tutorial.js), story missions (mission.js, objectives.js), the sandbox (sandbox.js), progression, boons, end-of-run summary
   ui/                banners, threat markers, HUD, store overlay, menus, the sandbox panel (sandbox-ui.js), the title screen's hero turntable (showcase.js), controls (How to Play data)
@@ -148,3 +149,11 @@ Missions are data (`data/missions.js`) built from reusable objective pieces (`ga
 ## License
 
 Copyright (c) 2026 Caleb Zinabu. All rights reserved. See [LICENSE](LICENSE) for details.
+
+## Online co-op (early test)
+
+The main menu's ONLINE CO-OP panel hosts a room (a 5-letter code) or joins one. Two browsers connect directly over WebRTC through the free PeerJS broker, and each sees the other as a second hero. Fighting together is not built yet.
+
+- `?peerhost=host&peerport=9000` in the page URL uses your own PeerServer (`npx peerjs --port 9000`) instead of the free cloud broker.
+- `api/turn.js` is a Vercel function that hands out Cloudflare TURN relay credentials for strict networks. Set `CF_TURN_KEY_ID` and `CF_TURN_API_TOKEN` on the Vercel project to turn it on; without them the game uses STUN only.
+- `npm run build && npm run smoke:coop` opens two browsers against a local PeerServer, connects them and checks each sees the other.

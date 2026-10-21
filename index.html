@@ -99,6 +99,7 @@
   <div id="banner"><div id="bannerk"></div><h1 id="bannerh"></h1><p id="bannerp"></p></div>
   <div id="tutor"><div class="tt-who"></div><div class="tt-say"></div><div class="tt-do"><span class="tt-keys"></span><span class="tt-task"></span><span class="tt-count"></span></div></div>
   <div id="xh"></div>
+  <div id="netping"></div>
   <div id="lockbar"><div class="lb-k">SABER LOCK</div><div class="lb-track"><div class="lb-mid"></div><div class="lb-fill"></div></div><div class="lb-hint"><b>LMB</b> drive &nbsp;·&nbsp; <b>E</b> kick &nbsp;·&nbsp; <b>F</b> shove</div></div>
   <div id="reticle"><span class="ring"></span><span class="rl t"></span><span class="rl r"></span><span class="rl b"></span><span class="rl l"></span><span class="dot"></span></div>
   <div id="energymeter"><div id="energyfill"></div></div>
@@ -184,6 +185,7 @@
       <div class="btn" id="restartBtn">↻ RESTART RUN</div>
       <div class="btn" id="homeBtn">MAIN MENU</div>
       <div class="btn fsctl" id="fsBtn" title="Fill the whole screen">FULLSCREEN <span class="fsval">OFF</span></div>
+      <div class="btn" id="coopBtn">ONLINE CO-OP</div>
       <div class="btn" id="settoggle">SETTINGS</div>
       <div class="btn" id="ctltoggle">HOW TO PLAY</div>
       <div class="btn" id="rmtoggle">EXTRAS</div>
@@ -231,6 +233,26 @@
           <div class="setpill" id="gripctl" title="Hold the lightsaber in a regular or reverse grip">GRIP<span class="setval" id="gripval">REGULAR</span><span class="gfxhint">G</span></div>
         </div>
       </div>
+    </div>
+  </div>
+  <div id="coop">
+    <div class="howto-panel">
+      <div class="howto-head"><div class="howto-title">ONLINE CO-OP</div><div class="rm-sub">Early test: see your partner move around</div><div class="howto-x" id="coopclose">✕</div></div>
+      <div class="coop-grid">
+        <div class="coop-col">
+          <h4>HOST A GAME</h4>
+          <p>Get a room code, then read it out to your friend.</p>
+          <div class="btn primary" id="coophost">HOST</div>
+        </div>
+        <div class="coop-col">
+          <h4>JOIN A GAME</h4>
+          <p>Type the 5-letter code your friend gives you.</p>
+          <div class="coop-join"><input id="coopcode" maxlength="5" autocomplete="off" spellcheck="false" placeholder="CODE"><div class="btn primary" id="coopjoin">JOIN</div></div>
+        </div>
+      </div>
+      <div id="coopstatus"></div>
+      <div class="btn" id="coopleave">LEAVE</div>
+      <p class="coop-note">Both of you start any mode and play as usual. You each see the other as a second hero in the arena. Fighting together comes next.</p>
     </div>
   </div>
   <div id="roadmap">
