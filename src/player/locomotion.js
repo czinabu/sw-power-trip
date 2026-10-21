@@ -16,6 +16,7 @@ import { mandoSlamImpact } from './mando/gadgets.js';
 import { MOVE } from '../data/movement.js';
 import { updateMantle, tryAutoMantle, updateWallRun, landingImpact, updateHang, updateForceSlide } from './parkour.js';
 import { doJump } from './movement.js';
+import { swingMoveMul, airControlMul } from './mobility.js';
 
 // Horizontal movement: WASD steering on the ground (or Mando air momentum), plus lunge/dash impulse velocity.
 // Returns whether there is movement input this frame (the pose code reads it).
@@ -28,7 +29,7 @@ export function updateMovement(dt, pp, st, f, r){
                    * (player.surgeT > G.gt ? player.surgeMul : 1)                      // CHASE SURGE — parkour on a story pursuit
                    * (player.boon && player.boon.adrenal && player.hp < maxHp()*0.35 ? 1.18 : 1)    // ADRENALINE boon — desperate burst
                    * focusMoveMul()                                                      // FORCE FOCUS — lighter on the feet in flow
-                   * (player.atkT > 0 && G.hero !== 'mando' ? MOVE.swingMove : 1)       // a swing plants the feet: spacing is yours to manage
+                   * (player.atkT > 0 && G.hero !== 'mando' ? swingMoveMul() : 1)       // a swing plants the feet: spacing is yours to manage (Djem So walks its cuts in)
                    * (player.landStagT > 0 ? MOVE.staggerMove : 1)                      // HARD LANDING — the knees are still buckled
                    * (player.flinchT > 0 ? CFG.player.flinch.move : 1)                  // HIT REACTION — reeling from a blow
                    * (player.saberLock ? 0 : 1)                                          // SABER LOCK — feet planted in the bind
@@ -90,7 +91,7 @@ export function updateMovement(dt, pp, st, f, r){
       const dl = TMP.length();
       const against = !moving || want.dot(player.moveVel) < 0 || player.pivotT > 0;
       let accel = (against ? MOVE.brake : MOVE.accel) * (st.accel || 1) * (player.sprinting && !against ? MOVE.sprintAccel : 1);
-      if (airborne) accel = MOVE.accel * (st.accel || 1) * (player.gliding ? 0.5 : MOVE.airControl);
+      if (airborne) accel = MOVE.accel * (st.accel || 1) * (player.gliding ? 0.5 : MOVE.airControl) * airControlMul();   // a leap in a fight steers less
       if (dl > 0.001) player.moveVel.addScaledVector(TMP.normalize(), Math.min(dl, accel * dt));
     }
     pp.addScaledVector(player.moveVel, dt);

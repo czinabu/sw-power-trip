@@ -19,6 +19,7 @@ import { updateMandoFlight } from './mando/flight.js';
 import { animatePlayer } from './animation.js';
 import { updateLockOn } from './lockon.js';
 import { holstered } from './holster.js';
+import { updateDashCharges } from './mobility.js';
 import { updateForceStrike } from './jedi/palm.js';
 
 // Per-frame player update. Each step below runs in this exact order every frame; the order matters
@@ -54,6 +55,7 @@ function updatePlayerMeters(dt, pp, st){
   if (player.stamDelay > 0) player.stamDelay -= dt;
   else player.stam = clamp(player.stam + CFG.player.stamRegen * player.up.stamRegen * (player.exhausted ? 0.7 : 1) * dt, 0, CFG.player.maxStam);
   if (player.dashT > 0) player.dashT -= dt;
+  updateDashCharges(dt);   // Force dash charges refill (player/mobility.js)
   if (player.riposteT > 0) player.riposteT -= dt;
   // a parry window that runs out without catching anything was a GUESS: the guard is slow to re-time for a moment
   // (a parry that lands zeroes parryT itself, so it never reaches this)

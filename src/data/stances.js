@@ -13,12 +13,12 @@ import { G } from '../state.js';
             regen, but feeble per hit and nearly useless against armored brutes.
    MEDIUM = the versatile technician — even stats, lowest power cooldowns, the widest parry window.
    STRONG = the brute/boss breaker — enormous single-hit damage that shreds armor and knocks brutes
-            flat, but slow, stamina-hungry, sluggish to dash, and a narrow arc that swarms punish.
+            flat, but slow, stamina-hungry, and a narrow arc that swarms punish.
    radiusMult = swing cleave radius · parryBonus = extra parry window · heavyDmg = vs armored foes. */
 export const STANCES = {
   fast:   { name: 'ATARU — FAST', form: 'ataru', formNo: 'IV', blade: 0x35c8ff,
             dmg: 0.58, heavyDmg: 0.42, speed: 2.05, knock: 0.38, stamina: 6, lunge: 1.4, move: 1.42, accel: 1.7, twist: 0.4, bladeLen: 0.94,
-            radiusMult: 1.45, forceRegen: 1.5, costMult: { push: 0.7, pull: 0.7 }, dashCd: 0.48,
+            radiusMult: 1.45, forceRegen: 1.5, costMult: { push: 0.7, pull: 0.7 },
             comboGap: 1.25, fovKick: 6,
             moveAtk: 1.5,         // PASSIVE: keeps most of its footwork mid-swing (every other form plants its feet) — kite while you cleave
             finisherArc: 1.1,     // the finisher cleaves ~10% wider — built for crowds
@@ -38,7 +38,7 @@ export const STANCES = {
             // clearly the SLOWEST swing (well under medium's 1.0) — heavy, deliberate, weighty — but the big LUNGE
             // and high damage make each committed stroke land hard, so it reads as power, not sluggishness.
             dmg: 2.15, heavyDmg: 1.75, speed: 0.68, knock: 2.2, stamina: 18, lunge: 1.4, move: 0.85, accel: 0.6, twist: 1.0, bladeLen: 1.14,
-            radiusMult: 0.8, forceRegen: 0.7, dashCd: 1.25, comboGap: 0.7, fovKick: -4,
+            radiusMult: 0.8, forceRegen: 0.7, comboGap: 0.7, fovKick: -4,
             atkDR: 0.15,          // PASSIVE: armored commitment — soak 15% damage WHILE mid-swing
             finisherLunge: 1.6,   // the 3rd hit lunges harder, carrying the heavy blade through
             finisherKnock: true,  // the finisher ALWAYS floors what it hits (brutes included)

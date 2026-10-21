@@ -26,6 +26,8 @@ import { startLock } from '../enemies/duel.js';
 import { mandoCatch } from './mando/melee.js';
 import { tutEvent } from '../game/tutor-bus.js';
 import { mandoShielding } from './mando/weapons.js';
+import { MOBILITY } from '../data/mobility.js';
+import { refundCharge, airGuardLost, airParryOk, airDamageMul, airborneInCombat, knockOutOfAir } from './mobility.js';
 
 const MELEE_REACH_UP = 1.7;   // a melee foe can't strike you if you're perched higher than this above their feet
 /* PERFECT DODGE — a blow that arrives in the first instant of a dash: time slows, the dash is refunded and (Jedi)
@@ -38,9 +40,11 @@ export function perfectDodge(fromPos){
   G.slowmo = Math.min(G.slowmo, P.slowmo); G.slowmoT = Math.max(G.slowmoT, P.slowT);
   if (G.hero === 'mando') player.jet = Math.min(player.jetMax, player.jet + MANDO.boostDash.fuel * P.refund);
   else {
-    player.force = clamp(player.force + CFG.abilities.dash.cost * P.refund, 0, CFG.player.maxForce);
+    // a dash or guard flip that cost a charge gets it back (and the dash its Force); a roll was free to begin with
+    if (player.dashSpent){ refundCharge(); player.dashSpent = false; }
+    if (player.dodgeKind === 'dash') player.force = clamp(player.force + MOBILITY.dash.cost * P.refund, 0, CFG.player.maxForce);
     player.riposteT = CFG.player.riposteTime;   // the next cut answers it
-    player.cds.dash = 0;
+    player.cds.dash = 0; player.cds.roll = 0;
     addFocus(FOCUS.gainParry);
   }
   const pp = playerPos();
@@ -139,11 +143,13 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
     }
   }
   // defense: hold RMB to BLOCK (absorb only); a freshly-timed RMB CLICK opens the parry window (a blast can't be parried)
-  else if (!silent && !(opts && opts.blast) && (player.blockHeld || player.parryT > 0) && fromPos){
+  // MID-AIR in a fight the guard can't hold: only Ataru keeps a timed parry up there (player/mobility.js)
+  else if (!silent && !(opts && opts.blast) && ((player.blockHeld && !airGuardLost()) || (player.parryT > 0 && airParryOk())) && fromPos){
     TMP.subVectors(fromPos, playerPos()); TMP.y = 0;
+    const guard = player.blockHeld && !airGuardLost();
     if (TMP.lengthSq() > 0.001 && TMP.normalize().dot(fwd()) > 0.1){
       const pp = playerPos();
-      if (player.parryT > 0 || (player.blockHeld && player.stam > 0)) deflectAnim(V3(fromPos.x, pp.y + 1.4, fromPos.z));
+      if (player.parryT > 0 || (guard && player.stam > 0)) deflectAnim(V3(fromPos.x, pp.y + 1.4, fromPos.z));
       if (player.parryT > 0){
         player.parryT = 0;   // a parry consumes the window
         player.riposteT = CFG.player.riposteTime;
@@ -166,10 +172,10 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
         tutEvent('parry');
         return 'parried';
       }
-      if (player.blockHeld && pierce){
+      if (guard && pierce){
         floater(pp, 'GUARD PIERCED', '#ff6a3a');   // it drove straight through the block: full force
         sfx(160, 0.12, 'square', 0.06, 70);
-      } else if (player.blockHeld && player.stam > 0){
+      } else if (guard && player.stam > 0){
         // a heavy blow (a brute's maul) jars the guard far harder than a grunt's chop
         const heavy = Math.max(1, dmg / CFG.player.blockHeavy);
         player.stam = Math.max(0, player.stam - CFG.player.blockStamCost * heavy * player.up.blockStam * (stance().blockStamMul || 1));
@@ -182,7 +188,7 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
         if (melee && CFG.player.blockChip > 0) hurtPlayer(dmg * CFG.player.blockChip, null, true, false, true);
         return 'blocked';
       }
-      else if (player.blockHeld) dmg *= 0.5;   // guard crushed (out of stamina) — half damage bleeds through
+      else if (guard) dmg *= 0.5;   // guard crushed (out of stamina) — half damage bleeds through
     }
   }
   dmg *= (1 - (player.up.dr || 0));   // UNSTOPPABLE damage reduction
@@ -193,6 +199,7 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
     dmg *= (1 - abil('barrier').dr);
     if (!silent){ burst(V3(playerPos().x, 1.5, playerPos().z), 0x6fd0ff, 5, 5, 3); sfx(900, 0.08, 'sine', 0.05, 1400); }
   }
+  dmg *= airDamageMul();   // caught MID-AIR in a fight: the blow lands harder (player/mobility.js)
   dmg *= diffDmgMul();   // DIFFICULTY scales all incoming damage (enemies, boss, blasts)
   player.hp -= dmg;
   if (G.stats) G.stats.dmgTaken += dmg;
@@ -212,6 +219,7 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
       TMP.subVectors(playerPos(), fromPos); TMP.y = 0;
       player.flinchDir = TMP.lengthSq() > 0.001 ? { x: TMP.x / TMP.length(), z: TMP.z / TMP.length() } : null;
       player.flinchHeavy = melee && heavyHit;
+      if (airborneInCombat()){ knockOutOfAir(); if (!silent) floater(playerPos(), 'CAUGHT MID-AIR', '#ff9a6a'); }
       if (melee){
         if (player.atkT > 0 || player.darkT > 0) cancelSwing();
         TMP.subVectors(playerPos(), fromPos); TMP.y = 0;

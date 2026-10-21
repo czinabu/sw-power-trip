@@ -11,6 +11,9 @@
 //   lift  — extra height of the arc, metres        bank / pitch — lean into the move at mid-flight
 //   legs  — tuck · pike · layout · split · slide   arms — an AIR_GUARDS key for the saber hand(s)
 //   ease  — 'flip' (fast through the middle, hanging at the ends) or 'twirl' (even spin)
+//
+// `roll` is the ground ROLL, the duel dodge on SHIFT in a fight (player/mobility.js, tuning in data/mobility.js): it
+// stays on the ground, so a negative lift keeps a somersault low (a shoulder roll) and the rest are sidesteps.
 
 /* ---------------- JEDI — per form ---------------- */
 export const AGILITY = {
@@ -21,6 +24,11 @@ export const AGILITY = {
       side: { spin: 1, tilt: 1.15, lift: 0.75, legs: 'split', arms: 'tuck', ease: 'twirl' },          // butterfly twist
       fwd:  { somer: 1, lift: 0.85, legs: 'tuck', arms: 'tuck' },                                        // dive-over front tuck
       back: { somer: -1, lift: 0.8, legs: 'tuck', arms: 'tuck' },                                        // back tuck
+    },
+    roll: {
+      side: { roll: 1, lift: 0.15, legs: 'split', arms: 'layout' },                                      // a low cartwheel
+      fwd:  { somer: 1, lift: -0.35, legs: 'tuck', arms: 'tuck' },                                       // dive roll
+      back: { somer: -1, lift: -0.35, legs: 'tuck', arms: 'tuck' },                                      // back roll
     },
     jump:   { tuck: 1.0, spin: 1, arms: 'tuck' },                    // a tap jump turns a full twist in the tuck
     double: { somer: 1, twist: 1, lift: 0.4, legs: 'tuck', arms: 'tuck' },              // front flip with a full twist
@@ -44,6 +52,11 @@ export const AGILITY = {
       fwd:  { spin: 1, tilt: 0.25, pitch: 0.3, lift: 0.3, legs: 'stride', arms: 'layout', ease: 'twirl' },
       back: { spin: -1, tilt: 0.25, pitch: -0.2, lift: 0.3, legs: 'stride', arms: 'layout', ease: 'twirl' },
     },
+    roll: {
+      side: { spin: 1, tilt: 0.15, lift: 0.05, legs: 'stride', arms: null, ease: 'twirl' },              // a spinning sidestep
+      fwd:  { somer: 1, lift: -0.45, legs: 'tuck', arms: 'tuck' },                                       // shoulder roll
+      back: { somer: -1, lift: -0.45, legs: 'tuck', arms: 'tuck' },
+    },
     jump:   { tuck: 0.7, arms: null },
     double: { somer: 1, lift: 0.35, legs: 'layout', arms: 'layout' },                   // a clean layout front flip
     evade: {
@@ -66,6 +79,11 @@ export const AGILITY = {
       side: { bank: 0.42, drop: 0.32, legs: 'slide', arms: null },                     // a driven sidestep slide
       fwd:  { pitch: 0.38, drop: 0.3, legs: 'slide', arms: null },                     // shoulder-first charge
       back: { pitch: -0.26, drop: 0.3, legs: 'slide', arms: null },                    // a braced back-slide
+    },
+    roll: {
+      side: { bank: 0.3, drop: 0.28, legs: 'slide', arms: null },                      // a planted sidestep, guard up
+      fwd:  { somer: 1, lift: -0.45, legs: 'tuck', arms: 'tuck' },                     // a heavy shoulder roll
+      back: { pitch: -0.22, drop: 0.28, legs: 'slide', arms: null },                   // a braced back-step
     },
     jump:   { tuck: 0.45, arms: null },
     double: { pitch: -0.12, legs: 'tuck', arms: 'hammer', tuckHold: 1 },               // Force leap, blade cocked overhead

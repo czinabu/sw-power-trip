@@ -121,6 +121,10 @@ body.mando #fpbar{background:linear-gradient(90deg,#d98a2b,#ffd9a0)}
 .ab.slot .cdt:empty{display:none}
 .ab.slot.cool{border-color:var(--edge)}
 .ab.slot.cool .key,.ab.slot.cool .an,.ab.slot.cool .ic{opacity:.45}
+/* DASH charges: a row of pips along the top-right edge */
+.ab.slot .chg{position:absolute;right:4px;top:5px;display:flex;gap:2px;z-index:1}
+.ab.slot .chg i{width:5px;height:5px;border-radius:50%;border:1px solid var(--accent)}
+.ab.slot .chg i.on{background:var(--accent);box-shadow:0 0 4px var(--accent)}
 /* ready but you lack the Force / power to cast it */
 .ab.slot.nofp{border-color:rgba(255,110,90,.55)}
 .ab.slot.nofp .ic{color:var(--danger-soft)}

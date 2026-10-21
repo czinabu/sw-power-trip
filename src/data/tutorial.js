@@ -93,7 +93,7 @@ export const TRAINING = {
       keys: 'TAP RMB', do: 'Deflect 3 bolts', ev: 'deflect', need: 3,
       spawn: [{ type: 'blaster', at: [0, -9], sparring: true, rooted: true }] },
     { say: 'Let the strike pass through where you were. Move as it falls, not before.',
-      keys: 'SHIFT', do: 'Perfect dodge: dash just as a blow lands', ev: 'perfectDodge', need: 1,
+      keys: 'SHIFT', do: 'Perfect dodge: roll just as a blow lands', ev: 'perfectDodge', need: 1,
       spawn: [{ type: 'grunt', at: [0, -4], sparring: true }] },
     { say: 'No cut must be finished. Break it off, and guard.',
       keys: 'LMB · RMB', do: 'Start a swing, then cancel it into your guard', ev: 'cancel', need: 1 },

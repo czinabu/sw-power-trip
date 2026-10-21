@@ -114,7 +114,7 @@ export function startLevel(idx, opts){
   player.judgeTargets = [];
   player.barrierT = 0; if (shared._barrierMesh) shared._barrierMesh.visible = false;
   player.mendT = 0;
-  player.cancelDR = 0; player.swingLock = 0; player.cancelRiposte = false;
+  player.cancelDR = 0; player.swingLock = 0; player.dashCharges = null; player.dashRecharge = 0; player.cancelRiposte = false;
   player.cds.mend = 0;
   if (idx === 0) switchStance('medium', true);   // a fresh legend starts balanced
   setStanceHud();

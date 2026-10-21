@@ -14,6 +14,8 @@ import { flipStyle, launchFlip } from './anim/agility.js';
 import { MOVE } from '../data/movement.js';
 import { tryVault, findLedge, startMantle, requestRoll, hangClimb } from './parkour.js';
 import { tutEvent } from '../game/tutor-bus.js';
+import { MOBILITY } from '../data/mobility.js';
+import { inCombat, formMob, groundRoll, rollRedash, spendCharge, airborneInCombat } from './mobility.js';
 
 /* MOMENTUM in a chain of moves: each move sends you where it says, instead of piling its push on top of whatever the
    last move left. The run's momentum (moveVel) and the impulses (vel) are steered together. */
@@ -52,11 +54,19 @@ export function forceDash(){
   const A = CFG.abilities.dash;
   if (G.mode !== 'play' || player.mantle || player.hang) return;
   if (requestRoll(playerPos())) return;   // SHIFT just before a hard landing rolls out of it instead (free)
-  if (!G.unlocked.dash || player.cds.dash > 0 || player.force < A.cost || player.landStagT > 0) return;
+  if (player.landStagT > 0) return;
+  // IN A FIGHT, SHIFT on the ground ROLLS (free, the duel dodge); a second SHIFT during the roll, or SHIFT in the air,
+  // is the FORCE DASH, which spends a charge and some Force. Out of a fight SHIFT just dashes, for free (mobility.js).
+  const fight = inCombat();
+  if (fight && player.grounded && !rollRedash()){ groundRoll(); return; }
+  const cost = fight ? MOBILITY.dash.cost * (formMob().dashCost ?? 1) : 0;
+  if (!G.unlocked.dash || player.cds.dash > 0 || player.force < cost) return;
+  if (!spendCharge()) return;
   if (player.atkT > 0) cancelSwing();   // DASH-CANCEL — bail a swing into an evasive dash in any direction
-  player.force -= A.cost;   // the dash spends Force
-  player.cds.dash = A.cd * (stance().dashCd || 1) * player.up.dashCdMult;
+  player.force -= cost;   // the dash spends Force (in a fight)
+  player.cds.dash = MOBILITY.dash.gap;
   player.dashT = A.time; player.dashStartT = G.gt;   // PERFECT DODGE reads the dash's start (player/damage.js)
+  player.dodgeKind = 'dash'; player.dashSpent = fight;   // a perfect dodge gives a spent charge back
   tutEvent('dash');
   const dir = V3(0,0,0);
   if (keys['w']) dir.add(fwd());
@@ -91,14 +101,18 @@ export function doJump(){
     return;
   }
   if (player.landStagT > 0) return;   // knees still buckled from a hard landing
-  if (player.blockHeld && player.grounded){
+  // (in a fight the evade spends a dash charge; with none left it's a plain jump out of the guard)
+  const fight = inCombat();
+  if (player.blockHeld && player.grounded && (!fight || !MOBILITY.air.evadeCharge || spendCharge())){
     // FORCE-ASSISTED EVADE out of the guard — a long, clean acrobatic leap that carries you clear.
-    //   W = FRONT handspring · A/D = SIDE flip · S/neutral = BACK flip. i-frames last the whole move.
+    //   W = FRONT handspring · A/D = SIDE flip · S/neutral = BACK flip. Out of a fight the i-frames last the whole
+    //   move; in one only its start (MOBILITY.air.evadeIframes), so the landing can be punished.
     player.vy = CFG.player.jumpVel * 0.82;            // low, gliding arc — these COVER GROUND, not height
     player.grounded = false;
     const dur = 0.72;                                 // slower, more cinematic — the spin hangs with the arc
-    player.dashT = Math.max(player.dashT, dur);        // i-frames for the full flip — a real dodge
-    player.dashStartT = G.gt;
+    const safe = fight ? Math.min(dur, MOBILITY.air.evadeIframes * (formMob().evadeIframes || 1)) : dur;
+    player.dashT = Math.max(player.dashT, safe);
+    player.dashStartT = G.gt; player.dodgeKind = 'evade'; player.dashSpent = fight && MOBILITY.air.evadeCharge;
     let dir = 'back', side = 1, push = fwd().multiplyScalar(-20);                               // BACK flip, away
     if (keys['w']){ dir = 'fwd'; push = fwd().multiplyScalar(22); }                             // FRONT handspring, far forward
     else if (keys['a']){ dir = 'side'; side = -1; push = rightV().multiplyScalar(-21); }        // SIDE flip, left
@@ -160,7 +174,7 @@ export function doJump(){
     // the second jump steers the leap: held keys turn the momentum their way, with a slight carry that way (the way
     // you're looking with no keys held)
     const sd = stickDir();
-    if (sd) turnTo(sd.x, sd.z);
+    if (sd && (!airborneInCombat() || formMob().airTurn)) turnTo(sd.x, sd.z);   // in a fight the leap keeps its line (Ataru can still turn it)
     player.vel.addScaledVector(sd || fwd(), 5);
     launchFlip({ ...flipStyle('double'), t: 0, dur: 0.82 }, 'fwd');
     burst(playerPos().clone().setY(playerPos().y + 0.4), 0x88ddff, 6, 4, 2);

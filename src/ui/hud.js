@@ -17,6 +17,8 @@ import { renderThreats } from './threats.js';
 import { svgIcon, SLOT_ICON } from './icons.js';
 import { trainingProgress } from '../game/tutorial.js';
 import { objectiveHud } from '../game/objectives.js';
+import { MOBILITY } from '../data/mobility.js';
+import { maxCharges, inCombat, formMob } from '../player/mobility.js';
 
 // give every power slot its icon once (key badge top-left, icon centre, name below)
 for (const id in SLOT_ICON){ const el = document.getElementById(id); if (el) el.querySelector('.key').insertAdjacentHTML('afterend', svgIcon(SLOT_ICON[id])); }
@@ -208,9 +210,24 @@ export function updateHud(){
   }
   document.getElementById('ab-block').classList.toggle('nofp', player.stam < CFG.player.blockStamCost);
   const jediSlots = [['ab-push','push',abil('push').cost],['ab-slam','slam',abil('jslam').cost],
-                ['ab-throw','throw',abil('throw').cost],['ab-dash','dash',0],
+                ['ab-throw','throw',abil('throw').cost],
                 ['ab-pull','pull',abil('pull').cost],['ab-judge','judge',abil('judge').cost],
                 ['ab-repulse','repulse',abil('repulse').cost],['ab-barrier','barrier',abil('barrier').cost],
                 ['ab-mend','mend',abil('mend').cost]];
   for (const [id, key, cost] of jediSlots) cdSlot(id, key, cost);
+  dashSlot();
+}
+
+/* DASH: pips for the Force dash charges, the shade showing the next one refilling. Out of a fight the dash is free:
+   the slot reads ready whatever the charges say. */
+function dashSlot(){
+  const el = $('ab-dash'); if (!el || el.style.display === 'none') return;
+  const max = maxCharges(), n = player.dashCharges ?? max, fight = inCombat();
+  if (!el._chg){ el.insertAdjacentHTML('beforeend', '<span class="chg"></span>'); el._chg = el.querySelector('.chg'); }
+  setHtml(el._chg, '<i class="on"></i>'.repeat(n) + '<i></i>'.repeat(Math.max(0, max - n)));
+  const empty = fight && n < 1;
+  el.style.setProperty('--cd', empty ? (1 - (player.dashRecharge || 0)).toFixed(3) : '0');
+  el.classList.toggle('cool', empty);
+  el.classList.toggle('nofp', fight && !empty && player.force < MOBILITY.dash.cost * (formMob().dashCost ?? 1));
+  setText(el.querySelector('.an'), fight ? 'ROLL' : 'DASH');
 }
