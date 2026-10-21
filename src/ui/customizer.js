@@ -73,7 +73,7 @@ export function closeCustomizer(){
   savePicks(picks);
   // the player wears the new look from the next run: rebuild it, then put back what the old model carried
   rebuildPlayerModel(picks);
-  applySaberGrip(player, G.saberGrip);
+  applySaberGrip(player, G.saberGrip, G.mode !== 'play');
   const st = STANCES[G.stance];
   if (st){ player.blade.glow.material.color.setHex(bladeColor(st)); player.blade.light.color.setHex(bladeColor(st)); }
   setHero(G.hero);

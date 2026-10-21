@@ -78,7 +78,7 @@ function figure(poseName){
   const P = POSES[poseName];
   const t = { group: new THREE.Group() };
   t.group.add(buildHeroModel(t, LOOK));
-  applySaberGrip(t, GRIP);
+  applySaberGrip(t, GRIP, true);
   const R = t.rig, mando = P.hero === 'mando';
   for (const m of t.mandoParts) m.visible = mando;
   for (const m of t.headBare) m.visible = !mando;

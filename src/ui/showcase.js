@@ -158,7 +158,7 @@ function dress(hero){
   fig.pistols.R.visible = mando;
   fig.rifleMesh.visible = false;
   fig.darksaberMesh.visible = false;
-  applySaberGrip(fig, G.saberGrip);
+  applySaberGrip(fig, G.saberGrip, true);
   const set = (o, v) => o.rotation.set(...(v || [0, 0, 0]));
   for (const s of ['armL', 'armR']){ set(R[s].sh, P[s].sh); set(R[s].el, P[s].el); }
   for (const s of ['legL', 'legR']){ set(R[s].hip, P[s].hip); set(R[s].knee, P[s].knee); }

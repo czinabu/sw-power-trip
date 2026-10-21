@@ -171,7 +171,7 @@ document.getElementById('swingctl').addEventListener('click', (e) => { e.stopPro
 export function setSaberGrip(grip){
   G.saberGrip = grip === 'reverse' ? 'reverse' : 'regular';
   try { localStorage.setItem('sw_sabergrip', G.saberGrip); } catch(e){}
-  applySaberGrip(player, G.saberGrip);
+  applySaberGrip(player, G.saberGrip, G.mode !== 'play');
   const gv = document.getElementById('gripval'); if (gv) gv.textContent = G.saberGrip.toUpperCase();
 }
 setSaberGrip(localStorage.getItem('sw_sabergrip') || 'regular');
