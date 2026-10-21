@@ -80,7 +80,8 @@ function updatePauseCam(){
 }
 
 export function updateCamera(dt){
-  if (G.paused && G.mode === 'play'){ updatePauseCam(); return; }
+  // the FOV slider wants the real gameplay camera, so the cut slideshow stands down while it's dragged
+  if (G.paused && G.mode === 'play' && !G.fovPreview){ updatePauseCam(); return; }
   if (pauseCam){
     camera.position.copy(pauseCam.pos); camera.quaternion.copy(pauseCam.quat);
     camera.fov = pauseCam.fov; camera.updateProjectionMatrix();
