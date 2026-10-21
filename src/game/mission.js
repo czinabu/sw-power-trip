@@ -18,8 +18,7 @@ import { ENEMY_TYPES } from '../data/enemies.js';
 import { buildEnemyMesh } from '../enemies/mesh.js';
 import { updateLegs } from '../enemies/gait.js';
 import { spawnEnemy, makeBossBar } from '../enemies/spawn.js';
-import { cleanupDuel } from '../enemies/duel.js';
-import { cleanupTactics } from '../enemies/tactics.js';
+import { removeEnemy } from '../enemies/cleanup.js';
 import { findClearSpawn } from '../world/collision.js';
 import { buildNav } from '../enemies/nav.js';
 import { makeEvacuee } from '../world/arenas/refuge.js';
@@ -93,9 +92,7 @@ function arcSpawn(a0, a1){
 function sweepField(){
   for (const e of enemies){
     if (!e.dead) burst(V3(e.group.position.x, 1.2, e.group.position.z), 0xffd28a, 10, 4, 3, 0.8);
-    scene.remove(e.group); cleanupDuel(e); cleanupTactics(e);
-    if (e.hpBar) scene.remove(e.hpBar);
-    if (e.aimLine) scene.remove(e.aimLine);
+    removeEnemy(e);
   }
   enemies.length = 0;
   G.spawnQueue.length = 0;
@@ -551,11 +548,7 @@ function quarryEscaped(){
   M.failT = 2.8;
 }
 // take one foe off the field without counting it as a kill
-function dropFoe(e){
-  scene.remove(e.group); cleanupDuel(e); cleanupTactics(e);
-  if (e.hpBar) scene.remove(e.hpBar);
-  if (e.aimLine) scene.remove(e.aimLine);
-}
+function dropFoe(e){ removeEnemy(e); }
 // the quarry stops running and fights: a champion of its type, standing where it stopped
 function spawnQuarryFoe(o, line, kicker){
   const q = M.def.quarry[G.hero], p = M.quarry.g.position;

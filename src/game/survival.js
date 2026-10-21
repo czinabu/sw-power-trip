@@ -13,8 +13,7 @@ import { floater } from '../fx/floaters.js';
 import { shared, G, enemies, bolts, player } from '../state.js';
 import { playerPos, maxHp } from '../player/helpers.js';
 import { makeBossBar, spawnEnemy } from '../enemies/spawn.js';
-import { cleanupDuel } from '../enemies/duel.js';
-import { cleanupTactics } from '../enemies/tactics.js';
+import { removeEnemy } from '../enemies/cleanup.js';
 import { clearGrenades } from '../enemies/grenades.js';
 import { findClearSpawn, edgeSpawn } from '../world/collision.js';
 import { buildArena } from '../world/arena.js';
@@ -109,7 +108,7 @@ export function startEndless(){
 }
 // rebuild the arena in place at a milestone — clear the field, build, recentre the player (NO run reset)
 function rotateEndlessArena(L){
-  for (const e of enemies){ scene.remove(e.group); cleanupDuel(e); cleanupTactics(e); } enemies.length = 0;
+  for (const e of enemies) removeEnemy(e); enemies.length = 0;
   for (const b of bolts) scene.remove(b.mesh); bolts.length = 0;
   clearGrenades();
   G.spawnQueue.length = 0;
