@@ -14,8 +14,9 @@ const Y = new THREE.Vector3(0, 1, 0);
 const _t = new THREE.Vector3(), _p = new THREE.Vector3(), _ax = new THREE.Vector3(), _grip = new THREE.Vector3();
 
 // cache the data as vectors once
+const vecOff = o => o && { hand: V(o.hand), pole: V(o.pole || [-0.55, -0.8, -0.25]).normalize() };
 const vecPose = p => p && ({ ...p, hand: V(p.hand), blade: V(p.blade).normalize(), pole: V(p.pole || [0.55, -0.8, -0.25]).normalize(),
-  off: p.off && { hand: V(p.off.hand), pole: V(p.off.pole || [-0.55, -0.8, -0.25]).normalize() } });
+  off: vecOff(p.off), offMove: vecOff(p.offMove) });
 const GUARDS = {}, SWINGS = {};
 for (const g in SABER_GUARDS){ GUARDS[g] = {}; for (const f in SABER_GUARDS[g]) GUARDS[g][f] = { ready: vecPose(SABER_GUARDS[g][f].ready), block: vecPose(SABER_GUARDS[g][f].block) }; }
 const AIR = {};
@@ -71,13 +72,18 @@ export function guardPose(dt, R, held, grip, form, blocking, sway, over = null, 
   switchT = Math.max(0, switchT - dt);
   const k = Math.min(1, dt * (blocking ? 18 : switchT > 0 ? SWITCH_RATE : 9) * rate);
   _t.copy(g.hand); _t.y += sway.y; _t.z += sway.z;
+  // mid-switch the blade swings out round the weapon side, never across the body or face
+  const out = switchT > 0 ? Math.sin(Math.PI * switchT / SWITCH_TIME) : 0;
+  if (out){ _t.x += 0.12 * out; _t.z += 0.08 * out; }
   saberPose.hand.lerp(_t, k);
-  slerpDir(saberPose.blade, g.blade, k, saberPose.blade);
+  slerpDir(saberPose.blade, out ? _ax.copy(g.blade).addScaledVector(OUTX, SWITCH_OUT * out).normalize() : g.blade, k, saberPose.blade);
   saberPose.pole.lerp(g.pole, k).normalize();
   saberPose.two += ((g.two ? 1 : 0) - saberPose.two) * Math.min(1, dt * 14);
-  if (g.off){
-    _p.copy(g.off.hand); if (sway.off){ _p.z += sway.off; _p.y += Math.abs(sway.off) * 0.3; }
-    saberPose.off.lerp(_p, Math.min(1, dt * 8 * rate)); saberPose.offPole.lerp(g.off.pole, k).normalize();
+  // a guard can rest its free hand while idle and bring it up as soon as the hero moves (offMove)
+  const off = (sway.moving && g.offMove) || g.off;
+  if (off){
+    _p.copy(off.hand); if (sway.off){ _p.z += sway.off; _p.y += Math.abs(sway.off) * 0.3; }
+    saberPose.off.lerp(_p, Math.min(1, dt * 8 * rate)); saberPose.offPole.lerp(off.pole, k).normalize();
   }
   saberPose.twist += ((g.twist || 0) - saberPose.twist) * Math.min(1, dt * 9 * rate);
   saberPose.lean += ((g.lean || 0) - saberPose.lean) * Math.min(1, dt * 10 * rate);
@@ -88,13 +94,14 @@ export function guardPose(dt, R, held, grip, form, blocking, sway, over = null, 
    (the guard blend runs much faster for a moment) instead of drifting there. */
 const SWITCH_TIME = 0.22, SWITCH_RATE = 24;   // seconds the fast blend lasts; its rate (the guard's own is 9)
 const GRIP_TURN = Math.PI / 0.16;   // rad/s the hilt turns over in the fingers on a grip change (half a turn in 0.16 s)
+const SWITCH_OUT = 1.1, OUTX = new THREE.Vector3(1, 0, 0);   // how far out to the weapon side the blade swings mid-switch
 let switchT = 0;
 export function startSwitch(){ switchT = SWITCH_TIME; }
 
 /* KEEP CLEAR — the blade never passes through the hero. The body is an upright elliptic column in chest space (a
    narrower one for the head); a hand inside it is pushed out, and a blade crossing it is turned out around the hand
    by how deep its deepest point sits. Runs on every pose (guards, cuts, form and grip switches, the blends between them). */
-const BODY_RX = 0.28, BODY_RZ = 0.2, BODY_LO = -1.5, BODY_TOP = 0.36, HEAD_R = 0.16, HEAD_TOP = 0.7, BLADE_LEN = 1.55;
+const BODY_RX = 0.3, BODY_RZ = 0.24, BODY_LO = -1.5, BODY_TOP = 0.36, HEAD_R = 0.2, HEAD_TOP = 0.7, BLADE_LEN = 1.55;
 const _n = new THREE.Vector3(), _w = new THREE.Vector3(), _s = new THREE.Vector3(), _ch = new THREE.Vector3(), _cd = new THREE.Vector3();
 // how deep a point sits inside the body (0 = outside), with the way out (level) in _n
 function depth(p){
