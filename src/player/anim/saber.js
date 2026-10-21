@@ -68,7 +68,8 @@ export function guardPose(dt, R, held, grip, form, blocking, sway, over = null, 
   if (!saberPose.live) seed(R, held);
   const G0 = (GUARDS[grip] && GUARDS[grip][form]) || GUARDS.regular.niman;
   const g = (!blocking && over) || (blocking ? G0.block : G0.ready);
-  const k = Math.min(1, dt * (blocking ? 18 : 9) * rate);
+  switchT = Math.max(0, switchT - dt);
+  const k = Math.min(1, dt * (blocking ? 18 : switchT > 0 ? SWITCH_RATE : 9) * rate);
   _t.copy(g.hand); _t.y += sway.y; _t.z += sway.z;
   saberPose.hand.lerp(_t, k);
   slerpDir(saberPose.blade, g.blade, k, saberPose.blade);
@@ -80,34 +81,19 @@ export function guardPose(dt, R, held, grip, form, blocking, sway, over = null, 
   }
   saberPose.twist += ((g.twist || 0) - saberPose.twist) * Math.min(1, dt * 9 * rate);
   saberPose.lean += ((g.lean || 0) - saberPose.lean) * Math.min(1, dt * 10 * rate);
-  applyTwirl(dt);
   return { torso: g.torso || 0 };
 }
 
-/* TWIRL — switching form or grip spins the saber round the wrist out at the weapon side, clear of the body: the hand
-   comes out in front of the weapon shoulder and the blade wheels tip-forward in a plane tilted out away from the hero,
-   then settles into the new guard. Switching again mid-spin keeps the same wheel turning, so flicking back and forth
-   reads as one long flourish. */
-const TWIRL_TIME = 0.5, TWIRL_RATE = 24;   // seconds one switch spins for; wheel speed (rad/s): about two turns
-const TWIRL_HAND = new THREE.Vector3(0.46, 0.16, 0.34), TWIRL_OUT = 0.45;   // TWIRL_OUT tilts the wheel's plane out
-const twirl = { t: 0, w: 0, ang: 0 };
-export function startTwirl(){
-  // a fresh spin starts the wheel where the blade already points, so it doesn't jump
-  if (twirl.w === 0) twirl.ang = Math.atan2(saberPose.blade.z, saberPose.blade.y);
-  twirl.t = TWIRL_TIME;
-}
-function applyTwirl(dt){
-  twirl.t = Math.max(0, twirl.t - dt);
-  twirl.w += ((twirl.t > 0 ? 1 : 0) - twirl.w) * Math.min(1, dt * (twirl.t > 0 ? 14 : 8));
-  if (twirl.w < 0.01){ twirl.w = 0; return; }
-  twirl.ang += dt * TWIRL_RATE;
-  saberPose.hand.lerp(TWIRL_HAND, twirl.w);
-  slerpDir(saberPose.blade, _t.set(TWIRL_OUT, Math.cos(twirl.ang), Math.sin(twirl.ang)).normalize(), twirl.w, saberPose.blade);
-}
+/* SWITCH — changing form or grip turns the saber straight into the new guard in one quick, efficient rotation
+   (the guard blend runs much faster for a moment) instead of drifting there. */
+const SWITCH_TIME = 0.22, SWITCH_RATE = 24;   // seconds the fast blend lasts; its rate (the guard's own is 9)
+const GRIP_TURN = Math.PI / 0.16;   // rad/s the hilt turns over in the fingers on a grip change (half a turn in 0.16 s)
+let switchT = 0;
+export function startSwitch(){ switchT = SWITCH_TIME; }
 
 /* KEEP CLEAR — the blade never passes through the hero. The body is an upright elliptic column in chest space (a
    narrower one for the head); a hand inside it is pushed out, and a blade crossing it is turned out around the hand
-   by how deep its deepest point sits. Runs on every pose (guards, cuts, twirls, the blends between them). */
+   by how deep its deepest point sits. Runs on every pose (guards, cuts, form and grip switches, the blends between them). */
 const BODY_RX = 0.28, BODY_RZ = 0.2, BODY_LO = -1.5, BODY_TOP = 0.36, HEAD_R = 0.16, HEAD_TOP = 0.7, BLADE_LEN = 1.55;
 const _n = new THREE.Vector3(), _w = new THREE.Vector3(), _s = new THREE.Vector3(), _ch = new THREE.Vector3(), _cd = new THREE.Vector3();
 // how deep a point sits inside the body (0 = outside), with the way out (level) in _n
@@ -159,7 +145,6 @@ export function swingPose(R, held, grip, form, sw){
     const G0 = (GUARDS[grip] && GUARDS[grip][form]) || GUARDS.regular.niman;
     sw.anim.rest = G0.ready;
   }
-  twirl.t = twirl.w = 0;   // a cut takes the blade out of any twirl
   const A = sw.anim, [C, S, F] = A.keys;
   const k = Math.min(1, sw.t / sw.dur);
   // COIL — the blade settles into the chamber and HANGS there for a beat before it snaps through (a riposte, already
@@ -262,7 +247,13 @@ export function deflectPose(dt, R, held, grip, form, d){
 }
 
 /* Solve the live pose onto the rig: weapon arm by IK, blade aimed, off hand on the hilt (two-handed) or free. */
-export function applySaberPose(R, held, offFree = true){
+export function applySaberPose(R, held, offFree = true, dt = 1 / 60){
+  // a grip change turns the hilt over in the hand; the wrist follows it round, so the blade itself stays on course
+  const r = held.root, to = r && r.userData.gripTo;
+  if (to !== undefined && r.rotation.x !== to){
+    const d = to - r.rotation.x, st = GRIP_TURN * dt;
+    r.rotation.x = Math.abs(d) <= st ? to : r.rotation.x + Math.sign(d) * st;
+  }
   R.chest.rotation.y = saberPose.twist;
   keepClear(_ch.copy(saberPose.hand), _cd.copy(saberPose.blade));
   solveArm(R.armR, _ch, saberPose.pole);

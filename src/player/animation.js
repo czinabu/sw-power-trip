@@ -328,7 +328,7 @@ function animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait){
     sw.t += sdt;
     // (no blade in hand — e.g. the weapon was swapped mid-swing — just run the swing's clock out)
     const cue = held ? swingPose(R, held, grip, form, sw) : { k: Math.min(1, sw.t / sw.dur), env: 0, cut: 0, spin: 0, hop: 0, drop: 0 };
-    if (held) applySaberPose(R, held, player.castT <= 0);
+    if (held) applySaberPose(R, held, player.castT <= 0, dt);
     // the body turns with the blade; a finisher spins all the way round (Ataru leaps into it)
     const turn = Math.sign(sw.pat.yT - sw.pat.yF);
     // a cut that flows out of the last one starts from that one's body turn, hop and drop and eases out of them by
@@ -424,7 +424,7 @@ function animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait){
       ? deflectPose(dt, R, held, grip, form, player.deflectAnim)
       : guardPose(dt, R, held, grip, form, blocking, sway, over, ag ? ag.rate : 1);
     // a free off hand swings with the stride when running (two-handed guards keep it on the hilt)
-    applySaberPose(R, held, player.castT <= 0);
+    applySaberPose(R, held, player.castT <= 0, dt);
     R.torso.rotation.y = dr(R.torso.rotation.y, planted ? body.torso : 0, 9);
     if (blocking || planted) vis.rotation.x = dr(vis.rotation.x, saberPose.lean + (planted ? footwork().lean : 0), 12);
     vis.rotation.y = dr(vis.rotation.y, 0, 12);

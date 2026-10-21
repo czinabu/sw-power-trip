@@ -91,12 +91,16 @@ export const WEAPON_MODELS = {
    out of the pinky side along the forearm). Visual only: swing reach and damage don't depend on the blade mesh.
    The animated node (player.saberHand) is untouched; only the hilt+blade root inside it flips. The saber's built
    orientation (root unrotated) runs the blade back up the forearm, i.e. it IS the reverse grip, so 'regular' is
-   the flipped one. Checked in game: regular points the blade away from the elbow, reverse back toward it. */
+   the flipped one. Checked in game: regular points the blade away from the elbow, reverse back toward it.
+   A switch mid-game turns the hilt over in the fingers (anim/saber.js eases the root to `gripTo`); a fresh model
+   starts in its grip. */
 let saberGrip = 'regular';
-export function applySaberGrip(player, grip){
+export function applySaberGrip(player, grip, instant = false){
   saberGrip = grip === 'reverse' ? 'reverse' : 'regular';
   const root = player.saberBladeRoot;
-  if (root) root.rotation.x = saberGrip === 'reverse' ? 0 : Math.PI;
+  if (!root) return;
+  root.userData.gripTo = saberGrip === 'reverse' ? 0 : Math.PI;
+  if (instant) root.rotation.x = root.userData.gripTo;
 }
 
 export function mountWeapon(R, S, id, socket){
@@ -117,7 +121,7 @@ export function mountLoadout(R, S, player){
   player.saberPivot = R.armR.sh;
   player.blade = { blade: saber.blade, glow: saber.glow, light: saber.light };
   player.saberBladeRoot = saber.bladeRoot;
-  applySaberGrip(player, saberGrip);
+  applySaberGrip(player, saberGrip, true);
 
   player.pistols = { L: mountWeapon(R, S, 'pistol', 'handL').group, R: mountWeapon(R, S, 'pistol', 'handR').group };
 
