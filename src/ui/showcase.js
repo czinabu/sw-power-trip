@@ -291,7 +291,7 @@ function setTheme(k, now){
 }
 
 export function showcaseActive(){
-  return G.mode === 'menu' && document.getElementById('overlay').style.display !== 'none';
+  return G.mode === 'menu' && !G.fovPreview && document.getElementById('overlay').style.display !== 'none';
 }
 
 export function renderShowcase(dt){

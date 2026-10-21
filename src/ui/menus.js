@@ -22,6 +22,10 @@ import { svgIcon } from './icons.js';
 import { setRoadmap } from './roadmap.js';
 import { enterFullscreenIfWanted, escapeIsOurs } from './fullscreen.js';
 import { CFG } from '../data/config.js';
+import { LEVELS } from '../data/levels.js';
+import { buildArena } from '../world/arena.js';
+import { findClearSpawn } from '../world/collision.js';
+import { playerPos } from '../player/helpers.js';
 
 /* ============================================================
    INPUT
@@ -210,10 +214,27 @@ volsl.addEventListener('input', (e) => { audioInit(); setMasterVol(parseFloat(e.
   sl.addEventListener('pointerdown', (e) => e.stopPropagation());
   sl.addEventListener('click', (e) => e.stopPropagation());
   sl.addEventListener('input', (e) => setShakeScale(parseFloat(e.target.value))); }
+// FOV PREVIEW — while the slider is held (or nudged with the arrow keys) the settings fade away and the live
+// in-game view shows through, so you can see the new width as you pick it
 { const sl = document.getElementById('fovsl');
-  sl.addEventListener('pointerdown', (e) => e.stopPropagation());
+  let held = false, idle = 0;
+  const preview = (on) => {
+    // from the title screen before any run there's no arena yet: raise the first one so there's a view to judge
+    if (on && G.mode === 'menu' && !shared.arenaGroup.children.length){
+      buildArena(LEVELS[0]);
+      const spot = findClearSpawn(0, shared.arenaHalf * 0.5, CFG.player.radius + 1.0); playerPos().set(spot.x, 0, spot.z);
+    }
+    G.fovPreview = on; document.body.classList.toggle('fovpreview', on);
+  };
+  const release = () => { if (!held) return; held = false; preview(false); };
+  sl.addEventListener('pointerdown', (e) => { e.stopPropagation(); held = true; clearTimeout(idle); preview(true); });
+  window.addEventListener('pointerup', release);
+  window.addEventListener('pointercancel', release);
   sl.addEventListener('click', (e) => e.stopPropagation());
-  sl.addEventListener('input', (e) => setFov(parseFloat(e.target.value))); }
+  sl.addEventListener('input', (e) => {
+    setFov(parseFloat(e.target.value));
+    if (!held){ preview(true); clearTimeout(idle); idle = setTimeout(() => preview(false), 900); }   // keyboard nudges
+  }); }
 for (const [id, set] of [['mussl', setMusicVol], ['fxsl', setSfxVol]]){
   const sl = document.getElementById(id); if (!sl) continue;
   sl.addEventListener('pointerdown', (e) => e.stopPropagation());
