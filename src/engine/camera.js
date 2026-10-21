@@ -100,10 +100,11 @@ export function updateCamera(dt){
   //       way you last strafed, with situational distance & offset strength -----
   let camHi = 0, distMul = 1, ots = 0;
   if (G.hero !== 'mando'){
-    // JEDI: over the right shoulder, like a modern saber game. The spine sits left of centre, so a foe straight ahead
-    // stays in view past it instead of hiding behind the hero's back
+    // JEDI: Jedi Academy framing: nearly dead centre behind the hero, close in, aimed high so they sit in the lower third.
+    // A slight right offset keeps a foe straight ahead from hiding behind the hero's back
     player.camOts = (player.camOts || 0) + (C.shoulder - (player.camOts || 0)) * Math.min(1, dt*4);
     ots = player.camOts;
+    distMul = C.jediDistMul;
   } else {
     const aiming = player.blockHeld || player.zoom || player.aiming > 0;
     const flying = !player.grounded;
@@ -203,7 +204,7 @@ export function updateCamera(dt){
   let td = clamp((G.pitch - C.topDownFrom) / (1.2 - C.topDownFrom), 0, 1);
   td = td*td*(3 - 2*td);
   const ahead = C.lookAhead * (1 - td * C.topDownAhead);
-  camera.lookAt(tx + f.x*ahead + rv.x*ots, ty + C.lookUp + (G.hero === 'mando' ? 0.3 : 0) + diveLook + aimRise - td * C.topDownDrop, tz + f.z*ahead + rv.z*ots);
+  camera.lookAt(tx + f.x*ahead + rv.x*ots, ty + C.lookUp + (G.hero === 'mando' ? 0.3 : C.jediLookUp) + diveLook + aimRise - td * C.topDownDrop, tz + f.z*ahead + rv.z*ots);
   // camera ROLL into a strafe — subtle for the Jedi; a pronounced Max-Payne bank for the boosting Mando, but
   // damped right down while AIMING so the shot stays readable.
   const strafe = vx * (-f.z) + vz * f.x;

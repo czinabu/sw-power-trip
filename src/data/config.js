@@ -79,10 +79,12 @@ export const CFG = {
     // LENS — a big-budget third-person framing: the hero fills about a third of the frame height, the lens rides at
     // shoulder height just off the right shoulder, and a moderate FOV keeps the backdrop large (a wide FOV shrinks
     // everything past the hero, which is what made the arenas read small)
-    fov: 60,                  // vertical degrees at rest (was 70: ~106° across a 16:9 screen, a fisheye on the props)
+    fov: 68,                  // vertical degrees at rest (wide, Jedi Academy style; the FOV setting overrides it)
     pivotY: 1.9,              // the lens orbits a point this high over the hero's feet (just over head height)
     minLensY: 1.3,            // looking up swings the lens down, but never lower than this over the hero's feet
-    shoulder: 0.75,           // Jedi lens sits this far right of the spine, so the foe ahead is never hidden behind you
+    shoulder: 0.2,            // Jedi lens sits this far right of the spine: almost centred, like Jedi Academy
+    jediDistMul: 0.85,        // Jedi follows closer than the baseDist (Mando keeps the full distance)
+    jediLookUp: 0.55,         // Jedi aim point rides this much higher, pushing the hero down into the lower third of the frame
     lookAhead: 5,             // the lens aims this far past the hero...
     lookUp: -0.15,            // ...and this high over the pivot (a hair under it keeps the hero's boots in frame)
     topDownFrom: 0.45,        // past this pitch (radians, looking down) the aim point starts drawing in toward the hero...
