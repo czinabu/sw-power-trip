@@ -119,6 +119,14 @@
 #settings{position:fixed;inset:0;z-index:25;display:none;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;
   background:rgba(1,4,10,.72);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);cursor:default}
 #settings.open{display:flex}
+/* FOV PREVIEW — only the FOV slider stays on screen over the live game view while it's being adjusted */
+body.fovpreview #overlay{background:none!important}
+body.fovpreview #overlay > :not(#settings){visibility:hidden}
+body.fovpreview #settings{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none}
+body.fovpreview #settings .howto-panel{background:transparent;border-color:transparent;box-shadow:none}
+body.fovpreview #settings .howto-panel *{visibility:hidden}
+body.fovpreview #settings #fovpill, body.fovpreview #settings #fovpill *{visibility:visible}
+body.fovpreview #fovpill{background:rgba(1,4,10,.82)}
 .set-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
 .set-grp{display:flex;flex-direction:column;gap:6px;background:rgba(255,255,255,.025);border:1px solid var(--edge);border-radius:var(--r-lg);padding:12px 14px}
 .set-grp h4{margin:0 0 4px;font-size:14px;letter-spacing:2.1px;color:var(--accent);font-weight:700}

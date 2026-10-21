@@ -220,7 +220,8 @@ export function updateCamera(dt){
   if (G.mode === 'play' && !player.zoom && (G.hitstop > 0.04 || G.slowmo < 0.9)) fovPunch = C.impactFov;
   else fovPunch = Math.max(0, fovPunch - dt * C.impactFov * 4);
   const wantFov = player.zoom ? 30 : (baseFov(C) + (player.dashT > 0 ? 10 : 0) + clamp(speed * 0.2, 0, 6) + (stance().fovKick || 0) - blasterAim);
-  camFov += (wantFov - camFov) * Math.min(1, dt * (player.zoom ? 12 : 7));
+  // previewing the FOV setting (often while paused, dt = 0): snap so the view follows the slider at once
+  camFov = G.fovPreview ? wantFov : camFov + (wantFov - camFov) * Math.min(1, dt * (player.zoom ? 12 : 7));
   const fov = camFov - fovPunch;
   if (Math.abs(camera.fov - fov) > 0.02){ camera.fov = fov; camera.updateProjectionMatrix(); }
 }
