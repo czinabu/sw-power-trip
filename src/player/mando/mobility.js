@@ -28,10 +28,12 @@ function stickOr(dflt){
    boost out of a fight, so in an empty sandbox or between waves the dive never showed). */
 export function mandoShift(){
   if (G.mode !== 'play' || player.mantle || player.hang) return;
-  // (a dive over uneven ground can leave the floor for a frame: that still counts as the ground)
+  // a second SHIFT just after a dive's push-off (still low over the ground) is the rocket boost
+  const redash = player.dodgeKind === 'dive' && G.gt - (player.rollAt ?? -9) < MM.dive.redash;
+  // (a slope can leave the floor for a frame: that still counts as the ground)
   const onGround = player.grounded || (G.gt - (player.lastGroundT ?? -9) < 0.12 && player.vy <= 0.5 && !player.jetActive);
-  if (!onGround){ airDodge(); return; }
-  if (!(player.dodgeKind === 'dive' && G.gt - (player.rollAt ?? -9) < MM.dive.redash)){ mandoDive(); return; }
+  if (!onGround && !redash){ airDodge(); return; }
+  if (!redash){ mandoDive(); return; }
   if (player.flip){   // the boost takes the dive (or the slide) over: back to the thruster skid
     player.flip = null; player.vis.rotation.set(0, 0, 0); player.vis.position.set(0, 0, 0);
   }
