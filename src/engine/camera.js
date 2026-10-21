@@ -29,9 +29,10 @@ function crowdAround(pp){
 
 // the resting FOV is authored for 16:9; on a narrower window (4:3, portrait) widen it so the sides don't close in
 function baseFov(C){
+  const f = G.fov || C.fov;   // the FOV setting, falling back to the authored default
   const a = Math.min(camera.aspect, 16/9);
-  const h = 2 * Math.atan(Math.tan(C.fov * Math.PI / 360) * 16/9);
-  return Math.max(C.fov, 2 * Math.atan(Math.tan(h / 2) / a) * 180 / Math.PI);
+  const h = 2 * Math.atan(Math.tan(f * Math.PI / 360) * 16/9);
+  return Math.max(f, 2 * Math.atan(Math.tan(h / 2) / a) * 180 / Math.PI);
 }
 
 export function updateCamera(dt){

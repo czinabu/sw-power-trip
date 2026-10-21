@@ -60,16 +60,16 @@ export const MANDO_STORE = [
   // its peers despite competing against a FREE skill-tree pick (Hunter's Creed costs no XP at all), a real value gap.
   { id:'bacta',   tier:2, stage:5, cost:150, avail:()=>!player.up.lifesteal, ico:'✚', nm:'BACTA STIM', ds:'Channel a fast self-heal (+30% vit) · G · LOCKS Hunter\'s Creed',
     owned:()=>!!G.unlocked.bacta, buy(){ G.unlocked.bacta = true; } },
-  // SIGNATURE WEAPON fork (after wave 7) — the major identity choice. Both bind to key 3 (mutually exclusive).
-  { id:'disruptor', tier:4, stage:6, cost:0, fork:'mainwpn', ico:'⌖', nm:'DISRUPTOR RIFLE', ds:'Scoped sniper (RMB) · spear melee · key 3 · LOCKS the Darksaber',
-    owned:()=>!!G.unlocked.disruptor, buy(){ G.unlocked.disruptor = true; switchWeapon('disruptor'); } },
-  { id:'darksaber', tier:4, stage:6, cost:0, fork:'mainwpn', dark:true, ico:'🗡', nm:'THE DARKSABER', ds:'Heavy beskar blade — devastating but slow · key 3 · RMB+LMB throws it, the grappling line reels it back · LOCKS the Disruptor',
-    owned:()=>!!player.up.darksaber, buy(){ player.up.darksaber = true; G.unlocked.dark = true; switchWeapon('darksaber'); } },
-  // LATE fork (after wave 8) — whistling birds OR thermal detonator
-  { id:'birds',   tier:3, stage:7, cost:250, fork:'m_late', ico:'✺', nm:'WHISTLING BIRDS', ds:'Homing micro-missile swarm · V',
+  // LATE fork (after wave 7) — whistling birds OR thermal detonator (comes BEFORE the signature weapon)
+  { id:'birds',   tier:3, stage:6, cost:250, fork:'m_late', ico:'✺', nm:'WHISTLING BIRDS', ds:'Homing micro-missile swarm · V',
     owned:()=>!!G.unlocked.birds, buy(){ G.unlocked.birds = true; } },
-  { id:'deto',    tier:3, stage:7, cost:250, fork:'m_late', ico:'◉', nm:'THERMAL DETONATOR', ds:'Sticky charge → big AoE · V',
+  { id:'deto',    tier:3, stage:6, cost:250, fork:'m_late', ico:'◉', nm:'THERMAL DETONATOR', ds:'Sticky charge → big AoE · V',
     owned:()=>!!G.unlocked.deto, buy(){ G.unlocked.deto = true; } },
+  // SIGNATURE WEAPON fork (after wave 8) — the major identity choice. Both bind to key 3 (mutually exclusive).
+  { id:'disruptor', tier:4, stage:7, cost:0, fork:'mainwpn', ico:'⌖', nm:'DISRUPTOR RIFLE', ds:'Scoped sniper (RMB) · spear melee · key 3 · LOCKS the Darksaber',
+    owned:()=>!!G.unlocked.disruptor, buy(){ G.unlocked.disruptor = true; switchWeapon('disruptor'); } },
+  { id:'darksaber', tier:4, stage:7, cost:0, fork:'mainwpn', dark:true, ico:'🗡', nm:'THE DARKSABER', ds:'Heavy beskar blade — devastating but slow · key 3 · RMB+LMB throws it, the grappling line reels it back · LOCKS the Disruptor',
+    owned:()=>!!player.up.darksaber, buy(){ player.up.darksaber = true; G.unlocked.dark = true; switchWeapon('darksaber'); } },
   // FINAL (after wave 9) — the expensive capstone (needs the signature weapon first)
   { id:'jetmissile', tier:5, stage:9, cost:560, final:true, avail:()=>!!(G.unlocked.disruptor||player.up.darksaber), ico:'☄', nm:'JETPACK MISSILE', ds:'Boba-Fett back launcher — HUGE blast &amp; damage · Z · earned AFTER your signature weapon',
     owned:()=>!!G.unlocked.jetmissile, buy(){ G.unlocked.jetmissile = true; } },

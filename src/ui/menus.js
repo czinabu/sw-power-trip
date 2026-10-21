@@ -21,6 +21,7 @@ import { renderControls } from './controls.js';
 import { svgIcon } from './icons.js';
 import { setRoadmap } from './roadmap.js';
 import { enterFullscreenIfWanted, escapeIsOurs } from './fullscreen.js';
+import { CFG } from '../data/config.js';
 
 /* ============================================================
    INPUT
@@ -188,6 +189,14 @@ function setShakeScale(v){
   const sl = document.getElementById('shakesl'); if (sl && +sl.value !== G.shakeScale) sl.value = G.shakeScale;
 }
 { let v; try { v = parseFloat(localStorage.getItem('sw_shake')); } catch(e){} setShakeScale(isNaN(v) ? 1 : v); }
+// FIELD OF VIEW — the resting vertical FOV the camera eases toward (dash kicks and disruptor zoom still ride on top)
+function setFov(v){
+  G.fov = Math.round(Math.max(50, Math.min(90, isNaN(v) ? CFG.camera.fov : v)));
+  try { localStorage.setItem('sw_fov', G.fov); } catch(e){}
+  const sv = document.getElementById('fovval'); if (sv) sv.textContent = G.fov + '°';
+  const sl = document.getElementById('fovsl'); if (sl && +sl.value !== G.fov) sl.value = G.fov;
+}
+{ let v; try { v = parseFloat(localStorage.getItem('sw_fov')); } catch(e){} setFov(isNaN(v) ? CFG.camera.fov : v); }
 setMasterVol(shared.masterVol);   // sync the sliders/labels to the values already loaded from localStorage
 setMusicVol(AE.vol.music); setSfxVol(AE.vol.sfx);
 const senssl = document.getElementById('senssl'), volsl = document.getElementById('volsl');
@@ -201,6 +210,10 @@ volsl.addEventListener('input', (e) => { audioInit(); setMasterVol(parseFloat(e.
   sl.addEventListener('pointerdown', (e) => e.stopPropagation());
   sl.addEventListener('click', (e) => e.stopPropagation());
   sl.addEventListener('input', (e) => setShakeScale(parseFloat(e.target.value))); }
+{ const sl = document.getElementById('fovsl');
+  sl.addEventListener('pointerdown', (e) => e.stopPropagation());
+  sl.addEventListener('click', (e) => e.stopPropagation());
+  sl.addEventListener('input', (e) => setFov(parseFloat(e.target.value))); }
 for (const [id, set] of [['mussl', setMusicVol], ['fxsl', setSfxVol]]){
   const sl = document.getElementById(id); if (!sl) continue;
   sl.addEventListener('pointerdown', (e) => e.stopPropagation());
