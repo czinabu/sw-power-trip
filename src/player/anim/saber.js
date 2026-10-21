@@ -256,7 +256,8 @@ export function deflectPose(dt, R, held, grip, form, d){
 /* Solve the live pose onto the rig: weapon arm by IK, blade aimed, off hand on the hilt (two-handed) or free. */
 export function applySaberPose(R, held, offFree = true, dt = 1 / 60){
   // a grip change turns the hilt over in the hand; the wrist follows it round, so the blade itself stays on course
-  const r = held.root, to = r && r.userData.gripTo;
+  // (the Darksaber has no flippable root: it's always held regular)
+  const r = held.root, to = r ? r.userData.gripTo : undefined;
   if (to !== undefined && r.rotation.x !== to){
     const d = to - r.rotation.x, st = GRIP_TURN * dt;
     r.rotation.x = Math.abs(d) <= st ? to : r.rotation.x + Math.sign(d) * st;
