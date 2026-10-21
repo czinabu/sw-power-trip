@@ -131,7 +131,7 @@ export const TRAINING = {
     { say: 'Beskar is heavy. Do not hop the crates: run straight at one and climb over it without stopping.',
       keys: 'W · SPACE', do: 'Run right up to a crate on the west lane and press SPACE at its edge', ev: 'vault', need: 1, mark: [-11, 8] },
     { say: 'Do not stand where the shot is going.',
-      keys: 'SHIFT', do: 'Thruster-dodge on the ground', ev: 'dash', need: 2 },
+      keys: 'SHIFT', do: 'Dive on the ground (SHIFT twice for the rocket boost)', ev: 'dash', need: 2 },
 
     { sec: 'THE JETPACK', say: 'I have reforged your booster. The jetpack is not for running. It is for the high ground. Take the lookout.',
       keys: 'HOLD SPACE', do: 'Fly to the top of the lookout', reach: [13.6, -9.4, 7.7], grant: 'jet1' },
@@ -146,7 +146,7 @@ export const TRAINING = {
         { at: [0, -11.5], after: 'vault', keys: 'W · SPACE', do: 'Climb over the sandbag wall', hint: 'OVER THE WALL' },
         { at: [13.6, -9.4, 7.7], keys: 'HOLD SPACE', do: 'Jet to the top of the lookout' },
         { at: [-2, 12], r: 2.4, land: true, keys: 'HOLD SPACE + HOLD SHIFT', do: 'Boost across the yard and land on the marker' },
-        { at: [0, 3.6], after: 'dash', keys: 'SHIFT', do: 'Thruster-dodge into the forge', hint: 'DODGE IN (SHIFT)' },
+        { at: [0, 3.6], after: 'dash', keys: 'SHIFT', do: 'Dive into the forge', hint: 'DIVE IN (SHIFT)' },
       ] },
 
     { sec: 'THE BLASTER', say: 'A clean shot ends the fight before it starts. Aim for the head.',

@@ -237,11 +237,12 @@ export function landingStyle(){
 
 /* ---------------- MANDO ---------------- */
 /* The Mando's whole-body moves (data/mobility.js MANDO_MOBILITY), posed about the hips and lowered to the floor:
-   DIVE — the Helldivers dive, the way you press: forward he dives flat and somersaults over, left or right he dives
-          over that shoulder and rolls on across, back he sits into a backward somersault; then up off one knee.
+   DIVE — the Max Payne / Helldivers dive, the way you press: laid out flat in the air (face-down forward, on his back
+          backward, on his side left or right), down on the plate with a skid, then up off one knee. No somersaults.
    SLIDE — feet first into base: leaning back, the lead leg out straight, the other folded under, hips near the floor. */
 const smooth = k => { k = clamp(k, 0, 1); return k * k * (3 - 2 * k); };
-const DIVE_LEGS = [0.1, 0.15, 0.16, 0.22, 0.04];      // straight out behind in the throw
+const DIVE_LEGS = [0.12, 0.28, 0.06, 0.45, 0.14];     // laid out behind in the throw, knees soft
+const DIVE_LEGS_BACK = [-0.55, 0.85, -0.3, 0.55, 0.16];   // on his back: knees up, boots toward the target
 const GETUP_LEGS = [-1.2, 1.9, 0.15, 1.5, 0.18];      // one knee planted, pushing up
 const BASE_LEGS = [-0.75, 0.06, -0.05, 1.9, 0.2];      // lead leg out, trail leg folded under (the body leans back on top)
 function mandoBody(dt, dr, vis, R, fl){
@@ -252,16 +253,23 @@ function mandoBody(dt, dr, vis, R, fl){
   }
   let pitch = 0, bank = 0, low, lift = 0, legs, lw = 1, drop;
   if (fl.kind === 'dive'){
-    // squared to the reticle the whole way: FORWARD dives flat and somersaults over, LEFT / RIGHT dives over that
-    // shoulder and rolls on across, BACK sits back into a backward somersault. One full turn, then up off one knee.
-    const D = MANDO_MOBILITY.dive, [a, b] = D.phases, back = fl.dir === 'back';
-    const turn = p < a ? Math.PI / 2 * smooth(p / a) : p < b ? Math.PI / 2 + Math.PI * 1.5 * smooth((p - a) / (b - a)) : 0;
-    if (fl.dir === 'side') bank = turn * fl.side; else pitch = back ? -turn : turn;
-    low = p < a ? smooth(p / a) : p < b ? 1 : 1 - smooth((p - b) / (1 - b));
-    lift = p < a && !back ? D.lift * Math.sin(Math.PI * p / a) : 0;
-    drop = 0.35 + (COM - 0.65) * Math.abs(Math.sin(turn));   // flat out (on the chest, side or back) sits lowest
-    legs = p < a ? (back ? LEGS.tuck : DIVE_LEGS) : p < b ? LEGS.tuck : GETUP_LEGS;
-    lw = p < b ? 1 : Math.sin(Math.PI * (p - b) / (1 - b));
+    // Max Payne / Helldivers: no somersaults. Squared to the reticle the whole way, he lays out flat in the air the
+    // way he dives (FORWARD face-down, BACK on his back with his boots toward the target, LEFT / RIGHT on his side,
+    // head first), comes down on the plate and skids, then gets up off one knee. One smooth curve, no snaps: the body
+    // tips over through the take-off, holds through the flight and the skid, and eases back up.
+    const D = MANDO_MOBILITY.dive, [a, b] = D.phases;
+    const flat = p < a ? smooth(p / a) : p < b ? 1 : 1 - smooth((p - b) / (1 - b));
+    pitch = (fl.df >= 0 ? D.tilt.fwd : D.tilt.back) * fl.df * flat;
+    bank = D.tilt.side * fl.dr * flat;
+    if (Math.abs(fl.dr) > Math.abs(fl.df)) pitch -= D.tilt.sideUp * Math.abs(fl.dr) * flat;   // a side dive lies a little on its back, chest to the target
+    low = flat; drop = COM - D.hips;
+    const air = clamp(p / D.land, 0, 1);
+    lift = D.lift * Math.sin(Math.PI * air) * (1 - air * 0.35);   // up off the floor, a longer fall than rise
+    legs = p < b ? (fl.df < -0.5 ? DIVE_LEGS_BACK : DIVE_LEGS) : GETUP_LEGS;
+    lw = p < b ? flat : Math.sin(Math.PI * (p - b) / (1 - b));
+    // the visor stays on the target: the head counters the lay-out
+    R.head.rotation.x = dr(R.head.rotation.x, -pitch * 0.55, 18);
+    R.head.rotation.z = dr(R.head.rotation.z, -bank * 0.4, 18);
   } else {
     const S = MANDO_MOBILITY.slide;
     const sp = Math.hypot(player.moveVel.x, player.moveVel.z);

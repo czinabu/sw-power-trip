@@ -71,12 +71,11 @@ export const MOBILITY = {
 
 /* THE MANDALORIAN. Beskar on the ground, a jetpack in the air: on his feet he fights like a soldier, and off them
    he's the most agile thing in the fight.
-   ON THE GROUND in a fight SHIFT is a COMBAT DIVE (Helldivers), the way you press, squared to the reticle: forward
-   he dives flat and somersaults over, left or right he dives over that shoulder and rolls on across, back he sits
-   into a backward somersault, then he gets back up. Free, a moment of invulnerability through the throw,
+   ON THE GROUND SHIFT is a COMBAT DIVE, in every mode, fight or not (Max Payne / Helldivers), the way you press, squared to the reticle
+   so the gun stays on target: he lays out flat in the air (face-down forward, on his back backward, on his side left
+   or right), lands on the plate and skids, then gets back up. Free, a moment of invulnerability through the throw,
    but the get-up is his weight showing: that's the window to punish. Tap SHIFT again early in the dive for the full
-   ROCKET BOOST (data/mando.js MANDO.boostDash, it spends jet fuel). Out of a fight SHIFT on the ground is the rocket
-   boost straight away, as before.
+   ROCKET BOOST (data/mando.js MANDO.boostDash, it spends jet fuel).
    IN THE AIR a SHIFT tap is an AIR DODGE: a straight, hard thruster kick the way you press (no flips: the pack does
    the work) with i-frames that also stops the fall for a beat. It spends one of a few JET CHARGES (refilling over time) plus a little fuel. Keep SHIFT held and it
    becomes the directional boost (data/mando.js boostThrust). In the air he steers hard, brakes hard against his
@@ -90,9 +89,12 @@ export const MANDO_MOBILITY = {
   },
   dive: {
     speed: 13,       // m/s impulse along the dive
-    time: 0.85,      // the whole move: the throw, the barrel roll on the deck, the get-up
-    phases: [0.3, 0.58],   // share of the move he's flying until, then rolling until; the rest is getting up
-    lift: 0.45,      // how high the throw arcs (m)
+    time: 0.95,      // the whole move: the throw, the flight, the skid on the plate, the get-up
+    phases: [0.28, 0.66],  // share of the move the body takes to lay out flat, and stays flat until; the rest is the get-up
+    land: 0.45,      // share of the move he's in the air before the plate hits the floor
+    lift: 0.55,      // how high the hips arc in the throw (m)
+    hips: 0.3,       // hip height lying flat (m)
+    tilt: { fwd: 1.45, back: 1.3, side: 1.35, sideUp: 0.3 },   // lay-out angles (rad): face-down, on the back, on the side
     iframes: 0.32,   // invulnerable from the start for this long (a perfect dodge counts from the start)
     cd: 0.25,        // gap after a dive before the next one
     redash: 0.3,     // a second SHIFT this soon into a dive fires the rocket boost instead
