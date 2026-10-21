@@ -1,4 +1,4 @@
-# Every PR and every push to main: the game must build, then survive a short scripted fight as each hero
+# Every PR and every push to main: the game must build, then survive a short scripted fight as each hero, and two browsers must connect for online co-op
 # (tools/smoke/smoke.mjs). Run the same thing locally with `npm run build && npm run smoke`.
 name: Build and smoke test
 
@@ -21,6 +21,7 @@ jobs:
       - run: npm run build
       - run: npx playwright install --with-deps chromium
       - run: npm run smoke
+      - run: npm run smoke:coop
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
