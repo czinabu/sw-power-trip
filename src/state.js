@@ -97,7 +97,7 @@ export const player = {
   barrierT: 0, mendT: 0, mendMax: 0.7,
   cancelT: -9, cancelDR: 0, swingLock: 0,   // swing-cancel system: riposte-window timestamp, brief DR, re-swing lockout
   runPhase: 0,
-  cds: { push:0, slam:0, throw:0, dash:0, pull:0, judge:0, repulse:0, barrier:0, mend:0, rocket:0, flame:0, dark:0, birds:0, deto:0, grapple:0, missile:0, bacta:0, darkThrow:0 },
+  cds: { push:0, slam:0, throw:0, dash:0, pull:0, judge:0, repulse:0, barrier:0, mend:0, rocket:0, flame:0, dark:0, birds:0, deto:0, grapple:0, missile:0, bacta:0, darkThrow:0, airCut:0 },
   saberPivot: null, saberHand: null, arcMesh: null, blade: null, rig: null,
   // mando
   fireCd: 0, firePistol: 1, firing: false, trigHeld: false, shieldDropT: 0, jetActive: false, mandoParts: null, pistols: null, lockOn: false,
