@@ -36,7 +36,7 @@ const CONTROLS = {
     ]},
     { title: 'FORCE POWERS', rows: [
       ['F', 'Push', 'From the start'],
-      ['C', 'Pull · hold 1s to Grasp', 'Unlocks after wave 2 · grasped: F throws, C yanks in, Alt drops'],
+      ['C', 'Pull · hold to Grasp', 'Unlocks after wave 2 · grasped: F throws, C yanks in, Alt drops'],
       ['V', 'Barrier', 'Earned with XP · or Saber Throw (RMB + LMB)'],
       ['X', 'Jump attack', 'Leaps if you\'re on the ground, winds up, then drives the blade down · Earned with XP · or Mend, a self-heal'],
       ['R', 'Judgement', 'Earned with XP · or Repulse'],
