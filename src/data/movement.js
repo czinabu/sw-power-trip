@@ -45,6 +45,7 @@ export const MOVE = {
   // FORCE SLIDE. The sprint is free (stamina belongs to the saber). The walk is a real walk, in a fight too.
   sprintMul: 1.42,      // top speed while sprinting
   walkMul: 0.42,        // top speed while walking (×7.2 ≈ 3.0 m/s: a brisk pace, still a walk, see GAIT.walkStride)
+  runAccel: 90, runBrake: 110,   // RUN mode (Jedi, ground): m/s² up to speed and down to a stop, × the form's accel (~0.1–0.2 s to full sprint); walk mode keeps accel/brake
   sprintAccel: 0.55,    // steering while sprinting is heavier (accel multiplier)
   sprintTurn: 4.2,      // max body turn rate while sprinting (rad/s)
   slideTime: 0.62, slideMinSpeed: 7.5,   // (the momentum window after a slide; the Mando's slide is data/mobility.js MANDO_MOBILITY.slide)
