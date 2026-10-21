@@ -37,6 +37,10 @@ Troopers move with the hero's ground handling and legs, so they read as people r
   feet stay put and step when the body moves or turns off them. Each foot stands on what is under it and the hips
   sink to the lower one; the body bobs with the stride and leans with acceleration.
 - Jet troopers and leaps hang their legs; knockdowns, ragdolls and get-ups let them go straight.
+- Bosses (`boss/boss.js`, `BOSS_GAIT` in `data/bosses.js`) use the same legs, sized for their 1.4x body (`legScale`).
+  They are heavy: slower accel and brake, a slower turn while walking up (his attacks still aim as before), a long pivot,
+  less bob and lean, and a thud (dust and a little camera shake) at each footfall near the hero. They pace in the captured
+  walk until phase III, then run. Blinks, jet charges, retreats and the ground-pound leave the ground; dying lets go.
 
 ## Behaviours
 

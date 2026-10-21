@@ -4,7 +4,7 @@
 // as the officers of that army.
 //
 // Hooks boss.js drives: bodyMat (hit flash, rage aura, windups) · pivot (weapon shoulder) · hand (weapon swing,
-// rotation.z) · eyes (swell on windup).
+// rotation.z) · eyes (swell on windup) · the legs and vis (enemies/gait.js, see updateBoss).
 
 import * as THREE from 'three';
 import { glow } from '../engine/renderer.js';
@@ -129,7 +129,12 @@ export function buildBoss(kind){
     weaponArm(k, L, kind);
     const aura = new THREE.PointLight(L.aura, 4, 14); aura.position.set(0, 0.25, 1.4); k.live(aura);   // pools on the floor in front of him
   }, { armor: L.armor, armor2: L.armor2, suit: L.suit, cloth: L.cloth, metal: L.metal });
-  const g = instantiate(baked);
+  // like the troopers (enemies/mesh.js): the group carries place and heading, `vis` inside it takes the gait's bob and lean.
+  // The trooper legs sit in the 1.4x body group, so enemies/gait.js is told how much bigger they are (legScale)
+  const vis = instantiate(baked), g = new THREE.Group();
+  g.add(vis);
+  g.userData = vis.userData;
+  g.userData.vis = vis; g.userData.legScale = BODY;
   g.scale.setScalar(1.35);
   return g;
 }

@@ -33,7 +33,9 @@ export function updateLegs(o, g, dt, mode = 'ground'){
   const L = o.legs || (o.legs = { cyc: 0, step: 0.5, vx: 0, vz: 0, ax: 0, az: 0, px: g.position.x, pz: g.position.z,
                                   locks: [null, null], offs: [[0, 0], [0, 0]], foot: null, ank: [null, null], drop: [0, 0],
                                   lean: 0, bank: 0, bob: 0, sway: 0 });
-  const sc = g.scale.x;
+  // gs: the group's world scale; ls: how much bigger this rig's legs are inside it (the bosses' 1.4x body, mesh.js legScale);
+  // sc: both, for lengths in metres. A heavy unit (u.gait, the bosses) softens the stride's bob and lean and thuds.
+  const gs = g.scale.x, ls = u.legScale || 1, sc = gs * ls, T = u.gait || null, Kl = K * ls;
   // measured ground velocity, smoothed; a jump in place (a teleport, a respawn) re-plants instead of striding
   let rx = (g.position.x - L.px) / dt, rz = (g.position.z - L.pz) / dt;
   L.px = g.position.x; L.pz = g.position.z;
@@ -59,7 +61,7 @@ export function updateLegs(o, g, dt, mode = 'ground'){
 
   // the body's frame: +z forward along its heading, +x to its side
   const yaw = g.rotation.y, cy = Math.cos(yaw), sy = Math.sin(yaw);
-  const toWorld = (lx, lz, out) => out.set(g.position.x + (lx * cy + lz * sy) * sc, 0, g.position.z + (-lx * sy + lz * cy) * sc);
+  const toWorld = (lx, lz, out) => out.set(g.position.x + (lx * cy + lz * sy) * gs, 0, g.position.z + (-lx * sy + lz * cy) * gs);
   const speed = Math.hypot(L.vx, L.vz);
   const vf = L.vx * sy + L.vz * cy, vr = L.vx * cy - L.vz * sy;
   const base = g.position.y;
@@ -84,11 +86,14 @@ export function updateLegs(o, g, dt, mode = 'ground'){
     [0, 0.5].forEach((off, i) => {
       const p = (L.cyc + off) % 1, d = mc.duty[i], swing = p >= d;
       const f = mocapFoot(mc, i, p, 2 * L.step / HERO_SCALE);
-      const s = f.s * K, lift = f.h * K * w * sc;
-      const P = toWorld(hipX(i) + s * fr + f.x * K, s * ff, new THREE.Vector3());
+      const s = f.s * Kl, lift = f.h * K * w * sc;
+      const P = toWorld(hipX(i) + s * fr + f.x * Kl, s * ff, new THREE.Vector3());
       if (!swing){
         // touch down: lock this spot in the world and hold it for the whole stance (the heel rises off it)
-        if (!L.locks[i]){ L.locks[i] = P.clone(); L.locks[i].y = floorAt(P.x, P.z, i); }
+        if (!L.locks[i]){
+          L.locks[i] = P.clone(); L.locks[i].y = floorAt(P.x, P.z, i);
+          if (T && T.step && speed > 1.5) T.step(o, L.locks[i], speed);   // a heavy footfall
+        }
         else floorAt(L.locks[i].x, L.locks[i].z, i);
         want[i] = L.locks[i].clone(); want[i].y += lift;
       } else {
@@ -144,12 +149,12 @@ export function updateLegs(o, g, dt, mode = 'ground'){
   // the BODY: the stride's bob and sway, the hips sinking to the lower foot, a lean into the speed and with the
   // acceleration (a push to start, a sit-back to stop, a bank into a turn)
   const body = mc ? mocapBody(mc, L.cyc % 1) : null;
-  const bob = body ? (body.y - (1 - mc.hipH) * LEG) * K * w : 0;
-  const sink = Math.min(0, L.drop[0], L.drop[1]) * GAIT.hipSink / sc;
+  const bob = body ? (body.y - (1 - mc.hipH) * LEG) * Kl * w * (T ? T.bob : 1) : 0;
+  const sink = Math.min(0, L.drop[0], L.drop[1]) * GAIT.hipSink / gs;
   L.bob = ease(L.bob, bob - 0.012, dt, 20);
-  L.sway = body ? body.sway * K * w : 0;
+  L.sway = body ? body.sway * Kl * w * (T ? T.bob : 1) : 0;
   const af = L.ax * sy + L.az * cy, ar = L.ax * cy - L.az * sy;
-  L.lean = ease(L.lean, clamp(af * GAIT.accelLean, -GAIT.accelMax, GAIT.accelMax) + Math.min(0.12, Math.max(0, vf) * 0.012) * w, dt, 12);
+  L.lean = ease(L.lean, (clamp(af * GAIT.accelLean, -GAIT.accelMax, GAIT.accelMax) + Math.min(0.12, Math.max(0, vf) * 0.012) * w) * (T ? T.lean : 1), dt, 12);
   L.bank = ease(L.bank, -clamp(ar * GAIT.accelBank, -GAIT.accelMax, GAIT.accelMax), dt, 12);
   vis.position.set(L.sway, L.bob + sink, 0);
   vis.rotation.set(L.lean, 0, L.bank + (body ? body.roll * 0.5 * w : 0));
@@ -162,7 +167,7 @@ export function updateLegs(o, g, dt, mode = 'ground'){
   legs.forEach(([th, sh, ft], i) => {
     L.ank[i] = want[i];
     _v.copy(want[i]).applyMatrix4(_inv);
-    const [hip, bend, roll] = solve(_v.z - th.position.z, _v.y - th.position.y, _v.x - th.position.x);
+    const [hip, bend, roll] = solve((_v.z - th.position.z) / ls, (_v.y - th.position.y) / ls, (_v.x - th.position.x) / ls);
     th.rotation.set(hip, 0, roll);
     sh.rotation.x = bend;
     ft.rotation.x = -(hip + bend) - pitch;   // the boot stays flat to the ground
