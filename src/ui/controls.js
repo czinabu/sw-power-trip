@@ -63,7 +63,7 @@ const CONTROLS = {
       ['E', 'Takedown', 'On a staggered or floored foe: finish it'],
       ['1 / 2 / 3', 'Switch weapon', 'Or the mouse wheel'],
       ['RMB + LMB', 'Darksaber throw', 'Darksaber in hand: hurl it, and the grappling line reels it back through anything in its path'],
-      ['4', 'Holster', 'Take a fighting stance with fists and gadgets: LMB / E swing hook, hook, uppercut, haymaker, RMB braces, and gadget power refills faster · 4 or 1 / 2 / 3 draws'],
+      ['4', 'Holster', 'Take a fighting stance with fists and gadgets: LMB / E swing hook, hook, uppercut, haymaker, hold RMB for the gauntlet shield (LMB behind it cuts shield and blade), and gadget power refills faster · 4 or 1 / 2 / 3 draws'],
     ]},
     { title: 'GADGETS', rows: [
       ['F', 'Flamethrower', 'Unlocks after wave 2'],

@@ -611,9 +611,9 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
     // close-quarters beats below pose the swings)
     mandoAimPoint();
     if (player.meleeT <= 0){
-      const bob = Math.sin(G.gt * 4.4) * 0.035;
-      R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -1.4 - bob, 12); R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, 0.05, 12);
-      R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -1.25, 12);
+      const bob = Math.sin(G.gt * 4.4) * 0.035, sh = player.isShielding;   // RMB: the lead forearm holds the gauntlet's disc out across the front
+      R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, sh ? -1.5 : -1.4 - bob, 12); R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, sh ? 0.25 : 0.05, 12);
+      R.armL.el.rotation.x = dr(R.armL.el.rotation.x, sh ? -1.6 : -1.25, 12);
       R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -1.1 + bob, 12); R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, 0.2, 12);
       R.armR.el.rotation.x = dr(R.armR.el.rotation.x, -1.9, 12);
       R.torso.rotation.y = dr(R.torso.rotation.y, 0.32, 10);   // bladed: the lead shoulder turned to the foe

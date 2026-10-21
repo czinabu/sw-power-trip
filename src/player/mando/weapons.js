@@ -202,7 +202,9 @@ function mandoBraced(){ return G.hero === 'mando' && player.blockHeld; }
 // can't fire, so holding the trigger then doesn't lower it (shield up while the coils vent).
 export const SHIELD_RETURN = 0.5;   // seconds after the last shot before the shield comes back up
 export function mandoShielding(){
-  if (G.hero !== 'mando' || player.weapon !== 'single' || mandoWeapon().melee || !player.blockHeld) return false;
+  if (G.hero !== 'mando' || !player.blockHeld) return false;
+  if (player.weapon === 'fists') return true;   // holstered: the gauntlet's shield stays up while he fights with his hands
+  if (player.weapon !== 'single' || mandoWeapon().melee) return false;
   return !(player.shieldDropT > 0) && !(player.trigHeld && !player.overheat);
 }
 function fireBlaster(W){
