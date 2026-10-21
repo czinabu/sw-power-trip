@@ -24,6 +24,7 @@ import { hideIndicators } from './cleanup.js';
    throws a live foe (the caller staggers or shoves it), and a foe it kills crumples where it stands instead of flying. */
 export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick, opts){
   if (e.dead) return;
+  if (dmg > 0) player.lastStrikeT = G.gt;   // a blow landed keeps you in the fight (player/mobility.js)
   if (e.state === 'stasis') dmg *= 1.5;   // frozen targets shatter harder
   if (e.state === 'stagger') dmg *= 1.5;  // a parried, stumbling foe is wide open
   // SENTINEL frontal deflector — chip damage from the front mostly bounces; FLANK it, or break the guard with a

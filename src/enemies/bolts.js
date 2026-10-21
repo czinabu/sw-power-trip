@@ -22,6 +22,7 @@ import { deflectAnim } from '../player/jedi/combat.js';
 import { deflectPlayerBolt } from './duel.js';
 import { sweepHit, headPos } from './bodyshape.js';
 import { tutEvent } from '../game/tutor-bus.js';
+import { airGuardLost, airParryOk } from '../player/mobility.js';
 import { masteryXp } from '../game/progression.js';
 
 /* ============================================================
@@ -80,14 +81,16 @@ export function updateBolts(dt){
       const facing = TMP.subVectors(b.mesh.position, pp).setY(0).lengthSq() > 0.001 && TMP.normalize().dot(fwd()) > 0.1;
       // DEFLECT requires either an active swing (the blade is moving) or a freshly-timed parry click.
       // Holding block only ABSORBS the bolt — it does not send it back.
-      const deflecting = near && facing && (player.atkT > 0 || player.parryT > 0);
-      const parried = near && facing && player.parryT > 0;
+      // MID-AIR in a fight the guard can't hold a bolt (Ataru keeps its timed parry): player/mobility.js
+      const airOk = airParryOk();
+      const deflecting = near && facing && (player.atkT > 0 || player.parryT > 0) && airOk;
+      const parried = near && facing && player.parryT > 0 && airOk;
       // SINGLE-BLASTER GAUNTLET SHIELD — a held energy shield that REFLECTS frontal bolts back (not just absorbs).
       // Each deflect spends stamina; run dry and the shield can't hold a bolt (it bleeds through, soaked by the beskar).
       const shielding = near && facing && mandoShielding() && player.stam > 0;   // dropped while the blaster fires
       // bolt-ABSORB (no reflect) is the other defensive guard — Jedi (any stance) or the Mando DARKSABER. DUAL/DISRUPTOR
       // bracing is offensive-only and lets bolts straight through.
-      const blocking = near && facing && player.blockHeld && player.stam > 0 && (G.hero !== 'mando' || player.weapon === 'darksaber');
+      const blocking = near && facing && player.blockHeld && !airGuardLost() && player.stam > 0 && (G.hero !== 'mando' || player.weapon === 'darksaber');
       if (d < abil('barrier').radius && near && player.barrierT > 0){
         // FORCE BARRIER auto-deflects bolts from any angle back into the crowd — no aim, no timing
         b.friendly = true; b.speed *= 1.3; b.dmg = 20;
