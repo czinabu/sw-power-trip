@@ -27,6 +27,8 @@ import { TROOP_MELEE, TROOP_FIRE, GRENADE } from '../data/tactics.js';
 import { tickTactics, planTroopMelee, troopFeint, holdTremble, planShot, approachSteer, tryOrder, updateOrder, tryLunge, updateLungeWind,
   updateLunge, dropLungeLine, cleanupTactics } from './tactics.js';
 import { throwGrenade } from './grenades.js';
+import { updateLegs } from './gait.js';
+import { MOVE } from '../data/movement.js';
 
 const NAV_EVERY = 0.1;      // seconds between a foe's route checks (the field itself refreshes in nav.js)
 const STUCK_AFTER = 0.5;    // window (s) over which a chasing foe must make headway, or it sidesteps to work itself free
@@ -52,6 +54,12 @@ function wallBetween(ax, az, b){
 
 const NO_REACT = { ragdoll: 1, knockdown: 1, getup: 1, fade: 1, spawn: 1, lock: 1, lunge: 1, grasped: 1 };   // states that own the whole body
 const LUNGING = { lungewind: 1, lunge: 1 };
+const NO_FEET = { ragdoll: 1, knockdown: 1, getup: 1, fade: 1, spawn: 1, grasped: 1 };   // states the legs don't stand in (enemies/gait.js)
+// turn toward a heading at a capped rate (the hero's turning weight, data/movement.js MOVE.turnRate)
+function turnToward(g, want, rate, dt){
+  const d = Math.atan2(Math.sin(want - g.rotation.y), Math.cos(want - g.rotation.y));
+  g.rotation.y += clamp(d, -rate * dt, rate * dt);
+}
 export function updateEnemies(dt){
   const pp = playerPos();
   updateNav(dt, pp);    // refresh the flow field toward the player (nav.js)
@@ -96,13 +104,16 @@ export function updateEnemies(dt){
       if (dist > 0.001){ TMP.normalize(); tx = TMP.x; tz = TMP.z; }
     }
 
+    // momentum belongs to the chase: any other state (a windup, a stagger, a knockdown) starts it again from a standstill
+    if (e.mv && (e.state !== 'chase' || e.stunT > 0)){ e.mv.x = e.mv.z = 0; e.pivotT = 0; }
+    e.walking = false;
     switch (e.state){
       case 'spawn':
         g.position.y = Math.min(0, -e.st * 6);
         if (e.st <= 0){ g.position.y = 0; e.state = 'chase'; }
         break;
       case 'chase': {
-        if (tgtPos) g.rotation.y = Math.atan2(tx, tz);
+        if (tgtPos) turnToward(g, Math.atan2(tx, tz), dist < t.range + ENGAGE.ringPad + 3 ? MOVE.combatTurnRate : MOVE.turnRate, dt);
         if (e.stunT > 0) break;   // reeling from a saber hit — no step, no swing this beat
         if (e.dummy){             // TRAINING target: it stands and takes it, and walks back to its post when knocked off it
           const hx = e.home.x - g.position.x, hz = e.home.z - g.position.z, hd = Math.hypot(hx, hz);
@@ -251,11 +262,23 @@ export function updateEnemies(dt){
         }
         const ml = Math.hypot(mx, mz) || 1;
         const esp = e.rooted ? 0 : e.spd * paceMul * (G.mut === 'berserk' ? 1.3 : 1);   // BERSERK mutator: enemies surge in faster · a ROOTED training foe holds its spot
-        g.position.x += (mx/ml) * esp * dt;
-        g.position.z += (mz/ml) * esp * dt;
+        // MOMENTUM — the hero's ground handling (data/movement.js MOVE): speed builds at `accel`, stopping or turning
+        // back against the momentum brakes harder, and reversing hard at speed plants the feet for a beat (a pivot)
+        const mv = e.mv || (e.mv = { x: 0, z: 0 });
+        let wantX = (mx/ml) * esp, wantZ = (mz/ml) * esp;
+        const msp = Math.hypot(mv.x, mv.z);
+        if (e.pivotT > 0) e.pivotT -= dt;
+        else if (msp > MOVE.pivotMinSpeed && esp > 0 && wantX*mv.x + wantZ*mv.z < Math.cos(MOVE.pivotAngle) * esp * msp) e.pivotT = MOVE.pivotTime;
+        if (e.pivotT > 0) wantX = wantZ = 0;
+        const dvx = wantX - mv.x, dvz = wantZ - mv.z, dvl = Math.hypot(dvx, dvz);
+        const against = esp === 0 || wantX*mv.x + wantZ*mv.z < 0 || e.pivotT > 0;
+        if (dvl > 1e-3){ const a = Math.min(dvl, (against ? MOVE.brake : MOVE.accel) * dt) / dvl; mv.x += dvx * a; mv.z += dvz * a; }
+        g.position.x += mv.x * dt;
+        g.position.z += mv.z * dt;
+        e.walking = paceMul < 1;   // the wary prowl is a walk; the run to rejoin, a run
         // remember where this step started, to check after collision whether it went anywhere (out of the scrum only:
         // stalkers circling at the ring are meant to hold their ground)
-        e.stepX = g.position.x - (mx/ml) * esp * dt; e.stepZ = g.position.z - (mz/ml) * esp * dt;
+        e.stepX = g.position.x - mv.x * dt; e.stepZ = g.position.z - mv.z * dt;
         e.stepWant = (!t.fly && dist > t.range + ENGAGE.ringPad + 1.5) ? esp * dt : 0;
         // (grounded y comes from the surface height set after collision — so foes can WALK UP the dais; flyers hover)
         if (dist < t.range && !stalking){
@@ -575,7 +598,7 @@ export function updateEnemies(dt){
     // height is then applied so they STAND on the surface underfoot (flat floor = 0). Tall sheer crates still block.
     if (!e.dead && !e.t.fly && e.state !== 'ragdoll' && e.state !== 'knockdown' && e.state !== 'fade' && e.state !== 'spawn' && e.state !== 'leap' && e.state !== 'grasped'){
       const sup = collideSolids(g.position, 0.7 * (e.t.scale || 1), true);
-      g.position.y = sup + Math.abs(Math.sin(G.gt*8 + i)) * 0.05;
+      g.position.y = sup;   // (the stride's bob is the legs': enemies/gait.js)
     }
     // STUCK CHECK — over a short window, a chasing foe that covered under a third of the ground it tried to (pinned in
     // a corner, or jittering back and forth against one) picks the more open side, sidesteps there and re-routes
@@ -614,5 +637,7 @@ export function updateEnemies(dt){
         if (g.rotation.z > 1.0 || g.rotation.z < -1.0) g.rotation.z = 0;
       }
     }
+    // LEGS — the hero's planted-foot gait on what the unit actually did this frame (enemies/gait.js)
+    updateLegs(e, g, dt, e.dead || NO_FEET[e.state] ? 'off' : (t.fly || e.state === 'leap') ? 'air' : e.walking ? 'walk' : 'ground');
   }
 }
