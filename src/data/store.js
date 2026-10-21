@@ -87,7 +87,7 @@ export const JEDI_STORE = [
   { id:'barrier', tier:1, stage:2, cost:90,  fork:'j_arm', ico:'⛨', nm:'FORCE BARRIER', ds:'Bubble: knockback on cast, −damage &amp; bolt-deflect, then a parting shove · V',
     owned:()=>!!G.unlocked.barrier, buy(){ G.unlocked.barrier = true; } },
   // II — SUSTAIN fork (after wave 5): clear breathing room with an AOE knockdown, OR knit your wounds. Offense vs sustain.
-  { id:'jslam',   tier:2, stage:4, cost:170, fork:'j_util', ico:'▼', nm:'JUMP ATTACK', ds:'Jump at a foe and hold LMB: the blade comes down in a shockwave',
+  { id:'jslam',   tier:2, stage:4, cost:170, fork:'j_util', ico:'▼', nm:'JUMP ATTACK', ds:'X: leap, wind up and bring the blade down in a shockwave',
     owned:()=>!!G.unlocked.slam,    buy(){ G.unlocked.slam = true; } },
   { id:'mend',    tier:2, stage:4, cost:170, fork:'j_util', avail:()=>!player.up.lifesteal, ico:'✚', nm:'FORCE MEND', ds:'Channel a big self-heal (+30% vit) · X · LOCKS Vampiric Blade',
     owned:()=>!!G.unlocked.mend,    buy(){ G.unlocked.mend = true; } },

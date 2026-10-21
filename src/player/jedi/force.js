@@ -2,6 +2,7 @@
 // Force powers: push, jump attack, saber throw, pull (and the grasp, grasp.js), repulse, barrier, mend, judgement.
 
 import * as THREE from 'three';
+import { CFG } from '../../data/config.js';
 import { abil, healFrac } from '../../data/mastery.js';
 import { scene } from '../../engine/renderer.js';
 import { sfx, S } from '../../audio/sfx.js';
@@ -98,36 +99,54 @@ export function forcePush(){
   if (pushed >= 4) floater(pp, 'CROWD CLEARED', '#7fd4ff');
 }
 
-/* JUMP ATTACK — the Jedi's plunging saber strike (it took over the old Force Slam's unlock and mastery). Once
-   unlocked, jump at a foe and HOLD the saber button in the air: the blade comes down and the landing is a strike on
-   whoever is under you plus a ground shockwave. Once mastered to rank II (bigWave), a dive out of a DOUBLE JUMP
-   lands a far bigger shockwave. */
-const JUMP_ATK_HOLD = 0.18;   // how long the saber button is held mid-air before the swing turns into the plunge
+/* JUMP ATTACK (X) — the Jedi's plunging saber strike (it took over the old Force Slam's unlock and mastery). In the
+   air it fires at once; on the ground it LEAPS first. Either way there is a beat of WIND-UP at the top (the climb
+   stalls, the body arches back, the blade goes up overhead in both hands), then the blade comes down and the landing
+   is a strike on whoever is under you plus a ground shockwave. Once mastered to rank II (bigWave), a dive out of a
+   DOUBLE JUMP lands a far bigger shockwave. */
+const SLAM_WIND = { air: 0.18, leap: 0.32 };   // wind-up before the plunge: from the air, and after a leap off the ground
 export function forceSlam(){
   const A = abil('jslam');
   const st = stance();
   const slamCost = fcost(A.cost * (st.powerCostMul || 1));
-  if (!G.unlocked.slam || player.cds.slam > 0 || player.force < slamCost || G.mode !== 'play' || player.slamming || player.grounded) return false;
-  if (player.mantle || player.hang || player.saberLock || shared.saberProj || player.holstered) return false;
+  if (!G.unlocked.slam || G.mode !== 'play' || player.slamming || player.mantle || player.hang || player.saberLock || shared.saberProj || player.holstered) return false;
+  if (player.cds.slam > 0 || player.force < slamCost){ sfx(220, 0.06, 'sine', 0.04, 160); return false; }   // a soft "not yet"
+  if (player.landStagT > 0) player.landStagT = 0;   // the Force picks you up out of a buckled landing
   player.force -= slamCost; player.cds.slam = A.cd * (st.cdMult || 1);
-  if (player.atkT > 0) cancelSwing();   // the air swing turns into the plunge
+  if (player.atkT > 0) cancelSwing();   // a swing turns into the jump attack
+  player.airCut = null; player.flip = null; player.gliding = false;
+  const leap = player.grounded;
+  if (leap){
+    // off the ground: a Force leap straight up into the wind-up, carrying a little toward the foe you face
+    player.grounded = false; player.lastJumpT = G.gt;
+    player.vy = CFG.player.jumpVel * 1.35;
+    player.vel.addScaledVector(fwd(), 3);
+  } else player.vy = Math.max(player.vy * 0.3, 3);   // in the air: the climb stalls and hangs a beat
   // a dive out of a double jump arms the big wave (rank II); read now, since landing clears doubleJumped
   player.slamBig = !!player.doubleJumped && A.bigWave > 0;
   player.slamming = true;
-  player.flip = null;
-  player.vel.multiplyScalar(0.5);        // keep some of the jump's carry so the strike lands on the foe you jumped at
+  player.slamWind = leap ? SLAM_WIND.leap : SLAM_WIND.air;
+  player.vel.multiplyScalar(0.6); player.moveVel.multiplyScalar(0.4);
+  const sp = playerPos();
+  sparks(V3(sp.x, sp.y + 2.4, sp.z), st.blade, 6, 5, { dir: V3(0, 1, 0), cone: 0.6, life: 0.24, grav: 0 });   // the blade goes up
+  sfx(160, 0.22, 'sawtooth', 0.045, 480);
+  tutEvent('jumpAttack');
+  return true;
+}
+// the wind-up, then the plunge
+export function updateJumpAttack(dt){
+  if (!(player.slamWind > 0)) return;
+  if (!player.slamming){ player.slamWind = 0; return; }
+  player.slamWind -= dt;
+  player.vel.multiplyScalar(Math.pow(0.15, dt));
+  if (player.vy < 1.2) player.vy = 1.2;   // hang at the top while the blade is up
+  if (player.slamWind > 0) return;
+  player.slamWind = 0;
+  player.vel.multiplyScalar(0.5);        // keep some of the carry so the strike lands on the foe you jumped at
   player.vy = -32;                       // drive straight down
   S.dash();
   const sp = playerPos();
   sparks(V3(sp.x, sp.y + 1.2, sp.z), stance().blade, player.slamBig ? 14 : 8, 10, { dir: V3(0, 1, 0), cone: 0.5, life: 0.25, grav: 0 });   // the air tears as you drop
-  tutEvent('jumpAttack');
-  return true;
-}
-// holding the saber button in the air for a beat starts the plunge
-export function updateJumpAttack(){
-  if (!player.atkHeld || player.grounded || player.slamming || !G.unlocked.slam) return;
-  if (G.gt - player.atkHeldT < JUMP_ATK_HOLD) return;
-  if (!forceSlam()) player.atkHeld = false;   // couldn't (cooldown, no Force): don't retry every frame for this press
 }
 export function slamImpact(){
   const A = abil('jslam'), st = stance();

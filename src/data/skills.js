@@ -48,8 +48,6 @@ export const SKILLS = [
     fl:'Become the tempest with a thousand edges.', apply(){ player.up.dmg *= 1.35; player.up.atkSpeed *= 1.2; } },
   { id:'ascend',ico:'✺', nm:'ASCENDANT',     tier:3, max:1, ds:'+70% Force regen · +20% knockback · restore Force',
     fl:'The Force has no bottom. Drink deeply.', apply(){ player.up.forceRegen *= 1.7; player.up.knock *= 1.2; player.force = CFG.player.maxForce; } },
-  { id:'tempest',ico:'❉',nm:'CATACLYSM',     tier:3, max:1, ds:'Saber finishers erupt in a Force shockwave',
-    fl:'End the argument. End the arguers.', apply(){ player.up.tempest = true; } },
 ];
 /* ---- MANDALORIAN creed — its own authentic upgrade path (clan, armor, jetpack, arsenal) ---- */
 export const TIER_NAME_MANDO = { 1: 'FOUNDLING', 2: 'VERD', 3: 'MANDALORE' };

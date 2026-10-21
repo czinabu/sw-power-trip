@@ -146,7 +146,7 @@ export function cancelSwing(){
 }
 /* A cut's damage. `only` (from anim: the blade's sweep, player/jedi/bladehit.js) lists exactly what the blade passed
    through this frame, and only those are struck. An empty list is the swing's once-per-cut pass at the strike point
-   (the arc flash, the Tempest shockwave) with nothing hit. With no list at all (no blade in hand) it falls back to
+   (the arc flash) with nothing hit. With no list at all (no blade in hand) it falls back to
    striking everything in the swing's arc and radius. */
 export function applySwingDamage(step, only){
   const st = stance();
@@ -287,27 +287,6 @@ export function applySwingDamage(step, only){
       screenFlash('radial-gradient(ellipse at center, rgba(180,90,255,.4), transparent 62%)', 0.7, 0.3);
       S.slam(ip); S.clash(ip, true);
     } else { player.arcMesh.scale.setScalar(1); }
-  }
-  // TEMPEST capstone — finishers erupt in a small Force shockwave: a SEPARATION tool (low dmg, strong knock,
-  // tight radius + a brief stagger), not a nuke. Visuals kept small to match.
-  if (finisher && player.up.tempest && fxPass){
-    // CATACLYSM — a pure SEPARATION tool: a wide Force shockwave that HURLS the swarm off you. Very low damage;
-    // its whole job is to make space, not to kill.
-    const col = st.blade, R = 6.5;
-    S.slam();
-    G.shake = Math.max(G.shake, 0.32);
-    spawnGroundShock(pp, col, R, 0.38, 0.5);
-    spawnGroundShock(pp, 0xffffff, R + 1.5, 0.45, 0.25);
-    burst(V3(pp.x, 0.4, pp.z), col, 10, 7, 3.5, 0.8);
-    for (const e of enemies){
-      if (e.dead || e.converted || e.state === 'spawn') continue;
-      TMP.subVectors(e.group.position, pp); TMP.y = 0;
-      if (!inReach(e, pp, R)) continue;
-      const kd = TMP.normalize().clone();
-      damageEnemy(e, 2, kd, 13);   // flat chip damage, modest shove — utility only, no scaling
-      flinchEnemy(e, kd, 0.4);
-    }
-    if (shared.boss && shared.boss.hp > 0 && shared.boss.group.position.distanceTo(pp) < R) damageBoss(2);
   }
   // arc flash in the blade's color — leaned toward the side the cut travels (back strikes flash to the rear)
   if (!fxPass) return;
