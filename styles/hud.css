@@ -279,3 +279,17 @@ body.sandbox #xpmeter,body.sandbox #xphud{display:none !important}   /* the sand
   color:var(--accent);text-shadow:0 1px 6px #000}
 #netping{position:fixed;top:18px;right:20px;display:none;font:600 12px/1 var(--font-ui);letter-spacing:1.5px;color:var(--ink-dim);text-shadow:0 1px 6px #000}
 #netping.on{display:block}
+
+/* ---------- top-right: objectives checklist (training lessons, story-mission objectives) ---------- */
+#objlist{position:fixed;top:44px;right:20px;width:250px;display:none;padding:8px 12px 9px;box-sizing:border-box;pointer-events:none;
+  border-right:2px solid var(--accent);background:linear-gradient(270deg,rgba(6,16,30,.7),rgba(6,16,30,0));text-shadow:0 1px 8px rgba(0,10,20,.9)}
+#objlist.on{display:block}
+#objlist .ol-h{font:700 11px/1 var(--font-ui);letter-spacing:2.4px;color:var(--ink-dim);text-align:right;margin-bottom:6px}
+#objlist .ol-i{display:flex;justify-content:flex-end;align-items:baseline;gap:8px;margin-top:4px;text-align:right;font:600 13px/1.25 var(--font-ui);letter-spacing:.8px;color:var(--ink-dim)}
+#objlist .ol-i b{order:2;flex:none;width:14px;text-align:center;font-weight:700}
+#objlist .ol-i.now{color:var(--ink)}
+#objlist .ol-i.now b{color:var(--gold)}
+#objlist .ol-i.done{color:var(--xp)}
+#objlist .ol-i.done span{text-decoration:line-through;text-decoration-color:rgba(120,255,180,.5)}
+#objlist .ol-n{margin-top:6px;font:600 11px/1 var(--font-ui);letter-spacing:1.8px;color:var(--ink-dim);text-align:right}
+@media (max-width:700px){ #objlist{width:190px;top:40px} }

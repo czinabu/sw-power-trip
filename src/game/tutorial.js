@@ -60,6 +60,14 @@ export function trainingProgress(){
   const L = TRAINING_LEVELS[T.hero];
   return { place: (L.name.split('—')[1] || L.name).trim(), lesson: Math.min(T.i + 1, T.steps.length), total: T.steps.length };
 }
+// the on-screen checklist: each lesson's task in short, ticked off as it passes
+export function trainingChecklist(){
+  if (!T.on) return null;
+  const items = T.steps.map((s, k) => ({
+    text: (s.do || (s.course && s.course[0].do) || s.sec || '').split(':')[0],
+    done: k < T.i || (k === T.i && (T.done || T.finished)), now: k === T.i && !T.done && !T.finished }));
+  return { title: 'OBJECTIVES', items };
+}
 function beginStep(i){
   T.i = i; T.count = 0; T.done = false; T.forms = null; T.waveOut = false;
   T.seen = new Set(); T.cp = 0; T.cpAfter = false; T.lowSeen = false;

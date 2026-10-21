@@ -642,6 +642,12 @@ export function skipObjective(){
   else completeObjective();
   return true;
 }
+// the on-screen checklist: the mission's objectives, ticked off as they fall
+export function missionChecklist(){
+  if (!M.on) return null;
+  const items = M.def.objectives.map((o, k) => ({ text: forHero(o).title, done: k < M.i || M.won, now: k === M.i && !M.won }));
+  return { title: 'OBJECTIVES', items };
+}
 // dev console / tests: the running mission's state (the quarry, the current objective's state)
 export const missionState = () => M;
 // how far through the mission (the atmosphere's mood follows it)
