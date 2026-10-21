@@ -154,7 +154,7 @@ document.addEventListener('keydown', (e) => {
       if (k === 'r' && !e.repeat) startReload();
       if (k === '1') switchWeapon('single');   // (from holstered, 1 / 2 / 3 draw that weapon)
       if (k === '2') switchWeapon('dual');
-      // 3 = the SIGNATURE WEAPON — Disruptor OR Darksaber (mutually exclusive; you own exactly one after the wave-7 fork)
+      // 3 = the SIGNATURE WEAPON — Disruptor OR Darksaber (mutually exclusive; you own exactly one after the wave-8 fork)
       if (k === '3') switchWeapon(player.up.darksaber ? 'darksaber' : 'disruptor');
     }
   } else {

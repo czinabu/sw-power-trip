@@ -42,6 +42,7 @@ export const G = {
   swingMirror: false,   // player preference: flips which way strafe-L/R directional cuts sweep
   mouseSens: 1,          // player preference: mouse look sensitivity multiplier
   shakeScale: 1,         // player preference: screen shake strength (0 = off, 1.5 = extra)
+  fov: 60,               // player preference: resting vertical FOV in degrees (the FOV slider, 50-90)
   levelIdx: 0, wave: 0, waveTotal: -1,   // waveTotal = cumulative waves started (drives Mando ability unlocks)
   yaw: 0, pitch: 0.22,
   hitstop: 0, shake: 0, slowmo: 1, slowmoT: 0,
