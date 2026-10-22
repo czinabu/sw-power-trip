@@ -37,7 +37,8 @@ function renderChecklist(c){
   const from = Math.max(0, Math.min(cur - 2, n - 7)), rows = c.items.slice(from, from + 7);
   el.classList.add('on');
   setHtml(el, '<div class="ol-h">' + c.title + '</div>' + rows.map(i =>
-    '<div class="ol-i' + (i.done ? ' done' : i.now ? ' now' : '') + '"><b>' + (i.done ? '✓' : i.now ? '▶' : '○') + '</b><span>' + i.text + '</span></div>').join('') +
+    '<div class="ol-i' + (i.done ? ' done' : i.now ? ' now' : '') + '"><b>' + (i.done ? '✓' : i.now ? '▶' : '○') + '</b><span>' + i.text + '</span></div>' +
+      (i.sub && i.sub.length ? '<div class="ol-s">' + i.sub.join('<br>') + (i.frac != null ? '<span class="ol-b"><i style="width:' + (clamp(i.frac, 0, 1) * 100).toFixed(1) + '%"></i></span>' : '') + '</div>' : '')).join('') +
     (n > 7 ? '<div class="ol-n">' + c.items.filter(i => i.done).length + ' / ' + n + ' DONE</div>' : ''));
 }
 

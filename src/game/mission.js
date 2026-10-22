@@ -27,7 +27,7 @@ import { endRun } from './summary.js';
 import { showBanner } from '../ui/banners.js';
 import { overlay, setOverlayState } from '../ui/menus.js';
 import { showPanel, hidePanel, makeBeacon, makeConsole, setMarkerColor, pulseMarker, removeMarker,
-         heroIn, hostilesIn, hostilesAlive, setObjectiveHud, mmss } from './objectives.js';
+         heroIn, hostilesIn, hostilesAlive, setObjectiveHud, objectiveHud, mmss } from './objectives.js';
 import { MISSIONS, MISSION_VOICE, MISSION_COLOR } from '../data/missions.js';
 
 const RED = 0xff4a3a, GREEN = 0x7bffae;
@@ -645,8 +645,15 @@ export function skipObjective(){
 // the on-screen checklist: the mission's objectives, ticked off as they fall
 export function missionChecklist(){
   if (!M.on) return null;
-  const items = M.def.objectives.map((o, k) => ({ text: forHero(o).title, done: k < M.i || M.won, now: k === M.i && !M.won }));
-  return { title: 'OBJECTIVES', items };
+  const objs = M.def.objectives.map(forHero), live = objectiveHud();
+  const items = objs.map((o, k) => {
+    // legs of one chase share a title: number them so the list reads as steps
+    const same = objs.filter(x => x.title === o.title);
+    const now = k === M.i && !M.won;
+    return { text: o.title + (same.length > 1 ? ' (' + (same.indexOf(o) + 1) + '/' + same.length + ')' : ''), done: k < M.i || M.won, now,
+             sub: now ? [o.task && o.task[G.hero], live && live.status].filter(Boolean) : null, frac: now && live ? live.frac : null };
+  });
+  return { title: 'MISSION OBJECTIVES', items };
 }
 // dev console / tests: the running mission's state (the quarry, the current objective's state)
 export const missionState = () => M;
