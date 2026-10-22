@@ -363,14 +363,33 @@ export function deflectAnim(from){
   if (G.hero === 'mando' || player.atkT > 0 || !from) return;
   const cur = player.deflectAnim;
   if (cur && cur.spin && cur.t < cur.dur) return;   // a spin already sweeping the blade round covers the next bolt too
+  player.deflectAnim = catchState(from);
+  deflectSpin(player.deflectAnim);
+}
+const catchState = (from) => {
   const pp = playerPos(), fy = player.faceYaw;
   const dx = from.x - pp.x, dz = from.z - pp.z, d = Math.hypot(dx, dz) || 1;
-  player.deflectAnim = {
+  return {
     t: 0, dur: 0.3, pose: null,
     side: (dx * -Math.cos(fy) + dz * Math.sin(fy)) / d,   // + = the weapon (right) side
     h: from.y - (pp.y + 1.4),                              // against the chest
   };
-  deflectSpin(player.deflectAnim);
+};
+/* ANTICIPATED TWIRL (Niman, data/poses.js DEFLECT_SPINS.anticipate) — called by enemies/bolts.js as a bolt comes into
+   range, `eta` seconds before the catch. If the catch is certain (a parry window that will still be open, or a held
+   guard) it sometimes starts the blade's twirl now, timed so the bolt lands on the blade as it passes the bottom of
+   the wheel (anim/saber.js deflectPose). */
+export function anticipateDeflect(from, eta){
+  const S = DEFLECT_SPINS[stance().form];
+  if (!S || !S.anticipate || G.hero === 'mando' || player.atkT > 0 || player.deflectAnim || !player.grounded || player.flip) return;
+  if (eta < 0.04 || G.gt - (player._dflSpinT || -9) < S.cd || Math.random() > S.anticipate) return;
+  if (!(player.parryT >= eta || (player.blockHeld && player.stam > 0))) return;
+  const d = catchState(from);
+  player._dflSpinT = G.gt;
+  player._dflFlip = Math.abs(d.side) > 0.2 ? (d.side > 0 ? 1 : -1) : -(player._dflFlip || -1);
+  d.spin = { turns: 0, twirl: S.twirl, side: player._dflFlip };
+  d.lead = eta; d.dur = eta + S.dur;
+  player.deflectAnim = d;
 }
 /* A catch can become a spin (data/poses.js DEFLECT_SPINS): on the move, or the second bolt of a volley. Jedi, grounded. */
 function deflectSpin(d){

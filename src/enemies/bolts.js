@@ -18,7 +18,7 @@ import { spawnHitSpark, spawnParryFlash } from '../fx/vfx.js';
 import { boltImpact, clashFlash } from '../fx/ink.js';
 import { mandoWeapon, mandoShielding, boltDamage, hitMarker } from '../player/mando/weapons.js';
 import { hurtPlayer } from '../player/damage.js';
-import { deflectAnim } from '../player/jedi/combat.js';
+import { deflectAnim, anticipateDeflect } from '../player/jedi/combat.js';
 import { deflectPlayerBolt } from './duel.js';
 import { bladePointNear } from '../player/jedi/clash.js';
 import { sweepHit, headPos } from './bodyshape.js';
@@ -115,6 +115,8 @@ export function updateBolts(dt){
       // bolt-ABSORB (no reflect) is the other defensive guard — Jedi (any stance) or the Mando DARKSABER. DUAL/DISRUPTOR
       // bracing is offensive-only and lets bolts straight through.
       const blocking = near && facing && player.blockHeld && !airGuardLost() && player.stam > 0 && (G.hero !== 'mando' || player.weapon === 'darksaber');
+      // a certain catch is about to land: let the blade start its flourish early (jedi/combat.js anticipateDeflect)
+      if (!b.anticip && near && facing && d > 2.6 && d < 2.6 + b.speed * 0.14){ b.anticip = true; anticipateDeflect(b.mesh.position, (d - 2.5) / b.speed); }
       if (d < abil('barrier').radius && near && player.barrierT > 0){
         // FORCE BARRIER auto-deflects bolts from any angle back into the crowd — no aim, no timing
         b.friendly = true; b.speed *= 1.3; b.dmg = 20;

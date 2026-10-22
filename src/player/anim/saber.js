@@ -246,7 +246,10 @@ export function deflectPose(dt, R, held, grip, form, d){
       from: { hand: saberPose.hand.clone(), blade: saberPose.blade.clone(), twist: saberPose.twist },
     };
   }
-  const P = d.pose, k = Math.min(1, d.t / d.dur);
+  // an anticipated twirl (jedi/combat.js anticipateDeflect) leads the catch by d.lead seconds: until the bolt lands the
+  // blade stays on its guard and wheels toward the bottom; the catch itself runs from the landing on
+  const lead = d.lead || 0, tp = Math.max(0, d.t - lead);
+  const P = d.pose, k = Math.min(1, tp / (d.dur - lead));
   if (k < 0.3){
     const t = easeOut(k / 0.3);
     arcLerp(P.from.hand, P.hand, t, PIVOT, saberPose.hand);
@@ -258,12 +261,18 @@ export function deflectPose(dt, R, held, grip, form, d){
     slerpDir(P.blade, P.flickBlade, t, saberPose.blade);
     saberPose.twist = P.twist;
   }
-  // a catch turned into a twirl (data/poses.js DEFLECT_SPINS): the blade wheels once about the hand on its way to the
-  // catch and back, and is on the catch's line again by the flick. The reverse grip keeps its blade along the forearm.
+  // a catch turned into a twirl (data/poses.js DEFLECT_SPINS): the blade wheels once about the hand and is on the
+  // catch's line again by the flick. Anticipated, the half turn to the bottom of the wheel is done at the landing (the
+  // blade sweeping through it at speed) and the rest follows. The reverse grip keeps its blade along the forearm.
   const sp = d.spin;
   if (sp && sp.twirl && grip === 'regular'){
-    const p = Math.min(1, k / 0.6);
-    saberPose.blade.applyAxisAngle(TWIRL_AXIS, -Math.PI * 2 * sp.twirl * sp.side * (p - Math.sin(Math.PI * 2 * p) / (Math.PI * 2))).normalize();
+    let ang;
+    if (lead){
+      const w = Math.max(lead, 0.14);
+      if (d.t < lead){ const u = d.t / lead; ang = Math.PI * (0.4 * u + 0.6 * u * u); }
+      else { const v = Math.min(1, (d.t - lead) / w); ang = Math.PI + Math.PI * (0.4 * v + 0.6 * (1 - (1 - v) * (1 - v))); }
+    } else { const p = Math.min(1, k / 0.6); ang = Math.PI * 2 * (p - Math.sin(Math.PI * 2 * p) / (Math.PI * 2)); }
+    saberPose.blade.applyAxisAngle(TWIRL_AXIS, -sp.twirl * sp.side * ang).normalize();
   }
   saberPose.pole.lerp(P.pole, Math.min(1, dt * 30)).normalize();
   // the form's block decides the hands: Djem So closes both on the hilt, Ataru and Niman keep the free hand out
