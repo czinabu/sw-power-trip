@@ -63,6 +63,15 @@ export function perfectDodge(fromPos){
   return true;
 }
 
+/* BLADE JAR — the breath a blade-on-blade contact costs. A crowd's blows can all land inside one swing, so contacts
+   within DUEL.jarGap of the last one are free: one swing costs at most one jar, never a stack of them (this was the
+   "stamina vanishes in a melee" drain). */
+export function jarStamina(n){
+  if (G.gt - (player._jarT || -9) < DUEL.jarGap) return;
+  player._jarT = G.gt;
+  player.stam = Math.max(0, player.stam - n); player.stamDelay = CFG.player.stamDelay;
+}
+
 /* BLADE CLASH — your cut is mid-arc when a foe's strike lands from in front: the blades meet, neither blow lands,
    and both fighters are thrown apart. Heavy forms (Djem So, the darksaber) win the clash and stagger the foe.
    `foe` and `at` come from player/jedi/clash.js when the two blades were seen to cross (else the nearest foe to the
@@ -89,7 +98,7 @@ export function bladeClash(fromPos, foe, at){
   if (player.swing && player.atkT > 0){ recoilSwing(cp); player.cancelT = G.gt; }
   else cancelSwing();
   player.vel.addScaledVector(dir, -C.push * (boss ? 1.4 : 1) / formWeight());   // a heavy form gives less ground
-  player.stam = Math.max(0, player.stam - C.stam); player.stamDelay = CFG.player.stamDelay;
+  jarStamina(C.stam);
   const heavy = !!foe && ((G.hero !== 'mando' && G.stance === 'strong') || G.hero === 'mando');
   if (heavy) staggerEnemy(foe, dir.x, dir.z, 'CLASH!');
   else {

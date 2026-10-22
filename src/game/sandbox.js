@@ -8,7 +8,7 @@ import { burst } from '../fx/particles.js';
 import { floater } from '../fx/floaters.js';
 import { shared, G, enemies, player } from '../state.js';
 import { CFG } from '../data/config.js';
-import { playerPos, maxHp } from '../player/helpers.js';
+import { playerPos, maxHp, maxStam } from '../player/helpers.js';
 import { spawnEnemy } from '../enemies/spawn.js';
 import { removeEnemy } from '../enemies/cleanup.js';
 import { findClearSpawn } from '../world/collision.js';
@@ -118,7 +118,7 @@ export function sandboxClear(){
   }
 }
 export function sandboxHeal(){
-  player.hp = maxHp(); player.force = CFG.player.maxForce; player.stam = CFG.player.maxStam;
+  player.hp = maxHp(); player.force = CFG.player.maxForce; player.stam = maxStam();
   if (G.hero === 'mando') player.jet = player.jetMax;
   floater(V3(playerPos().x, 1.2, playerPos().z), 'RESTORED', '#7bffae');
 }

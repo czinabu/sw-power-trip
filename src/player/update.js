@@ -8,7 +8,7 @@ import { V3, rand, clamp } from '../utils.js';
 import { burst } from '../fx/particles.js';
 import { floater, screenFlash } from '../fx/floaters.js';
 import { shared, G, player } from '../state.js';
-import { fwd, rightV, playerPos, stance, maxHp } from './helpers.js';
+import { fwd, rightV, playerPos, stance, maxHp, maxStam } from './helpers.js';
 import { focusRegenMul, updateFocus } from './jedi/focus.js';
 import { barrierShove, mendComplete, updateJudgement, updateJumpAttack } from './jedi/force.js';
 import { updateAirCut } from './jedi/aerial.js';
@@ -56,7 +56,7 @@ function updatePlayerMeters(dt, pp, st){
   if (G.gt - player.lastHurt > CFG.player.hpRegenDelay)
     player.hp = clamp(player.hp + CFG.player.hpRegen * dt, 0, maxHp());
   if (player.stamDelay > 0) player.stamDelay -= dt;
-  else player.stam = clamp(player.stam + CFG.player.stamRegen * player.up.stamRegen * (player.exhausted ? 0.7 : 1) * dt, 0, CFG.player.maxStam);
+  else player.stam = clamp(player.stam + CFG.player.stamRegen * player.up.stamRegen * (player.exhausted ? 0.85 : 1) * dt, 0, maxStam());
   if (player.dashT > 0) player.dashT -= dt;
   updateDashCharges(dt);   // Force dash charges refill (player/mobility.js)
   updateJetCharges(dt);    // the Mando's air-dodge charges (mando/mobility.js)
@@ -98,7 +98,7 @@ function updatePlayerMeters(dt, pp, st){
 
   // --- LOW STAMINA = DANGER. Run the bar dry and your guard SHATTERS: it drops, you can't
   //     block or parry, and you must recover before defending again. ---
-  const stamFrac = player.stam / CFG.player.maxStam;
+  const stamFrac = player.stam / maxStam();
   if (player.stam <= 0.5 && !player.exhausted){
     player.exhausted = true;
     player.blockHeld = false; player.parryT = 0;
@@ -109,7 +109,7 @@ function updatePlayerMeters(dt, pp, st){
     sfx(68, 0.6, 'sawtooth', 0.2, 28); sfx(200, 0.32, 'square', 0.09, 60);
     floater(pp, 'EXHAUSTED', '#ff6a3a');
   }
-  if (player.exhausted && player.stam > CFG.player.maxStam * 0.4) player.exhausted = false;   // recovered
+  if (player.exhausted && player.stam > maxStam() * 0.3) player.exhausted = false;   // recovered
   // danger vignette + rising heartbeat as the bar runs low (Jedi stamina only — Mando uses this bar for JET FUEL)
   const sv = document.getElementById('stamvig');
   const smbar = document.getElementById('smbar');

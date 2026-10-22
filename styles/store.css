@@ -4,15 +4,19 @@
    ============================================================ */
 #skilltree{position:fixed;inset:0;z-index:30;display:none;flex-direction:column;color:var(--ink);text-align:center;
   background:radial-gradient(ellipse 85% 70% at 50% 30%,rgba(8,20,38,.94),rgba(1,3,8,.985))}
-.st-scroll{flex:1;overflow-y:auto;padding:28px 24px 12px;display:flex;flex-direction:column;align-items:center;gap:20px}
-.st-head{animation:rise .3s var(--ease)}
+.st-scroll{flex:1;overflow-y:auto;padding:22px 24px 14px;display:flex;flex-direction:column;align-items:center;gap:16px}
+/* header: title left, wallet right — one slim band instead of a tall centred block */
+.st-head{width:min(1100px,100%);display:grid;grid-template-columns:1fr auto;column-gap:24px;align-items:center;text-align:left;animation:rise .3s var(--ease);
+  padding-bottom:14px;border-bottom:1px solid var(--edge)}
+.st-head .st-kicker,.st-head h1,.st-head .sub{grid-column:1}
+.st-head .st-wallet{grid-column:2;grid-row:1 / span 3}
 .st-kicker{font-size:12px;letter-spacing:2.4px;color:var(--ink-dim)}
-#skilltree h1{margin:6px 0 0;font:700 44px/1 var(--font-display);letter-spacing:4px;padding-left:4px;color:var(--ink);text-shadow:0 0 26px rgba(42,169,255,.7)}
+#skilltree h1{margin:4px 0 0;font:700 40px/1 var(--font-display);letter-spacing:4px;color:var(--ink);text-shadow:0 0 26px rgba(42,169,255,.7)}
 #skilltree .sub{font-size:12px;letter-spacing:3px;color:var(--accent);margin-top:8px}
-.st-wallet{display:flex;gap:10px;justify-content:center;margin-top:14px}
-.coin{display:flex;align-items:center;gap:9px;padding:6px 14px 6px 12px;border-radius:var(--r-chip);border:1px solid}
+.st-wallet{display:flex;gap:12px;justify-content:flex-end}
+.coin{display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:120px;padding:9px 16px;border-radius:var(--r-chip);border:1px solid}
 .coin .cl{font-size:11px;letter-spacing:2.5px}
-.coin b{font:700 18px/1 var(--font-ui);font-variant-numeric:tabular-nums}
+.coin b{font:700 28px/1 var(--font-ui);font-variant-numeric:tabular-nums}
 .coin.xp{border-color:rgba(60,200,120,.45);background:rgba(10,36,24,.55);color:#5fae84}
 .coin.xp b{color:var(--xp);text-shadow:0 0 10px var(--xp-glow)}
 .coin.sp{border-color:rgba(255,210,90,.45);background:rgba(40,30,8,.5);color:#c9a656}
@@ -20,34 +24,39 @@
 .coin.bump{animation:bump .35s var(--ease)}
 @keyframes bump{40%{transform:scale(1.12)}}
 /* sections */
-.st-sec{width:min(1000px,100%);animation:rise .35s var(--ease) both}
+.st-sec{width:min(1100px,100%);padding:14px 16px 16px;border-radius:var(--r-lg);border:1px solid var(--edge);background:rgba(8,20,38,.45);animation:rise .35s var(--ease) both}
 .st-sec:nth-of-type(2){animation-delay:.05s} .st-sec:nth-of-type(3){animation-delay:.1s}
-.storehdr{display:flex;align-items:baseline;gap:14px;margin:0 0 10px;padding-bottom:7px;border-bottom:1px solid var(--edge);text-align:left}
-.storehdr .sh-t{font:700 18px/1 var(--font-display);letter-spacing:2.4px;color:var(--ink)}
-.storehdr .sh-h{font-size:13px;font-weight:500;letter-spacing:0.5px;color:var(--ink-dim)}
+.storehdr{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 14px;margin:0 0 12px;text-align:left}
+.storehdr .sh-t{font:700 20px/1 var(--font-display);letter-spacing:2.4px;color:var(--ink)}
+.storehdr .sh-h{font-size:14px;font-weight:500;letter-spacing:0.5px;color:var(--ink-dim)}
 #boonhdr .sh-t{color:var(--gold)}
-.cardrow{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.cardrow{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
 /* a fork: two cards joined by an OR, so the either/or reads at a glance */
-.forkgroup{display:flex;align-items:stretch;gap:0;padding:4px;border-radius:var(--r-lg);border:1px dashed rgba(220,170,70,.45);background:rgba(40,30,8,.18)}
+.forkgroup{grid-column:span 2;display:flex;align-items:stretch;gap:0;padding:4px;border-radius:var(--r-lg);border:1px dashed rgba(220,170,70,.45);background:rgba(40,30,8,.18)}
+.forkgroup .card{flex:1;min-width:0}
 .forkgroup .or{align-self:center;width:30px;flex:none;font:700 11px/1 var(--font-display);letter-spacing:1px;color:#d9b45c}
 /* ---------- the card ---------- */
-.card{position:relative;width:186px;box-sizing:border-box;padding:12px 12px 11px;border-radius:var(--r-lg);cursor:pointer;pointer-events:auto;
-  display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;
+.card{position:relative;box-sizing:border-box;padding:14px;border-radius:var(--r-lg);cursor:pointer;pointer-events:auto;
+  display:grid;grid-template-columns:52px 1fr;column-gap:14px;row-gap:5px;align-content:start;align-items:start;text-align:left;
+  grid-auto-rows:auto;
   background:linear-gradient(180deg,rgba(14,32,56,.94),rgba(6,15,29,.95));border:1px solid var(--edge);
   box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.05);
   transition:transform .16s var(--ease),border-color .16s,box-shadow .16s}
 .card:hover{transform:translateY(-2px);border-color:var(--edge-lit);box-shadow:0 14px 30px -8px rgba(60,180,255,.45),inset 0 1px 0 rgba(255,255,255,.08)}
-.card .c-tag{font-size:10px;letter-spacing:2.5px;color:var(--ink-dim);padding:2px 9px;border-radius:var(--r-chip);border:1px solid var(--edge)}
+.card>*{grid-column:1 / -1}
+.card .c-ico{grid-column:1;grid-row:1 / span 3}
+.card .c-tag,.card .c-nm,.card .c-ds{grid-column:2}
+.card .c-tag{justify-self:start;font-size:10px;letter-spacing:2.2px;color:var(--ink-dim);padding:2px 9px;border-radius:var(--r-chip);border:1px solid var(--edge)}
 .card .c-ico{font-size:24px;line-height:1;width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:var(--r);transform:rotate(45deg);
   color:#bfe8ff;border:1px solid var(--edge);background:radial-gradient(circle at 50% 38%,rgba(120,200,255,.18),rgba(120,200,255,.02))}
-.card .c-nm{font-size:15px;font-weight:700;letter-spacing:1.5px;color:var(--ink);line-height:1.15}
+.card .c-nm{font-size:16px;font-weight:700;letter-spacing:1.5px;color:var(--ink);line-height:1.15}
 .card .c-nm .rk{font-size:11px;color:var(--gold);letter-spacing:1px;margin-left:3px;vertical-align:2px}
-.card .c-ds{flex:1;font:500 13.5px/1.35 var(--font-body);line-height:1.35;color:var(--ink-soft)}
-.card .c-fl{font:italic 500 12px/1.35 var(--font-body);line-height:1.35;color:var(--ink-faint)}
+.card .c-ds{font:500 14.5px/1.35 var(--font-body);color:var(--ink)}
+.card .c-fl{font:italic 500 12.5px/1.35 var(--font-body);color:var(--ink-dim)}
 .card .pips{display:flex;gap:4px}
 .card .pips i{width:7px;height:7px;border-radius:50%;border:1px solid var(--accent)}
 .card .pips i.on{background:var(--accent);box-shadow:0 0 6px var(--accent)}
-.card .c-cost{margin-top:2px;font-size:14px;font-weight:700;letter-spacing:1.5px;color:var(--xp);
+.card .c-cost{margin-top:4px;text-align:center;font-size:14px;font-weight:700;letter-spacing:1.5px;color:var(--xp);
   border:1px solid rgba(60,200,120,.45);border-radius:var(--r-chip);padding:4px 14px;background:rgba(20,50,34,.55)}
 .card:hover .c-cost{background:rgba(40,110,70,.6);color:#d8ffe8}
 .card .c-why{font-size:11.5px;letter-spacing:1px;color:#ff9f80}
@@ -78,9 +87,8 @@
 .card.boon.legendary .c-tag{color:var(--gold);border-color:var(--gold)}
 .card.boon.legendary .c-ico{color:var(--gold);border-color:rgba(255,210,90,.7);background:radial-gradient(circle at 50% 38%,rgba(255,210,90,.25),transparent)}
 /* training cards: tier accents, higher tiers glow hotter */
-.card.skill{width:210px}
 .card.skill .c-ico{width:46px;height:46px;font-size:26px}
-.card .c-ico{margin:9px 0 8px;flex:none}
+.card .c-ico{margin:6px 0 0}
 .card .c-ico .ic{transform:rotate(-45deg)}
 .card.t1 .c-tag{color:#6fd0e0;border-color:rgba(80,180,200,.45)}
 .card.t2{border-color:rgba(150,110,200,.45);background:linear-gradient(180deg,rgba(32,20,54,.94),rgba(14,8,28,.95))}
@@ -95,7 +103,7 @@
 .card.t3:hover{border-color:var(--gold);box-shadow:0 14px 38px -8px rgba(255,200,70,.6)}
 .card.t3 .pips i{border-color:var(--gold)} .card.t3 .pips i.on{background:var(--gold);box-shadow:0 0 6px var(--gold)}
 .card .lockmsg{font-size:11.5px;letter-spacing:1px;color:#ff9a66}
-.card.skill .c-pick{margin-top:2px;font-size:12px;font-weight:700;letter-spacing:2px;color:var(--gold);
+.card.skill .c-pick{margin-top:4px;text-align:center;font-size:12px;font-weight:700;letter-spacing:2px;color:var(--gold);
   border:1px solid rgba(255,210,90,.45);border-radius:var(--r-chip);padding:4px 14px;background:rgba(50,40,12,.5)}
 .card.skill.cant .c-pick{color:var(--ink-dim);border-color:var(--edge);background:transparent}
 .cardrow .empty{font-size:14px;font-weight:500;color:var(--ink-dim);padding:10px}
@@ -108,8 +116,16 @@
 @media (max-height:760px){
   .st-scroll{padding-top:18px;gap:14px}
   #skilltree h1{font-size:34px}
-  .card{width:172px;padding:10px}
-  .card .c-ico{width:34px;height:34px;font-size:19px;margin:6px 0}
-  .card.skill{width:196px}
+  .card{padding:10px 12px;grid-template-columns:44px 1fr}
+  .card .c-ico{width:34px;height:34px;font-size:19px;margin:4px 0}
   .card .c-fl{display:none}
 }
+@media (max-width:700px){
+  .st-head{grid-template-columns:1fr}
+  .st-head .st-wallet{grid-column:1;grid-row:auto;justify-content:flex-start;margin-top:10px}
+  .forkgroup{grid-column:auto;flex-direction:column}
+  .forkgroup .or{width:auto;padding:4px 0;text-align:center}
+}
+/* things you can act on right now glow softly; the dim ones step back */
+.card:not(.cant):not(.boon):not(.final){border-color:rgba(120,190,255,.38)}
+.coin.sp.has{box-shadow:0 0 16px rgba(255,210,90,.3)}

@@ -10,7 +10,7 @@ import { G, player } from '../state.js';
 import { MANDO, MANDO_WEAPONS } from '../data/mando.js';
 import { MANDO_MELEE } from '../data/duel.js';
 import { MOVE, GAIT } from '../data/movement.js';
-import { stance } from './helpers.js';
+import { stance, maxStam } from './helpers.js';
 import { tryAttack, applySwingDamage, FLOW } from './jedi/combat.js';
 import { mandoAimPoint, mandoWeapon, mandoShielding } from './mando/weapons.js';
 import { DARK_DUR } from './mando/darksaber.js';
@@ -952,7 +952,7 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
     sg.position.z = 0.95 + (player.bashOut || 0) * 0.45;   // the bash throws the disc out ahead of the arm
     const flare = player.shieldFlash, shimmer = 0.05 * Math.sin(G.gt * 9);
     sg.scale.setScalar(SHIELD_SIZE * (1 + flare * 1.5));
-    const lowStam = player.stam < CFG.player.maxStam * 0.18;   // shield failing — out of juice to deflect
+    const lowStam = player.stam < maxStam() * 0.18;   // shield failing — out of juice to deflect
     player.shieldDisc.material.color.setHex(lowStam ? 0xff8a4a : 0x4bd2ff);
     player.shieldRim.material.color.setHex(lowStam ? 0xffb866 : 0x9fe6ff);
     player.shieldDisc.material.opacity = (lowStam ? 0.16 : 0.26) + shimmer + flare * 2.0;

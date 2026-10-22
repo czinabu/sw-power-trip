@@ -9,7 +9,7 @@ import { sparks } from '../../fx/ink.js';
 import { shared, G, enemies, player } from '../../state.js';
 import { playerPos, stance } from '../helpers.js';
 import { cutLine, duelDefend, isGuarding } from '../../enemies/duel.js';
-import { bladeClash } from '../damage.js';
+import { bladeClash, jarStamina } from '../damage.js';
 import { bladeSegment } from './bladehit.js';
 
 /* WHERE THE WEAPON IS — each weapon's line in its slot's own frame (enemies/mesh.js weaponArm: the grip hangs off the
@@ -119,7 +119,7 @@ export function meetBlades(sw, pts){
    blade kicks back along the arc it came in on. `e` (optional) is the foe whose weapon caught it, knocked aside. */
 export function bounceOff(e, cp){
   const B = DUEL.bounce;
-  player.stam = Math.max(0, player.stam - B.stam); player.stamDelay = CFG.player.stamDelay;
+  jarStamina(B.stam);
   player.swingLock = Math.max(player.swingLock || 0, B.lock);
   player.queuedAtk = false; player.comboStep = 2;
   if (cp) recoilSwing(cp);

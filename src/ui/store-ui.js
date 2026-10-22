@@ -89,6 +89,7 @@ export function renderProgress(){
   tree.querySelector('.sub').textContent = G.hero === 'mando' ? 'HONE THE HUNTER' : 'CHANNEL THE FORCE';
   document.getElementById('xpbalval').textContent = xp;
   document.getElementById('spbalval').textContent = sp;
+  document.getElementById('spbalval').parentElement.classList.toggle('has', sp > 0);
   if (xp !== _lastXp) bump('xpbalval');
   if (sp !== _lastSp) bump('spbalval');
   _lastXp = xp; _lastSp = sp;

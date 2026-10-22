@@ -16,7 +16,7 @@ import { floater } from '../fx/floaters.js';
 import { shared, G, rockets, birds, detos, enemies, bolts, orbs, rings, vfx, player } from '../state.js';
 import { weaponUnlocked } from '../data/mando.js';
 import { setHero } from '../player/hero.js';
-import { playerPos, maxHp } from '../player/helpers.js';
+import { playerPos, maxHp, maxStam } from '../player/helpers.js';
 import { setStanceHud, switchStance } from '../player/jedi/stance.js';
 import { spawnEnemy } from '../enemies/spawn.js';
 import { damageEnemy } from '../enemies/damage.js';
@@ -100,7 +100,7 @@ export function startLevel(idx, opts){
   player.queuedAtk = false;
   player.vis.rotation.set(0,0,0);
   player.vis.position.y = 0;
-  player.stam = CFG.player.maxStam;
+  player.stam = maxStam();
   player.exhausted = false;
   document.getElementById('stamvig').style.opacity = '0';
   player.blockHeld = false;
@@ -133,7 +133,7 @@ export function startLevel(idx, opts){
     G.waveTotal = -1; G.mandoChoiceShown = false;
     G.xp = 0; G.xpEarned = 0; G.skillPoints = 0; G.powerLv = {}; G.mastery = {}; G.seenTypes = {};
     G.boonOffer = null; G.boonPicked = false;
-    player.up = { dmg: 1, forceRegen: 1, move: 1, knock: 1, parry: 0, lifesteal: 0, hpMax: 0, dashCdMult: 1, stamRegen: 1,
+    player.up = { dmg: 1, forceRegen: 1, move: 1, knock: 1, parry: 0, lifesteal: 0, hpMax: 0, dashCdMult: 1, stamRegen: 1, maxStam: 0,
                   atkSpeed: 1, dr: 0, blockStam: 1, riposte: 1, parryForce: 0,
                   fireRate: 1, fuelEff: 1, flameDmg: 1, flameRange: 1, rocketDmg: 1, rocketR: 1, braceDR: 0, aim: 0, darksaber: false, abilityCostMul: 1,
                   jetTier: 0, jetPow: 0.62, fjTier: 0, cellTier: 0, heatCap: 1, heatCool: 1 };

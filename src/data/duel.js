@@ -34,6 +34,7 @@ export const DUEL = {
   guardRange: 7,          // the guard arc only shows on foes this close
   // POSTURE — what each kind of blow costs a guard (blocked cuts build it; posture drains back when left alone)
   posture: { cut: 14, finisher: 26, heavyMul: 1.6, kick: 45, parry: 55, punch: 12, punchHeavy: 30, charge: 50, regen: 9, regenDelay: 1.6 },
+  jarGap: 0.45,           // seconds: blade contacts (clash, bounce) closer together than this cost stamina once, not each
   bounce: { stam: 8, lock: 0.22 },   // a cut turned by a guard bounces off: this much stamina and a short re-swing lockout
   /* BLADE ON BLADE (player/jedi/clash.js) — your cut meets a weapon that is READY for it (a guard, or a strike in
      flight) where the two actually cross. reach: how close the blades must pass (m, glow included: generous on
