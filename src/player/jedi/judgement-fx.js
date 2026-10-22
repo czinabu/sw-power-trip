@@ -3,7 +3,7 @@
 
 import * as THREE from 'three';
 import { CFG } from '../../data/config.js';
-import { scene, camera } from '../../engine/renderer.js';
+import { renderer, scene, camera } from '../../engine/renderer.js';
 import { rand } from '../../utils.js';
 import { G, player } from '../../state.js';
 import { inkSprite } from '../../fx/ink.js';
@@ -50,7 +50,15 @@ function makeRibbon(){
 }
 export function ensureJudgeLines(){
   if (judgeLines.length) return;
-  for (let i = 0; i < CFG.abilities.judge.targets + 3; i++) judgeLines.push(makeRibbon());   // +3 for the Storm upgrade
+  for (let i = 0; i < (CFG.abilities.judge.targets + 3) * 2; i++) judgeLines.push(makeRibbon());   // +3 for the Storm upgrade; x2 for a second hand when holstered
+}
+// build the ribbons and compile their shader before the first cast (called once from the menu's warm-up)
+export function prewarmJudgeFX(){
+  ensureJudgeLines();
+  const ln = judgeLines[0];
+  ln.visible = true;   // all-zero positions: nothing is drawn, but the program is built
+  renderer.compile(scene, camera);
+  ln.visible = false;
 }
 const JHAND = new THREE.Vector3(), _seg = new THREE.Vector3(), _toCam = new THREE.Vector3(), _side = new THREE.Vector3();
 // write a camera-facing ribbon through pts[from .. from+n] into the position buffer
@@ -71,12 +79,15 @@ export function updateJudgeFX(){
   const beat = Math.floor(G.gt / 0.055);   // the stepped re-roll
   for (let i = 0; i < judgeLines.length; i++){
     const ln = judgeLines[i];
-    const tgt = active ? player.judgeTargets[i] : null;
-    if (!tgt){ ln.visible = false; continue; }
+    // saber holstered: both palms throw it (line pairs share a target, left then right); otherwise the off-hand alone
+    const two = player.holstered && G.hero !== 'mando', right = two && (i & 1) === 1;
+    const tgt = active ? player.judgeTargets[two ? i >> 1 : i] : null;
+    if (!tgt || (!two && i >= judgeLines.length / 2)){ ln.visible = false; continue; }
     ln.visible = true;
-    player.rig.armL.el.updateWorldMatrix(true, false);
+    const arm = right ? player.rig.armR : player.rig.armL;
+    arm.el.updateWorldMatrix(true, false);
     JHAND.set(0, -0.33, 0);
-    player.rig.armL.el.localToWorld(JHAND);
+    arm.el.localToWorld(JHAND);
     const u = ln.userData, P = u.pts;
     if (u.beat !== beat){
       u.beat = beat;
@@ -95,8 +106,8 @@ export function updateJudgeFX(){
                            prev.z + (P[at + 1].z - P[at].z) * 0.7 + rand(-0.35, 0.35));
       }
       // a cel crackle where it bites
-      inkSprite({ pos: tgt, shape: 'star', points: 5, sharp: 0.12, color: COLOR, size: [0.7, 1.1], life: 0.07, steps: 1, coreW: 0.4 });
-      if (i === 0) inkSprite({ pos: JHAND, shape: 'star', points: 6, sharp: 0.15, color: COLOR, size: [0.5, 0.7], life: 0.06, steps: 1, coreW: 0.45 });
+      if (!right) inkSprite({ pos: tgt, shape: 'star', points: 5, sharp: 0.12, color: COLOR, size: [0.7, 1.1], life: 0.07, steps: 1, coreW: 0.4 });
+      if (i < 2) inkSprite({ pos: JHAND, shape: 'star', points: 6, sharp: 0.15, color: COLOR, size: [0.5, 0.7], life: 0.06, steps: 1, coreW: 0.45 });
     } else P[0].copy(JHAND);   // keep the root in the palm between re-rolls
     const pos = ln.geometry.attributes.position;
     ribbon(pos, P, 0, SEG, MAIN_W);
