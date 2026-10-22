@@ -16,6 +16,7 @@ import { damageBoss } from '../boss/boss.js';
 import { spawnGroundShock } from '../fx/vfx.js';
 import { segBlockedBySolids, clampToArena, collideSolids } from '../world/collision.js';
 import { hurtPlayer } from '../player/damage.js';
+import { blockedOnBlade } from '../player/jedi/clash.js';
 import { enemyDmgScale } from '../game/survival.js';
 import { ENGAGE } from '../data/enemies.js';
 import { updateDirector, usesToken, dropToken, claimToken, rangedSlotFree, behindCamera } from './director.js';
@@ -418,6 +419,8 @@ export function updateEnemies(dt){
                 // perfectly parried — the weapon is knocked wide and the foe STUMBLES, wide open
                 staggerEnemy(e, -tx, -tz);
                 break;
+              } else if (res === 'blocked'){
+                blockedOnBlade(e);   // its weapon rebounds off your guard (player/jedi/clash.js)
               } else if (res === 'hit'){
                 burst(V3(pp.x, 1.5, pp.z), 0xff5533, 6, 5, 3);
               }

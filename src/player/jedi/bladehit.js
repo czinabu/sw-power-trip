@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { shared, G, enemies, barrels, player } from '../../state.js';
 import { stance } from '../helpers.js';
 import { pointHit } from '../../enemies/bodyshape.js';
+import { meetBlades } from './clash.js';
 export { bodyRadius } from '../../enemies/bodyshape.js';
 
 /* BODIES — foes use their real hitbox (enemies/bodyshape.js: legs, torso, head, turned and tipped over with the model);
@@ -54,6 +55,8 @@ export function sweepBlade(sw, live){
     const bx = c.x + Math.cos(ab) * rb, bz = c.z + Math.sin(ab) * rb, tx = c.x + Math.cos(at) * rt, tz = c.z + Math.sin(at) * rt;
     for (let j = 0; j < ALONG; j++){ const a = j / (ALONG - 1); pts.push(bx + (tx - bx) * a, yb + (yt - yb) * a, bz + (tz - bz) * a); }
   }
+  // a READY blade in the way (a guard that holds, a strike in flight) stops the cut before it reaches any body
+  if (meetBlades(sw, pts)) return out;
   const test = (obj, x, z, y0, y1, r) => {
     if (cut.has(obj)) return;
     r += BODY.edge;

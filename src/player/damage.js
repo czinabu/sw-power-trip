@@ -23,6 +23,7 @@ import { diffDmgMul, diffWindow } from '../data/difficulty.js';
 import { masteryXp } from '../game/progression.js';
 import { DUEL } from '../data/duel.js';
 import { startLock } from '../enemies/duel.js';
+import { contactPoint, recoilSwing, knockWeapon } from './jedi/clash.js';
 import { mandoCatch } from './mando/melee.js';
 import { tutEvent } from '../game/tutor-bus.js';
 import { mandoShielding } from './mando/weapons.js';
@@ -63,34 +64,45 @@ export function perfectDodge(fromPos){
 }
 
 /* BLADE CLASH — your cut is mid-arc when a foe's strike lands from in front: the blades meet, neither blow lands,
-   and both fighters are thrown apart. Heavy forms (Djem So, the darksaber) win the clash and stagger the foe. */
-function bladeClash(fromPos){
+   and both fighters are thrown apart. Heavy forms (Djem So, the darksaber) win the clash and stagger the foe.
+   `foe` and `at` come from player/jedi/clash.js when the two blades were seen to cross (else the nearest foe to the
+   blow, meeting in front of you). Your swing kicks back off theirs (clash.js recoilSwing). The boss clashes too: he
+   is thrown back a step and his chain presses on (boss/boss.js), so the parry stays the bigger answer. */
+export function bladeClash(fromPos, foe, at){
   const C = CFG.player.clash;
-  let foe = null, bd = 1.3;
-  for (const e of enemies){
-    if (e.dead || e.converted) continue;
-    const d = Math.hypot(e.group.position.x - fromPos.x, e.group.position.z - fromPos.z);
-    if (d < bd){ bd = d; foe = e; }
+  const boss = shared.boss && shared.boss.hp > 0 && shared.boss.group.position.distanceTo(fromPos) < 0.01 ? shared.boss : null;
+  if (!foe && !boss){
+    let bd = 1.3;
+    for (const e of enemies){
+      if (e.dead || e.converted) continue;
+      const d = Math.hypot(e.group.position.x - fromPos.x, e.group.position.z - fromPos.z);
+      if (d < bd){ bd = d; foe = e; }
+    }
+    if (!foe) return false;
   }
-  if (!foe) return false;   // the boss's blows aren't clashable — parry those
   // a duellist's blade BINDS with yours instead: a saber lock (enemies/duel.js)
-  if (foe.dp && foe.dp.lock && Math.random() < DUEL.lock.chance && startLock(foe)) return true;
+  if (foe && foe.dp && foe.dp.lock && Math.random() < DUEL.lock.chance && startLock(foe)) return true;
   const pp = playerPos();
   TMP.subVectors(fromPos, pp); TMP.y = 0; TMP.normalize();
   const dir = TMP.clone();
-  cancelSwing();
-  player.vel.addScaledVector(dir, -C.push);
+  const cp = at || (foe || boss ? contactPoint(foe || boss) : V3(pp.x + dir.x * 1.2, pp.y + 1.5, pp.z + dir.z * 1.2));
+  if (player.swing && player.atkT > 0){ recoilSwing(cp); player.cancelT = G.gt; }
+  else cancelSwing();
+  player.vel.addScaledVector(dir, -C.push * (boss ? 1.4 : 1));
   player.stam = Math.max(0, player.stam - C.stam); player.stamDelay = CFG.player.stamDelay;
-  const heavy = (G.hero !== 'mando' && G.stance === 'strong') || G.hero === 'mando';
-  if (heavy) staggerEnemy(foe, dir.x, dir.z);
-  else flinchEnemy(foe, dir, C.knock * 0.12);
-  const cp = V3(pp.x + dir.x * 1.2, pp.y + 1.5, pp.z + dir.z * 1.2);
+  const heavy = !!foe && ((G.hero !== 'mando' && G.stance === 'strong') || G.hero === 'mando');
+  if (heavy) staggerEnemy(foe, dir.x, dir.z, 'CLASH!');
+  else {
+    if (foe){ flinchEnemy(foe, dir, C.knock * 0.12); knockWeapon(foe, 0.7); }
+    floater(playerPos(), 'CLASH', '#ffe9b0');
+  }
   clashFlash(cp, stance().blade, true);
   sparks(cp, 0xffe9b0, 14, 12, { life: 0.3 });
-  G.hitstop = Math.max(G.hitstop, 0.08); G.shake = Math.max(G.shake, 0.45);
+  G.hitstop = Math.max(G.hitstop, 0.08); G.shake = Math.max(G.shake, boss ? 0.6 : 0.45);
   S.clash(cp, true);
   if (G.stats) G.stats.clashes = (G.stats.clashes || 0) + 1;
   masteryXp('clash');
+  tutEvent('clash');
   return true;
 }
 
@@ -100,7 +112,7 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
   if (player.dashT > 0){ if (!silent) perfectDodge(fromPos); return 'none'; }
   const raw = dmg;
   // a cut in flight meets a melee strike from in front: CLASH (before any guard, since a swing can't be guarding)
-  if (melee && fromPos && !silent && !(opts && opts.noClash) && player.swing && player.atkT > 0 && (G.hero !== 'mando' || player.weapon === 'darksaber')){
+  if (melee && fromPos && !silent && !(opts && opts.noClash) && player.swing && !player.swing.recoil && player.atkT > 0 && (G.hero !== 'mando' || player.weapon === 'darksaber')){
     const k = player.swing.t / player.swing.dur, C = CFG.player.clash;
     TMP.subVectors(fromPos, playerPos()); TMP.y = 0;
     if (k >= C.from && k <= C.to && TMP.lengthSq() > 0.001 && TMP.normalize().dot(fwd()) > 0.2 && bladeClash(fromPos)) return 'clashed';

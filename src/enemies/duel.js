@@ -221,7 +221,7 @@ export function chainNext(e){
 /* ---------------- defence: does this blow get turned? ---------------- */
 // kind: 'cut' | 'finisher' | 'punch' | 'punchHeavy'. Returns 'block', 'dodge', 'break' (guard shattered, blow lands)
 // or null (it lands normally).
-export function duelDefend(e, line, kind, heavy){
+export function duelDefend(e, line, kind, heavy, at){
   const p = e.dp;
   if (!p || e.dead || e.converted || !GUARDING[e.state] || e.stunT > 0 || e.dodgeT > 0) return null;
   const g = e.group, pp = playerPos();
@@ -254,7 +254,8 @@ export function duelDefend(e, line, kind, heavy){
   e.lastLine = line; e.guard = line;
   const P = DUEL.posture;
   const cost = (kind === 'finisher' ? P.finisher : kind === 'punchHeavy' ? P.punchHeavy : kind === 'punch' ? P.punch : P.cut) * (heavy ? P.heavyMul : 1);
-  const cp = V3(g.position.x + dx / dl * 0.7, g.position.y + 1.5, g.position.z + dz / dl * 0.7);
+  // the flash goes where the blades cross (`at`, from player/jedi/clash.js), else just in front of the foe
+  const cp = at || V3(g.position.x + dx / dl * 0.7, g.position.y + 1.5, g.position.z + dz / dl * 0.7);
   if (addPosture(e, cost, dx / dl, dz / dl)) return 'break';
   e.arcFlash = 0.6;
   clashFlash(cp, G.hero === 'mando' ? 0xffd28a : stance().blade, false);

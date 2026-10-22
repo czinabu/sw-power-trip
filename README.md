@@ -34,7 +34,7 @@ src/
   fx/                particles, floating text, VFX lights, saber trail, one-shot VFX, ambient embers
   player/            hero swap, movement, parkour, damage, updatePlayer (update.js), animation
     model/           hero models: rig + sockets, outfit slots (jedi.js, mando.js), weapons, render styles, looks
-    jedi/            stances, focus, saber combat, Force powers, Judgement FX
+    jedi/            stances, focus, saber combat, blade-on-blade clashes (clash.js), Force powers, Judgement FX
     mando/           weapons, gadgets, darksaber
   enemies/           meshes, elites, special moves, spawning, damage, AI, pathing (nav.js), attack turns (director.js), blaster bolts (see docs/enemy-ai.md)
   boss/              boss lightning FX and the boss itself
