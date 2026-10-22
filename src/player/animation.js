@@ -350,16 +350,17 @@ function animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait){
     // captured (anim/mocap.js): the hips lead the cut and the shoulders whip through after them
     const MC = MOCAP_ON && sw.anim && !cue.spin ? mocapCut(cue.k, sw.anim.tc, sw.anim.ts, sw.anim.tf) : null;
     if (!player.flip){
-      if (cue.spin) vis.rotation.y = easeInOut(cue.cut) * Math.PI * 2 * cue.spin * (turn || 1);
+      if (cue.spin) vis.rotation.y = easeInOut(cue.cut) * Math.PI * 2 * cue.spin * -(cue.side || 1);
       else vis.rotation.y = MC ? MC.turn * st.twist * turn * 0.75 : cue.env * st.twist * turn * 0.55;
       if (cue.hop) vis.position.y = Math.sin(Math.PI * cue.k) * cue.hop;
       vis.rotation.y += sw.body.ry * inB;
       vis.position.y += sw.body.py * inB;
+      // (the rig is mirrored: a cut to the right is a CLOCKWISE turn seen from above, which is a negative yaw)
       // SPIN-IN (data/poses.js SWING_SPINS): whole turns laid over the cut that settle square as the blade reaches the strike.
       // A clash recoil lets the turn go instead of running it backwards.
       if (sw.spin && sw.spin.turns){
         const TAU = Math.PI * 2, p = clamp(cue.k / ((sw.anim && sw.anim.ts) || 0.4), 0, 1);
-        sw.spinOff = sw.recoil ? (sw.spinOff || 0) * Math.max(0, 1 - dt * 14) : TAU * sw.spin.turns * (cue.side || 1) * (p - Math.sin(TAU * p) / TAU);
+        sw.spinOff = sw.recoil ? (sw.spinOff || 0) * Math.max(0, 1 - dt * 14) : TAU * sw.spin.turns * -(cue.side || 1) * (p - Math.sin(TAU * p) / TAU);
         vis.rotation.y = Math.atan2(Math.sin(vis.rotation.y + sw.spinOff), Math.cos(vis.rotation.y + sw.spinOff));
       }
     }
