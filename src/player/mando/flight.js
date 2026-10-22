@@ -19,7 +19,10 @@ export function updateMandoFlight(dt, pp, f, r){
   player.jetActive = holdJet && (!player.grounded || player.vy > -0.2);
   // HOVER engages while airborne and holding RMB (brace OR disruptor scope), not thrusting, with fuel left —
   // so you can hold a steady shot or scoped snipe in mid-air.
-  const wantHover = !player.grounded && !player.jetActive && (player.blockHeld || player.zoom) && player.jet > 0 && G.mode === 'play' && player.darkT <= 0;
+  // (never out of a plain dive or a slide: aiming through one keeps you on your legs; hover is for when you're already
+  // up — or once a second SHIFT has lit the pack mid-dive, which then comes out of the lay-out into the hover)
+  const jetDived = !!player.flip && player.flip.kind === 'dive' && !!player.flip.jet;
+  const wantHover = !player.grounded && !player.jetActive && (!player.flip || jetDived) && (player.blockHeld || player.zoom) && player.jet > 0 && G.mode === 'play' && player.darkT <= 0;
   player.hovering = false;
   if (player.jetActive){
     if (!wasJet){ S.jetIgnite(); jetIgnite(pp); G.shake = Math.max(G.shake, 0.12); }   // ignition pop
@@ -39,6 +42,7 @@ export function updateMandoFlight(dt, pp, f, r){
     // HOVER — hold RMB (aim/brace) mid-air to LOCK altitude and strafe. Burns fuel with NO regen, so it
     // runs dry and drops you when the tank empties (limiting early, efficient once upgraded).
     player.hovering = true;
+    if (jetDived){ player.flip = null; player.vis.rotation.set(0, 0, 0); player.vis.position.set(0, 0, 0); }
     player.vy = dampToward(player.vy, 0, dt, 9);                            // arrest the fall → hold position
     player.jet = Math.max(0, player.jet - MANDO.jetHover * (player.up.jetHoverMul || 1.7) * fuelMul * dt);
     thrust(dt, 0.4);
