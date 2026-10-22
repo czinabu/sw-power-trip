@@ -53,9 +53,9 @@ export function openSkillTree(){
   // BOONS are SURVIVAL-ONLY — they snowball power too fast for the authored campaign (which uses the XP store + skill tree).
   if (G.endless){ G.boonOffer = rollBoons(); G.boonPicked = false; } else { G.boonOffer = null; }
   rollFreeCards();
+  upTabAuto = true;
   renderProgress();
   document.getElementById('skilltree').style.display = 'flex';
-  fitUpgradeScreen();
   document.getElementById('banner').style.opacity = '0';
   document.exitPointerLock();      // free the cursor so the cards are clickable
 }
@@ -74,18 +74,25 @@ const needXp = (cost) => 'NEED ' + (cost - (G.xp || 0)) + ' MORE XP';
 const opensIn = (n) => 'OPENS IN ' + n + ' MORE WAVE' + (n === 1 ? '' : 'S');
 function bump(id){ const el = document.getElementById(id).parentElement; el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
 let _lastXp = 0, _lastSp = 0;
-// scale the screen's contents down just enough that everything fits without scrolling (never below 0.5, then it scrolls)
-function fitUpgradeScreen(){
-  const sc = document.querySelector('#skilltree .st-scroll');
-  if (!sc) return;
-  sc.style.setProperty('--stz', '1');
-  const kids = [...sc.children].filter(k => k.offsetParent !== null);
-  const gap = parseFloat(getComputedStyle(sc).rowGap) || 0, pad = parseFloat(getComputedStyle(sc).paddingTop) + parseFloat(getComputedStyle(sc).paddingBottom);
-  const need = kids.reduce((h, k) => h + k.offsetHeight, 0) + gap * Math.max(0, kids.length - 1) + pad;
-  const z = Math.max(0.5, Math.min(1, sc.clientHeight / need));
-  sc.style.setProperty('--stz', z.toFixed(3));
+// TABS — one panel at a time (boon · training · powers · mastery); each tab carries a count of what you can act on now
+let upTab = null, upTabAuto = true;
+const TAB_NAME = { boonsec: 'BOON', trainsec: 'TRAINING', abilsec: 'POWERS', mastsec: 'MASTERY' };
+function showTabs(info){   // info: [{ id, label, n, kind }] for the panels that have something on them
+  const bar = document.getElementById('sttabs');
+  if (upTabAuto || !info.some(i => i.id === upTab)){
+    const pick = info.find(i => i.n > 0) || info[0];   // land on the first panel with something to spend on
+    upTab = pick && pick.id; upTabAuto = false;
+  }
+  bar.innerHTML = '';
+  for (const i of info){
+    const b = document.createElement('div');
+    b.className = 'st-tab' + (i.id === upTab ? ' on' : '');
+    b.innerHTML = '<span>' + i.label + '</span><span class="tb ' + (i.n > 0 ? i.kind : 'zero') + '">' + i.n + '</span>';
+    b.addEventListener('click', () => { upTab = i.id; showTabs(info); });
+    bar.appendChild(b);
+  }
+  for (const id in TAB_NAME) document.getElementById(id).classList.toggle('act', id === upTab);
 }
-window.addEventListener('resize', () => { if (G.skillSelect) fitUpgradeScreen(); });
 export function renderProgress(){
   const tree = document.getElementById('skilltree');
   const xp = G.xp || 0, sp = G.skillPoints || 0;
@@ -177,7 +184,7 @@ export function renderProgress(){
     const spent = r >= s.max;
     const lockedOut = !spent && s.avail && !s.avail();   // a rival pick (e.g. the heal path) closed this off
     const pips = s.max > 1 ? '<div class="pips">' + '<i class="on"></i>'.repeat(r) + '<i></i>'.repeat(s.max - r) + '</div>' : '';
-    const rankTag = r > 0 ? '<span class="rk">' + ['','II','III'][r] + '</span>' : '';
+    const rankTag = r > 0 ? '<span class="rk">' + ['','II','III','IV'][r] + '</span>' : '';
     const why = lockedOut ? 'LOCKED · you chose the other heal path' : spent ? 'FULLY TRAINED' : 'NO SKILL POINTS';
     wrap.appendChild(card({
       cls: ' skill t' + s.tier, tag: tierName(s.tier) + (s.tier === 3 ? ' · CAPSTONE' : ''),
@@ -192,7 +199,14 @@ export function renderProgress(){
   document.getElementById('sthint').textContent = sp > 0
     ? 'Unspent XP and skill points carry over to the next wave'
     : 'Unspent XP carries over to the next wave';
-  fitUpgradeScreen();
+  // tab bar: a badge counts what you can take right now (free boons, skill-point picks, affordable cards)
+  const n = (el) => el.querySelectorAll('.card:not(.cant)').length;
+  const info = [];
+  if (boonsec.style.display !== 'none') info.push({ id: 'boonsec', label: 'BOON', n: n(booncards), kind: 'sp' });
+  info.push({ id: 'trainsec', label: G.hero === 'mando' ? 'WEAPON UPGRADES' : 'TRAINING', n: n(wrap), kind: 'sp' });
+  if (store.querySelector('.card')) info.push({ id: 'abilsec', label: document.getElementById('storehdr').textContent, n: n(store), kind: '' });
+  if (mast.children.length) info.push({ id: 'mastsec', label: document.getElementById('masthdr').textContent, n: n(mast), kind: '' });
+  showTabs(info);
 }
 function buyStore(n){
   if (!G.skillSelect || !storeAvail(n) || (G.xp||0) < n.cost) return;
