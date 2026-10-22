@@ -23,7 +23,7 @@ import { updateDirector, usesToken, dropToken, claimToken, rangedSlotFree, behin
 import { updateNav, navSteer, navClass, navClearance } from './nav.js';
 import { DUEL } from '../data/duel.js';
 import { diffTellMul } from '../data/difficulty.js';
-import { updateDuel, planAttack, quickStrike, windupPose, strikePose, maybeFeint, chainNext, updateSaberLock } from './duel.js';
+import { updateDuel, planAttack, quickStrike, windupPose, strikePose, maybeFeint, chainNext, updateSaberLock, drainBreath } from './duel.js';
 import { TROOP_MELEE, TROOP_FIRE, GRENADE } from '../data/tactics.js';
 import { tickTactics, planTroopMelee, troopFeint, holdTremble, planShot, approachSteer, tryOrder, updateOrder, tryLunge, updateLungeWind,
   updateLunge, dropLungeLine } from './tactics.js';
@@ -418,6 +418,7 @@ export function updateEnemies(dt){
               if (res === 'parried'){
                 // perfectly parried — the weapon is knocked wide and the foe STUMBLES, wide open
                 staggerEnemy(e, -tx, -tz);
+                drainBreath(e, DUEL.breath.parried);
                 break;
               } else if (res === 'blocked'){
                 blockedOnBlade(e);   // its weapon rebounds off your guard (player/jedi/clash.js)
@@ -430,6 +431,7 @@ export function updateEnemies(dt){
         if (e.st <= 0 && e.state === 'strike'){
           if (chainNext(e)) break;   // a duellist's STRING: the next cut winds up straight out of this one
           if (!e.dead){ e.state = 'recover'; e.st = t.recover; }
+          if (!e.dead && !e.converted) e.openUntil = G.gt + t.recover * DUEL.open.share;   // OPENING: it has swung, it's open (data/duel.js)
           if (e.token) dropToken(e, true);   // swung — step back into the ring and let the next foe in
           g.userData.bodyMat.emissiveIntensity = 0;
         }

@@ -10,8 +10,8 @@ const CONTROLS = {
       ['MOUSE', 'Look'],
       ['SPACE', 'Jump', 'Tap again in the air to double-jump'],
       ['HOLD SPACE', 'Force leap and glide', 'Spends Force'],
-      ['SHIFT', 'Roll / dash', 'In a fight, SHIFT on the ground is a quick roll any way you press: free, with a moment of invulnerability · tap it again mid-roll (or press it in the air) to Force dash, which spends a charge (the pips on the slot) and some Force · out of a fight it just dashes, free · roll or dash just as a blow lands for a perfect dodge'],
-      ['Q', 'Run / walk', 'Switches between run (the default; forward sprints) and walk; the sprint is free but turns wide, the walk is a brisk, menacing pace, fights included'],
+      ['SHIFT', 'Roll / dash', 'In a fight, SHIFT on the ground is a quick roll any way you press: it costs some stamina (Ataru least, Djem So most), with a moment of invulnerability · tap it again mid-roll (or press it in the air) to Force dash, which spends a charge (the pips on the slot) and some Force · out of a fight it just dashes, free · roll or dash just as a blow lands for a perfect dodge'],
+      ['Q', 'Run / walk', 'Switches between run (the default; forward sprints) and walk; the sprint turns wide, and in a fight it burns stamina (it gives out before your guard does), the walk is a brisk, menacing pace, fights included'],
       ['ALT', 'Force slide', 'Out of a sprint: a long skid forward that ducks blaster fire and bowls troops over · attack out of it to sweep', 1],
     ]},
     { title: 'PARKOUR', rows: [

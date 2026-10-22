@@ -43,7 +43,7 @@ function pickMutator(n){
 }
 // a survival wave's enemy list — a composition that SHIFTS toward deadlier types as the run deepens
 export function genEndlessWave(n){
-  const total = Math.min(34, 5 + Math.floor(n * 1.5));   // more bodies on the field, later cap — survival pressure
+  const total = Math.min(22, 4 + Math.floor(n * 0.9));   // grounded pass: fewer bodies (was 34 cap, 1.5/wave); the duellists sharpen instead (data/duel.js eliteRamp)
   const w = {
     grunt:   Math.max(1.0, 6 - n*0.22),
     blaster: n >= 2 ? 0.8 + n*0.13 : 0,

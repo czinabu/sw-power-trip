@@ -2,22 +2,28 @@
 // ENEMY_TYPES: stats for every regular enemy.
 
 
-/* ENEMY TYPES — edit stats/behavior here; add new types and reference them in LEVELS.
+/* TIERS (the grounded pass): the rank and file — purge troopers, stormtroopers, jet troopers, officers — are FODDER: a
+   clean cut or two drops them and they barely guard, so the early waves teach timing without a wall of health. The
+   duellists (staff magnaguards, Sith acolytes), lancers, sentinels and brutes are the FIGHTS: each has its own guard,
+   posture, BREATH and counters (data/duel.js), so it takes reading and footwork, not mashing. Neither outruns the
+   other cheaply: troopers run a touch slower than your run, duellists a touch faster (sprinting clear costs stamina).
+
+   ENEMY TYPES — edit stats/behavior here; add new types and reference them in LEVELS.
    Looks: model picks the trooper design in enemies/mesh.js (purge, storm, heavy, magna, jet, riot, b1, scout);
    color is the armour, eye the glows, cloth any cape / poncho / kama. Looks never change gameplay. */
 export const ENEMY_TYPES = {
-  grunt:   { hp: 54,  speed: 6.7, dmg: 12, range: 2.7,  windup: 0.44, recover: 0.55, swing: 0.16,
+  grunt:   { hp: 44,  speed: 6.2, dmg: 12, range: 2.7,  windup: 0.44, recover: 0.55, swing: 0.16,
              scale: 1.0, color: 0x8a93a6, eye: 0xff3030, model: 'purge', ranged: false, weapon: 'sword', score: 1 },
-  blaster: { hp: 40,  speed: 5.2, dmg: 11, range: 14,   windup: 0.66, recover: 1.1,
+  blaster: { hp: 34,  speed: 5.0, dmg: 11, range: 14,   windup: 0.66, recover: 1.1,
              scale: 0.95, color: 0x6a7790, eye: 0xff7030, model: 'storm', ranged: true, boltSpeed: 21, score: 1 },
   brute:   { hp: 205, speed: 4.0, dmg: 27, range: 3.3,  windup: 0.8,  recover: 0.85, swing: 0.24,
              scale: 1.55, color: 0x55404a, eye: 0xff2060, model: 'heavy', ranged: false, weapon: 'maul', heavy: true, score: 3 },
   // staff duelist — telegraphed melee meant to be PARRIED (click RMB as the staff falls)
-  duelist: { hp: 98,  speed: 5.7, dmg: 18, range: 3.2,  windup: 0.54, recover: 0.7,  swing: 0.18,
+  duelist: { hp: 98,  speed: 6.0, dmg: 18, range: 3.2,  windup: 0.54, recover: 0.7,  swing: 0.18,
              scale: 1.08, color: 0x6f5a3a, eye: 0xffd24a, model: 'magna', cloth: 0x2b2420, ranged: false, weapon: 'staff', staff: true, score: 2 },
   // SITH ACOLYTE — a saber duellist (see data/duel.js): holds a guard, feints, strings cuts, binds blades in a lock,
   // and bats blaster fire back. A real duel, not a speed bump: read the guard, break it, punish the opening.
-  acolyte: { hp: 135, speed: 6.3, dmg: 19, range: 3.0,  windup: 0.5,  recover: 0.6,  swing: 0.15,
+  acolyte: { hp: 145, speed: 6.6, dmg: 19, range: 3.0,  windup: 0.5,  recover: 0.6,  swing: 0.15,
              scale: 1.03, color: 0x2c2a30, eye: 0xff2a36, model: 'acolyte', cloth: 0x1c1416, ranged: false, weapon: 'saber', score: 4 },
   // JET TROOPER — a HOVERING ranged skirmisher. It floats above the fray, matches your altitude (so you can't just
   // fly/hover above it) and rains bolts. Squishy & a priority target: counter it with ranged tools / Force powers /

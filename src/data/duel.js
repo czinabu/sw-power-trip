@@ -19,12 +19,21 @@
      deflect  chance it bats a blaster bolt back at the shooter (saber users only)
      lock     a cut that meets its strike mid-arc becomes a SABER LOCK instead of a plain clash
      push     how hard it drives a saber lock (balance per second)
-     ramp     feint and delay grow with run depth (data/tactics.js RAMP): the rank and file learn tricks as the run goes on */
+     ramp     feint and delay grow with run depth (data/tactics.js RAMP): the rank and file learn tricks as the run goes on
+     stam     BREATH: the foe's own stamina (DUEL.breath). Blocking, slipping, swinging and countering spend it; run it dry
+              and it can't guard or answer until it has backed off and caught its breath. Absent = no breath to manage.
+     parry    chance it PARRIES a cut that comes in on the rhythm of a mash (DUEL.rhythm): your blade is thrown wide,
+              you lose stamina and it ripostes. Spacing your cuts (or changing line) never gets parried.
+     elite    its skill climbs with run depth (DUEL.eliteRamp): a little gentler than listed early on, past it at the end */
 export const DUEL_PROFILES = {
-  grunt:   { block: 0.18, posture: 40,  feint: 0.2,  delay: 0.3,  chain: 0, counter: 0.15, thrust: 0,    dodge: 0, ramp: true },
+  // the rank and file: barely a guard, rarely an answer (they learn a few tricks as the run deepens: `ramp`)
+  grunt:   { block: 0.06, posture: 28,  feint: 0.2,  delay: 0.3,  chain: 0, counter: 0.05, thrust: 0,    dodge: 0, ramp: true },
   phalanx: { block: 0,    posture: 60,  feint: 0.15, delay: 0.35, chain: 1, counter: 0.3,  thrust: 0,    dodge: 0, ramp: true },
-  duelist: { block: 0.55, posture: 70,  feint: 0.25, delay: 0.25, chain: 1, counter: 0.45, thrust: 0.1,  dodge: 0.1, lock: true, push: 0.38 },
-  acolyte: { block: 0.72, posture: 95,  feint: 0.3,  delay: 0.3,  chain: 2, counter: 0.6,  thrust: 0.15, dodge: 0.2, deflect: 0.75, lock: true, push: 0.5 },
+  // the duellists: a guard, breath to manage, and a parry for anyone who mashes
+  duelist: { block: 0.55, posture: 70,  feint: 0.25, delay: 0.25, chain: 1, counter: 0.45, thrust: 0.1,  dodge: 0.1, lock: true, push: 0.38,
+             stam: 100, parry: 0.5, elite: true },
+  acolyte: { block: 0.72, posture: 95,  feint: 0.3,  delay: 0.3,  chain: 2, counter: 0.6,  thrust: 0.15, dodge: 0.2, deflect: 0.75, lock: true, push: 0.5,
+             stam: 130, parry: 0.7, elite: true },
 };
 
 export const DUEL = {
@@ -41,6 +50,24 @@ export const DUEL = {
      purpose); recoil: seconds the swing takes to kick back off the other blade; back: how much of the swing it rewinds;
      hitstop: the freeze on contact. The boss's blows clash too (data/bosses.js combo.clashGap). */
   clash: { reach: 0.22, recoil: 0.17, back: 0.3, hitstop: 0.07 },
+  /* BREATH — a duellist's stamina (profile `stam`). What each act costs it; it refills `regen`/s once it has gone
+     `regenDelay` s without spending. Below `winded` × its pool it is WINDED: it can't block, slip or counter, its guard
+     arc goes dark, and it gives up its attack turn and backs off until it is over `recover` × its pool again. Your
+     pressure is what drains it: block after block, a parried swing, a lock you push. */
+  breath: { block: 18, dodge: 20, swing: 12, chain: 9, counter: 10, parried: 25, lock: 22, regen: 24, regenDelay: 1.0,
+            winded: 0.2, recover: 0.6, retreat: 1.2 },
+  /* RHYTHM — a duellist reads a mash. A cut that arrives within `gap` s of your last one at it extends a streak; from
+     the `after`th quick cut on, its guard may PARRY instead of just block (profile `parry`): your swing is thrown off
+     (`flinch` s, `stam` stamina) and it ripostes straight away. A beat of patience, a feint of your own or a new line
+     resets the streak. */
+  rhythm: { gap: 0.8, after: 2, stam: 18, flinch: 0.35 },
+  /* OPENINGS — any melee foe that swings and misses, or finishes its string, is open while it recovers (`share` of its
+     recovery): a duellist can't guard in it, and a blow that lands there hits `dmg`× harder (a well placed cut). */
+  open: { share: 0.85, dmg: 1.3 },
+  /* ELITE RAMP — the duellists start a touch below their listed skill and grow past it: `from` on the first wave, 1 by
+     wave `full`, up to `max` by wave `top` (campaign waves add up; survival counts its own). Block, counter, parry and
+     breath scale with it, so the late game belongs to whoever has learned to read a guard. */
+  eliteRamp: { from: 0.8, full: 9, max: 1.25, top: 22 },
   // ENEMY OFFENCE
   feintAt: 0.7,           // a feint breaks off this far into its wind-up...
   feintRewind: 0.26,      // ...and the real strike winds up this fast from the other side

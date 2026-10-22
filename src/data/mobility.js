@@ -3,7 +3,7 @@
 // what each form changes about them. Edit here to retune duel movement.
 
 /* A fight is fought on the ground, Jedi Academy style. In COMBAT (a foe close by, the boss up, or a blow traded in
-   the last few seconds) SHIFT on the ground is a quick ROLL: free, short, with a moment of invulnerability. It is
+   the last few seconds) SHIFT on the ground is a quick ROLL: short, a little stamina (roll.stam), with a moment of invulnerability. It is
    the duel dodge. Tap SHIFT again during the roll (or press it in the air) for the FORCE DASH, which spends one of a
    few CHARGES that refill over time, plus a little Force. Being in the air in a fight is a commitment: you steer
    less, you can't hold a guard, blows land harder and knock you out of the leap.
@@ -21,6 +21,8 @@ export const MOBILITY = {
     cd: 0.3,         // gap after a roll before the next one
     redash: 0.3,     // a second SHIFT this soon into a roll turns it into a Force dash
     swingLock: 0.08, // the blade is slow to swing out of the roll's last beat
+    stam: 15,        // SOULS-STYLE: each roll spends this much stamina (forms scale it), so a dodge is a decision, not a
+                     // reflex to spam; with less than that in the bar there's no roll (step out of reach instead)
   },
   dash: {
     charges: 2,      // Force dash charges (forms change it below)
@@ -51,19 +53,19 @@ export const MOBILITY = {
       airParry: true,     // a timed parry still works in the air (a held block doesn't)
       airTurn: true,      // the second jump can still turn the leap toward the keys
       evadeIframes: 1.6,
-      roll: { speed: 1.05, iframes: 1.0, cd: 1.0 },
+      roll: { speed: 1.05, iframes: 1.0, cd: 1.0, stam: 0.7 },   // the acrobat rolls cheapest
       swingMove: 1.0,
     },
     niman: {
       charges: 2, recharge: 1.0, dashCost: 1.0,
       airControl: 1.0, airDmg: 1.0, airParry: false, evadeIframes: 1.0,
-      roll: { speed: 1.0, iframes: 1.15, cd: 0.85 },
+      roll: { speed: 1.0, iframes: 1.15, cd: 0.85, stam: 1.0 },
       swingMove: 1.15,
     },
     djemso: {
       charges: 2, recharge: 1.3, dashCost: 1.4,
       airControl: 0.85, airDmg: 1.25, airParry: false, evadeIframes: 0.8,
-      roll: { speed: 0.95, iframes: 1.35, cd: 0.7 },   // a heavy, planted sidestep that stays safe longest
+      roll: { speed: 0.95, iframes: 1.35, cd: 0.7, stam: 1.2 },   // a heavy, planted sidestep that stays safe longest (and costs most)
       swingMove: 1.4,     // footwork mid-swing: the heavy cuts walk the foe down instead of planting
     },
   },

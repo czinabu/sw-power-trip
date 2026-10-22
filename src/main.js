@@ -86,7 +86,7 @@ import { updateCamera } from './engine/camera.js';
 import { SEE } from './world/ink.js';
 import { NAV, buildNav, updateNav, navSteer, navDist } from './enemies/nav.js';
 import { DUEL, DUEL_PROFILES, MANDO_MELEE } from './data/duel.js';
-import { LOCK, startLock, endLock, duelDefend } from './enemies/duel.js';
+import { LOCK, startLock, endLock, duelDefend, eliteRamp } from './enemies/duel.js';
 import { foeBlade, bossBlade, contactPoint } from './player/jedi/clash.js';
 import { updateCoop, partnerShown } from './net/ghost.js';
 import './ui/coop-ui.js';
@@ -159,6 +159,6 @@ window.GAME = { partnerShown, CFG, ENEMY_TYPES, LEVELS, BOSS_CFG, BOSS_MANDO, ST
   FOCUS, focusTier, focusDmgMul, focusRegenMul, addFocus, updateFocus, enemyDmgScale, applySwingDamage,
   hitMarker, spawnBlasterBolt, mandoWeapon, updateBolts, updateHud,
   hazardZones, updateHazardZones, hazardContains, setOverlayState, nav: { NAV, buildNav, updateNav, navSteer, navDist },
-  duel: { DUEL, DUEL_PROFILES, MANDO_MELEE, LOCK, startLock, endLock, duelDefend, foeBlade, bossBlade, contactPoint },
+  duel: { DUEL, DUEL_PROFILES, MANDO_MELEE, LOCK, startLock, endLock, duelDefend, eliteRamp, foeBlade, bossBlade, contactPoint },
   tactics: { RAMP, TROOP_MELEE, TROOP_FIRE, PINCER, ORDERS, GRENADE, LUNGE, tacticsRamp, grenades, pushGrenades },
   get boss(){ return shared.boss; }, get saberProj(){ return shared.saberProj; }, get darkProj(){ return shared.darkProj; } };
