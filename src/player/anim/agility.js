@@ -319,7 +319,7 @@ function mandoBody(dt, dr, vis, R, fl){
 export function mandoAgilityPost(dt, dr, vis, R, f, r){
   const M = MANDO_AGILITY;
   if (player.flip && !player.slamming) mandoBody(dt, dr, vis, R, player.flip);
-  if (player.slamming) poseLegs(R, dr, LEGS.tuck, 0.6, 14);
+  if (player.slamming) poseLegs(R, dr, LEGS.tuck, player.slamWind > 0 ? 1 : 0.35, player.slamWind > 0 ? 12 : 18);   // knees up in the wind-up, braced near-straight for the impact
   slamLanding(dt, dr, R, M.slam.kneel, 0);
   if (player.grounded && player.dashT > 0 && !player.slamming && !player.flip){
     // ROCKET BOOST — he drops, the lead leg reaches into the skid and the trail leg drags

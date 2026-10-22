@@ -40,7 +40,11 @@ export const MANDO = {
   birds: { cost: 48, cd: 7.5, count: 6, dmg: 20, radius: 2.6, speed: 26, knock: 6 },   // V — whistling birds (homing)
   deto:  { cost: 42, cd: 5.2, fuse: 1.15, dmg: 72, radius: 6.5, knock: 22, range: 26, minRange: 3, flight: [0.35, 0.9] },   // thrown onto the reticle (range m; flight s, near → far)           // V — thermal detonator (sticky) — THE Mando area blast (radius 5.5→6.5 as the rocket shrank)
   grapple: { cost: 18, cd: 1.2, range: 26, pullSpeed: 42 },                            // C — grappling hook
-  slam:  { cost: 34, dmg: 46, radius: 9, knock: 24, diveVel: 34 },                     // X (air) — jetpack slam (jet fuel)
+  // X (air) — jetpack slam (jet fuel). A beat of wind-up (the pack fires up, he rises a little with the fist cocked),
+  // then the jets flip and drive him down; the landing is a superhero three-point with the fist in the deck. The
+  // farther he falls the harder it lands (up to boost× damage/radius from fallFull m), and foes inside core are stunned.
+  slam:  { cost: 34, dmg: 46, radius: 9, knock: 24, diveVel: 44, wind: 0.3, rise: 5, core: 3.5, stun: 1.4,
+           fallFull: 12, boost: 1.35 },                     // X (air) — jetpack slam (jet fuel)
   // (the E melee kit — string, catch, charge, dive kick, takedown — is tuned in data/duel.js MANDO_MELEE)
   // BACTA STIM (G) — the Mando's self-heal: jam a bacta injector into the gauntlet line. Mirrors the Jedi's Force
   // Mend (a quick channel → a big restore). Mutually exclusive with HUNTER'S CREED (heal-per-kill) so you commit to

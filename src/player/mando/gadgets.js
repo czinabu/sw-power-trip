@@ -320,24 +320,66 @@ export function updateGrapple(dt){
 /* ===== JETPACK SLAM — dive from the air for a ground shockwave (X) ===== */
 export function jetSlam(){
   if (G.mode !== 'play' || !G.unlocked.slam || player.grounded || player.slamming || player.jet < abil('mslam').cost) return;
-  player.jet -= abil('mslam').cost;
+  const A = abil('mslam');
+  player.jet -= A.cost;
   player.aiming = 0.5;
-  player.slamming = true; player.flip = null; player.vel.set(0,0,0); player.vy = -abil('mslam').diveVel;
-  S.dash(); sparks(playerPos().clone().setY(playerPos().y + 0.6), 0x88ddff, 8, 9, { dir: V3(0,1,0), cone: 0.5, life: 0.25, grav: 0 });
+  player.slamming = true; player.flip = null; player.slamWind = A.wind; player.slamTop = playerPos().y;
+  player.vel.multiplyScalar(0.3); player.moveVel.multiplyScalar(0.3);
+  player.vy = Math.max(player.vy * 0.2, A.rise);   // the pack fires up: a short rise into the wind-up
+  const pp = playerPos();
+  sparks(V3(pp.x, pp.y + 0.9, pp.z), 0x88ddff, 10, 9, { dir: V3(0, -1, 0), cone: 0.4, life: 0.25, grav: 0 });
+  S.jetIgnite(); sfx(140, 0.3, 'sawtooth', 0.05, 420);   // spooling up
+}
+/* the slam's wind-up hang, then the plunge: jets reversed, exhaust streaming up past the helmet */
+export function updateJetSlam(dt){
+  if (!player.slamming){ player.slamWind = 0; return; }
+  const A = abil('mslam'), pp = playerPos();
+  if (player.slamWind > 0){
+    player.slamWind -= dt;
+    player.vel.multiplyScalar(Math.pow(0.1, dt)); player.moveVel.multiplyScalar(Math.pow(0.1, dt));
+    player.vy = Math.max(player.vy * Math.pow(0.02, dt), 0.6);   // the rise stalls and hangs at the top
+    player.slamTop = Math.max(player.slamTop, pp.y);
+    if (Math.random() < dt * 30) sparks(V3(pp.x, pp.y + 1.0, pp.z), 0x66c6ff, 2, 6, { dir: V3(0, -1, 0), cone: 0.3, life: 0.12, grav: 0 });
+    if (player.slamWind > 0) return;
+    player.slamWind = 0;
+    player.vel.set(0, 0, 0); player.moveVel.set(0, 0, 0);
+    player.vy = -A.diveVel;                          // the jets flip: straight down
+    S.dash(); sfx(70, 0.35, 'sawtooth', 0.08, 30); G.shake = Math.max(G.shake, 0.3);
+    puff(V3(pp.x, pp.y + 2.2, pp.z), 0xb8c2c8, 1.2, 0.45, V3(0, 4, 0));
+    return;
+  }
+  player.vy = Math.min(player.vy, -A.diveVel);       // nothing slows the drop
+  if (Math.random() < dt * 40) sparks(V3(pp.x + rand(-0.2, 0.2), pp.y + 1.6, pp.z + rand(-0.2, 0.2)), 0x9fe0ff, 2, 14, { dir: V3(0, 1, 0), cone: 0.15, life: 0.16, grav: 0, size: 0.4 });
 }
 export function mandoSlamImpact(){
   const A = abil('mslam'), pp = playerPos();
-  S.slam(pp); S.boom(pp, 0.8);
-  G.shake = Math.max(G.shake, 1.3); G.hitstop = Math.max(G.hitstop, 0.1);
-  spawnGroundShock(pp, 0x9ad8ff, A.radius + 2, 0.4, 0.55);
-  spawnGroundShock(pp, 0x66c6ff, A.radius + 7, 0.7, 0.3);
-  inkSprite({ pos: V3(pp.x, pp.y + 0.6, pp.z), shape: 'star', points: 8, sharp: 0.16, color: 0x9ad8ff, size: [1.5, 4.2], life: 0.16, steps: 2, coreW: 0.4 });
-  dustRing(pp, A.radius);
-  burst(V3(pp.x, 0.4, pp.z), 0x9a9a9a, 10, 9, 8, 1.1);
-  flashLight(0x88ccff, 8, A.radius*2.2, V3(pp.x, 1, pp.z), 0.3);
-  for (const e of enemies){ if (e.dead || e.converted || e.state === 'spawn') continue; const d = distToBody(e, pp); if (d < A.radius){ const kd = TMP.subVectors(e.group.position, pp).setY(0).normalize().clone(); damageEnemy(e, A.dmg * player.up.dmg, kd, A.knock); flinchEnemy(e, kd, 0.7); } }
-  if (shared.boss && shared.boss.hp > 0 && shared.boss.group.position.distanceTo(pp) < A.radius) damageBoss(A.dmg * player.up.dmg);
-  for (const b of barrels){ if (b.mesh.position.distanceTo(pp) < A.radius && b.fuse < 0) b.fuse = 0.15; }
+  // the drop pays: from fallFull up, the full boost to damage and reach
+  const fall = clamp(((player.slamTop ?? pp.y) - pp.y) / A.fallFull, 0, 1), k = 1 + (A.boost - 1) * fall;
+  const radius = A.radius * k, dmg = A.dmg * player.up.dmg * k;
+  player.slamTop = null;
+  S.slam(pp); S.boom(pp, 1.0 + 0.4 * fall); S.heavy();
+  G.shake = Math.max(G.shake, 1.5 + 0.3 * fall); G.hitstop = Math.max(G.hitstop, 0.13);
+  G.slowmo = Math.min(G.slowmo, 0.55); G.slowmoT = Math.max(G.slowmoT, 0.14);   // a beat on the impact
+  player.landDip = 0.45 + 0.2 * fall;                                          // the view drops with him
+  screenFlash('radial-gradient(ellipse at center, rgba(140,210,255,.35), transparent 60%)', 0.45, 0.22);
+  spawnGroundShock(pp, 0xffffff, 3.2, 0.22, 0.8);           // the white crack at the fist
+  spawnGroundShock(pp, 0x9ad8ff, radius + 2, 0.4, 0.6);
+  spawnGroundShock(pp, 0x66c6ff, radius + 7, 0.7, 0.35);
+  inkSprite({ pos: V3(pp.x, pp.y + 0.6, pp.z), shape: 'star', points: 8, sharp: 0.16, color: 0x9ad8ff, size: [1.8, 4.6 + fall], life: 0.18, steps: 2, coreW: 0.4 });
+  // the exhaust blast rolls out along the deck
+  for (let n = 0; n < 8; n++){ const a = n / 8 * Math.PI * 2;
+    puff(V3(pp.x + Math.sin(a) * 0.8, pp.y + 0.3, pp.z + Math.cos(a) * 0.8), 0xb8c2c8, 0.7, 0.45, V3(Math.sin(a) * 10, 0.5, Math.cos(a) * 10), { delay: 0.02, op: 0.7 }); }
+  dustRing(pp, radius);
+  burst(V3(pp.x, 0.4, pp.z), 0x9a9a9a, 16, 10, 9, 1.2);     // deck plating and grit thrown up
+  burst(V3(pp.x, 0.4, pp.z), 0x9ad8ff, 8, 8, 6, 0.8);
+  flashLight(0x88ccff, 10, radius*2.4, V3(pp.x, 1, pp.z), 0.35);
+  for (const e of enemies){ if (e.dead || e.converted || e.state === 'spawn') continue; const d = distToBody(e, pp); if (d < radius){
+    const kd = TMP.subVectors(e.group.position, pp).setY(0).normalize().clone();
+    damageEnemy(e, dmg * (1 - d / radius * 0.35), kd, A.knock * k); flinchEnemy(e, kd, 0.9);
+    if (!e.dead && d < A.core){ e.state = 'stagger'; e.st = A.stun; e.stumble = 0.3; }   // right under him: knocked flat
+  } }
+  if (shared.boss && shared.boss.hp > 0 && shared.boss.group.position.distanceTo(pp) < radius) damageBoss(dmg);
+  for (const b of barrels){ if (b.mesh.position.distanceTo(pp) < radius && b.fuse < 0) b.fuse = 0.15; }
 }
 
 /* ===== ROCKET BOOST (ground) — spends jetpack fuel ===== */
