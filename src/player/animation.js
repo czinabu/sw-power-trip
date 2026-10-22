@@ -359,7 +359,7 @@ function animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait){
       // A clash recoil lets the turn go instead of running it backwards.
       if (sw.spin && sw.spin.turns){
         const TAU = Math.PI * 2, p = clamp(cue.k / ((sw.anim && sw.anim.ts) || 0.4), 0, 1);
-        sw.spinOff = sw.recoil ? (sw.spinOff || 0) * Math.max(0, 1 - dt * 14) : TAU * sw.spin.turns * (turn || 1) * (p - Math.sin(TAU * p) / TAU);
+        sw.spinOff = sw.recoil ? (sw.spinOff || 0) * Math.max(0, 1 - dt * 14) : TAU * sw.spin.turns * (cue.side || 1) * (p - Math.sin(TAU * p) / TAU);
         vis.rotation.y = Math.atan2(Math.sin(vis.rotation.y + sw.spinOff), Math.cos(vis.rotation.y + sw.spinOff));
       }
     }
