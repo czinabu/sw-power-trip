@@ -129,3 +129,23 @@
 /* things you can act on right now glow softly; the dim ones step back */
 .card:not(.cant):not(.boon):not(.final){border-color:rgba(120,190,255,.38)}
 .coin.sp.has{box-shadow:0 0 16px rgba(255,210,90,.3)}
+
+/* ---- ONE-SCREEN FIT: tighter cards, no flavour text; ui/store-ui.js fitUpgradeScreen() scales the rest to the window ---- */
+.st-scroll{padding:14px 20px 8px;gap:10px}
+.st-scroll>*{zoom:var(--stz,1)}
+.st-head{padding-bottom:8px}
+#skilltree h1{font-size:32px}
+.coin{padding:6px 14px}.coin b{font-size:22px}
+.st-sec{padding:10px 12px 12px}
+.storehdr{margin-bottom:8px}.storehdr .sh-t{font-size:17px}
+.cardrow{grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:8px}
+.card{padding:9px 11px;grid-template-columns:40px 1fr;column-gap:11px;row-gap:3px}
+.card .c-ico{width:34px;height:34px;font-size:19px;margin:4px 0 0}
+.card .c-nm{font-size:15px}
+.card .c-ds{font-size:13.5px;line-height:1.3}
+.card .c-fl{display:none}
+.card .c-cost,.card.skill .c-pick{margin-top:2px;padding:3px 12px}
+.card .pips{margin-top:1px}
+.forkgroup{padding:3px}
+.st-head,.st-sec{width:min(1500px,100%)}
+.cardrow{grid-template-columns:repeat(auto-fill,minmax(205px,1fr))}

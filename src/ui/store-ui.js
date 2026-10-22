@@ -55,6 +55,7 @@ export function openSkillTree(){
   rollFreeCards();
   renderProgress();
   document.getElementById('skilltree').style.display = 'flex';
+  fitUpgradeScreen();
   document.getElementById('banner').style.opacity = '0';
   document.exitPointerLock();      // free the cursor so the cards are clickable
 }
@@ -73,6 +74,18 @@ const needXp = (cost) => 'NEED ' + (cost - (G.xp || 0)) + ' MORE XP';
 const opensIn = (n) => 'OPENS IN ' + n + ' MORE WAVE' + (n === 1 ? '' : 'S');
 function bump(id){ const el = document.getElementById(id).parentElement; el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
 let _lastXp = 0, _lastSp = 0;
+// scale the screen's contents down just enough that everything fits without scrolling (never below 0.5, then it scrolls)
+function fitUpgradeScreen(){
+  const sc = document.querySelector('#skilltree .st-scroll');
+  if (!sc) return;
+  sc.style.setProperty('--stz', '1');
+  const kids = [...sc.children].filter(k => k.offsetParent !== null);
+  const gap = parseFloat(getComputedStyle(sc).rowGap) || 0, pad = parseFloat(getComputedStyle(sc).paddingTop) + parseFloat(getComputedStyle(sc).paddingBottom);
+  const need = kids.reduce((h, k) => h + k.offsetHeight, 0) + gap * Math.max(0, kids.length - 1) + pad;
+  const z = Math.max(0.5, Math.min(1, sc.clientHeight / need));
+  sc.style.setProperty('--stz', z.toFixed(3));
+}
+window.addEventListener('resize', () => { if (G.skillSelect) fitUpgradeScreen(); });
 export function renderProgress(){
   const tree = document.getElementById('skilltree');
   const xp = G.xp || 0, sp = G.skillPoints || 0;
@@ -179,6 +192,7 @@ export function renderProgress(){
   document.getElementById('sthint').textContent = sp > 0
     ? 'Unspent XP and skill points carry over to the next wave'
     : 'Unspent XP carries over to the next wave';
+  fitUpgradeScreen();
 }
 function buyStore(n){
   if (!G.skillSelect || !storeAvail(n) || (G.xp||0) < n.cost) return;
