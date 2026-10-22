@@ -83,18 +83,27 @@ export const CFG = {
     pivotY: 1.9,              // the lens orbits a point this high over the hero's feet (just over head height)
     minLensY: 1.3,            // looking up swings the lens down, but never lower than this over the hero's feet
     shoulder: 0.2,            // Jedi lens sits this far right of the spine: almost centred, like Jedi Academy
-    jediDistMul: 0.85,        // Jedi follows closer than the baseDist (Mando keeps the full distance)
-    jediLookUp: 0.55,         // Jedi aim point rides this much higher, pushing the hero down into the lower third of the frame
+    // JEDI — Jedi Academy's rig: a short, steady boom (its range is 80 units, about 1.25 hero heights) whose aim runs
+    // far down the line of sight, so the hero sits big and low-centre and the view swings around them, not past them
+    jediDist: 3.5,            // resting follow distance (the Mando uses mandoDist)
+    jediLookAhead: 12,        // the Jedi lens aims this far past the hero (JA projects its focus far down the view)...
+    jediLookUp: 0.2,          // ...and this much over the pivot
+    jediLensUp: 0.35,         // the Jedi lens rides this much over the pivot: just enough to see a foe ahead over the hero's shoulders
+    jediFrame: 0.45,          // share of the crowd / calm framing the Jedi takes: JA's range never breathes, so keep it steady
+    jediRunPull: 0.6,         // most the Jedi lens drops back while running flat out
     lookAhead: 5,             // the lens aims this far past the hero...
     lookUp: -0.15,            // ...and this high over the pivot (a hair under it keeps the hero's boots in frame)
     topDownFrom: 0.45,        // past this pitch (radians, looking down) the aim point starts drawing in toward the hero...
     topDownAhead: 0.5,        // ...losing up to this share of the look-ahead at the steepest pitch...
     topDownDrop: 0.5,         // ...and sinking this far, so a hero seen from overhead sits in frame, not off the bottom edge
-    baseDist: 5.4,            // resting follow distance (was 8.2)
     calmDist: 0.6,            // between waves / nothing nearby: ease back a touch so an empty arena never feels cramped
     crowdRadius: 10,          // enemies inside this range count toward the crowd pull-back
     crowdPull: 0.4,           // extra distance per nearby enemy...
     crowdMax: 2.6,            // ...capped here, so a brawl always fits on screen
+    // MANDO — Helldivers 2's rig: a closer boom held well off the right shoulder, so the hero stands left of centre with the
+    // crosshair clear past them, and it tucks in tighter still while aiming
+    mandoDist: 4.5,           // resting follow distance (aiming / flight scale it)
+    mandoLensUp: 0.85,        // the lens rides this much over the pivot, so the helmet sits under the crosshair's eye-line
     mandoShoulder: 0.95,      // MANDO lens offset off the shoulder (never centred, see camera.js)...
     mandoShoulderAim: 1.25,   // ...wider while aiming / bracing, so the reticle is always clear of the helmet...
     mandoShoulderFly: 1.05,   // ...and in the air
@@ -108,5 +117,6 @@ export const CFG = {
     hitKick: 0.28,            // the lens is knocked away from whatever hit you
     impactFov: 3.5,           // FOV punch-in on heavy hitstop / slow-mo beats
     sway: 0.035,              // idle handheld drift (0 to disable)
+    wallRise: [0.9, 1.8, 2.8],// WALL AT YOUR BACK: heights the boom tries rising by before it settles for pulling in tight
   },
 };

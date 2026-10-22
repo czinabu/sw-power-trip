@@ -11,7 +11,7 @@ import { CFG } from '../data/config.js';
 /* ============================================================
    CAMERA — third person follow
    ============================================================ */
-let camDist = 5, camFov = 60, camLift = 0, deadAt = -1, fovPunch = 0;
+let camDist = 5, camFov = 60, camLift = 0, camRise = 0, deadAt = -1, fovPunch = 0;
 // smooth layered-sine noise in [-1,1] — shake that rolls instead of buzzing frame to frame
 const wob = (t, s) => (Math.sin(t*23.1 + s) * 0.55 + Math.sin(t*37.7 + s*2.3) * 0.3 + Math.sin(t*61.3 + s*4.1) * 0.15);
 
@@ -105,7 +105,7 @@ export function updateCamera(dt){
     // A slight right offset keeps a foe straight ahead from hiding behind the hero's back
     player.camOts = (player.camOts || 0) + (C.shoulder - (player.camOts || 0)) * Math.min(1, dt*4);
     ots = player.camOts;
-    distMul = C.jediDistMul;
+    camHi = C.jediLensUp;
   } else {
     const aiming = player.blockHeld || player.zoom || player.aiming > 0;
     const flying = !player.grounded;
@@ -116,12 +116,13 @@ export function updateCamera(dt){
     const target = (player.camSide || 1) * (aiming ? C.mandoShoulderAim : flying ? C.mandoShoulderFly : C.mandoShoulder);
     player.camOts = (player.camOts || 0) + (target - (player.camOts || 0)) * Math.min(1, dt*4);   // smooth the swap
     ots = player.camOts;
-    camHi = 1.3;                                          // sit HIGH so the helmet stays well below the centred crosshair
-    distMul = aiming ? 1.0 : flying ? 1.3 : 1.15;         // a touch further out than the Jedi: a gunfight needs the room
+    camHi = C.mandoLensUp;                                // sit over the helmet so it stays below the centred crosshair
+    distMul = aiming ? 0.88 : flying ? 1.25 : 1;          // aiming tucks in over the shoulder; flight backs off for the room
   }
   // camera breathes with the action: pulls back HARD at high flight speed (Mando), softer otherwise, + for the boss
   const adsFly = G.hero === 'mando' && (player.blockHeld || player.zoom);   // aiming → steadier, tighter camera
-  const pullback = (G.hero === 'mando') ? clamp(speed * 0.14, 0, 4) : clamp(speed * 0.08, 0, 2);
+  const jedi = G.hero !== 'mando';
+  const pullback = jedi ? clamp(speed * 0.05, 0, C.jediRunPull) : clamp(speed * 0.14, 0, 4);
   // COMBAT FRAMING — a pack closing in pushes the lens back and up so the whole brawl stays on screen; a quiet
   // arena (between waves, nothing near) tucks it in closer for a grounded, over-the-shoulder feel
   const boss = shared.boss && shared.boss.hp > 0 ? shared.boss : null;
@@ -134,12 +135,13 @@ export function updateCamera(dt){
     frame = Math.max(frame, C.bossDist + clamp(1 - (bd - 3) / 9, 0, 1) * (C.bossNear - C.bossDist));
     lift = Math.max(lift, C.crowdLift);
   } else if (G.mode === 'play' && crowd < 0.3 && shared.levelPhase !== 'fighting') frame = C.calmDist;
+  if (jedi && !boss){ frame *= C.jediFrame; lift *= C.jediFrame; }   // (the boss still gets the full pull: its windups need the room)
   // DUEL FRAMING — locked onto a foe, back off with the gap between you so both blades stay on screen
   const lt = player.lockTarget, lp = lt && lt.group && lt.group.position;
   if (lp) frame = Math.max(frame, clamp(Math.hypot(lp.x - pp.x, lp.z - pp.z) * C.duelPull, 0, C.duelMax));
   if (adsFly) lift *= 0.3;   // don't drift the reticle's eye-line while aiming
   camLift += (lift - camLift) * Math.min(1, dt*2);
-  const wantDist = (C.baseDist + pullback + frame) * distMul;
+  const wantDist = ((jedi ? C.jediDist : C.mandoDist) + pullback + frame) * distMul;
   // draw back quicker than we settle in, so a closing pack is framed before it lands its first hit
   camDist += (wantDist - camDist) * Math.min(1, dt * (wantDist > camDist ? 3.5 : 2.2));
   const cosP = Math.cos(G.pitch), sinP = Math.sin(G.pitch);
@@ -160,6 +162,16 @@ export function updateCamera(dt){
   // Props merely in the way don't move the lens: they fade (below)
   const hx = pp.x, hz = pp.z;
   const clear = v => { const k = cameraClearance(hx, ty, hz, v.x, v.y, v.z); if (k < 1) v.set(hx + (v.x - hx)*k, ty + (v.y - ty)*k, hz + (v.z - hz)*k); };
+  // WALL AT YOUR BACK — pulling straight in jams the lens into the back of the hero's head. Try riding the boom up over
+  // them first (as JA's and most action games' cameras do), keeping whichever height leaves the longest clear line
+  let riseWant = 0;
+  if (cameraClearance(hx, ty, hz, TMP.x, TMP.y, TMP.z) < 1){
+    const reach = r => cameraClearance(hx, ty, hz, TMP.x, TMP.y + r, TMP.z) * Math.hypot(TMP.x - hx, TMP.y + r - ty, TMP.z - hz);
+    let best = reach(0) + 0.6;   // a rise has to buy real room to be worth tipping the view down
+    for (const r of C.wallRise){ const L = reach(r); if (L > best){ best = L; riseWant = r; } }
+  }
+  camRise += (riseWant - camRise) * Math.min(1, dt * 3);
+  TMP.y += camRise;
   clear(TMP);
   // INERTIA — the camera lags when you boost / fly fast (a weighty swoop), but snaps tight when you're AIMING
   const lagBase = (adsFly) ? 0.000004 : (G.hero === 'mando' && (player.boosting || speed > 14)) ? 0.02 : 0.000008;
@@ -205,8 +217,8 @@ export function updateCamera(dt){
   // in frame
   let td = clamp((G.pitch - C.topDownFrom) / (1.2 - C.topDownFrom), 0, 1);
   td = td*td*(3 - 2*td);
-  const ahead = C.lookAhead * (1 - td * C.topDownAhead);
-  camera.lookAt(tx + f.x*ahead + rv.x*ots, ty + C.lookUp + (G.hero === 'mando' ? 0.3 : C.jediLookUp) + diveLook + aimRise - td * C.topDownDrop, tz + f.z*ahead + rv.z*ots);
+  const ahead = (jedi ? C.jediLookAhead : C.lookAhead) * (1 - td * C.topDownAhead);
+  camera.lookAt(tx + f.x*ahead + rv.x*ots, ty + C.lookUp + (jedi ? C.jediLookUp : 0.3) + diveLook + aimRise - td * C.topDownDrop, tz + f.z*ahead + rv.z*ots);
   // camera ROLL into a strafe — subtle for the Jedi; a pronounced Max-Payne bank for the boosting Mando, but
   // damped right down while AIMING so the shot stays readable.
   const strafe = vx * (-f.z) + vz * f.x;
