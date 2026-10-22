@@ -208,13 +208,14 @@ export const SWING_SPINS = {
    into a spin: the same catch and flick, with the body (turns × 360°) or the blade (twirl: one wheel about the hand)
    carried round it, and a short step in the direction of travel. It is a flourish, not a shield: the catch lands on the
    same beat, the bolt is returned exactly as before, nothing is locked (a cut, a dash or a Force power takes over at once),
-   and `cd` seconds must pass before the next. The turn is toward the side the bolt arrived on (weapon side = clockwise).
+   and `cd` seconds must pass before the next. `anticipate` (Niman): the share of catches that are sure (a parry window still open when the bolt lands, or a held guard) where the twirl is started early enough that the bolt meets the blade at the bottom of the wheel. The turn is toward the side the bolt arrived on (weapon side = clockwise).
    Ataru (Form IV) is the acrobat: it whirls through a pirouette to cover every angle, as the form's duellists do on the
    move. Niman (Form VI) keeps what is useful of both: an economical wrist-twirl of the blade, feet staying put. Djem So
    (Form V) is power and the straight line: it plants and answers, no spin. */
 export const DEFLECT_SPINS = {
   ataru:  { turns: 1, twirl: 0, dur: 0.5, cd: 1.8, volley: 0.9, step: 1.0 },
-  niman:  { turns: 0, twirl: 1, dur: 0.42, cd: 1.5, volley: 0.9, step: 0 },
+  niman:  { turns: 0, twirl: 1, dur: 0.42, cd: 1.5, volley: 0.9, step: 0,
+            anticipate: 0.5 },   // on a share of catches the twirl starts BEFORE the bolt lands, so it strikes the blade at the bottom of the wheel
 };
 
 /* ---------------- DEFLECTS: where the blade goes to catch a blaster bolt ----------------
