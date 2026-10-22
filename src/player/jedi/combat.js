@@ -3,6 +3,7 @@
 
 import { CFG } from '../../data/config.js';
 import { SWING_PATTERNS } from '../../data/stances.js';
+import { SWING_SPINS } from '../../data/poses.js';
 import { sfx, S } from '../../audio/sfx.js';
 import { V3, rand, clamp, TMP } from '../../utils.js';
 import { burst } from '../../fx/particles.js';
@@ -96,6 +97,8 @@ export function tryAttack(flow = false){
   if (ripNow){ player.riposteT = 0; player.cancelRiposte = false; }
   player.swing = { t: 0, applied: false, step, dur, pat, dir: dirKey, back: backStrike, riposte: ripNow, cancelRip, flow, mom };
   player.deflectAnim = null;   // a cut takes the blade over from any catch in progress
+  const spin = pickSpin(st.form, step, dirKey, { ripNow, backStrike, mom });
+  if (spin){ player.swing.spin = spin; player.swing.dur *= spin.dur; player.atkT = player.swing.dur; }
   // cinematic lunge toward nearest target in view — STRONG's finisher lunges harder; a RIPOSTE drives in hardest
   const lunge = ripNow ? 2.0 : ((step === 2 && st.finisherLunge) ? st.finisherLunge : st.lunge);
   const tgt = backStrike ? nearestEnemyInCone(CFG.player.comboRange, -0.35, true)
@@ -112,8 +115,33 @@ export function tryAttack(flow = false){
   } else {
     stepIntoCut(fwd(), 7 * lunge);   // step into the strike
   }
+  if (spin) spinTravel(spin, dirKey);
   S.swing(G.hero === 'mando' ? 'dark' : G.stance);   // the blade's whoosh, voiced by form
   if (flow && G.hero !== 'mando') sfx(1250, 0.06, 'sine', 0.022, 1900);   // a faint ring: the link landed in rhythm
+}
+/* SPINS (data/poses.js SWING_SPINS) — which flourish, if any, this cut carries. Jedi only, on the ground, and never on a
+   finisher (it has its own spin), a riposte, a back strike or a momentum strike. */
+function pickSpin(form, step, dirKey, o){
+  if (G.hero === 'mando' || !player.grounded || player.flip || step === 2 || o.ripNow || o.backStrike || o.mom) return null;
+  const S = SWING_SPINS[form];
+  if (!S) return null;
+  if (step === 1 && S.mid) return S.mid;
+  return (dirKey === 'left' || dirKey === 'right') ? S.move : null;
+}
+// a spinning cut drives further: the lunge is scaled up, and a cut with no step of its own (nothing to close on) still
+// travels `reach` metres — forward, or to the side a strafe cut sweeps toward
+function spinTravel(spin, dirKey){
+  const sw = player.swing, f = fwd();
+  if (sw.travel){
+    sw.travel.x *= spin.travel; sw.travel.z *= spin.travel;
+    const m = Math.hypot(sw.travel.x, sw.travel.z);
+    if (m < spin.reach && m > 1e-3){ const k = spin.reach / m; sw.travel.x *= k; sw.travel.z *= k; }
+  }
+  if (!sw.travel || Math.hypot(sw.travel.x, sw.travel.z) < 1e-3){
+    const side = dirKey === 'right' ? 1 : dirKey === 'left' ? -1 : 0;
+    const dx = side ? -f.z * side : f.x, dz = side ? f.x * side : f.z;
+    sw.travel = { x: dx * spin.reach, z: dz * spin.reach, done: 0 };
+  }
 }
 // The cut's travel. On the ground it is ROOT MOTION: the same distance the old shove carried (impulse ÷ the ground
 // drag in locomotion.js), but laid along the swing so the body drives through the strike with the lead foot
