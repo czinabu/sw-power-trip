@@ -141,7 +141,8 @@ export function updateCamera(dt){
   if (lp) frame = Math.max(frame, clamp(Math.hypot(lp.x - pp.x, lp.z - pp.z) * C.duelPull, 0, C.duelMax));
   if (adsFly) lift *= 0.3;   // don't drift the reticle's eye-line while aiming
   camLift += (lift - camLift) * Math.min(1, dt*2);
-  const wantDist = ((jedi ? C.jediDist : C.mandoDist) + pullback + frame) * distMul;
+  const downPull = jedi ? C.jediDownPull * clamp((G.pitch - 0.25) / 0.65, 0, 1) : 0;   // tipping the view down to survey the fight
+  const wantDist = ((jedi ? C.jediDist : C.mandoDist) + pullback + frame + downPull) * distMul;
   // draw back quicker than we settle in, so a closing pack is framed before it lands its first hit
   camDist += (wantDist - camDist) * Math.min(1, dt * (wantDist > camDist ? 3.5 : 2.2));
   const cosP = Math.cos(G.pitch), sinP = Math.sin(G.pitch);
