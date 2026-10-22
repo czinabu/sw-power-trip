@@ -450,7 +450,12 @@ function animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait){
     applySaberPose(R, held, player.castT <= 0, dt);
     R.torso.rotation.y = dr(R.torso.rotation.y, planted ? body.torso : 0, 9);
     if (blocking || planted) vis.rotation.x = dr(vis.rotation.x, saberPose.lean + (planted ? footwork().lean : 0), 12);
-    vis.rotation.y = dr(vis.rotation.y, 0, 12);
+    // a catch turned into a spin (data/poses.js DEFLECT_SPINS): whole turns, clockwise toward a bolt on the weapon side
+    const ds = player.deflectAnim && player.deflectAnim.spin;
+    if (ds && ds.turns){
+      const TAU = Math.PI * 2, p = clamp(player.deflectAnim.t / player.deflectAnim.dur, 0, 1), off = -TAU * ds.turns * ds.side * (p - Math.sin(TAU * p) / TAU);
+      vis.rotation.y = Math.atan2(Math.sin(off), Math.cos(off));
+    } else vis.rotation.y = dr(vis.rotation.y, 0, 12);
   } else {
     releaseSaberPose(R, dt);
     if (G.hero !== 'mando' && player.holstered) forceHands(dr, vis, R, planted, moving, ph, inten);

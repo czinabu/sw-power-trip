@@ -3,7 +3,7 @@
 
 import { CFG } from '../../data/config.js';
 import { SWING_PATTERNS } from '../../data/stances.js';
-import { SWING_SPINS } from '../../data/poses.js';
+import { SWING_SPINS, DEFLECT_SPINS } from '../../data/poses.js';
 import { sfx, S } from '../../audio/sfx.js';
 import { V3, rand, clamp, TMP } from '../../utils.js';
 import { burst } from '../../fx/particles.js';
@@ -361,6 +361,8 @@ export function forceKick(){
    catch itself (which cover, which side) is picked in anim/saber.js. A swing already in flight keeps the blade. */
 export function deflectAnim(from){
   if (G.hero === 'mando' || player.atkT > 0 || !from) return;
+  const cur = player.deflectAnim;
+  if (cur && cur.spin && cur.t < cur.dur) return;   // a spin already sweeping the blade round covers the next bolt too
   const pp = playerPos(), fy = player.faceYaw;
   const dx = from.x - pp.x, dz = from.z - pp.z, d = Math.hypot(dx, dz) || 1;
   player.deflectAnim = {
@@ -368,4 +370,24 @@ export function deflectAnim(from){
     side: (dx * -Math.cos(fy) + dz * Math.sin(fy)) / d,   // + = the weapon (right) side
     h: from.y - (pp.y + 1.4),                              // against the chest
   };
+  deflectSpin(player.deflectAnim);
+}
+/* A catch can become a spin (data/poses.js DEFLECT_SPINS): on the move, or the second bolt of a volley. Jedi, grounded. */
+function deflectSpin(d){
+  const S = DEFLECT_SPINS[stance().form], recent = player._dflHits || (player._dflHits = []);
+  while (recent.length && G.gt - recent[0] > 1.5) recent.shift();
+  recent.push(G.gt);
+  if (!S || !player.grounded || player.flip || G.gt - (player._dflSpinT || -9) < S.cd) return;
+  const moving = Math.hypot(player.moveVel.x, player.moveVel.z) > 2;
+  const volley = recent.length >= 2 && G.gt - recent[recent.length - 2] < S.volley;
+  if (!moving && !volley) return;
+  player._dflSpinT = G.gt;
+  if (Math.abs(d.side) > 0.2) player._dflFlip = d.side > 0 ? 1 : -1;
+  else player._dflFlip = -(player._dflFlip || -1);
+  d.spin = { turns: S.turns, twirl: S.twirl, side: player._dflFlip };
+  d.dur = S.dur;
+  if (S.step && moving){   // a short step on in the direction of travel: the spin covers ground
+    TMP.set(player.moveVel.x, 0, player.moveVel.z).normalize();
+    player.vel.addScaledVector(TMP, S.step * 4);
+  }
 }
