@@ -23,7 +23,7 @@ import { diffDmgMul, diffWindow } from '../data/difficulty.js';
 import { masteryXp } from '../game/progression.js';
 import { DUEL } from '../data/duel.js';
 import { startLock } from '../enemies/duel.js';
-import { contactPoint, recoilSwing, knockWeapon } from './jedi/clash.js';
+import { contactPoint, recoilSwing, knockWeapon, formWeight, theirSparks } from './jedi/clash.js';
 import { mandoCatch } from './mando/melee.js';
 import { tutEvent } from '../game/tutor-bus.js';
 import { mandoShielding } from './mando/weapons.js';
@@ -88,7 +88,7 @@ export function bladeClash(fromPos, foe, at){
   const cp = at || (foe || boss ? contactPoint(foe || boss) : V3(pp.x + dir.x * 1.2, pp.y + 1.5, pp.z + dir.z * 1.2));
   if (player.swing && player.atkT > 0){ recoilSwing(cp); player.cancelT = G.gt; }
   else cancelSwing();
-  player.vel.addScaledVector(dir, -C.push * (boss ? 1.4 : 1));
+  player.vel.addScaledVector(dir, -C.push * (boss ? 1.4 : 1) / formWeight());   // a heavy form gives less ground
   player.stam = Math.max(0, player.stam - C.stam); player.stamDelay = CFG.player.stamDelay;
   const heavy = !!foe && ((G.hero !== 'mando' && G.stance === 'strong') || G.hero === 'mando');
   if (heavy) staggerEnemy(foe, dir.x, dir.z, 'CLASH!');
@@ -98,6 +98,7 @@ export function bladeClash(fromPos, foe, at){
   }
   clashFlash(cp, stance().blade, true);
   sparks(cp, 0xffe9b0, 14, 12, { life: 0.3 });
+  theirSparks(foe, cp);
   G.hitstop = Math.max(G.hitstop, 0.08); G.shake = Math.max(G.shake, boss ? 0.6 : 0.45);
   S.clash(cp, true);
   if (G.stats) G.stats.clashes = (G.stats.clashes || 0) + 1;

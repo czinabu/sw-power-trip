@@ -20,6 +20,7 @@ import { mandoWeapon, mandoShielding, boltDamage, hitMarker } from '../player/ma
 import { hurtPlayer } from '../player/damage.js';
 import { deflectAnim } from '../player/jedi/combat.js';
 import { deflectPlayerBolt } from './duel.js';
+import { bladePointNear } from '../player/jedi/clash.js';
 import { sweepHit, headPos } from './bodyshape.js';
 import { tutEvent } from '../game/tutor-bus.js';
 import { airGuardLost, airParryOk } from '../player/mobility.js';
@@ -38,14 +39,37 @@ const boltCoreGeo = new THREE.CapsuleGeometry(0.034, 0.66, 3, 6);
 const boltInkGeo = new THREE.CapsuleGeometry(0.1, 0.76, 3, 6);
 const boltCoreMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(2.4, 2.4, 2.4), toneMapped: false });   // over 1.0 → blooms
 const boltInkMat = new THREE.MeshBasicMaterial({ color: 0x07060a, side: THREE.BackSide, transparent: true, opacity: 0.85, depthWrite: false });
-export function fireBolt(pos, dir, speed, dmg, friendly, quiet){
+// src: who fired it (a foe, or the boss), so a deflect can send it back down the line (see redirect below)
+export function fireBolt(pos, dir, speed, dmg, friendly, quiet, src){
   const m = new THREE.Mesh(boltGeo, new THREE.MeshBasicMaterial({ color: friendly ? 0x66ccff : 0xff3322, toneMapped: false }));
   m.add(new THREE.Mesh(boltCoreGeo, boltCoreMat), new THREE.Mesh(boltInkGeo, boltInkMat));
   m.position.copy(pos);
   m.quaternion.setFromUnitVectors(V3(0,1,0), dir.clone().normalize());
   scene.add(m);
-  bolts.push({ mesh: m, dir: dir.clone().normalize(), speed, dmg, friendly, life: 4 });
+  bolts.push({ mesh: m, dir: dir.clone().normalize(), speed, dmg, friendly, life: 4, src });
   if (!quiet) S.enemyShot(pos, dmg > 20);   // the player's own shots play their gun's sound instead
+}
+/* REDIRECT — where a bolt off the blade goes. A timed parry sends it straight back at whoever fired it; a deflect off
+   a moving blade goes back down the same line, scattered by how much the form trains for blaster fire (STANCES
+   deflectScatter: Djem So carries Form V's Shien redirection and sends it home, Ataru is built for the duel and sprays
+   it). A shooter that is gone, or behind you, gives way to the nearest foe ahead; with nobody there it flies back the
+   way it came. The boss is never auto-aimed at: his own fire simply goes back the way it came. */
+function redirect(b, parried){
+  const s = b.src, pp = playerPos(), f = fwd();
+  let tgt = s && s !== shared.boss && !s.dead && !s.converted && enemies.includes(s) ? s : null;
+  if (tgt){ TMP.subVectors(tgt.group.position, pp).setY(0); if (TMP.lengthSq() > 0.01 && TMP.normalize().dot(f) < -0.2) tgt = null; }
+  if (!tgt && s !== shared.boss){ const n = nearestEnemyInCone(40, 0.3); if (n && n !== shared.boss) tgt = n; }
+  if (tgt){
+    const g = tgt.group.position;
+    b.dir.set(g.x, g.y + 1.3 * (tgt.t.scale || 1), g.z).sub(b.mesh.position).normalize();
+  } else b.dir.negate();
+  const sc = parried ? 0 : (stance().deflectScatter ?? 0.05);
+  if (sc){
+    const a = (Math.random() * 2 - 1) * sc, c = Math.cos(a), sn = Math.sin(a), x = b.dir.x;
+    b.dir.x = x * c - b.dir.z * sn; b.dir.z = x * sn + b.dir.z * c;
+    b.dir.y += (Math.random() * 2 - 1) * sc * 0.3; b.dir.normalize();
+  }
+  b.mesh.quaternion.setFromUnitVectors(V3(0, 1, 0), b.dir);
 }
 export function updateBolts(dt){
   const pp = playerPos();
@@ -104,9 +128,9 @@ export function updateBolts(dt){
         deflectAnim(b.mesh.position);   // the blade moves to meet it (skipped mid-swing: the cut is already there)
         if (parried) player.parryT = 0;
         b.friendly = true; b.speed *= 1.4; b.dmg = parried ? 42 : 22;
-        const tgt = nearestEnemyInCone(40, -1);
-        if (tgt && tgt !== shared.boss) b.dir.subVectors(tgt.group.position, b.mesh.position).setY(0).normalize();
-        else b.dir.negate();
+        // it leaves from the blade itself (it was caught a touch early, so the catch reads at the saber, not in the air)
+        if (bladePointNear(b.mesh.position, HIT)) b.mesh.position.copy(HIT);
+        redirect(b, parried);
         b.mesh.material.color.setHex(stance().blade);
         if (parried){
           player.force = clamp(player.force + 8 + player.up.parryForce + (stance().parryRefund || 0), 0, CFG.player.maxForce);

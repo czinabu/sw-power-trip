@@ -123,7 +123,7 @@ export function bounceOff(e, cp){
   player.swingLock = Math.max(player.swingLock || 0, B.lock);
   player.queuedAtk = false; player.comboStep = 2;
   if (cp) recoilSwing(cp);
-  if (e) knockWeapon(e, 0.5);
+  if (e){ knockWeapon(e, 0.5); if (cp) theirSparks(e, cp); }
 }
 
 /* RECOIL — the swing runs backwards a short way from where it met the other blade, then hands back to the guard
@@ -137,9 +137,21 @@ export function recoilSwing(cp){
   }
   if (!sw || sw.recoil || player.atkT <= 0) return;
   const C = DUEL.clash;
-  sw.recoil = { t: 0, dur: C.recoil, from: sw.t, back: Math.min(sw.t, sw.dur * C.back) };
+  // a light blade snaps back off the other one, a heavy one is hauled back (Ataru quickest, Djem So and the darksaber slowest)
+  sw.recoil = { t: 0, dur: C.recoil * formWeight(), from: sw.t, back: Math.min(sw.t, sw.dur * C.back) };
   sw.applied = true; player.queuedAtk = false;
   G.hitstop = Math.max(G.hitstop, C.hitstop);
+}
+
+/* how a form carries a clash, from its swing speed: < 1 for the light, quick forms, > 1 for the heavy ones. It scales
+   the recoil's time, and (inverted) how far a clash throws you back: Djem So stands its ground, Ataru gives way. */
+export function formWeight(){
+  return Math.min(1.3, Math.max(0.8, 1 / Math.sqrt(stance().speed || 1)));
+}
+
+// both blades spit: a few sparks in the other weapon's own glow colour beside yours
+export function theirSparks(e, cp){
+  if (e && e.t && e.t.eye) sparks(cp, e.t.eye, 6, 9, { life: 0.22, size: 0.5 });
 }
 
 // a foe's weapon is knocked back off yours: shoved up and out, and its guard/AI eases it home from there
@@ -156,4 +168,11 @@ export function blockedOnBlade(e){
   sparks(cp, 0xffe9b0, 8, 9, { life: 0.24 });
   knockWeapon(e, 0.6);
   e.st = Math.min(e.st, 0);
+}
+
+// the point on your own blade nearest `p` (into out); false with no blade in hand. A deflected bolt leaves from here.
+export function bladePointNear(p, out){
+  if (!bladeSegment(PB, PT)) return false;
+  nearOnSeg(p, PB, PT, out);
+  return true;
 }

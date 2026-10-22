@@ -332,7 +332,7 @@ export function updateBoss(dt){
           const muzzle = V3(g.position.x + tx*0.9, 2.6, g.position.z + tz*0.9);
           const aimAt = V3(pp.x + rand(-B.spread, B.spread), pp.y + 1.4 + rand(-0.4, 0.4), pp.z + rand(-B.spread, B.spread));
           const dir = aimAt.sub(muzzle).normalize();
-          fireBolt(muzzle, dir, B.boltSpeed, B.dmg, false);
+          fireBolt(muzzle, dir, B.boltSpeed, B.dmg, false, false, shared.boss);
           const bb = bolts[bolts.length-1]; if (bb){ bb.mesh.material.color.setHex(0xffaa33); bb.mesh.scale.set(1.3,1.6,1.3); }
           burst(muzzle, 0xffd28a, 2, 6, 1, 0.5);
         }
@@ -448,7 +448,7 @@ export function updateBoss(dt){
         shared.boss.lightTick = V.gap; shared.boss.volleyLeft--;
         const muzzle = V3(g.position.x + tx*0.9, 2.6, g.position.z + tz*0.9);
         const lead = V3(pp.x + player.vel.x*V.lead, pp.y + 1.4, pp.z + player.vel.z*V.lead).sub(muzzle).normalize();
-        fireBolt(muzzle, lead, V.boltSpeed, V.dmg, false);
+        fireBolt(muzzle, lead, V.boltSpeed, V.dmg, false, false, shared.boss);
         const bb = bolts[bolts.length-1]; if (bb){ bb.mesh.material.color.setHex(0xff7a2a); bb.mesh.scale.set(1.5,1.9,1.5); }
         burst(muzzle, 0xffae5a, 3, 7, 1, 0.5);
       }
