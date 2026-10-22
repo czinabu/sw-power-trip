@@ -16,6 +16,7 @@ import { updateGrasp } from './jedi/grasp.js';
 import { updateMandoCombat } from './mando/weapons.js';
 import { updateMovement, updateForceJump, updateGravityAndLanding } from './locomotion.js';
 import { updateMandoFlight } from './mando/flight.js';
+import { updateJetSlam } from './mando/gadgets.js';
 import { animatePlayer } from './animation.js';
 import { updateLockOn } from './lockon.js';
 import { holstered } from './holster.js';
@@ -35,6 +36,7 @@ export function updatePlayer(dt){
   if (G.hero === 'mando'){
     updateMandoCombat(dt, f, r);
     updateMandoFlight(dt, pp, f, r);
+    updateJetSlam(dt);    // the jetpack slam's wind-up and plunge (mando/gadgets.js)
   } else updateForceStrike(dt);   // the holstered Force strike string (jedi/palm.js)
   updateForceJump(dt, pp, f, r);
   updateGravityAndLanding(dt, pp);

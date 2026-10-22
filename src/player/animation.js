@@ -593,9 +593,22 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
   const layOut = !player.grounded && !player.slamming && !player.flip && player.boosting && _spd > 1.2;
   const flyingFree = layOut && !_aiming && w !== 'darksaber';
   // (aimed fire — RMB — stays on the IK aim too: the old joint-angle brace left the muzzles pointing at the sky)
-  const gunsIK = !flyingFree && player.meleeT <= 0 && player.darkT <= 0 && w !== 'fists';
+  // JETPACK SLAM (mando/gadgets.js jetSlam) — the arms leave the guns for the fist: cocked overhead through the wind-up,
+  // driven down through the plunge, planted on the deck in the three-point landing
+  const slamArms = w !== 'darksaber' && player.darkT <= 0 && (player.slamming || player.slamLandT > 0);
+  const gunsIK = !flyingFree && !slamArms && player.meleeT <= 0 && player.darkT <= 0 && w !== 'fists';
   if (!flyingFree){
-  if (w === 'darksaber'){
+  if (slamArms){
+    const wind = player.slamming && player.slamWind > 0, land = !player.slamming;
+    // [shoulder x, shoulder z, elbow x] right (the fist) and left (the balance arm)
+    const RA = wind ? [-2.75, -0.35, -1.7] : land ? [-0.55, -0.12, -0.08] : [-0.75, -0.1, -0.15];
+    const LA = wind ? [-1.1, 0.45, -0.5] : land ? [0.35, 0.55, -0.35] : [0.55, 0.4, -0.3];
+    const rt = wind ? 14 : 26;
+    R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, RA[0], rt); R.armR.sh.rotation.z = dr(R.armR.sh.rotation.z, RA[1], rt);
+    R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, 0, rt); R.armR.el.rotation.x = dr(R.armR.el.rotation.x, RA[2], rt);
+    R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, LA[0], rt); R.armL.sh.rotation.z = dr(R.armL.sh.rotation.z, LA[1], rt);
+    R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, 0, rt); R.armL.el.rotation.x = dr(R.armL.el.rotation.x, LA[2], rt);
+  } else if (w === 'darksaber'){
     // DARKSABER: animateArms (anim/saber.js) owns both arms — heavy two-handed guards and swings
   } else if (player.darkT > 0){
     // DARKSABER ABILITY SLASH (drawn just for the cut) — the darksaber form's heavy diagonal, keyframed like a swing
@@ -757,7 +770,9 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
   // JETPACK MISSILE — he leans in over the launch, the pack's nose down the reticle, the visor holding on the target
   const ML = MANDO.missileLean, mT = player.missileT > 0 && !player.flip ? player.missileT : 0;
   const mLean = mT > 0 ? ML.lean * smooth01((ML.time - mT) / ML.in) * smooth01(mT / (ML.time * 0.45)) : 0;
-  if (!(player.meleeT > 0)) R.torso.rotation.x = dr(R.torso.rotation.x, (player.weapon === 'fists' && player.grounded ? 0.1 : 0) + mLean, mLean > 0 ? 18 : 12);   // settle a knee/charge/dive hunch (the fighting stance keeps the chin down)
+  // the slam: arched back through the wind-up, hunched over the fist on the way down and in the landing
+  const sLean = player.slamming ? (player.slamWind > 0 ? -0.3 : 0.3) : player.slamLandT > 0 ? 0.5 * smooth01(player.slamLandT / 0.2) : 0;
+  if (!(player.meleeT > 0)) R.torso.rotation.x = dr(R.torso.rotation.x, (player.weapon === 'fists' && player.grounded ? 0.1 : 0) + mLean + sLean, mLean > 0 || sLean ? 18 : 12);   // settle a knee/charge/dive hunch (the fighting stance keeps the chin down)
   if (mLean > 0.01) headToReticle(R, mandoAimPoint(), dt, 16);
   wristBlade(dt, R, player.meleeT > 0 && BLADE_OUT[player.meleeKind]);
   player.bashOut = 0;
