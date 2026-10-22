@@ -34,6 +34,7 @@ for (const g in SABER_DEFLECTS){ DEFLECTS[g] = {}; for (const z in SABER_DEFLECT
 const WRAP_LIFT = new THREE.Vector3(0, 0.24, -0.1);
 const WRAP_BLADE = { regular: new THREE.Vector3(0, 0.78, -0.62).normalize(), reverse: new THREE.Vector3(0, -0.55, -0.83).normalize() };
 
+const TWIRL_AXIS = new THREE.Vector3(0.25, 0, 1).normalize();   // a wheel in front of the chest, just canted
 const easeOut = t => 1 - (1 - t) * (1 - t);
 const easeIn = t => t * t * t;   // a cut accelerates into contact
 const COIL_HOLD = 0.22;   // the share of the stroke's time the blade hangs at the top of the chamber before it goes
@@ -177,6 +178,13 @@ export function swingPose(R, held, grip, form, sw){
     saberPose.hand.add(_p);
     _ax.subVectors(F.blade, S.blade).multiplyScalar(o * 0.6);
     saberPose.blade.add(_ax).normalize();
+  }
+  // TWIRL — the blade wheels about the hand in front of the chest while it coils, and is back on the chamber's line by
+  // the strike (whole turns only, so it leaves and returns on the same line). The reverse grip keeps its blade along the forearm.
+  const sp = sw.spin;
+  if (sp && sp.twirl && grip === 'regular' && k < A.ts){
+    const p = k / A.ts, turn = Math.sign(sw.pat.yT - sw.pat.yF) || 1;
+    saberPose.blade.applyAxisAngle(TWIRL_AXIS, Math.PI * 2 * sp.twirl * turn * (p - Math.sin(Math.PI * 2 * p) / (Math.PI * 2))).normalize();
   }
   saberPose.pole.set(0.55, -0.8, -0.25).normalize();
   saberPose.twist = (ta + (tb - ta) * t) * style.twist;

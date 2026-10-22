@@ -185,6 +185,24 @@ export const SWING_STYLE = {
                twist: 0.8, finisher: { pattern: 'forward', spin: 0, hop: 0.1 } },
 };
 
+/* ---------------- SWING SPINS: pirouettes and blade twirls worked into the cuts ----------------
+   A spin is a layer over the normal cut, never a replacement: the same keyframes, the same damage, the strike lands on
+   the same key. The body turns turns × 360° over the chamber and settles square just as the blade reaches the strike
+   (so the cut hits what is in front of you), the blade can wheel (twirl: turns about the hand) while it coils, and the
+   step drives further (travel × the cut's root motion, at least `reach` metres). Only grounded, non-finisher, non-riposte,
+   non-back cuts spin, and any cancel (guard, Force, dash) ends it at once.
+   `mid` is the second link of a string (combo step 1); `move` is a strafe cut (A / D) on any other link. A spin cut is
+   `dur`× longer than a plain one to give the turn room. Regular grip wheels the blade; a reverse grip keeps it laid along
+   the forearm, so it spins with the body only. */
+export const SWING_SPINS = {
+  ataru:  { mid: { turns: 1, twirl: 0, travel: 1.5, reach: 1.3, dur: 1.1 },                  // acrobatic: a full pirouette between cuts
+            move: null },
+  niman:  { mid: { turns: 0, twirl: 1, travel: 1.15, reach: 0.8, dur: 1.08 },                // balanced: a wrist-twirl flourish, feet stay put
+            move: { turns: 1, twirl: 0, travel: 1.3, reach: 1.2, dur: 1.1 } },               // strafing cuts turn through
+  djemso: { mid: null,                                                                       // heavy: no flourish, but a strafing cut
+            move: { turns: 1, twirl: 0, travel: 1.5, reach: 1.5, dur: 1.15 } },              // wheels its weight round
+};
+
 /* ---------------- DEFLECTS: where the blade goes to catch a blaster bolt ----------------
    Zones are where the bolt arrives, seen from the hero: high / mid / low, on the weapon side (R, +x) or across the body
    (L, −x). Each zone has two or three catches, picked in turn (never the same one twice running), so a volley reads

@@ -355,6 +355,13 @@ function animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait){
       if (cue.hop) vis.position.y = Math.sin(Math.PI * cue.k) * cue.hop;
       vis.rotation.y += sw.body.ry * inB;
       vis.position.y += sw.body.py * inB;
+      // SPIN-IN (data/poses.js SWING_SPINS): whole turns laid over the cut that settle square as the blade reaches the strike.
+      // A clash recoil lets the turn go instead of running it backwards.
+      if (sw.spin && sw.spin.turns){
+        const TAU = Math.PI * 2, p = clamp(cue.k / ((sw.anim && sw.anim.ts) || 0.4), 0, 1);
+        sw.spinOff = sw.recoil ? (sw.spinOff || 0) * Math.max(0, 1 - dt * 14) : TAU * sw.spin.turns * (turn || 1) * (p - Math.sin(TAU * p) / TAU);
+        vis.rotation.y = Math.atan2(Math.sin(vis.rotation.y + sw.spinOff), Math.cos(vis.rotation.y + sw.spinOff));
+      }
     }
     // the body LOADS into the chamber (weapon shoulder drawn back) and THROWS its weight through the strike: the
     // shoulder reaches and the knees give, harder for a riposte; a spin or a leap carries its own body
@@ -368,7 +375,9 @@ function animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait){
     // CONTACT — the cut lands on what the blade actually sweeps through this frame (jedi/bladehit.js), during the
     // stroke itself (not the chamber or the follow-through); the strike point still runs the swing's one-off effects
     if (held){
-      const touched = sweepBlade(sw, !sw.recoil && cue.k >= ((sw.anim && sw.anim.tc) || 0.25) * 0.6 && cue.k <= 0.92);
+      // (a spin-in doesn't cut until the body has come round to face the strike)
+      const spun = sw.spin && sw.spin.turns && cue.k < ((sw.anim && sw.anim.ts) || 0.4) * 0.8;
+      const touched = sweepBlade(sw, !sw.recoil && !spun && cue.k >= ((sw.anim && sw.anim.tc) || 0.25) * 0.6 && cue.k <= 0.92);
       if (touched && touched.length && !sw.noHit){ applySwingDamage(sw.step, touched); sw.bite = BITE.time; }
     }
     if (!sw.applied && cue.k > 0.35){ sw.applied = true; applySwingDamage(sw.step, held || sw.cutSet || sw.noHit ? [] : undefined); }   // (noHit: the aerial cut struck on contact, jedi/aerial.js)
