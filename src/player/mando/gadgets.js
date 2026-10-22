@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { scene } from '../../engine/renderer.js';
 import { sfx, S } from '../../audio/sfx.js';
-import { V3, rand, TMP } from '../../utils.js';
+import { V3, rand, TMP, clamp } from '../../utils.js';
 import { burst } from '../../fx/particles.js';
 import { floater, screenFlash } from '../../fx/floaters.js';
 import { shared, G, rockets, birds, detos, enemies, barrels, solids, keys, player } from '../../state.js';
@@ -16,7 +16,7 @@ import { damageBoss, bossStagger } from '../../boss/boss.js';
 import { spawnHitSpark, spawnGroundShock } from '../../fx/vfx.js';
 import { collideSolids } from '../../world/collision.js';
 import { explosion, inkSprite, sparks, puff, motes, muzzleFlash, screenAngle, dustRing } from '../../fx/ink.js';
-import { mandoAimPoint, aCost } from './weapons.js';
+import { mandoAimPoint, mandoAimRay, aCost } from './weapons.js';
 import { abil } from '../../data/mastery.js';
 import { sweepHit, distToBody, chestPos } from '../../enemies/bodyshape.js';
 import { tutEvent } from '../../game/tutor-bus.js';
@@ -86,6 +86,7 @@ export function mandoJetMissile(){
   const A = abil('jetmissile');
   if (!G.unlocked.jetmissile || player.cds.missile > 0 || player.force < aCost(A.cost)) return;
   player.force -= aCost(A.cost); player.cds.missile = A.cd; player.aiming = 0.8;
+  player.missileT = MANDO.missileLean.time;   // he leans in over the launch (player/animation.js)
   const pp = playerPos(), f = fwd();
   const origin = V3();
   if (player.jetMissileMesh && player.jetMissileMesh.visible) player.jetMissileMesh.getWorldPosition(origin);   // launch from the pack-mounted missile
@@ -189,16 +190,36 @@ export function updateBirds(dt){
 }
 
 /* ===== THERMAL DETONATOR — a sticky grenade that arms, then blows (V) ===== */
+/* THERMAL DETONATOR — thrown where the reticle is: onto the foe it's over, else the spot on the floor it points at,
+   held between minRange and range (aimed at the sky, it goes as far as it can). */
+const DETO_G = 26;
+function detoTarget(A, from){
+  const aim = mandoAimPoint(), ray = mandoAimRay();
+  const o = ray.origin, d = ray.direction, floor = 0;   // (the floor it rests on: updateDetos)
+  let to;
+  if (player.lockOn) to = V3(aim.x, Math.max(floor + 0.16, aim.y - 0.6), aim.z);
+  else if (d.y < -1e-3) to = V3(o.x + d.x * (floor - o.y) / d.y, floor + 0.16, o.z + d.z * (floor - o.y) / d.y);
+  else to = V3(from.x + d.x * 1e3, floor + 0.16, from.z + d.z * 1e3);
+  const dx = to.x - from.x, dz = to.z - from.z, dist = Math.hypot(dx, dz) || 1;
+  const k = clamp(dist, A.minRange, A.range) / dist;
+  if (k !== 1){ to.x = from.x + dx * k; to.z = from.z + dz * k; if (!player.lockOn) to.y = floor + 0.16; }
+  return to;
+}
 export function thermalDetonator(){
   const A = abil('deto');
   if (!G.unlocked.deto || player.cds.deto > 0 || player.force < aCost(A.cost)) return;
   player.force -= aCost(A.cost); player.cds.deto = A.cd; player.aiming = 0.6;
-  const pp = playerPos(), f = fwd();
+  const pp = playerPos();
+  const from = V3(pp.x, pp.y + 1.5, pp.z), to = detoTarget(A, from);
+  // lobbed to land on it: a short flight up close, a longer arc far out (all inside the fuse)
+  const dx = to.x - from.x, dz = to.z - from.z, dist = Math.hypot(dx, dz);
+  const T = A.flight[0] + (A.flight[1] - A.flight[0]) * clamp((dist - A.minRange) / (A.range - A.minRange), 0, 1);
+  const vel = V3(dx / T, (to.y - from.y + 0.5 * DETO_G * T * T) / T, dz / T);
   const m = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 8), new THREE.MeshStandardMaterial({ color: 0x2a2e33, metalness: 0.6, roughness: 0.4 }));
   const band = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.04, 6, 12), new THREE.MeshBasicMaterial({ color: 0xff5a2a }));
   band.rotation.x = Math.PI/2; m.add(band);
-  m.position.set(pp.x + f.x*0.6, 1.5, pp.z + f.z*0.6); scene.add(m);
-  detos.push({ mesh: m, band, vel: V3(f.x*16, 7, f.z*16), fuse: A.fuse, stuck: null, stuckOff: null });
+  m.position.copy(from); scene.add(m);
+  detos.push({ mesh: m, band, vel, fuse: A.fuse, stuck: null, stuckOff: null });
   S.jump(); sfx(300, 0.1, 'square', 0.04, 160);
   floater(pp, 'DETONATOR', '#ff8a3a');
 }
@@ -210,7 +231,7 @@ export function updateDetos(dt){
       if (g.stuck.dead) g.stuck = null;
       else g.mesh.position.copy(g.stuck.group.position).add(g.stuckOff);
     } else {
-      g.vel.y -= 26*dt;
+      g.vel.y -= DETO_G*dt;
       g.prev = (g.prev || new THREE.Vector3()).copy(g.mesh.position);
       g.mesh.position.addScaledVector(g.vel, dt);
       if (g.mesh.position.y <= 0.16){ g.mesh.position.y = 0.16; g.vel.set(0,0,0); }

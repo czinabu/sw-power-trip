@@ -88,8 +88,11 @@ export const MANDO_MOBILITY = {
     range: 30,       // a gunfighter's fight starts farther out than a swordsman's (the linger is MOBILITY.combat's)
   },
   dive: {
-    speed: 13,       // m/s impulse along the dive
-    pop: 5.8,        // m/s up off the ground: a real leap (≈0.43 s in the air, the boots ≈0.6 m up at the top)
+    speed: 8.5,      // m/s impulse along the dive (legs only: no jets unless you tap SHIFT again, see jet below)
+    pop: 5.0,        // m/s up off the ground: a real leap (≈0.37 s in the air, the boots ≈0.45 m up at the top)
+    skidDrag: 7,     // how fast the slide along the deck dies once the plate is down (the air glides at 2.6)
+    turn: 12,        // how fast the lay-out follows the reticle mid-dive (turn onto your back by looking away)
+    jet: { speed: 15, lift: 3.2, fuel: 14, flame: 0.35 },   // SHIFT again in the air: the pack kicks the dive on (spends jet fuel; hold it to fly on)
     layout: 0.24,    // seconds from the push-off to laid out flat
     airDrop: 0.4,    // share of the way down to the floor the body lies in the air (the rest comes at touchdown)
     impact: 0.09,    // seconds for the plate to come down onto the deck at touchdown

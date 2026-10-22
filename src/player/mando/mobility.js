@@ -1,6 +1,6 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
-// Mando combat mobility (data/mobility.js MANDO_MOBILITY): SHIFT is a combat dive on the ground in a fight (a second
-// tap is the rocket boost), an air dodge in the air, and the jet charges the air dodge spends.
+// Mando combat mobility (data/mobility.js MANDO_MOBILITY): SHIFT is a combat dive on the ground (a second tap in the
+// air lights the pack), an air dodge in the air, and the jet charges the air dodge spends.
 
 import { MANDO_MOBILITY as MM, MOBILITY } from '../../data/mobility.js';
 import { V3 } from '../../utils.js';
@@ -24,11 +24,13 @@ function stickOr(dflt){
 }
 
 /* SHIFT pressed. Air: the air dodge (held on, it becomes the flight boost in mando/flight.js). Ground: the combat
-   dive, or the rocket boost on a second tap early in the dive. The same in every mode, fight or no fight (it used to
-   boost out of a fight, so in an empty sandbox or between waves the dive never showed). */
+   dive, legs only. SHIFT again while the dive is in the air lights the pack (jetDive), and holding it then flies on;
+   again just after a dive comes down is the rocket boost. The same in every mode, fight or no fight. */
 export function mandoShift(){
   if (G.mode !== 'play' || player.mantle || player.hang) return;
-  // a second SHIFT just after a dive's push-off (still low over the ground) is the rocket boost
+  const fl = player.flip;
+  if (fl && fl.kind === 'dive' && !fl.landT){ jetDive(fl); return; }
+  // a second SHIFT just after a dive's touchdown (still low over the ground) is the rocket boost
   const redash = player.dodgeKind === 'dive' && G.gt - (player.rollAt ?? -9) < MM.dive.redash;
   // (a slope can leave the floor for a frame: that still counts as the ground)
   const onGround = player.grounded || (G.gt - (player.lastGroundT ?? -9) < 0.12 && player.vy <= 0.5 && !player.jetActive);
@@ -38,6 +40,27 @@ export function mandoShift(){
     player.flip = null; player.vis.rotation.set(0, 0, 0); player.vis.position.set(0, 0, 0);
   }
   mandoBoostDash(true);
+}
+
+/* JET DIVE — the pack lights mid-dive: a thruster kick on along the dive (and up a little), once per dive. The
+   lay-out holds; SHIFT is armed again, so holding it flies on as the flight boost. */
+function jetDive(fl){
+  const J = MM.dive.jet;
+  player.shiftGround = false;
+  if (fl.jet || player.jet < J.fuel || player.darkT > 0) return false;
+  fl.jet = true;
+  player.jet -= J.fuel;
+  const dir = V3(fl.dx, 0, fl.dz);
+  player.vel.addScaledVector(dir, J.speed);
+  player.vy = Math.max(player.vy, J.lift);
+  player.dashT = Math.max(player.dashT, MM.dive.iframes * 0.6);
+  player.jetKickT = J.flame;
+  const bp = playerPos();
+  sparks(V3(bp.x - dir.x * 0.4, bp.y + 0.9, bp.z - dir.z * 0.4), 0x66c6ff, 10, 14, { dir: V3(-dir.x, -0.1, -dir.z), cone: 0.3, life: 0.22, grav: 0 });
+  puff(V3(bp.x - dir.x * 0.7, bp.y + 0.7, bp.z - dir.z * 0.7), 0xb8c2c8, 0.9, 0.4, V3(-dir.x * 3, 0, -dir.z * 3));
+  G.shake = Math.max(G.shake, 0.12);
+  S.dash(); sfx(240, 0.12, 'sawtooth', 0.05, 130);
+  return true;
 }
 
 /* COMBAT DIVE — Helldivers: free, i-frames through the throw, any way you press (no keys: back, out of reach). He
@@ -61,7 +84,9 @@ export function mandoDive(){
   player.cds.roll = D.time + D.cd;
   tutEvent('dash');
   // the dive's way in the body's frame: the lay-out leans that way (anim/agility.js mandoBody)
-  player.flip = { kind: 'dive', t: 0, dur: D.maxTime, df: dir.dot(fwd()), dr: dir.dot(rightV()) };
+  // (dx/dz: the way it goes in the world; df/dr follow the reticle as he turns mid-air)
+  player.flip = { kind: 'dive', t: 0, dur: D.maxTime, dx: dir.x, dz: dir.z, df: dir.dot(fwd()), dr: dir.dot(rightV()) };
+  player.shiftGround = true;   // holding this SHIFT on doesn't light the pack (mando/flight.js): that takes a second tap
   burst(playerPos().clone().setY(0.25), 0xb9c2cc, 6, 3, 1.5, 0.8);
   S.jump();
   return true;

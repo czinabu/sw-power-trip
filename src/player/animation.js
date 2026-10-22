@@ -7,7 +7,7 @@ import { CFG } from '../data/config.js';
 import { clamp, dampAngle, wrapAngle, V3 } from '../utils.js';
 import { burst } from '../fx/particles.js';
 import { G, player } from '../state.js';
-import { MANDO } from '../data/mando.js';
+import { MANDO, MANDO_WEAPONS } from '../data/mando.js';
 import { MANDO_MELEE } from '../data/duel.js';
 import { MOVE, GAIT } from '../data/movement.js';
 import { stance } from './helpers.js';
@@ -23,7 +23,9 @@ import { advanceGait, gaitLegs, gaitHipOffset, releaseGait } from './anim/gait.j
 import { MOCAP_ON, MOCAP_LAND_T, mocapLand, mocapAirLegs, airPhase, mocapCut } from './anim/mocap.js';
 import { footingLegs, releaseFooting } from './anim/footing.js';
 import { stepCloth } from './model/cloth.js';
-import { jediAirLegs, jediAgilityArms, jediAgilityPost, mandoAgilityPost, landingStyle, slamPitch } from './anim/agility.js';
+import { jediAirLegs, jediAgilityArms, jediAgilityPost, mandoAgilityPost, landingStyle, slamPitch, headToReticle } from './anim/agility.js';
+
+const smooth01 = k => { k = clamp(k, 0, 1); return k * k * (3 - 2 * k); };
 
 export function animatePlayer(dt, pp, st, f, r, moving){
   const dr = (cur, tgt, l) => cur + (tgt - cur) * Math.min(1, l*dt);
@@ -587,7 +589,9 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
   const _aiming = player.zoom || player.aiming > 0 || player.blockHeld || player.firing;
   // FREE FLIGHT (the superman lay-out) is for a hard BOOST only — Boba Fett, not Superman: cruising and hovering
   // stay upright with the weapon still held (see the flight pose below).
-  const flyingFree = !player.grounded && !player.slamming && !player.flip && !_aiming && player.boosting && _spd > 1.2 && w !== 'darksaber';
+  // the LAY-OUT itself (the flight pose below) holds while you shoot too — Max Payne in the air: then the guns stay on IK
+  const layOut = !player.grounded && !player.slamming && !player.flip && player.boosting && _spd > 1.2;
+  const flyingFree = layOut && !_aiming && w !== 'darksaber';
   // (aimed fire — RMB — stays on the IK aim too: the old joint-angle brace left the muzzles pointing at the sky)
   const gunsIK = !flyingFree && player.meleeT <= 0 && player.darkT <= 0 && w !== 'fists';
   if (!flyingFree){
@@ -600,14 +604,14 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
     swingPose(R, { node: player.darksaberMesh, root: null }, 'regular', 'darksaber', player._darkSw);
     applySaberPose(R, { node: player.darksaberMesh, root: null }, true);
   } else if (twoH && player.stabT > 0){
-    // SPEAR STAB — both arms drive the rifle forward like a pike
-    const ext = Math.sin((1 - Math.max(0,player.stabT)/0.24) * Math.PI);
-    R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -1.25 - ext*0.55, 22);
-    R.armR.sh.rotation.z = dr(R.armR.sh.rotation.z, -0.1, 18);
-    R.armR.el.rotation.x = dr(R.armR.el.rotation.x, -0.1, 20);
-    R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -1.15 - ext*0.45, 20);
-    R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, 0.32, 16);
-    R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -0.45, 16);
+    // SPEAR STAB — the rifle comes up level on the reticle like a pike, chambers back a hand, then both arms drive it
+    // out to full reach (the prongs land at the peak: mando/weapons.js stabStrike) and it eases back
+    const W = MANDO_WEAPONS.disruptor, k = 1 - Math.max(0, player.stabT) / W.stabTime;
+    const c = W.stabHit * 0.45, pk = W.stabHit * 1.15;
+    const thrust = k < c ? -0.3 * smooth01(k / c)
+                 : k < pk ? -0.3 + 1.3 * (1 - (1 - (k - c) / (pk - c)) ** 3)
+                 : k < 0.65 ? 1 : 1 - smooth01((k - 0.65) / 0.35);
+    riflePose(dt, R, player, mandoAimPoint(), thrust);
   } else if (twoH && !player.zoom && player.aiming <= 0){
     // DISRUPTOR REST — carried low across the body; the barrel only swings OUT when you aim (RMB) or attack
     rifleLowered();
@@ -668,25 +672,27 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
     const vF = vx*f.x + vz*f.z, vR = vx*r.x + vz*r.z;
     const pivot = 1.05;                 // ~torso height above the rig origin — rotate around here so the body lies flat
     const FLAT = Math.PI / 2;           // horizontal — 0° to the ground (full lay-out at cruise speed)
-    const HEAD_UP = 0.5;                // how far above level the visor cranes when fully flat
     const speed = Math.hypot(vF, vR);
     const speedF = clamp((speed - 0.5) / 5.2, 0, 1);
     const altF = clamp((pp.y - (player.groundY || 0) - 0.5) / 4.0, 0, 1);
     const lvl = speedF * altF;
     const liftFor = a => pivot * (1 - Math.cos(a));
-    if (flyingFree && lvl > 0.001){
-      // BOOST — forward superman (always forward, regardless of drift)
-      const pitchAmount = clamp(Math.abs(vF) / AIRREF, 0, 1);
-      const pitchScale = 0.45 + (lvl * 0.30);
-      const pitch = (FLAT * pitchScale) * pitchAmount * (vF >= 0 ? 1 : -1);
-      vis.rotation.x = dr(vis.rotation.x, pitch, 8);
-      vis.rotation.z = dr(vis.rotation.z, clamp(vR * 0.065, -0.42, 0.42), 10);
-      vis.position.y = dr(vis.position.y, liftFor(pitch), 8);
-      R.head.rotation.x = dr(R.head.rotation.x, -pitch - HEAD_UP*lvl, 11);     // counter the body + crane UP
-      R.head.rotation.z = dr(R.head.rotation.z, 0, 11);
+    if (layOut && lvl > 0.001){
+      // BOOST — the Max Payne lay-out: still squared to the reticle, the body lies down the way he's flying —
+      // face-down going forward, on his back flying backward, on his side strafing (a little onto the back, chest
+      // to the target) — and the helmet stays up on the crosshair the whole time
+      const L = MANDO.flightLean;
+      const amt = clamp(speed / AIRREF, 0, 1) * (0.6 + 0.4 * lvl);
+      const u = vF / speed, s = vR / speed;
+      const pitch = ((u >= 0 ? L.fwd : L.back) * u - L.sideUp * s * s) * amt;
+      vis.rotation.x = dr(vis.rotation.x, pitch, L.rate);
+      vis.rotation.z = dr(vis.rotation.z, L.side * s * amt, L.rate);
+      vis.position.y = dr(vis.position.y, liftFor(Math.max(Math.abs(vis.rotation.x), Math.abs(vis.rotation.z))), 8);
+      headToReticle(R, mandoAimPoint(), dt, 11);
       player.airDive = lvl > 0.4 ? 2 : 0;
-      // SUPERMAN arms — ALWAYS reach forward in WORLD space: the shoulder angle tracks the body pitch
-      const armX = -1.45 - pitch * 0.9;
+      // SUPERMAN arms (not shooting) — ALWAYS reach forward in WORLD space: the shoulder angle tracks the body pitch
+      if (flyingFree){
+      const armX = -1.45 - Math.max(0, pitch) * 0.9;
       R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, armX, 11);
       R.armR.sh.rotation.z = dr(R.armR.sh.rotation.z, 0.16, 11);
       R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, -0.14, 11);
@@ -695,6 +701,7 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
       R.armL.sh.rotation.z = dr(R.armL.sh.rotation.z, -0.16, 11);
       R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, 0.14, 11);
       R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -0.22, 11);
+      }
     } else {
       // UPRIGHT — lean modestly into travel, bank into a strafe, and keep making the small corrections of a
       // jetpack holding station. Aiming steadies it (less lean, a slight cant toward the gun).
@@ -747,7 +754,11 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
   }
   // CLOSE QUARTERS (E, player/mando/melee.js) — each beat of the kit has its own body: a left jab, a right cross, a
   // rising knee, the vibroblade slash, the shoulder-first jet charge, the boot-first dive, the vambrace catch
-  if (!(player.meleeT > 0)) R.torso.rotation.x = dr(R.torso.rotation.x, player.weapon === 'fists' && player.grounded ? 0.1 : 0, 12);   // settle a knee/charge/dive hunch (the fighting stance keeps the chin down)
+  // JETPACK MISSILE — he leans in over the launch, the pack's nose down the reticle, the visor holding on the target
+  const ML = MANDO.missileLean, mT = player.missileT > 0 && !player.flip ? player.missileT : 0;
+  const mLean = mT > 0 ? ML.lean * smooth01((ML.time - mT) / ML.in) * smooth01(mT / (ML.time * 0.45)) : 0;
+  if (!(player.meleeT > 0)) R.torso.rotation.x = dr(R.torso.rotation.x, (player.weapon === 'fists' && player.grounded ? 0.1 : 0) + mLean, mLean > 0 ? 18 : 12);   // settle a knee/charge/dive hunch (the fighting stance keeps the chin down)
+  if (mLean > 0.01) headToReticle(R, mandoAimPoint(), dt, 16);
   wristBlade(dt, R, player.meleeT > 0 && BLADE_OUT[player.meleeKind]);
   player.bashOut = 0;
   if (player.meleeT > 0){

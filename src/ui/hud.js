@@ -239,9 +239,11 @@ function mandoShiftSlot(){
   const A = MANDO_MOBILITY.airDodge, n = player.jetCharges ?? A.charges, fight = inCombat(), air = !player.grounded;
   if (!el._chg){ el.insertAdjacentHTML('beforeend', '<span class="chg"></span>'); el._chg = el.querySelector('.chg'); }
   setHtml(el._chg, '<i class="on"></i>'.repeat(n) + '<i></i>'.repeat(Math.max(0, A.charges - n)));
-  const cool = air ? (player.jet < A.fuel || (fight && n < 1)) : player.cds.roll > 0;
+  const fl = player.flip, diving = !!fl && fl.kind === 'dive' && !fl.landT;   // in a dive's air SHIFT is the jet dive
+  const cool = diving ? (!!fl.jet || player.jet < MANDO_MOBILITY.dive.jet.fuel)
+             : air ? (player.jet < A.fuel || (fight && n < 1)) : player.cds.roll > 0;
   el.classList.toggle('cool', cool);
-  setText(el.querySelector('.an'), air ? 'AIR DODGE' : 'DIVE');
+  setText(el.querySelector('.an'), diving ? 'JET DIVE' : air ? 'AIR DODGE' : 'DIVE');
 }
 
 /* DASH: pips for the Force dash charges, the shade showing the next one refilling. Out of a fight the dash is free:

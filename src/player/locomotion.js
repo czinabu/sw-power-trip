@@ -131,7 +131,8 @@ export function updateMovement(dt, pp, st, f, r){
     pp.x += tr.x * df; pp.z += tr.z * df;
     player._rootVX = tr.x * df / Math.max(dt, 1e-4); player._rootVZ = tr.z * df / Math.max(dt, 1e-4);
   } else player._rootVX = player._rootVZ = 0;
-  const velDrag = (player.flip || player.dashT > 0) ? 2.6 : (!player.grounded && G.hero !== 'mando') ? 1.2 : 9;   // airborne impulses (wall kicks, leaps) carry
+  const skid = player.flip && player.flip.kind === 'dive' && player.flip.landT && G.hero === 'mando';
+  const velDrag = skid ? MANDO_MOBILITY.dive.skidDrag : (player.flip || player.dashT > 0) ? 2.6 : (!player.grounded && G.hero !== 'mando') ? 1.2 : 9;   // airborne impulses (wall kicks, leaps) carry
   player.vel.multiplyScalar(Math.max(0, 1 - dt*velDrag));
   if (player.kickT > 0) player.kickT -= dt;   // JEDI front-kick recovery (hero-agnostic so it always winds down)
   return moving;

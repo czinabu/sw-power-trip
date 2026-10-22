@@ -34,6 +34,8 @@ import { syncHolster } from '../holster.js';
 const _camDir = new THREE.Vector3(), _ray = new THREE.Raycaster(), _ndc = new THREE.Vector2(), _far = new THREE.Vector3();
 const AIM_FAR = 80;
 export const _look = new THREE.Vector3(), _lh = new THREE.Vector3();   // camera look dir + its horizontal (jetpack dive thrust)
+// the reticle's ray as mandoAimPoint last cast it (origin, direction)
+export const mandoAimRay = () => _ray.ray;
 export function mandoAimPoint(){
   _ndc.set((player.aimOff.x) * 2 / innerWidth, -(player.aimOff.y) * 2 / innerHeight);   // through the floating reticle
   _ray.setFromCamera(_ndc, camera);
@@ -101,14 +103,14 @@ export function updateReload(dt){
   if (player.heatDelay > 0) player.heatDelay -= dt;
   if (!W || W.melee){ player.heat = Math.max(0, player.heat - (W && W.cool || 0.6) * dt); player.overheat = false; return; }
   if (player.heatDelay <= 0 || player.overheat){           // overheated coils always bleed; otherwise wait out the delay
-    const rate = player.overheat ? (W.overCool || 0.42) : (W.cool || 0.6);
+    const rate = (player.overheat ? (W.overCool || 0.42) : (W.cool || 0.6)) * (player.up.heatCool || 1);
     player.heat = Math.max(0, player.heat - rate * dt);
   }
   if (player.overheat && player.heat <= 0.02){ player.overheat = false; sfx(620, 0.06, 'square', 0.05, 320); sfx(820, 0.05, 'triangle', 0.04, 400); floater(playerPos(), 'READY', '#bfe8ff'); }
 }
 // add heat for one shot; returns true if that shot just tripped the overheat lock
 function addHeat(W){
-  player.heat = Math.min(1, player.heat + (W.heat || 0.1));
+  player.heat = Math.min(1, player.heat + (W.heat || 0.1) / (player.up.heatCap || 1));   // POWER CELLS hold more (game/progression.js)
   player.heatDelay = HEAT_COOL_DELAY;   // restart the cool-delay every shot
   if (player.heat >= 0.999){ player.overheat = true; player.heat = 1; sfx(90, 0.22, 'sawtooth', 0.08, 40); sfx(160, 0.16, 'square', 0.06, 70); floater(playerPos(), 'OVERHEAT!', '#ff7a3a'); G.shake = Math.max(G.shake, 0.2); return true; }
   return false;
@@ -267,14 +269,31 @@ function disruptorWake(from, dir){
   }
   sparks(from, 0xaff0ff, 6, 14, { dir, cone: 0.25, life: 0.2, grav: 0, size: 0.45 });
 }
-// disruptor used un-scoped = an electric SPEAR: a fast, snappy thrust that lunges you in
+// disruptor used un-scoped = an electric SPEAR: a fast, snappy thrust that lunges you in. The rifle comes up level on
+// the reticle, chambers back a hand and drives out (the pose: anim/guns.js riflePose); the prongs land at the drive's
+// peak (stabStrike, from updateMandoCombat), a beat after the click. Its own clock: a shot just before doesn't block it.
 function spearStab(W){
-  if (player.stabT > 0 || player.fireCd > 0) return;
-  player.stabT = 0.24; player.fireCd = W.stabCd; player.aiming = 0.7;
+  if (player.stabT > 0 || (player.stabCdT || 0) > 0){
+    if (Math.max(player.stabT, player.stabCdT || 0) < W.stabQueue) player.stabQ = true;   // mashing: the next jab is queued
+    return;
+  }
+  player.stabQ = false;
+  player.stabT = W.stabTime; player.stabCdT = W.stabCd; player.stabHit = false; player.aiming = 0.7;
+  player.fireCd = Math.max(player.fireCd, 0.12);
   if (player.rifleProngGlow) player.rifleProngGlow.material.opacity = 1;
+  S.swing('fast'); sfx(1300, 0.08, 'sawtooth', 0.03, 200);
+}
+function stabStrike(W){
+  player.stabHit = true;
   const f = fwd(), pp = playerPos();
-  player.vel.addScaledVector(f, 9);   // a committed spear LUNGE — drives you onto the target
-  S.swing('fast'); S.zap(); sfx(1300, 0.1, 'sawtooth', 0.04, 200);
+  player.vel.addScaledVector(f, W.stabLunge);   // a committed spear LUNGE — drives you onto the target
+  S.zap();
+  // the arc crackles off the prongs at full reach
+  if (player.rifleProngGlow){
+    const tip = player.rifleProngGlow.getWorldPosition(V3());
+    sparks(tip, 0xaff0ff, 8, 9, { dir: f, cone: 0.6, life: 0.16, grav: 0, size: 0.35 });
+    inkSprite({ pos: tip, shape: 'star', points: 6, sharp: 0.1, color: 0x7fe0ff, size: [0.3, 0.6], life: 0.1, steps: 2, coreW: 0.35 });
+  }
   let best = null, bd = W.stabRange;
   for (const e of enemies){ if (e.dead || e.converted || e.state === 'spawn') continue; TMP.subVectors(e.group.position, pp); TMP.y = 0; const d = TMP.length() - bodyRadius(e); if (d < bd && inReach(e, pp, W.stabRange, f, 0.4)){ bd = d; best = e; } }   // the prongs reach the body
   if (best){
@@ -349,7 +368,17 @@ export function updateFlame(dt){
 // Mando per-frame weapon upkeep: timers, free-aim drift + sway, reload, held auto-fire, flamethrower, darksaber.
 export function updateMandoCombat(dt, f, r){
   if (player.fireCd > 0) player.fireCd -= dt;
-  if (player.stabT > 0) player.stabT -= dt;
+  if (player.stabCdT > 0) player.stabCdT -= dt;
+  if (player.missileT > 0) player.missileT -= dt;
+  if (player.stabT > 0){
+    player.stabT -= dt;
+    const W = MANDO_WEAPONS.disruptor;
+    if (player.weapon !== 'disruptor' || player.zoom) player.stabT = 0;
+    else if (!player.stabHit && 1 - player.stabT / W.stabTime >= W.stabHit) stabStrike(W);
+  }
+  if (player.stabQ && player.stabT <= 0 && !(player.stabCdT > 0)){
+    if (player.weapon === 'disruptor' && !player.zoom && G.mode === 'play') spearStab(MANDO_WEAPONS.disruptor); else player.stabQ = false;
+  }
   updateMandoMelee(dt);   // the E kit: string recovery, catch window, charge and dive (melee.js)
   if (player.aiming > 0) player.aiming -= dt;
   if (player.zoom) player.aiming = 0.3;                 // holding the scope keeps you squared up

@@ -6,7 +6,7 @@ import { G, player } from '../state.js';
 import { maxHp } from '../player/helpers.js';
 import { setStanceHud } from '../player/jedi/stance.js';
 import { switchWeapon } from '../player/mando/weapons.js';
-import { applyJetTier } from '../game/progression.js';
+import { applyJetTier, applyCellTier } from '../game/progression.js';
 
 /* ============================================================
    PROGRESSION CONFIG  (edit here to add/retune progression)
@@ -30,6 +30,14 @@ export const MANDO_AUTO = [
     has:()=>(player.up.jetTier||0) >= 1, grant(){ player.up.jetTier = 1; applyJetTier(); } },
   { key:'jet2', stage:8, hud:'SPACE', name:'JETPACK BOOSTER II',
     has:()=>(player.up.jetTier||0) >= 2, grant(){ player.up.jetTier = 2; applyJetTier(); } },
+  // POWER CELLS — the blasters hold more energy before they overheat and recover it faster (data/mando.js cells),
+  // keeping pace with the fire-rate upgrades that drain it quicker
+  { key:'cells1', stage:2, hud:'HOLD LMB', name:'POWER CELLS I',
+    has:()=>(player.up.cellTier||0) >= 1, grant(){ player.up.cellTier = 1; applyCellTier(); } },
+  { key:'cells2', stage:5, hud:'HOLD LMB', name:'POWER CELLS II',
+    has:()=>(player.up.cellTier||0) >= 2, grant(){ player.up.cellTier = 2; applyCellTier(); } },
+  { key:'cells3', stage:8, hud:'HOLD LMB', name:'POWER CELLS III',
+    has:()=>(player.up.cellTier||0) >= 3, grant(){ player.up.cellTier = 3; applyCellTier(); } },
 ];
 // `stage` is the survival gate (cumulative waveTotal); campaign uses level/wave. Both kept in sync in checkUnlocks.
 export const JEDI_AUTO = [
@@ -63,7 +71,7 @@ export const MANDO_STORE = [
   // LATE fork (after wave 7) — whistling birds OR thermal detonator (comes BEFORE the signature weapon)
   { id:'birds',   tier:3, stage:6, cost:250, fork:'m_late', ico:'✺', nm:'WHISTLING BIRDS', ds:'Homing micro-missile swarm · V',
     owned:()=>!!G.unlocked.birds, buy(){ G.unlocked.birds = true; } },
-  { id:'deto',    tier:3, stage:6, cost:250, fork:'m_late', ico:'◉', nm:'THERMAL DETONATOR', ds:'Sticky charge → big AoE · V',
+  { id:'deto',    tier:3, stage:6, cost:250, fork:'m_late', ico:'◉', nm:'THERMAL DETONATOR', ds:'Sticky charge thrown onto the crosshair → big AoE · V',
     owned:()=>!!G.unlocked.deto, buy(){ G.unlocked.deto = true; } },
   // SIGNATURE WEAPON fork (after wave 8) — the major identity choice. Both bind to key 3 (mutually exclusive).
   { id:'disruptor', tier:4, stage:7, cost:0, fork:'mainwpn', ico:'⌖', nm:'DISRUPTOR RIFLE', ds:'Scoped sniper (RMB) · spear melee · key 3 · LOCKS the Darksaber',

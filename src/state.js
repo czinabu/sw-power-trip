@@ -41,6 +41,7 @@ export const G = {
   saberGrip: 'regular',   // player preference: 'regular' or 'reverse' lightsaber grip (visual only)
   swingMirror: false,   // player preference: flips which way strafe-L/R directional cuts sweep
   mouseSens: 1,          // player preference: mouse look sensitivity multiplier
+  adsSens: 0.4,          // player preference: share of it while the disruptor is scoped in
   shakeScale: 1,         // player preference: screen shake strength (0 = off, 1.5 = extra)
   fov: 60,               // player preference: resting vertical FOV in degrees (the FOV slider, 50-90)
   sbMenu: false,         // the sandbox B panel is open (same cinematic cuts as the pause screen)
