@@ -6,7 +6,7 @@ import { CFG } from '../../data/config.js';
 import { abil, healFrac } from '../../data/mastery.js';
 import { scene } from '../../engine/renderer.js';
 import { sfx, S } from '../../audio/sfx.js';
-import { V3, clamp, TMP } from '../../utils.js';
+import { V3, clamp, rand, TMP } from '../../utils.js';
 import { burst } from '../../fx/particles.js';
 import { floater, screenFlash } from '../../fx/floaters.js';
 import { shared, G, enemies, bolts, barrels, vfx, player } from '../../state.js';
@@ -477,6 +477,10 @@ export function updateJudgement(dt){
       tpos.push(V3(shared.boss.group.position.x, 2.2, shared.boss.group.position.z));
     }
   }
+  if (!tpos.length){   // nothing to chain to: the bolt lashes out into the open ground ahead, flickering about the aim
+    const reach = A.range * 0.6, side = new THREE.Vector3(-f.z, 0, f.x);
+    tpos.push(V3(pp.x + f.x*reach + side.x*rand(-1.2, 1.2), 1.1 + rand(-0.4, 0.5), pp.z + f.z*reach + side.z*rand(-1.2, 1.2)));
+  }
   player.judgeTargets = tpos;
-  if (tpos.length) S.arc(tpos[0]);
+  S.arc(tpos[0]);
 }
