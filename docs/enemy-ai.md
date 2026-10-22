@@ -85,7 +85,32 @@ frame per living duellist.
   blade gets through.
 - **Bolts:** acolytes bat blaster fire back at the shooter from the front.
 
-`window.GAME.duel` exposes the tables and the lock in the dev console.
+- **Breath:** duellists (staff magnaguards, Sith acolytes) have their own stamina (`stam` in the profile, `DUEL.breath`).
+  Blocking, slipping a cut, swinging, stringing and countering spend it; a parried swing or a lost lock drains it. Run
+  it dry and the foe is WINDED: no guard, no slip, no counter, and it gives up its attack turn to back off and recover.
+  Its breath shows as a thin pale strip under the posture bar.
+- **Mash reading:** cuts that follow each other within `DUEL.rhythm.gap` build a streak. From the second quick cut on, a
+  duellist may PARRY (profile `parry`): your blade is thrown off, you lose stamina and flinch, and it ripostes at once.
+  Pause, change line, kick, or finish the string and it can't read you.
+- **Openings:** any melee foe that swings and doesn't chain into another cut is open for most of its recovery
+  (`DUEL.open`). A duellist can't guard in that window, and any blow that lands in it hits 1.3x harder (`OPENING`).
+- **Elite ramp:** duellist skill (block, counter, parry, breath) starts at 0.8x on wave 1, is as listed by wave 9 and
+  climbs to 1.25x by wave 22 (`DUEL.eliteRamp`), so the endgame is for players who read guards.
+
+## Grounded pace (souls-style)
+
+Movement was slowed so a fight can't simply be outrun, while keeping distance is still possible at a price.
+
+| What | Where | Now |
+|---|---|---|
+| Run speed | `CFG.player.speed` | 6.4 (was 7.2); Ataru's form multiplier 1.25 (was 1.42) |
+| Sprint | `MOVE.sprintMul`, `MOVE.combatSprint` | 1.3x; in a fight it drains 11 stamina/s and stops short of empty |
+| Ground roll | `MOBILITY.roll.stam` | 15 stamina per roll in a fight (Ataru 0.7x, Djem So 1.2x); no roll without it |
+| Troopers | `ENEMY_TYPES.grunt` | 44 hp, 6.2 speed, barely guards (block 0.06) |
+| Duellists | `ENEMY_TYPES.duelist/acolyte` | 6.0 / 6.6 speed: faster than your run, slower than your sprint |
+| Wave sizes | `LEVELS`, `genEndlessWave` | about 40% fewer bodies, mostly troopers; survival caps at 22 |
+
+`window.GAME.duel` exposes the tables, `eliteRamp()` and the lock in the dev console.
 
 ## Hitboxes
 

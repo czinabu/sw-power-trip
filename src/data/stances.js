@@ -17,7 +17,7 @@ import { G } from '../state.js';
    radiusMult = swing cleave radius · parryBonus = extra parry window · heavyDmg = vs armored foes. */
 export const STANCES = {
   fast:   { name: 'ATARU — FAST', form: 'ataru', formNo: 'IV', blade: 0x35c8ff,
-            dmg: 0.64, heavyDmg: 0.46, speed: 1.7, knock: 0.38, stamina: 6, lunge: 1.4, move: 1.42, accel: 1.7, twist: 0.4, bladeLen: 0.94,
+            dmg: 0.64, heavyDmg: 0.46, speed: 1.7, knock: 0.38, stamina: 6, lunge: 1.4, move: 1.25, accel: 1.7, twist: 0.4, bladeLen: 0.94,
             radiusMult: 1.45, forceRegen: 1.5, costMult: { push: 0.7, pull: 0.7 },
             comboGap: 1.25, fovKick: 6,
             moveAtk: 1.5,         // PASSIVE: keeps most of its footwork mid-swing (every other form plants its feet) — kite while you cleave

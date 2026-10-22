@@ -19,11 +19,44 @@ import { enemyDmgScale } from '../game/survival.js';
 import { showBanner } from '../ui/banners.js';
 import { tacticsRamp } from './tactics.js';
 import { tutEvent } from '../game/tutor-bus.js';
+import { dropToken } from './director.js';
 
 const LINES = ['L', 'R', 'H'];
 const GUARDING = { chase: 1, recover: 1 };
 const DIFF_MUL = { padawan: 0.7, knight: 1, master: 1.15 };
 const diffMul = () => DIFF_MUL[G.diff] || 1;
+
+/* ELITE RAMP (DUEL.eliteRamp) — how far a duellist's skill has grown this deep into the run. 1 = as listed. */
+export function eliteRamp(){
+  const R = DUEL.eliteRamp, n = G.endless ? (G.endlessWave || 0) : (G.waveTotal || 0);
+  if (n <= R.full) return R.from + (1 - R.from) * clamp((n - 1) / (R.full - 1), 0, 1);
+  return 1 + (R.max - 1) * clamp((n - R.full) / (R.top - R.full), 0, 1);
+}
+const skill = e => (e.dp && e.dp.elite ? eliteRamp() : 1);
+
+/* ---------------- breath (DUEL.breath): a duellist's own stamina ---------------- */
+// spend `amt` if it has it (true), or come up short (false). A foe without a breath pool always has it.
+function spend(e, amt){
+  if (e.breath == null) return true;
+  if (e.winded || e.breath < amt) return false;
+  e.breath -= amt; e.breathAt = G.gt;
+  if (e.breath < e.breathMax * DUEL.breath.winded) wind(e);
+  return true;
+}
+// run it dry: no guard, no answer; it gives up its turn and backs off to catch its breath
+function wind(e){
+  if (e.winded || e.dead) return;
+  e.winded = true; e.counterQueued = false;
+  if (e.token) dropToken(e, true);
+  const g = e.group;
+  floater(V3(g.position.x, g.position.y + 1.5, g.position.z), 'WINDED', '#9fd8ff');
+}
+// your pressure drains it: a parried swing, a lock lost (no-op on foes without breath)
+export function drainBreath(e, amt){
+  if (e.breath == null || e.dead) return;
+  e.breath = Math.max(0, e.breath - amt); e.breathAt = G.gt;
+  if (e.breath < e.breathMax * DUEL.breath.winded) wind(e);
+}
 
 /* which line a cut comes in on, from where the blade starts (screen left / right / overhead). The strafe cuts start on
    the far side (D sweeps left → right, so it arrives on the LEFT), the overhead and finisher come down HIGH. */
@@ -44,6 +77,8 @@ export function initDuel(e){
   e.lineStreak = 0; e.lastLine = null;
   e.counterAt = -9;
   e.lastSide = null;
+  e.rhyN = 0; e.rhyAt = -9;   // your cutting rhythm at it (DUEL.rhythm)
+  if (p.stam){ e.breathMax = e.breath = p.stam * skill(e); e.breathAt = -9; e.winded = false; }
 }
 const showsGuard = e => e.dp && e.dp.block >= 0.4;
 
@@ -52,6 +87,15 @@ export function updateDuel(e, dt, dist){
   const g = e.group, p = e.dp;
   // posture drains back once the foe has been left alone for a moment
   if (e.posture > 0 && G.gt - e.postureAt > DUEL.posture.regenDelay) e.posture = Math.max(0, e.posture - DUEL.posture.regen * dt);
+  // breath comes back once it stops spending; winded, it stays out of the fight until it has enough of it again
+  if (e.breath != null){
+    const B = DUEL.breath;
+    if (e.breath < e.breathMax && G.gt - e.breathAt > B.regenDelay) e.breath = Math.min(e.breathMax, e.breath + B.regen * (e.winded ? 1.25 : 1) * dt);
+    if (e.winded){
+      if (e.breath >= e.breathMax * B.recover) e.winded = false;
+      else e.tokenRest = Math.max(e.tokenRest || 0, B.retreat);   // no turn while it gets its wind back: it holds the ring
+    }
+  }
   // the guard shifts lines every so often (and after a hit lands on a line it wasn't covering)
   if ((e.guardT -= dt) <= 0){
     e.guardT = rand(DUEL.guardShift[0], DUEL.guardShift[1]);
@@ -70,7 +114,7 @@ export function updateDuel(e, dt, dist){
   if (showsGuard(e)){
     if (!g.userData.guardArc) makeGuardArc(e);
     const a = g.userData.guardArc;
-    a.visible = guarding && !e.dead;
+    a.visible = guarding && !e.dead && !e.winded;   // winded: the guard is down
     if (a.visible){
       const want = e.guard === 'R' ? 0 : e.guard === 'L' ? Math.PI : Math.PI / 2;
       a.rotation.z = dampToward(a.rotation.z, want, dt, 14);
@@ -79,8 +123,9 @@ export function updateDuel(e, dt, dist){
       a.material.color.setHex(e.lineStreak >= DUEL.adaptAfter ? 0xffb35a : 0xfff0c8);   // amber: it has read your cut
     }
   }
-  // posture bar over the head while the guard is under pressure
-  if (e.posture > 0.5 && !e.dead){
+  // posture bar over the head while the guard is under pressure, and its breath under it once it has spent some
+  const spent = e.breath != null && e.breath < e.breathMax - 0.5;
+  if ((e.posture > 0.5 || spent) && !e.dead && dist < DUEL.guardRange * 2){
     if (!e.postBar) makePostureBar(e);
     const b = e.postBar, k = clamp(e.posture / p.posture, 0, 1);
     b.visible = true;
@@ -89,6 +134,14 @@ export function updateDuel(e, dt, dist){
     b.userData.fill.scale.x = Math.max(0.001, k);
     b.userData.fill.position.x = -(1 - k) * 0.55;
     b.userData.fill.material.color.setHex(k > 0.75 ? 0xff6a3a : 0xffd24a);
+    const br = b.userData.breath;
+    br.visible = e.breath != null;
+    if (br.visible){
+      const kb = clamp(e.breath / e.breathMax, 0, 1);
+      br.scale.x = Math.max(0.001, kb);
+      br.position.x = -(1 - kb) * 0.55;
+      br.material.color.setHex(e.winded ? 0x3a5a8a : 0x9fd8ff);
+    }
   } else if (e.postBar) e.postBar.visible = false;
 }
 
@@ -109,7 +162,13 @@ function makePostureBar(e){
   const bg = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.11), new THREE.MeshBasicMaterial({ color: 0x140d04, transparent: true, opacity: 0.75, depthTest: false }));
   const fill = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.06), new THREE.MeshBasicMaterial({ color: 0xffd24a, depthTest: false, toneMapped: false }));
   fill.position.z = 0.01;
-  grp.add(bg, fill); grp.renderOrder = 998; grp.userData.fill = fill;
+  // breath: a thin pale strip under the posture bar
+  const bbg = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.06), new THREE.MeshBasicMaterial({ color: 0x0a1018, transparent: true, opacity: 0.75, depthTest: false }));
+  bbg.position.y = -0.1;
+  const breath = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.03), new THREE.MeshBasicMaterial({ color: 0x9fd8ff, depthTest: false, toneMapped: false }));
+  breath.position.set(0, -0.1, 0.01);
+  grp.add(bg, fill, bbg, breath); grp.renderOrder = 998; grp.userData.fill = fill; grp.userData.breath = breath;
+  bbg.visible = !!e.dp.stam;
   scene.add(grp); e.postBar = grp;
 }
 
@@ -164,12 +223,14 @@ export function planAttack(e, quick){
   const p = e.dp, m = diffMul();
   const sides = LINES.filter(l => l !== e.lastSide);
   const plan = { side: sides[(Math.random() * sides.length) | 0], feint: false, hold: 0, chain: 0, thrust: false };
+  spend(e, quick ? DUEL.breath.counter : DUEL.breath.swing);   // (it swings on an empty tank too, but the tank shows it)
   if (!quick){
     plan.thrust = Math.random() < p.thrust * m;
     const r = p.ramp ? tacticsRamp() : 1;   // the rank and file pick up their tricks as the run deepens (tactics.js)
     plan.feint = !plan.thrust && Math.random() < p.feint * m * r;
     plan.hold = Math.random() < p.delay * m * r ? rand(DUEL.delayHold[0], DUEL.delayHold[1]) : 0;
     plan.chain = p.chain ? (Math.random() * (p.chain + 1)) | 0 : 0;
+    if (e.winded) plan.chain = 0;
   }
   if (plan.thrust){ plan.side = 'T'; plan.chain = 0; thrustTell(e); }
   e.plan = plan;
@@ -209,6 +270,7 @@ export function chainNext(e){
   const pl = e.plan;
   if (!pl || pl.chain <= 0 || e.dead) return false;
   pl.chain--;
+  if (!spend(e, DUEL.breath.chain)){ pl.chain = 0; return false; }   // out of breath: the string ends here
   const o = ['L', 'R', 'H'].filter(l => l !== pl.side);
   pl.side = o[(Math.random() * o.length) | 0];
   e.lastSide = pl.side;
@@ -227,10 +289,15 @@ export function duelDefend(e, line, kind, heavy, at){
   const g = e.group, pp = playerPos();
   const efx = Math.sin(g.rotation.y), efz = Math.cos(g.rotation.y);
   const dx = pp.x - g.position.x, dz = pp.z - g.position.z, dl = Math.hypot(dx, dz) || 1;
+  // RHYTHM — how quickly this blow follows your last one at it (DUEL.rhythm): a mash builds a streak it can read
+  const R = DUEL.rhythm;
+  e.rhyN = G.gt - e.rhyAt < R.gap ? e.rhyN + 1 : 1; e.rhyAt = G.gt;
   if ((efx * dx + efz * dz) / dl < 0.35) return null;   // a blow from the flank or behind always lands
-  const m = diffMul();
+  if (G.gt < (e.openUntil || 0)) return null;           // caught recovering from its own swing: the guard isn't up yet
+  if (e.winded) return null;                             // out of breath: nothing left to guard with
+  const m = diffMul() * skill(e);
   // a light cut seen coming: the agile ones slip it with a backstep
-  if (p.dodge && (kind === 'cut' || kind === 'punch') && Math.random() < p.dodge * m){
+  if (p.dodge && (kind === 'cut' || kind === 'punch') && Math.random() < p.dodge * m && spend(e, DUEL.breath.dodge)){
     e.dodgeT = 0.3; e.dodgeX = -dx / dl; e.dodgeZ = -dz / dl;
     e.state = 'recover'; e.st = Math.max(e.st, 0.35);
     floater(V3(g.position.x, g.position.y + 1.2, g.position.z), 'SLIPPED', '#c8d4e0');
@@ -238,12 +305,20 @@ export function duelDefend(e, line, kind, heavy, at){
     if (Math.random() < p.counter * m) e.counterQueued = true;
     return 'dodge';
   }
+  // PARRY — a mash is read, whatever line it comes in on: the blade is thrown off and it answers at once
+  if (p.parry && e.rhyN > R.after && kind !== 'finisher' && Math.random() < p.parry * m && spend(e, DUEL.breath.block)){
+    e.rhyN = 0; e.counterQueued = true; e.guard = line;
+    const cp = at || V3(g.position.x + dx / dl * 0.7, g.position.y + 1.5, g.position.z + dz / dl * 0.7);
+    punishMash(cp);
+    floater(V3(g.position.x, g.position.y + 1.3, g.position.z), 'PARRIED', '#ff8a5a');
+    return 'block';
+  }
   const onLine = line === e.guard;
   let chance = onLine ? p.block : p.block * DUEL.offLine;
   if (onLine && e.lineStreak >= DUEL.adaptAfter) chance = 0.95;   // it has your rhythm: same cut, same answer
   if (kind === 'finisher') chance *= 0.75;
   chance *= m;
-  if (Math.random() >= chance){
+  if (Math.random() >= chance || !spend(e, DUEL.breath.block)){
     // it lands: the guard swings over to cover that line next time
     if (Math.random() < 0.6){ e.guard = line; e.guardT = rand(DUEL.guardShift[0], DUEL.guardShift[1]); }
     e.lineStreak = 0;
@@ -265,8 +340,21 @@ export function duelDefend(e, line, kind, heavy, at){
   if (e.lineStreak >= DUEL.adaptAfter) floater(V3(g.position.x, g.position.y + 1.3, g.position.z), 'READ YOU', '#ffb35a');
   else floater(V3(g.position.x, g.position.y + 1.3, g.position.z), 'BLOCKED', '#c8d4e0');
   // and the answer: a fast riposte, if it has the skill and the breath
-  if (G.gt - e.counterAt > DUEL.counterCd && Math.random() < p.counter * m * (e.lineStreak >= DUEL.adaptAfter ? 1.5 : 1)) e.counterQueued = true;
+  if (G.gt - e.counterAt > DUEL.counterCd && Math.random() < p.counter * m * (e.lineStreak >= DUEL.adaptAfter ? 1.5 : 1)
+      && (e.breath == null || e.breath >= DUEL.breath.counter)) e.counterQueued = true;
   return 'block';
+}
+
+// your mashed cut is parried: the swing is thrown wide, the arm jars and the breath goes out of you
+function punishMash(cp){
+  const R = DUEL.rhythm;
+  player.stam = Math.max(0, player.stam - R.stam); player.stamDelay = CFG.player.stamDelay;
+  player.flinchT = player.flinchMax = Math.max(player.flinchT || 0, R.flinch);
+  player.queuedAtk = false;
+  clashFlash(cp, 0xff8a5a, true);
+  sparks(cp, 0xffc890, 12, 12, { life: 0.3 });
+  S.parry(cp);
+  G.hitstop = Math.max(G.hitstop, 0.09); G.shake = Math.max(G.shake, 0.45);
 }
 
 // add guard strain; past the profile's posture the guard BREAKS (staggered, wide open). Returns true on a break.
@@ -419,6 +507,7 @@ function winLock(label, knock){
   e.state = 'recover';
   staggerEnemy(e, dx / dl, dz / dl, label);
   e.st += 0.4; e.posture = 0;
+  drainBreath(e, DUEL.breath.lock);   // a bind lost takes the wind out of it
   tutEvent('guardBreak', e);   // winning the bind breaks its guard too
   if (knock) damageEnemy(e, 8, V3(dx / dl, 0, dz / dl), knock);
   player.riposteT = CFG.player.riposteTime + 0.3;

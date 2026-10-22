@@ -15,6 +15,7 @@ import { sparks } from '../fx/ink.js';
 import { addStreak } from '../player/damage.js';
 import { gainXp, killBonus } from '../game/progression.js';
 import { ENGAGE } from '../data/enemies.js';
+import { DUEL } from '../data/duel.js';
 import { dropToken } from './director.js';
 import { tutEvent } from '../game/tutor-bus.js';
 import { officerDown } from './tactics.js';
@@ -27,6 +28,11 @@ export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick, opts){
   if (dmg > 0) player.lastStrikeT = G.gt;   // a blow landed keeps you in the fight (player/mobility.js)
   if (e.state === 'stasis') dmg *= 1.5;   // frozen targets shatter harder
   if (e.state === 'stagger') dmg *= 1.5;  // a parried, stumbling foe is wide open
+  // an OPENING: caught recovering from its own swing, a well placed blow lands harder (data/duel.js DUEL.open)
+  else if (!tick && knockDir && dmg > 0 && !e.converted && G.gt < (e.openUntil || 0)){
+    dmg *= DUEL.open.dmg;
+    if (e.openShown !== e.openUntil){ e.openShown = e.openUntil; floater(V3(e.group.position.x, e.group.position.y + 1.9, e.group.position.z), 'OPENING', '#ffe27a'); }
+  }
   // SENTINEL frontal deflector — chip damage from the front mostly bounces; FLANK it, or break the guard with a
   // finisher / Djem-So heavy / a RIPOSTE. The shield shatters once depleted, leaving it open & staggered.
   if (e.t.shield && !e.shieldBroken && knockDir && !tick && dmg > 0){

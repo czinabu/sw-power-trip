@@ -4,6 +4,8 @@
 
 import { MOBILITY, MANDO_MOBILITY } from '../data/mobility.js';
 import { MOVE } from '../data/movement.js';
+import { CFG } from '../data/config.js';
+import { floater } from '../fx/floaters.js';
 import { V3 } from '../utils.js';
 import { burst } from '../fx/particles.js';
 import { S } from '../audio/sfx.js';
@@ -72,12 +74,18 @@ function stickOr(dflt){
   return d.lengthSq() > 0.01 ? d.normalize() : dflt;
 }
 
-/* GROUND ROLL — SHIFT on the ground in a fight. Free, short, a brief window of invulnerability, any way you press
+/* GROUND ROLL — SHIFT on the ground in a fight. Costs stamina (MOBILITY.roll.stam), short, a brief window of invulnerability, any way you press
    (no keys: a roll back, out of reach). The body move is the form's (data/agility.js roll). */
 export function groundRoll(){
   const R = MOBILITY.roll, F = formMob().roll || {};
   if (player.cds.roll > 0) return false;
+  const cost = (R.stam || 0) * (F.stam ?? 1);
+  if (player.stam < cost){   // no breath for it: the feet won't carry a roll
+    if (G.gt - (player.lastWinded ?? -9) > 0.6){ player.lastWinded = G.gt; floater(playerPos(), 'WINDED', '#ffaa66'); }
+    return false;
+  }
   if (player.atkT > 0) cancelSwing();   // ROLL-CANCEL: bail a swing into the roll
+  player.stam -= cost; player.stamDelay = Math.max(player.stamDelay || 0, CFG.player.stamDelay);
   const dir = stickOr(fwd().clone().negate());
   const df = dir.dot(fwd()), drr = dir.dot(rightV());
   const side = Math.abs(drr) >= Math.abs(df) * 0.8;
