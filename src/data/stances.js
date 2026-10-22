@@ -17,7 +17,7 @@ import { G } from '../state.js';
    radiusMult = swing cleave radius · parryBonus = extra parry window · heavyDmg = vs armored foes. */
 export const STANCES = {
   fast:   { name: 'ATARU — FAST', form: 'ataru', formNo: 'IV', blade: 0x35c8ff,
-            dmg: 0.58, heavyDmg: 0.42, speed: 2.05, knock: 0.38, stamina: 6, lunge: 1.4, move: 1.42, accel: 1.7, twist: 0.4, bladeLen: 0.94,
+            dmg: 0.64, heavyDmg: 0.46, speed: 1.7, knock: 0.38, stamina: 6, lunge: 1.4, move: 1.42, accel: 1.7, twist: 0.4, bladeLen: 0.94,
             radiusMult: 1.45, forceRegen: 1.5, costMult: { push: 0.7, pull: 0.7 },
             comboGap: 1.25, fovKick: 6,
             moveAtk: 1.5,         // PASSIVE: keeps most of its footwork mid-swing (every other form plants its feet) — kite while you cleave
@@ -26,7 +26,7 @@ export const STANCES = {
             gait: { amp: 1.0, lift: 1.3, bob: 0.45, lean: 1.25 },   // MOVEMENT: light, high-kneed, springy — a duelist on the balls of their feet
             syn: 'CROWDS · snappy Force casts · keeps moving while attacking · WEAK vs armor' },
   medium: { name: 'NIMAN — BALANCED', form: 'niman', formNo: 'VI', blade: 0x3aff8c,
-            dmg: 1.0, heavyDmg: 0.95, speed: 1.0, knock: 0.85, stamina: 11, lunge: 1.15, move: 1.0, accel: 1.0, twist: 0.55, bladeLen: 1.0,
+            dmg: 1.04, heavyDmg: 0.99, speed: 0.92, knock: 0.85, stamina: 11, lunge: 1.15, move: 1.0, accel: 1.0, twist: 0.55, bladeLen: 1.0,
             radiusMult: 1.0, cdMult: 0.65, parryBonus: 0.10, comboGap: 1.0, fovKick: 0,
             parryRefund: 16,      // PASSIVE: the duelist's form — a clean parry feeds extra Force back
             blockStamMul: 0.55,   // SYNERGY: economical guard — blocking/parrying drains far less stamina
@@ -37,7 +37,7 @@ export const STANCES = {
             // carries the blade through. High dmg, shreds armor, weak Force synergy (forceRegen < 1, no powerDmg).
             // clearly the SLOWEST swing (well under medium's 1.0) — heavy, deliberate, weighty — but the big LUNGE
             // and high damage make each committed stroke land hard, so it reads as power, not sluggishness.
-            dmg: 2.15, heavyDmg: 1.75, speed: 0.68, knock: 2.2, stamina: 18, lunge: 1.4, move: 0.85, accel: 0.6, twist: 1.0, bladeLen: 1.14,
+            dmg: 2.2, heavyDmg: 1.8, speed: 0.64, knock: 2.2, stamina: 18, lunge: 1.4, move: 0.85, accel: 0.6, twist: 1.0, bladeLen: 1.14,
             radiusMult: 0.8, forceRegen: 0.7, comboGap: 0.7, fovKick: -4,
             atkDR: 0.15,          // PASSIVE: armored commitment — soak 15% damage WHILE mid-swing
             finisherLunge: 1.6,   // the 3rd hit lunges harder, carrying the heavy blade through
