@@ -152,6 +152,10 @@ export function swingPose(R, held, grip, form, sw){
     // the follow-through settles a little toward the form's guard instead of freezing (the recovery)
     const G0 = (GUARDS[grip] && GUARDS[grip][form]) || GUARDS.regular.niman;
     sw.anim.rest = G0.ready;
+    // which way across the body the cut travels (chest +x is the weapon side): spins and twirls turn into it. A cut
+    // that runs straight down the middle has none of its own and turns toward the weapon side.
+    const dx = scaled[2].hand.x - scaled[0].hand.x;
+    sw.anim.side = Math.abs(dx) > 0.15 ? Math.sign(dx) : 1;
   }
   const A = sw.anim, [C, S, F] = A.keys;
   const k = Math.min(1, sw.t / sw.dur);
@@ -183,8 +187,10 @@ export function swingPose(R, held, grip, form, sw){
   // the strike (whole turns only, so it leaves and returns on the same line). The reverse grip keeps its blade along the forearm.
   const sp = sw.spin;
   if (sp && sp.twirl && grip === 'regular' && k < A.ts){
-    const p = k / A.ts, turn = Math.sign(sw.pat.yT - sw.pat.yF) || 1;
-    saberPose.blade.applyAxisAngle(TWIRL_AXIS, Math.PI * 2 * sp.twirl * turn * (p - Math.sin(Math.PI * 2 * p) / (Math.PI * 2))).normalize();
+    // the wheel carries the blade over the top toward the cut's side (the top of the wheel moves with the cut, so the
+    // tip comes round into the chamber already travelling the way the stroke goes)
+    const p = k / A.ts;
+    saberPose.blade.applyAxisAngle(TWIRL_AXIS, -Math.PI * 2 * sp.twirl * A.side * (p - Math.sin(Math.PI * 2 * p) / (Math.PI * 2))).normalize();
   }
   saberPose.pole.set(0.55, -0.8, -0.25).normalize();
   saberPose.twist = (ta + (tb - ta) * t) * style.twist;
@@ -203,7 +209,7 @@ export function swingPose(R, held, grip, form, sw){
   // strike, peaking as the blade reaches the strike key, then carried out by the follow-through)
   const coil = k < A.tc ? easeOut(k / A.tc) : k < A.tc + hold ? 1 : k < A.ts ? 1 - (k - A.tc - hold) / (A.ts - A.tc - hold) : 0;
   const drive = k < A.tc + hold ? 0 : k < A.ts ? easeIn((k - A.tc - hold) / (A.ts - A.tc - hold)) : k < A.tf ? 1 - 0.6 * easeOut((k - A.ts) / (A.tf - A.ts)) : 0.4 * (1 - easeOut((k - A.tf) / (1 - A.tf)));
-  return { k, env: Math.sin(Math.PI * k), cut, spin: A.spin, hop: A.hop, drop: style.drop || 0, fin: A.fin, strike: k > A.tc && k < A.tf, coil, drive };
+  return { k, env: Math.sin(Math.PI * k), cut, spin: A.spin, hop: A.hop, drop: style.drop || 0, fin: A.fin, strike: k > A.tc && k < A.tf, coil, drive, side: A.side };
 }
 
 /* DEFLECT — the blade snaps to catch a bolt and flicks it away. Which catch is picked from where the bolt arrives
