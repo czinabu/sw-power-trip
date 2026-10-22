@@ -7,7 +7,7 @@ import { clamp } from '../utils.js';
 import { shared, G, enemies, player } from '../state.js';
 import { MANDO, MANDO_WEAPONS, weaponUnlocked } from '../data/mando.js';
 import { abil } from '../data/mastery.js';
-import { maxHp } from '../player/helpers.js';
+import { maxHp, maxStam } from '../player/helpers.js';
 import { FOCUS, focusTier } from '../player/jedi/focus.js';
 import { mandoWeapon } from '../player/mando/weapons.js';
 import { MUTATORS } from '../data/mutators.js';
@@ -107,7 +107,7 @@ export function updateHud(){
     if (showE){
       const saber = G.hero === 'jedi' || mandoWeapon().melee;   // saber forms → stamina gauge; blasters → heat gauge
       if (saber){
-        ef.style.height = (player.stam / CFG.player.maxStam * 100) + '%';
+        ef.style.height = (player.stam / maxStam() * 100) + '%';
         em.classList.add('saberbar');
         em.classList.toggle('over', player.exhausted);   // guard broken → flashes red
       } else {

@@ -25,8 +25,10 @@ export const SKILLS = [
     fl:'Let it move through you, never from you.', apply(){ player.up.forceRegen *= 1.22; } },
   { id:'swift', ico:'➤', nm:'FLEET FOOT',    tier:1, max:3, ds:'+8% move speed · −12% dash CD',
     fl:'Be where the blow is not.', apply(){ player.up.move *= 1.08; player.up.dashCdMult *= 0.88; } },
-  { id:'focus', ico:'◈', nm:'SERENITY',      tier:1, max:2, ds:'+0.04s parry window · +20% stamina',
+  { id:'focus', ico:'◈', nm:'SERENITY',      tier:1, max:2, ds:'+0.04s parry window · +20% stamina regen',
     fl:'A still mind parries what a fast hand cannot.', apply(){ player.up.parry += 0.04; player.up.stamRegen *= 1.2; } },
+  { id:'endure',ico:'❖', nm:'ENDURANCE',     tier:1, max:3, ds:'+20 max stamina · +10% stamina regen',
+    fl:'The blade is light to one who does not tire.', apply(){ player.up.maxStam += 20; player.up.stamRegen *= 1.1; player.stam += 20; } },
   // ---- TIER II — KNIGHT disciplines, needs 2 spent ----
   { id:'jugg',  ico:'✷', nm:'JUGGERNAUT',    tier:2, max:2, ds:'+30% knockback · +10% saber damage',
     fl:'Meet force with greater force.', apply(){ player.up.knock *= 1.3; player.up.dmg *= 1.1; } },
@@ -63,6 +65,8 @@ export const MANDO_SKILLS = [
     fl:'Draw fast. Draw first.', apply(){ player.up.fireRate = (player.up.fireRate || 1) * 1.1; player.up.move *= 1.06; } },
   { id:'optics',  ico:'◈', nm:'TARGETING VISOR', tier:1, max:2, ds:'+10% blaster damage · steadier aim',
     fl:'The HUD never blinks.', apply(){ player.up.dmg *= 1.1; player.up.aim = (player.up.aim || 0) + 0.35; } },
+  { id:'grit',    ico:'❖', nm:'BATTLE STAMINA',  tier:1, max:3, ds:'+20 max stamina · +10% regen (Darksaber &amp; shield)',
+    fl:'The Way is walked, not sprinted.', apply(){ player.up.maxStam += 20; player.up.stamRegen *= 1.1; player.stam += 20; } },
   // ---- TIER II — VERD (warrior): specialised gear ----
   { id:'gam',     ico:'⛨', nm:'FULL BESKAR\'GAM', tier:2, max:2, ds:'Brace soaks +18% · +15 max vit',
     fl:'Let them break their blades on you.', apply(){ player.up.braceDR = (player.up.braceDR || 0) + 0.18; player.up.hpMax += 15; player.hp = Math.min(player.hp + 15, maxHp()); } },

@@ -6,7 +6,7 @@ import { MUSIC } from '../audio/music.js';
 import { V3 } from '../utils.js';
 import { burst } from '../fx/particles.js';
 import { shared, G, enemies, player } from '../state.js';
-import { playerPos, maxHp } from '../player/helpers.js';
+import { playerPos, maxHp, maxStam } from '../player/helpers.js';
 import { CFG } from '../data/config.js';
 import { floater } from '../fx/floaters.js';
 import { setStanceHud } from '../player/jedi/stance.js';
@@ -86,7 +86,7 @@ function beginStep(i){
   if (s.grant === 'jet1' && !(player.up.jetTier >= 1)){ player.up.jetTier = 1; applyJetTier(); player.jet = player.jetMax; }
   if (s.grant === 'dual') G.unlocked = { ...(G.unlocked || {}), dual: true };
   // a fresh start for the trial: full health, Force and fuel
-  if (s.heal){ player.hp = maxHp(); player.force = CFG.player.maxForce; player.stam = CFG.player.maxStam; if (G.hero === 'mando') player.jet = player.jetMax; }
+  if (s.heal){ player.hp = maxHp(); player.force = CFG.player.maxForce; player.stam = maxStam(); if (G.hero === 'mando') player.jet = player.jetMax; }
   if (s.poll === 'forms') T.forms = new Set();
   const col = BEACON[T.hero];
   if (s.reach) T.beacons.push(makeBeacon(s.reach[0], s.reach[1], s.reach[2] || 0, col));
