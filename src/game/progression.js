@@ -12,6 +12,7 @@ import { MANDO_STORE, JEDI_STORE } from '../data/store.js';
 import { masterySet, masteryRank } from '../data/mastery.js';
 import { renderProgress } from '../ui/store-ui.js';
 import { MASTERY_XP } from '../data/difficulty.js';
+import { MANDO } from '../data/mando.js';
 
 export function skillSet(){ return G.hero === 'mando' ? MANDO_SKILLS : SKILLS; }
 export function tierName(t){ return (G.hero === 'mando' ? TIER_NAME_MANDO : TIER_NAME)[t]; }
@@ -60,6 +61,13 @@ export function applyJetTier(){
   player.jetMax   = [70, 100, 130, 160][t] || 70;           // fuel tank (tier 0: ~3.5 s of thrust)
   player.up.jetHoverMul = [1.3, 1.0, 0.8, 0.6][t] || 1.3; // HOVER fuel burn — punishing early, efficient once upgraded
   player.jet = Math.min(player.jetMax, Math.max(player.jet, player.jetMax * 0.6));
+}
+
+// POWER CELLS — the guns hold more energy (heat) and recover it faster, a tier at a time (data/mando.js cells)
+export function applyCellTier(){
+  const t = player.up.cellTier || 0, C = MANDO.cells;
+  player.up.heatCap = C.cap[t] || 1;
+  player.up.heatCool = C.cool[t] || 1;
 }
 
 // helper: does a fork sibling already own the slot? (buying one weapon locks the other)

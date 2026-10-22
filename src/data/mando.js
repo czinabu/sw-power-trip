@@ -15,6 +15,15 @@ export const MANDO = {
   airAccel: 26, airSpeed: 12, airSpeedMax: 24, airDrag: 0.55,   // gentle WASD steer · ref · momentum cap · low drift drag
   climbBase: 8.5, climbRange: 7, diveCap: 32,                   // SPACE vertical: base hover/climb + more looking up
   boostThrust: 50, boostDrain: 20, boostDiveAccel: 40,          // SHIFT boost: horizontal thrust · fuel/s · look-down dive accel
+  // the boosted flight's Max Payne lay-out (player/animation.js): the most it lies over (rad) flying forward / backward /
+  // sideways (and how far a side lay-out rolls onto the back), at full speed and height, and how fast it follows
+  // POWER CELLS (auto, data/store.js MANDO_AUTO) — the guns' energy: each tier holds more heat before an overheat (cap)
+  // and sheds it faster (cool), so the fire-rate upgrades that drain it quicker have something to draw on
+  cells: { cap: [1, 1.25, 1.5, 1.8], cool: [1, 1.1, 1.2, 1.3] },
+  // firing the jetpack missile he leans in over it, the pack aimed down the reticle: how far (rad), for how long (s),
+  // and how fast it goes in
+  missileLean: { lean: 0.4, time: 0.75, in: 0.08 },
+  flightLean: { fwd: 1.2, back: 1.05, side: 1.1, sideUp: 0.22, rate: 8 },
   boostDash: { speed: 30, time: 0.30, cd: 0.6, fuel: 16 },      // ROCKET BOOST on the ground (SHIFT twice); spends jet fuel · the dive and air dodge: data/mobility.js
   // ABILITY base costs are deliberately STEEP — upgrades (player.up.abilityCostMul) bring them down
   flame: { range: 8.5, angle: 0.5, dmg: 42, knock: 4, fuel: 52 },  // F (HELD) — flamethrower, Force/sec in a cone (drains faster now)
@@ -29,7 +38,7 @@ export const MANDO = {
   // on and reels it home, cutting again on the way back. Every foe it touches is cut once going out and once coming back.
   darkThrow: { cost: 30, cd: 6.0, dmg: 58, speed: 30, range: 18, latch: 0.16, reelSpeed: 40, knock: 10 },
   birds: { cost: 48, cd: 7.5, count: 6, dmg: 20, radius: 2.6, speed: 26, knock: 6 },   // V — whistling birds (homing)
-  deto:  { cost: 42, cd: 5.2, fuse: 1.15, dmg: 72, radius: 6.5, knock: 22 },           // V — thermal detonator (sticky) — THE Mando area blast (radius 5.5→6.5 as the rocket shrank)
+  deto:  { cost: 42, cd: 5.2, fuse: 1.15, dmg: 72, radius: 6.5, knock: 22, range: 26, minRange: 3, flight: [0.35, 0.9] },   // thrown onto the reticle (range m; flight s, near → far)           // V — thermal detonator (sticky) — THE Mando area blast (radius 5.5→6.5 as the rocket shrank)
   grapple: { cost: 18, cd: 1.2, range: 26, pullSpeed: 42 },                            // C — grappling hook
   slam:  { cost: 34, dmg: 46, radius: 9, knock: 24, diveVel: 34 },                     // X (air) — jetpack slam (jet fuel)
   // (the E melee kit — string, catch, charge, dive kick, takedown — is tuned in data/duel.js MANDO_MELEE)
@@ -55,7 +64,10 @@ export const MANDO_WEAPONS = {
                hipSpread: 0.02, braceSpread: 0.006, braceDmg: 1.12, foStart: 8, foEnd: 24, foMin: 0.35 },    // a touch looser, but still honest to the reticle
   disruptor: { name: 'DISRUPTOR', fire: 'rifle', fireCd: 0.7, dmg: 150, dual: false, heat: 0.42, cool: 0.5, overCool: 0.4,
                hipSpread: 0, braceSpread: 0, braceDmg: 1, foStart: 999, foEnd: 999, foMin: 1,
-               twoHand: true, stabDmg: 38, stabCd: 0.3, stabRange: 5.2, stabStun: 2.0 },   // pinpoint sniper; else a fast electric spear
+               twoHand: true, stabDmg: 38, stabRange: 5.2, stabStun: 2.0,   // pinpoint sniper; else a fast electric spear
+               // the stab: the whole move (s), the share of it where the prongs land (chamber → drive), the gap to the next
+               // jab (a click inside the last stretch queues it), and the lunge
+               stabTime: 0.34, stabHit: 0.3, stabCd: 0.38, stabQueue: 0.14, stabLunge: 9 },
   darksaber: { name: 'DARKSABER', fire: 'saber', melee: true },                              // LMB slash; unlocked at the wave-5 fork
   fists:     { name: 'HOLSTERED', fire: 'fists', melee: true },                              // 4: weapon holstered, LMB throws the close-quarters string (not in the wheel)
 };

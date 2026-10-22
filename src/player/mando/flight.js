@@ -48,7 +48,9 @@ export function updateMandoFlight(dt, pp, f, r){
   }
   // DIRECTIONAL BOOST — HOLD SHIFT in the air to drive HARD where you're moving/facing; look DOWN to DIVE. This
   // is the committed, momentum-building, fuel-hungry thrust (the ground SHIFT tap is a dodge, handled on keydown).
-  const boostHeld = !!keys['shift'] && !player.grounded && player.jet > 0 && G.mode === 'play' && player.darkT <= 0;
+  // (the SHIFT that started a ground dive doesn't count until it's let go: mando/mobility.js)
+  if (!keys['shift']) player.shiftGround = false;
+  const boostHeld = !!keys['shift'] && !player.shiftGround && !player.grounded && player.jet > 0 && G.mode === 'play' && player.darkT <= 0;
   player.boosting = boostHeld;
   if (boostHeld){
     const jetPow = player.up.jetPow || 0.62;
@@ -62,7 +64,9 @@ export function updateMandoFlight(dt, pp, f, r){
     player.jet = Math.max(0, player.jet - MANDO.boostDrain * fuelMul * dt);
     thrust(dt, 1.4, _lh);
   }
-  const flying = player.jetActive || player.boosting;
+  // a jet dive's kick (mando/mobility.js jetDive) burns hot for a beat
+  if (player.jetKickT > 0){ player.jetKickT -= dt; if (player.flip && player.flip.dx != null) thrust(dt, 1.4, _lh.set(player.flip.dx, 0, player.flip.dz)); }
+  const flying = player.jetActive || player.boosting || player.jetKickT > 0;
   const descCap = flying ? MANDO.diveCap : MANDO.fallCap;   // DIVING (boost + look down) lets you fall much faster
   if (!player.grounded && player.vy < -descCap) player.vy = -descCap;
   // FUEL FEEDBACK — a low warning chirp as the tank runs down, and a SPUTTER the instant it goes dry mid-air

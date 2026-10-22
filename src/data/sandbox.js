@@ -7,7 +7,7 @@ import { stanceUnlocked } from './stances.js';
 import { G, player } from '../state.js';
 import { setStanceHud, switchStance } from '../player/jedi/stance.js';
 import { switchWeapon } from '../player/mando/weapons.js';
-import { applyJetTier } from '../game/progression.js';
+import { applyJetTier, applyCellTier } from '../game/progression.js';
 
 // each hero's room: the Jedi train in the temple's training room, the Mandalorian in the throne room at Sundari
 export const SANDBOX_LEVELS = {
@@ -69,6 +69,8 @@ export const SANDBOX_KIT = {
     { id: 'darksaber',  nm: 'THE DARKSABER',   key: '3', slot: 'wpn', ...weapon('darksaber') },
     { id: 'jet',        nm: 'JETPACK BOOSTER II', key: 'SPACE', has: () => (player.up.jetTier || 0) >= 2,
       set: (on) => { player.up.jetTier = on ? 2 : 0; applyJetTier(); player.jet = player.jetMax; } },
+    { id: 'cells',      nm: 'POWER CELLS III', key: 'LMB', has: () => (player.up.cellTier || 0) >= 3,
+      set: (on) => { player.up.cellTier = on ? 3 : 0; applyCellTier(); } },
     { id: 'rocket',     nm: 'WRIST ROCKET',    key: 'Q',        ...flag('rocket') },
     { id: 'flame',      nm: 'FLAMETHROWER',    key: 'F',        ...flag('flame') },
     { id: 'grapple',    nm: 'GRAPPLING HOOK',  key: 'X', slot: 'x', ...flag('grapple') },

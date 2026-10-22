@@ -188,6 +188,14 @@ function setMouseSens(v){
   const sl = document.getElementById('senssl'); if (sl && +sl.value !== G.mouseSens) sl.value = G.mouseSens;
 }
 setMouseSens(parseFloat(localStorage.getItem('sw_sens')) || 1);
+// SCOPE SENSITIVITY — mouse look while the disruptor is scoped in (engine/input.js), a share of the normal one
+function setAdsSens(v){
+  G.adsSens = Math.max(0.1, Math.min(1, isNaN(v) ? 0.4 : v));
+  try { localStorage.setItem('sw_adssens', G.adsSens); } catch(e){}
+  const sv = document.getElementById('adsval'); if (sv) sv.textContent = Math.round(G.adsSens * 100) + '%';
+  const sl = document.getElementById('adssl'); if (sl && +sl.value !== G.adsSens) sl.value = G.adsSens;
+}
+{ let v; try { v = parseFloat(localStorage.getItem('sw_adssens')); } catch(e){} setAdsSens(v); }
 // SCREEN SHAKE — scales every camera shake, roll and hit kick (0 turns them off)
 function setShakeScale(v){
   G.shakeScale = Math.max(0, Math.min(1.5, isNaN(v) ? 1 : v));
@@ -210,6 +218,9 @@ const senssl = document.getElementById('senssl'), volsl = document.getElementByI
 senssl.addEventListener('pointerdown', (e) => e.stopPropagation());
 senssl.addEventListener('click', (e) => e.stopPropagation());
 senssl.addEventListener('input', (e) => setMouseSens(parseFloat(e.target.value)));
+{ const adssl = document.getElementById('adssl');
+  adssl.addEventListener('pointerdown', (e) => e.stopPropagation()); adssl.addEventListener('click', (e) => e.stopPropagation());
+  adssl.addEventListener('input', (e) => setAdsSens(parseFloat(e.target.value))); }
 volsl.addEventListener('pointerdown', (e) => e.stopPropagation());
 volsl.addEventListener('click', (e) => e.stopPropagation());
 volsl.addEventListener('input', (e) => { audioInit(); setMasterVol(parseFloat(e.target.value)); });

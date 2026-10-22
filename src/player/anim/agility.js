@@ -11,10 +11,28 @@ import { FORM_OF } from '../../data/poses.js';
 import { MOCAP_ON, mocapAirLegs, airPhase, mocapFlip, flipTurn, flipLegs } from './mocap.js';
 import { MOCAP_MOVES } from '../../data/mocap.js';
 import { MANDO_MOBILITY } from '../../data/mobility.js';
+import { mandoAimPoint } from '../mando/weapons.js';
 
 const TAU = Math.PI * 2;
 const COM = 1.12;   // centre of mass above the feet in the hero group's space (rig hips × model scale): flips turn here
 const _e = new THREE.Euler(), _v = new THREE.Vector3();
+const _q1 = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _q3 = new THREE.Quaternion(), _qe = new THREE.Euler(), _hp = new THREE.Vector3();
+
+/* The helmet turned onto a world point (the reticle's), whatever the body is doing under it: the look it wants in the
+   world, taken into the neck's frame (which sits inside the rig's mirrored scale, so y/z flip), held to what a neck
+   can turn and eased in. For the lay-outs: the dive, the flight lean. */
+export function headToReticle(R, aim, dt, rate = 12, maxA = 1.6){
+  const h = R.head, par = h.parent;
+  par.updateWorldMatrix(true, false);
+  par.getWorldPosition(_hp);
+  const dx = aim.x - _hp.x, dy = aim.y - _hp.y - 0.25, dz = aim.z - _hp.z;
+  _q1.setFromEuler(_qe.set(-Math.atan2(dy, Math.hypot(dx, dz)), Math.atan2(dx, dz), 0, 'YXZ'));
+  par.getWorldQuaternion(_q2).invert().multiply(_q1);
+  _q2.set(_q2.x, -_q2.y, -_q2.z, _q2.w);
+  const ang = 2 * Math.acos(Math.min(1, Math.abs(_q2.w)));
+  if (ang > maxA) _q2.copy(_q3.identity().slerp(_q2, maxA / ang));
+  h.quaternion.slerp(_q2, Math.min(1, dt * rate));
+}
 
 export const formNow = () => FORM_OF[G.stance] || 'niman';
 export const agilityOf = (form = formNow()) => AGILITY[form] || AGILITY.niman;
@@ -261,18 +279,22 @@ function mandoBody(dt, dr, vis, R, fl){
     // boots toward the target, LEFT / RIGHT on his side, head first), held high through the flight. When the plate
     // hits the deck the body drops the rest of the way (the impact), skids, then gets up off one knee. Smooth curves
     // throughout: tipping over through the take-off, the drop at touchdown, easing back up.
+    // He stays squared to the reticle, so turning it mid-air rolls the lay-out round the way he's flying: dive left,
+    // look left and he comes over onto his back (the dive's world way against where the body faces, eased).
+    if (fl.dx != null){
+      const sy = Math.sin(player.faceYaw), cy = Math.cos(player.faceYaw);
+      fl.df = dr(fl.df, fl.dx * sy + fl.dz * cy, D.turn);
+      fl.dr = dr(fl.dr, -fl.dx * cy + fl.dz * sy, D.turn);
+    }
     const flat = upT < 0 ? smooth(fl.t / D.layout) : 1 - smooth(upT / D.getup);
     pitch = (fl.df >= 0 ? D.tilt.fwd : D.tilt.back) * fl.df * flat;
     bank = D.tilt.side * fl.dr * flat;
-    if (Math.abs(fl.dr) > Math.abs(fl.df)) pitch -= D.tilt.sideUp * Math.abs(fl.dr) * flat;   // a side dive lies a little on its back, chest to the target
+    pitch -= D.tilt.sideUp * fl.dr * fl.dr * flat;   // a side dive lies a little on its back, chest to the target
     // in the air the body lies at chest height; at touchdown it comes down onto the plate
     const hit = fl.landT ? smooth((fl.t - fl.landT) / D.impact) : 0;
     low = flat * (D.airDrop + (1 - D.airDrop) * hit); drop = COM - D.hips;
-    legs = upT < 0 ? (fl.df < -0.5 ? DIVE_LEGS_BACK : DIVE_LEGS) : GETUP_LEGS;
+    legs = upT < 0 ? mixLegs(DIVE_LEGS, DIVE_LEGS_BACK, smooth(clamp((-fl.df - 0.2) / 0.6, 0, 1))) : GETUP_LEGS;
     lw = upT < 0 ? flat : Math.sin(Math.PI * clamp(upT / D.getup, 0, 1));
-    // the visor stays on the target: the head counters the lay-out
-    R.head.rotation.x = dr(R.head.rotation.x, -pitch * 0.55, 18);
-    R.head.rotation.z = dr(R.head.rotation.z, -bank * 0.4, 18);
   } else {
     const S = MANDO_MOBILITY.slide;
     const sp = Math.hypot(player.moveVel.x, player.moveVel.z);
@@ -287,6 +309,8 @@ function mandoBody(dt, dr, vis, R, fl){
   _v.set(0, COM, 0).applyEuler(_e.set(pitch, 0, bank));
   vis.position.set(-_v.x, COM - _v.y - drop * low, -_v.z);
   poseLegs(R, dr, legs, lw, 20);
+  // the visor stays on the reticle through the lay-out, however it's rolled
+  if (fl.kind === 'dive') headToReticle(R, mandoAimPoint(), dt, 18);
 }
 
 /* After the Mando pose: the dive and the slide pose the whole body (mandoBody), the rocket boost becomes a

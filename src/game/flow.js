@@ -79,7 +79,7 @@ export function startLevel(idx, opts){
   player.firing = false; player.trigHeld = false; player.shieldDropT = 0; player.fireCd = 0; player.flaming = false; player.jetActive = false; player.boosting = false; player.meleeT = 0; player.lockOn = false;
   catchDarksaber(true);   // a thrown Darksaber goes back in the hand before the next fight
   player.darkT = 0; player.darkApplied = false; if (player.darksaberMesh) player.darksaberMesh.visible = false;
-  player.zoom = false; player.aiming = 0; player.recoilKick = 0; player.stabT = 0; player.heat = 0; player.overheat = false; player.ventT = 0;
+  player.zoom = false; player.aiming = 0; player.recoilKick = 0; player.stabT = 0; player.stabQ = false; player.stabCdT = 0; player.missileT = 0; player.heat = 0; player.overheat = false; player.ventT = 0;
   player.jet = player.jetMax;
   // a fresh campaign starts with the basic blasters; mid-campaign keep the equipped (if still unlocked)
   if (idx === 0 || !weaponUnlocked(player.weapon)) player.weapon = 'single';
@@ -136,7 +136,7 @@ export function startLevel(idx, opts){
     player.up = { dmg: 1, forceRegen: 1, move: 1, knock: 1, parry: 0, lifesteal: 0, hpMax: 0, dashCdMult: 1, stamRegen: 1,
                   atkSpeed: 1, dr: 0, blockStam: 1, riposte: 1, parryForce: 0,
                   fireRate: 1, fuelEff: 1, flameDmg: 1, flameRange: 1, rocketDmg: 1, rocketR: 1, braceDR: 0, aim: 0, darksaber: false, abilityCostMul: 1,
-                  jetTier: 0, jetPow: 0.62, fjTier: 0 };
+                  jetTier: 0, jetPow: 0.62, fjTier: 0, cellTier: 0, heatCap: 1, heatCool: 1 };
     player.boon = {}; player.boons = {}; player.momentumStacks = 0; player.momentumT = 0; player.phoenixReady = false;   // ROGUELITE BOONS
     player.focus = 0; player.focusHitT = 0; player._focusTier = 0;   // FORCE FOCUS meter
     player.skills = {};

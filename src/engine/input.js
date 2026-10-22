@@ -43,9 +43,11 @@ import { forceStrike } from '../player/jedi/palm.js';
 const inputActive = () => document.pointerLockElement === renderer.domElement || (shared.lockFallback && G.mode === 'play');
 document.addEventListener('mousemove', (e) => {
   if (!inputActive()) return;
-  G.yaw -= e.movementX * 0.0023 * G.mouseSens;
+  // scoped in (the disruptor's 30° zoom) the look slows to the SCOPE SENS setting, or the reticle flies off the target
+  const sens = G.mouseSens * (G.hero === 'mando' && player.zoom ? G.adsSens : 1);
+  G.yaw -= e.movementX * 0.0023 * sens;
   // allow looking well UP (was capped at -0.15, so you couldn't aim high on the ground) as well as down
-  G.pitch = clamp(G.pitch + e.movementY * 0.0021 * G.mouseSens, -0.62, 1.2);
+  G.pitch = clamp(G.pitch + e.movementY * 0.0021 * sens, -0.62, 1.2);
 });
 document.addEventListener('mousedown', (e) => {
   if (!inputActive()) return;

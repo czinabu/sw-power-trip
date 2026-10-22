@@ -124,12 +124,15 @@ function overShoulder(dir, side){
 }
 
 /* DISRUPTOR shouldered: gun hand by the weapon-side collarbone, rifle down the aim line, off hand on the foregrip. */
-export function riflePose(dt, R, player, worldAim){
+// thrust: the disruptor's spear stab (-0.3 chambered back … 1 at full reach): the stock comes off the shoulder to
+// the hip line and both hands drive it down the aim, the chest squaring into it
+export function riflePose(dt, R, player, worldAim, thrust = 0){
   draw.rifle += (1 - draw.rifle) * Math.min(1, dt * 14);
-  R.chest.rotation.y += (-0.38 - R.chest.rotation.y) * Math.min(1, dt * 10);   // bladed behind the stock
+  const stab = thrust !== 0;
+  R.chest.rotation.y += (-0.38 + Math.max(0, thrust) * 0.34 - R.chest.rotation.y) * Math.min(1, dt * (stab ? 24 : 10));   // bladed behind the stock
   const dir = aimFrom(R.chest, _p.set(0.1, 0.3, 0), worldAim, _aim);
   const rec = player.recoil || 0;
-  _h.set(0.13, 0.17 - rec * 0.05, 0.2 - rec * 0.1).addScaledVector(dir, 0.08);
+  _h.set(0.13, 0.17 - rec * 0.05 - (stab ? 0.14 : 0), 0.2 - rec * 0.1).addScaledVector(dir, 0.08 + thrust * 0.36);
   solveArm(R.armR, _h, POLE_R);
   R.armR.wr.updateWorldMatrix(true, false);
   _d.copy(dir); _d.y += rec * 0.35; _d.normalize();

@@ -131,7 +131,7 @@ export const TRAINING = {
     { say: 'Beskar is heavy. Do not hop the crates: run straight at one and climb over it without stopping.',
       keys: 'W · SPACE', do: 'Run right up to a crate on the west lane and press SPACE at its edge', ev: 'vault', need: 1, mark: [-11, 8] },
     { say: 'Do not stand where the shot is going.',
-      keys: 'SHIFT', do: 'Dive on the ground (SHIFT twice for the rocket boost)', ev: 'dash', need: 2 },
+      keys: 'SHIFT', do: 'Dive on the ground (SHIFT again mid-dive lights the jetpack)', ev: 'dash', need: 2 },
 
     { sec: 'THE JETPACK', say: 'I have reforged your booster. The jetpack is not for running. It is for the high ground. Take the lookout.',
       keys: 'HOLD SPACE', do: 'Fly to the top of the lookout', reach: [13.6, -9.4, 7.7], grant: 'jet1' },
