@@ -12,28 +12,28 @@ const CONTROLS = {
       ['HOLD SPACE', 'Force leap and glide', 'Spends Force'],
       ['SHIFT', 'Roll / dash', 'In a fight, SHIFT on the ground is a quick roll any way you press: it costs some stamina (Ataru least, Djem So most), with a moment of invulnerability · tap it again mid-roll (or press it in the air) to Force dash, which spends a charge (the pips on the slot) and some Force · out of a fight it just dashes, free · roll or dash just as a blow lands for a perfect dodge'],
       ['Q', 'Run / walk', 'Switches between run (the default; forward sprints) and walk; the sprint turns wide, and in a fight it burns stamina (it gives out before your guard does), the walk is a brisk, menacing pace, fights included'],
-      ['ALT', 'Force slide', 'Out of a sprint: a long skid forward that ducks blaster fire and bowls troops over · attack out of it to sweep'],
+      ['ALT', 'Force slide', 'Out of a sprint: a long skid forward that ducks blaster fire and bowls troops over · attack out of it to sweep', 1],
     ]},
     { title: 'PARKOUR', rows: [
       ['SPACE', 'Vault / climb', 'Press it right in front of low cover while running at it to vault over in one move; jump at a ledge to pull up'],
-      ['A / D', 'Ledge hang', 'Catch a high lip to hang; A/D shimmy, W or SPACE climbs, S drops'],
-      ['W', 'Wall-run', 'Jump alongside a tall wall at speed; SPACE kicks off it'],
-      ['FLOW', 'Parkour pays', 'Every vault, climb, slide, wall-run and roll refunds Force; chain different moves for more, and the cut right after one hits harder'],
-      ['SHIFT', 'Landing roll', 'Just before a hard landing, or you stagger'],
+      ['A / D', 'Ledge hang', 'Catch a high lip to hang; A/D shimmy, W or SPACE climbs, S drops', 1],
+      ['W', 'Wall-run', 'Jump alongside a tall wall at speed; SPACE kicks off it', 1],
+      ['FLOW', 'Parkour pays', 'Every vault, climb, slide, wall-run and roll refunds Force; chain different moves for more, and the cut right after one hits harder', 1],
+      ['SHIFT', 'Landing roll', 'Just before a hard landing, or you stagger', 1],
     ]},
     { title: 'FIGHT', rows: [
       ['LMB', 'Saber combo', 'The key you hold picks the cut: A / D sweep sideways, W chops overhead, S whirls behind you; every third is a finisher'],
       ['HOLD RMB', 'Block', 'Soaks most of a blow; heavy hits drain stamina'],
       ['TAP RMB', 'Parry and deflect', 'Time it as a blow or bolt lands; a missed parry can\'t be retried for a moment'],
       ['E', 'Kick', 'Shoves a foe back and cracks a duellist\'s guard'],
-      ['IN THE AIR', 'A leap is a commitment', 'Mid-fight you steer less, can\'t hold a guard, and a blow that lands hits harder and drops you · Ataru keeps its timed parry and its control up there'],
-      ['W + AIR + LMB', 'Aerial cut', 'Leaping forward: a short lunge and a cut at the foe ahead · costs Force, 3s cooldown · a standing jump just swings'],
-      ['LMB', 'Saber lock', 'Blades bound: mash to drive through · E kicks out · F shoves'],
-      ['T / MMB', 'Lock on', 'Keeps one foe framed; press again to release'],
+      ['IN THE AIR', 'A leap is a commitment', 'Mid-fight you steer less, can\'t hold a guard, and a blow that lands hits harder and drops you · Ataru keeps its timed parry and its control up there', 1],
+      ['W + AIR + LMB', 'Aerial cut', 'Leaping forward: a short lunge and a cut at the foe ahead · costs Force, 3s cooldown · a standing jump just swings', 1],
+      ['LMB', 'Saber lock', 'Blades bound: mash to drive through · E kicks out · F shoves', 1],
+      ['T / MMB', 'Lock on', 'Keeps one foe framed; press again to release', 1],
       ['1 / 2 / 3', 'Saber form', 'Or the mouse wheel'],
-      ['G', 'Switch grip', 'Regular or reverse; swings hit the same either way'],
-      ['4', 'Holster saber', 'Fight with the Force alone, both hands free: LMB throws palm strikes (every third is a burst), RMB wards, Force powers hit 20% harder and Force refills faster · 4 again draws'],
-      ['RMB + SPACE', 'Evasive leap', 'Jump while blocking to vault clear · in a fight it spends a dash charge and is only safe at its start'],
+      ['G', 'Switch grip', 'Regular or reverse; swings hit the same either way', 1],
+      ['4', 'Holster saber', 'Fight with the Force alone, both hands free: LMB throws palm strikes (every third is a burst), RMB wards, Force powers hit 20% harder and Force refills faster · 4 again draws', 1],
+      ['RMB + SPACE', 'Evasive leap', 'Jump while blocking to vault clear · in a fight it spends a dash charge and is only safe at its start', 1],
     ]},
     { title: 'FORCE POWERS', rows: [
       ['F', 'Push', 'From the start'],
@@ -50,26 +50,26 @@ const CONTROLS = {
       ['SPACE', 'Hop', 'Run and hop at low cover to vault it; hop at a ledge to climb'],
       ['HOLD SPACE', 'Jetpack thrust', 'Hover and climb; burns fuel'],
       ['SHIFT', 'Combat dive', 'On the ground SHIFT dives you flat any way you press, Max Payne style, on your legs alone (no jet fuel), then you get back up: free, invulnerable through the throw, and the gun stays on target · turn the crosshair mid-dive and the lay-out rolls with it (dive left, look left, land on your back) · dive just as a blow lands for a perfect dodge'],
-      ['SHIFT x2', 'Jet dive / rocket boost', 'SHIFT again while the dive is in the air lights the pack and throws it much farther (hold it to fly on) · just after a dive lands, the full rocket boost · both spend jet fuel'],
-      ['SHIFT (air)', 'Air dodge', 'A straight thruster kick any way you press, invulnerable for a moment, and it stops your fall · spends a jet charge (the pips on the slot) and a little fuel'],
-      ['HOLD SHIFT', 'Boost in the air', 'Keep SHIFT held after the dodge: he lays out the way you fly, Max Payne style, guns up on the crosshair · look down to dive'],
-      ['HOLD RMB (air)', 'Hover', 'Hold your height and strafe; let go of the keys to stop dead'],
-      ['ALT / C', 'Slide', 'Feet first, out of any run, aiming too · carries far, steers a little, ducks blaster fire and keeps your aim steady · jump out of it for a long hop'],
+      ['SHIFT x2', 'Jet dive / rocket boost', 'SHIFT again while the dive is in the air lights the pack and throws it much farther (hold it to fly on) · just after a dive lands, the full rocket boost · both spend jet fuel', 1],
+      ['SHIFT (air)', 'Air dodge', 'A straight thruster kick any way you press, invulnerable for a moment, and it stops your fall · spends a jet charge (the pips on the slot) and a little fuel', 1],
+      ['HOLD SHIFT', 'Boost in the air', 'Keep SHIFT held after the dodge: he lays out the way you fly, Max Payne style, guns up on the crosshair · look down to dive', 1],
+      ['HOLD RMB (air)', 'Hover', 'Hold your height and strafe; let go of the keys to stop dead', 1],
+      ['ALT / C', 'Slide', 'Feet first, out of any run, aiming too · carries far, steers a little, ducks blaster fire and keeps your aim steady · jump out of it for a long hop', 1],
       ['FLOW', 'Parkour pays', 'Vaults, climbs and slides refuel the jetpack; shots right after one hit harder'],
     ]},
     { title: 'FIGHT', rows: [
       ['LMB', 'Fire', 'Headshots deal far more damage'],
       ['R', 'Vent heat', 'Cool down before you overheat'],
       ['HOLD RMB', 'Brace / shield / scope', 'Depends on the weapon in hand · scoped look speed is the SCOPE SENS setting'],
-      ['LMB (disruptor)', 'Spear stab', 'Unscoped, the disruptor is an electric spear: a quick thrust that lunges in and stuns · click again to keep jabbing'],
+      ['LMB (disruptor)', 'Spear stab', 'Unscoped, the disruptor is an electric spear: a quick thrust that lunges in and stuns · click again to keep jabbing', 1],
       ['E', 'Close quarters', 'Jab, cross, knee, vibroblade · tap E as a blow lands to catch it on the vambrace'],
-      ['W + E', 'Jet charge', 'Burn in and shoulder-check a foe a few strides ahead'],
-      ['SPACE + E', 'Dive kick', 'In the air: drop boot-first onto a foe below'],
-      ['RMB + E', 'Shield and blade', 'Single blaster: vibroblade cuts and a shield bash with the shield kept up · costs stamina'],
-      ['E', 'Takedown', 'On a staggered or floored foe: finish it'],
+      ['W + E', 'Jet charge', 'Burn in and shoulder-check a foe a few strides ahead', 1],
+      ['SPACE + E', 'Dive kick', 'In the air: drop boot-first onto a foe below', 1],
+      ['RMB + E', 'Shield and blade', 'Single blaster: vibroblade cuts and a shield bash with the shield kept up · costs stamina', 1],
+      ['E', 'Takedown', 'On a staggered or floored foe: finish it', 1],
       ['1 / 2 / 3', 'Switch weapon', 'Or the mouse wheel'],
-      ['RMB + LMB', 'Darksaber throw', 'Darksaber in hand: hurl it, and the grappling line reels it back through anything in its path'],
-      ['4', 'Holster', 'Take a fighting stance with fists and gadgets: LMB / E swing hook, hook, uppercut, haymaker, hold RMB for the gauntlet shield (LMB behind it cuts shield and blade), and gadget power refills faster · 4 or 1 / 2 / 3 draws'],
+      ['RMB + LMB', 'Darksaber throw', 'Darksaber in hand: hurl it, and the grappling line reels it back through anything in its path', 1],
+      ['4', 'Holster', 'Take a fighting stance with fists and gadgets: LMB / E swing hook, hook, uppercut, haymaker, hold RMB for the gauntlet shield (LMB behind it cuts shield and blade), and gadget power refills faster · 4 or 1 / 2 / 3 draws', 1],
     ]},
     { title: 'GADGETS', rows: [
       ['F', 'Flamethrower', 'Unlocks after wave 2'],
@@ -105,6 +105,8 @@ const TIPS = {
   ],
 };
 
+let showAll = false;
+export function toggleControlsDetail(hero){ showAll = !showAll; renderControls(hero); }
 function keycaps(keys){
   return keys.split(' ').map(k => (k === '/' || k === '+') ? '<span>' + k + '</span>' : '<kbd>' + k + '</kbd>').join('');
 }
@@ -114,12 +116,15 @@ export function renderControls(hero){
   let html = '';
   for (const g of groups){
     html += '<div class="cg"><h4>' + g.title + '</h4>';
-    for (const [keys, action, note] of g.rows)
-      html += '<div class="cr"><div class="ck">' + keycaps(keys) + '</div><div class="ca">' + action + (note ? '<small>' + note + '</small>' : '') + '</div></div>';
+    for (const [keys, action, note, adv] of g.rows)
+      html += '<div class="cr' + (adv ? ' adv' : '') + '" tabindex="0"><div class="ck">' + keycaps(keys) + '</div><div class="ca">' + action + (note ? '<small>' + note + '</small>' : '') + '</div></div>';
     html += '</div>';
   }
-  html += '<div class="cg wide"><h4>GOOD TO KNOW</h4><ul class="tips">' + TIPS[hero].map(t => '<li>' + t + '</li>').join('') + '</ul></div>';
+  html += '<div class="cg wide adv"><h4>GOOD TO KNOW</h4><ul class="tips">' + TIPS[hero].map(t => '<li>' + t + '</li>').join('') + '</ul></div>';
   el.innerHTML = html;
+  el.classList.toggle('all', showAll);
+  const more = document.getElementById('howtomore');
+  if (more) more.textContent = showAll ? 'SHOW LESS' : 'SHOW ALL MOVES';
   const tabs = document.getElementById('howtohero');
   if (tabs){
     tabs.innerHTML = '<span data-h="jedi" class="' + (hero === 'jedi' ? 'on' : '') + '">JEDI</span>' +

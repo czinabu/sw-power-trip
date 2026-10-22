@@ -17,7 +17,7 @@ import { closeSandboxPanel } from './sandbox-ui.js';
 import { MISSIONS } from '../data/missions.js';
 import { closeProgress } from './store-ui.js';
 import { DIFFS } from '../data/difficulty.js';
-import { renderControls } from './controls.js';
+import { renderControls, toggleControlsDetail } from './controls.js';
 import { svgIcon } from './icons.js';
 import { setRoadmap } from './roadmap.js';
 import { enterFullscreenIfWanted, escapeIsOurs } from './fullscreen.js';
@@ -269,6 +269,7 @@ howto.addEventListener('click', (e) => {
   e.stopPropagation();   // reading the help must never launch or resume the game
   const tab = e.target.closest('[data-h]');
   if (tab) renderControls(tab.dataset.h);
+  else if (e.target.id === 'howtomore') toggleControlsDetail(document.querySelector('#howtohero .on').dataset.h);
   else if (e.target === howto) setHowTo(false);   // click the backdrop to close
 });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && howto.classList.contains('open')) setHowTo(false); });
