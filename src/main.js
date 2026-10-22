@@ -32,7 +32,7 @@ import { bomberExplode } from './enemies/specials.js';
 import { spawnEnemy } from './enemies/spawn.js';
 import { damageEnemy } from './enemies/damage.js';
 import { updateEnemies } from './enemies/ai.js';
-import { updateBolts, updateOrbs } from './enemies/bolts.js';
+import { updateBolts, updateOrbs, fireBolt } from './enemies/bolts.js';
 import { updateGrenades, grenades, pushGrenades } from './enemies/grenades.js';
 import { RAMP, TROOP_MELEE, TROOP_FIRE, PINCER, ORDERS, GRENADE, LUNGE } from './data/tactics.js';
 import { tacticsRamp } from './enemies/tactics.js';
@@ -152,7 +152,7 @@ tick();
 /* expose configs + API for live tweaking and future edits (dev console) */
 window.GAME = { partnerShown, CFG, ENEMY_TYPES, LEVELS, BOSS_CFG, BOSS_MANDO, STANCES, SKILLS, MANDO, MANDO_WEAPONS, G, enemies, player, pillars, solids, rockets, bolts,
   startLevel, startWave, spawnEnemy, startTutorial, startMission, skipObjective, startSandbox, sandboxSpawn, sandboxClear, setSandboxKit, sandboxKitAll, missionState, skipStep, trainingProgress, spawnBoss, queueSpawn, checkUnlocks, switchStance, setHero,
-  openSkillTree, damageEnemy, damageBoss, updateHud, nextStoreGoal, enemyHpScale, eliteChance, ELITES, cycleQuality, forceBarrier, forceMend, updatePlayer, updateEnemies, updateBolts, endRun, updateFlow, startEndless, startEndlessWave, genEndlessWave, MUTATORS, ENDLESS_POWERS, buyPower, keys, camera, SEE,
+  openSkillTree, damageEnemy, damageBoss, updateHud, nextStoreGoal, enemyHpScale, eliteChance, ELITES, cycleQuality, forceBarrier, forceMend, updatePlayer, updateEnemies, updateBolts, fireBolt, endRun, updateFlow, startEndless, startEndlessWave, genEndlessWave, MUTATORS, ENDLESS_POWERS, buyPower, keys, camera, SEE,
   tryAttack, castGesture, forcePush, forceSlam, forceRepulse, stance, applySwingDamage, spawnChampion, startWave, bomberExplode, MUSIC, audioInit,
   spawnBoss, updateBoss, bossStagger, BOSS_CFG, BOSS_MANDO, rings,
   BOONS, BOON_BY_ID, rollBoons, pickBoon, hurtPlayer, abil, MASTERY_JEDI, MASTERY_MANDO, masteryOffers, buyMastery,

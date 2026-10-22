@@ -43,7 +43,7 @@ function fireAt(e, tgtPos, spread){
   const muzzle = V3(g.position.x, g.position.y+1.5, g.position.z);
   const aimDir = V3(tgtPos.x, tgtPos.y + 1.4, tgtPos.z).sub(muzzle).normalize();
   if (spread){ aimDir.x += rand(-spread, spread); aimDir.y += rand(-spread, spread) * 0.5; aimDir.z += rand(-spread, spread); aimDir.normalize(); }
-  fireBolt(muzzle, aimDir, t.boltSpeed * (G.mut === 'marksmen' ? 1.4 : 1), (e.converted ? t.dmg * CFG.convertDmgMult : t.dmg) * enemyDmgScale(), e.converted);
+  fireBolt(muzzle, aimDir, t.boltSpeed * (G.mut === 'marksmen' ? 1.4 : 1), (e.converted ? t.dmg * CFG.convertDmgMult : t.dmg) * enemyDmgScale(), e.converted, false, e);
 }
 
 /* is there real cover between a melee foe and its target, tall enough that a swing can't reach over it? A solid the

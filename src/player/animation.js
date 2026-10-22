@@ -391,7 +391,7 @@ function animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait){
     }
     if (player.atkT <= 0){
       player.lastAtkEnd = G.gt;
-      vis.rotation.y = 0;
+      if (!sw.recoil) vis.rotation.y = 0;   // (a recoil ends partway round: the guard eases the body back square, no pop)
       player._swingDrop = 0;
       if (player.queuedAtk){ player.queuedAtk = false; tryAttack(); }   // buffered combo
     }

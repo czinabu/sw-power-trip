@@ -22,6 +22,7 @@ export const STANCES = {
             comboGap: 1.25, fovKick: 6,
             moveAtk: 1.5,         // PASSIVE: keeps most of its footwork mid-swing (every other form plants its feet) — kite while you cleave
             finisherArc: 1.1,     // the finisher cleaves ~10% wider — built for crowds
+            deflectScatter: 0.1,  // LORE: Ataru is a duelling form with little answer to blaster fire — deflects spray (rad)
             castMul: 0.65,        // SYNERGY: snappy Force casts — the gesture fires ~35% faster
             gait: { amp: 1.0, lift: 1.3, bob: 0.45, lean: 1.25 },   // MOVEMENT: light, high-kneed, springy — a duelist on the balls of their feet
             syn: 'CROWDS · snappy Force casts · keeps moving while attacking · WEAK vs armor' },
@@ -30,6 +31,7 @@ export const STANCES = {
             radiusMult: 1.0, cdMult: 0.65, parryBonus: 0.10, comboGap: 1.0, fovKick: 0,
             parryRefund: 16,      // PASSIVE: the duelist's form — a clean parry feeds extra Force back
             blockStamMul: 0.55,   // SYNERGY: economical guard — blocking/parrying drains far less stamina
+            deflectScatter: 0.05, // LORE: Niman, the jack of all forms — deflects go back roughly down the line (rad)
             gait: { amp: 1.08, lift: 1.0, bob: 0.4, lean: 1.0 },   // MOVEMENT: smooth, balanced, even strides
             syn: 'VERSATILE · −35% cooldowns · widest parry · cheap guard · parries refund +Force' },
   strong: { name: 'DJEM SO — STRONG', form: 'djemso', formNo: 'V', blade: 0xb24bff,
@@ -42,6 +44,7 @@ export const STANCES = {
             atkDR: 0.15,          // PASSIVE: armored commitment — soak 15% damage WHILE mid-swing
             finisherLunge: 1.6,   // the 3rd hit lunges harder, carrying the heavy blade through
             finisherKnock: true,  // the finisher ALWAYS floors what it hits (brutes included)
+            deflectScatter: 0.02, // LORE: Form V's Shien variant — redirected fire goes home to the shooter (rad)
             powerScale: 1.35, powerCostMul: 1.3,   // SYNERGY: Force powers hit with BRUTE scale (+35% radius/knock) but cost +30% Force
             gait: { amp: 1.2, lift: 0.78, bob: 0.85, lean: 0.8 },   // MOVEMENT: long, heavy, planted strides — a juggernaut's weighty stomp
             syn: 'BRUTES & BOSS · 15% DR mid-swing · finisher floors · BIG but costly Force powers' },
@@ -53,6 +56,7 @@ export const STANCES = {
             dmg: 2.8, heavyDmg: 2.6, speed: 0.55, knock: 1.6, stamina: 26, lunge: 1.4, move: 0.92, accel: 0.7, twist: 0.95, bladeLen: 1.2,
             radiusMult: 1.12, forceRegen: 1.0, dashCd: 1.2, comboGap: 0.6, fovKick: -3,
             parryBonus: -0.05, moveAtkPenalty: 0.32,   // smallest parry window · crawls while mid-swing
+            deflectScatter: 0.12, // no Jedi training: a bolt off the darksaber goes back loosely (rad)
             syn: 'DARKSABER · devastating but SLOW & clumsy · huge stamina · tiny parry — time it, do not spam' },
 };
 export const STANCE_ORDER = ['fast', 'medium', 'strong'];   // the darksaber is NOT here — it's auto-selected, never cycled
