@@ -85,11 +85,12 @@ export const CFG = {
     shoulder: 0.2,            // Jedi lens sits this far right of the spine: almost centred, like Jedi Academy
     // JEDI — Jedi Academy's rig: a short, steady boom (its range is 80 units, about 1.25 hero heights) whose aim runs
     // far down the line of sight, so the hero sits big and low-centre and the view swings around them, not past them
-    jediDist: 3.5,            // resting follow distance (the Mando uses mandoDist)
+    jediDist: 4.1,            // resting follow distance (the Mando uses mandoDist)
     jediLookAhead: 12,        // the Jedi lens aims this far past the hero (JA projects its focus far down the view)...
     jediLookUp: 0.2,          // ...and this much over the pivot
     jediLensUp: 0.35,         // the Jedi lens rides this much over the pivot: just enough to see a foe ahead over the hero's shoulders
-    jediFrame: 0.45,          // share of the crowd / calm framing the Jedi takes: JA's range never breathes, so keep it steady
+    jediFrame: 0.7,           // share of the crowd / calm framing the Jedi takes (JA's range never breathes; a pack still needs the room)
+    jediDownPull: 1.6,        // looking DOWN over a brawl draws the Jedi lens back up to this much, so the whole pack fits under it
     jediRunPull: 0.6,         // most the Jedi lens drops back while running flat out
     lookAhead: 5,             // the lens aims this far past the hero...
     lookUp: -0.15,            // ...and this high over the pivot (a hair under it keeps the hero's boots in frame)
