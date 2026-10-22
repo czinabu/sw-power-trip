@@ -162,7 +162,7 @@ export function updateCamera(dt){
   const clear = v => { const k = cameraClearance(hx, ty, hz, v.x, v.y, v.z); if (k < 1) v.set(hx + (v.x - hx)*k, ty + (v.y - ty)*k, hz + (v.z - hz)*k); };
   clear(TMP);
   // INERTIA — the camera lags when you boost / fly fast (a weighty swoop), but snaps tight when you're AIMING
-  const lagBase = (adsFly) ? 0.00002 : (G.hero === 'mando' && (player.boosting || speed > 14)) ? 0.02 : 0.00004;
+  const lagBase = (adsFly) ? 0.000004 : (G.hero === 'mando' && (player.boosting || speed > 14)) ? 0.02 : 0.000008;
   // (frozen sim: dt = 0 would leave the lens stuck on the last pause cut, so the FOV preview snaps straight to the gameplay spot)
   camera.position.lerp(TMP, G.fovPreview ? 1 : 1 - Math.pow(lagBase, dt));
   // SHAKE — trauma model: strength is shake², so chip damage barely registers and a boss slam rattles the screen.
