@@ -3,7 +3,7 @@
 
 import { scene } from '../engine/renderer.js';
 import { V3 } from '../utils.js';
-import { vfx } from '../state.js';
+import { vfx, G, player } from '../state.js';
 import { flashLight } from './lights.js';
 import { inkSprite, sparks, hitSpark, clashFlash, groundRing, updateInk } from './ink.js';
 
@@ -38,8 +38,13 @@ export function spawnPushWave(pos, dir, color, power){
   ripple(0, 1, 1);
   ripple(0.06, 0.7, 0.8);
   // the palm burst + speed lines thrown down the push
-  inkSprite({ pos: start, shape: 'star', points: 6, sharp: 0.3, color, size: [0.35, 0.9 + 0.4*power], life: 0.14, steps: 2, coreW: 0.45 });
-  sparks(start, color, Math.round(10 + 8*power), 28 + 10*power, { dir, cone: 0.32, life: 0.26, grav: 0, stretch: 5, size: 0.5 });
+  // saber holstered: both palms throw the push, so the burst and speed lines leave a hand each
+  const hands = player.holstered && G.hero !== 'mando' ? [-0.3, 0.3] : [0];
+  for (const side of hands){
+    const at = hands.length > 1 ? V3(start.x - dir.z*side, start.y - 0.15, start.z + dir.x*side) : start;
+    inkSprite({ pos: at, shape: 'star', points: 6, sharp: 0.3, color, size: [0.35, 0.9 + 0.4*power], life: 0.14, steps: 2, coreW: 0.45 });
+    sparks(at, color, Math.round((10 + 8*power) / hands.length), 28 + 10*power, { dir, cone: 0.32, life: 0.26, grav: 0, stretch: 5, size: 0.5 });
+  }
 }
 // a bright impact at the point a blade connects — cel star, shock ring and streak sparks
 export function spawnHitSpark(pos, color, power){

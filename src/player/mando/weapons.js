@@ -316,14 +316,15 @@ export function mandoFlame(){   // keydown cue only — the stream itself is HEL
   S.jetIgnite();   // the pilot catches — the roar itself is a loop in audio/director.js
 }
 const FLAME = [[0, 0xfff1b8], [0.14, 0xffd34a], [0.36, 0xff8a2a], [0.6, 0xc8461e], [0.78, 0x4a3c36]];
+// the flame's glow light lives in the scene from load at intensity 0, so the first burst doesn't change the light count
+const flameLight = new THREE.PointLight(0xff7a2a, 0, 11);
+scene.add(flameLight);
 export function updateFlame(dt){
   const A = abil('flame');
   const active = G.hero === 'mando' && G.unlocked.flame && !!keys['f'] && player.force > 4 && G.mode === 'play' && player.darkT <= 0;
   player.flaming = active;
-  if (!player.flameLight){ player.flameLight = new THREE.PointLight(0xff7a2a, 0, 11); player.flameLight.visible = false; scene.add(player.flameLight); }
-  const fl = player.flameLight;
-  fl.intensity += ((active ? 5.5 + Math.random()*1.5 : 0) - fl.intensity) * Math.min(1, dt*14);
-  fl.visible = fl.intensity > 0.05;
+  const fl = player.flameLight || (player.flameLight = flameLight);
+  fl.intensity += ((active ? 5.5 + Math.random()*1.5 : 0) - fl.intensity) * Math.min(1, dt*14);   // faded, never toggled: a light count change recompiles every shader (the first-flame hitch)
   if (!active) return;
   player.force = Math.max(0, player.force - A.fuel * (player.up.abilityCostMul || 1) * dt);
   const pp = playerPos();

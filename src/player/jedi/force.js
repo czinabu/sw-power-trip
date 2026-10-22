@@ -200,11 +200,9 @@ function spawnPlayerRing(pos, maxR, color){
               ease: 3, life: 0.5, delay: 0.06, op: 0.6, fadeAt: 0.3, coreW: 0.25, inkW: 0.3 });
 }
 
-let _throwLight = null;
-function throwLight(){
-  if (!_throwLight){ _throwLight = new THREE.PointLight(0xffffff, 0, 8); scene.add(_throwLight); }
-  return _throwLight;
-}
+const _throwLight = new THREE.PointLight(0xffffff, 0, 8);   // in the scene from load (a light added mid-fight recompiles every shader)
+scene.add(_throwLight);
+function throwLight(){ return _throwLight; }
 export function saberThrow(){
   const A = abil('throw');
   const cost = fcost(A.cost);
