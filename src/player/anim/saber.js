@@ -258,6 +258,13 @@ export function deflectPose(dt, R, held, grip, form, d){
     slerpDir(P.blade, P.flickBlade, t, saberPose.blade);
     saberPose.twist = P.twist;
   }
+  // a catch turned into a twirl (data/poses.js DEFLECT_SPINS): the blade wheels once about the hand on its way to the
+  // catch and back, and is on the catch's line again by the flick. The reverse grip keeps its blade along the forearm.
+  const sp = d.spin;
+  if (sp && sp.twirl && grip === 'regular'){
+    const p = Math.min(1, k / 0.6);
+    saberPose.blade.applyAxisAngle(TWIRL_AXIS, -Math.PI * 2 * sp.twirl * sp.side * (p - Math.sin(Math.PI * 2 * p) / (Math.PI * 2))).normalize();
+  }
   saberPose.pole.lerp(P.pole, Math.min(1, dt * 30)).normalize();
   // the form's block decides the hands: Djem So closes both on the hilt, Ataru and Niman keep the free hand out
   saberPose.two += ((bg.two ? 1 : 0) - saberPose.two) * Math.min(1, dt * 14);
