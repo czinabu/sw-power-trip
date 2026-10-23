@@ -10,16 +10,23 @@ import { V3, rand } from '../utils.js';
 import { burst } from './particles.js';
 import { flashLight } from './lights.js';
 import { shared } from '../state.js';
+import { playerPos } from '../player/helpers.js';
 
 const N = 16;
 const geo = new THREE.CapsuleGeometry(0.12, 1.6, 2, 5);
 const pool = [];
 const B = { on: false, boomT: 0, ally: 0x4aa8ff, foe: 0xff3322 };
 
+// where the wider battle sits: past the arena's walls, or on a battle map (far bigger) just out to the hero's sides
+function field(){
+  if (!shared.arenaBig) return { cx: 0, cz: 0, h: shared.arenaHalf, hz: shared.arenaHalfZ };
+  const p = playerPos();
+  return { cx: p.x, cz: p.z, h: 34, hz: 34 };
+}
 function lane(){
-  // a lane of fire out past one side of the arena, running across the line between the armies
-  const h = shared.arenaHalf, hz = shared.arenaHalfZ, side = Math.random() < 0.5 ? -1 : 1;
-  const x = side * (h + rand(6, 26)), z0 = rand(-hz, hz * 0.4), dir = Math.random() < 0.5 ? 1 : -1;
+  // a lane of fire out past one side of the fight, running across the line between the armies
+  const { cx, cz, h, hz } = field(), side = Math.random() < 0.5 ? -1 : 1;
+  const x = cx + side * (h + rand(6, 26)), z0 = cz + rand(-hz, hz * 0.4), dir = Math.random() < 0.5 ? 1 : -1;
   return { from: V3(x, rand(1.5, 9), z0), vel: V3(rand(-4, 4), rand(-0.5, 0.8), dir * rand(55, 80)) };
 }
 export function startBattleFx(allyColor){
@@ -53,8 +60,8 @@ export function updateBattleFx(dt){
   // artillery on the horizon: a flash, a plume, a far-off thump
   if ((B.boomT -= dt) <= 0){
     B.boomT = rand(1.6, 4.2);
-    const h = shared.arenaHalf, hz = shared.arenaHalfZ, a = rand(0, Math.PI * 2), r = rand(1.15, 1.6);
-    const p = V3(Math.cos(a) * h * r, 0.5, Math.sin(a) * hz * r);
+    const { cx, cz, h, hz } = field(), a = rand(0, Math.PI * 2), r = rand(1.15, 1.6);
+    const p = V3(cx + Math.cos(a) * h * r, 0.5, cz + Math.sin(a) * hz * r);
     burst(V3(p.x, 2, p.z), 0xffae2a, 14, 10, 9, 1.6); burst(V3(p.x, 3, p.z), 0x555555, 10, 4, 6, 2.2);
     flashLight(0xffae2a, 4, 40, V3(p.x, 6, p.z), 0.35);
     S.boom(p, 0.6);
