@@ -1,5 +1,5 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
-// ROADMAP panel: a read-only overlay on the main menu listing what's shipped and planned (data/roadmap.js).
+// ROADMAP panel: a read-only overlay on the main menu (its ROADMAP button) listing what's shipped and planned (data/roadmap.js).
 
 import { ROADMAP, ROADMAP_STATUS } from '../data/roadmap.js';
 

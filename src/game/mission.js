@@ -1,6 +1,6 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
-// STORY MISSIONS: runs a mission (data/missions.js) objective by objective: hold a spot, slice consoles, chase a quarry,
-// win a duel.
+// STORY MISSIONS: runs a mission (data/missions.js) objective by objective: hold a spot, slice consoles, take posts,
+// walk someone across the field, chase a quarry, win a duel.
 // Built from the objective kit (game/objectives.js) so later modes can reuse the same pieces.
 
 import * as THREE from 'three';
@@ -30,11 +30,13 @@ import { showPanel, hidePanel, makeBeacon, makeConsole, setMarkerColor, pulseMar
          heroIn, hostilesIn, hostilesAlive, setObjectiveHud, objectiveHud, mmss } from './objectives.js';
 import { MISSIONS, MISSION_VOICE, MISSION_COLOR } from '../data/missions.js';
 import { spawnSquad, squadIn, squadStanding } from '../allies/squad.js';
+import { collideSolids } from '../world/collision.js';
+import { diffDmgMul } from '../data/difficulty.js';
 import { startBattleFx, stopBattleFx, updateBattleFx } from '../fx/battle.js';
 
 const RED = 0xff4a3a, GREEN = 0x7bffae;
 const M = { on: false, def: null, i: 0, o: null, s: null, markers: [], props: [], fx: [], panelT: 0, waitT: 0, endT: 0, won: false,
-            failT: 0, quarry: null, qHp: 0 };
+            failT: 0, quarry: null, qHp: 0, vip: null };
 
 // an objective as this hero plays it: its `hero` overrides laid over it, and per-hero words picked
 function forHero(o){
@@ -49,14 +51,16 @@ export function missionDone(id, hero){ try { return localStorage.getItem('sw_mis
 export function startMission(id = 'refuge', fromObjective = 0){
   const def = MISSIONS[id] || MISSIONS.refuge;
   clearMission();
-  startLevel(0, { level: def.level, mission: true });   // fresh hero, kit and stats, on the mission's arena
+  const sub = def.level.sub && typeof def.level.sub === 'object' ? def.level.sub[G.hero] : def.level.sub;
+  startLevel(0, { level: { ...def.level, sub }, mission: true });   // fresh hero, kit and stats, on the mission's arena
   for (const k of (def.grant && def.grant[G.hero]) || []) G.unlocked[k] = true;
   G.waveTotal = def.kit; checkUnlocks();                 // a mid-run kit: forms, Force jump / jetpack boosters, dual blasters
   G.waveTotal = 0;   // ...but foes as tough as the first wave (HP and elite odds climb with waveTotal)
-  Object.assign(M, { on: true, def, i: fromObjective, o: null, s: null, fx: [], panelT: 0, endT: 0, won: false, failT: 0, quarry: null, qHp: 0 });
+  Object.assign(M, { on: true, def, i: fromObjective, o: null, s: null, fx: [], panelT: 0, endT: 0, won: false, failT: 0, quarry: null, qHp: 0, vip: null });
   const st = (fromObjective && def.objectives[fromObjective].start) || def.start;   // a retry may begin further along
   if (st){ playerPos().set(st[0], 0, st[1]); G.yaw = player.faceYaw = st[2] || 0; }
   if (def.quarry) placeQuarry(def.objectives[fromObjective]);
+  if (def.escort) placeVip(fromObjective);
   // a STRIKE TEAM mission: the squad forms up beside the hero (allies/squad.js), and the wider battle rages past the walls
   if (def.squad) spawnSquad(def.squad, st);
   if (def.battle) startBattleFx(G.hero === 'mando' ? 0xffa040 : 0x4aa8ff);
@@ -72,7 +76,7 @@ function clearMission(){
   for (const m of M.markers) removeMarker(m);
   M.markers = [];
   for (const p of M.props) scene.remove(p);
-  M.props = []; M.fx = []; M.quarry = null;
+  M.props = []; M.fx = []; M.quarry = null; M.vip = null;
   stopBattleFx();
   if (M.on) hidePanel();
   M.on = false;
@@ -159,7 +163,7 @@ const KINDS = {
                : mates ? 'SQUAD HOLDING ' + mmss(o.time - s.prog) : (o.unguarded || 'RAMP UNGUARDED') + ' ' + mmss(o.time - s.prog)) + total,
         warn: rate === 0 });
       if (s.prog >= o.time){
-        showBanner('TRANSPORT AWAY', 'Its guns clear the field as it climbs.', 2.4);
+        showBanner(o.doneLine || 'TRANSPORT AWAY', o.doneLine ? (o.doneSub || '') : 'Its guns clear the field as it climbs.', 2.4);
         G.shake = Math.max(G.shake, 0.6);
         if (shared.refugeShip) liftOff();
         for (const e of enemies) e.goal = null;
@@ -183,7 +187,10 @@ const KINDS = {
       s.trickT = o.trickle.every; s.hurtAt = player.lastHurt;
     },
     update(o, s, dt){
-      if ((s.trickT -= dt) <= 0){ s.trickT = o.trickle.every; if (hostilesAlive() + G.spawnQueue.length < o.trickle.cap) queueGroup(o.trickle.group); }
+      if ((s.trickT -= dt) <= 0){
+        s.trickT = o.trickle.every;
+        if (hostilesAlive() + G.spawnQueue.length < o.trickle.cap) queueGroup(o.trickle.group, { at: o.from && (() => arcSpawn(o.from[0], o.from[1])) });
+      }
       const hit = player.lastHurt !== s.hurtAt; s.hurtAt = player.lastHurt;
       let left = 0, at = null;
       for (const c of s.cons){
@@ -199,14 +206,15 @@ const KINDS = {
           c.done = true; left--; at = null;
           setMarkerColor(c.m, GREEN); c.m.userData.beam.visible = false;
           burst(V3(c.x, 1.2, c.z), GREEN, 16, 6, 4, 0.8); S.reward(1);
-          floater(V3(c.x, 1.8, c.z), 'UPLINK DOWN', '#7bffae');
+          floater(V3(c.x, 1.8, c.z), o.consoleName ? o.consoleName + (o.consoleName === 'CHARGE' ? ' SET' : ' SECURED') : 'UPLINK DOWN', '#7bffae');
         }
       }
       const n = s.cons.length; s.at = at;
       setObjectiveHud({ kicker: 'MISSION · ' + M.def.title, title: o.title,
         frac: at ? at.prog / o.time : (n - left) / n,
-        status: at ? 'SLICING… STAY ON THE CONSOLE' : (n - left) + ' / ' + n + ' UPLINKS DOWN' });
-      if (!left){ showBanner('UPLINKS SILENCED', 'The bombardment never comes.', 2.2); return true; }
+        status: at ? (o.consoleName ? 'WORKING… STAY ON IT' : 'SLICING… STAY ON THE CONSOLE')
+                   : (n - left) + ' / ' + n + (o.consoleName ? ' ' + o.consoleName + 'S DONE' : ' UPLINKS DOWN') });
+      if (!left){ showBanner(o.doneLine || 'UPLINKS SILENCED', o.doneLine ? (o.doneSub || '') : 'The bombardment never comes.', 2.2); return true; }
     },
   },
 
@@ -244,9 +252,66 @@ const KINDS = {
         burst(V3(P.x, 1.2, P.z), GREEN, 16, 6, 4, 0.8); S.reward(1);
         floater(V3(P.x, 1.8, P.z), (o.postName || 'POST') + ' TAKEN', '#7bffae');
         for (const e of enemies) if (e.goal) e.goal = null;
-        if (++s.k >= n){ showBanner(o.doneLine || 'THE LINE IS BROKEN', '', 2.2); return true; }
+        if (++s.k >= n){ showBanner(o.doneLine || 'THE LINE IS BROKEN', o.doneSub || '', 2.2); return true; }
         showBanner('', (o.postName || 'POST') + ' ' + s.k + ' / ' + n + ' TAKEN · PUSH ON', 1.6);
         startPost(o, s);
+      }
+    },
+  },
+
+  /* ESCORT: walk the mission's escort along a path. It walks while you're near and nothing is on it; foes close to
+     it pin it down and wear it away. Troops are sent at it as it passes their ground. */
+  escort: {
+    cue: 'battle',
+    music: (o, s) => ({ urgency: s.d / s.P.len, danger: s.pinned > 0, focus: s.near }),
+    begin(o, s){
+      s.P = pathOf(o.path); s.d = 0; s.pinned = 0; s.near = true; s.hitT = 0; s.trickT = o.trickle ? o.trickle.every * 0.6 : 0;
+      s.amb = (o.ambush || []).map(a => ({ ...a, d: projectPath(s.P, a.at[0], a.at[1]), fired: false }));
+      s.goal = { pos: M.vip.g.position, aggro: o.aggro || 7 };   // the foes sent at it march on it (the live position)
+      const [ex, ez] = o.path[o.path.length - 1];
+      M.markers.push(s.dest = makeBeacon(ex, ez, 0, MISSION_COLOR[G.hero], 1.6));   // where it's going
+      walkVip(s, 0);
+    },
+    update(o, s, dt){
+      const v = M.vip, vp = v.g.position, pp = playerPos();
+      const send = (g, from) => queueGroup(g, { at: from && (() => arcSpawn(from[0], from[1])), then: e => { if (e) e.goal = s.goal; } });
+      for (const a of s.amb){
+        if (a.fired || s.d < a.d) continue;
+        a.fired = true;
+        if (hostilesAlive() + G.spawnQueue.length > 10) continue;
+        send(a.group, a.from || o.from);
+        showBanner('', o.ambushLine || 'TROOPS MOVING ON THE ' + (v.def.kicker || v.def.name), 1.4);
+      }
+      if (o.trickle && (s.trickT -= dt) <= 0){
+        s.trickT = o.trickle.every;
+        if (hostilesAlive() + G.spawnQueue.length < o.trickle.cap) send(o.trickle.group, o.from);
+      }
+      // pinned: foes at it stop it and wear it down; otherwise it walks on, as long as you're with it
+      let pinned = 0;
+      for (const e of enemies) if (!e.dead && !e.converted && Math.hypot(e.group.position.x - vp.x, e.group.position.z - vp.z) < o.threat) pinned++;
+      s.pinned = pinned;
+      s.near = Math.hypot(pp.x - vp.x, pp.z - vp.z) < o.leash;
+      if (pinned){
+        v.hp -= pinned * o.dps * diffDmgMul() * dt;
+        if ((s.hitT -= dt) <= 0){
+          s.hitT = 0.35 + Math.random() * 0.3;
+          burst(V3(vp.x + (Math.random() - 0.5) * 0.6, 1.0 + Math.random() * 0.6, vp.z + (Math.random() - 0.5) * 0.6), 0xffb050, 6, 5, 2, 0.4);
+          sfx(180 + Math.random() * 80, 0.05, 'square', 0.02, 120);
+        }
+      } else v.hp = Math.min(v.maxHp, v.hp + (o.regen || 0) * dt);
+      v.tag.material.color.setHex(pinned ? RED : MISSION_COLOR[G.hero]);
+      const walking = !pinned && s.near && s.d < s.P.len;
+      walkVip(s, walking ? dt : 0, walking ? o.speed : 0, dt);
+      pulseMarker(s.dest, dt, G.gt);
+      if (v.hp <= 0){ vipDown(); return; }
+      const hp = Math.round(100 * v.hp / v.maxHp) + '%', left = Math.max(0, Math.round(s.P.len - s.d));
+      setObjectiveHud({ kicker: 'MISSION · ' + M.def.title, title: o.title, frac: s.d / s.P.len,
+        status: (pinned ? 'UNDER FIRE · DRIVE THEM OFF IT' : !s.near ? v.def.name + ' WAITS FOR YOU' : 'MOVING · ' + left + ' M TO GO')
+              + ' · ' + v.def.name + ' ' + hp, warn: pinned > 0 || v.hp < v.maxHp * 0.3 });
+      if (s.d >= s.P.len){
+        for (const e of enemies) if (e.goal === s.goal) e.goal = null;
+        showBanner('', v.def.name + ' IS THROUGH', 1.4);
+        return true;
       }
     },
   },
@@ -621,6 +686,56 @@ function spawnQuarryFoe(o, line, kicker){
   return e;
 }
 
+/* ============================================================
+   THE ESCORT — who you walk across the field in an escort (data/missions.js `escort`): a squadmate-style model with a
+   marker over it that turns red while it's under fire. It stays where the last escort leg left it (the hold after it
+   happens around it).
+   ============================================================ */
+function pathOf(pts){
+  const cum = [0];
+  for (let k = 1; k < pts.length; k++) cum.push(cum[k-1] + Math.hypot(pts[k][0] - pts[k-1][0], pts[k][1] - pts[k-1][1]));
+  return { pts, cum, len: cum[cum.length - 1] };
+}
+function placeVip(fromObjective){
+  const d = M.def.escort[G.hero];
+  const g = buildEnemyMesh({ model: d.model, color: d.color, eye: d.eye, cloth: d.cloth, scale: d.scale || 1 });
+  const tag = new THREE.Mesh(new THREE.OctahedronGeometry(0.16, 0),
+    new THREE.MeshBasicMaterial({ color: MISSION_COLOR[G.hero], toneMapped: false, depthTest: false, transparent: true }));
+  tag.renderOrder = 998;
+  scene.add(g, tag); M.props.push(g, tag);
+  M.vip = { g, tag, def: d, hp: d.hp, maxHp: d.hp };
+  // it stands where its walk picks up: the start of the first escort leg from here on, or the end of the last one before
+  const objs = M.def.objectives, next = objs.slice(fromObjective).find(o => o.kind === 'escort');
+  const prev = objs.slice(0, fromObjective).reverse().find(o => o.kind === 'escort');
+  const at = next ? next.path[0] : prev ? prev.path[prev.path.length - 1] : (M.def.start || [0, 0]);
+  g.position.set(at[0], 0, at[1]);
+  const [ax, az] = next ? next.path[0] : at, [bx, bz] = next ? next.path[1] : [at[0], at[1] - 1];
+  g.rotation.y = Math.atan2(bx - ax, bz - az);
+  tag.position.set(at[0], 2.3 * (d.scale || 1), at[1]);
+}
+// move the escort s.d along its leg (spd m/s for dt seconds; dt 0 just places it), sliding off any cover in the way
+function walkVip(s, dt, spd = 0, rdt = dt){
+  const v = M.vip, g = v.g, P = s.P;
+  s.d = Math.min(P.len, s.d + spd * dt);
+  const d = Math.min(s.d, P.len - 1e-4);
+  let k = 0; while (k < P.pts.length - 2 && d > P.cum[k+1]) k++;
+  const a = P.pts[k], b = P.pts[k+1], t = (d - P.cum[k]) / (P.cum[k+1] - P.cum[k] || 1);
+  const want = V3(a[0] + (b[0] - a[0]) * t, 0, a[1] + (b[1] - a[1]) * t);
+  if (dt) collideSolids(want, 0.6, false);
+  const dir = Math.atan2(b[0] - a[0], b[1] - a[1]);
+  g.position.set(want.x, 0, want.z);
+  g.rotation.y += Math.atan2(Math.sin(dir - g.rotation.y), Math.cos(dir - g.rotation.y)) * Math.min(1, (rdt || 1) * 8);
+  updateLegs(v, g, rdt, 'ground');
+  v.tag.position.set(g.position.x, 2.3 * (v.def.scale || 1) + Math.sin(G.gt * 5) * 0.1, g.position.z);
+}
+function vipDown(){
+  const v = M.vip;
+  burst(V3(v.g.position.x, 1.0, v.g.position.z), 0xffa040, 26, 8, 4, 1);
+  showBanner(v.def.name + ' IS DOWN', 'Back to the start of this leg.', 2.6, { kicker: 'MISSION FAILED' });
+  S.uiDeny();
+  M.failT = 2.8;
+}
+
 // the duel's opponent: an existing duellist, scaled up into a champion with its own bar and a sharper profile
 function spawnInquisitor(o, at = o.at, opts = {}){
   const e = fieldSpawn(o.foe, at[0], at[1]);
@@ -710,6 +825,7 @@ export function skipObjective(){
     playerPos().set(ax + (bx - ax) * t, 0, az + (bz - az) * t);
     completeObjective();
   }
+  else if (M.o.kind === 'escort'){ M.s.d = M.s.P.len; walkVip(M.s, 0); completeObjective(); }   // it reaches the end of its leg
   else completeObjective();
   return true;
 }
