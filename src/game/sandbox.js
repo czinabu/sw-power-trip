@@ -20,6 +20,7 @@ import { SANDBOX_LEVELS, SANDBOX_KIT } from '../data/sandbox.js';
 import { BATTLE_MAPS } from '../data/battlemaps.js';
 import { buildArena } from '../world/arena.js';
 import { clearGrenades } from '../enemies/grenades.js';
+import { regroupSquad } from '../allies/squad.js';
 
 // the panel's settings: how many foes a pick calls in, whether they come elite or stand still as dummies
 // (god mode is G.sandboxGod, so player/damage.js can read it)
@@ -61,6 +62,7 @@ export function setSandboxMap(id){
   const L = sandboxLevel();
   buildArena(L);
   placeHero();
+  regroupSquad();   // the squad comes along
   showBanner((L.name.split('—')[1] || L.name).trim(), L.sub, 2.2);
 }
 
