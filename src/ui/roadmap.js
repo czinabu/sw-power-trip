@@ -1,18 +1,26 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
-// ROADMAP panel: a read-only overlay on the main menu listing what's planned (data/roadmap.js).
+// ROADMAP panel: a read-only overlay on the main menu listing what's shipped and planned (data/roadmap.js).
 
 import { ROADMAP, ROADMAP_STATUS } from '../data/roadmap.js';
 
 const panel = document.getElementById('roadmap');
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
+// One column per status group, in this order; 'next' and 'later' share the PLANNED column.
+const COLUMNS = [['now'], ['next', 'later'], ['done']];
+
 function render(){
-  document.getElementById('rmlist').innerHTML = ROADMAP.map((p, i) =>
-    `<div class="rm-phase rm-${p.status}">
-      <div class="rm-top"><span class="rm-n">${i + 1}</span><span class="rm-st">${ROADMAP_STATUS[p.status] || ''}</span></div>
-      <h4>${esc(p.title)}</h4>
-      <ul>${p.items.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>
-    </div>`).join('');
+  document.getElementById('rmlist').innerHTML = COLUMNS.map((statuses) => {
+    const phases = ROADMAP.filter((p) => statuses.includes(p.status));
+    const head = ROADMAP_STATUS[statuses[0]];
+    return `<div class="rm-col rm-${statuses[0]}">
+      <div class="rm-st">${head}</div>
+      ${phases.map((p) => `<div class="rm-phase">
+        <h4>${esc(p.title)}${p.status === 'later' ? ' <span class="rm-later">LATER</span>' : ''}</h4>
+        <ul>${p.items.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>
+      </div>`).join('')}
+    </div>`;
+  }).join('');
 }
 
 export function setRoadmap(open){
