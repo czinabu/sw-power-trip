@@ -10,7 +10,7 @@ import { shared } from '../state.js';
    (hold RMB facing him) or PUSH it to throw it back and stun him. */
 
 const BL_SEG = 13;
-function ensureBossLight(){
+export function ensureBossLight(){
   if (shared.bossLight) return;
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(BL_SEG*3), 3));

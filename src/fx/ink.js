@@ -90,6 +90,7 @@ for (let i = 0; i < POOL; i++){
   scene.add(m);
   sprites.push(m);
 }
+export const inkProbe = sprites[0];   // a pooled sprite, for engine/prewarm.js to compile the sprite shader before the first one fires
 const _z = new THREE.Vector3(0, 0, 1), _hot = new THREE.Color();
 // a colour pushed past 1.0 so the bloom pass catches it (the composer renders in half-float)
 function hot(hex, k){ return _hot.setHex(hex).multiplyScalar(k); }

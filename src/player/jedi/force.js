@@ -203,6 +203,15 @@ function spawnPlayerRing(pos, maxR, color){
 const _throwLight = new THREE.PointLight(0xffffff, 0, 8);   // in the scene from load (a light added mid-fight recompiles every shader)
 scene.add(_throwLight);
 function throwLight(){ return _throwLight; }
+// the thrown blade is built once and hidden between throws: building meshes and materials on the throw is the first-use hitch
+const thrownSaber = new THREE.Group();
+const thrownBlade = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.03, 1.7, 8), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+const thrownGlow = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.09, 1.75, 8),
+  new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false }));
+thrownSaber.add(thrownBlade, thrownGlow);
+thrownSaber.visible = false;
+scene.add(thrownSaber);
+export function hideThrownSaber(){ thrownSaber.visible = false; _throwLight.intensity = 0; }
 export function saberThrow(){
   const A = abil('throw');
   const cost = fcost(A.cost);
@@ -211,18 +220,14 @@ export function saberThrow(){
   faceAbilityAim(A.range);   // line the throw up on the nearest target
   castGesture('push', 0.3);  // face the throw direction
   const f = fwd(), pp = playerPos();
-  const m = new THREE.Group();
-  const blade = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.03, 1.7, 8),
-    new THREE.MeshBasicMaterial({ color: 0xffffff }));
-  const glow = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.09, 1.75, 8),
-    new THREE.MeshBasicMaterial({ color: stance().blade, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false }));
+  const m = thrownSaber;
+  thrownGlow.material.color.setHex(stance().blade);
   // one light that lives in the scene for good and only fades (adding a light per throw recompiles every material)
   const l = throwLight();
   l.color.setHex(stance().blade); l.intensity = 8;
-  m.add(blade, glow);
-  m.rotation.z = Math.PI/2;
+  m.rotation.set(0, 0, Math.PI/2);
   m.position.set(pp.x + f.x, 1.7, pp.z + f.z);
-  scene.add(m);
+  m.visible = true;
   player.saberHand.visible = false;
   shared.saberProj = { mesh: m, dir: f.clone(), traveled: 0, returning: false, hitSet: new Set() };
   S.swing();
@@ -239,7 +244,7 @@ export function updateSaberThrow(dt){
     TMP.set(pp.x, 1.7, pp.z).sub(sp.mesh.position);
     const d = TMP.length();
     if (d < 1.2){
-      scene.remove(sp.mesh); shared.saberProj = null; throwLight().intensity = 0;
+      sp.mesh.visible = false; shared.saberProj = null; throwLight().intensity = 0;
       player.saberHand.visible = true;
       return;
     }
@@ -352,7 +357,7 @@ export function forceRepulse(){
 /* FORCE BARRIER — the kit's defensive power. A brief shimmering bubble that soaks most
    incoming damage and auto-deflects blaster bolts back at the crowd. A clutch panic button. */
 
-function ensureBarrierMesh(){
+export function ensureBarrierMesh(){
   if (shared._barrierMesh) return;
   const geo = new THREE.SphereGeometry(1.7, 32, 24);
   const mat = barrierMaterial(0x6fd0ff);
