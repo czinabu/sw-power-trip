@@ -28,19 +28,20 @@ src/
   main.js            imports every module in load order, runs the main loop, exposes window.GAME
   state.js           G (run state), player, entity arrays, keys, and `shared` (values that get reassigned)
   utils.js           math helpers
-  data/              tuning tables: config, movement, stances, enemies, levels, bosses, mando, skills, store, mastery, boons, mutators, difficulty, worlds (arena looks), sandbox
+  data/              tuning tables: config, movement, stances, enemies, levels, bosses, mando, skills, store, mastery, boons, mutators, difficulty, worlds (arena looks), sandbox, allies (the squad and revive rules)
   engine/            renderer + post-processing, graphics quality, input, camera
   audio/             mixer + voice builder (engine.js), sound bank (sfx.js), adaptive orchestral score with hero themes and mission cues (music.js), loops + ambience (director.js)
-  fx/                particles, floating text, VFX lights, saber trail, one-shot VFX, ambient embers
+  fx/                particles, floating text, VFX lights, saber trail, one-shot VFX, ambient embers, the wider battle past a mission's edge (battle.js)
   player/            hero swap, movement, parkour, damage, updatePlayer (update.js), animation
     model/           hero models: rig + sockets, outfit slots (jedi.js, mando.js), weapons, render styles, looks
     jedi/            stances, focus, saber combat, blade-on-blade clashes (clash.js), Force powers, Judgement FX
     mando/           weapons, gadgets, darksaber
   enemies/           meshes, elites, special moves, spawning, damage, AI, pathing (nav.js), attack turns (director.js), blaster bolts (see docs/enemy-ai.md)
+  allies/            the hero's strike team: squadmates, orders, who they shoot and who shoots them (squad.js)
   boss/              boss lightning FX and the boss itself
   net/               online co-op: room-code connection over WebRTC (session.js) and the partner's ghost hero (ghost.js); see below
   world/             arena builder, arenas/ (temple, foundry, plains layouts; hall and forge for training; refuge and pursuit for the story missions; dojo and throne for the sandbox), Ink bake, painted skies/floors, backdrops, atmosphere, collision, hazards (see docs/world-guidelines.md)
-  game/              level/wave flow, survival mode, training (tutorial.js), story missions (mission.js, objectives.js), the sandbox (sandbox.js), progression, boons, end-of-run summary
+  game/              level/wave flow, survival mode, training (tutorial.js), story missions (mission.js, objectives.js), the sandbox (sandbox.js), downed-and-revive (revive.js), progression, boons, end-of-run summary
   ui/                banners, threat markers, HUD, store overlay, menus, the sandbox panel (sandbox-ui.js), the title screen's hero turntable (showcase.js), controls (How to Play data)
 ```
 
@@ -81,6 +82,10 @@ Each file starts with a one-line description. Balance changes usually only touch
 **The Long Chase** (also under EXTRAS) runs down a fleeing quarry (an Inquisitor for the Jedi, an assassin droid bounty for the Mando) through the spaceport at Khel Dar: one long, narrow street that snakes through a sandstone port town to the docking bay. Keep it in sight (lose it for six seconds and it gets away), cross the market stalls, alley fence, terraces and causeway gaps with the parkour flow, get past the troops it calls out of the doorways, then duel it when it's cornered at its ship. Four times it stops to cut through a sealed way while a squad holds you off, and it runs on once they're down. Catch it on open ground and it turns to fight until you've hurt it, then breaks away; those wounds carry into the final duel. The run has a checkpoint at the plaza.
 
 Missions are data (`data/missions.js`) built from reusable objective pieces (`game/objectives.js`: zones, consoles, timers, the objective HUD line). An arena can be long instead of square (`arenaZ` in its level: the pursuit route is 56 × 320); bounds, enemy pathing, the shadow box and the sky all follow it.
+
+**Spearhead** (also under EXTRAS) is a large-battle mission with a strike team of four at your back: clone troopers for the Jedi, Mandalorians for the Mando. Break three enemy posts, hold the ground while their counter-attack comes in, then duel the Warden who leads it. **H** orders the squad to hold the spot under the crosshair, and H again brings them back on you.
+
+**The squad** — allies hold ground and soften the rank and file; duellists, heavies and bosses are always yours. A squadmate's bolt is weak, their kills pay half XP and nothing toward streaks, Focus or boons, and at most half the troopers can be on them at once, so you always have a fight of your own. Squadmates that drop are down, not dead: stand by one to get it up, or it gets up on its own. With a squadmate standing, a killing blow downs you instead and the nearest one runs to get you up, once per wave or objective (twice on Padawan). The revive code (`game/revive.js`) knows nothing about who is reviving whom, so online co-op can use it for partners. The tuning is all in `data/allies.js`. The squad is also in the sandbox (the panel's SQUAD row) and survival (the REINFORCEMENTS power, which brings an extra trooper a wave for each squadmate).
 
 **Survival mode** — unlocked after beating the campaign as both heroes. Endless escalating waves, 8 wave mutators, Warbringer mid-boss every 10 waves, arena rotation, repeatable power-ups, roguelite boon picks each wave
 

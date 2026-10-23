@@ -5,6 +5,8 @@
 import { renderer } from '../engine/renderer.js';
 import { G, shared } from '../state.js';
 import { SANDBOX_FOES, SANDBOX_COUNTS, SANDBOX_KIT } from '../data/sandbox.js';
+import { addSquadmate, dismissSquadmate, squadSize } from '../allies/squad.js';
+import { SQUAD } from '../data/allies.js';
 import { SB, sandboxSpawn, sandboxClear, sandboxHeal, setSandboxDummy, setSandboxKit, sandboxKitAll, kitAvailable } from '../game/sandbox.js';
 
 const panel = document.getElementById('sandbox');
@@ -31,6 +33,7 @@ function pill(id, on){ const el = $(id); el.classList.toggle('on', on); el.query
 function render(){
   $('sbcount').innerHTML = SANDBOX_COUNTS.map(n => `<span data-n="${n}" class="${n === SB.count ? 'on' : ''}">×${n}</span>`).join('');
   pill('sbelite', SB.elite); pill('sbdummy', SB.dummy); pill('sbgod', !!G.sandboxGod);
+  $('sbsquadn').textContent = squadSize() + ' / ' + SQUAD.max;
   $('sbfoes').innerHTML = SANDBOX_FOES.map(f => {
     const nm = typeof f.nm === 'object' ? f.nm[G.hero] : f.nm;
     return `<div class="sb-chip${f.special ? ' special' : ''}" data-foe="${f.id}">${nm}<span class="k">${f.id === 'boss' ? 'BOSS' : f.special ? 'MID-BOSS' : ''}</span></div>`;
@@ -51,6 +54,8 @@ panel.addEventListener('click', (e) => {
   if (t.closest('#sbelite')){ SB.elite = !SB.elite; render(); return; }
   if (t.closest('#sbdummy')){ setSandboxDummy(!SB.dummy); render(); return; }
   if (t.closest('#sbgod')){ G.sandboxGod = !G.sandboxGod; render(); return; }
+  if (t.closest('#sbsquadadd')){ addSquadmate(); render(); return; }
+  if (t.closest('#sbsquaddrop')){ dismissSquadmate(); render(); return; }
   if (t.closest('#sbclear')){ sandboxClear(); return; }
   if (t.closest('#sbheal')){ sandboxHeal(); return; }
   if (t.closest('#sball')){ sandboxKitAll(true); render(); return; }

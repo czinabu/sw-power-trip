@@ -17,6 +17,7 @@ import { hurtPlayer } from '../player/damage.js';
 import { enemyDmgScale } from '../game/survival.js';
 import { damageEnemy } from './damage.js';
 import { damageBoss } from '../boss/boss.js';
+import { blastAllies } from '../allies/squad.js';
 
 export const grenades = [];
 const ballGeo = new THREE.SphereGeometry(0.16, 10, 8);
@@ -96,6 +97,7 @@ function explode(n){
   if (turned && shared.boss && shared.boss.hp > 0 && shared.boss.group.position.distanceTo(pos) < n.R) damageBoss(foeDmg * 0.6);
   for (const b of barrels){ if (b.mesh.position.distanceTo(pos) < n.R && b.fuse < 0) b.fuse = 0.15; }
   if (turned) return;   // turned back, or thrown by an ally: it's on your side now
+  blastAllies(pos, n.R, n.dmg * enemyDmgScale());   // the hero's squad is caught in it too
   const pp = playerPos();
   if (Math.hypot(pp.x - pos.x, pp.z - pos.z) < n.R && pp.y < 3.2){   // a dash through it is a perfect dodge (hurtPlayer)
     screenFlash('radial-gradient(ellipse at center, rgba(255,170,60,.32), transparent 60%)', 0.5, 0.25);

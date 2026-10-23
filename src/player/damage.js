@@ -29,6 +29,7 @@ import { tutEvent } from '../game/tutor-bus.js';
 import { mandoShielding } from './mando/weapons.js';
 import { MOBILITY, MANDO_MOBILITY } from '../data/mobility.js';
 import { refundCharge, airGuardLost, airParryOk, airDamageMul, airborneInCombat, knockOutOfAir } from './mobility.js';
+import { heroCanGoDown, downHero, hitDownedHero } from '../game/revive.js';
 
 const MELEE_REACH_UP = 1.7;   // a melee foe can't strike you if you're perched higher than this above their feet
 /* PERFECT DODGE — a blow that arrives in the first instant of a dash: time slows, the dash is refunded and (Jedi)
@@ -119,6 +120,8 @@ export function bladeClash(fromPos, foe, at){
 export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
   const pierce = !!(opts && opts.unblockable);   // a THRUST (or a lost lock): a held guard can't stop it, only a parry
   if (G.mode !== 'play') return 'none';
+  if (player.downed){ hitDownedHero(); return 'none'; }   // down: a blow drains the time left instead (game/revive.js)
+  if (G.gt < (player.reviveGuardT || 0)) return 'none';   // just got up: a moment's grace
   if (player.dashT > 0){ if (!silent) perfectDodge(fromPos); return 'none'; }
   const raw = dmg;
   // a cut in flight meets a melee strike from in front: CLASH (before any guard, since a swing can't be guarding)
@@ -279,21 +282,27 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
       updateBoonStrip();
       return 'phoenix';
     }
-    player.hp = 0;
-    G.mode = 'dead';
-    G.slowmo = 0.2;
-    endRun(false);
-    showBanner(G.hero === 'mando' ? 'THE HUNT IS OVER' : 'THE FORCE FALLS SILENT', '', 999);
-    setTimeout(()=>{
-      if (G.mode !== 'dead') return;
-      document.exitPointerLock();
-      if (shared.lockFallback){
-        overlay.style.display = 'flex';
-        setOverlayState('dead');
-      }
-    }, 1200);
+    // DOWNED — with a squadmate standing (and a second chance left this wave), you drop instead (game/revive.js)
+    if (heroCanGoDown()){ downHero(); return 'downed'; }
+    killHero();
   }
   return 'hit';
+}
+// the end of the run: the hero falls for good
+export function killHero(){
+  player.hp = 0;
+  G.mode = 'dead';
+  G.slowmo = 0.2;
+  endRun(false);
+  showBanner(G.hero === 'mando' ? 'THE HUNT IS OVER' : 'THE FORCE FALLS SILENT', '', 999);
+  setTimeout(()=>{
+    if (G.mode !== 'dead') return;
+    document.exitPointerLock();
+    if (shared.lockFallback){
+      overlay.style.display = 'flex';
+      setOverlayState('dead');
+    }
+  }, 1200);
 }
 
 export function addStreak(n){

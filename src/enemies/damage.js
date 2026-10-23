@@ -20,16 +20,23 @@ import { dropToken } from './director.js';
 import { tutEvent } from '../game/tutor-bus.js';
 import { officerDown } from './tactics.js';
 import { hideIndicators } from './cleanup.js';
+import { SQUAD } from '../data/allies.js';
 
 /* opts.launch === false: a blow with no rocket behind it (the Mandalorian's fists, knee and blade). It never floors or
    throws a live foe (the caller staggers or shoves it), and a foe it kills crumples where it stands instead of flying. */
+/* opts.ally: a squadmate's bolt (allies/squad.js). It lands as plain damage: no opening bonus, no hitstop or shake, and a
+   kill it makes pays SQUAD.killXp of the XP and feeds no streak, Focus, lifesteal or boon (data/allies.js). */
 export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick, opts){
   if (e.dead) return;
-  if (dmg > 0) player.lastStrikeT = G.gt;   // a blow landed keeps you in the fight (player/mobility.js)
+  const byAlly = !!(opts && opts.ally);
+  if (dmg > 0 && !byAlly){
+    player.lastStrikeT = G.gt;   // a blow landed keeps you in the fight (player/mobility.js)
+    if (!tick){ G.squadFocus = e; G.squadFocusT = G.gt; }   // the squad prefers the trooper you're fighting
+  }
   if (e.state === 'stasis') dmg *= 1.5;   // frozen targets shatter harder
   if (e.state === 'stagger') dmg *= 1.5;  // a parried, stumbling foe is wide open
   // an OPENING: caught recovering from its own swing, a well placed blow lands harder (data/duel.js DUEL.open)
-  else if (!tick && knockDir && dmg > 0 && !e.converted && G.gt < (e.openUntil || 0)){
+  else if (!tick && !byAlly && knockDir && dmg > 0 && !e.converted && G.gt < (e.openUntil || 0)){
     dmg *= DUEL.open.dmg;
     if (e.openShown !== e.openUntil){ e.openShown = e.openUntil; floater(V3(e.group.position.x, e.group.position.y + 1.9, e.group.position.z), 'OPENING', '#ffe27a'); }
   }
@@ -58,7 +65,7 @@ export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick, opts){
     }
   }
   // EXECUTIONER boon — a hit that would leave a normal foe under 22% finishes it outright (not bosses/champions)
-  if (player.boon && player.boon.exec && !tick && knockDir && !e.warbringer && !e.champion && e.maxHp && (e.hp - dmg) > 0 && (e.hp - dmg) < e.maxHp*0.22){
+  if (player.boon && player.boon.exec && !byAlly && !tick && knockDir && !e.warbringer && !e.champion && e.maxHp && (e.hp - dmg) > 0 && (e.hp - dmg) < e.maxHp*0.22){
     dmg = e.hp; floater(V3(e.group.position.x, e.group.position.y+1.7, e.group.position.z), 'EXECUTE', '#ff7a7a');
   }
   // a JET TROOPER caught by a big blast (see blastKnock in data/enemies.js) doesn't get knocked about: its pack goes up
@@ -85,12 +92,12 @@ export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick, opts){
       sparks(cp, 0xffffff, Math.round(3 + power*3), 9 + power*5, { dir: kd, cone: 0.8, life: 0.24 });
       sparks(V3(cp.x + kd.x*0.4, cp.y, cp.z + kd.z*0.4), col, Math.round(3 + power*3), 7 + power*5, { dir: kd, cone: 1, life: 0.3 });
       spawnHitSpark(cp, col, power);
-      if (e.hp > 0){
+      if (e.hp > 0 && !byAlly){
         G.hitstop = Math.max(G.hitstop, 0.02 + power*0.028);   // a micro-freeze on impact — the core of "punch"
         G.shake   = Math.max(G.shake,   0.12 + power*0.13);
       }
     }
-    floater(p, Math.round(dmg), e.hp <= 0 ? '#ffd24a' : '#bfe8ff');
+    floater(p, Math.round(dmg), byAlly ? '#8ea2b4' : e.hp <= 0 ? '#ffd24a' : '#bfe8ff');
     S.impact(cp, power);   // voiced by what landed it: saber burn, blaster pop, or a thump
   }
   if (e.sparring && e.hp < 1){ e.hp = 1; tutEvent('sparDown', e); }   // TRAINING: a sparring partner takes the blow but never falls (beating it down still counts)
@@ -110,6 +117,13 @@ export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick, opts){
     } else {
       e.vel.copy(d.multiplyScalar((knockPow||14) * (e.t.heavy ? 0.5 : 1)));
       e.vel.y = rand(5, 9) * (e.t.heavy ? 0.6 : 1);
+    }
+    if (byAlly){
+      // the squad's kill: a share of the bounty, none of the hero's rewards
+      if (!e.converted){ gainXp(e.t.score * 4 * SQUAD.killXp); if (G.stats) G.stats.squadKills = (G.stats.squadKills || 0) + 1; }
+      S.kill(cp, !!e.t.heavy);
+      burst(V3(p.x, p.y+1.2, p.z), 0xffaa44, 8, 6, 4);
+      return;
     }
     G.hitstop = Math.max(G.hitstop, isFinisher ? 0.1 : 0.05);
     G.shake = Math.max(G.shake, 0.38);
@@ -151,7 +165,7 @@ export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick, opts){
     }
   }
   // ECHO STRIKE boon — the blow rings out a second time for 40% (only if the first didn't kill; guarded vs recursion)
-  if (player.boon && player.boon.echo && !tick && knockDir && !e.dead && !e._echoing && dmg > 0){
+  if (player.boon && player.boon.echo && !byAlly && !tick && knockDir && !e.dead && !e._echoing && dmg > 0){
     e._echoing = true; damageEnemy(e, dmg*0.4, knockDir, 0, false, false); e._echoing = false;
   }
 }

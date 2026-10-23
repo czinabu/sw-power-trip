@@ -127,6 +127,15 @@ space, so they turn, scale (elites too) and tip over with it.
 
 Open the game with `?hitbox` in the URL to draw every foe's hitbox as a wireframe (yellow = head).
 
+## Fighting the hero's squad
+
+Troopers (`FODDER` in `src/data/allies.js`) can turn on a squadmate (`src/allies/squad.js` `foeAllyTarget`) when it is
+`aggroBy` metres closer than the hero, but never more than `aggroShare` of the living fodder at once. A foe on a
+squadmate (`e.onAlly`) skips the hero-only behaviour (attack tokens, officer orders, pincers, stalking, ranged slots)
+and walks straight at its target. Duellists, heavies, champions and bosses never pick a squadmate. While the hero is
+downed, melee foes hold off them and look for the squad instead, so a revive is a race against ranged fire, not a
+foregone death.
+
 ## Checking it
 
 `window.GAME.nav` exposes the grid (`NAV`), `navSteer` and `navDist` in the dev console. `NAV.dist[0]` is the

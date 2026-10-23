@@ -22,6 +22,7 @@ import { MUTATORS } from '../data/mutators.js';
 import { payWaveClear } from './progression.js';
 import { openSkillTree } from '../ui/store-ui.js';
 import { showBanner } from '../ui/banners.js';
+import { squadSize, regroupSquad } from '../allies/squad.js';
 
 /* ============================================================
    SURVIVAL / ENDLESS MODE — escalating waves, mutators, milestone spikes, arena rotation, repeatable power-ups.
@@ -69,6 +70,8 @@ export function genEndlessWave(n){
     for (const t of types){ r -= w[t]; if (r <= 0){ pick = t; break; } }
     list.push(pick);
   }
+  // the hero's squad (REINFORCEMENTS): one more trooper per squadmate, for them to hold off
+  for (let i = 0; i < squadSize(); i++) list.push(Math.random() < 0.5 ? 'grunt' : 'blaster');
   return list;
 }
 // milestone every 5 waves: ELITE SURGE (whole wave comes elite) or, every 10, a CHAMPION mini-boss + a smaller pack
@@ -115,6 +118,7 @@ function rotateEndlessArena(L){
   buildArena(L);
   { const spot = findClearSpawn(0, shared.arenaHalf*0.42, CFG.player.radius + 1.0); playerPos().set(spot.x, 0, spot.z); }
   player.vel.set(0,0,0); player.moveVel.set(0,0,0); player.vy = 0;
+  regroupSquad();   // the squad comes along
   showBanner('', 'A NEW KILLING GROUND', 1.8);
 }
 export function startEndlessWave(){

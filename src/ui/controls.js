@@ -33,6 +33,7 @@ const CONTROLS = {
       ['1 / 2 / 3', 'Saber form', 'Or the mouse wheel'],
       ['G', 'Switch grip', 'Regular or reverse; swings hit the same either way', 1],
       ['4', 'Holster saber', 'Fight with the Force alone, both hands free: LMB throws palm strikes (every third is a burst), RMB wards, Force powers hit 20% harder and Force refills faster · 4 again draws', 1],
+      ['H', 'Squad order', 'With a squad: hold the spot under the crosshair, H again to bring them back on you · stand by a downed squadmate to get them up · while you have one standing, a killing blow downs you instead and they come to get you up', 1],
       ['RMB + SPACE', 'Evasive leap', 'Jump while blocking to vault clear · in a fight it spends a dash charge and is only safe at its start', 1],
     ]},
     { title: 'FORCE POWERS', rows: [
@@ -69,6 +70,7 @@ const CONTROLS = {
       ['E', 'Takedown', 'On a staggered or floored foe: finish it', 1],
       ['1 / 2 / 3', 'Switch weapon', 'Or the mouse wheel'],
       ['RMB + LMB', 'Darksaber throw', 'Darksaber in hand: hurl it, and the grappling line reels it back through anything in its path', 1],
+      ['H', 'Squad order', 'With a squad: hold the spot under the crosshair, H again to bring them back on you · stand by a downed squadmate to get them up · while you have one standing, a killing blow downs you instead and they come to get you up', 1],
       ['4', 'Holster', 'Take a fighting stance with fists and gadgets: LMB / E swing hook, hook, uppercut, haymaker, hold RMB for the gauntlet shield (LMB behind it cuts shield and blade), and gadget power refills faster · 4 or 1 / 2 / 3 draws', 1],
     ]},
     { title: 'GADGETS', rows: [

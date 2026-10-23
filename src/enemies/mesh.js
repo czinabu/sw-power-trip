@@ -182,6 +182,23 @@ const HELMETS = {
     k.add(loft([{ y:0, w:0.23, d:0.12, z:0.12 }, { y:0.025, w:0.23, d:0.12, z:0.12 }], chamfer(0.5)), 'black', h, [0, 0.22, 0.03]);   // brim
     k.glow(new THREE.BoxGeometry(0.06, 0.04, 0.01), t.eye, h, [0, 0.31, 0.162], [0,0,0], { tag: 'eye' });
   },
+  // CLONE TROOPER (a squadmate): domed helm, a T-visor, a cheek frame, a fin crest in the unit's markings
+  clone(k, h, t){
+    k.add(loft([{ y:-0.02, w:0.25, d:0.26 }, { y:0.08, w:0.29, d:0.3 }, { y:0.22, w:0.3, d:0.31 }, { y:0.33, w:0.27, d:0.28 }, { y:0.41, w:0.15, d:0.17 }], HEAD), 'armor', h);
+    k.add(loft([{ y:-0.04, w:0.2, d:0.09, z:0.13 }, { y:0.1, w:0.22, d:0.08, z:0.14 }], chamfer(0.35)), 'armor', h);
+    k.add(plate([[-0.12,0.025],[0.12,0.025],[0.12,-0.015],[0.03,-0.022],[0.026,-0.13],[-0.026,-0.13],[-0.03,-0.022],[-0.12,-0.015]], 0.02, 0.004), 'black', h, [0, 0.22, 0.155], [0,0,0], { outline: false });
+    k.add(block(0.03, 0.1, 0.3, 0.3), 'cloth', h, [0, 0.38, -0.01]);   // the crest in the unit's colour
+    for (const s of [-1, 1]) k.add(block(0.025, 0.12, 0.08, 0.3), 'cloth', h, [0.15*s, 0.2, 0.06], [0, 0.35*s, 0], { outline: false });
+    k.glow(new THREE.BoxGeometry(0.2, 0.012, 0.01), t.eye, h, [0, 0.225, 0.168], [0,0,0], { tag: 'eye', opacity: 0.6 });
+  },
+  // MANDALORIAN WARRIOR (a squadmate): a tall beskar helm with the T-visor, a rangefinder and a flared jaw
+  mandalorian(k, h, t){
+    k.add(loft([{ y:-0.03, w:0.25, d:0.27 }, { y:0.1, w:0.28, d:0.3 }, { y:0.26, w:0.29, d:0.31 }, { y:0.36, w:0.25, d:0.27 }, { y:0.42, w:0.13, d:0.16 }], HEAD), 'armor', h);
+    k.add(loft([{ y:-0.05, w:0.27, d:0.12, z:0.1 }, { y:0.08, w:0.25, d:0.1, z:0.12 }], chamfer(0.3)), 'armor2', h);
+    k.add(plate([[-0.12,0.03],[0.12,0.03],[0.12,-0.01],[0.028,-0.02],[0.025,-0.15],[-0.025,-0.15],[-0.028,-0.02],[-0.12,-0.01]], 0.022, 0.004), 'black', h, [0, 0.25, 0.16], [0,0,0], { outline: false });
+    k.add(block(0.022, 0.18, 0.022, 0.3), 'metal', h, [0.165, 0.32, 0.02], [0.25, 0, -0.1]);
+    k.glow(new THREE.BoxGeometry(0.2, 0.012, 0.01), t.eye, h, [0, 0.255, 0.174], [0,0,0], { tag: 'eye', opacity: 0.5 });
+  },
   // SCOUT TROOPER: big brow visor jutting forward, a long breather snout
   scout(k, h, t){
     k.add(loft([{ y:0.0, w:0.24, d:0.25 }, { y:0.14, w:0.27, d:0.28 }, { y:0.3, w:0.26, d:0.28 }, { y:0.38, w:0.14, d:0.17 }], HEAD), 'armor', h);
@@ -444,6 +461,25 @@ export const MODELS = {
     const h = helmet(k, 'purge', t);
     for (const s of [-1, 1]) k.add(shard(0.04, 0.22, 0.12), 'armor2', h, [0.07*s, 0.42, -0.02], [-0.4, 0, 0.25*s]);
   },
+  // CLONE TROOPER — a squadmate (allies/squad.js): white plates in the unit's colour, a DC-15 held across the chest
+  clone(k, t){
+    const w = 1;
+    legs(k, w); hips(k, w); torso(k, w); pauldrons(k, w, 'cloth', 0.85);
+    k.add(block(0.32, 0.05, 0.03, 0.3), 'cloth', k.root, [0, 1.74, 0.19], [0,0,0], { outline: false });   // the chest stripe
+    rifle(k, t, w, false);
+    helmet(k, 'clone', t);
+  },
+  // MANDALORIAN WARRIOR — a squadmate: beskar in its own colour, a cloth kama, a jetpack, a blaster rifle
+  mandalorian(k, t){
+    const w = 1;
+    legs(k, w, { boot: 'leather' }); hips(k, w); torso(k, w, { pack: false }); pauldrons(k, w, 'armor', 0.9);
+    k.add(plate([[-0.26,0],[0.26,0],[0.3,-0.55],[-0.3,-0.55]], 0.014, 0.004), 'cloth', k.root, [0, 1.08, -0.19], [0.08, 0, 0], { outline: false });   // kama
+    const pack = k.group(k.root, [0, 1.52, -0.28]);
+    k.add(block(0.34, 0.44, 0.16, 0.3), 'armor2', pack);
+    for (const s of [-1, 1]) k.add(loft([{ y:-0.2, w:0.12, d:0.12 }, { y:0.18, w:0.12, d:0.12 }, { y:0.24, w:0.06, d:0.06 }], ngon(8, PI/8)), 'metal', pack, [0.15*s, 0.02, -0.04]);
+    rifle(k, t, w, false);
+    helmet(k, 'mandalorian', t);
+  },
   // SCOUT SNIPER — scout helm, camo poncho, a long DLT-19x (sniper)
   scout(k, t){
     const w = 0.95;
@@ -457,7 +493,7 @@ export const MODELS = {
 /* ---------------- build ---------------- */
 
 export function buildEnemyMesh(t){
-  const id = t.model + ':' + t.color.toString(16) + ':' + t.eye.toString(16);
+  const id = t.model + ':' + t.color.toString(16) + ':' + t.eye.toString(16) + (t.cloth != null ? ':' + t.cloth.toString(16) : '');
   const baked = bakeDesign(id, k => MODELS[t.model](k, t), {
     armor: t.color, armor2: shade(t.color, 0.62), shield: shade(t.color, 1.15), cloth: t.cloth ?? 0x3f382e,
   });

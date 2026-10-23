@@ -7,6 +7,8 @@ import { maxHp } from '../player/helpers.js';
 import { setStanceHud } from '../player/jedi/stance.js';
 import { switchWeapon } from '../player/mando/weapons.js';
 import { applyJetTier, applyCellTier } from '../game/progression.js';
+import { addSquadmate, squadSize } from '../allies/squad.js';
+import { SQUAD } from './allies.js';
 
 /* ============================================================
    PROGRESSION CONFIG  (edit here to add/retune progression)
@@ -121,4 +123,8 @@ export const ENDLESS_POWERS = [
   { id:'alacrity', ico:'✦', nm:'ALACRITY',   ds:'+8% attack &amp; fire speed',    apply(){ player.up.atkSpeed *= 1.08; player.up.fireRate = (player.up.fireRate||1)*1.08; } },
   { id:'attune',   ico:'❂', nm:'ATTUNEMENT', ds:'+15% Force regen · −5% cost',    apply(){ player.up.forceRegen *= 1.15; player.up.abilityCostMul *= 0.95; } },
   { id:'bulwark',  ico:'⛨', nm:'RESOLVE',    ds:'take 6% less damage',            apply(){ player.up.dr = 1 - (1-(player.up.dr||0))*0.94; } },
+  // REINFORCEMENTS — one more squadmate fights beside you (allies/squad.js); each wave then brings one more trooper per
+  // squadmate (game/survival.js), so the squad earns its keep without thinning the fight. Pricier, and it caps out.
+  { id:'squad',    ico:'⚑', nm:'REINFORCEMENTS', ds:'+1 squadmate fights beside you (up to 4)', base: 320, step: 160,
+    avail: () => squadSize() < SQUAD.max, apply(){ addSquadmate(); } },
 ];
