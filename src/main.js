@@ -89,6 +89,8 @@ import { DUEL, DUEL_PROFILES, MANDO_MELEE } from './data/duel.js';
 import { LOCK, startLock, endLock, duelDefend, eliteRamp } from './enemies/duel.js';
 import { foeBlade, bossBlade, contactPoint } from './player/jedi/clash.js';
 import { updateCoop, partnerShown } from './net/ghost.js';
+import { allies, updateSquad, updateSquadHud, spawnSquad, addSquadmate, squadOrder } from './allies/squad.js';
+import { downed } from './game/revive.js';
 import './ui/coop-ui.js';
 
 setHero(G.hero);   // initialise control text + crosshair for the default hero
@@ -115,6 +117,7 @@ function tick(){
       updateFlow(dt);
       updateMission(dt);
       updateSandbox(dt);
+      updateSquad(dt);   // the hero's squad, and anyone downed waiting to be got up (allies/squad.js, game/revive.js)
     }
     updateEnemies(dt);
     updateBolts(dt);
@@ -134,6 +137,7 @@ function tick(){
     }
     updateHud();
   }
+  updateSquadHud();
   updateTutorial(G.paused || G.skillSelect ? 0 : dt);   // the training lessons, and the unlock drills in a real run
   updateCoop(rawDt);     // online co-op: send my state, move the partner's ghost (net/ghost.js)
   updateTrail(dt);
@@ -161,6 +165,7 @@ window.GAME = { partnerShown, CFG, ENEMY_TYPES, LEVELS, BOSS_CFG, BOSS_MANDO, ST
   hazardZones, updateHazardZones, hazardContains, setOverlayState, nav: { NAV, buildNav, updateNav, navSteer, navDist },
   duel: { DUEL, DUEL_PROFILES, MANDO_MELEE, LOCK, startLock, endLock, duelDefend, eliteRamp, foeBlade, bossBlade, contactPoint },
   tactics: { RAMP, TROOP_MELEE, TROOP_FIRE, PINCER, ORDERS, GRENADE, LUNGE, tacticsRamp, grenades, pushGrenades },
+  squad: { allies, spawnSquad, addSquadmate, squadOrder, downed },
   get boss(){ return shared.boss; }, get saberProj(){ return shared.saberProj; }, get darkProj(){ return shared.darkProj; } };
 
 /* the battle maps (data/battlemaps.js): what's built and what it costs, for the console and tools/smoke/maps.mjs */

@@ -31,6 +31,7 @@ import { removeEnemy } from './cleanup.js';
 import { throwGrenade } from './grenades.js';
 import { updateLegs } from './gait.js';
 import { MOVE } from '../data/movement.js';
+import { foeAllyTarget, hurtAlly } from '../allies/squad.js';
 
 const NAV_EVERY = 0.1;      // seconds between a foe's route checks (the field itself refreshes in nav.js)
 const STUCK_AFTER = 0.5;    // window (s) over which a chasing foe must make headway, or it sidesteps to work itself free
@@ -99,6 +100,10 @@ export function updateEnemies(dt){
       if (tt){ tgtPos = tt.pos; tgtEnemy = tt.enemy; tgtBoss = tt.boss; }
       else tgtPos = null;
     }
+    // SQUADMATES — a trooper with one of the hero's squad clearly nearer may turn on it instead (allies/squad.js:
+    // only the rank and file, and never more than a share of them). It fights it straight: no attack turns, no tricks.
+    const tgtAlly = foeAllyTarget(e, pp), onAlly = !!tgtAlly;
+    if (onAlly) tgtPos = tgtAlly.group.position;
     let tx = 0, tz = 0, dist = 999;
     if (tgtPos){
       TMP.subVectors(tgtPos, g.position); TMP.y = 0;
@@ -123,12 +128,12 @@ export function updateEnemies(dt){
           break;
         }
         // DUELLING — a foe that just turned your blade answers at once (duel.js), if a turn is free for it
-        if (e.counterQueued && tgtPos && !e.converted){
+        if (e.counterQueued && tgtPos && !e.converted && !onAlly){
           e.counterQueued = false;
           if (dist < t.range + 1.2 && claimToken(e)){ e.counterAt = G.gt; quickStrike(e, DUEL.counterWindup); break; }
         }
         // a trooper that FEINTED comes again straight away, fast (tactics.js)
-        if (e.feintAgain && tgtPos && !e.converted){
+        if (e.feintAgain && tgtPos && !e.converted && !onAlly){
           e.feintAgain = false;
           if (dist < t.range + 0.8 && claimToken(e)){
             e.state = 'windup'; e.wu = e.st = TROOP_MELEE.feintWindup; e.plan = null; e.troop = null;
@@ -137,7 +142,7 @@ export function updateEnemies(dt){
           }
         }
         // OFFICER — calls a volley or a flank with you in sight (tactics.js) · LANCER — plants and lunges from mid range
-        if (t.officer && tgtPos && tryOrder(e, dt, dist, tgtPos)) break;
+        if (t.officer && tgtPos && !onAlly && tryOrder(e, dt, dist, tgtPos)) break;
         // (a lancer circling in the ring waits its turn like the rest: it lunges with a token, or to close from afar)
         if (t.lancer && tgtPos && (e.token || dist > t.range + ENGAGE.ringPad + 1) && tryLunge(e, dt, dist, tgtPos)) break;
         // WARBRINGER mid-boss — periodically LEAPS and quakes the ground where you stand (dash/jump it)
@@ -153,7 +158,7 @@ export function updateEnemies(dt){
         // stalking ring, cover-hugging and local avoidance below stand aside so nothing pulls it back into the wall.
         const er = 0.7 * (t.scale || 1);
         let pathing = false, wx = tx, wz = tz;
-        if (tgtPos && !t.fly && !e.converted){
+        if (tgtPos && !t.fly && !e.converted && !onAlly){
           if ((e.navT = (e.navT || 0) - dt) <= 0){
             e.navT = NAV_EVERY * rand(0.8, 1.2);
             e.navDirect = navSteer(g.position.x, g.position.z, tgtPos.x, tgtPos.z, navClass(er), steer);
@@ -162,7 +167,7 @@ export function updateEnemies(dt){
           if (!e.navDirect){ pathing = true; wx = e.navX; wz = e.navZ; }
         }
         // PINCER — a token holder sent wide comes at you from an angle off the others (tactics.js)
-        if (!pathing && e.appr && tgtPos && approachSteer(e, dt, tgtPos, dist, appr)){ wx = appr.x; wz = appr.z; }
+        if (!pathing && !onAlly && e.appr && tgtPos && approachSteer(e, dt, tgtPos, dist, appr)){ wx = appr.x; wz = appr.z; }
         let mx = wx, mz = wz;
         // separation from other enemies
         for (const o of enemies){
@@ -173,7 +178,7 @@ export function updateEnemies(dt){
         }
         // STALKING — a melee foe without an attack token holds a ring just outside its reach and circles,
         // so a crowd takes turns instead of piling into one wall of swings (see ENGAGE / director.js)
-        const stalking = !!tgtPos && usesToken(e) && !e.token;
+        const stalking = !!tgtPos && !onAlly && usesToken(e) && !e.token;
         let paceMul = 1;
         if (stalking && !pathing){
           const ring = t.range + ENGAGE.ringPad;
@@ -290,20 +295,23 @@ export function updateEnemies(dt){
           else if (t.ranged && !t.fly && !e.converted && !exposed && !t.grenade){ /* no clear shot — keep peeking, or flank for one */ }
           // a melee foe on the far side of tall cover doesn't swing at the wall — it keeps routing around
           else if (!t.ranged && !e.converted && wallBetween(g.position.x, g.position.z, tgtPos)){ /* go around */ }
+          // the hero is DOWN (game/revive.js): a blade doesn't finish them, it circles and waits; the squad is coming
+          else if (!t.ranged && !e.converted && !onAlly && player.downed){ /* hold */ }
           // RANGED SLOTS: only a few troopers aim at once, so a firing line staggers its shots
-          else if (t.ranged && !e.converted && !rangedSlotFree(t)){ /* hold — sidestep and wait */ }
+          else if (t.ranged && !e.converted && !onAlly && !rangedSlotFree(t)){ /* hold — sidestep and wait */ }
           // MELEE WINDUP STAGGER: hostile (non-converted) melee foes share a cooldown so a crowd doesn't all coil &
           // swing at once — ranged/converted foes are unaffected (already standoff/ally-targeted, not a swarm problem).
-          else if (t.ranged || e.converted || G.gt - (G.lastMeleeWindupT ?? -9) >= MELEE_WINDUP_GAP){
+          else if (t.ranged || e.converted || onAlly || G.gt - (G.lastMeleeWindupT ?? -9) >= MELEE_WINDUP_GAP){
             // a swing coiled BEHIND the camera gets a longer tell, so off-screen hits stay fair
-            e.wu = t.windup * (!t.ranged && !e.converted && behindCamera(g.position) ? ENGAGE.rearWindup : 1) * (e.converted ? 1 : diffTellMul());   // DIFFICULTY: longer tells on Padawan
+            e.wu = t.windup * (!t.ranged && !e.converted && !onAlly && behindCamera(g.position) ? ENGAGE.rearWindup : 1) * (e.converted || onAlly ? 1 : diffTellMul());   // DIFFICULTY: longer tells on Padawan
             e.state = 'windup'; e.st = e.wu; telegraphWindup(e);
             // a duellist picks its line, and whether this one is a feint, a held strike or the start of a string; a plain
             // trooper may hold or feint (tactics.js); a line trooper plans a double-tap or a held aim
             e.troop = null; e.volley = false;
-            if (e.dp && !t.ranged && !e.converted) planAttack(e);
+            if (onAlly) e.plan = null;   // a plain blow or a plain shot at a squadmate
+            else if (e.dp && !t.ranged && !e.converted) planAttack(e);
             else { e.plan = null; if (t.ranged) planShot(e); else planTroopMelee(e); }
-            if (!t.ranged && !e.converted) G.lastMeleeWindupT = G.gt;
+            if (!t.ranged && !e.converted && !onAlly) G.lastMeleeWindupT = G.gt;
           }
           // else: another melee foe just committed to a swing — hold in chase this frame and retry next frame
         }
@@ -361,7 +369,7 @@ export function updateEnemies(dt){
           if (t.ranged){
             if (tgtPos && t.grenade){
               // GRENADIER — lob a detonator where the target will be (a little lead, a little scatter)
-              const v = e.converted ? null : player.vel, L = GRENADE.lead, sc = GRENADE.scatter;
+              const v = e.converted || onAlly ? null : player.vel, L = GRENADE.lead, sc = GRENADE.scatter;
               const at = V3(tgtPos.x + (v ? v.x * L : 0) + rand(-sc, sc), 0, tgtPos.z + (v ? v.z * L : 0) + rand(-sc, sc));
               throwGrenade(e, V3(g.position.x + tx*0.4, g.position.y + 2.2, g.position.z + tz*0.4), at, e.converted);
               if (g.userData.weaponArm) g.userData.weaponArm.rotation.x = 0.5;   // the arm follows through
@@ -412,6 +420,8 @@ export function updateEnemies(dt){
             if (e.converted){
               if (tgtEnemy) damageEnemy(tgtEnemy, t.dmg * CFG.convertDmgMult, V3(tx,0,tz), 10);
               else if (tgtBoss) damageBoss(t.dmg * CFG.convertDmgMult);
+            } else if (onAlly){
+              hurtAlly(tgtAlly, t.dmg * enemyDmgScale(), g.position);
             } else {
               // a THRUST drives through a held guard: parry it or get out of the way
               const res = hurtPlayer(t.dmg * enemyDmgScale() * (thrust ? DUEL.thrustDmg : 1), g.position, false, true, false, thrust ? { unblockable: true } : null);   // melee — blocked by high ground

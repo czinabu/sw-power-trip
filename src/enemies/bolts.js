@@ -25,6 +25,7 @@ import { sweepHit, headPos } from './bodyshape.js';
 import { tutEvent } from '../game/tutor-bus.js';
 import { airGuardLost, airParryOk } from '../player/mobility.js';
 import { masteryXp } from '../game/progression.js';
+import { allySweep, hurtAlly, isFodder } from '../allies/squad.js';
 
 /* ============================================================
    PROJECTILES — blaster bolts & boss orbs
@@ -94,6 +95,15 @@ export function updateBolts(dt){
           S.boltImpact(V3(bx, by, bz));
           break;
         }
+      }
+    }
+    // a hostile bolt that meets one of the hero's squadmates on the way stops in it (allies/squad.js)
+    if (!kill && !b.friendly){
+      const ah = allySweep(PREV, b.mesh.position, BOLT_R);
+      if (ah){
+        b.mesh.position.lerpVectors(PREV, b.mesh.position, ah.t);
+        hurtAlly(ah.ally, b.dmg, b.mesh.position); kill = true;
+        boltImpact(b.mesh.position, b.mesh.material.color.getHex(), b.dir);
       }
     }
     if (!kill && !b.friendly){
@@ -180,15 +190,20 @@ export function updateBolts(dt){
       let foe = null, hit = null;
       for (const e of enemies){
         if (e.dead || e.converted) continue;
+        if (b.ally && !isFodder(e)) continue;   // a squadmate's fire leaves the duellists to you (data/allies.js)
         const h = sweepHit(e, PREV, b.mesh.position, BOLT_R);
         if (h && (!hit || h.t < hit.t)){ hit = h; foe = e; }
       }
-      const bp = shared.boss && shared.boss.hp > 0 ? shared.boss.group.position : null;
+      const bp = shared.boss && shared.boss.hp > 0 && !b.ally ? shared.boss.group.position : null;
       const bossT = bp ? segCylinder(PREV, b.mesh.position, bp, 1.6, bp.y, bp.y + 3.4) : -1;
       if (foe && !(bossT >= 0 && bossT < hit.t)){
         const e = foe;
         b.mesh.position.lerpVectors(PREV, b.mesh.position, hit.t);   // the impact shows where it struck
-        if (!deflectPlayerBolt(e, b)){   // a saber duellist bats it straight back at you (duel.js)
+        if (b.ally){
+          // a squadmate's bolt: plain damage, a small rock, nothing for the hero's streak or Focus (enemies/damage.js)
+          damageEnemy(e, b.dmg, b.dir, 3, false, false, { ally: true }); kill = true;
+          boltImpact(b.mesh.position, b.mesh.material.color.getHex(), b.dir);
+        } else if (!deflectPlayerBolt(e, b)){   // a saber duellist bats it straight back at you (duel.js)
           let dmg = boltDamage(b);   // range falloff
           const isHead = hit.head;
           if (isHead){

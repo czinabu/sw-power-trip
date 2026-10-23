@@ -111,10 +111,10 @@ export function nextStoreGoal(){
   return best;
 }
 export function powerLv(id){ return (G.powerLv && G.powerLv[id]) || 0; }
-export function powerCost(p){ return 180 + powerLv(p.id) * 90; }   // each power keeps its OWN rising price & level
+export function powerCost(p){ return (p.base || 180) + powerLv(p.id) * (p.step || 90); }   // each power keeps its OWN rising price & level
 export function buyPower(p){
   const cost = powerCost(p);
-  if (!G.skillSelect || (G.xp||0) < cost) return;
+  if (!G.skillSelect || (G.xp||0) < cost || (p.avail && !p.avail())) return;
   if (!G.powerLv) G.powerLv = {};
   G.xp -= cost; G.powerLv[p.id] = powerLv(p.id) + 1; p.apply();
   floater(playerPos(), p.nm + ' ×' + G.powerLv[p.id] + '!', '#ffd24a'); burst(playerPos().clone().setY(1.6), 0xffd24a, 12, 6, 5);

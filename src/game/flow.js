@@ -32,6 +32,8 @@ import { diffBossCheckpoint } from '../data/difficulty.js';
 import { catchDarksaber } from '../player/mando/darksaber.js';
 import { resetGrasp } from '../player/jedi/grasp.js';
 import { resetAirCut } from '../player/jedi/aerial.js';
+import { clearSquad } from '../allies/squad.js';
+import { clearDowned } from './revive.js';
 
 /* ============================================================
    LEVEL / WAVE FLOW
@@ -54,6 +56,7 @@ export function startLevel(idx, opts){
   // clear battlefield
   for (const e of enemies) removeEnemy(e);
   enemies.length = 0;
+  clearSquad(); clearDowned();   // the squad and anyone downed don't carry into a new level (a mode calls its own squad in)
   endLock();
   for (const b of bolts) scene.remove(b.mesh);
   bolts.length = 0;

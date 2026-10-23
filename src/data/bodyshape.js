@@ -32,5 +32,7 @@ export const HITBOX = {
   officer: parts({ hx: 0.46 }, { y1: 2.38 }),                                        // officer
   grenadier: parts({ hx: 0.52, hz: 0.32 }, { y1: 2.36 }),                            // grenadier (bandolier, pack)
   lancer:  parts({ hx: 0.5, hz: 0.3 }, { y1: 2.44 }),                                // lancer (crest, cape)
+  clone:   parts({ hx: 0.5 }, { y1: 2.38 }),                                         // squadmate: clone trooper
+  mandalorian: parts({ hx: 0.5, hz: 0.36 }, { y1: 2.42 }),                           // squadmate: Mandalorian warrior (jetpack)
   b1:      parts({ y0: 0.8, y1: 1.72, hx: 0.4, hz: 0.3 }, { y0: 1.72, y1: 2.19, hx: 0.12, hz: 0.3 }, { y1: 0.8, hx: 0.2, hz: 0.15 }),  // bomber droid
 };

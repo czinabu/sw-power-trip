@@ -39,6 +39,7 @@ import { tutEvent } from '../game/tutor-bus.js';
 import { diffWindow } from '../data/difficulty.js';
 import { toggleHolster } from '../player/holster.js';
 import { forceStrike } from '../player/jedi/palm.js';
+import { squadOrder } from '../allies/squad.js';
 
 const inputActive = () => document.pointerLockElement === renderer.domElement || (shared.lockFallback && G.mode === 'play');
 document.addEventListener('mousemove', (e) => {
@@ -51,6 +52,7 @@ document.addEventListener('mousemove', (e) => {
 });
 document.addEventListener('mousedown', (e) => {
   if (!inputActive()) return;
+  if (player.downed) return;   // down: nothing to fight with until you're back up (game/revive.js)
   if (player.saberLock){ if (e.button === 0) lockPress(); return; }   // blades bound: LMB drives (enemies/duel.js)
   if (G.hero === 'mando'){
     if (e.button === 0){
@@ -137,12 +139,14 @@ document.addEventListener('contextmenu', (e) => e.preventDefault());
 document.addEventListener('keydown', (e) => {
   if (e.target && e.target.tagName === 'INPUT' && e.target.type !== 'range') return;   // typing in a text box (the co-op room code) is not play
   const k = e.key.toLowerCase();
+  if (player.downed && G.mode === 'play' && k !== 'p' && k !== 'm' && k !== 'escape') return;   // down: wait for your squad
   keys[k] = true;
   if (k === 'alt') e.preventDefault();   // ALT is the slide: keep the browser from grabbing it for its menu bar
   if (k === 'p' && !e.repeat){ cycleQuality(); return; }   // graphics quality — works anywhere
   if (k === 'm' && !e.repeat){ audioInit(); const on = MUSIC.toggle(); showBanner('', '♪ MUSIC ' + (on ? 'ON' : 'OFF'), 1.0); return; }   // music on/off (persists)
   if (k === ' ' && !e.repeat) doJump();
-  if (k === '4' && !e.repeat) toggleHolster();   // HOLSTER: the Jedi fights with the Force alone, the Mando with fists and gadgets (player/holster.js)
+  if (k === '4' && !e.repeat) toggleHolster();
+  if (k === 'h' && !e.repeat) squadOrder();   // SQUAD: hold the spot under the crosshair, or on me (allies/squad.js)   // HOLSTER: the Jedi fights with the Force alone, the Mando with fists and gadgets (player/holster.js)
   if (G.hero === 'mando'){
     if (k === 'shift' && !e.repeat) mandoShift();        // combat roll / rocket boost / air dodge (mando/mobility.js); held in the air it boosts
     if (G.mode === 'play'){

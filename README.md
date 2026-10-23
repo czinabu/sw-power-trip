@@ -29,15 +29,16 @@ src/
   main.js            imports every module in load order, runs the main loop, exposes window.GAME
   state.js           G (run state), player, entity arrays, keys, and `shared` (values that get reassigned)
   utils.js           math helpers
-  data/              tuning tables: config, movement, stances, enemies, levels, bosses, mando, skills, store, mastery, boons, mutators, difficulty, worlds (arena looks), sandbox, battlemaps
+  data/              tuning tables: config, movement, stances, enemies, levels, bosses, mando, skills, store, mastery, boons, mutators, difficulty, worlds (arena looks), sandbox, battlemaps, allies (the squad and revive rules)
   engine/            renderer + post-processing, graphics quality, input, camera
   audio/             mixer + voice builder (engine.js), sound bank (sfx.js), adaptive orchestral score with hero themes and mission cues (music.js), loops + ambience (director.js)
-  fx/                particles, floating text, VFX lights, saber trail, one-shot VFX, ambient embers
+  fx/                particles, floating text, VFX lights, saber trail, one-shot VFX, ambient embers, the wider battle past a mission's edge (battle.js)
   player/            hero swap, movement, parkour, damage, updatePlayer (update.js), animation
     model/           hero models: rig + sockets, outfit slots (jedi.js, mando.js), weapons, render styles, looks
     jedi/            stances, focus, saber combat, blade-on-blade clashes (clash.js), Force powers, Judgement FX
     mando/           weapons, gadgets, darksaber
   enemies/           meshes, elites, special moves, spawning, damage, AI, pathing (nav.js), attack turns (director.js), blaster bolts (see docs/enemy-ai.md)
+  allies/            the hero's strike team: squadmates, orders, who they shoot and who shoots them (squad.js)
   boss/              boss lightning FX and the boss itself
   net/               online co-op: room-code connection over WebRTC (session.js) and the partner's ghost hero (ghost.js); see below
   world/             arena builder, arenas/ (temple, foundry, plains layouts; hall and forge for training; refuge and pursuit for the story missions; dojo and throne for the sandbox; grassland, icefront and graveyard, the battle maps, with field.js for their shared pieces), Ink bake, painted skies/floors, backdrops, atmosphere, collision, hazards (see docs/world-guidelines.md)
@@ -83,9 +84,11 @@ Each file starts with a one-line description. Balance changes usually only touch
 
 Missions are data (`data/missions.js`) built from reusable objective pieces (`game/objectives.js`: zones, consoles, timers, the objective HUD line). An arena can be long instead of square (`arenaZ` in its level: the pursuit route is 56 × 320); bounds, enemy pathing, the shadow box and the sky all follow it.
 
-**Survival mode** — unlocked after beating the campaign as both heroes. Endless escalating waves, 8 wave mutators, Warbringer mid-boss every 10 waves, arena rotation (the three campaign arenas, then the three battle maps), repeatable power-ups, roguelite boon picks each wave
+**Spearhead** (also under EXTRAS) is a large-battle mission with a strike team of four at your back: clone troopers for the Jedi, Mandalorians for the Mando. Break three enemy posts, hold the ground while their counter-attack comes in, then duel the Warden who leads it. **H** orders the squad to hold the spot under the crosshair, and H again brings them back on you.
 
-**Battle maps** — three large open fields for big fights with allied squads, two to three times a campaign arena across: the Grass Sea of Lothal (150 m: a landing field, ridge lines and rock spires, a downed walker for high ground, an Imperial outpost with mortar strikes landing on the open grass), the Ice Front on Hoth (140 m: two staggered trench lines in front of the shield generator, a no-man's land of boulders and drifts under walker cannon fire, the Imperial forward line) and the Starship Graveyard of Jakku (160 m: a scavenger camp, a field of standing hull plates, a buried engine bell with plasma vents, crashed fighters, an Imperial salvage yard). Pick one from the sandbox panel's ARENA row, or meet them in survival. Each lays out the same way, allies at the north end and the enemy coming from the south, and exports its SPOTS (where squads start, the cover lines facing each way, the points worth holding) for story missions to build on. On a map this big the sun's shadow box, the sky dome and the drifting dust follow the hero, waves arrive on a ring 28 to 40 m out instead of at the far edge, and the enemy flow field only routes the fight around the hero, so it costs about what Exegol does. `npm run smoke:maps` plays a short fight on each one.
+**The squad** — allies hold ground and soften the rank and file; duellists, heavies and bosses are always yours. A squadmate's bolt is weak, their kills pay half XP and nothing toward streaks, Focus or boons, and at most half the troopers can be on them at once, so you always have a fight of your own. Squadmates that drop are down, not dead: stand by one to get it up, or it gets up on its own. With a squadmate standing, a killing blow downs you instead and the nearest one runs to get you up, once per wave or objective (twice on Padawan). The revive code (`game/revive.js`) knows nothing about who is reviving whom, so online co-op can use it for partners. The tuning is all in `data/allies.js`. The squad is also in the sandbox (the panel's SQUAD row) and survival (the REINFORCEMENTS power, which brings an extra trooper a wave for each squadmate).
+
+**Survival mode** — unlocked after beating the campaign as both heroes. Endless escalating waves, 8 wave mutators, Warbringer mid-boss every 10 waves, arena rotation, repeatable power-ups, roguelite boon picks each wave
 
 **10 enemy types** — grunts, blaster troopers, staff duelists, Sith acolytes (saber duellists), brutes, jet troopers, shield sentinels, saboteur bombers, snipers (with laser-sight telegraph), and the Warbringer mid-boss with a leap-slam attack
 
