@@ -11,6 +11,7 @@ npm install        # once
 npm run dev        # play at the printed localhost URL; reloads instantly as you edit
 npm run build      # writes dist/index.html, one self-contained file you can double-click or share
 npm run smoke      # after a build: plays both heroes headlessly for a short fight, fails on any error
+npm run smoke:maps # after a build: a short fight on each battle map (sandbox and survival), and what each one costs to draw
 ```
 
 Every pull request runs the build and the smoke test automatically (`.github/workflows/check.yml`); a red check means the game failed to build or threw an error mid-fight. The first run needs the test browser once: `npx playwright install chromium`.
@@ -28,7 +29,7 @@ src/
   main.js            imports every module in load order, runs the main loop, exposes window.GAME
   state.js           G (run state), player, entity arrays, keys, and `shared` (values that get reassigned)
   utils.js           math helpers
-  data/              tuning tables: config, movement, stances, enemies, levels, bosses, mando, skills, store, mastery, boons, mutators, difficulty, worlds (arena looks), sandbox, allies (the squad and revive rules)
+  data/              tuning tables: config, movement, stances, enemies, levels, bosses, mando, skills, store, mastery, boons, mutators, difficulty, worlds (arena looks), sandbox, battlemaps, allies (the squad and revive rules)
   engine/            renderer + post-processing, graphics quality, input, camera
   audio/             mixer + voice builder (engine.js), sound bank (sfx.js), adaptive orchestral score with hero themes and mission cues (music.js), loops + ambience (director.js)
   fx/                particles, floating text, VFX lights, saber trail, one-shot VFX, ambient embers, the wider battle past a mission's edge (battle.js)
@@ -40,8 +41,8 @@ src/
   allies/            the hero's strike team: squadmates, orders, who they shoot and who shoots them (squad.js)
   boss/              boss lightning FX and the boss itself
   net/               online co-op: room-code connection over WebRTC (session.js) and the partner's ghost hero (ghost.js); see below
-  world/             arena builder, arenas/ (temple, foundry, plains layouts; hall and forge for training; refuge and pursuit for the story missions; dojo and throne for the sandbox), Ink bake, painted skies/floors, backdrops, atmosphere, collision, hazards (see docs/world-guidelines.md)
-  game/              level/wave flow, survival mode, training (tutorial.js), story missions (mission.js, objectives.js), the sandbox (sandbox.js), downed-and-revive (revive.js), progression, boons, end-of-run summary
+  world/             arena builder, arenas/ (temple, foundry, plains layouts; hall and forge for training; refuge and pursuit for the story missions; dojo and throne for the sandbox; grassland, icefront and graveyard, the battle maps, with field.js for their shared pieces), Ink bake, painted skies/floors, backdrops, atmosphere, collision, hazards (see docs/world-guidelines.md)
+  game/              level/wave flow, survival mode, training (tutorial.js), story missions (mission.js, objectives.js), the sandbox (sandbox.js), progression, boons, end-of-run summary
   ui/                banners, threat markers, HUD, store overlay, menus, the sandbox panel (sandbox-ui.js), the title screen's hero turntable (showcase.js), controls (How to Play data)
 ```
 

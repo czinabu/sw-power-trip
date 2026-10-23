@@ -304,10 +304,83 @@ export const MISSION_WORLDS = {
   },
 };
 
+/* BATTLE MAPS — the large open fields for big squad battles (data/battlemaps.js) keep one look whatever WORLD is picked.
+   They are two to three times the size of a campaign arena, so fog starts nearer (as a share of the arena) and the
+   backdrop sits further out; the sky dome and the sun's shadow box ride along with the hero (world/atmosphere.js). */
+export const BATTLE_WORLDS = {
+  grassland: {   // the Grass Sea of Lothal: golden grass and rock spires under a big afternoon sky
+    sky: { top: 0x3e6aa8, horizon: 0xf0d098, below: 0x9a9a6a, bands: 7, stars: 0,
+      sun: { el: 0.22, color: 0xfff0c0, halo: 0xffd890, size: 20 },
+      clouds: { color: 0xf8e8d0, under: 0xc0a890, count: 14, lo: 0.45, hi: 0.9 },
+      ridges: [{ color: 0x8a9a7a, h: 0.07, rough: 0.05, seed: 6 }, { color: 0x7a8a68, h: 0.04, rough: 0.06, seed: 13 }] },
+    fog: 0xc8c4a0, fogStart: 0.42, fogEnd: 1.65,
+    light: { sun: 0xfff0d0, sunI: 1.75, dir: [-26, 40, 30], hemiSky: 0xbcd0f0, hemiGround: 0x5a5a3a, fill: 0.8, rim: 0xffd8a0, rimI: 0.5 },
+    floor: { kind: 'grass', base: 0x7e8448, seed: 21 },
+    outer: 0x767c44,
+    pal: { stone: 0x8e8470, stoneD: 0x6a6252, bag: 0x9e9070, metal: 0x7a828e, imperial: 0x3e424a, crate: 0x7e6a50,
+           stripe: 0xd9a43a, lamp: 0xffc070, scorch: 0x3a3626, blast: 0xff7a30, beacon: 0xff5040 },
+    backdrop: [
+      { kind: 'spires', count: 22, r: [1.35, 2.3], h: [18, 40], w: [3, 6], color: 0x8a8070, color2: 0x7a705e },
+      { kind: 'dunes', count: 14, r: [1.08, 1.3], h: 4, color: 0x767c44 },
+      { kind: 'walker', az: -1.9, r: 1.7, scale: 1.4, color: 0x8a909a, color2: 0x6a7078, glow: 0xff5a3a },
+      { kind: 'destroyer', az: -1.3, r: 2.0, y: 46, scale: 1.3, color: 0x8a8c96, color2: 0x767884, glow: 0x9ad8ff },
+    ],
+    ambient: { kind: 'dust', color: 0xfff0c8, count: 160, size: 0.28 },
+    beats: { fog: 0xd0b088, fill: 1.06, tint: 0xffd0a0 },
+    hazards: { barrel: 0xa33820 },
+    sound: 'temple',
+  },
+  icefront: {   // the Ice Front on Hoth: a grey-blue snowfield under low cloud, snow on the wind
+    sky: { top: 0x5a6e8a, horizon: 0xc8d4e0, below: 0x8a96a6, bands: 6, stars: 0,
+      sun: { el: 0.18, color: 0xf0f4ff, halo: 0xc8d8f0, size: 16 },
+      clouds: { color: 0xd8e0ea, under: 0x8a98aa, count: 26, lo: 0.2, hi: 0.9 },
+      ridges: [{ color: 0x8a9ab0, h: 0.16, rough: 0.12, spiky: 0.5, seed: 19 }, { color: 0x6e7e96, h: 0.08, rough: 0.08, seed: 4 }] },
+    fog: 0xa4b0c0, fogStart: 0.3, fogEnd: 1.35,
+    light: { sun: 0xeef4ff, sunI: 1.6, dir: [24, 38, 34], hemiSky: 0xc0d0e8, hemiGround: 0x4a5262, fill: 0.92, rim: 0xffb080, rimI: 0.45 },
+    floor: { kind: 'snow', base: 0x8a98aa, seed: 27 },   // mid grey-blue, never white: the troopers must read against it
+    outer: 0x8494a6,
+    pal: { snow: 0x9eaabb, snowD: 0x76859a, bag: 0x8a7a5e, ice: 0x7e96b0, rock: 0x5a6474, plank: 0x6a5a48, metal: 0x8a929c, metalD: 0x4a525c, imperial: 0x3a3e46,
+           stripe: 0xd9a43a, lamp: 0xffc070, shield: 0x7ad8ff, scorch: 0x3a4252, blast: 0xff7a40, beacon: 0xff5040 },
+    backdrop: [
+      { kind: 'cliffs', count: 20, r: [1.4, 2.2], h: [16, 32], w: 0.3, color: 0x7a8aa0, color2: 0x6a7a92, skip: [[-1.0, 0.3]] },
+      { kind: 'dunes', count: 16, r: [1.06, 1.3], h: 4, color: 0x8494a6 },
+      { kind: 'walker', az: -1.0, r: 1.5, scale: 1.6, color: 0x7a8494, color2: 0x5e6878, glow: 0xff5a3a, stand: true },
+      { kind: 'walker', az: -2.3, r: 1.8, scale: 1.4, color: 0x7a8494, color2: 0x5e6878, glow: 0xff5a3a, stand: true },
+    ],
+    ambient: { kind: 'snow', color: 0xf4f8ff, count: 420, size: 0.24, opacity: 0.8 },
+    beats: { fog: 0x8a90a4, fill: 1.04, tint: 0xd8e0ff },
+    hazards: { barrel: 0xa33820 },
+    sound: 'plains',
+  },
+  graveyard: {   // the Starship Graveyard on Jakku: pale sand, hard noon light, a dead Star Destroyer on the horizon
+    sky: { top: 0x4a74b0, horizon: 0xf0d0a0, below: 0xc0a070, bands: 7, stars: 0,
+      sun: { el: 0.4, color: 0xfff4d0, halo: 0xffe0a0, size: 18 },
+      clouds: { color: 0xf4e4c8, under: 0xc8a888, count: 6, lo: 0.55, hi: 0.85 },
+      ridges: [{ color: 0xc09a6a, h: 0.06, rough: 0.04, seed: 9 }, { color: 0xa88458, h: 0.04, rough: 0.05, seed: 15 }] },
+    fog: 0xdcc098, fogStart: 0.45, fogEnd: 1.7,
+    light: { sun: 0xfff0d0, sunI: 1.7, dir: [18, 46, 22], hemiSky: 0xc4d4f0, hemiGround: 0x7a6040, fill: 0.78, rim: 0xffc890, rimI: 0.5 },
+    floor: { kind: 'sand', base: 0xa88a60, seed: 33 },
+    outer: 0xa4865c,
+    pal: { hull: 0x8e8e88, hullD: 0x5e5e5a, rust: 0x7a5236, sand: 0xae8e60, cloth: 0x9a6a46, imperial: 0x3a3e46, stripe: 0xd9a43a,
+           dark: 0x2a2622, lamp: 0xffc070, plasma: 0x6ad8ff, beacon: 0xff5040 },
+    backdrop: [
+      { kind: 'wreck', az: -2.2, r: 1.75, scale: 1.2, color: 0x8a8a86, color2: 0x6e6e6a },
+      { kind: 'wreck', az: 0.5, r: 2.0, scale: 0.8, color: 0x8a8a86, color2: 0x6e6e6a, roll: -0.5 },
+      { kind: 'mesas', count: 10, r: [1.6, 2.3], h: [10, 22], w: [10, 20], color: 0xb08a5e, color2: 0x9a7650, skip: [[-2.2, 0.5]] },
+      { kind: 'dunes', count: 18, r: [1.05, 1.35], h: 5, color: 0xa4865c },
+    ],
+    ambient: { kind: 'dust', color: 0xffe8c0, count: 200, size: 0.3 },
+    beats: { fog: 0xd8a878, fill: 1.05, tint: 0xffc890 },
+    hazards: { barrel: 0xa33820, vent: 0x3a3a3c, ventIdle: 0x1a3a4a, ventActive: 0x6ad8ff },
+    sound: 'temple',
+  },
+};
+
 /* the theme for a level (by its layout), or null for unthemed/procedural arenas */
 export function themeFor(L){
   if (TRAINING_WORLDS[L.layout]) return TRAINING_WORLDS[L.layout];
   if (MISSION_WORLDS[L.layout]) return MISSION_WORLDS[L.layout];
+  if (BATTLE_WORLDS[L.layout]) return BATTLE_WORLDS[L.layout];
   const d = WORLD_DIRECTIONS[WORLD];
   return (d && L.layout && d[L.layout]) || null;
 }

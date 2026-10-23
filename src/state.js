@@ -21,6 +21,8 @@ export const shared = {
   arenaGroup: new THREE.Group(),
   arenaHalf: 20,
   arenaHalfZ: 20,   // half the depth (north–south): the same as arenaHalf except on a long arena (L.arenaZ, the pursuit route)
+  arenaLevel: null, // the level definition the arena was built from
+  arenaBig: false,  // a battle map (world/arena.js BIG_ARENA): spawns, pathing, light and the sky dome follow the hero
   arenaLayout: 'temple',   // which authored layout is up (temple | foundry | plains) — picks the ambience, reverb and music palette
   ambient: null,   // drifting embers / ash / dust
   templeBrazier: null,

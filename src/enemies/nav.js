@@ -23,6 +23,7 @@ const HOT_COST = 7;                     // extra cost per cell of a warning/firi
 const IDLE_COST = 0.25;                 // a resting hazard is only mildly disliked
 const LINE_PAD = 0.12;                  // straight-line moves keep this much more room than the grid needs
 const INF = 1e9;
+const BIG_RANGE = 46;                   // a battle map's flow field reaches this far (walking metres) from the hero
 
 const nav = {
   n: 0, nz: 0, half: 0, halfZ: 0, ox: 0, oz: 0,   // cells across (x) and along (z), arena half-sizes, grid origin (−half)
@@ -78,7 +79,9 @@ export function buildNav(){
     nav.hz[k] = h;
   }
   // a long route (the pursuit) is mostly far behind or far ahead: fill only this far out, so a refresh stays cheap
-  nav.range = nav.halfZ > nav.half * 1.5 ? 70 : INF;
+  // and so is a battle map (shared.arenaBig): only the fight around the hero needs routing; foes further out walk
+  // straight in until they reach the filled stretch
+  nav.range = nav.halfZ > nav.half * 1.5 ? 70 : shared.arenaBig ? BIG_RANGE : INF;
   nav.t = 0; nav.primed = false;
 }
 

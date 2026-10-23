@@ -146,7 +146,8 @@ export function updateHud(){
       '<span class="wi-h' + (o.warn ? ' warn' : '') + '">' + o.status + '</span>' +
       (o.frac != null ? '<span class="wi-bar"><i style="width:' + (clamp(o.frac, 0, 1) * 100).toFixed(1) + '%"></i></span>' : ''));
   } else if (G.sandbox){
-    setHtml($('waveinfo'), '<span class="wi-l">SANDBOX · ' + (G.hero === 'mando' ? 'THE THRONE ROOM' : 'THE TRAINING ROOM') + '</span><span class="wi-w">PRESS B FOR FOES &amp; POWERS</span>' + hostiles +
+    const room = ((shared.arenaLevel && shared.arenaLevel.name.split('—')[1]) || (G.hero === 'mando' ? 'THE THRONE ROOM' : 'THE TRAINING ROOM')).trim();   // the room, or the battle map picked
+    setHtml($('waveinfo'), '<span class="wi-l">SANDBOX · ' + room + '</span><span class="wi-w">PRESS B FOR FOES &amp; POWERS</span>' + hostiles +
       (G.sandboxGod ? '<span class="wi-h">GOD MODE</span>' : ''));
   } else if (G.endless){
     const mut = G.mut ? MUTATORS.find(m => m.id === G.mut) : null;

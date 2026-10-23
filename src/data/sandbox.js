@@ -8,8 +8,13 @@ import { G, player } from '../state.js';
 import { setStanceHud, switchStance } from '../player/jedi/stance.js';
 import { switchWeapon } from '../player/mando/weapons.js';
 import { applyJetTier, applyCellTier } from '../game/progression.js';
+import { BATTLE_MAPS } from './battlemaps.js';
 
 // each hero's room: the Jedi train in the temple's training room, the Mandalorian in the throne room at Sundari
+/* ARENAS — the panel's map row: the hero's own room, or any battle map (data/battlemaps.js) to try big fights on */
+export const SANDBOX_MAPS = [{ id: 'room', nm: { jedi: 'TRAINING ROOM', mando: 'THRONE ROOM' } },
+  ...Object.values(BATTLE_MAPS).map(m => ({ id: m.id, nm: m.short }))];
+
 export const SANDBOX_LEVELS = {
   jedi:  { name: 'SANDBOX — THE TRAINING ROOM', sub: 'No waves, no clock. Press B to call in foes and choose your powers.',
            arena: 48, floor: 0x6a3020, fog: 0x2a1a14, sky: 0x1a0e0a, layout: 'dojo', waves: [], hazards: {} },

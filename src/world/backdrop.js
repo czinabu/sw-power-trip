@@ -189,6 +189,7 @@ const BUILD = {
   },
   /* LANDMARK — a downed AT-AT walker: hull on its side, head, splayed and broken legs */
   walker(grp, o, half){
+    if (o.stand) return BUILD.walkerUp(grp, o, half);
     const [x, z] = P(o.az, half * o.r), s = o.scale || 1, g = new THREE.Group();
     g.position.set(x, 0, z); g.rotation.y = -o.az + 0.6; grp.add(g);
     const m = mat(o.color), m2 = mat(o.color2 || o.color);
@@ -199,6 +200,37 @@ const BUILD = {
       put(g, new THREE.BoxGeometry(1.4*s, len*s, 1.6*s), m2, lx*s, len*s*0.32, lz*s, rx, 0, rz);
     }
     if (o.glow) put(g, new THREE.BoxGeometry(0.6*s, 0.6*s, 2*s), glowMat(o.glow), 13.6*s, 2.4*s, 1.2*s, 0.4, 0.3, -0.25);
+  },
+  /* LANDMARK — a walker STANDING on the horizon (o.stand) instead of downed: hull on four straight legs, head forward */
+  walkerUp(grp, o, half){
+    const [x, z] = P(o.az, half * o.r), s = o.scale || 1, g = new THREE.Group();
+    g.position.set(x, 0, z); g.rotation.y = -o.az + PI/2 + (o.turn || 0.4); grp.add(g);
+    const m = mat(o.color), m2 = mat(o.color2 || o.color);
+    put(g, new THREE.BoxGeometry(6.4*s, 6*s, 14*s), m, 0, 16.5*s, 0);                                    // hull
+    put(g, new THREE.BoxGeometry(5*s, 1.2*s, 12*s), m2, 0, 20*s, 0);                                     // the armoured spine
+    put(g, new THREE.BoxGeometry(3.2*s, 2.8*s, 5*s), m2, 0, 14.2*s, 11.4*s, 0.12);                       // head, low and forward
+    put(g, new THREE.CylinderGeometry(1.2*s, 1.4*s, 3.6*s, 8), m2, 0, 15.2*s, 8.2*s, PI/2 - 0.25);       // neck
+    for (const sx of [-0.8, 0.8]) put(g, new THREE.CylinderGeometry(0.22*s, 0.22*s, 2.6*s, 6), m2, sx*s, 13.4*s, 14.2*s, PI/2);   // chin guns
+    for (const [lx, lz] of [[-2.6, -5.2], [2.6, -5.2], [-2.6, 5.0], [2.6, 5.0]]){
+      const k = lz > 0 ? 1 : -1;   // the knees bend the same way front and back
+      put(g, new THREE.BoxGeometry(0.9*s, 7*s, 1.1*s), m2, lx*s, 10.4*s, (lz + 0.6*k)*s, -0.18*k, 0, 0);   // upper leg
+      put(g, new THREE.SphereGeometry(0.8*s, 8, 6), m, lx*s, 7*s, (lz + 1.2*k)*s);                            // knee
+      put(g, new THREE.BoxGeometry(0.8*s, 7*s, 1.0*s), m2, lx*s, 3.6*s, (lz + 0.6*k)*s, 0.18*k, 0, 0);    // lower leg
+      put(g, new THREE.CylinderGeometry(1.0*s, 1.3*s, 0.7*s, 8), m, lx*s, 0.35*s, lz*s);                   // foot
+    }
+    if (o.glow) put(g, new THREE.BoxGeometry(2.2*s, 0.4*s, 0.2*s), glowMat(o.glow), 0, 14.8*s, 13.95*s);
+  },
+  /* LANDMARK — a crashed Star Destroyer, stern buried in the sand, bow raised and rolled onto one side (Jakku) */
+  wreck(grp, o, half){
+    const [x, z] = P(o.az, half * o.r), s = o.scale || 1, g = new THREE.Group();
+    g.position.set(x, 0, z); g.rotation.set(0, -o.az + PI/2, 0); grp.add(g);
+    const h = new THREE.Group(); h.rotation.set(-0.16, 0, o.roll ?? 0.55); g.add(h);   // bow up, rolled
+    const m = mat(o.color), m2 = mat(o.color2 || o.color);
+    put(h, new THREE.ConeGeometry(14*s, 70*s, 3), m, 0, 6*s, 0, PI/2, 0, 0, [1, 1, 0.22]);             // the dagger hull
+    put(h, new THREE.BoxGeometry(10*s, 4*s, 7*s), m2, 0, 10.5*s, -22*s);                                // superstructure
+    put(h, new THREE.BoxGeometry(14*s, 1.6*s, 2.4*s), m2, 0, 13.4*s, -24*s);                            // bridge
+    for (const ex of [-5, 0, 5]) put(h, new THREE.CylinderGeometry(1.8*s, 2.2*s, 3*s, 10), m2, ex*s, 6*s, -35.5*s, PI/2);   // dead engines
+    put(grp, new THREE.SphereGeometry(1, 12, 6, 0, PI*2, 0, PI/2), mat(o.sand || 0xa4865c), x, -0.2, z, 0, -o.az, 0, [30*s, 5*s, 14*s]);   // sand piled at the impact
   },
   /* LANDMARK — a Star Destroyer hanging in the sky (silhouette wedge with engine glow) */
   destroyer(grp, o, half){
