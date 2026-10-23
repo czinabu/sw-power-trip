@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { CFG } from '../data/config.js';
 import { LEVELS } from '../data/levels.js';
+import { BATTLE_MAPS } from '../data/battlemaps.js';
 import { scene } from '../engine/renderer.js';
 import { S } from '../audio/sfx.js';
 import { MUSIC } from '../audio/music.js';
@@ -35,7 +36,8 @@ export function enemyDmgScale(){
   // COMPOUNDS past wave ~5 so a late-game mistake actually hurts even through stacked Vitality / damage-reduction.
   return (1 + n*0.03) * Math.pow(1.035, Math.max(0, n-5)) * (G.mut === 'frenzy' ? 1.3 : 1);
 }
-const ENDLESS_ARENAS = [0, 1, 2];   // rotate through the three authored arenas
+// rotate through the three campaign arenas, then the battle maps (every 5 waves; data/battlemaps.js)
+export const ENDLESS_ARENAS = [...LEVELS, ...Object.values(BATTLE_MAPS).map(m => m.level)];
 function pickMutator(n){
   if (n < 3 || n % 5 === 0) return null;     // early waves & milestone surges run clean
   if (Math.random() < 0.34) return null;     // not every wave is mutated
@@ -120,7 +122,7 @@ function rotateEndlessArena(L){
 export function startEndlessWave(){
   G.endlessWave++; G.waveTotal++;
   const n = G.endlessWave;
-  if (n > 1 && (n - 1) % 5 === 0){ G.arenaRot = (G.arenaRot + 1) % ENDLESS_ARENAS.length; rotateEndlessArena(LEVELS[ENDLESS_ARENAS[G.arenaRot]]); }
+  if (n > 1 && (n - 1) % 5 === 0){ G.arenaRot = (G.arenaRot + 1) % ENDLESS_ARENAS.length; rotateEndlessArena(ENDLESS_ARENAS[G.arenaRot]); }
   G.eliteSurge = false; G.pendingChampion = false;
   G.mut = pickMutator(n);
   const milestone = (n % 5 === 0);

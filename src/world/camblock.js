@@ -11,8 +11,8 @@
 
 import * as THREE from 'three';
 
-const props = [];   // { inv: Matrix4 (world → mesh local), box: Box3 (local), solid: lens may not sit inside it }
-const _a = new THREE.Vector3(), _b = new THREE.Vector3();
+const props = [];   // { inv: Matrix4 (world → mesh local), box: Box3 (local), solid: lens may not sit inside it, c, r: world bounding sphere }
+const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3();
 
 // per-prop fade (0 solid … 1 faded), one byte per prop id, read by the baked materials' vertex shader (ink.js SEE)
 export const FADE_W = 256, FADE_H = 64;
@@ -34,7 +34,9 @@ export function registerProp(o){
   if (props.length >= FADE_W * FADE_H) return -1;
   const geo = o.geometry;
   if (!geo.boundingBox) geo.computeBoundingBox();
-  props.push({ inv: o.matrixWorld.clone().invert(), box: geo.boundingBox.clone(), solid: o.material.side !== THREE.DoubleSide });
+  // a world bounding sphere, so the per-frame tests can skip props nowhere near the hero (a battle map has hundreds)
+  const box = geo.boundingBox.clone(), c = box.getCenter(new THREE.Vector3()), r = box.getSize(_c).length() / 2 * o.matrixWorld.getMaxScaleOnAxis();
+  props.push({ inv: o.matrixWorld.clone().invert(), box, solid: o.material.side !== THREE.DoubleSide, c: c.applyMatrix4(o.matrixWorld), r });
   return props.length - 1;
 }
 
@@ -53,6 +55,8 @@ export function cameraClearance(ax, ay, az, bx, by, bz, margin = 0.35){
     let best = k;
     for (const pr of props){
       if (!pr.solid) continue;
+      const dx = px - pr.c.x, dy = py - pr.c.y, dz = pz - pr.c.z;
+      if (dx*dx + dy*dy + dz*dz > pr.r*pr.r) continue;   // the lens spot is nowhere near this prop
       _b.set(px, py, pz).applyMatrix4(pr.inv);
       if (!pr.box.containsPoint(_b)) continue;
       // transform the segment into the prop's frame; the parameter t along it is unchanged by an affine map
@@ -72,9 +76,11 @@ export function cameraClearance(ax, ay, az, bx, by, bz, margin = 0.35){
 const LINES = [0.5, 1.1, 1.8];
 export function updatePropFade(cam, px, py, pz, dt, spare = 0.3){
   const ease = Math.min(1, dt * 8);
+  const reach = Math.hypot(px - cam.x, py + 1 - cam.y, pz - cam.z) + 2;   // a prop that can cut a sight line is within this of the hero
   let dirty = false;
   for (let i = 0; i < props.length; i++){
     const pr = props[i];
+    if (fade[i] === 0){ const dx = px - pr.c.x, dz = pz - pr.c.z, m = reach + pr.r; if (dx*dx + dz*dz > m*m) continue; }   // far off and already solid
     let hit = 0;
     _a.set(px, py + LINES[1], pz).applyMatrix4(pr.inv);
     if (!pr.box.containsPoint(_a)){

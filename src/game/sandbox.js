@@ -6,7 +6,7 @@ import { scene } from '../engine/renderer.js';
 import { V3 } from '../utils.js';
 import { burst } from '../fx/particles.js';
 import { floater } from '../fx/floaters.js';
-import { shared, G, enemies, player } from '../state.js';
+import { shared, G, enemies, player, bolts } from '../state.js';
 import { CFG } from '../data/config.js';
 import { playerPos, maxHp, maxStam } from '../player/helpers.js';
 import { spawnEnemy } from '../enemies/spawn.js';
@@ -17,10 +17,15 @@ import { spawnChampion } from './survival.js';
 import { startLevel, syncJediChips, syncMandoChips } from './flow.js';
 import { showBanner } from '../ui/banners.js';
 import { SANDBOX_LEVELS, SANDBOX_KIT } from '../data/sandbox.js';
+import { BATTLE_MAPS } from '../data/battlemaps.js';
+import { buildArena } from '../world/arena.js';
+import { clearGrenades } from '../enemies/grenades.js';
 
 // the panel's settings: how many foes a pick calls in, whether they come elite or stand still as dummies
 // (god mode is G.sandboxGod, so player/damage.js can read it)
-export const SB = { count: 1, elite: false, dummy: false };
+// map: 'room' (the hero's own room) or a battle map's id, remembered across visits
+export const SB = { count: 1, elite: false, dummy: false, map: savedMap() };
+function savedMap(){ try { const m = localStorage.getItem('sw_sandbox_map'); if (m && BATTLE_MAPS[m]) return m; } catch(e){} return 'room'; }
 
 // unlocked once the campaign has been beaten with either hero (summary.js records each win)
 export function sandboxUnlocked(){
@@ -28,12 +33,35 @@ export function sandboxUnlocked(){
 }
 
 export function startSandbox(){
-  startLevel(0, { level: SANDBOX_LEVELS[G.hero] || SANDBOX_LEVELS.jedi, sandbox: true });   // fresh hero and starting kit, in the hero's room
+  startLevel(0, { level: sandboxLevel(), sandbox: true });   // fresh hero and starting kit, in the hero's room (or the picked battle map)
   G.waveTotal = 0;   // foes at their base toughness (HP and elite odds climb with waveTotal)
-  const s = findClearSpawn(0, -10, CFG.player.radius + 1.0);
-  playerPos().set(s.x, 0, s.z); G.yaw = player.faceYaw = 0;   // south of centre, facing the north wall (the crest, or the throne)
+  placeHero();
   const kit = savedKit();
   if (kit) applyKit(kit); else sandboxKitAll(true);   // the first visit: everything (the first of each key-sharing pair)
+}
+
+/* ---------- the arena ---------- */
+function sandboxLevel(){ const m = BATTLE_MAPS[SB.map]; return m ? m.level : (SANDBOX_LEVELS[G.hero] || SANDBOX_LEVELS.jedi); }
+// the room: south of centre, facing the north wall (the crest, or the throne) · a battle map: where the allies start
+function placeHero(){
+  const m = BATTLE_MAPS[SB.map], [x, z, yaw] = m ? m.spots.allyStart : [0, -10, 0];
+  const s = findClearSpawn(x, z, CFG.player.radius + 1.0);
+  playerPos().set(s.x, 0, s.z); G.yaw = player.faceYaw = yaw;
+  player.vel.set(0, 0, 0); player.moveVel.set(0, 0, 0); player.vy = 0;
+}
+// switch arenas from the panel: the floor is cleared and the new one is built in place (the kit stays as it is)
+export function setSandboxMap(id){
+  if (id !== 'room' && !BATTLE_MAPS[id]) return;
+  SB.map = id;
+  try { localStorage.setItem('sw_sandbox_map', id); } catch(e){}
+  if (!G.sandbox) return;
+  sandboxClear();
+  for (const b of bolts) scene.remove(b.mesh); bolts.length = 0;
+  clearGrenades();
+  const L = sandboxLevel();
+  buildArena(L);
+  placeHero();
+  showBanner((L.name.split('—')[1] || L.name).trim(), L.sub, 2.2);
 }
 
 /* ---------- the kit ---------- */

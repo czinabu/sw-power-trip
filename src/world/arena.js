@@ -23,11 +23,18 @@ import { buildRefugeArena } from './arenas/refuge.js';
 import { buildPursuitArena } from './arenas/pursuit.js';
 import { buildDojoArena } from './arenas/dojo.js';
 import { buildThroneArena } from './arenas/throne.js';
+import { buildGrasslandArena } from './arenas/grassland.js';
+import { buildIcefrontArena } from './arenas/icefront.js';
+import { buildGraveyardArena } from './arenas/graveyard.js';
 import { buildNav } from '../enemies/nav.js';
 
 /* ============================================================
    ARENA
    ============================================================ */
+
+/* an arena wider than this is a BATTLE MAP (data/battlemaps.js): far bigger than the sun's shadow box and the reach of
+   one flow field, so the light, the sky dome, enemy arrivals and pathing all work around wherever the hero is */
+export const BIG_ARENA = 100;
 
 scene.add(shared.arenaGroup);
 
@@ -39,6 +46,8 @@ export function buildArena(L){
   resetCamBlockers();
   shared.arenaHalf = L.arena / 2;
   shared.arenaHalfZ = (L.arenaZ || L.arena) / 2;   // L.arenaZ: a long arena, deeper north–south than it is wide
+  shared.arenaLevel = L;
+  shared.arenaBig = L.arena > BIG_ARENA;            // a battle map: spawns, pathing, light and sky work around the hero (see BIG_ARENA)
   shared.ambient = null;
   shared.dojoRemotes = null;      // the sandbox room's hovering remotes (world/arenas/dojo.js)
   shared.templeBrazier = null;   // cleared each rebuild; the temple layout re-assigns it (so we never flicker a stale mesh)
@@ -102,6 +111,9 @@ export function buildArena(L){
   else if (L.layout === 'pursuit'){ buildPursuitArena(LP); }
   else if (L.layout === 'dojo'){ buildDojoArena(LP); }
   else if (L.layout === 'throne'){ buildThroneArena(LP); }
+  else if (L.layout === 'grassland'){ buildGrasslandArena(LP); }
+  else if (L.layout === 'icefront'){ buildIcefrontArena(LP); }
+  else if (L.layout === 'graveyard'){ buildGraveyardArena(LP); }
   else {
   // pick a spot at least `gap` clear of every other obstacle so cover stays SPREAD OUT — clustered obstacles
   // form walls that trap the enemy AI. Returns null if no open spot is found (so we just place fewer).
@@ -183,6 +195,14 @@ export function buildArena(L){
   if (T) shared.arenaBake = bakeArena(shared.arenaGroup, T.ink ?? 0.045);
 }
 
+/* what's built and what it costs to draw (the battle-map smoke test reads it: tools/smoke/maps.mjs) */
+export function arenaInfo(){
+  const L = shared.arenaLevel || {};
+  let calls = 0, tris = 0;
+  shared.arenaGroup.traverse(o => { if (!o.isMesh || !o.visible) return; calls++; const g = o.geometry; tris += (g.index ? g.index.count : g.attributes.position.count) / 3; });
+  return { layout: L.layout, half: shared.arenaHalf, halfZ: shared.arenaHalfZ, big: shared.arenaBig, solids: solids.length, calls, tris: Math.round(tris) };
+}
+
 // painted textures are drawn once per theme and reused on every rebuild (survival rotates arenas mid-run)
 const paintCache = new WeakMap();
 function painted(T, make){ if (!paintCache.has(T)) paintCache.set(T, make()); return paintCache.get(T); }
@@ -197,9 +217,10 @@ function disposeArena(g){
 function buildWorld(L, T){
   const lt = T.light, sunSpec = T.sky.sun && { ...T.sky.sun, az: T.sky.sun.az ?? Math.atan2(lt.dir[2], lt.dir[0]) };
   const tx = painted(T, () => ({ sky: paintSky({ ...T.sky, sun: sunSpec }), floor: paintFloor(T.floor) }));
-  const W = L.arena, D = L.arenaZ || L.arena, long = D > W;
-  // a long arena's dome rides along with the camera (atmosphere.js), so it never has to reach past the far plane
-  const sky = new THREE.Mesh(new THREE.SphereGeometry(long ? 300 : L.arena*1.7, 32, 16),
+  const W = L.arena, D = L.arenaZ || L.arena, long = D > W, roam = long || W > BIG_ARENA;
+  // a long arena's or a battle map's dome rides along with the camera (atmosphere.js), so it never has to reach past
+  // the far plane
+  const sky = new THREE.Mesh(new THREE.SphereGeometry(roam ? 300 : L.arena*1.7, 32, 16),
     new THREE.MeshBasicMaterial({ map: tx.sky, side: THREE.BackSide, fog: false }));
   sky.userData.noBake = true;
   shared.arenaGroup.add(sky);
@@ -211,7 +232,7 @@ function buildWorld(L, T){
   floor.rotation.x = -Math.PI/2; floor.receiveShadow = true; floor.userData.noBake = true;
   shared.arenaGroup.add(floor);
   // the ground past the edge: a plain ring (no outline), a hair lower so the floor always wins where they overlap
-  const outer = new THREE.Mesh(new THREE.RingGeometry(W*0.5, Math.max(W, D)*1.2, 48, 1), toon(T.outer ?? T.floor.base));
+  const outer = new THREE.Mesh(new THREE.RingGeometry(W*0.5, Math.max(W, D)*(roam && !long ? 1.6 : 1.2), 48, 1), toon(T.outer ?? T.floor.base));
   outer.rotation.x = -Math.PI/2; outer.position.y = -0.04; outer.receiveShadow = true; outer.userData.noBake = true;
   shared.arenaGroup.add(outer);
   // a dark ink line marks the playable edge (the same square the movement clamp uses; a long arena is walled in instead)

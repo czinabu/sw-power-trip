@@ -3,7 +3,7 @@
 
 import { V3, clamp } from '../utils.js';
 import { burst } from '../fx/particles.js';
-import { shared, solids, hazardZones, vents } from '../state.js';
+import { shared, solids, hazardZones, vents, player } from '../state.js';
 import { damageEnemy } from '../enemies/damage.js';
 
 // LINE-OF-SIGHT — does any real wall/pillar/crate (shallow CLIMBABLE steps don't count, same convention as the
@@ -136,10 +136,25 @@ function spotInHazard(x, z, pad){
   return false;
 }
 export function edgeSpawn(lo = 0.75, hi = 0.92, radius = 0.8){
+  if (shared.arenaBig) return nearSpawn(radius);
   let x = 0, z = 0;
   for (let t = 0; t < 24; t++){
     const a = Math.random()*Math.PI*2, r = shared.arenaHalf * (lo + Math.random()*(hi - lo));
     x = Math.cos(a)*r; z = Math.sin(a)*r;
+    if (!spotBlocked(x, z, radius) && !spotInHazard(x, z, radius)) break;
+  }
+  return V3(x, 0, z);
+}
+/* a BATTLE MAP's edge is a minute's run away, so a wave arrives on a ring round the hero instead (NEAR_SPAWN m out,
+   kept inside the arena): close enough to reach the fight, far enough to come in from the fog */
+const NEAR_SPAWN = [28, 40];
+function nearSpawn(radius){
+  const p = player.group.position, lim = shared.arenaHalf - 3, limZ = shared.arenaHalfZ - 3;
+  let x = 0, z = 0;
+  for (let t = 0; t < 24; t++){
+    const a = Math.random()*Math.PI*2, r = NEAR_SPAWN[0] + Math.random()*(NEAR_SPAWN[1] - NEAR_SPAWN[0]);
+    x = clamp(p.x + Math.cos(a)*r, -lim, lim); z = clamp(p.z + Math.sin(a)*r, -limZ, limZ);
+    if (Math.hypot(x - p.x, z - p.z) < NEAR_SPAWN[0] * 0.6) continue;   // clamped up against the hero at the arena edge
     if (!spotBlocked(x, z, radius) && !spotInHazard(x, z, radius)) break;
   }
   return V3(x, 0, z);

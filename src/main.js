@@ -162,3 +162,10 @@ window.GAME = { partnerShown, CFG, ENEMY_TYPES, LEVELS, BOSS_CFG, BOSS_MANDO, ST
   duel: { DUEL, DUEL_PROFILES, MANDO_MELEE, LOCK, startLock, endLock, duelDefend, eliteRamp, foeBlade, bossBlade, contactPoint },
   tactics: { RAMP, TROOP_MELEE, TROOP_FIRE, PINCER, ORDERS, GRENADE, LUNGE, tacticsRamp, grenades, pushGrenades },
   get boss(){ return shared.boss; }, get saberProj(){ return shared.saberProj; }, get darkProj(){ return shared.darkProj; } };
+
+/* the battle maps (data/battlemaps.js): what's built and what it costs, for the console and tools/smoke/maps.mjs */
+import { arenaInfo } from './world/arena.js';
+import { ENDLESS_ARENAS } from './game/survival.js';
+import { BATTLE_MAPS } from './data/battlemaps.js';
+import { setSandboxMap } from './game/sandbox.js';
+Object.assign(window.GAME, { arena: arenaInfo, ENDLESS_ARENAS, BATTLE_MAPS, setSandboxMap });

@@ -105,7 +105,7 @@ function blob(x, cx, cy, len, th, R){
 }
 
 /* ---------- FLOORS ----------
-   f: { kind: flagstone|sand|basalt|deck|parquet|ash|snow|ice, base, line, hi, glow, seed }. One 512px tile = 9 world units. */
+   f: { kind: flagstone|sand|basalt|deck|parquet|ash|snow|ice|grass, base, line, hi, glow, seed }. One 512px tile = 9 world units. */
 export function paintFloor(f){
   const N = 512;
   const c = document.createElement('canvas'); c.width = c.height = N;
@@ -196,6 +196,16 @@ export function paintFloor(f){
       }
     }
     speckle(700, 'rgba(255,230,200,0.05)', 'rgba(0,0,0,0.06)');
+  } else if (f.kind === 'grass'){
+    // a sea of grass: big soft patches a shade off the base, then short blade strokes leaning with the wind
+    for (let i = 0; i < 22; i++){ x.fillStyle = css(R() < 0.5 ? hi : shade(base, 0.88)); const px = R()*N, py = R()*N, r = 24 + R()*60, rot = R()*0.8; wrap(() => { x.beginPath(); x.ellipse(px, py, r*1.6, r*0.8, rot, 0, 7); x.fill(); }); }
+    for (let i = 0; i < 900; i++){
+      const px = R()*N, py = R()*N, l = 5 + R()*7, lean = 0.5 + R()*0.6, k = R();
+      x.strokeStyle = css(k < 0.4 ? line : k < 0.7 ? hi : shade(base, 1.32)); x.lineWidth = 1.4;
+      x.beginPath(); x.moveTo(px, py); x.lineTo(px + l*lean*0.5, py - l); x.stroke();
+    }
+    for (let i = 0; i < 6; i++){ x.fillStyle = css(shade(base, 0.8)); const px = R()*N, py = R()*N, r = 6 + R()*8; wrap(() => { x.beginPath(); x.ellipse(px, py, r*1.4, r*0.7, R(), 0, 7); x.fill(); }); }   // bare earth
+    speckle(900, 'rgba(255,250,200,0.05)', 'rgba(20,30,0,0.08)');
   } else if (f.kind === 'snow' || f.kind === 'ice'){
     // soft drifts as flat lighter/darker shapes; ice gets white crack lines
     for (let i = 0; i < 16; i++){ x.fillStyle = css(R() < 0.5 ? hi : shade(base, 0.93)); const px = R()*N, py = R()*N, r = 20 + R()*50, rot = R()*0.6; wrap(() => { x.beginPath(); x.ellipse(px, py, r*2, r*0.7, rot, 0, 7); x.fill(); }); }

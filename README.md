@@ -11,6 +11,7 @@ npm install        # once
 npm run dev        # play at the printed localhost URL; reloads instantly as you edit
 npm run build      # writes dist/index.html, one self-contained file you can double-click or share
 npm run smoke      # after a build: plays both heroes headlessly for a short fight, fails on any error
+npm run smoke:maps # after a build: a short fight on each battle map (sandbox and survival), and what each one costs to draw
 ```
 
 Every pull request runs the build and the smoke test automatically (`.github/workflows/check.yml`); a red check means the game failed to build or threw an error mid-fight. The first run needs the test browser once: `npx playwright install chromium`.
@@ -28,7 +29,7 @@ src/
   main.js            imports every module in load order, runs the main loop, exposes window.GAME
   state.js           G (run state), player, entity arrays, keys, and `shared` (values that get reassigned)
   utils.js           math helpers
-  data/              tuning tables: config, movement, stances, enemies, levels, bosses, mando, skills, store, mastery, boons, mutators, difficulty, worlds (arena looks), sandbox
+  data/              tuning tables: config, movement, stances, enemies, levels, bosses, mando, skills, store, mastery, boons, mutators, difficulty, worlds (arena looks), sandbox, battlemaps
   engine/            renderer + post-processing, graphics quality, input, camera
   audio/             mixer + voice builder (engine.js), sound bank (sfx.js), adaptive orchestral score with hero themes and mission cues (music.js), loops + ambience (director.js)
   fx/                particles, floating text, VFX lights, saber trail, one-shot VFX, ambient embers
@@ -39,7 +40,7 @@ src/
   enemies/           meshes, elites, special moves, spawning, damage, AI, pathing (nav.js), attack turns (director.js), blaster bolts (see docs/enemy-ai.md)
   boss/              boss lightning FX and the boss itself
   net/               online co-op: room-code connection over WebRTC (session.js) and the partner's ghost hero (ghost.js); see below
-  world/             arena builder, arenas/ (temple, foundry, plains layouts; hall and forge for training; refuge and pursuit for the story missions; dojo and throne for the sandbox), Ink bake, painted skies/floors, backdrops, atmosphere, collision, hazards (see docs/world-guidelines.md)
+  world/             arena builder, arenas/ (temple, foundry, plains layouts; hall and forge for training; refuge and pursuit for the story missions; dojo and throne for the sandbox; grassland, icefront and graveyard, the battle maps, with field.js for their shared pieces), Ink bake, painted skies/floors, backdrops, atmosphere, collision, hazards (see docs/world-guidelines.md)
   game/              level/wave flow, survival mode, training (tutorial.js), story missions (mission.js, objectives.js), the sandbox (sandbox.js), progression, boons, end-of-run summary
   ui/                banners, threat markers, HUD, store overlay, menus, the sandbox panel (sandbox-ui.js), the title screen's hero turntable (showcase.js), controls (How to Play data)
 ```
@@ -82,7 +83,9 @@ Each file starts with a one-line description. Balance changes usually only touch
 
 Missions are data (`data/missions.js`) built from reusable objective pieces (`game/objectives.js`: zones, consoles, timers, the objective HUD line). An arena can be long instead of square (`arenaZ` in its level: the pursuit route is 56 × 320); bounds, enemy pathing, the shadow box and the sky all follow it.
 
-**Survival mode** — unlocked after beating the campaign as both heroes. Endless escalating waves, 8 wave mutators, Warbringer mid-boss every 10 waves, arena rotation, repeatable power-ups, roguelite boon picks each wave
+**Survival mode** — unlocked after beating the campaign as both heroes. Endless escalating waves, 8 wave mutators, Warbringer mid-boss every 10 waves, arena rotation (the three campaign arenas, then the three battle maps), repeatable power-ups, roguelite boon picks each wave
+
+**Battle maps** — three large open fields for big fights with allied squads, two to three times a campaign arena across: the Grass Sea of Lothal (150 m: a landing field, ridge lines and rock spires, a downed walker for high ground, an Imperial outpost with mortar strikes landing on the open grass), the Ice Front on Hoth (140 m: two staggered trench lines in front of the shield generator, a no-man's land of boulders and drifts under walker cannon fire, the Imperial forward line) and the Starship Graveyard of Jakku (160 m: a scavenger camp, a field of standing hull plates, a buried engine bell with plasma vents, crashed fighters, an Imperial salvage yard). Pick one from the sandbox panel's ARENA row, or meet them in survival. Each lays out the same way, allies at the north end and the enemy coming from the south, and exports its SPOTS (where squads start, the cover lines facing each way, the points worth holding) for story missions to build on. On a map this big the sun's shadow box, the sky dome and the drifting dust follow the hero, waves arrive on a ring 28 to 40 m out instead of at the far edge, and the enemy flow field only routes the fight around the hero, so it costs about what Exegol does. `npm run smoke:maps` plays a short fight on each one.
 
 **10 enemy types** — grunts, blaster troopers, staff duelists, Sith acolytes (saber duellists), brutes, jet troopers, shield sentinels, saboteur bombers, snipers (with laser-sight telegraph), and the Warbringer mid-boss with a leap-slam attack
 

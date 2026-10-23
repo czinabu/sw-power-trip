@@ -69,9 +69,9 @@ export function applyAtmosphere(T, L, sky){
   sun.color.setHex(lt.sun); sun.intensity = lt.sunI;
   const d = lt.dir || [30, 50, 20];
   sun.position.set(d[0], d[1], d[2]);
-  // a long arena (the pursuit route) is far bigger than the sun's shadow box: the light and its box follow the hero
-  // there, and the sky dome follows the camera. Everywhere else the light is fixed over the middle, as before
-  A.dir = d; A.long = (L.arenaZ || L.arena) > L.arena;
+  // a long arena (the pursuit route) or a battle map is far bigger than the sun's shadow box: the light and its box
+  // follow the hero there, and the sky dome follows the camera. Everywhere else the light is fixed over the middle
+  A.dir = d; A.long = (L.arenaZ || L.arena) > L.arena || shared.arenaBig;
   if (!sun.target.parent) scene.add(sun.target);
   sun.target.position.set(0, 0, 0);
   hemi.color.setHex(lt.hemiSky); hemi.groundColor.setHex(lt.hemiGround); hemi.intensity = lt.fill;
