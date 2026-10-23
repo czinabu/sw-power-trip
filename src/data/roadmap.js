@@ -8,7 +8,7 @@ export const ROADMAP = [
   { title: 'Combat and movement', status: 'done',
     items: ['Grounded combat: stamina sprint, roll, parries', 'Saber stamina tuning', 'Jedi and Mando camera rigs', 'Smoother first use: saber throw, bosses, squads'] },
   { title: 'Missions and maps', status: 'done',
-    items: ['Three large battle maps', 'Allied squads, downed allies and revive', 'SPEARHEAD squad mission'] },
+    items: ['Three large battle maps', 'Allied squads, downed allies and revive', 'SPEARHEAD on the Grass Sea of Lothal'] },
   { title: 'Menus', status: 'done',
     items: ['How to Play: basics first, details on hover', 'Upgrade screen tabs', 'Extras and roadmap panel'] },
   { title: 'Online co-op', status: 'now',

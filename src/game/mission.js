@@ -90,8 +90,13 @@ function fieldSpawn(type, x, z){
 function queueGroup(g, opts){ for (const t in g) for (let n = 0; n < g[t]; n++) queueSpawn(t, opts); }
 // a clear spot on the edge ring, within an arc of it
 function arcSpawn(a0, a1){
-  const a = a0 + Math.random() * (a1 - a0), r = shared.arenaHalf * (0.74 + Math.random() * 0.14);
-  const s = findClearSpawn(Math.cos(a) * r, Math.sin(a) * r, 0.9);
+  const a = a0 + Math.random() * (a1 - a0);
+  let x, z;
+  if (shared.arenaBig){   // a battle map's edge is a minute's run away: come in from that side of the hero instead
+    const p = playerPos(), r = 28 + Math.random() * 12, hx = shared.arenaHalf - 4, hz = shared.arenaHalfZ - 4;
+    x = Math.max(-hx, Math.min(hx, p.x + Math.cos(a) * r)); z = Math.max(-hz, Math.min(hz, p.z + Math.sin(a) * r));
+  } else { const r = shared.arenaHalf * (0.74 + Math.random() * 0.14); x = Math.cos(a) * r; z = Math.sin(a) * r; }
+  const s = findClearSpawn(x, z, 0.9);
   return V3(s.x, 0, s.z);
 }
 // sweep what's left of the field (between objectives) without counting it as kills
