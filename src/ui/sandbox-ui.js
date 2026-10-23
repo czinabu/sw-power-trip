@@ -4,10 +4,10 @@
 
 import { renderer } from '../engine/renderer.js';
 import { G, shared } from '../state.js';
-import { SANDBOX_FOES, SANDBOX_COUNTS, SANDBOX_KIT } from '../data/sandbox.js';
+import { SANDBOX_FOES, SANDBOX_COUNTS, SANDBOX_KIT, SANDBOX_MAPS } from '../data/sandbox.js';
 import { addSquadmate, dismissSquadmate, squadSize } from '../allies/squad.js';
 import { SQUAD } from '../data/allies.js';
-import { SB, sandboxSpawn, sandboxClear, sandboxHeal, setSandboxDummy, setSandboxKit, sandboxKitAll, kitAvailable } from '../game/sandbox.js';
+import { SB, sandboxSpawn, sandboxClear, sandboxHeal, setSandboxDummy, setSandboxKit, sandboxKitAll, kitAvailable, setSandboxMap } from '../game/sandbox.js';
 
 const panel = document.getElementById('sandbox');
 const $ = (id) => document.getElementById(id);
