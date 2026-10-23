@@ -1,20 +1,26 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
-// ROADMAP: what's planned next, shown on the main menu's ROADMAP panel. Edit freely —
-// status is 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
+// ROADMAP: shown on the main menu's EXTRAS panel, grouped by status. Every PR that ships a feature
+// or notable change updates this file: move finished items into 'done' (keep the list short, drop
+// the oldest) and add new plans under 'next' or 'later'. Keep entries to a few words.
+// status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
-  { title: 'Polish the core game', status: 'now',
-    items: ['Combat, camera and movement feel', 'Menus, HUD and upgrade screens', 'Balance across all three levels'] },
-  { title: 'Missions', status: 'now',
-    items: ['Playable above: The Last Evacuation', 'Playable above: The Long Chase', 'Extraction: reach the landing zone and survive', 'A Missions mode beside Campaign and Survival'] },
-  { title: 'Squad-ready', status: 'next',
-    items: ['Gamepad support', 'Revive downed allies', 'Upgrade picks that don\'t pause the fight'] },
-  { title: 'Online co-op', status: 'later',
-    items: ['2 to 4 players: one hosts, friends join with a code', 'Jedi and Mandalorian in the same squad', 'Enemies and bosses scale with squad size'] },
-  { title: 'Bigger missions', status: 'later',
-    items: ['Escort a prisoner or droid', 'Assassinate a marked target', 'Multi-stage raids ending in a boss', 'Objectives that need both heroes'] },
+  { title: 'Combat and movement', status: 'done',
+    items: ['Grounded combat: stamina sprint, roll, parries', 'Saber stamina tuning', 'Jedi and Mando camera rigs'] },
+  { title: 'Missions and maps', status: 'done',
+    items: ['Three large battle maps', 'Allied squads, downed allies and revive', 'SPEARHEAD squad mission'] },
+  { title: 'Menus', status: 'done',
+    items: ['How to Play: basics first, details on hover', 'Upgrade screen tabs', 'Extras and roadmap panel'] },
+  { title: 'Online co-op', status: 'now',
+    items: ['Phase 1: join with a code, see each other in the arena'] },
+  { title: 'Balance pass', status: 'next',
+    items: ['Abilities, enemies and upgrades across all modes'] },
+  { title: 'More content', status: 'next',
+    items: ['New missions and enemy types', 'Gamepad support', 'Upgrade picks that don\'t pause the fight'] },
+  { title: 'Co-op, fully', status: 'later',
+    items: ['2 to 4 players fighting together', 'Enemies scale with squad size'] },
   { title: 'Beyond', status: 'later',
-    items: ['Duel mode: 1v1 with fixed loadouts', 'Local split-screen', 'More arenas'] },
+    items: ['Escort and assassinate missions', 'Duel mode', 'Local split-screen'] },
 ];
 
-export const ROADMAP_STATUS = { now: 'IN PROGRESS', next: 'UP NEXT', later: 'LATER' };
+export const ROADMAP_STATUS = { done: 'SHIPPED', now: 'IN PROGRESS', next: 'PLANNED', later: 'LATER' };
