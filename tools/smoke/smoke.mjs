@@ -1,7 +1,7 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
 // SMOKE TEST — boots the BUILT game (dist/index.html) in headless Chromium and plays each hero for a short scripted
 // fight in a random look from the character customizer: walk in, turn toward the nearest foe, attack and fire off the
-// hero's moves. Then each story mission once, skipping ahead through its objectives so every one (the hold, the sabotage,
+// hero's moves. Then each story mission once (the strike team mission with its squad), skipping ahead through its objectives so every one (the hold, the sabotage,
 // the chase legs, the duels) gets set up and played, and the sandbox, with foes and a boss called in from its panel.
 // Fails on any page error or console error, or if the fight never gets going (no frames, no enemies, nothing hit).
 //   npm run build && npm run smoke            (SMOKE_SECONDS=… sets the game time per hero, default 20)
@@ -28,9 +28,9 @@ const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--ena
 let failed = false;
 
 // a mission run passes once its last objective (a duel) is up: the HUD line then names the opponent
-const DUEL_LINE = { refuge: /INQUISITOR/, pursuit: /VX-7|SEVENTH BLADE/ };
+const DUEL_LINE = { refuge: /INQUISITOR/, pursuit: /VX-7|SEVENTH BLADE/, strike: /WARDEN/ };
 // [hero, menu mode, story mission]
-for (const [hero, mode, mission] of [['jedi', 'campaign'], ['mando', 'campaign'], ['jedi', 'mission', 'refuge'], ['mando', 'mission', 'pursuit'], ['mando', 'sandbox']]){
+for (const [hero, mode, mission] of [['jedi', 'campaign'], ['mando', 'campaign'], ['jedi', 'mission', 'refuge'], ['mando', 'mission', 'pursuit'], ['jedi', 'mission', 'strike'], ['mando', 'sandbox']]){
   const label = hero + (mode === 'campaign' ? '' : ' ' + (mission || mode));
   const errors = [];
   // small window on the LOW preset: headless Chromium draws WebGL in software, and this keeps it at a usable frame rate
@@ -89,6 +89,7 @@ for (const [hero, mode, mission] of [['jedi', 'campaign'], ['mando', 'campaign']
       await page.keyboard.press('b');
       await page.click('[data-n="3"]'); await page.click('[data-foe="grunt"]'); await page.click('[data-foe="acolyte"]');
       await page.click('[data-kit="birds"]'); await page.click('[data-foe="boss"]');
+      await page.click('#sbsquadadd'); await page.click('#sbsquadadd');   // two squadmates fight beside the hero
       await page.click('#sbdone');
     }
     await page.evaluate(() => { window.__frames = 0; const f = () => { window.__frames++; requestAnimationFrame(f); }; requestAnimationFrame(f); });
@@ -139,7 +140,7 @@ for (const [hero, mode, mission] of [['jedi', 'campaign'], ['mando', 'campaign']
       const hurt = enemies.filter(e => e.maxHp && e.hp < e.maxHp).length;
       return { gameSeconds: +(G.gt - start).toFixed(1), frames: window.__frames, mode: G.mode, level: G.levelIdx,
                wave: G.waveTotal || 0, enemies: enemies.length, kills: (G.stats && G.stats.kills) || 0, hurt,
-               objective: document.getElementById('waveinfo').textContent };
+               objective: document.getElementById('waveinfo').textContent, squad: GAME.squad.allies.length };
     }, startGt);
     if (mode === 'mission') result.skips = skips;
     result.everHit = everHit;
@@ -158,6 +159,7 @@ for (const [hero, mode, mission] of [['jedi', 'campaign'], ['mando', 'campaign']
     if (result.mode !== 'play' && !(mode === 'mission' && result.mode === 'victory')) problems.push(`left play mode (mode: ${result.mode})`);
     if (mode === 'mission' && !DUEL_LINE[mission].test(result.objective)) problems.push('the mission never reached its duel');
     if (!result.enemies && !result.kills) problems.push('no enemies ever spawned');
+    if ((mission === 'strike' || mode === 'sandbox') && !result.squad) problems.push('the squad never formed up');
     if (!result.kills && !result.hurt && !result.everHit) problems.push('the hero never hit anything');
   }
   console.log(`${problems.length ? 'FAIL' : 'ok  '} ${label.padEnd(14)} ${JSON.stringify(result || {})} (${((Date.now() - t0) / 1000).toFixed(0)}s)`);

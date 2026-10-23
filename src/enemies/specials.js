@@ -15,6 +15,7 @@ import { damageBoss } from '../boss/boss.js';
 import { spawnGroundShock } from '../fx/vfx.js';
 import { hurtPlayer } from '../player/damage.js';
 import { enemyDmgScale } from '../game/survival.js';
+import { blastAllies } from '../allies/squad.js';
 
 // SABOTEUR detonation — a concussive blast: unblockable on the player (dash i-frames / distance save you), chains
 // to nearby foes, pops barrels. Fires when its fuse burns out OR when it's killed at close range.
@@ -32,6 +33,7 @@ export function bomberExplode(e){
   }
   if (shared.boss && shared.boss.hp > 0 && shared.boss.group.position.distanceTo(pos) < A.blastR) damageBoss(28);
   for (const b of barrels){ if (b.mesh.position.distanceTo(pos) < A.blastR && b.fuse < 0) b.fuse = 0.15; }
+  blastAllies(pos, A.blastR, A.dmg * enemyDmgScale());   // the hero's squad is caught in it too
   const pp = playerPos();
   if (pp.distanceTo(pos) < A.blastR && player.dashT <= 0){
     const kd = TMP.subVectors(pp, pos).setY(0).normalize().clone();

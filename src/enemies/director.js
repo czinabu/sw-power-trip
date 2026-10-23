@@ -10,7 +10,8 @@ import { GRENADE } from '../data/tactics.js';
 import { assignApproach } from './tactics.js';
 
 // hostile melee foes that take turns (bombers rush regardless; the Warbringer runs its own leap pattern)
-export const usesToken = e => !e.converted && !e.dead && !e.t.ranged && !e.t.bomber && !e.warbringer;
+// (a trooper busy with one of the hero's squadmates, allies/squad.js, is out of the queue until it turns back)
+export const usesToken = e => !e.converted && !e.onAlly && !e.dead && !e.t.ranged && !e.t.bomber && !e.warbringer;
 const ACTIVE = { windup: 1, strike: 1 };
 const LOST = { stagger: 1, knockdown: 1, getup: 1, ragdoll: 1, stasis: 1, fade: 1 };
 
@@ -73,7 +74,7 @@ const fireClass = t => t.sniper ? 'sniper' : t.grenade ? 'grenade' : 'line';
 export function rangedSlotFree(t){
   const c = fireClass(t);
   let n = 0;
-  for (const e of enemies) if (!e.dead && !e.converted && e.t.ranged && e.state === 'windup' && fireClass(e.t) === c) n++;
+  for (const e of enemies) if (!e.dead && !e.converted && !e.onAlly && e.t.ranged && e.state === 'windup' && fireClass(e.t) === c) n++;   // fire at the squad doesn't use your slots
   const late = (G.waveTotal || 0) >= ENGAGE.lateAt;
   const cap = c === 'sniper' ? (late ? ENGAGE.sniperSlotsLate : ENGAGE.sniperSlots)
     : c === 'grenade' ? (late ? GRENADE.slotsLate : GRENADE.slots)

@@ -29,6 +29,8 @@ import { overlay, setOverlayState } from '../ui/menus.js';
 import { showPanel, hidePanel, makeBeacon, makeConsole, setMarkerColor, pulseMarker, removeMarker,
          heroIn, hostilesIn, hostilesAlive, setObjectiveHud, objectiveHud, mmss } from './objectives.js';
 import { MISSIONS, MISSION_VOICE, MISSION_COLOR } from '../data/missions.js';
+import { spawnSquad, squadIn, squadStanding } from '../allies/squad.js';
+import { startBattleFx, stopBattleFx, updateBattleFx } from '../fx/battle.js';
 
 const RED = 0xff4a3a, GREEN = 0x7bffae;
 const M = { on: false, def: null, i: 0, o: null, s: null, markers: [], props: [], fx: [], panelT: 0, waitT: 0, endT: 0, won: false,
@@ -55,6 +57,9 @@ export function startMission(id = 'refuge', fromObjective = 0){
   const st = (fromObjective && def.objectives[fromObjective].start) || def.start;   // a retry may begin further along
   if (st){ playerPos().set(st[0], 0, st[1]); G.yaw = player.faceYaw = st[2] || 0; }
   if (def.quarry) placeQuarry(def.objectives[fromObjective]);
+  // a STRIKE TEAM mission: the squad forms up beside the hero (allies/squad.js), and the wider battle rages past the walls
+  if (def.squad) spawnSquad(def.squad, st);
+  if (def.battle) startBattleFx(G.hero === 'mando' ? 0xffa040 : 0x4aa8ff);
   // retrying past the evacuation: the transport has already gone
   if (def.objectives.slice(0, fromObjective).some(o => o.kind === 'hold' && o.evacuees)) shipGone();
   // the opening banner (startLevel's) gets its moment before the first objective begins
@@ -68,6 +73,7 @@ function clearMission(){
   M.markers = [];
   for (const p of M.props) scene.remove(p);
   M.props = []; M.fx = []; M.quarry = null;
+  stopBattleFx();
   if (M.on) hidePanel();
   M.on = false;
   MUSIC.setCue(null);
@@ -133,16 +139,19 @@ const KINDS = {
         }
       }
       const inZone = heroIn(o.at[0], o.at[1], o.r), foes = hostilesIn(o.at[0], o.at[1], o.r);
-      const rate = inZone ? 1 : foes ? 0 : o.awayRate;
+      // squadRate: squadmates ordered onto the zone (H) keep it ticking while you're away; a foe in it halves that
+      const mates = o.squadRate ? squadIn(o.at[0], o.at[1], o.r) : 0;
+      const rate = inZone ? 1 : mates ? o.squadRate * (foes ? 0.5 : 1) : foes ? 0 : o.awayRate;
       s.prog += dt * rate; s.rate = rate; s.inZone = inZone;
       if (s.kids) updateEvacuees(o.evacuees, s, dt, Math.min(1, s.prog / o.time), rate);
       setMarkerColor(s.zone, rate === 0 ? RED : MISSION_COLOR[G.hero]);
       s.zone.userData.beam.visible = !inZone;   // the column guides you back; standing in it, it would only fill the screen
       pulseMarker(s.zone, dt, G.gt);
       const total = alive ? ' · ' + alive + ' HOSTILE' + (alive === 1 ? '' : 'S') : '';
-      const who = o.evacuees ? o.evacuees.name[G.hero] + ' ABOARD ' + s.aboard + ' / ' + o.evacuees.count : 'EVACUATING';
+      const who = o.evacuees ? o.evacuees.name[G.hero] + ' ABOARD ' + s.aboard + ' / ' + o.evacuees.count : (o.holding || 'HOLDING');
       setObjectiveHud({ kicker: 'MISSION · ' + M.def.title, title: o.title, frac: s.prog / o.time,
-        status: (rate === 0 ? 'OVERRUN: RETAKE THE RAMP' : inZone ? who + ' · ' + mmss(o.time - s.prog) : 'RAMP UNGUARDED ' + mmss(o.time - s.prog)) + total,
+        status: (rate === 0 ? 'OVERRUN: ' + (o.overrun || 'RETAKE THE RAMP') : inZone ? who + ' · ' + mmss(o.time - s.prog)
+               : mates ? 'SQUAD HOLDING ' + mmss(o.time - s.prog) : (o.unguarded || 'RAMP UNGUARDED') + ' ' + mmss(o.time - s.prog)) + total,
         warn: rate === 0 });
       if (s.prog >= o.time){
         showBanner('TRANSPORT AWAY', 'Its guns clear the field as it climbs.', 2.4);
@@ -193,6 +202,47 @@ const KINDS = {
         frac: at ? at.prog / o.time : (n - left) / n,
         status: at ? 'SLICING… STAY ON THE CONSOLE' : (n - left) + ' / ' + n + ' UPLINKS DOWN' });
       if (!left){ showBanner('UPLINKS SILENCED', 'The bombardment never comes.', 2.2); return true; }
+    },
+  },
+
+  /* CAPTURE: take a line of posts one after another. A post's guard holds it; stand in it (or put the squad on it,
+     H) with no foe inside and it turns. Each squadmate in it speeds it up. Fresh troops march on the post you're
+     taking while it's contested. */
+  capture: {
+    cue: 'battle',
+    music: (o, s) => ({ urgency: (s.k + (s.cur ? s.cur.prog / o.time : 0)) / o.posts.length, danger: s.contested, focus: s.inZone }),
+    begin(o, s){ s.k = 0; s.trickT = o.trickle ? o.trickle.every * 0.5 : 0; startPost(o, s); },
+    update(o, s, dt){
+      const P = s.cur;
+      if (o.trickle && (s.trickT -= dt) <= 0){
+        s.trickT = o.trickle.every;
+        if (hostilesAlive() + G.spawnQueue.length < o.trickle.cap){
+          const goal = { pos: V3(P.x, 0, P.z), aggro: o.aggro || 9 };
+          queueGroup(o.trickle.group, { at: o.from && (() => arcSpawn(o.from[0], o.from[1])), then: e => { if (e) e.goal = goal; } });
+        }
+      }
+      const inZone = heroIn(P.x, P.z, o.r), mates = squadIn(P.x, P.z, o.r), foes = hostilesIn(P.x, P.z, o.r);
+      const rate = foes ? 0 : (inZone ? 1 : mates ? o.squadRate : 0) * (1 + (o.perMate || 0) * mates);
+      P.prog = Math.min(o.time, P.prog + dt * rate);
+      s.inZone = inZone; s.contested = foes > 0 && (inZone || mates > 0);
+      setMarkerColor(P.m, foes ? RED : MISSION_COLOR[G.hero]);
+      P.m.userData.beam.visible = !inZone;
+      pulseMarker(P.m, dt, G.gt);
+      const alive = hostilesAlive() + G.spawnQueue.length, n = o.posts.length;
+      setObjectiveHud({ kicker: 'MISSION · ' + M.def.title, title: o.title, frac: P.prog / o.time,
+        status: (foes ? 'POST ' + (s.k + 1) + ' / ' + n + ' · CLEAR IT: ' + foes + ' IN THE ZONE'
+               : rate > 0 ? 'TAKING POST ' + (s.k + 1) + ' / ' + n + (mates ? ' · SQUAD ×' + mates : '')
+               : 'POST ' + (s.k + 1) + ' / ' + n + ' · GET ON IT, OR SEND THE SQUAD (H)') + (alive ? ' · ' + alive + ' HOSTILE' + (alive === 1 ? '' : 'S') : ''),
+        warn: foes > 0 });
+      if (P.prog >= o.time){
+        setMarkerColor(P.m, GREEN); P.m.userData.beam.visible = false;
+        burst(V3(P.x, 1.2, P.z), GREEN, 16, 6, 4, 0.8); S.reward(1);
+        floater(V3(P.x, 1.8, P.z), (o.postName || 'POST') + ' TAKEN', '#7bffae');
+        for (const e of enemies) if (e.goal) e.goal = null;
+        if (++s.k >= n){ showBanner(o.doneLine || 'THE LINE IS BROKEN', '', 2.2); return true; }
+        showBanner('', (o.postName || 'POST') + ' ' + s.k + ' / ' + n + ' TAKEN · PUSH ON', 1.6);
+        startPost(o, s);
+      }
     },
   },
 
@@ -310,6 +360,11 @@ const KINDS = {
         s.raged = true;
         e.dp = { ...e.dp, ...o.rageDuel }; e.spd *= 1.15;
         showBanner('', o.name + ' PRESSES THE ATTACK', 1.8); S.roar(e.group.position);
+      }
+      // trickle: troops keep coming for the squad to hold off while you take the duel (a strike team's last stand)
+      if (o.trickle && !gone && (s.trickT = (s.trickT ?? o.trickle.every) - dt) <= 0){
+        s.trickT = o.trickle.every;
+        if (hostilesAlive() + G.spawnQueue.length < o.trickle.cap + 1) queueGroup(o.trickle.group, { at: o.from && (() => arcSpawn(o.from[0], o.from[1])) });
       }
       setObjectiveHud({ kicker: 'MISSION · ' + M.def.title, title: o.title, frac: gone ? 0 : e.hp / e.maxHp, status: o.name, warn: true });
       if (gone){ showBanner(o.name + ' FALLS', '', 2.2); return true; }
@@ -578,6 +633,16 @@ function spawnInquisitor(o, at = o.at, opts = {}){
   return e;
 }
 
+// the next post of a capture: its beacon, and the guard that holds it
+function startPost(o, s){
+  const c = o.posts[s.k], spot = findClearSpawn(c.at[0], c.at[1], 1.4);
+  const m = makeBeacon(spot.x, spot.z, 0, RED, o.r / 0.9);
+  M.markers.push(m);
+  for (const t in c.guards) for (let n = 0; n < c.guards[t]; n++)
+    fieldSpawn(t, spot.x + (Math.random() - 0.5) * o.r * 1.4, spot.z + (Math.random() - 0.5) * o.r * 1.4);
+  s.cur = { x: spot.x, z: spot.z, m, prog: 0 };
+}
+
 function beginObjective(){
   const o = forHero(M.def.objectives[M.i]);
   M.o = o; M.s = {};
@@ -617,6 +682,7 @@ export function updateMission(dt){
   if (!M.on) return;
   if (!G.mission){ clearMission(); return; }   // left the mission (main menu, another mode)
   M.fx = M.fx.filter(f => f(dt));
+  updateBattleFx(dt);
   if (M.panelT > 0 && (M.panelT -= dt) <= 0) hidePanel();
   if (M.failT > 0){ if ((M.failT -= dt) <= 0) startMission(M.def.id, M.i); return; }   // it got away: this leg again
   if (M.quarry && !(M.o && M.o.kind === 'pursuit')) faceHero(M.quarry, dt);   // between legs it stops and looks back

@@ -15,16 +15,22 @@
 //               seconds between pulses (officers call them in, so drop the officers) · cap: most foes on the field
 //               from: [a0, a1] the arc of the edge they arrive from (radians, 0 = east, -π/2 = south) · aggro: a foe
 //               marches on the zone and only fights you when you're this close to it
+//               squadRate (optional): progress speed with only squadmates (allies/squad.js) in the zone
 //               evacuees: { count, path: [[x, z]…] (from their shelter to the ship's hatch), spacing, speed, name } the
 //               people being saved, filing aboard as the timer runs (they stop and huddle while it stalls)
 //   sabotage  reach each console and stay on it to slice it
 //               consoles: [{ at: [x, z], guards: { type: count } }] · time: seconds of slicing each · r: how close
 //               hitLoss: seconds of slicing lost when you're hit · trickle: { every, cap, group } light reinforcements
+//   capture   take a line of posts in turn: stand in one (or put the squad on it with H) with no foe inside
+//               posts: [{ at: [x, z], guards: { type: count } }] · r · time: seconds to take each · squadRate: speed with
+//               only squadmates in it · perMate: extra speed per squadmate in it · trickle: { every, cap, group } troops
+//               marching on the post being taken · from: the arc they come from · aggro (see hold)
 //   duel      one opponent, one on one
 //               foe: the enemy type it's built from · name · hp, dmg: multipliers on that type · scale · tint
 //               duel: overrides of its duelling profile (data/duel.js) · rage: at this fraction of hp it presses harder
 //               (rageDuel: the profile then) · at: [x, z] where it lands · quarry: true fights the mission's quarry
 //               where it stopped running instead (its name and look come from the mission's `quarry`)
+//               trickle (optional): { every, cap, group } troops for the squad to hold off during the duel · from
 //   pursuit   chase the quarry along one leg of its route (the arena's spots) without losing it
 //               leg: which leg · sight: how far you can see it (m; walls block the view) · lost: seconds out of
 //               sight before it gets away (the objective restarts) · pace: [[gap m, speed m/s]…] how fast it runs for
@@ -92,6 +98,54 @@ export const MISSIONS = {
     ],
     done: { jedi: 'The younglings are safe and the refuge still stands. Well fought.',
             mando: 'The foundlings are safe. The hunter is not. This is the Way.' },
+  },
+
+  // A STRIKE TEAM mission: `squad` squadmates form up beside the hero (allies/squad.js, data/allies.js), and `battle`
+  // runs the wider war past the walls (fx/battle.js). The squad shoots the troopers; the duellists are yours.
+  strike: {
+    id: 'strike',
+    title: 'SPEARHEAD',
+    blurb: 'lead a strike team through the battle lines',
+    level: { name: 'MISSION — THE BATTLE OF THE WASTES', sub: 'The army holds the wastes before the citadel. Break its line.',
+             arena: 72, floor: 0x3b2f31, fog: 0x401a22, sky: 0x1a080c, skyTop: 0x090103, sun: 0xffb0a0, ember: 0xff4a55,
+             fill: 0.98, sunI: 1.9, fogStart: 0.6, layout: 'plains', waves: [], hazards: {} },
+    start: [0, 30, Math.PI],   // the north edge, looking south across the wastes at their line
+    kit: 4,
+    grant: { jedi: ['throw', 'slam'], mando: ['grapple', 'birds'] },
+    squad: 4, battle: true,
+    objectives: [
+      { kind: 'capture', title: 'BREAK THEIR LINE',
+        say: { jedi: 'Your troopers are with you, General. Take their forward posts one by one. Leave the troopers to the squad, and the blades to yourself.',
+               mando: 'Your clan rides with you. Take their posts one by one. They\'ll handle the troopers. The blades are yours.' },
+        task: { jedi: 'Take the three posts (H sends the squad to hold one)', mando: 'Take the three posts (H sends the squad to hold one)' },
+        r: 5, time: 9, squadRate: 0.55, perMate: 0.15, postName: 'POST', doneLine: 'THEIR LINE BREAKS', aggro: 9,
+        posts: [ { at: [12, 17], guards: { grunt: 3, blaster: 2 } },
+                 { at: [-15, 2], guards: { grunt: 3, blaster: 2, officer: 1, lancer: 1 } },
+                 { at: [9, -13], guards: { grunt: 2, blaster: 2, grenadier: 1, duelist: 1 } } ],
+        trickle: { every: 13, cap: 10, group: { grunt: 2, blaster: 1 } }, from: [-Math.PI + 0.35, -0.35] },
+
+      { kind: 'hold', title: 'HOLD THE GROUND', music: 'battle',
+        say: { jedi: 'They are throwing everything at us. Hold the ground until the gunships arrive. If a blade comes for you, put the squad on the ground (H) and meet it.',
+               mando: 'They want the ground back. Hold it till the gunships come. Put your clan on it (H) when you have to go hunting.' },
+        task: { jedi: 'Hold the ground until the gunships arrive', mando: 'Hold the ground until the gunships arrive' },
+        at: [0, -3], r: 7, time: 60, awayRate: 0.25, squadRate: 0.6, overrun: 'RETAKE THE GROUND', unguarded: 'GROUND UNGUARDED',
+        pulses: [ { grunt: 3, blaster: 2 }, { grunt: 2, blaster: 2, officer: 1 }, { grunt: 3, blaster: 1, phalanx: 1 },
+                  { grunt: 2, blaster: 2, grenadier: 1 }, { grunt: 2, blaster: 1, acolyte: 1 }, { grunt: 3, blaster: 2, flyer: 1 } ],
+        every: [8, 11], cap: 11, from: [-Math.PI + 0.35, -0.35], aggro: 9 },
+
+      { kind: 'duel', title: 'DEFEAT THE WARDEN',
+        say: { jedi: 'Their commander takes the field himself. Your men will keep his troops off you. He is yours.',
+               mando: 'Their commander wants you himself. The clan will keep his troops busy. Take him.' },
+        task: { jedi: 'Win the duel while the squad holds', mando: 'Win the duel while the clan holds' },
+        foe: 'acolyte', name: 'THE WARDEN', hp: 4.5, dmg: 1.2, scale: 1.2, tint: 0x8a2a1a, at: [0, -14],
+        duel: { block: 0.75, posture: 165, feint: 0.35, chain: 2, counter: 0.55 },
+        rage: 0.5, rageDuel: { feint: 0.5, delay: 0.4, chain: 3, thrust: 0.25 },
+        trickle: { every: 12, cap: 4, group: { grunt: 2, blaster: 1 } }, from: [-Math.PI + 0.35, -0.35],
+        hero: { mando: { foe: 'duelist', name: 'THE IRON WARDEN', tint: 0x4a4a52, hp: 5,
+                         duel: { block: 0.7, posture: 155, feint: 0.3, chain: 2, counter: 0.5 } } } },
+    ],
+    done: { jedi: 'The line is broken and the wastes are ours. Your men fought well, General. So did you.',
+            mando: 'The ground is ours. The clan stands. This is the Way.' },
   },
 
   pursuit: {

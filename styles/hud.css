@@ -297,3 +297,22 @@ body.sandbox #xpmeter,body.sandbox #xphud{display:none !important}   /* the sand
 #objlist .ol-b i{display:block;height:100%;background:var(--gold);box-shadow:0 0 8px rgba(255,210,90,.6);transition:width .2s linear}
 #objlist .ol-n{margin-top:6px;font:600 11px/1 var(--font-ui);letter-spacing:1.8px;color:var(--ink-dim);text-align:right}
 @media (max-width:700px){ #objlist{width:200px;top:40px} }
+
+/* ---------- the squad (allies/squad.js): a strip above the vitals, and the prompt while you're down ---------- */
+#squadhud{position:fixed;left:20px;bottom:170px;width:200px;display:flex;flex-direction:column;gap:3px;pointer-events:none;
+  text-shadow:0 1px 6px rgba(0,0,0,.9)}
+#squadhud .sq-head{display:flex;justify-content:space-between;font:700 11px/1 var(--font-ui);letter-spacing:2px;color:var(--ink-dim);margin-bottom:2px}
+#squadhud .sq-ord{color:var(--accent)}
+#squadhud .sq-ord kbd{font:700 9px/1 var(--font-ui);padding:1px 4px;border:1px solid currentColor;border-radius:3px;margin-left:3px}
+#squadhud .sq-row{display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:1px;color:var(--ink-soft)}
+#squadhud .sq-n{width:74px;white-space:nowrap;overflow:hidden}
+#squadhud .sq-bar{flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.14);overflow:hidden}
+#squadhud .sq-bar i{display:block;height:100%;background:var(--accent);transition:width .15s linear}
+#squadhud .sq-row.down{color:#ff9a8a}
+#squadhud .sq-row.down .sq-bar i{background:#7bffae}
+#squadhud .sq-rev{font-size:10px;letter-spacing:1.4px;color:var(--ink-dim);margin-top:2px}
+#downed{position:fixed;left:50%;top:58%;transform:translateX(-50%);text-align:center;pointer-events:none;text-shadow:0 1px 10px rgba(0,0,0,.95)}
+#downed .dn-t{font:700 26px/1 var(--font-display);letter-spacing:4px;color:#ff8a7a}
+#downed .dn-s{font-size:13px;letter-spacing:2px;color:var(--ink-soft);margin-top:6px}
+#downed .dn-bar{width:220px;height:5px;margin:8px auto 0;border-radius:3px;background:rgba(255,255,255,.14);overflow:hidden}
+#downed .dn-bar i{display:block;height:100%;background:#7bffae;box-shadow:0 0 8px rgba(120,255,170,.6)}

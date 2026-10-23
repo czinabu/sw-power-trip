@@ -161,6 +161,7 @@ export function renderProgress(){
   // mastery ranks so the one-off upgrades to your kit stay up top.
   if (G.endless){
     for (const p of ENDLESS_POWERS){
+      if (p.avail && !p.avail()) continue;
       const lv = powerLv(p.id), pc = powerCost(p);
       mast.appendChild(card({ cls:' power', tag: lv > 0 ? 'POWER · LEVEL ' + lv : 'POWER', ico:p.ico, nm:p.nm, ds:p.ds,
         cost: pc + ' XP', afford: xp >= pc, why: needXp(pc), onClick: () => buyPower(p) }));
