@@ -59,7 +59,7 @@ export const G = {
   hero: 'jedi',          // 'jedi' (saber/Force) or 'mando' (jetpack/blasters) — chosen on the menu
   // SURVIVAL / ENDLESS mode
   modeSel: 'campaign',   // menu pick: 'campaign' | 'endless' | 'training' | 'mission' | 'sandbox'
-  missionId: 'refuge',   // which story mission (data/missions.js) the EXTRAS panel launched
+  missionId: 'refuge',   // which story mission (data/missions.js) the menu's MISSIONS list has picked
   endless: false,        // true while a survival run is active
   training: false,       // true while the tutorial runs (game/tutorial.js)
   mission: false,        // true while a story mission runs (game/mission.js)

@@ -197,7 +197,7 @@ document.addEventListener('keydown', (e) => {
     G.mode = 'play'; G.slowmo = 1;
     overlay.style.display = 'none';
     document.getElementById('banner').style.opacity = '0';
-    if (G.mission){ if (again) startMission(); else retryMission(); }
+    if (G.mission){ if (again) startMission(G.missionId); else retryMission(); }
     else if (again) startLevel(0); else retryLevel();
     try { const p = renderer.domElement.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch(e){}
   }

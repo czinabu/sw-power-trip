@@ -155,10 +155,16 @@
         <div class="setup-col">
           <div class="sec-label">MODE</div>
           <div id="modeselect">
-            <div class="modeopt brk sel" id="mode-campaign"><span class="mt">CAMPAIGN</span><span class="md">3 levels and a boss finale</span></div>
+            <div class="modeopt brk major sel" id="mode-campaign"><span class="mt">CAMPAIGN</span><span class="md">3 levels and a boss finale</span></div>
+            <div class="modeopt brk major" id="mode-mission"><span class="mt">MISSIONS</span><span class="md">pick one story mission</span></div>
             <div class="modeopt brk" id="mode-endless"><span class="mt">SURVIVAL</span><span class="md">endless waves, chase a high score</span></div>
             <div class="modeopt brk" id="mode-training"><span class="mt">TRAINING</span><span class="md">learn your hero's moves</span></div>
             <div class="modeopt brk" id="mode-sandbox"><span class="mt">SANDBOX</span><span class="md">any foe, any power</span></div>
+          </div>
+          <div id="missionpick">
+            <div class="sec-label">MISSION</div>
+            <div id="msnlist"></div>
+            <div id="msninfo"></div>
           </div>
         </div>
         <div class="setup-col">
@@ -187,10 +193,10 @@
       <div class="btn" id="restartBtn">↻ RESTART RUN</div>
       <div class="btn" id="homeBtn">MAIN MENU</div>
       <div class="btn fsctl" id="fsBtn" title="Fill the whole screen">FULLSCREEN <span class="fsval">OFF</span></div>
-      <div class="btn" id="coopBtn">ONLINE CO-OP</div>
       <div class="btn" id="settoggle">SETTINGS</div>
       <div class="btn" id="ctltoggle">HOW TO PLAY</div>
-      <div class="btn" id="rmtoggle">EXTRAS</div>
+      <div class="btn" id="coopBtn">CO-OP</div>
+      <div class="btn" id="rmtoggle">ROADMAP</div>
     </div>
     <div id="trainconfirm">
       <div class="hc-q" id="trainq">New to this? The training grounds teach every move in a few minutes.</div>
@@ -261,10 +267,7 @@
   </div>
   <div id="roadmap">
     <div class="howto-panel">
-      <div class="howto-head"><div class="howto-title">EXTRAS</div><div class="rm-sub">Modes still being built, and what's coming</div><div class="howto-x" id="rmclose">✕</div></div>
-      <div class="sec-label">EXPERIMENTAL</div>
-      <div class="xp-list" id="xplist"></div>
-      <div class="sec-label">ROADMAP</div>
+      <div class="howto-head"><div class="howto-title">ROADMAP</div><div class="rm-sub">What's shipped, what's being built, and what's coming</div><div class="howto-x" id="rmclose">✕</div></div>
       <div class="rm-list" id="rmlist"></div>
     </div>
   </div>

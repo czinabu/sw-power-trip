@@ -1,5 +1,5 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
-// Main menu: hero, mode and difficulty pickers, pause, restart, return to menu and fullscreen.
+// Main menu: hero, mode (and mission) and difficulty pickers, pause, restart, return to menu and fullscreen.
 
 import { renderer } from '../engine/renderer.js';
 import { cycleQuality } from '../engine/quality.js';
@@ -19,7 +19,6 @@ import { closeProgress } from './store-ui.js';
 import { DIFFS } from '../data/difficulty.js';
 import { renderControls, toggleControlsDetail } from './controls.js';
 import { svgIcon } from './icons.js';
-import { setRoadmap } from './roadmap.js';
 import { enterFullscreenIfWanted, escapeIsOurs } from './fullscreen.js';
 import { CFG } from '../data/config.js';
 import { LEVELS } from '../data/levels.js';
@@ -115,24 +114,33 @@ function setModeSel(m){
     return;
   }
   G.modeSel = m;
-  for (const k of ['campaign', 'endless', 'training', 'sandbox']) document.getElementById('mode-' + k).classList.toggle('sel', m === k);
+  for (const k of ['campaign', 'mission', 'endless', 'training', 'sandbox']) document.getElementById('mode-' + k).classList.toggle('sel', m === k);
+  document.getElementById('setup').classList.toggle('missions', m === 'mission');   // the mission list opens under the modes
   if (_ovState === 'menu') setOverlayState('menu');   // headline + button follow the mode
 }
 document.getElementById('mode-campaign').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setModeSel('campaign'); });
+document.getElementById('mode-mission').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setModeSel('mission'); });
 document.getElementById('mode-endless').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setModeSel('endless'); });
 document.getElementById('mode-training').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setModeSel('training'); });
 document.getElementById('mode-sandbox').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setModeSel('sandbox'); });
-// EXPERIMENTAL (in the EXTRAS panel): one card per story mission (data/missions.js), each launching straight in
-document.getElementById('xplist').innerHTML = Object.values(MISSIONS).map(m =>
-  `<div class="xp-card" id="xp-${m.id}">
-    <div class="xp-text"><span class="mt">STORY · ${m.title}</span><span class="md"></span><span class="xp-note">Work in progress: balance and the map are still changing.</span></div>
-    <div class="btn primary" data-mission="${m.id}">PLAY</div>
+// MISSIONS: one card per story mission (data/missions.js) under the mode row; pick one, then BEGIN (or double-click it)
+const placeOf = (m) => m.level.name.replace(/^MISSION\s*—\s*/, '');
+document.getElementById('msnlist').innerHTML = Object.values(MISSIONS).map(m =>
+  `<div class="msn brk" id="msn-${m.id}" data-mission="${m.id}">
+    <span class="mt">${m.title}${m.squad ? '<span class="msn-tag">SQUAD</span>' : ''}<span class="won"></span></span><span class="mw">${placeOf(m)}</span>
   </div>`).join('');
-for (const b of document.querySelectorAll('#xplist [data-mission]')) b.addEventListener('click', (e) => {
-  e.stopPropagation(); audioInit(); setRoadmap(false);
-  G.modeSel = 'mission'; G.missionId = b.dataset.mission; if (_ovState === 'menu') setOverlayState('menu');
-  launch();
-});
+function setMission(id){
+  if (!MISSIONS[id]) id = Object.keys(MISSIONS)[0];
+  G.missionId = id; try { localStorage.setItem('sw_mission', id); } catch(e){}
+  for (const el of document.querySelectorAll('#msnlist .msn')) el.classList.toggle('sel', el.dataset.mission === id);
+  refreshMissionMark();
+  if (_ovState === 'menu') setOverlayState('menu');   // the headline names the mission
+}
+for (const b of document.querySelectorAll('#msnlist [data-mission]')){
+  b.addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setMission(b.dataset.mission); });
+  b.addEventListener('dblclick', (e) => { e.stopPropagation(); setMission(b.dataset.mission); launch(); });
+}
+{ let id; try { id = localStorage.getItem('sw_mission'); } catch(e){} setMission(id || G.missionId); }
 refreshSurvivalLock(); refreshSandboxLock();
 // TRAINING marks which heroes have finished it
 function refreshTrainingMark(){
@@ -142,15 +150,17 @@ function refreshTrainingMark(){
                           : 'learn your hero\'s moves';
 }
 refreshTrainingMark();
-// STORY MISSIONS mark which heroes have won them
+// STORY MISSIONS mark which heroes have won them: a tick on the card for each, and the picked one's line under the list
 function refreshMissionMark(){
+  const mark = (id) => { const j = missionDone(id, 'jedi'), m = missionDone(id, 'mando');
+    return (j || m) ? 'Jedi ' + (j ? '<span class="ok">✓</span>' : '–') + ' Mando ' + (m ? '<span class="ok">✓</span>' : '–') : ''; };
   for (const id in MISSIONS){
-    const md = document.querySelector('#xp-' + id + ' .md'); if (!md) continue;
-    const j = missionDone(id, 'jedi'), m = missionDone(id, 'mando');
-    md.innerHTML = MISSIONS[id].blurb + ((j || m) ? ' · Jedi ' + (j ? '<span class="ok">✓</span>' : '–') + ' Mando ' + (m ? '<span class="ok">✓</span>' : '–') : '');
+    const w = document.querySelector('#msn-' + id + ' .won'); if (!w) continue;
+    w.textContent = (missionDone(id, 'jedi') ? 'J✓' : '') + (missionDone(id, 'mando') ? ' M✓' : '');
   }
+  const m = MISSIONS[G.missionId], info = document.getElementById('msninfo');
+  if (m && info) info.innerHTML = m.blurb.charAt(0).toUpperCase() + m.blurb.slice(1) + '.' + (mark(m.id) ? ' &nbsp;' + mark(m.id) : '');
 }
-refreshMissionMark();
 // FIRST CAMPAIGN — once, a hero who hasn't trained (or beaten the campaign) is offered the training grounds first
 function shouldOfferTraining(){
   if (_ovState !== 'menu' || G.modeSel !== 'campaign' || trainingDone(G.hero)) return false;
@@ -403,7 +413,6 @@ function goHome(){
   startLevel(0);   // sweep the battlefield and reset the hero + kit, exactly as a fresh campaign would
   G.mode = 'menu'; G.paused = false; G.slowmo = 1; G.slowmoT = 0; G.hitstop = 0;
   overlay.style.display = 'flex';
-  if (G.modeSel === 'mission') setModeSel('campaign');   // the experimental mission isn't a menu pick: back to the campaign
   refreshSurvivalLock(); refreshSandboxLock(); refreshTrainingMark(); refreshMissionMark();
   setOverlayState('menu');
   overlay.scrollTop = 0;

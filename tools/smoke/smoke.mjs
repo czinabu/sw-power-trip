@@ -1,7 +1,8 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
 // SMOKE TEST — boots the BUILT game (dist/index.html) in headless Chromium and plays each hero for a short scripted
 // fight in a random look from the character customizer: walk in, turn toward the nearest foe, attack and fire off the
-// hero's moves. Then each story mission once (the strike team mission with its squad), skipping ahead through its objectives so every one (the hold, the sabotage,
+// hero's moves. Then story missions picked from the menu's MISSIONS list (the strike team mission with its squad, the
+// Lothal escort), skipping ahead through their objectives so every kind (the hold, the sabotage, the capture, the escort,
 // the chase legs, the duels) gets set up and played, and the sandbox, with foes and a boss called in from its panel.
 // Fails on any page error or console error, or if the fight never gets going (no frames, no enemies, nothing hit).
 //   npm run build && npm run smoke            (SMOKE_SECONDS=… sets the game time per hero, default 20)
@@ -28,9 +29,9 @@ const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--ena
 let failed = false;
 
 // a mission run passes once its last objective (a duel) is up: the HUD line then names the opponent
-const DUEL_LINE = { refuge: /INQUISITOR/, pursuit: /VX-7|SEVENTH BLADE/, strike: /WARDEN/ };
+const DUEL_LINE = { refuge: /INQUISITOR/, pursuit: /VX-7|SEVENTH BLADE/, strike: /WARDEN/, grassland: /SHIELD CAPTAIN/ };
 // [hero, menu mode, story mission]
-for (const [hero, mode, mission] of [['jedi', 'campaign'], ['mando', 'campaign'], ['jedi', 'mission', 'refuge'], ['mando', 'mission', 'pursuit'], ['jedi', 'mission', 'strike'], ['mando', 'sandbox']]){
+for (const [hero, mode, mission] of [['jedi', 'campaign'], ['mando', 'campaign'], ['jedi', 'mission', 'refuge'], ['mando', 'mission', 'pursuit'], ['jedi', 'mission', 'strike'], ['mando', 'mission', 'grassland'], ['mando', 'sandbox']]){
   const label = hero + (mode === 'campaign' ? '' : ' ' + (mission || mode));
   const errors = [];
   // small window on the LOW preset: headless Chromium draws WebGL in software, and this keeps it at a usable frame rate
@@ -54,8 +55,8 @@ for (const [hero, mode, mission] of [['jedi', 'campaign'], ['mando', 'campaign']
     await page.click('#hero-' + hero);
     // restyle the hero in the customizer first, so the fight runs on a rebuilt player model
     if (mode === 'campaign'){ await page.click('#cztoggle'); await page.click('#czrandom'); await page.click('#czdone'); }
-    // the story mission lives in the EXTRAS panel (experimental) and launches from its own PLAY button
-    if (mode === 'mission'){ await page.click('#rmtoggle'); await page.click(`#xp-${mission} [data-mission]`); }
+    // a story mission: MISSIONS on the mode row, then its card in the list that opens under it
+    if (mode === 'mission'){ await page.click('#mode-mission'); await page.click('#msn-' + mission); }
     else await page.click('#mode-' + mode);
     // BEGIN, then give the game a few seconds to drop into the fight; click again if it's still on the menu
     let started = false;
@@ -96,6 +97,7 @@ for (const [hero, mode, mission] of [['jedi', 'campaign'], ['mando', 'campaign']
 
     const startGt = await page.evaluate(() => GAME.G.gt);
     await page.keyboard.down('w');
+    const objectives = mode === 'mission' ? await page.evaluate(() => GAME.missionState().def.objectives.length) : 0;
     let step = 0, skips = 0, everHit = false;   // a mission skips past (and clears) earlier foes, so remember any hit
     for (;;){
       const s = await page.evaluate(() => {
@@ -122,7 +124,8 @@ for (const [hero, mode, mission] of [['jedi', 'campaign'], ['mando', 'campaign']
       if (s.gt - startGt >= GAME_SECONDS || s.mode !== 'play' || Date.now() - t0 > REAL_LIMIT_MS) break;
       // a mission: a few seconds of each objective, then on to the next (the duel plays out to the end of the run, so it
       // gets the bigger share: on a slow runner it takes a while for the duellist to arrive and close in)
-      if (mode === 'mission' && skips < 2 && s.gt - startGt > GAME_SECONDS * 0.18 * (skips + 1)){
+      const every = Math.min(0.18, 0.54 / Math.max(1, objectives - 1));
+      if (mode === 'mission' && skips < objectives - 1 && s.gt - startGt > GAME_SECONDS * every * (skips + 1)){
         if (await page.evaluate(() => GAME.skipObjective())) skips++;
       }
       // attack: a click (saber swing / blaster shot), and a move every few steps
@@ -167,7 +170,7 @@ for (const [hero, mode, mission] of [['jedi', 'campaign'], ['mando', 'campaign']
   if (problems.length) failed = true;
 }
 
-// FULLSCREEN — on by default: the first click takes the page fullscreen, and the menu toggle turns it off (and stays off)
+// FULLSCREEN — on by default: the first click takes the page fullscreen, and the toggle in SETTINGS turns it off (and stays off)
 {
   const page = await browser.newPage({ viewport: { width: 480, height: 270 } });
   const problems = [];
@@ -178,11 +181,12 @@ for (const [hero, mode, mission] of [['jedi', 'campaign'], ['mando', 'campaign']
     await page.click('#hero-mando');
     const on = await page.waitForFunction(() => !!document.fullscreenElement, null, { timeout: 3000 }).then(() => true, () => false);
     if (!on) problems.push('the first click did not go fullscreen');
-    else if (!await page.waitForFunction(() => document.querySelector('#fsBtn .fsval').textContent === 'ON', null, { timeout: 2000 }).then(() => true, () => false))
-      problems.push('menu toggle does not say ON in fullscreen');
-    await page.click('#fsBtn');
+    await page.click('#settoggle');
+    if (on && !await page.waitForFunction(() => document.querySelector('#settings .fsval').textContent === 'ON', null, { timeout: 2000 }).then(() => true, () => false))
+      problems.push('settings toggle does not say ON in fullscreen');
+    await page.click('#settings .fsctl');
     const off = await page.waitForFunction(() => !document.fullscreenElement, null, { timeout: 3000 }).then(() => true, () => false);
-    if (!off) problems.push('the menu toggle did not leave fullscreen');
+    if (!off) problems.push('the settings toggle did not leave fullscreen');
     if (await page.evaluate(() => localStorage.getItem('sw_fullscreen')) !== '0') problems.push('turning fullscreen off was not remembered');
     if (await page.evaluate(() => GAME.G.mode) !== 'menu') problems.push('the fullscreen toggle launched the game');
   } catch (e){ problems.push('script: ' + e.message); }
