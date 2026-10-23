@@ -35,6 +35,7 @@ import { buildNav } from '../enemies/nav.js';
 /* an arena wider than this is a BATTLE MAP (data/battlemaps.js): far bigger than the sun's shadow box and the reach of
    one flow field, so the light, the sky dome, enemy arrivals and pathing all work around wherever the hero is */
 export const BIG_ARENA = 100;
+export const arenaBuilt = [];   // callbacks run when a build finishes (engine/prewarm.js compiles what the fight will need)
 
 scene.add(shared.arenaGroup);
 
@@ -193,6 +194,7 @@ export function buildArena(L){
   buildNav();   // the enemy pathing grid follows the new layout (enemies/nav.js)
   // INK: cel-shade every static prop and merge them into a handful of draw calls (glows and hazards stay live)
   if (T) shared.arenaBake = bakeArena(shared.arenaGroup, T.ink ?? 0.045);
+  for (const f of arenaBuilt) f();
 }
 
 /* what's built and what it costs to draw (the battle-map smoke test reads it: tools/smoke/maps.mjs) */
