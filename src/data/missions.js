@@ -62,7 +62,7 @@
 
 import { REFUGE_SPOTS } from '../world/arenas/refuge.js';
 import { PURSUIT_SPOTS } from '../world/arenas/pursuit.js';
-import { BATTLE_MAPS, ICEFRONT_SPOTS, GRAVEYARD_SPOTS } from './battlemaps.js';
+import { BATTLE_MAPS, GRASSLAND_SPOTS, ICEFRONT_SPOTS, GRAVEYARD_SPOTS } from './battlemaps.js';
 
 export const MISSION_VOICE = { jedi: 'THE BATTLEMASTER', mando: 'THE ARMORER' };
 export const MISSION_COLOR = { jedi: 0x5ad2ff, mando: 0xffa040 };
@@ -117,10 +117,10 @@ export const MISSIONS = {
     id: 'strike',
     title: 'SPEARHEAD',
     blurb: 'lead a strike team through the battle lines',
-    level: { name: 'MISSION — THE BATTLE OF THE WASTES', sub: 'The army holds the wastes before the citadel. Break its line.',
-             arena: 72, floor: 0x3b2f31, fog: 0x401a22, sky: 0x1a080c, skyTop: 0x090103, sun: 0xffb0a0, ember: 0xff4a55,
-             fill: 0.98, sunI: 1.9, fogStart: 0.6, layout: 'plains', waves: [], hazards: {} },
-    start: [0, 30, Math.PI],   // the north edge, looking south across the wastes at their line
+    // the Grass Sea of Lothal (data/battlemaps.js): up from the landing field, across the ridges, to the outpost's gate
+    level: { ...BATTLE_MAPS.grassland.level, name: 'MISSION — THE BATTLE OF THE GRASS SEA',
+             sub: 'The Empire holds the grass before its outpost. Break its line and take the gate.' },
+    start: GRASSLAND_SPOTS.allyStart,   // the landing field in the north, looking south across the grass
     kit: 4,
     grant: { jedi: ['throw', 'slam'], mando: ['grapple', 'birds'] },
     squad: 4, battle: true,
@@ -130,16 +130,16 @@ export const MISSIONS = {
                mando: 'Your clan rides with you. Take their posts one by one. They\'ll handle the troopers. The blades are yours.' },
         task: { jedi: 'Take the three posts (H sends the squad to hold one)', mando: 'Take the three posts (H sends the squad to hold one)' },
         r: 5, time: 9, squadRate: 0.55, perMate: 0.15, postName: 'POST', doneLine: 'THEIR LINE BREAKS', aggro: 9,
-        posts: [ { at: [12, 17], guards: { grunt: 3, blaster: 2 } },
-                 { at: [-15, 2], guards: { grunt: 3, blaster: 2, officer: 1, lancer: 1 } },
-                 { at: [9, -13], guards: { grunt: 2, blaster: 2, grenadier: 1, duelist: 1 } } ],
+        posts: [ { at: GRASSLAND_SPOTS.points.ridge, guards: { grunt: 3, blaster: 2 } },                        // the first ridge
+                 { at: GRASSLAND_SPOTS.points.walker, guards: { grunt: 3, blaster: 2, officer: 1, lancer: 1 } },   // under the downed walker
+                 { at: GRASSLAND_SPOTS.points.crossroads, guards: { grunt: 2, blaster: 2, grenadier: 1, duelist: 1 } } ],
         trickle: { every: 13, cap: 10, group: { grunt: 2, blaster: 1 } }, from: [-Math.PI + 0.35, -0.35] },
 
-      { kind: 'hold', title: 'HOLD THE GROUND', music: 'battle',
-        say: { jedi: 'They are throwing everything at us. Hold the ground until the gunships arrive. If a blade comes for you, put the squad on the ground (H) and meet it.',
-               mando: 'They want the ground back. Hold it till the gunships come. Put your clan on it (H) when you have to go hunting.' },
-        task: { jedi: 'Hold the ground until the gunships arrive', mando: 'Hold the ground until the gunships arrive' },
-        at: [0, -3], r: 7, time: 60, awayRate: 0.25, squadRate: 0.6, overrun: 'RETAKE THE GROUND', unguarded: 'GROUND UNGUARDED',
+      { kind: 'hold', title: 'HOLD THE GATE', music: 'battle',
+        say: { jedi: 'Their gate is open and the whole outpost is coming out of it. Hold it until the gunships arrive. If a blade comes for you, put the squad on the gate (H) and meet it.',
+               mando: 'The gate\'s ours if we can keep it. Hold it till the gunships come. Put your clan on it (H) when you have to go hunting.' },
+        task: { jedi: 'Hold the gate until the gunships arrive', mando: 'Hold the gate until the gunships arrive' },
+        at: GRASSLAND_SPOTS.points.gate, r: 7, time: 60, awayRate: 0.25, squadRate: 0.6, overrun: 'RETAKE THE GATE', unguarded: 'GATE UNGUARDED',
         pulses: [ { grunt: 3, blaster: 2 }, { grunt: 2, blaster: 2, officer: 1 }, { grunt: 3, blaster: 1, phalanx: 1 },
                   { grunt: 2, blaster: 2, grenadier: 1 }, { grunt: 2, blaster: 1, acolyte: 1 }, { grunt: 3, blaster: 2, flyer: 1 } ],
         every: [8, 11], cap: 11, from: [-Math.PI + 0.35, -0.35], aggro: 9 },
@@ -148,14 +148,14 @@ export const MISSIONS = {
         say: { jedi: 'Their commander takes the field himself. Your men will keep his troops off you. He is yours.',
                mando: 'Their commander wants you himself. The clan will keep his troops busy. Take him.' },
         task: { jedi: 'Win the duel while the squad holds', mando: 'Win the duel while the clan holds' },
-        foe: 'acolyte', name: 'THE WARDEN', hp: 4.5, dmg: 1.2, scale: 1.2, tint: 0x8a2a1a, at: [0, -14],
+        foe: 'acolyte', name: 'THE WARDEN', hp: 4.5, dmg: 1.2, scale: 1.2, tint: 0x8a2a1a, at: [0, -28],   // the open grass before the gate
         duel: { block: 0.75, posture: 165, feint: 0.35, chain: 2, counter: 0.55 },
         rage: 0.5, rageDuel: { feint: 0.5, delay: 0.4, chain: 3, thrust: 0.25 },
         trickle: { every: 12, cap: 4, group: { grunt: 2, blaster: 1 } }, from: [-Math.PI + 0.35, -0.35],
         hero: { mando: { foe: 'duelist', name: 'THE IRON WARDEN', tint: 0x4a4a52, hp: 5,
                          duel: { block: 0.7, posture: 155, feint: 0.3, chain: 2, counter: 0.5 } } } },
     ],
-    done: { jedi: 'The line is broken and the wastes are ours. Your men fought well, General. So did you.',
+    done: { jedi: 'The line is broken and the Grass Sea is ours. Your men fought well, General. So did you.',
             mando: 'The ground is ours. The clan stands. This is the Way.' },
   },
 
@@ -312,16 +312,17 @@ export const MISSIONS = {
             mando: 'The cores are aboard and the bounty is ours. This is the Way.' },
   },
 
-  // LOTHAL: an escort. Walk the slicer droid across the grass to the outpost's gate, hold the gate while it slices
-  // it open, then face the shield captain who comes out of it.
+  // LOTHAL: an escort, on the far side of the Grass Sea from SPEARHEAD's push. The slicer droid has what it came for
+  // inside the outpost; walk it out up the east flank to the landing field, hold the pad until the shuttle is down,
+  // then face the shield captain who followed you out.
   grassland: {
     id: 'grassland',
-    title: 'THE OUTPOST GATE',
-    blurb: 'escort a slicer droid across the grass, hold the gate',
-    level: { ...BATTLE_MAPS.grassland.level, name: 'MISSION — THE GRASS SEA OF LOTHAL',
-             sub: { jedi: 'The outpost holds the prisoners. Only the droid can open its gate.',
-                    mando: 'The outpost has what the clan needs. The droid opens the gate. You get it there.' } },
-    start: [3, 51, Math.PI],   // the landing field, just behind the droid so it's in view
+    title: 'THE EXTRACTION',
+    blurb: 'walk a slicer droid out under fire, hold the landing pad',
+    level: { ...BATTLE_MAPS.grassland.level, name: 'MISSION — THE EAST FLANK OF LOTHAL',
+             sub: { jedi: 'The droid carries the outpost\'s prison codes. Get it to the shuttle.',
+                    mando: 'The droid has the bounty\'s location in its memory. Get it to the ship.' } },
+    start: [52, -42, 0],   // outside the outpost's east wall, just behind the droid, looking north up the flank
     kit: 4,
     grant: { jedi: ['throw', 'slam'], mando: ['grapple', 'birds'] },
     squad: 2,
@@ -333,44 +334,44 @@ export const MISSIONS = {
         say: { jedi: 'The droid will not walk into blaster fire on its own. Stay close and keep the troops off it. Clear them and it walks on.',
                mando: 'The droid won\'t move if you\'re not with it, and it won\'t move under fire. Keep them off it.' },
         task: { jedi: 'Stay near the droid and keep foes off it', mando: 'Stay near the droid and keep foes off it' },
-        path: [[0, 45], [0, 40], [5, 31], [5, 20], [6, 6], [4, -4]],
+        path: [[51, -36], [49, -24], [49, -10], [49, 4]],
         speed: 2.6, leash: 15, threat: 6, dps: 4, regen: 3, aggro: 7,
-        ambush: [ { at: [5, 30], group: { grunt: 2, blaster: 2 }, from: [-0.9, 0.2] },
-                  { at: [5, 15], group: { grunt: 2, lancer: 1, grenadier: 1 }, from: [Math.PI - 0.2, Math.PI + 0.9] },
-                  { at: [5, 2], group: { grunt: 2, blaster: 1, officer: 1, flyer: 1 }, from: [-Math.PI + 0.4, -0.4] } ],
+        ambush: [ { at: [49, -30], group: { grunt: 2, blaster: 2 }, from: [-Math.PI + 0.4, -0.4] },
+                  { at: [49, -16], group: { grunt: 2, lancer: 1, grenadier: 1 }, from: [Math.PI - 0.6, Math.PI + 0.6] },
+                  { at: [49, -2], group: { grunt: 2, blaster: 1, officer: 1, flyer: 1 }, from: [-Math.PI + 0.4, -0.4] } ],
         trickle: { every: 16, cap: 7, group: { grunt: 1, blaster: 1 } }, from: [-Math.PI + 0.4, -0.4] },
 
-      { kind: 'escort', title: { jedi: 'ESCORT RX-4', mando: 'ESCORT SCRAP' }, start: [7, 1, Math.PI],
-        say: { jedi: 'Through the last ridges to the gate. They will throw shields in front of it: break them, or go around.',
-               mando: 'Last stretch to the gate. Shield troopers ahead. Break them or flank them.' },
-        task: { jedi: 'Get the droid to the outpost gate', mando: 'Get the droid to the outpost gate' },
-        path: [[4, -4], [-1, -12], [-3, -22], [0, -31], [0, -38]],
+      { kind: 'escort', title: { jedi: 'ESCORT RX-4', mando: 'ESCORT SCRAP' }, start: [52, 0, 0],
+        say: { jedi: 'Up the flank to the landing field. They will throw shields in front of it: break them, or go around.',
+               mando: 'Last stretch to the landing field. Shield troopers ahead. Break them or flank them.' },
+        task: { jedi: 'Get the droid to the landing field', mando: 'Get the droid to the landing field' },
+        path: [[49, 4], [49, 20], [48, 31], [34, 36], [34, 44], [14, 50]],
         speed: 2.4, leash: 15, threat: 6, dps: 4.5, regen: 3, aggro: 7,
-        ambush: [ { at: [-2, -10], group: { grunt: 2, phalanx: 1, blaster: 1 }, from: [-Math.PI + 0.4, -0.4] },
-                  { at: [-3, -22], group: { grunt: 2, sniper: 1, grenadier: 1 }, from: [-Math.PI + 0.4, -0.4] },
-                  { at: [0, -32], group: { grunt: 2, bomber: 1, blaster: 1 }, from: [-Math.PI + 0.4, -0.4] } ],
+        ambush: [ { at: [49, 12], group: { grunt: 2, phalanx: 1, blaster: 1 }, from: [-Math.PI + 0.4, -0.4] },
+                  { at: [48, 30], group: { grunt: 2, sniper: 1, grenadier: 1 }, from: [Math.PI - 0.6, Math.PI + 0.6] },
+                  { at: [34, 42], group: { grunt: 2, bomber: 1, blaster: 1 }, from: [-Math.PI + 0.4, -0.4] } ],
         trickle: { every: 15, cap: 7, group: { grunt: 1, blaster: 1 } }, from: [-Math.PI + 0.4, -0.4] },
 
-      { kind: 'hold', title: 'HOLD THE GATE', music: 'defend', start: [3, -30, Math.PI],
-        say: { jedi: 'The droid is slicing the gate. Hold here until it opens. They will come from inside and from the grass.',
-               mando: 'It\'s slicing the lock. Hold the gate till it\'s open. They\'ll come from both sides.' },
-        task: { jedi: 'Hold the gate while the droid slices it', mando: 'Hold the gate while the droid slices it' },
-        at: [0, -36], r: 6.5, time: 45, awayRate: 0.35, squadRate: 0.55, holding: 'SLICING THE GATE',
-        overrun: 'CLEAR THE GATE', unguarded: 'GATE UNGUARDED', doneLine: 'THE GATE OPENS', doneSub: 'Someone steps out to close it.',
+      { kind: 'hold', title: 'HOLD THE LANDING PAD', music: 'defend', start: [10, 46, Math.PI],
+        say: { jedi: 'The shuttle is inbound. Hold the pad until it is down. They will come over the sandbags.',
+               mando: 'Ship\'s inbound. Hold the pad till it lands. They\'re coming over the sandbags.' },
+        task: { jedi: 'Hold the landing pad until the shuttle lands', mando: 'Hold the landing pad until the ship lands' },
+        at: [8, 52], r: 7, time: 45, awayRate: 0.35, squadRate: 0.55, holding: 'SHUTTLE INBOUND',
+        overrun: 'CLEAR THE PAD', unguarded: 'PAD UNGUARDED', doneLine: 'THE SHUTTLE IS DOWN', doneSub: 'Someone followed you out.',
         pulses: [ { grunt: 2, blaster: 2 }, { grunt: 2, officer: 1, blaster: 1 }, { grunt: 2, lancer: 1, grenadier: 1 },
                   { grunt: 2, flyer: 1, blaster: 1 }, { grunt: 2, phalanx: 1, sniper: 1 } ],
-        every: [8, 12], cap: 9, from: [-Math.PI + 0.2, 0], aggro: 8 },
+        every: [8, 12], cap: 9, from: [-Math.PI + 0.3, -0.3], aggro: 8 },
 
-      { kind: 'duel', title: 'DEFEAT THE SHIELD CAPTAIN', start: [2, -32, Math.PI],
+      { kind: 'duel', title: 'DEFEAT THE SHIELD CAPTAIN', start: [8, 50, Math.PI],
         say: { jedi: 'The outpost\'s captain fights behind a riot shield. Go around it, or break it with the Force.',
                mando: 'Riot shield, stun baton. Blasters won\'t get through the front. Get behind it, or blow it off its feet.' },
-        task: { jedi: 'Win the duel', mando: 'Win the duel' },
-        foe: 'phalanx', name: 'THE SHIELD CAPTAIN', hp: 4, dmg: 1.2, scale: 1.22, tint: 0x5a6472, at: [0, -45],
+        task: { jedi: 'Win the duel while the squad holds', mando: 'Win the duel while the clan holds' },
+        foe: 'phalanx', name: 'THE SHIELD CAPTAIN', hp: 4, dmg: 1.2, scale: 1.22, tint: 0x5a6472, at: [6, 36],
         duel: { posture: 130, feint: 0.3, chain: 2, counter: 0.45 },
         rage: 0.5, rageDuel: { feint: 0.45, delay: 0.4, chain: 3 },
         trickle: { every: 14, cap: 3, group: { grunt: 2 } }, from: [-Math.PI + 0.4, -0.4] },
     ],
-    done: { jedi: 'The gate is open and the prisoners walk free. The droid did its part. So did you.',
-            mando: 'The gate is open and the outpost is ours. Good droid. This is the Way.' },
+    done: { jedi: 'The droid is aboard and the codes with it. The prisoners will walk free. Well done.',
+            mando: 'The droid is aboard and the trail is ours. Good droid. This is the Way.' },
   },
 };

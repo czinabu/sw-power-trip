@@ -20,6 +20,7 @@ import {
 } from './state.js';
 import { MANDO, MANDO_WEAPONS } from './data/mando.js';
 import './fx/lights.js';
+import './engine/prewarm.js';
 import './player/mesh.js';
 import { setHero } from './player/hero.js';
 import { updateTrail } from './fx/trail.js';

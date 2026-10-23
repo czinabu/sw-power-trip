@@ -6,11 +6,11 @@
 
 export const ROADMAP = [
   { title: 'Combat and movement', status: 'done',
-    items: ['Grounded combat: stamina sprint, roll, parries', 'Saber stamina tuning', 'Jedi and Mando camera rigs'] },
+    items: ['Grounded combat: stamina sprint, roll, parries', 'Saber stamina tuning', 'Jedi and Mando camera rigs', 'Smoother first use: saber throw, bosses, squads'] },
   { title: 'Battle maps and squads', status: 'done',
-    items: ['Three large battle maps', 'Allied squads, downed allies and revive', 'SPEARHEAD squad mission'] },
+    items: ['Three large battle maps', 'Allied squads, downed allies and revive', 'SPEARHEAD on the Grass Sea of Lothal'] },
   { title: 'Missions', status: 'done',
-    items: ['Missions tab: pick any single mission', 'Hoth trench defence, Jakku salvage raid', 'Lothal escort: walk a droid to the gate'] },
+    items: ['Missions tab: pick any single mission', 'Hoth trench defence, Jakku salvage raid', 'Lothal escort: walk a droid out under fire'] },
   { title: 'Menus', status: 'done',
     items: ['Main menu: play choices first, extras in one row', 'How to Play: basics first, details on hover', 'Roadmap panel'] },
   { title: 'Online co-op', status: 'now',
