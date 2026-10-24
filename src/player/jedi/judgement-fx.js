@@ -3,7 +3,7 @@
 
 import * as THREE from 'three';
 import { CFG } from '../../data/config.js';
-import { renderer, scene, camera } from '../../engine/renderer.js';
+import { scene, camera, compileLive } from '../../engine/renderer.js';
 import { rand } from '../../utils.js';
 import { G, player } from '../../state.js';
 import { inkSprite } from '../../fx/ink.js';
@@ -57,7 +57,7 @@ export function prewarmJudgeFX(){
   ensureJudgeLines();
   const ln = judgeLines[0];
   ln.visible = true;   // all-zero positions: nothing is drawn, but the program is built
-  renderer.compile(scene, camera);
+  compileLive();
   ln.visible = false;
 }
 const JHAND = new THREE.Vector3(), _seg = new THREE.Vector3(), _toCam = new THREE.Vector3(), _side = new THREE.Vector3();
