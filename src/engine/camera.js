@@ -11,7 +11,10 @@ import { CFG } from '../data/config.js';
 /* ============================================================
    CAMERA — third person follow
    ============================================================ */
-let camDist = 5, camFov = 60, camLift = 0, camRise = 0, deadAt = -1, fovPunch = 0;
+let camDist = 5, camFov = 60, camLift = 0, camRise = 0, jaYaw = 0, jaLive = false, deadAt = -1, fovPunch = 0;
+// the Jedi rig's state (JA's cameraCurLoc / cameraCurTarget): where the lens and its aim point are, each easing after
+// its ideal spot on its own damping
+const jaLoc = camera.position.clone(), jaTarget = camera.position.clone(), LOOK = camera.position.clone();
 // smooth layered-sine noise in [-1,1] — shake that rolls instead of buzzing frame to frame
 const wob = (t, s) => (Math.sin(t*23.1 + s) * 0.55 + Math.sin(t*37.7 + s*2.3) * 0.3 + Math.sin(t*61.3 + s*4.1) * 0.15);
 
@@ -100,13 +103,9 @@ export function updateCamera(dt){
   // ----- MANDO camera: HIGH + ALWAYS over a shoulder (helmet never under the crosshair) — the shoulder follows the
   //       way you last strafed, with situational distance & offset strength -----
   let camHi = 0, distMul = 1, ots = 0;
-  if (G.hero !== 'mando'){
-    // JEDI: Jedi Academy framing: nearly dead centre behind the hero, close in, aimed high so they sit in the lower third.
-    // A slight right offset keeps a foe straight ahead from hiding behind the hero's back
-    player.camOts = (player.camOts || 0) + (C.shoulder - (player.camOts || 0)) * Math.min(1, dt*4);
-    ots = player.camOts;
-    camHi = C.jediLensUp;
-  } else {
+  const jedi = G.hero !== 'mando';
+  if (jedi) player.camOts = 0;   // (the Jedi rig below carries its own small offset)
+  else {
     const aiming = player.blockHeld || player.zoom || player.aiming > 0;
     const flying = !player.grounded;
     const lat = vx*rv.x + vz*rv.z;                        // signed strafe: +right, -left
@@ -121,8 +120,7 @@ export function updateCamera(dt){
   }
   // camera breathes with the action: pulls back HARD at high flight speed (Mando), softer otherwise, + for the boss
   const adsFly = G.hero === 'mando' && (player.blockHeld || player.zoom);   // aiming → steadier, tighter camera
-  const jedi = G.hero !== 'mando';
-  const pullback = jedi ? clamp(speed * 0.05, 0, C.jediRunPull) : clamp(speed * 0.14, 0, 4);
+  const pullback = jedi ? 0 : clamp(speed * 0.14, 0, 4);   // (JA's range doesn't stretch with speed)
   // COMBAT FRAMING — a pack closing in pushes the lens back and up so the whole brawl stays on screen; a quiet
   // arena (between waves, nothing near) tucks it in closer for a grounded, over-the-shoulder feel
   const boss = shared.boss && shared.boss.hp > 0 ? shared.boss : null;
@@ -135,25 +133,54 @@ export function updateCamera(dt){
     frame = Math.max(frame, C.bossDist + clamp(1 - (bd - 3) / 9, 0, 1) * (C.bossNear - C.bossDist));
     lift = Math.max(lift, C.crowdLift);
   } else if (G.mode === 'play' && crowd < 0.3 && shared.levelPhase !== 'fighting') frame = C.calmDist;
-  if (jedi && !boss){ frame *= C.jediFrame; lift *= C.jediFrame; }   // (the boss still gets the full pull: its windups need the room)
+  if (jedi && !boss){ frame *= C.ja.frame; lift *= C.ja.frame; }   // (the boss still gets the full pull: its windups need the room)
   // DUEL FRAMING — locked onto a foe, back off with the gap between you so both blades stay on screen
   const lt = player.lockTarget, lp = lt && lt.group && lt.group.position;
   if (lp) frame = Math.max(frame, clamp(Math.hypot(lp.x - pp.x, lp.z - pp.z) * C.duelPull, 0, C.duelMax));
   if (adsFly) lift *= 0.3;   // don't drift the reticle's eye-line while aiming
   camLift += (lift - camLift) * Math.min(1, dt*2);
-  const wantDist = ((jedi ? C.jediDist : C.mandoDist) + pullback + frame) * distMul;
+  const wantDist = ((jedi ? C.ja.range : C.mandoDist) + pullback + frame) * distMul;
   // draw back quicker than we settle in, so a closing pack is framed before it lands its first hit
   camDist += (wantDist - camDist) * Math.min(1, dt * (wantDist > camDist ? 3.5 : 2.2));
-  // the boom stops climbing at the hero's orbit cap; the rest of a downward look tips the aim down from there (below),
-  // so looking down at a fight keeps the hero big in frame instead of hoisting the lens overhead
-  const orbitP = Math.min(G.pitch, jedi ? C.jediOrbitMax : C.mandoOrbitMax), tipDown = G.pitch - orbitP;
-  const cosP = Math.cos(orbitP), sinP = Math.sin(orbitP);
+  const cosP = Math.cos(G.pitch), sinP = Math.sin(G.pitch);
   // DEATH — the view slowly rises and draws back off the fallen hero (real time: the death slow-mo would stall it)
   let dk = 0;
   if (G.mode === 'dead'){ if (deadAt < 0) deadAt = performance.now(); dk = Math.min(1, (performance.now() - deadAt) / 2500); dk = dk*dk*(3 - 2*dk); }
   else deadAt = -1;
   const d = camDist + dk*3;
-  TMP.set(tx - f.x*d*cosP + rv.x*ots, ty + camHi + camLift + dk*3 + d*sinP, tz - f.z*d*cosP + rv.z*ots);
+  // where the lens is clipped back toward (JA traces from the aim point; the Mando's rig from the hero's head)
+  let ox = pp.x, oy = ty, oz = pp.z;
+  if (jedi){
+    // ----- JEDI: Jedi Academy's rig (cg_view.cpp, CG_OffsetThirdPersonView). The ideal aim point sits vertOffset over
+    // the eye; the ideal lens sits `d` behind it along the line of sight (pitch included: looking down swings it up over
+    // the hero, looking up swings it down behind). Each then closes a fixed share of its gap per 50 ms -----
+    const J = C.ja, k = dt / 0.05;
+    const fy = -sinP, fx = f.x*cosP, fz = f.z*cosP;   // JA's camerafwd (our pitch is + looking down)
+    const itx = pp.x, ity = pp.y + J.eye + J.vertOffset + camLift + dk*3, itz = pp.z;
+    TMP.set(itx - fx*d, ity - fy*d, itz - fz*d);
+    // turning fast stiffens the lens so it doesn't cut across the orbit (JA: yaw speed in degrees per ms, 1 → 2.5)
+    let dy = Math.abs(G.yaw - jaYaw) * 180 / Math.PI % 360; if (dy > 180) dy = 360 - dy;
+    let stiff = dt > 0 ? dy / (dt * 1000) : 0;
+    stiff = stiff < 1 ? 0 : stiff > 2.5 ? 0.75 : (stiff - 1) * 0.5;
+    jaYaw = G.yaw;
+    if (!jaLive || G.fovPreview){ jaTarget.set(itx, ity, itz); jaLoc.copy(TMP); jaLive = true; }   // (re)start: no swoop in
+    else {
+      const tr = Math.pow(1 - J.targetDamp, k);
+      jaTarget.set(itx - (itx - jaTarget.x)*tr, ity - (ity - jaTarget.y)*tr, itz - (itz - jaTarget.z)*tr);
+      const pk = Math.abs(G.pitch) * 180 / Math.PI / 115;
+      let df = J.cameraDamp + (1 - J.cameraDamp) * pk*pk;
+      df += (1 - df) * stiff;
+      const lr = df >= 1 ? 0 : Math.pow(1 - df, k);
+      jaLoc.set(TMP.x - (TMP.x - jaLoc.x)*lr, TMP.y - (TMP.y - jaLoc.y)*lr, TMP.z - (TMP.z - jaLoc.z)*lr);
+    }
+    // JA's horizontal offset slides lens and aim together, so the view direction is unchanged
+    TMP.set(jaLoc.x + rv.x*J.horz, jaLoc.y, jaLoc.z + rv.z*J.horz);
+    LOOK.set(jaTarget.x + rv.x*J.horz, jaTarget.y, jaTarget.z + rv.z*J.horz);
+    ox = jaTarget.x; oy = jaTarget.y; oz = jaTarget.z;
+  } else {
+    jaLive = false;
+    TMP.set(tx - f.x*d*cosP + rv.x*ots, ty + camHi + camLift + dk*3 + d*sinP, tz - f.z*d*cosP + rv.z*ots);
+  }
   // aiming up swings the lens down behind the hero; never let it sink below `minLensY` over their feet, so the
   // view never comes up from the floor. Past that point the swing it would have made raises the aim point instead,
   // so you can keep looking up at the same rate
@@ -163,13 +190,12 @@ export function updateCamera(dt){
   // never park the lens INSIDE a prop (inside one, its ink hull fills the screen black): pull in along the line from
   // the hero's head. The head, not the look-ahead point, because running at a wall puts the look-ahead inside it.
   // Props merely in the way don't move the lens: they fade (below)
-  const hx = pp.x, hz = pp.z;
-  const clear = v => { const k = cameraClearance(hx, ty, hz, v.x, v.y, v.z); if (k < 1) v.set(hx + (v.x - hx)*k, ty + (v.y - ty)*k, hz + (v.z - hz)*k); };
+  const clear = v => { const k = cameraClearance(ox, oy, oz, v.x, v.y, v.z); if (k < 1) v.set(ox + (v.x - ox)*k, oy + (v.y - oy)*k, oz + (v.z - oz)*k); };
   // WALL AT YOUR BACK — pulling straight in jams the lens into the back of the hero's head. Try riding the boom up over
   // them first (as JA's and most action games' cameras do), keeping whichever height leaves the longest clear line
   let riseWant = 0;
-  if (cameraClearance(hx, ty, hz, TMP.x, TMP.y, TMP.z) < 1){
-    const reach = r => cameraClearance(hx, ty, hz, TMP.x, TMP.y + r, TMP.z) * Math.hypot(TMP.x - hx, TMP.y + r - ty, TMP.z - hz);
+  if (cameraClearance(ox, oy, oz, TMP.x, TMP.y, TMP.z) < 1){
+    const reach = r => cameraClearance(ox, oy, oz, TMP.x, TMP.y + r, TMP.z) * Math.hypot(TMP.x - ox, TMP.y + r - oy, TMP.z - oz);
     let best = reach(0) + 0.6;   // a rise has to buy real room to be worth tipping the view down
     for (const r of C.wallRise){ const L = reach(r); if (L > best){ best = L; riseWant = r; } }
   }
@@ -179,7 +205,9 @@ export function updateCamera(dt){
   // INERTIA — the camera lags when you boost / fly fast (a weighty swoop), but snaps tight when you're AIMING
   const lagBase = (adsFly) ? 0.000004 : (G.hero === 'mando' && (player.boosting || speed > 14)) ? 0.02 : 0.000008;
   // (frozen sim: dt = 0 would leave the lens stuck on the last pause cut, so the FOV preview snaps straight to the gameplay spot)
-  camera.position.lerp(TMP, G.fovPreview ? 1 : 1 - Math.pow(lagBase, dt));
+  // (the Jedi rig has already done its own easing)
+  if (jedi) camera.position.copy(TMP);
+  else camera.position.lerp(TMP, G.fovPreview ? 1 : 1 - Math.pow(lagBase, dt));
   // SHAKE — trauma model: strength is shake², so chip damage barely registers and a boss slam rattles the screen.
   // Smooth noise (real time, so a hitstop freeze-frame still trembles) with a touch of roll; damped while scoped.
   const now = performance.now() / 1000;
@@ -218,11 +246,11 @@ export function updateCamera(dt){
   // LOOKING DOWN — the lens climbs overhead, and aiming far past the hero from up there drops them off the bottom of the
   // screen. As the view tips over, draw the aim point back in toward the hero and down toward the waist, so they stay
   // in frame
-  let td = clamp((orbitP - C.topDownFrom) / (1.2 - C.topDownFrom), 0, 1);
+  let td = clamp((G.pitch - C.topDownFrom) / (1.2 - C.topDownFrom), 0, 1);
   td = td*td*(3 - 2*td);
-  const ahead = (jedi ? C.jediLookAhead : C.lookAhead) * (1 - td * C.topDownAhead);
-  const tip = Math.tan(tipDown) * (ahead + d*cosP);   // a look past the orbit cap drops the aim instead of raising the lens
-  camera.lookAt(tx + f.x*ahead + rv.x*ots, ty + C.lookUp + (jedi ? C.jediLookUp : 0.3) + diveLook + aimRise - td * C.topDownDrop - tip, tz + f.z*ahead + rv.z*ots);
+  const ahead = C.lookAhead * (1 - td * C.topDownAhead);
+  if (jedi) camera.lookAt(LOOK);   // JA: the view runs from the lens through its aim point, over the hero's head
+  else camera.lookAt(tx + f.x*ahead + rv.x*ots, ty + C.lookUp + 0.3 + diveLook + aimRise - td * C.topDownDrop, tz + f.z*ahead + rv.z*ots);
   // camera ROLL into a strafe — subtle for the Jedi; a pronounced Max-Payne bank for the boosting Mando, but
   // damped right down while AIMING so the shot stays readable.
   const strafe = vx * (-f.z) + vz * f.x;
