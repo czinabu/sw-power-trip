@@ -18,7 +18,8 @@ import { hazardContains } from '../world/hazards.js';
 const CS = 0.6;                         // cell size (world units)
 const CLASSES = [0.62, 0.95];           // passable clearance: troopers, and big bodies (brutes, vital elites)
 export const BIG_RADIUS = 0.85;         // a body radius above this paths as a big body
-const REBUILD = 0.12;                   // seconds between flow-field refreshes (the two sizes take turns)
+const REBUILD = 0.12;
+const REBUILD_BIG = 0.18;               // a battle map's fill is the big one: refresh it a little less often                   // seconds between flow-field refreshes (the two sizes take turns)
 const HOT_COST = 7;                     // extra cost per cell of a warning/firing hazard (avoid, but never a wall)
 const IDLE_COST = 0.25;                 // a resting hazard is only mildly disliked
 const LINE_PAD = 0.12;                  // straight-line moves keep this much more room than the grid needs
@@ -164,6 +165,7 @@ function fillField(cls, px, pz, hot){
   }
 }
 
+const hotSig = a => { let h = 0; for (let i = 1; i < a.length; i++) h = (h * 3 + a[i]) | 0; return h; };   // which hazards are hot, as one number
 const hotScratch = { a: new Uint8Array(64) };
 function hotTable(){
   const m = hazardZones.length + vents.length + 1;
@@ -179,11 +181,20 @@ export function updateNav(dt, pp){
   if (!nav.n || nav.half !== shared.arenaHalf || nav.halfZ !== (shared.arenaHalfZ || shared.arenaHalf)) buildNav();
   nav.t -= dt;
   if (nav.t > 0) return;
-  nav.t = REBUILD;
+  nav.t = shared.arenaBig ? REBUILD_BIG : REBUILD;
   nav.hotNow = hotTable();
-  if (!nav.primed){ fillField(0, pp.x, pp.z, nav.hotNow); fillField(1, pp.x, pp.z, nav.hotNow); nav.primed = true; return; }
+  if (!nav.primed){ fillField(0, pp.x, pp.z, nav.hotNow); fillField(1, pp.x, pp.z, nav.hotNow); nav.primed = true; nav.at = [cellOf(pp.x), cellOfZ(pp.z)]; nav.hotSig = hotSig(nav.hotNow); nav.still = 0; nav.pending = -1; return; }
+  // standing still with no hazard changing: the field is already right, so don't pay for a re-fill (up to 2 s, to be safe)
+  const cx = cellOf(pp.x), cz = cellOfZ(pp.z), sig = hotSig(nav.hotNow);
+  if (cx === nav.at[0] && cz === nav.at[1] && sig === nav.hotSig && nav.still < 16){
+    nav.still++;
+    if (nav.pending >= 0){ fillField(nav.pending, pp.x, pp.z, nav.hotNow); nav.pending = -1; }   // the other size catches up with where we stopped
+    return;
+  }
+  nav.at[0] = cx; nav.at[1] = cz; nav.hotSig = sig; nav.still = 0;
   nav.flip ^= 1;
   fillField(nav.flip, pp.x, pp.z, nav.hotNow);
+  nav.pending = nav.flip ^ 1;
 }
 
 export const navClass = radius => radius > BIG_RADIUS ? 1 : 0;
