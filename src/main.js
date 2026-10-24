@@ -94,6 +94,7 @@ import { updateCoop, partnerShown } from './net/ghost.js';
 import { allies, updateSquad, updateSquadHud, spawnSquad, addSquadmate, squadOrder } from './allies/squad.js';
 import { downed } from './game/revive.js';
 import './ui/coop-ui.js';
+import './ui/saves-ui.js';   // NEW GAME / SAVE GAME / LOAD GAME and the save-slot panel
 
 setHero(G.hero);   // initialise control text + crosshair for the default hero
 

@@ -100,18 +100,28 @@
 #overlay.st-menu .ov-actions{gap:6px;margin-top:22px}
 #overlay.st-menu .ov-actions .btn{box-sizing:border-box}
 #overlay.st-menu .ov-actions .go{flex:1 0 100%;margin-bottom:4px}
-#overlay.st-menu .ov-actions .btn:not(.go){flex:1 1 0;min-width:0;white-space:nowrap;padding:9px 6px;font-size:12px;letter-spacing:1.5px;
+#overlay.st-menu .ov-actions .btn:not(.go){flex:1 1 30%;min-width:0;white-space:nowrap;padding:9px 6px;font-size:12px;letter-spacing:1.5px;
   background:rgba(8,18,33,.45)}
 #overlay.st-menu #fsBtn{display:none}
 #overlay .go{animation:none}
 #restartBtn{display:none;color:#ffcfa0;border-color:rgba(200,120,60,.45)}
 #restartBtn:hover{border-color:#ffb060;color:#ffe2c4}
 #overlay.st-menu #homeBtn{display:none}
+/* NEW GAME on the title screen only, SAVE GAME on the pause screen only, LOAD GAME on both (and the end screens) */
+#overlay:not(.st-menu) #newBtn{display:none}
+#overlay:not(.st-pause) #saveBtn{display:none}
 /* leave-run confirm: swaps in for the action row so a stray click can't throw a run away */
 #homeconfirm{display:none;flex-direction:column;align-items:center;gap:12px;margin-top:28px;padding:16px 22px;cursor:default;
   border:1px solid rgba(200,120,60,.45);border-radius:var(--r-lg);background:rgba(30,16,8,.72);animation:rise .2s var(--ease)}
 #overlay.confirming #homeconfirm{display:flex}
 #overlay.confirming .ov-actions{display:none}
+/* new-game confirm: the same swap as leaving a run */
+#newconfirm{display:none;flex-direction:column;align-items:center;gap:12px;margin-top:22px;padding:16px 22px;cursor:default;
+  border:1px solid rgba(200,120,60,.45);border-radius:var(--r-lg);background:rgba(30,16,8,.72);animation:rise .2s var(--ease)}
+#overlay.newconfirming #newconfirm{display:flex}
+#overlay.newconfirming .ov-actions{display:none}
+#newYes{color:#ffcfa0;border-color:rgba(200,120,60,.6)}
+#newYes:hover{border-color:#ffb060;color:#ffe2c4}
 .hc-q{font:600 15px/1.35 var(--font-ui);letter-spacing:1px;color:var(--ink-soft)}
 .hc-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
 #homeYes{color:#ffcfa0;border-color:rgba(200,120,60,.6)}
@@ -349,3 +359,25 @@ body.fovpreview #fovpill{background:rgba(1,4,10,.82)}
 #overlay.st-pause .ov-foot{text-align:left;margin-top:22px;font-size:12px}
 #overlay.st-pause .ov-inner,#overlay.st-pause .ov-actions .btn{animation:rise .3s var(--ease) both}
 @media (max-width:520px){#overlay.st-pause .ov-actions{grid-template-columns:1fr} #msnlist{grid-template-columns:1fr}}
+
+/* ---------- SAVE / LOAD: same panel as HOW TO PLAY, one row per slot (ui/saves-ui.js) ---------- */
+#saves{position:fixed;inset:0;z-index:25;display:none;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;
+  background:rgba(1,4,10,.72);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);cursor:default}
+#saves.open{display:flex}
+#saves .howto-panel{width:min(620px,100%)}
+.sv-list{display:flex;flex-direction:column;gap:8px}
+.sv-slot{display:flex;align-items:center;gap:14px;padding:12px 14px;border:1px solid var(--edge);border-radius:var(--r-lg);background:rgba(255,255,255,.025)}
+.sv-slot.empty{border-style:dashed}
+.sv-n{font:700 22px/1 var(--font-display);color:var(--ink-dim);width:22px;text-align:center}
+.sv-info{flex:1;min-width:0}
+.sv-t{font:700 15px/1.2 var(--font-ui);letter-spacing:1.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sv-d{margin-top:3px;font:500 13px/1.3 var(--font-body);color:var(--ink-dim)}
+.sv-slot.empty .sv-t{color:var(--ink-faint)}
+.sv-slot .btn{padding:9px 14px;font-size:12px;letter-spacing:1.5px;white-space:nowrap}
+.sv-slot .btn.warn{color:#ffcfa0;border-color:rgba(200,120,60,.6)}
+.sv-del{pointer-events:auto;cursor:pointer;width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:8px;
+  border:1px solid transparent;color:var(--ink-faint);font-size:13px}
+.sv-del:hover{color:#ffb4a8;border-color:rgba(255,90,80,.45)}
+.sv-del.warn{color:#ffb4a8;border-color:rgba(255,90,80,.6);width:auto;padding:0 8px;font:600 11px/1 var(--font-ui);letter-spacing:1.2px}
+.sv-note{margin:12px 0 0;font-size:13px;line-height:1.4;color:var(--ink-dim)}
+@media (max-width:520px){.sv-slot{flex-wrap:wrap}}

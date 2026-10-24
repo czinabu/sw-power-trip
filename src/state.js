@@ -69,6 +69,7 @@ export const G = {
   endlessWave: 0,        // current survival wave (1-based)
   mut: null,             // active wave mutator id (or null)
   arenaRot: 0,           // which authored arena the survival run is currently on
+  resumeRun: null,       // a loaded save's campaign run, waiting on the menu's CONTINUE CAMPAIGN (game/saves.js)
 };
 export let rockets = [], birds = [], detos = [], grapples = [];   // mando projectiles / hooks
 export const enemies = [], bolts = [], orbs = [], barrels = [], vents = [], rings = [], vfx = [], pillars = [], solids = [], hazardZones = [];
