@@ -6,7 +6,7 @@ import { camera } from '../engine/renderer.js';
 import { sfx, S } from '../audio/sfx.js';
 import { V3, rand, clamp, TMP, dampToward } from '../utils.js';
 import { burst } from '../fx/particles.js';
-import { G, enemies, solids, player } from '../state.js';
+import { G, enemies, solids } from '../state.js';
 import { MELEE_WINDUP_GAP } from '../data/mando.js';
 import { playerPos } from '../player/helpers.js';
 import { bomberExplode, updateAimLine, warbringerSlam, breakJetpack } from './specials.js';
@@ -32,6 +32,7 @@ import { throwGrenade } from './grenades.js';
 import { updateLegs } from './gait.js';
 import { MOVE } from '../data/movement.js';
 import { foeAllyTarget, hurtAlly } from '../allies/squad.js';
+import { heroFor } from './targets.js';
 
 const NAV_EVERY = 0.1;      // seconds between a foe's route checks (the field itself refreshes in nav.js)
 const STUCK_AFTER = 0.5;    // window (s) over which a chasing foe must make headway, or it sidesteps to work itself free
@@ -90,11 +91,14 @@ export function updateEnemies(dt){
     if (e.stunT > 0) e.stunT -= dt;
     if (e.aimLine && e.state !== 'windup') e.aimLine.visible = false;   // the marksman's beam only shows while charging
 
-    // pick a target: the player, or — for mind-tricked units — their old allies
-    let tgtPos = pp, tgtEnemy = null, tgtBoss = false;
+    // pick a target: a hero (solo, always this browser's; in co-op, whichever one this foe picked: targets.js),
+    // or — for mind-tricked units — their old allies. A partner's hero is a puppet here: what this foe does to it
+    // is only for show until the shared fight (co-op phase 2) lets their own browser take the blow.
+    const hero = heroFor(e), hp = hero.pos, remote = !hero.local;
+    let tgtPos = hp, tgtEnemy = null, tgtBoss = false;
     // a MISSION foe with a goal (game/mission.js: the ramp during the hold) marches on it, and only turns on the hero
     // when the hero is in its way (within goal.aggro). At the goal it stays and attacks what's there.
-    if (e.goal && !e.converted && Math.hypot(pp.x - g.position.x, pp.z - g.position.z) > e.goal.aggro) tgtPos = e.goal.pos;
+    if (e.goal && !e.converted && Math.hypot(hp.x - g.position.x, hp.z - g.position.z) > e.goal.aggro) tgtPos = e.goal.pos;
     if (e.converted){
       const tt = hostileTargetFor(e);
       if (tt){ tgtPos = tt.pos; tgtEnemy = tt.enemy; tgtBoss = tt.boss; }
@@ -102,7 +106,7 @@ export function updateEnemies(dt){
     }
     // SQUADMATES — a trooper with one of the hero's squad clearly nearer may turn on it instead (allies/squad.js:
     // only the rank and file, and never more than a share of them). It fights it straight: no attack turns, no tricks.
-    const tgtAlly = foeAllyTarget(e, pp), onAlly = !!tgtAlly;
+    const tgtAlly = foeAllyTarget(e, hp), onAlly = !!tgtAlly;
     if (onAlly) tgtPos = tgtAlly.group.position;
     let tx = 0, tz = 0, dist = 999;
     if (tgtPos){
@@ -148,8 +152,8 @@ export function updateEnemies(dt){
         // WARBRINGER mid-boss — periodically LEAPS and quakes the ground where you stand (dash/jump it)
         if (e.warbringer && !e.converted && dist > 4.5 && dist < 17 && (e.leapCd = (e.leapCd || 3) - dt) <= 0){
           e.state = 'leapwind'; e.st = 0.55;
-          e.leapTarget = { x: pp.x, z: pp.z }; e.leapFrom = { x: g.position.x, z: g.position.z };
-          spawnGroundShock(V3(pp.x, 0.1, pp.z), 0xff5a3a, 5, 0.55, 0.5);   // a warning ring marks the landing zone
+          e.leapTarget = { x: hp.x, z: hp.z }; e.leapFrom = { x: g.position.x, z: g.position.z };
+          spawnGroundShock(V3(hp.x, 0.1, hp.z), 0xff5a3a, 5, 0.55, 0.5);   // a warning ring marks the landing zone
           S.windup(g.position, true);
           break;
         }
@@ -158,7 +162,8 @@ export function updateEnemies(dt){
         // stalking ring, cover-hugging and local avoidance below stand aside so nothing pulls it back into the wall.
         const er = 0.7 * (t.scale || 1);
         let pathing = false, wx = tx, wz = tz;
-        if (tgtPos && !t.fly && !e.converted && !onAlly){
+        // (the flow field leads to this browser's hero: a foe after a partner goes straight in and steers round cover)
+        if (tgtPos && !t.fly && !e.converted && !onAlly && !remote){
           if ((e.navT = (e.navT || 0) - dt) <= 0){
             e.navT = NAV_EVERY * rand(0.8, 1.2);
             e.navDirect = navSteer(g.position.x, g.position.z, tgtPos.x, tgtPos.z, navClass(er), steer);
@@ -296,14 +301,14 @@ export function updateEnemies(dt){
           // a melee foe on the far side of tall cover doesn't swing at the wall — it keeps routing around
           else if (!t.ranged && !e.converted && wallBetween(g.position.x, g.position.z, tgtPos)){ /* go around */ }
           // the hero is DOWN (game/revive.js): a blade doesn't finish them, it circles and waits; the squad is coming
-          else if (!t.ranged && !e.converted && !onAlly && player.downed){ /* hold */ }
+          else if (!t.ranged && !e.converted && !onAlly && hero.down){ /* hold */ }
           // RANGED SLOTS: only a few troopers aim at once, so a firing line staggers its shots
-          else if (t.ranged && !e.converted && !onAlly && !rangedSlotFree(t)){ /* hold — sidestep and wait */ }
+          else if (t.ranged && !e.converted && !onAlly && !rangedSlotFree(t, hero)){ /* hold — sidestep and wait */ }
           // MELEE WINDUP STAGGER: hostile (non-converted) melee foes share a cooldown so a crowd doesn't all coil &
           // swing at once — ranged/converted foes are unaffected (already standoff/ally-targeted, not a swarm problem).
           else if (t.ranged || e.converted || onAlly || G.gt - (G.lastMeleeWindupT ?? -9) >= MELEE_WINDUP_GAP){
             // a swing coiled BEHIND the camera gets a longer tell, so off-screen hits stay fair
-            e.wu = t.windup * (!t.ranged && !e.converted && !onAlly && behindCamera(g.position) ? ENGAGE.rearWindup : 1) * (e.converted || onAlly ? 1 : diffTellMul());   // DIFFICULTY: longer tells on Padawan
+            e.wu = t.windup * (!t.ranged && !e.converted && !onAlly && !remote && behindCamera(g.position) ? ENGAGE.rearWindup : 1) * (e.converted || onAlly ? 1 : diffTellMul());   // DIFFICULTY: longer tells on Padawan
             e.state = 'windup'; e.st = e.wu; telegraphWindup(e);
             // a duellist picks its line, and whether this one is a feint, a held strike or the start of a string; a plain
             // trooper may hold or feint (tactics.js); a line trooper plans a double-tap or a held aim
@@ -369,7 +374,7 @@ export function updateEnemies(dt){
           if (t.ranged){
             if (tgtPos && t.grenade){
               // GRENADIER — lob a detonator where the target will be (a little lead, a little scatter)
-              const v = e.converted || onAlly ? null : player.vel, L = GRENADE.lead, sc = GRENADE.scatter;
+              const v = e.converted || onAlly ? null : hero.vel, L = GRENADE.lead, sc = GRENADE.scatter;
               const at = V3(tgtPos.x + (v ? v.x * L : 0) + rand(-sc, sc), 0, tgtPos.z + (v ? v.z * L : 0) + rand(-sc, sc));
               throwGrenade(e, V3(g.position.x + tx*0.4, g.position.y + 2.2, g.position.z + tz*0.4), at, e.converted);
               if (g.userData.weaponArm) g.userData.weaponArm.rotation.x = 0.5;   // the arm follows through
@@ -422,6 +427,8 @@ export function updateEnemies(dt){
               else if (tgtBoss) damageBoss(t.dmg * CFG.convertDmgMult);
             } else if (onAlly){
               hurtAlly(tgtAlly, t.dmg * enemyDmgScale(), g.position);
+            } else if (remote){
+              /* the partner's puppet: no damage here (co-op phase 2 sends the blow to their browser to parry or take) */
             } else {
               // a THRUST drives through a held guard: parry it or get out of the way
               const res = hurtPlayer(t.dmg * enemyDmgScale() * (thrust ? DUEL.thrustDmg : 1), g.position, false, true, false, thrust ? { unblockable: true } : null);   // melee — blocked by high ground
@@ -433,7 +440,7 @@ export function updateEnemies(dt){
               } else if (res === 'blocked'){
                 blockedOnBlade(e);   // its weapon rebounds off your guard (player/jedi/clash.js)
               } else if (res === 'hit'){
-                burst(V3(pp.x, 1.5, pp.z), 0xff5533, 6, 5, 3);
+                burst(V3(hp.x, 1.5, hp.z), 0xff5533, 6, 5, 3);
               }
             }
           }
@@ -502,7 +509,7 @@ export function updateEnemies(dt){
         if (tgtPos) updateLungeWind(e, dt, tgtPos); else e.state = 'chase';
         break;
       case 'lunge':
-        updateLunge(e, dt, pp);
+        updateLunge(e, dt, hp, remote);
         break;
       case 'grasped': break;   // the Jedi's grasp moves the body (player/jedi/grasp.js)
       case 'stasis':
@@ -606,7 +613,7 @@ export function updateEnemies(dt){
     // Death (ragdoll) and a knockdown are exempt, so a slain or floored flyer falls under gravity instead of the hover
     // holding it up against the knock (that fight left it skidding on its back across the arena, never shooting).
     if (e.t.fly && !e.dead && e.state !== 'ragdoll' && e.state !== 'knockdown' && e.state !== 'fade' && e.state !== 'spawn' && e.state !== 'grasped'){
-      const flyH = clamp(playerPos().y + 1.5, 2.4, 9) + Math.sin(G.gt*2 + i) * 0.22;
+      const flyH = clamp(heroFor(e).pos.y + 1.5, 2.4, 9) + Math.sin(G.gt*2 + i) * 0.22;
       g.position.y = dampToward(g.position.y, flyH, dt, 4);
       if (g.userData.thrusters){ const fl = 0.7 + Math.abs(Math.sin(G.gt*18 + i)) * 0.5; for (const th of g.userData.thrusters) th.material.opacity = fl; }
     }

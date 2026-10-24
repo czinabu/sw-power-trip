@@ -1,6 +1,7 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
 // CO-OP SMOKE TEST — runs a local PeerServer, opens two browsers on the BUILT game (dist/index.html), hosts in one,
-// joins from the other with the room code, starts play in both and checks each sees the other's ghost hero.
+// joins from the other with the room code, starts play in both and checks each sees the other's hero, posed from the
+// network, and that enemies go after both heroes.
 //   npm run build && npm run smoke:coop
 
 import { chromium } from 'playwright';
@@ -49,9 +50,21 @@ try {
   await host.evaluate(() => GAME.player.group.position.set(5, 0, 3));
   await guest.waitForFunction(() => GAME.partnerShown(), null, { timeout: 15000, polling: 250 });
   await host.waitForFunction(() => GAME.partnerShown(), null, { timeout: 15000, polling: 250 });
+  // PHASE 1 — the partner is posed from the network (its arm moves as the other side's animation runs), counts as
+  // being in the same fight, and enemies split between the two heroes
+  const hp = await host.evaluate(() => { const p = GAME.player.group.position; return { x: p.x, z: p.z }; });
+  await guest.evaluate((p) => GAME.player.group.position.set(p.x + 2, 0, p.z + 1), hp);
+  for (const page of [host, guest]) await page.waitForFunction(() => GAME.partnerInfo().posed && GAME.partnerInfo().here, null, { timeout: 15000, polling: 250 });
+  const arm0 = await guest.evaluate(() => GAME.partnerInfo().armR);
+  await host.evaluate(() => { try { GAME.tryAttack(); } catch(e){} });   // the host (Jedi) swings
+  await guest.waitForFunction((a) => JSON.stringify(GAME.partnerInfo().armR) !== JSON.stringify(a), arm0, { timeout: 15000, polling: 250 });
+  const hunted = await Promise.race([
+    host.waitForFunction(() => GAME.partnerInfo().hunters > 0, null, { timeout: 25000, polling: 250 }).then(() => 'host'),
+    guest.waitForFunction(() => GAME.partnerInfo().hunters > 0, null, { timeout: 25000, polling: 250 }).then(() => 'guest'),
+  ]);
   ok = true;
-  console.log('ok   co-op: connected with code ' + code + ', each side sees the other');
-} catch(e){ errors.push(e.message); for (const p of browser.contexts().flatMap(c => c.pages())) errors.push(JSON.stringify(await p.evaluate(() => ({ shown: GAME.partnerShown(), mode: GAME.G.mode, status: document.getElementById('coopstatus').textContent })).catch(x => x.message))); }
+  console.log('ok   co-op: connected with code ' + code + ', each side sees the other, the partner animates, and enemies on the ' + hunted + ' side go after the partner');
+} catch(e){ errors.push(e.message); for (const p of browser.contexts().flatMap(c => c.pages())) errors.push(JSON.stringify(await p.evaluate(() => ({ info: GAME.partnerInfo(), mode: GAME.G.mode, status: document.getElementById('coopstatus').textContent })).catch(x => x.message))); }
 await browser.close(); server.close?.();
 if (!ok || errors.length){ console.error('FAIL co-op\n' + errors.join('\n')); process.exit(1); }
 process.exit(0);
