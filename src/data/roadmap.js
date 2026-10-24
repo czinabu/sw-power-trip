@@ -12,7 +12,7 @@ export const ROADMAP = [
   { title: 'Missions', status: 'done',
     items: ['Missions tab: pick any single mission', 'Hoth trench defence, Jakku salvage raid', 'Lothal escort: walk a droid out under fire'] },
   { title: 'Menus', status: 'done',
-    items: ['Main menu: play choices first, extras in one row', 'How to Play: basics first, details on hover', 'Roadmap panel'] },
+    items: ['Main menu: play choices first, fits on one screen', 'How to Play: basics first, details on hover', 'Roadmap panel'] },
   { title: 'Online co-op', status: 'now',
     items: ['Phase 1: join with a code, see each other in the arena'] },
   { title: 'Balance pass', status: 'next',
