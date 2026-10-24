@@ -141,11 +141,13 @@ export function updateCamera(dt){
   if (lp) frame = Math.max(frame, clamp(Math.hypot(lp.x - pp.x, lp.z - pp.z) * C.duelPull, 0, C.duelMax));
   if (adsFly) lift *= 0.3;   // don't drift the reticle's eye-line while aiming
   camLift += (lift - camLift) * Math.min(1, dt*2);
-  const downPull = jedi ? C.jediDownPull * clamp((G.pitch - 0.25) / 0.65, 0, 1) : 0;   // tipping the view down to survey the fight
-  const wantDist = ((jedi ? C.jediDist : C.mandoDist) + pullback + frame + downPull) * distMul;
+  const wantDist = ((jedi ? C.jediDist : C.mandoDist) + pullback + frame) * distMul;
   // draw back quicker than we settle in, so a closing pack is framed before it lands its first hit
   camDist += (wantDist - camDist) * Math.min(1, dt * (wantDist > camDist ? 3.5 : 2.2));
-  const cosP = Math.cos(G.pitch), sinP = Math.sin(G.pitch);
+  // the boom stops climbing at the hero's orbit cap; the rest of a downward look tips the aim down from there (below),
+  // so looking down at a fight keeps the hero big in frame instead of hoisting the lens overhead
+  const orbitP = Math.min(G.pitch, jedi ? C.jediOrbitMax : C.mandoOrbitMax), tipDown = G.pitch - orbitP;
+  const cosP = Math.cos(orbitP), sinP = Math.sin(orbitP);
   // DEATH — the view slowly rises and draws back off the fallen hero (real time: the death slow-mo would stall it)
   let dk = 0;
   if (G.mode === 'dead'){ if (deadAt < 0) deadAt = performance.now(); dk = Math.min(1, (performance.now() - deadAt) / 2500); dk = dk*dk*(3 - 2*dk); }
@@ -216,10 +218,11 @@ export function updateCamera(dt){
   // LOOKING DOWN — the lens climbs overhead, and aiming far past the hero from up there drops them off the bottom of the
   // screen. As the view tips over, draw the aim point back in toward the hero and down toward the waist, so they stay
   // in frame
-  let td = clamp((G.pitch - C.topDownFrom) / (1.2 - C.topDownFrom), 0, 1);
+  let td = clamp((orbitP - C.topDownFrom) / (1.2 - C.topDownFrom), 0, 1);
   td = td*td*(3 - 2*td);
   const ahead = (jedi ? C.jediLookAhead : C.lookAhead) * (1 - td * C.topDownAhead);
-  camera.lookAt(tx + f.x*ahead + rv.x*ots, ty + C.lookUp + (jedi ? C.jediLookUp : 0.3) + diveLook + aimRise - td * C.topDownDrop, tz + f.z*ahead + rv.z*ots);
+  const tip = Math.tan(tipDown) * (ahead + d*cosP);   // a look past the orbit cap drops the aim instead of raising the lens
+  camera.lookAt(tx + f.x*ahead + rv.x*ots, ty + C.lookUp + (jedi ? C.jediLookUp : 0.3) + diveLook + aimRise - td * C.topDownDrop - tip, tz + f.z*ahead + rv.z*ots);
   // camera ROLL into a strafe — subtle for the Jedi; a pronounced Max-Payne bank for the boosting Mando, but
   // damped right down while AIMING so the shot stays readable.
   const strafe = vx * (-f.z) + vz * f.x;

@@ -85,12 +85,13 @@ export const CFG = {
     shoulder: 0.2,            // Jedi lens sits this far right of the spine: almost centred, like Jedi Academy
     // JEDI — Jedi Academy's rig: a short, steady boom (its range is 80 units, about 1.25 hero heights) whose aim runs
     // far down the line of sight, so the hero sits big and low-centre and the view swings around them, not past them
-    jediDist: 4.1,            // resting follow distance (the Mando uses mandoDist)
+    jediDist: 3.8,            // resting follow distance (the Mando uses mandoDist)
     jediLookAhead: 12,        // the Jedi lens aims this far past the hero (JA projects its focus far down the view)...
     jediLookUp: 0.2,          // ...and this much over the pivot
     jediLensUp: 0.35,         // the Jedi lens rides this much over the pivot: just enough to see a foe ahead over the hero's shoulders
-    jediFrame: 0.7,           // share of the crowd / calm framing the Jedi takes (JA's range never breathes; a pack still needs the room)
-    jediDownPull: 1.6,        // looking DOWN over a brawl draws the Jedi lens back up to this much, so the whole pack fits under it
+    jediFrame: 0.4,           // share of the crowd / calm framing the Jedi takes (JA's range barely breathes)
+    jediOrbitMax: 0.42,       // LOOKING DOWN: the Jedi lens climbs over the hero only up to this pitch (radians); past it the view
+                              // tips down from where it is, so the hero stays big in the lower-centre instead of a speck at the bottom edge
     jediRunPull: 0.6,         // most the Jedi lens drops back while running flat out
     lookAhead: 5,             // the lens aims this far past the hero...
     lookUp: -0.15,            // ...and this high over the pivot (a hair under it keeps the hero's boots in frame)
@@ -104,6 +105,7 @@ export const CFG = {
     // MANDO — Helldivers 2's rig: a closer boom held well off the right shoulder, so the hero stands left of centre with the
     // crosshair clear past them, and it tucks in tighter still while aiming
     mandoDist: 4.5,           // resting follow distance (aiming / flight scale it)
+    mandoOrbitMax: 0.55,      // the Mando's boom climbs a little higher than the Jedi's (see jediOrbitMax) before the view tips instead
     mandoLensUp: 0.85,        // the lens rides this much over the pivot, so the helmet sits under the crosshair's eye-line
     mandoShoulder: 0.95,      // MANDO lens offset off the shoulder (never centred, see camera.js)...
     mandoShoulderAim: 1.25,   // ...wider while aiming / bracing, so the reticle is always clear of the helmet...
