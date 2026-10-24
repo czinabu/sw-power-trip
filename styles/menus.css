@@ -28,7 +28,16 @@
 .sec-label{font:600 12px/1 var(--font-ui);letter-spacing:2.5px;color:var(--ink-dim);margin:0 0 8px;text-align:left;display:flex;align-items:center;gap:10px}
 .sec-label::after{content:'';flex:1;height:1px;background:var(--edge)}
 #heroselect{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-#overlay.st-menu #heroselect{grid-template-columns:1fr;gap:8px}
+/* the main menu keeps every row on one screen: the heroes side by side as name plates (the turntable shows the rest),
+   short mode lines, and ui/menus.js fitMenu() scales the column down when a short window still can't hold it */
+#overlay.st-menu #heroselect{grid-template-columns:1fr 1fr;gap:8px}
+#overlay.st-menu .herocard{align-items:center;gap:12px;padding:10px 12px}
+#overlay.st-menu .herocard .hi{width:38px;height:38px}
+#overlay.st-menu .herocard .hn{font-size:21px}
+#overlay.st-menu #setup{margin-top:20px;gap:14px}
+#overlay.st-menu .ov-head h2{margin-top:10px}
+#overlay.st-menu #modeselect .modeopt:not(.major) .md{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#overlay.st-menu .ov-foot{margin-top:12px}
 .herocard{--bc:var(--accent);display:flex;gap:14px;align-items:flex-start;text-align:left;padding:14px 16px;border-radius:var(--r);
   border:1px solid var(--edge);background:rgba(8,18,33,.7);cursor:pointer;pointer-events:auto;
   transition:border-color .15s,background .15s,opacity .15s;opacity:.7}
@@ -42,7 +51,7 @@
 .herocard .hrole{font:600 13px/1 var(--font-ui);letter-spacing:2px;color:var(--accent);margin-top:5px;text-transform:uppercase}
 #hero-mando .hrole{color:#c9d6e2}
 .herocard .hd{margin:10px 0 0;padding:0;list-style:none;font:500 14px/1.4 var(--font-body);color:var(--ink-soft)}
-#overlay.st-menu .herocard:not(.sel) .hd{display:none}
+#overlay.st-menu .herocard .hd{display:none}
 .herocard .hd li{position:relative;padding-left:14px;margin-top:2px}
 .herocard .hd li::before{content:'';position:absolute;left:0;top:.6em;width:5px;height:5px;transform:rotate(45deg);background:var(--edge-mid)}
 .herocard.sel .hd li::before{background:var(--accent)}

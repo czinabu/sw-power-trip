@@ -59,7 +59,24 @@ export function setOverlayState(state){
   } else if (state === 'victory'){
     go.textContent = 'PLAY AGAIN';
   }
+  queueFit();
 }
+
+/* FIT THE MENU — the title screen's column always fits the window without scrolling: when the window is too short for
+   it (a laptop screen, the mission list open, the customizer's rows), the whole column is scaled down to fit. Other
+   screens scroll as before. */
+let _fitQueued = false;
+function queueFit(){ if (!_fitQueued){ _fitQueued = true; requestAnimationFrame(fitMenu); } }
+function fitMenu(){
+  _fitQueued = false;
+  const inner = overlay.querySelector('.ov-inner');
+  inner.style.zoom = '';
+  if (_ovState !== 'menu') return;
+  const z = Math.min(1, (window.innerHeight - 10) / inner.offsetHeight);
+  if (z < 0.995) inner.style.zoom = Math.max(0.55, z).toFixed(3);
+}
+window.addEventListener('resize', queueFit);
+new MutationObserver(queueFit).observe(overlay, { attributes: true, attributeFilter: ['class'] });   // customizing on and off
 
 function beginPlay(){
   overlay.style.display = 'none';
