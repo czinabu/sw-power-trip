@@ -42,12 +42,8 @@ export const MOVE = {
   hangClimbHold: 0.22,  // hold W this long (or tap SPACE) to pull up; S lets go
   hangClimbTime: 0.5,
   // sprint, walk and slide (Jedi): Q toggles between run (the default, forward sprints) and walk; ALT mid-sprint is the
-  // FORCE SLIDE. Out of a fight the sprint is free; in one it burns stamina (combatSprint). The walk is a real walk, in a fight too.
+  // FORCE SLIDE. The sprint never costs stamina. The walk is a real walk, in a fight too.
   sprintMul: 1.3,       // top speed while sprinting (×6.4 ≈ 8.3 m/s: outruns a trooper, only just a duellist)
-  // SOULS-STYLE SPRINT: in a fight (player/mobility.js inCombat) the sprint spends stamina and holds its regen, so
-  // keeping your distance is a choice with a price, not a free exit. It stops short of empty (`floor`) so running
-  // never breaks your guard; it starts again once the bar is back over `resume`. Out of a fight it's free.
-  combatSprint: { drain: 11, floor: 14, resume: 30 },
   walkMul: 0.47,        // top speed while walking (×6.4 ≈ 3.0 m/s: a brisk pace, still a walk, see GAIT.walkStride)
   runAccel: 90, runBrake: 110,   // RUN mode (Jedi, ground): m/s² up to speed and down to a stop, × the form's accel (~0.1–0.2 s to full sprint); walk mode keeps accel/brake
   sprintAccel: 0.55,    // steering while sprinting is heavier (accel multiplier)

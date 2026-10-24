@@ -104,7 +104,7 @@ Movement was slowed so a fight can't simply be outrun, while keeping distance is
 | What | Where | Now |
 |---|---|---|
 | Run speed | `CFG.player.speed` | 6.4 (was 7.2); Ataru's form multiplier 1.25 (was 1.42) |
-| Sprint | `MOVE.sprintMul`, `MOVE.combatSprint` | 1.3x; in a fight it drains 11 stamina/s and stops short of empty |
+| Sprint | `MOVE.sprintMul` | 1.3x; free, running never costs stamina |
 | Ground roll | `MOBILITY.roll.stam` | 15 stamina per roll in a fight (Ataru 0.7x, Djem So 1.2x); no roll without it |
 | Troopers | `ENEMY_TYPES.grunt` | 44 hp, 6.2 speed, barely guards (block 0.06) |
 | Duellists | `ENEMY_TYPES.duelist/acolyte` | 6.0 / 6.6 speed: faster than your run, slower than your sprint |
