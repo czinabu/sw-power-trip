@@ -189,9 +189,14 @@ for (const [hero, mode, mission] of [['jedi', 'campaign'], ['mando', 'campaign']
     if (!off) problems.push('the settings toggle did not leave fullscreen');
     if (await page.evaluate(() => localStorage.getItem('sw_fullscreen')) !== '0') problems.push('turning fullscreen off was not remembered');
     if (await page.evaluate(() => GAME.G.mode) !== 'menu') problems.push('the fullscreen toggle launched the game');
+    // the ROADMAP button opens its panel over the menu, and never starts a run
+    await page.click('#setclose');
+    await page.click('#rmtoggle');
+    if (!await page.evaluate(() => document.getElementById('roadmap').classList.contains('open'))) problems.push('the ROADMAP button did not open the roadmap');
+    if (await page.evaluate(() => GAME.G.mode) !== 'menu') problems.push('the ROADMAP button launched the game');
   } catch (e){ problems.push('script: ' + e.message); }
   await page.close();
-  console.log(`${problems.length ? 'FAIL' : 'ok  '} fullscreen`);
+  console.log(`${problems.length ? 'FAIL' : 'ok  '} fullscreen, roadmap`);
   for (const p of problems) console.log('     ' + p);
   if (problems.length) failed = true;
 }

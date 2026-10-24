@@ -79,6 +79,7 @@ import './ui/banners.js';
 import './ui/threats.js';
 import { updateHud } from './ui/hud.js';
 import { setOverlayState } from './ui/menus.js';
+import './ui/roadmap.js';   // the ROADMAP panel (its button on the main menu)
 import { showcaseActive, renderShowcase, leaveShowcase } from './ui/showcase.js';
 import './ui/customizer.js';
 import './data/difficulty.js';
