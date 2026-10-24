@@ -79,7 +79,7 @@ export const CFG = {
     // LENS — a big-budget third-person framing: the hero fills about a third of the frame height, the lens rides at
     // shoulder height just off the right shoulder, and a moderate FOV keeps the backdrop large (a wide FOV shrinks
     // everything past the hero, which is what made the arenas read small)
-    fov: 64,                  // vertical degrees at rest: JA's cg_fov 80 (horizontal, 4:3) is 64° tall; the FOV setting overrides it
+    fov: 72,                  // vertical degrees at rest, a touch wider than JA's 64° (cg_fov 80 at 4:3); the FOV setting overrides it
     pivotY: 1.9,              // the lens orbits a point this high over the hero's feet (just over head height)
     minLensY: 1.3,            // looking up swings the lens down, but never lower than this over the hero's feet
     // JEDI — a port of Jedi Academy's third-person camera (OpenJK code/cgame/cg_view.cpp, CG_OffsetThirdPersonView) at
@@ -89,7 +89,7 @@ export const CFG = {
     ja: {
       eye: 2.5,               // focus: the hero's eye (JA: origin + viewheight, 60 of 64 units up)
       vertOffset: 0.68,       // cg_thirdPersonVertOffset 16: the aim point rides this far over the eye...
-      range: 3.4,             // cg_thirdPersonRange 80: ...and the lens sits this far behind it, along the line of sight
+      range: 4.2,             // cg_thirdPersonRange 80 is 3.4 m: ...the lens sits this far behind it, along the line of sight (backed off a bit)
       targetDamp: 0.5,        // cg_thirdPersonTargetDamp: share of the gap the aim point closes every 50 ms
       cameraDamp: 0.3,        // cg_thirdPersonCameraDamp: the same for the lens; JA stiffens it toward 1 as the view
                               // tips toward straight up/down ((pitch / 115°)²) and on fast turns (over 1° per ms)

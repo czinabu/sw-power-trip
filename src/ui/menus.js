@@ -238,7 +238,9 @@ function setFov(v){
   const sv = document.getElementById('fovval'); if (sv) sv.textContent = G.fov + '°';
   const sl = document.getElementById('fovsl'); if (sl && +sl.value !== G.fov) sl.value = G.fov;
 }
-{ let v; try { v = parseFloat(localStorage.getItem('sw_fov')); } catch(e){} setFov(isNaN(v) ? CFG.camera.fov : v); }
+// (sw_fov_v: the default moved to 72; a setting saved before then was most likely the old default, so it resets once)
+{ let v; try { v = parseFloat(localStorage.getItem('sw_fov')); if (localStorage.getItem('sw_fov_v') !== '2'){ v = NaN; localStorage.setItem('sw_fov_v', '2'); } } catch(e){}
+  setFov(isNaN(v) ? CFG.camera.fov : v); }
 setMasterVol(shared.masterVol);   // sync the sliders/labels to the values already loaded from localStorage
 setMusicVol(AE.vol.music); setSfxVol(AE.vol.sfx);
 const senssl = document.getElementById('senssl'), volsl = document.getElementById('volsl');
