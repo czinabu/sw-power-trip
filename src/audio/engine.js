@@ -70,11 +70,14 @@ export const ROOMS = {
   plains:  { secs: 3.4, damp: 0.8, wet: 0.3 },
 };
 let _room = '';
+// each room's impulse response is ~300k random samples: make it once (the rest in idle time after audio starts), not on every arena switch
+const IRS = {};
+const irFor = kind => IRS[kind] || (IRS[kind] = makeIR(ROOMS[kind].secs, ROOMS[kind].damp, 0.012));
 export function setRoom(kind){
   if (!AE.ready || kind === _room || !ROOMS[kind]) return;
   _room = kind;
   const R = ROOMS[kind];
-  AE.room.buffer = makeIR(R.secs, R.damp, 0.012);
+  AE.room.buffer = irFor(kind);
   AE.roomOut.gain.setTargetAtTime(R.wet, now(), 0.3);
 }
 
@@ -105,6 +108,9 @@ export function initEngine(){
   for (const k of ['white', 'pink', 'brown']) AE.noise[k] = makeNoise(k);
   AE.ready = true;
   setRoom('menu');
+  const rest = Object.keys(ROOMS).filter(k => k !== 'menu'), idle = window.requestIdleCallback ? f => requestIdleCallback(f, { timeout: 3000 }) : f => setTimeout(f, 200);
+  const warm = () => { const k = rest.shift(); if (k){ irFor(k); idle(warm); } };
+  idle(warm);
 
   // a hidden tab shouldn't keep a fight's worth of loops droning in the background
   document.addEventListener('visibilitychange', () => {
