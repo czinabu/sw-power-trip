@@ -66,3 +66,12 @@ addEventListener('resize', () => {
   renderer.setSize(innerWidth, innerHeight);
   composer.setSize(innerWidth, innerHeight);
 });
+
+/* renderer.compile, but as the game draws: the scene is drawn into the composer's render target, where three.js builds a
+   different shader variant (no tone mapping, linear output) than for the screen. Compiling against the screen, as a bare
+   renderer.compile does, builds programs the game never uses and leaves the real ones to compile on first draw. */
+export function compileLive(){
+  const prev = renderer.getRenderTarget();
+  renderer.setRenderTarget(composer.readBuffer);
+  try { renderer.compile(scene, camera); } finally { renderer.setRenderTarget(prev); }
+}

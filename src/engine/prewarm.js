@@ -2,7 +2,7 @@
 // First-use hitch killer: everything a fight needs is built or compiled before the fight, not on its first use.
 
 import * as THREE from 'three';
-import { renderer, scene, camera } from './renderer.js';
+import { scene, compileLive } from './renderer.js';
 import { arenaBuilt } from '../world/arena.js';
 import { ENEMY_TYPES } from '../data/enemies.js';
 import { SQUAD } from '../data/allies.js';
@@ -55,9 +55,9 @@ export function prewarmShaders(){
   // every material. Compile with them here so the programs are cached before he walks in, then take them away.
   const extra = [0, 1].map(() => new THREE.PointLight(0xffffff, 0, 10));
   for (const l of extra) scene.add(l);
-  try { renderer.compile(scene, camera); } catch(e){}
+  try { compileLive(); } catch(e){}
   for (const l of extra) scene.remove(l);
-  try { renderer.compile(scene, camera); } catch(e){}
+  try { compileLive(); } catch(e){}
   for (const o of specimens) o.visible = false;
   for (const [o, v] of lazy) o.visible = v;
 }

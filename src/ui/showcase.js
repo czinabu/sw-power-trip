@@ -3,7 +3,7 @@
 // turntable on the right, instead of the live arena. Switching hero spins the turntable and swaps the figure.
 
 import * as THREE from 'three';
-import { renderer, composer, renderPass, scene, camera, bloomPass } from '../engine/renderer.js';
+import { renderer, composer, renderPass, scene, camera, bloomPass, compileLive } from '../engine/renderer.js';
 import { G } from '../state.js';
 import { prewarmJudgeFX } from '../player/jedi/judgement-fx.js';
 import { buildHeroModel } from '../player/model/index.js';
@@ -296,7 +296,7 @@ export function showcaseActive(){
 }
 
 export function renderShowcase(dt){
-  if (!warm){ warm = true; renderer.compile(scene, camera); prewarmJudgeFX(); }   // keep the arena's shaders ready, so BEGIN doesn't hitch
+  if (!warm){ warm = true; compileLive(); prewarmJudgeFX(); }   // keep the arena's shaders ready, so BEGIN doesn't hitch
   if (!shown){ dress(G.hero); setTheme(G.hero, true); }
   // hero picked → spin the stand once, swapping the figure at the brightest point of the beam
   if (G.hero !== shown && swapT < 0){ swapT = 0; nextHero = G.hero; setTheme(nextHero, false); bgMat.uniforms.b.value = textures[nextHero]; }

@@ -212,6 +212,17 @@ thrownSaber.add(thrownBlade, thrownGlow);
 thrownSaber.visible = false;
 scene.add(thrownSaber);
 export function hideThrownSaber(){ thrownSaber.visible = false; _throwLight.intensity = 0; }
+// the hilt in the hand goes while the blade is in flight. Shrunk and dimmed, NOT hidden: its blade light is part of the
+// scene's light count, and hiding it (like adding one) makes three.js recompile every material, the throw hitch
+let _handLight = 0;
+export function stowHandSaber(away){
+  const h = player.saberHand, B = player.blade;
+  if (!h) return;
+  h.scale.setScalar(away ? 1e-4 : 1);
+  if (!B) return;
+  if (away){ if (B.light.intensity > 0) _handLight = B.light.intensity; B.light.intensity = 0; }
+  else if (_handLight && !(player.holstered && G.hero !== 'mando')){ B.light.intensity = _handLight; }
+}
 export function saberThrow(){
   const A = abil('throw');
   const cost = fcost(A.cost);
@@ -228,7 +239,7 @@ export function saberThrow(){
   m.rotation.set(0, 0, Math.PI/2);
   m.position.set(pp.x + f.x, 1.7, pp.z + f.z);
   m.visible = true;
-  player.saberHand.visible = false;
+  stowHandSaber(true);
   shared.saberProj = { mesh: m, dir: f.clone(), traveled: 0, returning: false, hitSet: new Set() };
   S.swing();
 }
@@ -245,7 +256,7 @@ export function updateSaberThrow(dt){
     const d = TMP.length();
     if (d < 1.2){
       sp.mesh.visible = false; shared.saberProj = null; throwLight().intensity = 0;
-      player.saberHand.visible = true;
+      stowHandSaber(false);
       return;
     }
     TMP.normalize();

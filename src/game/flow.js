@@ -32,7 +32,7 @@ import { diffBossCheckpoint } from '../data/difficulty.js';
 import { catchDarksaber } from '../player/mando/darksaber.js';
 import { resetGrasp } from '../player/jedi/grasp.js';
 import { resetAirCut } from '../player/jedi/aerial.js';
-import { hideThrownSaber } from '../player/jedi/force.js';
+import { hideThrownSaber, stowHandSaber } from '../player/jedi/force.js';
 import { clearSquad } from '../allies/squad.js';
 import { clearDowned } from './revive.js';
 
@@ -72,7 +72,7 @@ export function startLevel(idx, opts){
   if (shared.boss){ scene.remove(shared.boss.group); shared.boss = null; }
   if (shared.bossLight) shared.bossLight.visible = false;
   document.getElementById('bosswrap').style.display = 'none';
-  if (shared.saberProj){ hideThrownSaber(); shared.saberProj = null; player.saberHand.visible = true; }
+  if (shared.saberProj){ hideThrownSaber(); shared.saberProj = null; stowHandSaber(false); }
   for (const rk of rockets) scene.remove(rk.mesh);
   rockets.length = 0;
   G.spawnQueue.length = 0;
