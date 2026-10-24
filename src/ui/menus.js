@@ -25,6 +25,7 @@ import { LEVELS } from '../data/levels.js';
 import { buildArena } from '../world/arena.js';
 import { findClearSpawn } from '../world/collision.js';
 import { playerPos } from '../player/helpers.js';
+import { canResume, resumeRun, resumeLabel } from '../game/saves.js';
 
 /* ============================================================
    INPUT
@@ -36,7 +37,7 @@ export const overlay = document.getElementById('overlay');
 let _ovState = 'menu';
 export function setOverlayState(state){
   _ovState = state;
-  overlay.classList.remove('st-menu', 'st-pause', 'st-dead', 'st-victory', 'confirming');
+  overlay.classList.remove('st-menu', 'st-pause', 'st-dead', 'st-victory', 'confirming', 'newconfirming');
   overlay.classList.add('st-' + state);
   document.body.classList.toggle('in-menu', state === 'menu');
   document.getElementById('banner').style.opacity = '0';   // the overlay carries the message; don't let a banner ghost through it
@@ -46,7 +47,9 @@ export function setOverlayState(state){
   document.getElementById('restartBtn').textContent = G.training ? '↻ RESTART TRAINING' : G.mission ? '↻ RESTART MISSION' : '↻ RESTART RUN';
   document.getElementById('skipBtn').style.display = state === 'pause' && G.training ? 'inline-flex' : 'none';
   const go = document.getElementById('goText'), sub = document.getElementById('ovsub');
-  if (state === 'menu'){
+  if (state === 'menu' && G.modeSel === 'campaign' && canResume()){   // a loaded save picks the campaign up where it was
+    go.textContent = 'CONTINUE CAMPAIGN'; sub.textContent = resumeLabel();
+  } else if (state === 'menu'){
     go.textContent = G.modeSel === 'endless' ? 'BEGIN SURVIVAL' : G.modeSel === 'training' ? 'BEGIN TRAINING' : G.modeSel === 'mission' ? 'BEGIN MISSION' : G.modeSel === 'sandbox' ? 'ENTER THE SANDBOX' : 'BEGIN CAMPAIGN';
     sub.textContent = G.modeSel === 'endless' ? 'HOW LONG CAN YOU LAST?' : G.modeSel === 'training' ? 'LEARN THE WAYS OF YOUR ORDER' : G.modeSel === 'mission' ? missionTitle(G.missionId) : G.modeSel === 'sandbox' ? 'ANY FOE, ANY POWER' : 'CHOOSE YOUR LEGEND';
   } else if (state === 'pause'){
@@ -89,7 +92,7 @@ function beginPlay(){
   if ((G.modeSel === 'endless' && !survivalUnlocked()) || (G.modeSel === 'sandbox' && !sandboxUnlocked())) G.modeSel = 'campaign';   // safety — never launch a locked mode
   if (G.mode === 'menu' || G.mode === 'victory'){
     G.mode = 'play'; G.slowmo = 1;
-    if (G.modeSel === 'endless') startEndless(); else if (G.modeSel === 'training') startTutorial(); else if (G.modeSel === 'mission') startMission(G.missionId); else if (G.modeSel === 'sandbox') startSandbox(); else startLevel(0);
+    if (G.modeSel === 'endless') startEndless(); else if (G.modeSel === 'training') startTutorial(); else if (G.modeSel === 'mission') startMission(G.missionId); else if (G.modeSel === 'sandbox') startSandbox(); else if (canResume()) resumeRun(); else startLevel(0);
   } else if (G.mode === 'dead'){
     G.mode = 'play'; G.slowmo = 1;
     if (G.endless) startEndless(); else if (G.training) startTutorial(); else if (G.mission) retryMission(); else if (G.sandbox) startSandbox(); else retryLevel();   // survival retry = a fresh survival run
@@ -124,7 +127,7 @@ export function refreshSandboxLock(){
   if (md) md.innerHTML = un ? 'any foe, any power' : svgIcon('lock', 'lk') + 'beat the campaign';
   el.title = un ? '' : 'The sandbox unlocks once you have beaten the campaign with either hero';
 }
-function setModeSel(m){
+export function setModeSel(m){
   if ((m === 'endless' && !survivalUnlocked()) || (m === 'sandbox' && !sandboxUnlocked())){   // can't pick a locked mode
     S.uiDeny();
     const el = document.getElementById('mode-' + m); el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake');
@@ -146,7 +149,7 @@ document.getElementById('msnlist').innerHTML = Object.values(MISSIONS).map(m =>
   `<div class="msn brk" id="msn-${m.id}" data-mission="${m.id}">
     <span class="mt">${m.title}${m.squad ? '<span class="msn-tag">SQUAD</span>' : ''}<span class="won"></span></span><span class="mw">${placeOf(m)}</span>
   </div>`).join('');
-function setMission(id){
+export function setMission(id){
   if (!MISSIONS[id]) id = Object.keys(MISSIONS)[0];
   G.missionId = id; try { localStorage.setItem('sw_mission', id); } catch(e){}
   for (const el of document.querySelectorAll('#msnlist .msn')) el.classList.toggle('sel', el.dataset.mission === id);
@@ -180,10 +183,10 @@ function refreshMissionMark(){
 }
 // FIRST CAMPAIGN — once, a hero who hasn't trained (or beaten the campaign) is offered the training grounds first
 function shouldOfferTraining(){
-  if (_ovState !== 'menu' || G.modeSel !== 'campaign' || trainingDone(G.hero)) return false;
+  if (_ovState !== 'menu' || G.modeSel !== 'campaign' || trainingDone(G.hero) || canResume()) return false;
   try { return localStorage.getItem('sw_asktrain') !== '1' && localStorage.getItem('sw_camp_' + G.hero) !== '1'; } catch(e){ return false; }
 }
-function setDiff(d){
+export function setDiff(d){
   G.diff = d; try { localStorage.setItem('sw_diff', d); } catch(e){}
   for (const k in DIFFS) document.getElementById('diff-' + k).classList.toggle('sel', k === d);
 }
@@ -330,15 +333,20 @@ document.addEventListener('click', (e) => {
 }, true);
 overlay.addEventListener('click', (e) => {
   // only the primary button or empty backdrop launches/resumes: a stray click on a label or setting shouldn't
-  if (e.target.closest('#runsummary, #setup, #customizer, #homeconfirm, #trainconfirm, .ov-foot')) return;
+  if (e.target.closest('#runsummary, #setup, #customizer, #homeconfirm, #newconfirm, #trainconfirm, .ov-foot')) return;
   if (overlay.classList.contains('customizing')) return;   // the stage turns the hero while customizing (ui/customizer.js)
+  if (overlay.classList.contains('newconfirming')) return;
+  beginFromMenu();
+});
+// BEGIN from the title screen: a hero who hasn't trained is offered the training grounds first
+export function beginFromMenu(){
   if (shouldOfferTraining()){
     try { localStorage.setItem('sw_asktrain', '1'); } catch(err){}
     overlay.classList.add('asktrain');
     return;
   }
   launch();
-});
+}
 document.getElementById('trainYes').addEventListener('click', (e) => { e.stopPropagation(); overlay.classList.remove('asktrain'); setModeSel('training'); launch(); });
 document.getElementById('trainNo').addEventListener('click', (e) => { e.stopPropagation(); overlay.classList.remove('asktrain'); launch(); });
 // take the pointer lock and start (or resume) play; where the lock never works, play unlocked
@@ -374,7 +382,7 @@ document.addEventListener('pointerlockerror', () => {
 // PAUSE KEYS — Enter resumes from the pause screen in every browser. Where Esc is locked to the game (fullscreen in
 // Chrome / Edge, see fullscreen.js) a quick Esc pauses and resumes too, so closing the pause screen with Esc no longer
 // drops you out of fullscreen. Runs in the capture phase so it sees the screen before Esc closes a panel on top of it.
-const panelOpen = () => howto.classList.contains('open') || settings.classList.contains('open') ||
+const panelOpen = () => howto.classList.contains('open') || settings.classList.contains('open') || document.getElementById('saves').classList.contains('open') || overlay.classList.contains('newconfirming') ||
   document.getElementById('roadmap').classList.contains('open') || document.getElementById('coop').classList.contains('open') || overlay.classList.contains('confirming') || overlay.classList.contains('asktrain');
 window.addEventListener('keydown', (e) => {
   if (e.repeat || (e.key !== 'Escape' && e.key !== 'Enter')) return;
@@ -422,7 +430,7 @@ function restartRun(){
 document.getElementById('restartBtn').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); restartRun(); });
 // MAIN MENU — abandon the run and go back to the title screen. From pause it asks first (a run is easy to lose
 // by accident); from the fallen/victory screens the run is already over, so it goes straight there.
-function goHome(){
+export function goHome(){
   overlay.classList.remove('confirming');
   closeSandboxPanel(false);
   document.getElementById('skilltree').style.display = 'none';
@@ -432,9 +440,13 @@ function goHome(){
   startLevel(0);   // sweep the battlefield and reset the hero + kit, exactly as a fresh campaign would
   G.mode = 'menu'; G.paused = false; G.slowmo = 1; G.slowmoT = 0; G.hitstop = 0;
   overlay.style.display = 'flex';
+  refreshMenu();
+  overlay.scrollTop = 0;
+}
+// the title screen's locks, ticks and headline, after anything that changes progress (a run ending, a loaded save, NEW GAME)
+export function refreshMenu(){
   refreshSurvivalLock(); refreshSandboxLock(); refreshTrainingMark(); refreshMissionMark();
   setOverlayState('menu');
-  overlay.scrollTop = 0;
 }
 // finishing the training grounds hands you back to the menu, with the campaign picked
 setTrainingExit(() => {

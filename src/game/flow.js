@@ -46,8 +46,10 @@ export function queueSpawn(typeName, opts){
 
 // opts.level runs another level definition in place of LEVELS[idx] (the training grounds, game/tutorial.js; a story
 // mission, game/mission.js, which also passes opts.mission; the sandbox, game/sandbox.js, with opts.sandbox);
-// opts.retry restarts the level from its checkpoint after a death (see the CHECKPOINT note below)
+// opts.retry restarts the level from its checkpoint after a death (see the CHECKPOINT note below); opts.resume keeps
+// the build a loaded save put back (game/saves.js), even on level 1
 export function startLevel(idx, opts){
+  const fresh = idx === 0 && !(opts && opts.resume);   // a brand-new campaign: reset the hero's build
   G.levelIdx = idx;
   G.endless = false; G.mut = null;   // campaign — never in survival mode (startEndless re-flags after this)
   G.training = !!(opts && opts.training);
@@ -86,7 +88,7 @@ export function startLevel(idx, opts){
   player.zoom = false; player.aiming = 0; player.recoilKick = 0; player.stabT = 0; player.stabQ = false; player.stabCdT = 0; player.missileT = 0; player.heat = 0; player.overheat = false; player.ventT = 0;
   player.jet = player.jetMax;
   // a fresh campaign starts with the basic blasters; mid-campaign keep the equipped (if still unlocked)
-  if (idx === 0 || !weaponUnlocked(player.weapon)) player.weapon = 'single';
+  if (fresh || !weaponUnlocked(player.weapon)) player.weapon = 'single';
   player.grappleActive = null;
   for (const bd of birds) scene.remove(bd.mesh); birds.length = 0;
   for (const dt2 of detos) scene.remove(dt2.mesh); detos.length = 0;
@@ -121,14 +123,14 @@ export function startLevel(idx, opts){
   player.mendT = 0;
   player.cancelDR = 0; player.swingLock = 0; player.dashCharges = null; player.dashRecharge = 0; player.cancelRiposte = false;
   player.cds.mend = 0;
-  if (idx === 0) switchStance('medium', true);   // a fresh legend starts balanced
+  if (fresh) switchStance('medium', true);   // a fresh legend starts balanced
   setStanceHud();
   G.yaw = Math.PI;  // face arena center
   player.faceYaw = Math.PI;
   G.wave = 0;
   G.streak = 0;
   document.getElementById('streak').style.opacity = '0';
-  if (idx === 0){
+  if (fresh){
     // fresh campaign — STARTING KIT only; the rest auto-unlocks or is bought with XP.
     //  Jedi: Saber + Block + Push + Dash (Pull auto-unlocks after wave 2).  Mando: Single blaster + weak jetpack +
     //  Brace (RMB) + Rocket (Dual auto-unlocks after wave 1, Flame after wave 2).

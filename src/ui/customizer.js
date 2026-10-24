@@ -69,8 +69,17 @@ export function closeCustomizer(){
   setOverlayState('menu');   // restores the headline
   const now = JSON.stringify(picks);
   if (now === saved) return;
-  saved = now;
   savePicks(picks);
+  dressPlayer();
+}
+// a loaded save brings its own look (ui/saves-ui.js): pick it up and dress the player in it
+export function reloadLook(){
+  picks = loadPicks();
+  restyleShowcase(picks);
+  if (JSON.stringify(picks) !== saved) dressPlayer();
+}
+function dressPlayer(){
+  saved = JSON.stringify(picks);
   // the player wears the new look from the next run: rebuild it, then put back what the old model carried
   rebuildPlayerModel(picks);
   applySaberGrip(player, G.saberGrip, G.mode !== 'play');

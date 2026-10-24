@@ -192,6 +192,9 @@
       <div class="btn" id="skipBtn">SKIP LESSON</div>
       <div class="btn" id="restartBtn">↻ RESTART RUN</div>
       <div class="btn" id="homeBtn">MAIN MENU</div>
+      <div class="btn" id="newBtn">NEW GAME</div>
+      <div class="btn" id="saveBtn">SAVE GAME</div>
+      <div class="btn" id="loadBtn">LOAD GAME</div>
       <div class="btn fsctl" id="fsBtn" title="Fill the whole screen">FULLSCREEN <span class="fsval">OFF</span></div>
       <div class="btn" id="settoggle">SETTINGS</div>
       <div class="btn" id="ctltoggle">HOW TO PLAY</div>
@@ -203,6 +206,13 @@
       <div class="hc-row">
         <div class="btn primary" id="trainYes">TRAIN FIRST</div>
         <div class="btn" id="trainNo">START THE CAMPAIGN</div>
+      </div>
+    </div>
+    <div id="newconfirm">
+      <div class="hc-q">Start a new game? Wins, unlocks and bests start over. Your save slots are kept.</div>
+      <div class="hc-row">
+        <div class="btn" id="newYes">START OVER</div>
+        <div class="btn" id="newNo">CANCEL</div>
       </div>
     </div>
     <div id="homeconfirm">
@@ -243,6 +253,12 @@
           <div class="setpill" id="gripctl" title="Hold the lightsaber in a regular or reverse grip">GRIP<span class="setval" id="gripval">REGULAR</span><span class="gfxhint">G</span></div>
         </div>
       </div>
+    </div>
+  </div>
+  <div id="saves">
+    <div class="howto-panel">
+      <div class="howto-head"><div class="howto-title" id="savestitle">LOAD GAME</div><div class="rm-sub" id="savessub"></div><div class="howto-x" id="savesclose">✕</div></div>
+      <div class="sv-list" id="svlist"></div>
     </div>
   </div>
   <div id="coop">

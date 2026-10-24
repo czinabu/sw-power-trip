@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "smoke": "node tools/smoke/smoke.mjs",
     "smoke:coop": "node tools/smoke/coop.mjs",
-    "smoke:maps": "node tools/smoke/maps.mjs"
+    "smoke:maps": "node tools/smoke/maps.mjs",
+    "smoke:saves": "node tools/smoke/saves.mjs"
   },
   "dependencies": {
     "peerjs": "^1.5.5",
