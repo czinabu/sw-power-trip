@@ -9,7 +9,7 @@
 export const CFG = {
   player: {
     maxHp: 100, maxForce: 100, forceRegen: 13, hpRegen: 2, hpRegenDelay: 6,   // Force regens a touch slower → abilities are deliberate, not spammed
-    speed: 6.4, accel: 34, jumpVel: 10.2, gravity: 27, airJumps: 1,   // grounded pace (was 7.2): a run doesn't outpace a fight; MOVE.combatSprint
+    speed: 6.4, accel: 34, jumpVel: 10.2, gravity: 27, airJumps: 1,  
     radius: 0.55,                    // collision radius vs solid pillars/crates
     maxStam: 130, stamRegen: 30, stamDelay: 0.5,   // stamina system for swings/blocks — bigger pool, faster refill, but a delay still punishes mindless mashing
     blockStamCost: 12, blockMoveCost: 0,

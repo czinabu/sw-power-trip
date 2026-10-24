@@ -42,19 +42,12 @@ export function updateMovement(dt, pp, st, f, r){
   if (keys['a']) want.sub(r);
   const moving = want.lengthSq() > 0.01;
   // RUN / WALK (Jedi) — Q toggles between them; every life starts in RUN. Running forward (W) on the ground sprints:
-  // faster and heavier to steer. Out of a fight it costs nothing; in one it burns stamina (below). In WALK the
+  // faster and heavier to steer, and it never costs stamina, fight or no fight. In WALK the
   // Jedi paces, a brisk purposeful walk, fight or no fight: the Vader walk, cutting down whatever comes into reach.
   const wasSprinting = player.sprinting;
   player.sprinting = G.hero !== 'mando' && !!player.sprintOn && !!keys['w'] && (player.grounded || wasSprinting)
                      && !player.blockHeld && player.atkT <= 0 && !(player.flinchT > 0)
                      && !(player.landStagT > 0) && !(player.slideT > 0) && !player.mantle && !player.hang;
-  // in a fight the sprint costs stamina (data/movement.js MOVE.combatSprint): it gives out short of empty, and won't
-  // start again until the bar has some breath back
-  const CS = MOVE.combatSprint;
-  if (player.sprinting && inCombat()){
-    if (player.stam <= CS.floor || (!wasSprinting && player.stam < CS.resume)) player.sprinting = false;
-    else { player.stam = Math.max(CS.floor, player.stam - CS.drain * dt); player.stamDelay = Math.max(player.stamDelay, 0.2); }
-  }
   player.walking = G.hero !== 'mando' && !player.sprintOn && player.grounded;
   // PIVOT — reversing hard at speed plants the feet: you brake to a stop before the new direction takes
   if (player.pivotT > 0) player.pivotT -= dt;
