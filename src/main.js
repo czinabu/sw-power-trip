@@ -90,7 +90,7 @@ import { NAV, buildNav, updateNav, navSteer, navDist } from './enemies/nav.js';
 import { DUEL, DUEL_PROFILES, MANDO_MELEE } from './data/duel.js';
 import { LOCK, startLock, endLock, duelDefend, eliteRamp } from './enemies/duel.js';
 import { foeBlade, bossBlade, contactPoint } from './player/jedi/clash.js';
-import { updateCoop, partnerShown } from './net/ghost.js';
+import { updateCoop, partnerShown, partnerInfo } from './net/partner.js';
 import { allies, updateSquad, updateSquadHud, spawnSquad, addSquadmate, squadOrder } from './allies/squad.js';
 import { downed } from './game/revive.js';
 import './ui/coop-ui.js';
@@ -142,7 +142,7 @@ function tick(){
   }
   updateSquadHud();
   updateTutorial(G.paused || G.skillSelect ? 0 : dt);   // the training lessons, and the unlock drills in a real run
-  updateCoop(rawDt);     // online co-op: send my state, move the partner's ghost (net/ghost.js)
+  updateCoop(rawDt);     // online co-op: send my pose, pose the partner's hero (net/partner.js)
   updateTrail(dt);
   updateJudgeFX();
   updateAmbient(G.paused ? 0 : rawDt);
@@ -157,7 +157,7 @@ function tick(){
 tick();
 
 /* expose configs + API for live tweaking and future edits (dev console) */
-window.GAME = { partnerShown, CFG, ENEMY_TYPES, LEVELS, BOSS_CFG, BOSS_MANDO, STANCES, SKILLS, MANDO, MANDO_WEAPONS, G, enemies, player, pillars, solids, rockets, bolts,
+window.GAME = { partnerShown, partnerInfo, CFG, ENEMY_TYPES, LEVELS, BOSS_CFG, BOSS_MANDO, STANCES, SKILLS, MANDO, MANDO_WEAPONS, G, enemies, player, pillars, solids, rockets, bolts,
   startLevel, startWave, spawnEnemy, startTutorial, startMission, skipObjective, startSandbox, sandboxSpawn, sandboxClear, setSandboxKit, sandboxKitAll, missionState, skipStep, trainingProgress, spawnBoss, queueSpawn, checkUnlocks, switchStance, setHero,
   openSkillTree, damageEnemy, damageBoss, updateHud, nextStoreGoal, enemyHpScale, eliteChance, ELITES, cycleQuality, forceBarrier, forceMend, updatePlayer, updateEnemies, updateBolts, fireBolt, endRun, updateFlow, startEndless, startEndlessWave, genEndlessWave, MUTATORS, ENDLESS_POWERS, buyPower, keys, camera, SEE,
   tryAttack, castGesture, saberThrow, forcePush, forceSlam, forceRepulse, stance, applySwingDamage, spawnChampion, startWave, bomberExplode, MUSIC, audioInit,

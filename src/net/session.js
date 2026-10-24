@@ -1,7 +1,7 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
 // Online co-op connection: one browser hosts under a short room code, the other joins with it. A WebRTC data channel
 // (PeerJS: its free broker only introduces the two browsers, then they talk directly) carries small JSON messages.
-// This file knows nothing about the game: ghost.js and coop-ui.js listen to it through on().
+// This file knows nothing about the game: partner.js and coop-ui.js listen to it through on().
 
 const ID_PREFIX = 'swpt-';
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';   // no 0/O/1/I: easy to read out over voice chat

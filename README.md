@@ -40,7 +40,7 @@ src/
   enemies/           meshes, elites, special moves, spawning, damage, AI, pathing (nav.js), attack turns (director.js), blaster bolts (see docs/enemy-ai.md)
   allies/            the hero's strike team: squadmates, orders, who they shoot and who shoots them (squad.js)
   boss/              boss lightning FX and the boss itself
-  net/               online co-op: room-code connection over WebRTC (session.js) and the partner's ghost hero (ghost.js); see below
+  net/               online co-op: room-code connection over WebRTC (session.js), the partner's hero (partner.js) and pose sync (pose.js); see below
   world/             arena builder, arenas/ (temple, foundry, plains layouts; hall and forge for training; refuge and pursuit for the story missions; dojo and throne for the sandbox; grassland, icefront and graveyard, the battle maps, with field.js for their shared pieces), Ink bake, painted skies/floors, backdrops, atmosphere, collision, hazards (see docs/world-guidelines.md)
   game/              level/wave flow, survival mode, training (tutorial.js), story missions (mission.js, objectives.js), the sandbox (sandbox.js), progression, boons, end-of-run summary
   ui/                banners, threat markers, HUD, store overlay, menus, the sandbox panel (sandbox-ui.js), the title screen's hero turntable (showcase.js), controls (How to Play data)
@@ -166,8 +166,12 @@ Copyright (c) 2026 Caleb Zinabu. All rights reserved. See [LICENSE](LICENSE) for
 
 ## Online co-op (early test)
 
-The main menu's ONLINE CO-OP panel hosts a room (a 5-letter code) or joins one. Two browsers connect directly over WebRTC through the free PeerJS broker, and each sees the other as a second hero. Fighting together is not built yet.
+The main menu's ONLINE CO-OP panel hosts a room (a 5-letter code) or joins one. Two browsers connect directly over WebRTC through the free PeerJS broker, and each sees the other as a second hero in their own customizer look. Fighting together (both browsers fighting the same enemies) is not built yet.
+
+- **Players list.** `src/player/players.js` holds every hero in the fight: `players[0]` is always this browser's hero (`player`), and each partner is one more entry. Code that needs "a hero" rather than "my hero" goes through it, so going from 2 to 4 players is mostly balance and testing.
+- **The partner's pose.** Each browser sends its hero's finished pose about 20 times a second (`net/pose.js`: every rig joint, which weapon is out and where it hangs, blade and jet glows). The partner's puppet eases between poses, so every animation shows exactly as on their own screen, and `animation.js` never needs to know about a second hero.
+- **Enemies pick a hero.** `src/enemies/targets.js` lets each foe choose which hero to go after, by distance and by how many foes are already on each, so a crowd splits between you. Attack turns and ranged slots (`director.js`) are per hero. Solo, there is one hero and nothing changes. Until each browser shares the same enemies, a blow aimed at the partner's puppet does no damage. Tuning lives in `data/coop.js`.
 
 - `?peerhost=host&peerport=9000` in the page URL uses your own PeerServer (`npx peerjs --port 9000`) instead of the free cloud broker.
 - `api/turn.js` is a Vercel function that hands out Cloudflare TURN relay credentials for strict networks. Set `CF_TURN_KEY_ID` and `CF_TURN_API_TOKEN` on the Vercel project to turn it on; without them the game uses STUN only.
-- `npm run build && npm run smoke:coop` opens two browsers against a local PeerServer, connects them and checks each sees the other.
+- `npm run build && npm run smoke:coop` opens two browsers against a local PeerServer, connects them and checks each sees the other, that the partner is posed from the network, and that enemies go after both heroes.

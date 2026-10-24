@@ -11,7 +11,7 @@ import { burst } from '../fx/particles.js';
 import { floater } from '../fx/floaters.js';
 import { spawnGroundShock } from '../fx/vfx.js';
 import { G, enemies, player } from '../state.js';
-import { playerPos } from '../player/helpers.js';
+import { heroPosOf } from './targets.js';
 import { segBlockedBySolids } from '../world/collision.js';
 import { hurtPlayer } from '../player/damage.js';
 import { enemyDmgScale } from '../game/survival.js';
@@ -80,10 +80,11 @@ const flanking = () => (G.flankUntil || 0) > G.gt && (G.flankUntil - G.gt) <= OR
 export function assignApproach(e){
   e.appr = null;
   if (e.converted || e.t.ranged) return;
-  const pp = playerPos(), b = bearingOf(e.group.position, pp), flank = flanking();
+  const pp = heroPosOf(e), b = bearingOf(e.group.position, pp), flank = flanking();
   let near = null;
   for (const o of enemies){
     if (o === e || o.dead || !o.token) continue;
+    if (o.hero !== e.hero) continue;   // in co-op, only the ones closing on the same hero
     if (Math.abs(wrap(bearingOf(o.group.position, pp) - b)) < PINCER.near){ near = o; break; }
   }
   if (!near && !flank) return;
@@ -154,7 +155,7 @@ export function updateOrder(e, dt, tx, tz){
   if (e.st > 0) return;
   u.bodyMat.emissiveIntensity = 0;
   e.state = 'recover'; e.st = 0.5;
-  const pp = playerPos();
+  const pp = heroPosOf(e);
   if (e.order === 'volley'){
     // every trooper in reach aims on the same beat, and they fire together
     for (const o of volleyTroops(e, pp)){
@@ -233,7 +234,8 @@ export function updateLungeWind(e, dt, pp){
   e.state = 'lunge'; e.st = Math.min(0.6, e.lungeLen / LUNGE.speed); e.lungeLocked = false;
   S.whoosh(g.position, true);
 }
-export function updateLunge(e, dt, pp){
+// pp is the hero this lancer is after; a partner's puppet (remote) only gets the show, no blow (co-op phase 2)
+export function updateLunge(e, dt, pp, remote = false){
   const g = e.group, u = g.userData, d = e.lungeDir;
   const ox = g.position.x, oz = g.position.z;
   g.position.x += d.x * LUNGE.speed * dt; g.position.z += d.z * LUNGE.speed * dt;
@@ -242,7 +244,7 @@ export function updateLunge(e, dt, pp){
   if (e.lungeLine) e.lungeLine.material.opacity = Math.max(0, e.lungeLine.material.opacity - dt * 3);
   if (Math.random() < 0.6) burst(V3(g.position.x, g.position.y + 1.3, g.position.z), e.t.eye, 1, 2, 1, 0.6);
   // caught along the path it swept this frame?
-  if (!e.lungeHit && Math.abs(pp.y - g.position.y) < 1.8){
+  if (!e.lungeHit && !remote && Math.abs(pp.y - g.position.y) < 1.8){
     const sx = g.position.x - ox, sz = g.position.z - oz, sl = sx*sx + sz*sz || 1;
     const k = clamp(((pp.x - ox) * sx + (pp.z - oz) * sz) / sl, 0, 1);
     if (Math.hypot(pp.x - (ox + sx*k), pp.z - (oz + sz*k)) < LUNGE.hitR){
