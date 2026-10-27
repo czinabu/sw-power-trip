@@ -2,6 +2,7 @@
 // The holstered Jedi's LMB: a Force strike string (two palm strikes, then a burst), tuned in CFG.holster.
 
 import { CFG } from '../../data/config.js';
+import { stamDelay } from '../stamina.js';
 import { sfx, S } from '../../audio/sfx.js';
 import { V3, TMP } from '../../utils.js';
 import { floater } from '../../fx/floaters.js';
@@ -28,7 +29,7 @@ export function forceStrike(){
     if (G.gt - player.lastWinded > 0.6){ player.lastWinded = G.gt; floater(playerPos(), 'WINDED', '#ffaa66'); }
     return;
   }
-  player.stam -= B.stamina; player.stamDelay = CFG.player.stamDelay;
+  player.stam -= B.stamina; player.stamDelay = stamDelay();
   if (player.slideT > 0) player.slideT = 0;
   player.palmStep = step;
   player.palmT = player.palmMax = B.dur;

@@ -8,6 +8,7 @@ import { burst } from '../../fx/particles.js';
 import { floater, screenFlash } from '../../fx/floaters.js';
 import { shared, G, enemies, keys, player } from '../../state.js';
 import { CFG } from '../../data/config.js';
+import { stamDelay } from '../stamina.js';
 import { fwd, playerPos } from '../helpers.js';
 import { noteDefense } from '../../game/readout.js';
 import { damageEnemy, flinchEnemy, staggerEnemy } from '../../enemies/damage.js';
@@ -85,7 +86,7 @@ function guardStrike(){
     if (G.gt - (player.lastWinded ?? -9) > 0.6){ player.lastWinded = G.gt; floater(playerPos(), 'WINDED', '#ffaa66'); }
     return;
   }
-  player.stam -= B.stam; player.stamDelay = CFG.player.stamDelay;
+  player.stam -= B.stam; player.stamDelay = stamDelay();
   player.punchStep = step;
   player.meleeT = player.meleeMax = B.recover; player.meleeKind = B.name; player.meleeSkip = 0;
   player.vel.addScaledVector(fwd(), B.lunge);

@@ -12,6 +12,10 @@ export const CFG = {
     speed: 6.4, accel: 34, jumpVel: 10.2, gravity: 27, airJumps: 1,  
     radius: 0.55,                    // collision radius vs solid pillars/crates
     maxStam: 130, stamRegen: 30, stamDelay: 0.5,   // stamina system for swings/blocks — bigger pool, faster refill, but a delay still punishes mindless mashing
+    /* STAMINA RAMP — deeper in a run, the pool refills later and slower: delay → `delayTo` s and regen → `regenTo`/s, linearly,
+       reaching them at campaign cumulative wave `campaignWave` (Exegol) or survival wave `survivalWave`. Padawan, training,
+       sandbox and missions stay at the base values above. */
+    stamRamp: { delayTo: 0.8, regenTo: 26, campaignWave: 8, survivalWave: 10 },
     blockStamCost: 12, blockMoveCost: 0,
     parryWindow: 0.16,               // a TIMED window — opens the instant you click RMB
     parryWhiffLock: 0.42,            // a window that catches nothing leaves the guard unable to parry for this long (no spamming RMB)

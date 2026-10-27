@@ -3,6 +3,7 @@
 
 import * as THREE from 'three';
 import { CFG } from '../data/config.js';
+import { stamDelay } from '../player/stamina.js';
 import { DUEL, DUEL_PROFILES, GUARD_POSE, WIND } from '../data/duel.js';
 import { scene, camera } from '../engine/renderer.js';
 import { sfx, S } from '../audio/sfx.js';
@@ -344,7 +345,7 @@ export function duelDefend(e, line, kind, heavy, at){
 // your mashed cut is parried: the swing is thrown wide, the arm jars and the breath goes out of you
 function punishMash(cp){
   const R = DUEL.rhythm;
-  player.stam = Math.max(0, player.stam - R.stam); player.stamDelay = CFG.player.stamDelay;
+  player.stam = Math.max(0, player.stam - R.stam); player.stamDelay = stamDelay();
   player.flinchT = player.flinchMax = Math.max(player.flinchT || 0, R.flinch);
   player.queuedAtk = false;
   clashFlash(cp, 0xff8a5a, true);
@@ -472,7 +473,7 @@ export function lockPress(){
   const L = DUEL.lock;
   const formMul = G.hero === 'mando' ? 1.1 : G.stance === 'strong' ? L.heavyPress : G.stance === 'fast' ? L.fastPress : 1;
   const dry = player.stam < L.stam;
-  player.stam = Math.max(0, player.stam - L.stam); player.stamDelay = CFG.player.stamDelay;
+  player.stam = Math.max(0, player.stam - L.stam); player.stamDelay = stamDelay();
   LOCK.bal += L.press * formMul * (dry ? 0.35 : 1);
   sparks(lockPoint(), 0xffffff, 3, 9, { life: 0.18, size: 0.4 });
   sfx(rand(150, 190), 0.06, 'square', 0.03, 90);
@@ -481,7 +482,7 @@ export function lockPress(){
 export function lockKick(){
   if (!LOCK.foe) return;
   if (player.stam < DUEL.lock.kickStam){ floater(playerPos(), 'WINDED', '#ffaa66'); return; }
-  player.stam -= DUEL.lock.kickStam; player.stamDelay = CFG.player.stamDelay;
+  player.stam -= DUEL.lock.kickStam; player.stamDelay = stamDelay();
   if (G.hero !== 'mando'){ player.kickT = player.kickMax = 0.4; }
   else { player.meleeT = player.meleeMax = 0.4; player.meleeKind = 'knee'; }
   winLock('KICKED LOOSE', 22);
