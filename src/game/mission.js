@@ -13,6 +13,8 @@ import { floater } from '../fx/floaters.js';
 import { shared, G, enemies, player, solids } from '../state.js';
 import { CFG } from '../data/config.js';
 import { playerPos, maxHp } from '../player/helpers.js';
+import { SCALE, heroScale } from '../data/coop.js';
+import { heroesHere } from '../player/players.js';
 import { hurtPlayer } from '../player/damage.js';
 import { ENEMY_TYPES } from '../data/enemies.js';
 import { buildEnemyMesh } from '../enemies/mesh.js';
@@ -740,7 +742,7 @@ function vipDown(){
 function spawnInquisitor(o, at = o.at, opts = {}){
   const e = fieldSpawn(o.foe, at[0], at[1]);
   e.champion = true;
-  e.hp = e.maxHp = Math.round(e.hp * o.hp);
+  e.hp = e.maxHp = Math.round(e.hp * o.hp * heroScale(SCALE.bossHp, heroesHere()));
   e.t = { ...e.t, dmg: e.t.dmg * o.dmg, score: 20 };   // a copy: never mutate the shared type
   if (e.dp) e.dp = { ...e.dp, ...o.duel };
   e.group.scale.multiplyScalar(o.scale);

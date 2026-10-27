@@ -39,6 +39,8 @@ export const ROADMAP = [
     items: ['A heavy melee blow on an empty guard breaks it: a short stagger, and the next hit lands in full', 'Bolts keep the cheap stamina block; the beskar brace and darksaber follow the same rule', 'Same in every mode, co-op included'] },
   { title: 'Warbringer posture', status: 'done',
     items: ['A posture bar and breath under its health bar: parries and Djem So finishers wear it down', 'A full bar breaks it open for a long punish; its held overhead is parry-or-dodge', 'Taller bar in co-op; same in survival, campaign and sandbox'] },
+  { title: 'Co-op combat scaling', status: 'done',
+    items: ['Melee turns and ranged slots count per hero: two heroes face up to four swinging foes', 'Bosses, champions and duel opponents gain 60% health per extra hero, as the Warbringer\'s posture bar does', 'One extra squad revive per wave for each extra hero; squads stay rank and file only', 'Solo is untouched, in every mode'] },
   { title: 'Balance, round two', status: 'next',
     items: ['Survival scaling and mission pulses, from real playtest notes'] },
   { title: 'Co-op, fully', status: 'later',

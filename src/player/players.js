@@ -21,6 +21,10 @@ export const localPlayer = me;
 export function addPlayer(p){ if (!players.includes(p)) players.push(p); return p; }
 export function removePlayer(p){ const i = players.indexOf(p); if (i > 0) players.splice(i, 1); }
 
+// how many heroes are in this fight: this one, plus each partner in the same arena and mode (1 solo, so scaling by it
+// changes nothing there). Bosses, champions and revives read it when they start (data/coop.js SCALE)
+export const heroesHere = () => Math.max(1, players.filter(p => p.here).length);
+
 // heroes an enemy may pick right now: in this arena and on their feet
 export const targetable = (p) => !!p && p.here && !p.down;
 

@@ -15,6 +15,8 @@ import { burst } from '../fx/particles.js';
 import { floater } from '../fx/floaters.js';
 import { shared, G, enemies, bolts, player } from '../state.js';
 import { playerPos } from '../player/helpers.js';
+import { SCALE } from '../data/coop.js';
+import { heroesHere } from '../player/players.js';
 import { buildEnemyMesh } from '../enemies/mesh.js';
 import { updateLegs } from '../enemies/gait.js';
 import { sweepHit } from '../enemies/bodyshape.js';
@@ -182,7 +184,7 @@ function standUp(a, share){
 }
 // a wave (or objective) cleared: everyone up and patched, and the hero's second chance back
 function refill(){
-  G.reviveLeft = REVIVE.hero.revives[diffKey()] ?? 1;
+  G.reviveLeft = (REVIVE.hero.revives[diffKey()] ?? 1) + SCALE.revives * (heroesHere() - 1);   // a partner in the fight earns more second chances
   for (const a of allies){ if (a.body) getUp(a.body, 'clear'); a.hp = a.maxHp; }
 }
 

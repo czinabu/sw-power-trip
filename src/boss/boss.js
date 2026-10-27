@@ -14,6 +14,8 @@ import { burst } from '../fx/particles.js';
 import { floater } from '../fx/floaters.js';
 import { shared, G, enemies, bolts, rings, player } from '../state.js';
 import { fwd, playerPos } from '../player/helpers.js';
+import { SCALE, heroScale } from '../data/coop.js';
+import { heroesHere } from '../player/players.js';
 import { bossTelegraph } from '../enemies/damage.js';
 import { fireBolt } from '../enemies/bolts.js';
 import { updateBossLightFX } from './light.js';
@@ -36,7 +38,7 @@ export function spawnBoss(){
   const half = LEVELS[G.levelIdx].arena/2;
   const mando = G.hero === 'mando';
   const kind = mando ? 'mando' : 'sith';
-  const hp = Math.round((mando ? BOSS_MANDO.hp : BOSS_CFG.hp) * diffHpMul());   // DIFFICULTY scales the boss too
+  const hp = Math.round((mando ? BOSS_MANDO.hp : BOSS_CFG.hp) * diffHpMul() * heroScale(SCALE.bossHp, heroesHere()));   // DIFFICULTY scales the boss too
   const g = buildBoss(kind);
   g.userData.gait = { bob: BOSS_GAIT.bob, lean: BOSS_GAIT.lean, step(o, at){   // a footfall: dust and a thud near the hero
     const p = playerPos(), d = Math.hypot(at.x - p.x, at.z - p.z);
