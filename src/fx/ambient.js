@@ -6,6 +6,7 @@ import { rand } from '../utils.js';
 import { shared, G, player } from '../state.js';
 import { makeEmberSprite } from '../world/textures.js';
 import { updateAtmosphere } from '../world/atmosphere.js';
+import { updateAir } from '../world/air.js';
 
 /* L.ambient (from the world theme): { kind: 'embers' (rise) | 'ash' | 'snow' (fall) | 'dust' (drift), color, count, size } */
 export function buildAmbient(L){
@@ -40,6 +41,7 @@ function box(){
 }
 export function updateAmbient(dt){
   updateAtmosphere(dt);
+  updateAir(dt);
   if (shared.templeBrazier){   // the temple brazier breathes/flickers (bloom turns it into a glow)
     shared.templeBrazier.scale.set(0.9 + 0.12*Math.sin(G.gt*9.3), 1 + 0.14*Math.sin(G.gt*13) + 0.06*Math.sin(G.gt*27), 0.9 + 0.12*Math.cos(G.gt*11.1));
   }

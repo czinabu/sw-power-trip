@@ -1,5 +1,6 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
-// Renderer, scene, camera, post-processing (antialiasing, ambient occlusion, bloom, colour grade), base lights, resize handling.
+// Renderer, scene, camera, post-processing (antialiasing, ambient occlusion, light shafts, bloom, colour grade), base lights,
+// resize handling.
 
 import * as THREE from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
@@ -76,6 +77,39 @@ aoPass.render = (...a) => {
   _aoRender(...a);
 };
 composer.addPass(aoPass);
+
+/* LIGHT SHAFTS — god rays from the painted sun: each pixel marches toward the sun's spot on screen through the AO
+   pass's depth buffer, and every step that lands on open sky adds a little of the sun's colour, so the light
+   streams between pillars, spires and wrecks. Uses that depth, so it runs with the AO (HIGH); world/air.js aims it
+   and sets its strength per world. Added before the bloom, so the brightest rays glow. */
+export const shaftPass = new ShaderPass({
+  uniforms: { tDiffuse: { value: null }, tDepth: { value: aoPass.depthTexture }, sunUv: { value: new THREE.Vector2(0.5, 0.5) },
+    strength: { value: 0 }, color: { value: new THREE.Color(1, 0.95, 0.85) } },
+  vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+  fragmentShader: `
+    uniform sampler2D tDiffuse, tDepth; uniform vec2 sunUv; uniform float strength; uniform vec3 color;
+    varying vec2 vUv;
+    #define N 24
+    void main(){
+      vec4 src = texture2D(tDiffuse, vUv);
+      vec2 dstep = (sunUv - vUv) / float(N) * 0.9;
+      float jitter = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453);
+      vec2 uv = vUv + dstep * jitter;
+      float lit = 0.0, w = 1.0, wsum = 0.0;
+      for (int i = 0; i < N; i++){
+        vec2 c = clamp(uv, 0.001, 0.999);
+        lit += step(0.99999, texture2D(tDepth, c).x) * w;
+        wsum += w; w *= 0.94; uv += dstep;
+      }
+      lit /= wsum;
+      float fall = 1.0 - smoothstep(0.0, 0.85, length((vUv - sunUv) * vec2(1.6, 1.0)));   // strongest near the sun
+      // only where the view itself isn't open sky: the rays fall across the arena, the sky keeps its painted look
+      float onSky = step(0.99999, texture2D(tDepth, vUv).x);
+      gl_FragColor = vec4(src.rgb + color * lit * fall * strength * (1.0 - 0.75 * onSky), src.a);
+    }`,
+});
+shaftPass.enabled = false;
+composer.addPass(shaftPass);
 export const bloomPass = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.82, 0.55, 0.78);
 composer.addPass(bloomPass);
 /* SCENE GLOW — the bloom and the blade lights are tuned for a dark arena. In a bright one (pale stone, ice, snow) the
@@ -128,10 +162,10 @@ setGrade();
 
 /* the menu stand draws its own little stage through this same composer: no AO (it would sample the game scene) and
    no arena grade */
-let _standAO = false;
+let _standAO = false, _standShafts = false;
 export function standPost(on){
-  if (on){ _standAO = aoPass.enabled; aoPass.enabled = false; gradePass.uniforms.amount.value = 0; }
-  else { aoPass.enabled = _standAO; gradePass.uniforms.amount.value = 1; }
+  if (on){ _standAO = aoPass.enabled; _standShafts = shaftPass.enabled; aoPass.enabled = shaftPass.enabled = false; gradePass.uniforms.amount.value = 0; }
+  else { aoPass.enabled = _standAO; shaftPass.enabled = _standShafts; gradePass.uniforms.amount.value = 1; }
 }
 
 export const hemi = new THREE.HemisphereLight(0x8fb0d6, 0x231a16, 0.62);   // dimmer ambient → more contrast & mood

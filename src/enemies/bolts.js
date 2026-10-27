@@ -17,6 +17,7 @@ import { damageBoss } from '../boss/boss.js';
 import { FOCUS, addFocus } from '../player/jedi/focus.js';
 import { spawnHitSpark, spawnParryFlash } from '../fx/vfx.js';
 import { boltImpact, clashFlash } from '../fx/ink.js';
+import { scorchSolid } from '../fx/scorch.js';
 import { mandoWeapon, mandoShielding, boltDamage, hitMarker } from '../player/mando/weapons.js';
 import { hurtPlayer } from '../player/damage.js';
 import { deflectAnim, anticipateDeflect } from '../player/jedi/combat.js';
@@ -95,6 +96,7 @@ export function updateBolts(dt){
           kill = true;
           spawnHitSpark(V3(bx, by, bz), b.friendly ? 0x6fd0ff : 0xff5a3a, 0.8);
           S.boltImpact(V3(bx, by, bz));
+          scorchSolid(c, V3(bx, by, bz));   // a burn on the cover it struck
           break;
         }
       }

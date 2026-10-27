@@ -237,6 +237,7 @@ export const TRAINING_WORLDS = {
     sound: 'foundry',
   },
   dojo: {   // the sandbox's training room inside the temple: warm wood and cream panels under a dark ceiling, lamp-lit
+    mist: false,   // indoors
     sky: { top: 0x1a0e0a, horizon: 0x3a2218, below: 0x2a1810, bands: 5, stars: 0 },
     fog: 0x2a1a14, fogStart: 1.4, fogEnd: 4.0, clear: 0x1a0e0a,
     light: { sun: 0xffe2c0, sunI: 1.45, dir: [-12, 40, 18], hemiSky: 0xffd8b8, hemiGround: 0x4a2a1e, fill: 1.0, rim: 0xffc890, rimI: 0.35 },
@@ -250,6 +251,7 @@ export const TRAINING_WORLDS = {
     sound: 'temple',
   },
   throne: {   // the Mandalorian's sandbox: the palace throne room at Sundari, grey daylight through tall windows
+    mist: false,   // indoors
     sky: { top: 0x10161a, horizon: 0x26302e, below: 0x1a2220, bands: 5, stars: 0 },
     fog: 0x1e2826, fogStart: 1.4, fogEnd: 4.0, clear: 0x10161a,
     light: { sun: 0xdce8f0, sunI: 1.5, dir: [26, 30, -14], hemiSky: 0xa8c4c8, hemiGround: 0x1e2a28, fill: 0.85, rim: 0x9ad0e0, rimI: 0.4 },

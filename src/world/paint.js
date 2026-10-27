@@ -148,7 +148,7 @@ export function paintFloor(f){
       x.strokeStyle = css(i % 3 === 0 ? line : hi); x.lineWidth = i % 3 === 0 ? 2.5 : 3.5;
       wrap(() => { x.beginPath(); for (let u = 0; u <= len; u += 6){ const px = x0 + u, py = y0 + Math.sin(u/40 + ph)*amp; u ? x.lineTo(px, py) : x.moveTo(px, py); } x.stroke(); });
     }
-    for (let i = 0; i < 10; i++){ x.fillStyle = css(shade(base, 0.9)); const px = R()*N, py = R()*N, r = 10 + R()*24; wrap(() => { x.beginPath(); x.ellipse(px, py, r*1.8, r*0.6, 0, 0, 7); x.fill(); }); }
+    for (let i = 0; i < 10; i++){ x.fillStyle = css(shade(base, 0.94)); const px = R()*N, py = R()*N, r = 10 + R()*24; wrap(() => { x.beginPath(); x.ellipse(px, py, r*3.2, r*0.42, 0, 0, 7); x.fill(); }); }   // long wind scours along the ripples
     speckle(1400, 'rgba(255,240,210,0.06)', 'rgba(60,30,0,0.06)');
   } else if (f.kind === 'basalt' || f.kind === 'ash'){
     // polygonal plates split by cracks; basalt cracks glow (lava), ash cracks are just dark
@@ -207,8 +207,16 @@ export function paintFloor(f){
     for (let i = 0; i < 6; i++){ x.fillStyle = css(shade(base, 0.8)); const px = R()*N, py = R()*N, r = 6 + R()*8; wrap(() => { x.beginPath(); x.ellipse(px, py, r*1.4, r*0.7, R(), 0, 7); x.fill(); }); }   // bare earth
     speckle(900, 'rgba(255,250,200,0.05)', 'rgba(20,30,0,0.08)');
   } else if (f.kind === 'snow' || f.kind === 'ice'){
-    // soft drifts as flat lighter/darker shapes; ice gets white crack lines
-    for (let i = 0; i < 16; i++){ x.fillStyle = css(R() < 0.5 ? hi : shade(base, 0.93)); const px = R()*N, py = R()*N, r = 20 + R()*50, rot = R()*0.6; wrap(() => { x.beginPath(); x.ellipse(px, py, r*2, r*0.7, rot, 0, 7); x.fill(); }); }
+    // wind-packed drifts: long tapering tongues all lying with the wind (one heading per tile), a lit crest along
+    // the windward side of each, so the snow reads as blown rather than spotted; ice gets white crack lines
+    const wind = R() * Math.PI, cw = Math.cos(wind), sw = Math.sin(wind);
+    const tongue = (px, py, len, th, bend) => { const p = []; for (let k = 0; k <= 12; k++){ const t = k/12, w = th * Math.sin(Math.PI * Math.pow(t, 0.7)), u = (t - 0.5) * len, v = bend * (t - 0.5) * (t - 0.5) * len * 0.3; p.push([px + cw*u - sw*(v + w), py + sw*u + cw*(v + w)]); } for (let k = 12; k >= 0; k--){ const t = k/12, w = th * 0.6 * Math.sin(Math.PI * Math.pow(t, 0.7)), u = (t - 0.5) * len, v = bend * (t - 0.5) * (t - 0.5) * len * 0.3; p.push([px + cw*u - sw*(v - w), py + sw*u + cw*(v - w)]); } return p; };
+    for (let i = 0; i < 14; i++){
+      const px = R()*N, py = R()*N, len = 140 + R()*220, th = 7 + R()*13, bend = R() - 0.5;
+      const body = tongue(px, py, len, th, bend), crest = tongue(px - sw*th*0.55, py + cw*th*0.55, len*0.82, th*0.32, bend);
+      x.fillStyle = css(R() < 0.35 ? shade(base, 0.94) : mix(base, hi, 0.6)); wrap(() => fill(body));
+      x.fillStyle = css(hi); wrap(() => fill(crest));
+    }
     if (f.kind === 'ice'){
       x.strokeStyle = css(hi); x.lineWidth = 2;
       for (let i = 0; i < 14; i++) { const d = crackPath(R()*N, R()*N, 4, 70); wrap(d); }

@@ -13,6 +13,7 @@ import { damageEnemy } from '../enemies/damage.js';
 import { damageBoss } from '../boss/boss.js';
 import { hurtPlayer } from '../player/damage.js';
 import { toon, toonUnique, inkify, hullGeo, inkHull } from './ink.js';
+import { scorchGround } from '../fx/scorch.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { TELLS } from '../fx/tells.js';
 
@@ -94,6 +95,7 @@ function explodeBarrel(b, idx){
   const p = b.mesh.position;
   burst(p, 0xff7722, 22, 11, 8);
   burst(p, 0xffdd55, 12, 8, 6);
+  scorchGround(p, 4.6);
   G.shake = Math.max(G.shake, 0.8); G.hitstop = Math.max(G.hitstop, 0.05);
   S.boom(p, 1.2);
   for (const e of enemies){

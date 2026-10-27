@@ -155,7 +155,7 @@ Missions are data (`data/missions.js`: hold, sabotage, capture, escort, pursuit 
 ## Tech
 
 - **Three.js** (r160, pinned) from npm
-- **EffectComposer** on multisampled buffers (antialiasing): GTAO ambient occlusion (High), UnrealBloomPass for glow, and a per-world colour grade
+- **EffectComposer** on multisampled buffers (antialiasing): GTAO ambient occlusion and sun light shafts (High), UnrealBloomPass for glow, and a per-world colour grade
 - **Web Audio API** for all sound (procedural synthesis — no audio files)
 - **Vite** for the dev server and build, with `vite-plugin-singlefile` to inline everything into one HTML file
 - Motion capture: the data used in this project was obtained from [mocap.cs.cmu.edu](http://mocap.cs.cmu.edu). The database was created with funding from NSF EIA-0196217.

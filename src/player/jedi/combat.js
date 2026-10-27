@@ -16,6 +16,7 @@ import { damageBoss } from '../../boss/boss.js';
 import { FOCUS, focusTier, focusDmgMul, addFocus } from './focus.js';
 import { spawnHitSpark, spawnGroundShock } from '../../fx/vfx.js';
 import { inkSprite, sparks, clashFlash } from '../../fx/ink.js';
+import { scorchGround } from '../../fx/scorch.js';
 import { DUEL } from '../../data/duel.js';
 import { cutLine, duelDefend, isGuarding, guardImpact } from '../../enemies/duel.js';
 import { bodyRadius } from './bladehit.js';
@@ -312,6 +313,7 @@ export function applySwingDamage(step, only){
       const pp0 = playerPos(), ip = V3(pp0.x + fwd().x*1.6, 1.2, pp0.z + fwd().z*1.6);
       spawnGroundShock(V3(ip.x, 0.1, ip.z), st.blade, 5.5, 0.34, 0.6);
       spawnGroundShock(V3(ip.x, 0.1, ip.z), 0xffffff, 8, 0.5, 0.3);
+      scorchGround(ip, 2.4);   // the blade bites the floor
       inkSprite({ pos: ip, shape: 'star', points: 10, sharp: 0.14, color: st.blade, size: [1.6, 4.6], life: 0.2, steps: 2, coreW: 0.38 });   // the cel shockburst
       sparks(ip, st.blade, 18, 16, { life: 0.4, size: 0.6 }); sparks(ip, 0xffffff, 8, 18, { life: 0.3 });
       burst(ip, 0x9a9a9a, 8, 9, 6, 1.1);   // chips of stone

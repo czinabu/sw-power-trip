@@ -12,6 +12,7 @@ import { screenFlash } from '../fx/floaters.js';
 import { flashLight } from '../fx/lights.js';
 import { spawnGroundShock } from '../fx/vfx.js';
 import { TELLS, tellSound } from '../fx/tells.js';
+import { scorchGround } from '../fx/scorch.js';
 import { shared, G, enemies, barrels, player } from '../state.js';
 import { playerPos } from '../player/helpers.js';
 import { hurtPlayer } from '../player/damage.js';
@@ -87,6 +88,7 @@ function explode(n){
   const pos = n.ball.position.clone(); pos.y = 0;
   burst(V3(pos.x, 1, pos.z), 0xffae2a, 22, 12, 7); burst(V3(pos.x, 1, pos.z), 0xff5a1a, 12, 9, 5);
   spawnGroundShock(V3(pos.x, 0.1, pos.z), 0xffae2a, n.R + 1, 0.45, 0.7);
+  scorchGround(n.ball.position, n.R * 1.1);
   flashLight(0xffae2a, 5, n.R * 2.4, V3(pos.x, 1.2, pos.z), 0.25);
   G.shake = Math.max(G.shake, 0.55); S.boom(pos, 1);
   const turned = n.vel || n.friendly, foeDmg = turned ? GRENADE.pushedDmg : GRENADE.foeDmg, knock = turned ? GRENADE.pushedKnock : GRENADE.foeKnock;
