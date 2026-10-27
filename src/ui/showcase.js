@@ -3,7 +3,7 @@
 // turntable on the right, instead of the live arena. Switching hero spins the turntable and swaps the figure.
 
 import * as THREE from 'three';
-import { renderer, composer, renderPass, scene, camera, bloomPass, compileLive } from '../engine/renderer.js';
+import { renderer, composer, renderPass, scene, camera, bloomPass, compileLive, standPost } from '../engine/renderer.js';
 import { G } from '../state.js';
 import { prewarmJudgeFX } from '../player/jedi/judgement-fx.js';
 import { buildHeroModel } from '../player/model/index.js';
@@ -339,7 +339,9 @@ export function renderShowcase(dt){
   // sabers and bolts would halo it; on the stand only light sources (blade, rings, beam) should glow
   // (and the stand keeps its own bloom strength whatever the arena behind the menu set, see setSceneGlow)
   const th = bloomPass.threshold, st = bloomPass.strength; bloomPass.threshold = STAND_BLOOM; bloomPass.strength = 0.82;
+  standPost(true);   // no ambient occlusion or arena colour grade on the stand
   composer.render();
+  standPost(false);
   bloomPass.threshold = th; bloomPass.strength = st;
   renderPass.scene = scene; renderPass.camera = camera;
 }

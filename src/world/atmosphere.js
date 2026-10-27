@@ -4,7 +4,7 @@
 // touches gameplay.
 
 import * as THREE from 'three';
-import { renderer, scene, camera, hemi, sun, rim, glow, setSceneGlow } from '../engine/renderer.js';
+import { renderer, scene, camera, hemi, sun, rim, glow, setSceneGlow, setGrade, aoFade } from '../engine/renderer.js';
 import { rand, clamp } from '../utils.js';
 import { shared, G, player } from '../state.js';
 import { playerPos } from '../player/helpers.js';
@@ -61,10 +61,32 @@ function applyGlow(b){
   if (player.darkLight) player.darkLight.intensity = DARK_LIGHT * glow.light;
 }
 
+/* the arena's colour grade (engine/renderer.js setGrade): shadows lean toward the sky fill, highlights toward the sun,
+   so Jedha's dusk warms, Ilum's ice cools and Mustafar burns without hand-picking a grade per world. A theme can
+   override any of it with `grade: { sat, contrast, shadow, high }` (shadow/high as hex). */
+const _gs = new THREE.Color(), _gh = new THREE.Color(), WHITE = new THREE.Color(1, 1, 1);
+function tintOf(out, hex, k){
+  out.setHex(hex, THREE.LinearSRGBColorSpace);   // the grade runs on the display image: take the hex as it reads
+  const m = Math.max(out.r, out.g, out.b, 1e-3);
+  out.multiplyScalar(1 / m);
+  return out.lerp(WHITE, 1 - k);
+}
+function gradeFor(T){
+  const g = T.grade || {};
+  return {
+    sat: g.sat ?? 1.1, contrast: g.contrast ?? 1.08,
+    shadow: g.shadow != null ? g.shadow : tintOf(_gs, T.light.hemiSky, 0.14),
+    high: g.high != null ? g.high : tintOf(_gh, T.light.sun, 0.22),
+  };
+}
+
 /* set lights, fog and clear colour for a theme. sky: the dome mesh (its material colour is used as a tint) */
 export function applyAtmosphere(T, L, sky){
   const lt = T.light;
   scene.fog = new THREE.Fog(T.fog, L.arena * (T.fogStart ?? 0.5), L.arena * (T.fogEnd ?? 1.9));
+  // ambient occlusion fades out before the fog thickens (engine/renderer.js)
+  aoFade.near = Math.max(12, scene.fog.near * 0.5); aoFade.far = Math.max(aoFade.near + 10, scene.fog.near * 1.1);
+  setGrade(gradeFor(T));
   renderer.setClearColor(T.clear ?? T.fog);
   sun.color.setHex(lt.sun); sun.intensity = lt.sunI;
   const d = lt.dir || [30, 50, 20];
@@ -85,7 +107,7 @@ export function applyAtmosphere(T, L, sky){
 }
 
 /* an unthemed arena: stop driving the lights */
-export function clearAtmosphere(){ applyGlow(0); A.T = null; A.sky = null; A.strike = null; A.long = false; sun.target.position.set(0, 0, 0); }
+export function clearAtmosphere(){ applyGlow(0); setGrade(); aoFade.near = 18; aoFade.far = 46; A.T = null; A.sky = null; A.strike = null; A.long = false; sun.target.position.set(0, 0, 0); }
 
 /* how far into this level's fight we are, 0 (first wave) → 1 (final wave / boss) */
 function progress(){

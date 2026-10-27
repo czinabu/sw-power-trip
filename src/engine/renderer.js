@@ -1,11 +1,13 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
-// Renderer, scene, camera, bloom post-processing, base lights, resize handling.
+// Renderer, scene, camera, post-processing (antialiasing, ambient occlusion, bloom, colour grade), base lights, resize handling.
 
 import * as THREE from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 
 /* ============================================================
    ENGINE SETUP
@@ -22,10 +24,58 @@ document.body.appendChild(renderer.domElement);
 export const scene = new THREE.Scene();
 export const camera = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, 0.1, 400);
 
-/* bloom post-processing — sabers, bolts and embers glow */
-export const composer = new EffectComposer(renderer);
+/* post-processing: scene → ambient occlusion → bloom (sabers, bolts and embers glow) → tone map → colour grade.
+   ANTIALIASING: the canvas's own antialias does nothing once the scene is drawn into the composer's buffers, so the
+   buffers are multisampled themselves (setMSAA, per quality preset in engine/quality.js). */
+export const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(innerWidth, innerHeight, { type: THREE.HalfFloatType, samples: 4 }));
+export function setMSAA(n){
+  for (const rt of [composer.renderTarget1, composer.renderTarget2]) if (rt.samples !== n){ rt.samples = n; rt.dispose(); }
+}
 export const renderPass = new RenderPass(scene, camera);
 composer.addPass(renderPass);
+
+/* AMBIENT OCCLUSION — soft contact shadow in corners, under props and where a body meets the floor, so nothing
+   floats. HIGH quality only (it draws the scene a second time for depth and normals). Only solid surfaces take part:
+   glows, blades, particles, sprites, see-through props and the ink hulls (back faces) are left out, so a saber or a
+   muzzle flash never darkens the floor around it. It runs at CSS-pixel resolution and fades out with distance, so
+   the fogged backdrop isn't smudged. */
+export const aoPass = new GTAOPass(scene, camera, innerWidth, innerHeight);
+aoPass.updateGtaoMaterial({ radius: 0.7, distanceExponent: 1.5, thickness: 1.2, scale: 1.25, samples: 12 });
+aoPass.updatePdMaterial({ samples: 12, radius: 6 });
+aoPass.blendIntensity = 0.85;
+const _aoHidden = [];
+function noAO(o){
+  if (o.isPoints || o.isLine || o.isSprite || o.userData.noAO) return true;
+  const m = Array.isArray(o.material) ? o.material[0] : o.material;
+  return !!m && (m.transparent || m.side === THREE.BackSide || m.toneMapped === false || m.blending === THREE.AdditiveBlending);
+}
+aoPass.overrideVisibility = function(){ this.scene.traverseVisible(o => { if (noAO(o)){ o.visible = false; _aoHidden.push(o); } }); };
+aoPass.restoreVisibility = function(){ for (const o of _aoHidden) o.visible = true; _aoHidden.length = 0; };
+const _aoSize = aoPass.setSize.bind(aoPass);
+aoPass.setSize = (w, h) => { const k = 1 / Math.max(1, renderer.getPixelRatio()); _aoSize(Math.round(w * k), Math.round(h * k)); };
+// the stock blend multiplies the AO in everywhere: this one fades it out from aoFade.near to aoFade.far metres
+export const aoFade = { near: 18, far: 46 };
+Object.assign(aoPass.blendMaterial.uniforms, { tDepth: { value: aoPass.depthTexture }, cameraNear: { value: 0.1 }, cameraFar: { value: 400 },
+  fadeNear: { value: aoFade.near }, fadeFar: { value: aoFade.far } });
+aoPass.blendMaterial.fragmentShader = `
+  uniform float intensity, cameraNear, cameraFar, fadeNear, fadeFar;
+  uniform sampler2D tDiffuse, tDepth;
+  varying vec2 vUv;
+  void main(){
+    float d = texture2D(tDepth, vUv).x;
+    float z = cameraNear * cameraFar / ((cameraFar - cameraNear) * d - cameraFar);   // view-space z (negative)
+    float k = intensity * (1.0 - smoothstep(fadeNear, fadeFar, -z));
+    vec4 texel = texture2D(tDiffuse, vUv);
+    gl_FragColor = vec4(mix(vec3(1.0), texel.rgb, k), texel.a);
+  }`;
+aoPass.blendMaterial.needsUpdate = true;
+const _aoRender = aoPass.render.bind(aoPass);
+aoPass.render = (...a) => {
+  const u = aoPass.blendMaterial.uniforms;
+  u.cameraNear.value = camera.near; u.cameraFar.value = camera.far; u.fadeNear.value = aoFade.near; u.fadeFar.value = aoFade.far;
+  _aoRender(...a);
+};
+composer.addPass(aoPass);
 export const bloomPass = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.82, 0.55, 0.78);
 composer.addPass(bloomPass);
 /* SCENE GLOW — the bloom and the blade lights are tuned for a dark arena. In a bright one (pale stone, ice, snow) the
@@ -42,6 +92,47 @@ export function setSceneGlow(b){
   glow.light = 1 - 0.55 * b;
 }
 composer.addPass(new OutputPass());
+
+/* COLOUR GRADE — after tone mapping, on the display image: a little more colour and contrast, and a split tone (the
+   shadows lean toward the arena's sky fill, the highlights toward its sun) so each world has its own cast. Brightness
+   is kept: the tint is normalised to its own luminance. world/atmosphere.js sets it per arena (setGrade); the menu
+   stand switches it off for its frame (ui/showcase.js). The vignette is the CSS #cine overlay. */
+export const gradePass = new ShaderPass({
+  uniforms: { tDiffuse: { value: null }, amount: { value: 1 }, sat: { value: 1.1 }, contrast: { value: 1.08 },
+    shadow: { value: new THREE.Color(0.93, 0.97, 1.06) }, high: { value: new THREE.Color(1.05, 1.0, 0.93) } },
+  vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+  fragmentShader: `
+    uniform sampler2D tDiffuse; uniform float amount, sat, contrast; uniform vec3 shadow, high;
+    varying vec2 vUv;
+    const vec3 LUM = vec3(0.2126, 0.7152, 0.0722);
+    void main(){
+      vec4 src = texture2D(tDiffuse, vUv);
+      vec3 c = src.rgb;
+      float l = dot(c, LUM);
+      c = mix(vec3(l), c, sat);
+      c = (c - 0.5) * contrast + 0.5;
+      vec3 tint = mix(shadow, high, smoothstep(0.12, 0.75, l));
+      c *= tint / max(dot(tint, LUM), 1e-3);
+      gl_FragColor = vec4(mix(src.rgb, clamp(c, 0.0, 1.0), amount), src.a);
+    }`,
+});
+composer.addPass(gradePass);
+export const GRADE_DEFAULT = { sat: 1.1, contrast: 1.08, shadow: 0xedf7ff, high: 0xfff4e6 };
+export function setGrade(g = GRADE_DEFAULT){
+  const u = gradePass.uniforms;
+  u.sat.value = g.sat ?? GRADE_DEFAULT.sat; u.contrast.value = g.contrast ?? GRADE_DEFAULT.contrast;
+  if (g.shadow instanceof THREE.Color) u.shadow.value.copy(g.shadow); else u.shadow.value.setHex(g.shadow ?? GRADE_DEFAULT.shadow, THREE.LinearSRGBColorSpace);
+  if (g.high instanceof THREE.Color) u.high.value.copy(g.high); else u.high.value.setHex(g.high ?? GRADE_DEFAULT.high, THREE.LinearSRGBColorSpace);
+}
+setGrade();
+
+/* the menu stand draws its own little stage through this same composer: no AO (it would sample the game scene) and
+   no arena grade */
+let _standAO = false;
+export function standPost(on){
+  if (on){ _standAO = aoPass.enabled; aoPass.enabled = false; gradePass.uniforms.amount.value = 0; }
+  else { aoPass.enabled = _standAO; gradePass.uniforms.amount.value = 1; }
+}
 
 export const hemi = new THREE.HemisphereLight(0x8fb0d6, 0x231a16, 0.62);   // dimmer ambient → more contrast & mood
 scene.add(hemi);
@@ -73,5 +164,10 @@ addEventListener('resize', () => {
 export function compileLive(){
   const prev = renderer.getRenderTarget();
   renderer.setRenderTarget(composer.readBuffer);
-  try { renderer.compile(scene, camera); } finally { renderer.setRenderTarget(prev); }
+  try {
+    renderer.compile(scene, camera);
+    // the AO pass's own programs (its depth/normal override, the AO, denoise and blend shaders) would otherwise
+    // compile on the first frame it runs: run it once here into the composer's spare buffer
+    if (aoPass.enabled) aoPass.render(renderer, composer.writeBuffer, composer.readBuffer);
+  } finally { renderer.setRenderTarget(prev); }
 }
