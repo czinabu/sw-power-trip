@@ -393,6 +393,7 @@ function animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait){
       player.lastAtkEnd = G.gt;
       if (!sw.recoil) vis.rotation.y = 0;   // (a recoil ends partway round: the guard eases the body back square, no pop)
       player._swingDrop = 0;
+      if (G.hero !== 'mando' && sw.step === 2 && !sw.recoil && stance().finisherRecover) player.swingLock = Math.max(player.swingLock || 0, stance().finisherRecover);   // the heavy finisher hangs a beat (its guard break's cost)
       if (player.queuedAtk){ player.queuedAtk = false; tryAttack(); }   // buffered combo
     }
     return;

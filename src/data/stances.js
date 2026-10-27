@@ -20,6 +20,7 @@ export const STANCES = {
             dmg: 0.64, heavyDmg: 0.46, speed: 1.7, knock: 0.38, stamina: 6, lunge: 1.4, move: 1.25, accel: 1.7, twist: 0.4, bladeLen: 0.94,
             radiusMult: 1.45, forceRegen: 1.5, costMult: { push: 0.7, pull: 0.7 },
             comboGap: 1.25, fovKick: 6,
+            reach: { lungeMax: 3.9, range: 6.5 },   // ROLE: the lunge closes up to 3.9m (others 2.4) and finds foes out to 6.5m (others 5), enough to cross the 3.2m stalker ring to an officer behind it
             moveAtk: 1.5,         // PASSIVE: keeps most of its footwork mid-swing (every other form plants its feet) — kite while you cleave
             finisherArc: 1.1,     // the finisher cleaves ~10% wider — built for crowds
             backLineDmg: 1.6,     // ROLE: hunts the back line — officers, snipers, grenadiers and jet troopers take +60% (see backLineMul)
@@ -45,6 +46,7 @@ export const STANCES = {
             radiusMult: 0.8, postureMul: 1.5, forceRegen: 0.7, comboGap: 0.7, fovKick: -4,
             atkDR: 0.15,          // PASSIVE: armored commitment — soak 15% damage WHILE mid-swing
             finisherLunge: 1.6,   // the 3rd hit lunges harder, carrying the heavy blade through
+            finisherRecover: 0.12,   // COST of the ×1.5 guard break: the finisher hangs ~0.12s longer before you can act again
             finisherKnock: true,  // the finisher ALWAYS floors what it hits (brutes included)
             deflectScatter: 0.02, // LORE: Form V's Shien variant — redirected fire goes home to the shooter (rad)
             powerScale: 1.35, powerCostMul: 1.3,   // SYNERGY: Force powers hit with BRUTE scale (+35% radius/knock) but cost +30% Force

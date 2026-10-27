@@ -55,6 +55,7 @@ export const MOBILITY = {
       evadeIframes: 1.6,
       roll: { speed: 1.05, iframes: 1.0, cd: 1.0, stam: 0.7 },   // the acrobat rolls cheapest
       swingMove: 1.0,
+      dashSpeed: 1.2,     // the acrobat's dash carries ~20% farther, enough to cross the stalker ring
     },
     niman: {
       charges: 2, recharge: 1.0, dashCost: 1.0,

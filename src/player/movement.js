@@ -76,7 +76,7 @@ export function forceDash(){
   if (dir.lengthSq() < 0.01) dir.copy(fwd());
   dir.normalize();
   commitTo(dir.x, dir.z);
-  player.vel.addScaledVector(dir, A.speed);
+  player.vel.addScaledVector(dir, A.speed * (formMob().dashSpeed ?? 1));
   // the dash's body move is the form's (data/agility.js): Ataru's butterfly twist and tuck flips, Niman's spin
   // dodge, Djem So's driven slide. The flip only poses the body; the impulse and i-frames above do the work.
   const df = dir.dot(fwd()), drr = dir.dot(rightV());
