@@ -4,7 +4,7 @@
 // the Jump Attack's job); only the foe it sends flying can bowl over whoever it is knocked into.
 
 import { CFG } from '../../data/config.js';
-import { SWING_PATTERNS } from '../../data/stances.js';
+import { SWING_PATTERNS, backLineMul } from '../../data/stances.js';
 import { sfx, S } from '../../audio/sfx.js';
 import { V3, clamp, TMP } from '../../utils.js';
 import { burst } from '../../fx/particles.js';
@@ -102,7 +102,7 @@ function strike(pp, tgt){
   if (tgt && tgt === shared.boss){ damageBoss(dmg * st.heavyDmg); hit = true; }
   else if (tgt){
     if (isGuarding(tgt)) guardImpact(tgt, DUEL.posture.charge);   // the weight of the fall cracks a guard
-    damageEnemy(tgt, dmg * (tgt.t.heavy ? st.heavyDmg : 1), dir.clone(), knock, true);
+    damageEnemy(tgt, dmg * (tgt.t.heavy ? st.heavyDmg : 1) * backLineMul(st, tgt), dir.clone(), knock, true);
     if (!tgt.dead) flinchEnemy(tgt, dir, 0.7);   // rocked back, not floored: you still have to finish it
     // the foe goes flying the way the cut was travelling: anyone it crashes into goes down with it
     player.airCutFling = { e: tgt, t: AIR_CUT.fling, dir: dir.clone(), dmg: dmg * AIR_CUT.flingDmg, knock: knock * 0.5, hit: new Set([tgt]) };
