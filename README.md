@@ -98,7 +98,7 @@ Missions are data (`data/missions.js`: hold, sabotage, capture, escort, pursuit 
 
 **Survival mode** — unlocked after beating the campaign as both heroes. Endless escalating waves, 8 wave mutators, Warbringer mid-boss every 10 waves, arena rotation, repeatable power-ups, roguelite boon picks each wave
 
-**10 enemy types** — grunts, blaster troopers, staff duelists, Sith acolytes (saber duellists), brutes, jet troopers, shield sentinels, saboteur bombers, snipers (with laser-sight telegraph), and the Warbringer mid-boss with a leap-slam attack
+**10 enemy types** — grunts, blaster troopers, staff duelists, Sith acolytes (saber duellists), brutes, jet troopers, shield sentinels, saboteur bombers, snipers (with laser-sight telegraph), and the Warbringer mid-boss with a leap-slam attack and a posture bar (parries and heavy blows break it open; its held overhead is parry-or-dodge)
 
 **Combat depth:**
 - Directional saber swings tied to WASD movement

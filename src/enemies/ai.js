@@ -24,7 +24,7 @@ import { updateDirector, usesToken, dropToken, claimToken, rangedSlotFree, behin
 import { updateNav, navSteer, navClass, navClearance } from './nav.js';
 import { DUEL } from '../data/duel.js';
 import { diffTellMul } from '../data/difficulty.js';
-import { updateDuel, planAttack, quickStrike, windupPose, strikePose, maybeFeint, chainNext, updateSaberLock, drainBreath } from './duel.js';
+import { updateDuel, planAttack, quickStrike, windupPose, strikePose, maybeFeint, chainNext, updateSaberLock, drainBreath, addPosture } from './duel.js';
 import { TROOP_MELEE, TROOP_FIRE, GRENADE } from '../data/tactics.js';
 import { tickTactics, planTroopMelee, troopFeint, holdTremble, planShot, approachSteer, tryOrder, updateOrder, tryLunge, updateLungeWind,
   updateLunge, dropLungeLine } from './tactics.js';
@@ -151,7 +151,7 @@ export function updateEnemies(dt){
         // (a lancer circling in the ring waits its turn like the rest: it lunges with a token, or to close from afar)
         if (t.lancer && tgtPos && (e.token || dist > t.range + ENGAGE.ringPad + 1) && tryLunge(e, dt, dist, tgtPos)) break;
         // WARBRINGER mid-boss — periodically LEAPS and quakes the ground where you stand (dash/jump it)
-        if (e.warbringer && !e.converted && dist > 4.5 && dist < 17 && (e.leapCd = (e.leapCd || 3) - dt) <= 0){
+        if (e.warbringer && !e.converted && !e.winded && dist > 4.5 && dist < 17 && (e.leapCd = (e.leapCd || 3) - dt) <= 0){
           e.state = 'leapwind'; e.st = 0.55;
           e.leapTarget = { x: hp.x, z: hp.z }; e.leapFrom = { x: g.position.x, z: g.position.z };
           tellFx('dodge', hp, 5, 0.55);   // the shared dodge-only tell marks the landing zone
@@ -304,17 +304,19 @@ export function updateEnemies(dt){
           else if (!t.ranged && !e.converted && !onAlly && hero.down){ /* hold */ }
           // RANGED SLOTS: only a few troopers aim at once, so a firing line staggers its shots
           else if (t.ranged && !e.converted && !onAlly && !rangedSlotFree(t, hero)){ /* hold — sidestep and wait */ }
+          // the Warbringer out of breath can't swing: it stands blowing until it has recovered (duel.js)
+          else if (e.winded && !e.converted){ /* catching its breath */ }
           // MELEE WINDUP STAGGER: hostile (non-converted) melee foes share a cooldown so a crowd doesn't all coil &
           // swing at once — ranged/converted foes are unaffected (already standoff/ally-targeted, not a swarm problem).
           else if (t.ranged || e.converted || onAlly || G.gt - (G.lastMeleeWindupT ?? -9) >= MELEE_WINDUP_GAP){
             // a swing coiled BEHIND the camera gets a longer tell, so off-screen hits stay fair
             e.wu = t.windup * (!t.ranged && !e.converted && !onAlly && !remote && behindCamera(g.position) ? ENGAGE.rearWindup : 1) * (e.converted || onAlly ? 1 : diffTellMul());   // DIFFICULTY: longer tells on Padawan
-            e.state = 'windup'; e.st = e.wu; telegraphWindup(e);
+            e.state = 'windup'; e.st = e.wu; telegraphWindup(e); e.heldTell = false;
             // a duellist picks its line, and whether this one is a feint, a held strike or the start of a string; a plain
             // trooper may hold or feint (tactics.js); a line trooper plans a double-tap or a held aim
             e.troop = null; e.volley = false;
             if (onAlly) e.plan = null;   // a plain blow or a plain shot at a squadmate
-            else if (e.dp && !t.ranged && !e.converted) planAttack(e);
+            else if (e.dp && !e.dp.brace && !t.ranged && !e.converted) planAttack(e);   // (the Warbringer keeps the brute's held overhead: tactics.js)
             else { e.plan = null; if (t.ranged) planShot(e); else planTroopMelee(e); }
             if (!t.ranged && !e.converted && !onAlly) G.lastMeleeWindupT = G.gt;
           }
@@ -364,6 +366,8 @@ export function updateEnemies(dt){
           g.userData.weaponArm.rotation.z = coil * (heavy ? 0.9 : 0.6);
         }
         holdTremble(e, wk);   // a held swing shakes at the apex
+        // the Warbringer's overhead comes down unblockable: at the top of the hold the shared parry-or-dodge tell flares
+        if (e.dp && e.dp.brace && wk >= 1 && !e.heldTell){ e.heldTell = true; tellFx('parry', g.position, 3.6, 0.5); }
         // charging embers stream off the weapon near the apex
         if (coil > 0.6 && Math.random() < (heavy ? 0.5 : 0.32))
           burst(V3(g.position.x + tx*0.3, g.position.y + (heavy?3.0:2.3), g.position.z + tz*0.3), heavy ? 0xff5522 : t.eye, 1, 3, 4, 0.7);
@@ -416,6 +420,7 @@ export function updateEnemies(dt){
         if (!e.struck && k >= 0.5){
           e.struck = true;
           const thrust = !!(e.plan && e.plan.side === 'T');
+          const unblockable = thrust || !!(e.dp && e.dp.brace);   // a thrust, or the Warbringer's overhead
           // REACH — the blow lands only if the weapon really gets there: the lunge closes in (never into the body), then
           // the target has to be inside the weapon's reach. Step back out of a slow wind-up and it whiffs.
           const lunge = Math.min(thrust ? 1.4 : heavy ? 0.9 : 0.5, Math.max(0, dist - 1.2));
@@ -431,10 +436,11 @@ export function updateEnemies(dt){
               /* the partner's puppet: no damage here (co-op phase 2 sends the blow to their browser to parry or take) */
             } else {
               // a THRUST drives through a held guard: parry it or get out of the way
-              const res = hurtPlayer(t.dmg * enemyDmgScale() * (thrust ? DUEL.thrustDmg : 1), g.position, false, true, false, thrust ? { unblockable: true } : null);   // melee — blocked by high ground
+              const res = hurtPlayer(t.dmg * enemyDmgScale() * (thrust ? DUEL.thrustDmg : 1), g.position, false, true, false, unblockable ? { unblockable: true } : null);   // melee — blocked by high ground
               if (res === 'parried'){
                 // perfectly parried — the weapon is knocked wide and the foe STUMBLES, wide open
-                staggerEnemy(e, -tx, -tz);
+                // the Warbringer's posture takes the parry; a full bar breaks it open (duel.js), otherwise it reels as any brute does
+                if (!(e.dp && e.dp.brace && addPosture(e, DUEL.posture.parry, -tx, -tz))) staggerEnemy(e, -tx, -tz);
                 drainBreath(e, DUEL.breath.parried);
                 break;
               } else if (res === 'blocked'){

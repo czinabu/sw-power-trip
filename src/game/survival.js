@@ -15,6 +15,7 @@ import { shared, G, enemies, bolts, player } from '../state.js';
 import { playerPos, maxHp } from '../player/helpers.js';
 import { makeBossBar, spawnEnemy } from '../enemies/spawn.js';
 import { removeEnemy } from '../enemies/cleanup.js';
+import { initWarbringer } from '../enemies/duel.js';
 import { clearGrenades } from '../enemies/grenades.js';
 import { findClearSpawn, edgeSpawn } from '../world/collision.js';
 import { buildArena } from '../world/arena.js';
@@ -88,6 +89,7 @@ export function spawnChampion(){
   spawnEnemy('brute', edgeSpawn(0.82, 0.88, 1.8));   // the champion is big: find it a clear patch of the edge
   const e = enemies[enemies.length-1]; if (!e) return;
   e.champion = true; e.warbringer = true; e.leapCd = rand(3.5, 5.5);
+  initWarbringer(e);                                              // a posture bar and breath, and a longer held overhead (co-op: a taller bar)
   e.hp = Math.round(e.hp * 4.5);                                  // a wall of HP
   e.maxHp = e.hp;
   e.t = Object.assign({}, e.t, { dmg: e.t.dmg * 1.4, score: 16 });   // per-enemy copy: hits harder, pays big (don't mutate the shared type)

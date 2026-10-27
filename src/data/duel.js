@@ -36,6 +36,26 @@ export const DUEL_PROFILES = {
              stam: 130, parry: 0.7, elite: true },
 };
 
+/* THE WARBRINGER (survival's champion, game/survival.js spawnChampion; the sandbox and campaign mid-bosses call the
+   same function). A brute with a POSTURE bar instead of a guard: it never turns a blow, but a good parry or a heavy
+   blow wears the bar down, and a full bar BREAKS it, leaving it wide open for a long, punishable stagger.
+     posture   the bar at one hero; each extra hero in co-op adds `coop` of it again, so two heroes face 150 × 1.6
+     stam      its breath (DUEL.breath rules: a parried swing drains it, run dry it can't attack until it has recovered)
+     cut       a landed light cut builds this fraction of a duellist's cut strain; a finisher, kick, palm or charge builds
+               the full amount, so Djem So's finisher (stance postureMul 1.5) hits it hardest. A parry costs it DUEL.posture.parry
+     drain     breath a landed cut / finisher takes off it
+     open      seconds a broken posture leaves it staggered and open (damage × DUEL.open.dmg while it lasts)
+     swing     its held overhead, modelled on the brute's (TROOP_MELEE.brute): every swing is held at the top, longer than a
+               brute's, and comes down unblockable (the shared parry-or-dodge tell). The leap slam stays dodge-only. */
+export const WARBRINGER = {
+  posture: 150, coop: 0.6, stam: 120,
+  cut: 0.35, drain: { cut: 5, finisher: 16 },
+  open: 2.6,
+  swing: { hold: 1, holdT: [0.5, 0.8], feint: 0 },
+};
+// the duel profile it carries (enemies/duel.js initDuel): `brace` = no guard and no duellist's plan, just posture and breath
+export const WARBRINGER_PROFILE = { block: 0, brace: true, posture: WARBRINGER.posture, feint: 0, delay: 0, chain: 0, counter: 0, thrust: 0, dodge: 0, stam: WARBRINGER.stam };
+
 export const DUEL = {
   offLine: 0.22,          // a guard still turns this fraction of its block chance on the lines it ISN'T covering
   guardShift: [0.9, 1.8], // seconds a guard holds a line before shifting (it also shifts to cover a line it was just hit on)
