@@ -103,14 +103,14 @@ export function tryAttack(flow = false){
   // cinematic lunge toward nearest target in view — STRONG's finisher lunges harder; a RIPOSTE drives in hardest
   const lunge = ripNow ? 2.0 : ((step === 2 && st.finisherLunge) ? st.finisherLunge : st.lunge);
   const tgt = backStrike ? nearestEnemyInCone(CFG.player.comboRange, -0.35, true)
-                         : nearestEnemyInCone(CFG.player.comboRange, 0.6);
+                         : nearestEnemyInCone(st.reach?.range ?? CFG.player.comboRange, 0.6);
   if (tgt && !backStrike){
     TMP.subVectors(tgt.group.position, playerPos()); TMP.y = 0;
     const d = TMP.length();
     TMP.normalize();
     // NO aim assist — you aim the cut yourself. The lunge only closes a short gap toward a foe you're already
     // facing; anything farther you have to walk into range first (footwork is part of the fight).
-    if (d > 2.2) stepIntoCut(TMP, lunge * Math.min(d - 1.8, CFG.player.lungeMax) / 0.18);
+    if (d > 2.2) stepIntoCut(TMP, lunge * Math.min(d - 1.8, st.reach?.lungeMax ?? CFG.player.lungeMax) / 0.18);
   } else if (backStrike){
     stepIntoCut(fwd(), -4.5 * lunge);   // shove off the back foot, away from the threat
   } else {
