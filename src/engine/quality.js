@@ -1,19 +1,20 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
 // Graphics quality presets (cycle with P).
 
-import { renderer, composer, bloomPass, sun } from './renderer.js';
+import { renderer, composer, bloomPass, aoPass, setMSAA, sun } from './renderer.js';
 
 /* ============================================================
    GRAPHICS QUALITY — an escape valve for weaker machines. Cycle with 'P'
    (saved to localStorage). We only touch render-state levers that DON'T force
    shader recompiles: pixel ratio (the biggest lever), shadow-map resolution,
-   the bloom pass, and the CSS film grain. Shadows stay ON at every tier.
+   antialiasing (multisampling the composer's buffers), the ambient-occlusion and
+   bloom passes, and the CSS film grain. Shadows stay ON at every tier.
    ============================================================ */
 const QUALITY_LEVELS = ['low', 'medium', 'high'];
 const QUALITY = {
-  low:    { pixelRatio: 1,    shadowMap: 512,  bloom: false, grain: false },
-  medium: { pixelRatio: 1.5,  shadowMap: 1024, bloom: true,  grain: false },
-  high:   { pixelRatio: 2,    shadowMap: 2048, bloom: true,  grain: true  },
+  low:    { pixelRatio: 1,    shadowMap: 512,  msaa: 0, ao: false, bloom: false, grain: false },
+  medium: { pixelRatio: 1.5,  shadowMap: 1024, msaa: 4, ao: false, bloom: true,  grain: false },
+  high:   { pixelRatio: 2,    shadowMap: 2048, msaa: 4, ao: true,  bloom: true,  grain: true  },
 };
 let qualityIdx = QUALITY_LEVELS.indexOf(localStorage.getItem('jpt_quality'));
 if (qualityIdx < 0) qualityIdx = 2;   // default HIGH
@@ -25,6 +26,8 @@ function applyQuality(){
     if (sun.shadow.map){ sun.shadow.map.dispose(); sun.shadow.map = null; }   // rebuild at the new size
   }
   bloomPass.enabled = q.bloom;
+  aoPass.enabled = q.ao;
+  setMSAA(q.msaa);
   const grain = document.getElementById('grain');
   if (grain) grain.style.display = q.grain ? '' : 'none';
   renderer.setSize(innerWidth, innerHeight);   // pixel-ratio change needs a resize to take hold
