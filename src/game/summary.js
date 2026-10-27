@@ -7,11 +7,14 @@ import { BOON_BY_ID } from '../data/boons.js';
 import { showBanner } from '../ui/banners.js';
 import { icon } from '../ui/icons.js';
 import { overlay, survivalUnlocked, refreshSurvivalLock, setOverlayState } from '../ui/menus.js';
+import { closeReadout } from './readout.js';
+import { readoutSummaryHtml } from '../ui/readout-ui.js';
 
 /* ---------- END-OF-RUN SUMMARY + SCORE ---------- */
 export function endRun(won){
   const st = G.stats; if (!st || st._ended) return;   // compute once per end (cleared on re-entering play)
   st._ended = true;
+  closeReadout();
   const elapsed = Math.max(0, G.gt - (st.startGt || 0));
   const endless = !!G.endless;
   const waves = endless ? (G.endlessWave || 0) : clamp((G.waveTotal || 0) + 1, 0, 99);
@@ -50,7 +53,7 @@ function renderRunSummary(){
     '<div class="rs-score">SCORE <b>' + s.score.toLocaleString() + '</b>' +
       (s.newBest ? '<span class="rs-best new">★ NEW BEST</span>' : '<span class="rs-best">BEST ' + s.best.toLocaleString() + '</span>') + '</div>' +
     '<div class="rs-grid c' + (s.acc >= 0 ? 4 : 3) + '">' + grid + '</div>' +
-    boonHtml;
+    boonHtml + readoutSummaryHtml();
   el.style.display = 'block';
 }
 

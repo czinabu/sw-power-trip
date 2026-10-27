@@ -9,6 +9,7 @@ import { floater, screenFlash } from '../../fx/floaters.js';
 import { shared, G, enemies, keys, player } from '../../state.js';
 import { CFG } from '../../data/config.js';
 import { fwd, playerPos } from '../helpers.js';
+import { noteDefense } from '../../game/readout.js';
 import { damageEnemy, flinchEnemy, staggerEnemy } from '../../enemies/damage.js';
 import { duelDefend, guardImpact, isGuarding, lockKick } from '../../enemies/duel.js';
 import { bodyRadius } from '../jedi/bladehit.js';
@@ -164,6 +165,7 @@ export function mandoCatch(fromPos){
   floater(pp, 'CAUGHT! ⟲ TAKEDOWN', '#ffd28a');
   S.clash(cp, true); sfx(2600, 0.12, 'triangle', 0.04, 1800);
   if (G.stats) G.stats.parries++;
+  noteDefense('parries', fromPos);
 }
 
 /* ---------------- takedown: finish anything reeling or floored ---------------- */

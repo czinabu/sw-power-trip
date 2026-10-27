@@ -381,3 +381,12 @@ body.fovpreview #fovpill{background:rgba(1,4,10,.82)}
 .sv-del.warn{color:#ffb4a8;border-color:rgba(255,90,80,.6);width:auto;padding:0 8px;font:600 11px/1 var(--font-ui);letter-spacing:1.2px}
 .sv-note{margin:12px 0 0;font-size:13px;line-height:1.4;color:var(--ink-dim)}
 @media (max-width:520px){.sv-slot{flex-wrap:wrap}}
+
+/* ---------- run summary: the combat readout section (ui/readout-ui.js) ---------- */
+#runsummary .rs-readout{margin-top:18px;text-align:left}
+#runsummary .rs-readout .rs-bl{font-size:11px;letter-spacing:1.8px;color:var(--ink-dim);margin-bottom:8px;text-align:center}
+#runsummary .rs-readout .ro-tot{justify-content:center;font-size:12px}
+#runsummary .rs-readout .ro-bar{font-size:12px;background:var(--panel-solid);border-radius:var(--r-chip)}
+#runsummary .ro-tab{width:100%;margin-top:12px;border-collapse:collapse;font-size:12px;letter-spacing:.8px;font-variant-numeric:tabular-nums}
+#runsummary .ro-tab th{font-size:10px;letter-spacing:1.6px;color:var(--ink-dim);font-weight:500;text-align:left;padding:3px 6px}
+#runsummary .ro-tab td{padding:4px 6px;color:var(--ink-soft);border-top:1px solid var(--edge)}

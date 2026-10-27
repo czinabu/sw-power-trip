@@ -35,6 +35,7 @@ import { resetAirCut } from '../player/jedi/aerial.js';
 import { hideThrownSaber, stowHandSaber } from '../player/jedi/force.js';
 import { clearSquad } from '../allies/squad.js';
 import { clearDowned } from './revive.js';
+import { resetReadout, beginWave } from './readout.js';
 
 /* ============================================================
    LEVEL / WAVE FLOW
@@ -148,6 +149,7 @@ export function startLevel(idx, opts){
     player.skills = {};
     G.skillPoints = 0; G.skillSpent = 0;
     // RUN STATS — drive the end-of-run summary + score. Reset only on a fresh campaign (idx 0).
+    resetReadout();
     G.stats = { kills: 0, dmgTaken: 0, parries: 0, deflects: 0, perfectDodges: 0, flawless: 0, cleanWaves: 0, shotsFired: 0, shotsHit: 0, bestStreak: 0, bossKilled: false, startGt: G.gt, summary: null };
   }
   /* CHECKPOINT — a retry puts the run back where the level began: the same wave count, so the army isn't tougher
@@ -238,6 +240,7 @@ export function startWave(){
   }
   shared.levelPhase = 'fighting';
   G.waveHits = 0; G.waveDmg = 0;   // how cleanly this wave is fought (payWaveClear)
+  beginWave('L' + (G.levelIdx + 1) + ' · WAVE ' + (G.wave + 1));
   G.waveTotal++;   // cumulative wave count drives Mando ability unlocks
   showBanner('', 'WAVE ' + (G.wave+1) + ' / ' + L.waves.length, 1.5);
   MUSIC.waveSting();

@@ -14,6 +14,8 @@ import { MUTATORS } from '../data/mutators.js';
 import { nextStoreGoal } from '../game/progression.js';
 import { updateBoonStrip } from '../game/boons.js';
 import { renderThreats } from './threats.js';
+import { readoutLiveHtml } from './readout-ui.js';
+import { readoutOn } from '../game/readout.js';
 import { svgIcon, SLOT_ICON } from './icons.js';
 import { trainingProgress, trainingChecklist } from '../game/tutorial.js';
 import { missionChecklist } from '../game/mission.js';
@@ -160,6 +162,7 @@ export function updateHud(){
     setHtml($('waveinfo'), '<span class="wi-l">LEVEL ' + (G.levelIdx + 1) + ' · ' + place + '</span><span class="wi-w">' + wave + '</span>' +
       (shared.boss ? '' : hostiles));
   }
+  { const ro = $('readout'), on = !!G.sandbox && G.mode === 'play' && readoutOn(); ro.style.display = on ? 'block' : 'none'; if (on) setHtml(ro, readoutLiveHtml()); }
   renderChecklist(G.mode === 'play' && !G.sandbox ? (G.training ? trainingChecklist() : G.mission ? missionChecklist() : null) : null);
   if (G.hero !== 'mando'){   // holstered (4): LMB is a Force strike and RMB a ward instead of saber and block
     setText($('ab-atk').querySelector('.an'), player.holstered ? 'FORCE STRIKE' : 'SABER');

@@ -25,6 +25,7 @@ import { sweepHit, headPos } from './bodyshape.js';
 import { tutEvent } from '../game/tutor-bus.js';
 import { airGuardLost, airParryOk } from '../player/mobility.js';
 import { masteryXp } from '../game/progression.js';
+import { noteDefense } from '../game/readout.js';
 import { allySweep, hurtAlly, isFodder } from '../allies/squad.js';
 
 /* ============================================================
@@ -151,8 +152,8 @@ export function updateBolts(dt){
           G.slowmo = Math.min(G.slowmo, 0.4); G.slowmoT = Math.max(G.slowmoT, 0.12);
           spawnParryFlash(V3(b.mesh.position.x, b.mesh.position.y, b.mesh.position.z), 0xffd24a);
           screenFlash('radial-gradient(ellipse at center, rgba(255,230,150,.4), transparent 65%)', 0.7, 0.28);
-          S.parry(b.mesh.position); floater(pp, 'PARRY!', '#ffe27a'); if (G.stats) G.stats.parries++; masteryXp('boltParry');
-        } else { clashFlash(b.mesh.position.clone(), stance().blade, false); S.deflect(b.mesh.position); floater(pp, 'DEFLECT', '#7fd4ff'); if (G.stats) G.stats.deflects++; }
+          S.parry(b.mesh.position); floater(pp, 'PARRY!', '#ffe27a'); if (G.stats) G.stats.parries++; noteDefense('parries', null, { src: b.src }); masteryXp('boltParry');
+        } else { clashFlash(b.mesh.position.clone(), stance().blade, false); S.deflect(b.mesh.position); floater(pp, 'DEFLECT', '#7fd4ff'); if (G.stats) G.stats.deflects++; noteDefense('deflects', null, { src: b.src }); }
         tutEvent('deflect');
         addFocus(parried ? FOCUS.gainParry : FOCUS.gainDeflect);   // deflecting fire feeds the flow
       } else if (d < 2.5 && shielding){
@@ -167,7 +168,7 @@ export function updateBolts(dt){
         player.shieldFlash = 0.22;   // the disc flares on the catch (drawn in updatePlayer)
         clashFlash(b.mesh.position.clone(), 0x6fd0ff, false);
         G.shake = Math.max(G.shake, 0.12); G.hitstop = Math.max(G.hitstop, 0.02);
-        S.shieldHit(b.mesh.position); S.deflect(b.mesh.position); floater(pp, 'DEFLECT', '#7fd4ff'); if (G.stats) G.stats.deflects++;
+        S.shieldHit(b.mesh.position); S.deflect(b.mesh.position); floater(pp, 'DEFLECT', '#7fd4ff'); if (G.stats) G.stats.deflects++; noteDefense('deflects', null, { src: b.src });
         tutEvent('shieldReflect');
       } else if (d < 2.2 && blocking){
         // absorbed on the guard — costs stamina, no reflection
@@ -176,10 +177,10 @@ export function updateBolts(dt){
         player.stamDelay = CFG.player.stamDelay;
         spawnHitSpark(b.mesh.position.clone(), stance().blade, 0.8);
         G.shake = Math.max(G.shake, 0.12);
-        S.block(b.mesh.position); floater(pp, 'BLOCK', '#9cc8e8');
+        S.block(b.mesh.position); floater(pp, 'BLOCK', '#9cc8e8'); noteDefense('blocks', null, { src: b.src });
         kill = true;
       } else if (d < 1.2 && dy < 1.2 && !(player.slideT > 0 && b.mesh.position.y > pp.y + 0.8)){   // a slide ducks under fire
-        hurtPlayer(b.dmg, b.mesh.position); kill = true;
+        hurtPlayer(b.dmg, b.mesh.position, false, false, false, { src: b.src }); kill = true;
         boltImpact(b.mesh.position, b.mesh.material.color.getHex(), b.dir);
       }
       // a near miss tears past your ear
