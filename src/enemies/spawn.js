@@ -43,6 +43,7 @@ function maybeTip(typeName){
   const tip = TYPE_TIPS[typeName];
   if (tip && G.mode === 'play' && !G.training) showBanner(tip[0], tip[1], 3.0);   // in training the teacher explains it
 }
+let nextNid = 0;   // every foe's number, the same on both screens in co-op (net/foes.js)
 export function spawnEnemy(typeName, pos){
   const t = ENEMY_TYPES[typeName];
   const g = buildEnemyMesh(t);
@@ -50,7 +51,7 @@ export function spawnEnemy(typeName, pos){
   scene.add(g);
   const hp = Math.round(t.hp * enemyHpScale());
   const e = {
-    type: typeName, t, group: g, hp, maxHp: hp, state: 'spawn', st: 0.5,
+    nid: ++nextNid, type: typeName, t, group: g, hp, maxHp: hp, state: 'spawn', st: 0.5,
     vel: V3(0,0,0), flash: 0, hitCd: 0, dead: false,
     converted: false, convT: 0, struck: false, stumble: 0, burn: 0, flinch: 0,
     spd: t.speed * rand(0.88, 1.14),   // per-unit variance so crowds move organically

@@ -21,6 +21,7 @@ import { tutEvent } from '../game/tutor-bus.js';
 import { officerDown } from './tactics.js';
 import { hideIndicators } from './cleanup.js';
 import { SQUAD } from '../data/allies.js';
+import { queueHit } from '../net/run.js';
 
 /* opts.launch === false: a blow with no rocket behind it (the Mandalorian's fists, knee and blade). It never floors or
    throws a live foe (the caller staggers or shoves it), and a foe it kills crumples where it stands instead of flying. */
@@ -28,6 +29,15 @@ import { SQUAD } from '../data/allies.js';
    kill it makes pays SQUAD.killXp of the XP and feeds no streak, Focus, lifesteal or boon (data/allies.js). */
 export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick, opts){
   if (e.dead) return;
+  if (e.net){   // a foe the host owns (co-op): the blow goes to the host, which applies it; here only the spark and the feel
+    if (opts && opts.ally) return;
+    queueHit(e, dmg, knockDir, knockPow, isFinisher, tick);
+    if (dmg > 0 && !tick){
+      spawnHitSpark(V3(e.group.position.x, e.group.position.y + 1.3, e.group.position.z), e.t.eye, 0.8);
+      G.hitstop = Math.max(G.hitstop, 0.03); G.shake = Math.max(G.shake, 0.14);
+    }
+    return;
+  }
   const byAlly = !!(opts && opts.ally);
   if (dmg > 0 && !byAlly){
     player.lastStrikeT = G.gt;   // a blow landed keeps you in the fight (player/mobility.js)

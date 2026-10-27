@@ -28,6 +28,7 @@ import { openSkillTree } from '../ui/store-ui.js';
 import { showBanner } from '../ui/banners.js';
 import { squadSize, regroupSquad } from '../allies/squad.js';
 import { beginWave } from './readout.js';
+import { coopRun } from '../net/run.js';
 
 /* ============================================================
    SURVIVAL / ENDLESS MODE — escalating waves, mutators, milestone spikes, arena rotation, repeatable power-ups.
@@ -114,10 +115,16 @@ export function startEndless(){
   startLevel(0);                                   // full fresh setup (kit/build/stats) on the first arena (temple)
   G.endless = true; G.endlessWave = 0; G.arenaRot = 0; G.mut = null;
   G.eliteSurge = false; G.pendingChampion = false;
+  if (G.coopJoin){   // joining the host's run (net/foes.js): their arena, their foes; the host runs the waves
+    G.coopJoin = false; G.coopGuest = true;
+    if (coopRun.ar){ G.arenaRot = coopRun.ar; rotateEndlessArena(ENDLESS_ARENAS[coopRun.ar]); }
+    showBanner('CO-OP SURVIVAL', 'Fighting alongside the host.', 3.0);
+    return;
+  }
   showBanner('SURVIVAL', 'They will not stop coming. Neither will you.', 3.0);
 }
 // rebuild the arena in place at a milestone — clear the field, build, recentre the player (NO run reset)
-function rotateEndlessArena(L){
+export function rotateEndlessArena(L){
   for (const e of enemies) removeEnemy(e); enemies.length = 0;
   for (const b of bolts) scene.remove(b.mesh); bolts.length = 0;
   clearGrenades();
