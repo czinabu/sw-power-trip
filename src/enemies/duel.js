@@ -20,6 +20,7 @@ import { showBanner } from '../ui/banners.js';
 import { tacticsRamp } from './tactics.js';
 import { tutEvent } from '../game/tutor-bus.js';
 import { dropToken } from './director.js';
+import { tellFx } from '../fx/tells.js';
 
 const LINES = ['L', 'R', 'H'];
 const GUARDING = { chase: 1, recover: 1 };
@@ -238,13 +239,8 @@ export function planAttack(e, quick){
   e.wuBase = e.wu;
   e.wu += plan.hold; e.st = e.wu;
 }
-// a THRUST can't be stopped by a held guard: a white-hot tell, a sharp rising whine
-function thrustTell(e){
-  const g = e.group;
-  spawnGroundShock(g.position, 0xffffff, 2.6, 0.45, 0.8);
-  burst(V3(g.position.x, 1.8, g.position.z), 0xffffff, 8, 5, 3, 0.8);
-  sfx(1400, 0.22, 'sawtooth', 0.04, 2600);
-}
+// a THRUST can't be stopped by a held guard: the shared parry-or-dodge tell (fx/tells.js)
+function thrustTell(e){ tellFx('parry', e.group.position, 2.6); }
 // a quick strike out of turn order: the answer to a blocked cut, or a riposte after a dodge (it still needs a free turn: ai.js)
 export function quickStrike(e, wind){
   e.state = 'windup'; e.wu = wind; e.st = wind;

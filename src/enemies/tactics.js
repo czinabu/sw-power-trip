@@ -15,7 +15,8 @@ import { heroPosOf } from './targets.js';
 import { segBlockedBySolids } from '../world/collision.js';
 import { hurtPlayer } from '../player/damage.js';
 import { enemyDmgScale } from '../game/survival.js';
-import { staggerEnemy, telegraphWindup } from './damage.js';
+import { staggerEnemy } from './damage.js';
+import { TELLS, tellFx } from '../fx/tells.js';
 import { behindCamera } from './director.js';
 import { showBanner } from '../ui/banners.js';
 
@@ -192,7 +193,7 @@ export function officerDown(e){
 const lineGeo = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2).translate(0, 0, 0.5);   // 1×1, from its origin forward
 function lungeLine(e){
   if (e.lungeLine) return e.lungeLine;
-  const m = new THREE.Mesh(lineGeo, new THREE.MeshBasicMaterial({ color: e.t.eye, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
+  const m = new THREE.Mesh(lineGeo, new THREE.MeshBasicMaterial({ color: TELLS.parry.accent, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
   m.renderOrder = 4;
   scene.add(m); e.lungeLine = m;
   return m;
@@ -209,7 +210,7 @@ export function tryLunge(e, dt, dist, pp){
   if (n >= LUNGE.slots){ e.lungeCd = 0.5; return false; }
   e.state = 'lungewind'; e.st = LUNGE.tell;
   e.lungeDir = { x: 0, z: 1 }; e.lungeHit = false;
-  telegraphWindup(e);
+  tellFx('parry', g.position, 2.6);   // the shared parry-or-dodge tell
   if (!G.seenLunge){ G.seenLunge = true; if (G.mode === 'play' && !G.training) showBanner('LUNGE', 'The line on the ground is where the lancer strikes. Step off it as it locks, or parry the point.', 2.6); }
   return true;
 }
@@ -222,14 +223,14 @@ export function updateLungeWind(e, dt, pp){
   g.rotation.y = Math.atan2(e.lungeDir.x, e.lungeDir.z);
   g.rotation.x = -0.28 * Math.min(1, k * 1.6);   // sinks onto the back foot
   if (u.weaponArm){ u.weaponArm.rotation.x = dampToward(u.weaponArm.rotation.x, -0.2, dt, 12); u.weaponArm.rotation.z = dampToward(u.weaponArm.rotation.z, -0.15, dt, 12); }   // the pike drawn back level
-  u.bodyMat.emissive.setHex(0x7ad8ff); u.bodyMat.emissiveIntensity = 0.3 + k * 1.6;
+  u.bodyMat.emissive.setHex(TELLS.parry.accent); u.bodyMat.emissiveIntensity = 0.3 + k * 1.6;
   const m = lungeLine(e);
   m.visible = true;
   m.position.set(g.position.x, 0.06, g.position.z);
   m.rotation.y = g.rotation.y;
   m.scale.set(e.lungeLocked ? 0.7 : 0.45, 1, e.lungeLen);
   m.material.opacity = 0.15 + k * 0.55;
-  m.material.color.setHex(e.lungeLocked ? 0xffffff : e.t.eye);
+  m.material.color.setHex(e.lungeLocked ? TELLS.parry.color : TELLS.parry.accent);
   if (e.st > 0) return;
   e.state = 'lunge'; e.st = Math.min(0.6, e.lungeLen / LUNGE.speed); e.lungeLocked = false;
   S.whoosh(g.position, true);

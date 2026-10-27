@@ -11,6 +11,7 @@ import { burst } from '../fx/particles.js';
 import { screenFlash } from '../fx/floaters.js';
 import { flashLight } from '../fx/lights.js';
 import { spawnGroundShock } from '../fx/vfx.js';
+import { TELLS, tellSound } from '../fx/tells.js';
 import { shared, G, enemies, barrels, player } from '../state.js';
 import { playerPos } from '../player/helpers.js';
 import { hurtPlayer } from '../player/damage.js';
@@ -34,8 +35,8 @@ export function throwGrenade(e, from, at, friendly){
   ball.position.copy(from);
   scene.add(ball);
   // the landing mark goes down the moment it leaves the hand: a rim at the blast radius and a fill that grows with the fuse
-  const ring = new THREE.Mesh(ringGeo, markMat(friendly ? 0x66ccff : 0xff5a2a, 0.75));
-  const fill = new THREE.Mesh(fillGeo, markMat(friendly ? 0x66ccff : 0xff3a1a, 0.22));
+  const ring = new THREE.Mesh(ringGeo, markMat(friendly ? 0x66ccff : TELLS.area.color, 0.75));
+  const fill = new THREE.Mesh(fillGeo, markMat(friendly ? 0x66ccff : TELLS.area.color, 0.22));
   ring.scale.setScalar(R); fill.scale.setScalar(0.01);
   ring.position.set(at.x, 0.07, at.z); fill.position.set(at.x, 0.065, at.z);
   ring.renderOrder = fill.renderOrder = 4;
@@ -44,7 +45,7 @@ export function throwGrenade(e, from, at, friendly){
   const T = clamp(d / 16, GRENADE.flight[0], GRENADE.flight[1]);
   grenades.push({ ball, core, ring, fill, from: from.clone(), to: V3(at.x, 0.16, at.z), T, t: 0, fuse: e.t.fuse, fuseMax: e.t.fuse + T,
     R, dmg: e.t.dmg, friendly: !!friendly, landed: false, vel: null, beep: 0 });
-  sfx(320, 0.12, 'triangle', 0.05, 180);
+  if (friendly) sfx(320, 0.12, 'triangle', 0.05, 180); else tellSound('area');
 }
 export function clearGrenades(){
   for (const g of grenades) scene.remove(g.ball, g.ring, g.fill);
