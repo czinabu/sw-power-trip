@@ -29,6 +29,7 @@ import { tutEvent } from '../game/tutor-bus.js';
 import { mandoShielding } from './mando/weapons.js';
 import { MOBILITY, MANDO_MOBILITY } from '../data/mobility.js';
 import { refundCharge, airGuardLost, airParryOk, airDamageMul, airborneInCombat, knockOutOfAir } from './mobility.js';
+import { noteDamage, noteDefense } from '../game/readout.js';
 import { heroCanGoDown, downHero, hitDownedHero } from '../game/revive.js';
 
 const MELEE_REACH_UP = 1.7;   // a melee foe can't strike you if you're perched higher than this above their feet
@@ -59,6 +60,7 @@ export function perfectDodge(fromPos){
   floater(pp, 'PERFECT DODGE', '#9fe6ff');
   sfx(1400, 0.1, 'sine', 0.05, 700); sfx(300, 0.25, 'sine', 0.06, 150);
   if (G.stats) G.stats.perfectDodges = (G.stats.perfectDodges || 0) + 1;
+  noteDefense('dodges');
   masteryXp('perfectDodge');
   tutEvent('perfectDodge');
   return true;
@@ -156,6 +158,7 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
           const dr = MANDO.braceDR + (player.up.braceDR || 0);   // skill can push the soak higher
           dmg *= (1 - Math.min(0.88, dr));
           player.stam = Math.max(0, player.stam - 5 * player.up.blockStam);
+          noteDefense('blocks', fromPos, opts);
           player.stamDelay = CFG.player.stamDelay;
           // ENERGY SHIELD soak — a blue ripple across the disc + a metallic beskar ring underneath
           burst(cpp, 0x6fd0ff, 8, 9, 4, 0.8); burst(cpp, 0xcfe0ec, 5, 5, 3);
@@ -196,6 +199,7 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
         floater(pp, (player.cancelRiposte ? 'PARRY! ⟲ CRUSHING RIPOSTE' : 'PARRY! ⟲ RIPOSTE READY'), '#ffe27a');
         S.parry(fp);   // a bright ringing clash
         if (G.stats) G.stats.parries++;
+        noteDefense('parries', fromPos, opts);
         masteryXp('parry');
         addFocus(FOCUS.gainParry);   // a perfect parry is the biggest FOCUS spike
         tutEvent('parry');
@@ -213,6 +217,7 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
         G.shake = Math.max(G.shake, 0.15 * heavy);
         player.vel.addScaledVector(fwd(), -2.5 * heavy);   // the blow drives you back a step
         sfx(900, 0.07, 'square', 0.05, 500);
+        noteDefense('blocks', fromPos, opts);
         // a block is not a parry: some of a melee blow still gets through the guard
         if (melee && CFG.player.blockChip > 0) hurtPlayer(dmg * CFG.player.blockChip, null, true, false, true);
         return 'blocked';
@@ -232,6 +237,7 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
   dmg *= diffDmgMul();   // DIFFICULTY scales all incoming damage (enemies, boss, blasts)
   player.hp -= dmg;
   if (G.stats) G.stats.dmgTaken += dmg;
+  noteDamage(dmg, fromPos, opts, chip, silent);
   G.waveDmg = (G.waveDmg || 0) + dmg; if (!chip) G.waveHits = (G.waveHits || 0) + 1;   // a blocked blow's chip doesn't spoil a flawless wave
   player.lastHurt = G.gt;
   if (G.hero !== 'mando' && !chip) player.focus = (player.focus || 0) * FOCUS.hitLoss;   // FORCE FOCUS — a clean trade is broken when you're hit (not by block chip)

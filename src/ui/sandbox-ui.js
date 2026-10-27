@@ -7,6 +7,7 @@ import { G, shared } from '../state.js';
 import { SANDBOX_FOES, SANDBOX_COUNTS, SANDBOX_KIT, SANDBOX_MAPS } from '../data/sandbox.js';
 import { addSquadmate, dismissSquadmate, squadSize } from '../allies/squad.js';
 import { SQUAD } from '../data/allies.js';
+import { readoutOn, setReadoutOn, restartReadout } from '../game/readout.js';
 import { SB, sandboxSpawn, sandboxClear, sandboxHeal, setSandboxDummy, setSandboxKit, sandboxKitAll, kitAvailable, setSandboxMap } from '../game/sandbox.js';
 
 const panel = document.getElementById('sandbox');
@@ -33,7 +34,7 @@ function pill(id, on){ const el = $(id); el.classList.toggle('on', on); el.query
 function render(){
   $('sbmap').innerHTML = SANDBOX_MAPS.map(m => `<span data-map="${m.id}" class="${m.id === SB.map ? 'on' : ''}">${typeof m.nm === 'object' ? m.nm[G.hero] : m.nm}</span>`).join('');
   $('sbcount').innerHTML = SANDBOX_COUNTS.map(n => `<span data-n="${n}" class="${n === SB.count ? 'on' : ''}">×${n}</span>`).join('');
-  pill('sbelite', SB.elite); pill('sbdummy', SB.dummy); pill('sbgod', !!G.sandboxGod);
+  pill('sbelite', SB.elite); pill('sbdummy', SB.dummy); pill('sbgod', !!G.sandboxGod); pill('sbreadout', readoutOn());
   $('sbsquadn').textContent = squadSize() + ' / ' + SQUAD.max;
   $('sbfoes').innerHTML = SANDBOX_FOES.map(f => {
     const nm = typeof f.nm === 'object' ? f.nm[G.hero] : f.nm;
@@ -56,6 +57,8 @@ panel.addEventListener('click', (e) => {
   if (t.closest('#sbelite')){ SB.elite = !SB.elite; render(); return; }
   if (t.closest('#sbdummy')){ setSandboxDummy(!SB.dummy); render(); return; }
   if (t.closest('#sbgod')){ G.sandboxGod = !G.sandboxGod; render(); return; }
+  if (t.closest('#sbreadout')){ setReadoutOn(!readoutOn()); render(); return; }
+  if (t.closest('#sbroreset')){ restartReadout(); return; }
   if (t.closest('#sbsquadadd')){ addSquadmate(); render(); return; }
   if (t.closest('#sbsquaddrop')){ dismissSquadmate(); render(); return; }
   if (t.closest('#sbclear')){ sandboxClear(); return; }

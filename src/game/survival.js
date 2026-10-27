@@ -24,6 +24,7 @@ import { payWaveClear } from './progression.js';
 import { openSkillTree } from '../ui/store-ui.js';
 import { showBanner } from '../ui/banners.js';
 import { squadSize, regroupSquad } from '../allies/squad.js';
+import { beginWave } from './readout.js';
 
 /* ============================================================
    SURVIVAL / ENDLESS MODE — escalating waves, mutators, milestone spikes, arena rotation, repeatable power-ups.
@@ -140,6 +141,7 @@ export function startEndlessWave(){
   if (G.pendingChampion){ G.pendingChampion = false; spawnChampion(); }
   shared.levelPhase = 'fighting';
   G.waveHits = 0; G.waveDmg = 0;   // how cleanly this wave is fought (payWaveClear)
+  beginWave('WAVE ' + n);
   checkUnlocks(1600);   // survival earns the same auto-kit (stances, Force jump/pull, dual blasters, jetpack tiers) as waves climb
   const mut = G.mut ? MUTATORS.find(m => m.id === G.mut) : null;
   const head = milestone ? (n % 10 === 0 ? '◈ CHAMPION ◈' : '◈ ELITE SURGE ◈') : '';

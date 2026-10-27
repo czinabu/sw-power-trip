@@ -23,6 +23,7 @@ import { holstered } from './holster.js';
 import { updateDashCharges } from './mobility.js';
 import { updateJetCharges } from './mando/mobility.js';
 import { updateForceStrike } from './jedi/palm.js';
+import { noteStamina } from '../game/readout.js';
 
 // Per-frame player update. Each step below runs in this exact order every frame; the order matters
 // (e.g. movement feeds the jetpack, both feed gravity/landing, and the pose reads the landed state).
@@ -99,6 +100,7 @@ function updatePlayerMeters(dt, pp, st){
   // --- LOW STAMINA = DANGER. Run the bar dry and your guard SHATTERS: it drops, you can't
   //     block or parry, and you must recover before defending again. ---
   const stamFrac = player.stam / maxStam();
+  noteStamina(dt);
   if (player.stam <= 0.5 && !player.exhausted){
     player.exhausted = true;
     player.blockHeld = false; player.parryT = 0;

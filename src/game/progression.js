@@ -13,6 +13,7 @@ import { masterySet, masteryRank } from '../data/mastery.js';
 import { renderProgress } from '../ui/store-ui.js';
 import { MASTERY_XP } from '../data/difficulty.js';
 import { MANDO } from '../data/mando.js';
+import { endWave } from './readout.js';
 
 export function skillSet(){ return G.hero === 'mando' ? MANDO_SKILLS : SKILLS; }
 export function tierName(t){ return (G.hero === 'mando' ? TIER_NAME_MANDO : TIER_NAME)[t]; }
@@ -41,6 +42,7 @@ export function masteryXp(kind){
 }
 // WAVE CLEAR — the wave's XP, plus a bonus share of it when the wave was fought cleanly (no hit taken, or little)
 export function payWaveClear(clearXp){
+  endWave();   // the combat readout closes this wave's numbers
   gainXp(clearXp);
   const flawless = !(G.waveHits > 0), clean = !flawless && (G.waveDmg || 0) < maxHp() * MASTERY_XP.cleanHp;
   if (G.training || !(flawless || clean)) return;

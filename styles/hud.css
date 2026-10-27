@@ -316,3 +316,16 @@ body.sandbox #xpmeter,body.sandbox #xphud{display:none !important}   /* the sand
 #downed .dn-s{font-size:13px;letter-spacing:2px;color:var(--ink-soft);margin-top:6px}
 #downed .dn-bar{width:220px;height:5px;margin:8px auto 0;border-radius:3px;background:rgba(255,255,255,.14);overflow:hidden}
 #downed .dn-bar i{display:block;height:100%;background:#7bffae;box-shadow:0 0 8px rgba(120,255,170,.6)}
+
+/* ---------- combat readout: the sandbox's live box (ui/readout-ui.js) ---------- */
+#readout{position:fixed;top:60px;right:20px;width:250px;display:none;box-sizing:border-box;padding:10px 12px 9px;pointer-events:none;z-index:12;
+  border:1px solid var(--edge);border-radius:var(--r);background:rgba(6,16,30,.62);font:600 11px/1.3 var(--font-ui);letter-spacing:1.2px;color:var(--ink-soft)}
+.ro-h{display:flex;justify-content:space-between;font-size:11px;letter-spacing:2px;color:var(--ink-dim);margin-bottom:6px}
+.ro-tot{display:flex;flex-wrap:wrap;gap:3px 12px;font-size:10.5px;letter-spacing:1.4px;color:var(--ink-dim)}
+.ro-tot b{color:var(--ink);font-weight:700}
+.ro-bars{display:flex;flex-direction:column;gap:3px;margin-top:7px}
+.ro-bar{position:relative;display:flex;justify-content:space-between;padding:2px 6px;font-size:10.5px;letter-spacing:1.4px;overflow:hidden}
+.ro-bar i{position:absolute;left:0;top:0;bottom:0;background:rgba(255,106,58,.28);z-index:0}
+.ro-bar span,.ro-bar b{position:relative;z-index:1;color:var(--ink)}
+.ro-none,.ro-hint{font-size:10.5px;letter-spacing:1.4px;color:var(--ink-faint)}
+.ro-hint{margin-top:6px}
