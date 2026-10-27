@@ -68,6 +68,7 @@ function updatePlayerMeters(dt, pp, st){
   if (player.parryT > 0){ player.parryT -= dt; if (player.parryT <= 0) player.parryLockT = CFG.player.parryWhiffLock; }
   if (player.parryLockT > 0) player.parryLockT -= dt;
   if (player.landStagT > 0) player.landStagT -= dt;   // HARD LANDING recovery
+  if (player.gbT > 0) player.gbT -= dt;                // GUARD BREAK window (damage.js)
   if (player.flinchT > 0) player.flinchT -= dt;        // HIT REACTION recovery
   if (player.blockHeld) player.blockT += dt;
   // FORCE BARRIER bubble — track its life and animate the shimmering shell around the player

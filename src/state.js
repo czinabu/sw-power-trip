@@ -90,7 +90,7 @@ export const player = {
   atkT: 0, comboStep: 0, lastAtkEnd: -9, swing: null,
   dashT: 0, lastHurt: -9,
   dashCharges: null, dashRecharge: 0, dodgeKind: null,   // Force dash charges (player/mobility.js); null = full
-  stam: CFG.player.maxStam, stamDelay: 0, lastWinded: -9, exhausted: false, heartT: 0,
+  stam: CFG.player.maxStam, stamDelay: 0, lastWinded: -9, exhausted: false, gbT: 0, heartT: 0,
   blockHeld: false, blockT: 0, parryT: 0, riposteT: 0,
   castT: 0, castMax: 0.3, castKind: '', swingFlip: false,   // force-cast hand gesture + neutral swing alternator
   holstered: false, palmT: 0, palmMax: 0, palmStep: 0, palm: null, palmQueued: false, lastPalmEnd: -9,   // Jedi saber on the belt + the Force strike string (jedi/palm.js)

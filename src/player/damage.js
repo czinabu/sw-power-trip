@@ -15,6 +15,7 @@ import { flinchEnemy, staggerEnemy } from '../enemies/damage.js';
 import { FOCUS, addFocus } from './jedi/focus.js';
 import { deflectAnim, cancelSwing } from './jedi/combat.js';
 import { sparks, clashFlash } from '../fx/ink.js';
+import { TELLS, tellCss } from '../fx/tells.js';
 import { spawnHitSpark, spawnParryFlash, spawnGroundShock } from '../fx/vfx.js';
 import { updateBoonStrip } from '../game/boons.js';
 import { endRun } from '../game/summary.js';
@@ -65,6 +66,29 @@ export function perfectDodge(fromPos){
   masteryXp('perfectDodge');
   tutEvent('perfectDodge');
   return true;
+}
+
+/* GUARD BREAK — a heavy MELEE blow that finds the guard empty (no stamina) smashes it open: a short stagger, and for
+   CFG.player.guardBreak.window nothing guards, so the next hit lands in full. Bolts never do this; a held block
+   against them stays the cheap stamina cost. Same for the beskar brace and the darksaber. */
+function guardBreak(fromPos){
+  const GB = CFG.player.guardBreak, pp = playerPos();
+  player.gbT = GB.window;
+  player.blockHeld = false; player.parryT = 0; player.zoom = false;
+  player.flinchT = player.flinchMax = Math.max(player.flinchT || 0, GB.stagger * formWeight());   // a heavy form reels a little longer
+  player.flinchAt = G.gt; player.flinchHeavy = true;
+  cancelSwing();
+  TMP.subVectors(pp, fromPos); TMP.y = 0;
+  if (TMP.lengthSq() > 0.001){
+    player.flinchDir = { x: TMP.x / TMP.length(), z: TMP.z / TMP.length() };
+    player.vel.addScaledVector(TMP.normalize(), CFG.player.flinch.knock * 1.6);
+  }
+  const col = TELLS.dodge.color;
+  floater(pp, 'GUARD BROKEN', tellCss('dodge'));
+  spawnGroundShock(V3(pp.x, 0.1, pp.z), col, 2.2, 0.4, 0.8);
+  burst(V3(pp.x + fwd().x, 1.5, pp.z + fwd().z), col, 14, 8, 4, 0.8);
+  G.shake = Math.max(G.shake, 0.8); G.hitstop = Math.max(G.hitstop, 0.08);
+  sfx(68, 0.45, 'sawtooth', 0.2, 28); sfx(200, 0.25, 'square', 0.09, 60);
 }
 
 /* BLADE JAR — the breath a blade-on-blade contact costs. A crowd's blows can all land inside one swing, so contacts
@@ -127,6 +151,10 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
   if (G.gt < (player.reviveGuardT || 0)) return 'none';   // just got up: a moment's grace
   if (player.dashT > 0){ if (!silent) perfectDodge(fromPos); return 'none'; }
   const raw = dmg;
+  const open = player.gbT > 0;   // guard just broken: no soak, catch, block or parry until it passes
+  // an empty guard (dry, or already shattered by running dry) meets a heavy melee blow from the front
+  let broke = false;
+  const heavyMelee = !!(melee && fromPos && !silent && !chip && !pierce && !open && raw >= CFG.player.flinch.heavyDmg);
   // a cut in flight meets a melee strike from in front: CLASH (before any guard, since a swing can't be guarding)
   if (melee && fromPos && !silent && !(opts && opts.noClash) && player.swing && !player.swing.recoil && player.atkT > 0 && (G.hero !== 'mando' || player.weapon === 'darksaber')){
     const k = player.swing.t / player.swing.dur, C = CFG.player.clash;
@@ -143,12 +171,12 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
   // aggressive gunslinger stance with NO damage reduction. The DARKSABER skips this and uses the full lightsaber
   // block/parry path below instead (it guards & parries just like the Jedi medium stance).
   // MANDO — the VAMBRACE CATCH: a blow that lands just after E is turned on the beskar, and the attacker reels
-  if (G.hero === 'mando' && melee && fromPos && !silent && player.catchT > 0){
+  if (G.hero === 'mando' && melee && fromPos && !silent && !open && player.catchT > 0){
     TMP.subVectors(fromPos, playerPos()); TMP.y = 0;
     if (TMP.lengthSq() < 0.001 || TMP.normalize().dot(fwd()) > -0.2){ mandoCatch(fromPos); return 'parried'; }
   }
   if (G.hero === 'mando' && player.weapon !== 'darksaber'){
-    if (!silent && !pierce && mandoShielding() && fromPos){
+    if (!silent && !pierce && !open && mandoShielding() && fromPos){
       TMP.subVectors(fromPos, playerPos()); TMP.y = 0;
       if (TMP.lengthSq() < 0.001 || TMP.normalize().dot(fwd()) > -0.25){
         const pp = playerPos(), cpp = V3(pp.x + fwd().x*0.55, 1.5, pp.z + fwd().z*0.55);
@@ -171,13 +199,14 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
         } else {
           spawnHitSpark(cpp, 0x556070, 0.6);   // GUARD CRUSHED — dim spark, no soak, no flares
           sfx(180, 0.08, 'square', 0.05, 90);
+          if (heavyMelee){ guardBreak(fromPos); broke = true; }
         }
       }
     }
   }
   // defense: hold RMB to BLOCK (absorb only); a freshly-timed RMB CLICK opens the parry window (a blast can't be parried)
   // MID-AIR in a fight the guard can't hold: only Ataru keeps a timed parry up there (player/mobility.js)
-  else if (!silent && !(opts && opts.blast) && ((player.blockHeld && !airGuardLost()) || (player.parryT > 0 && airParryOk())) && fromPos){
+  else if (!silent && !open && !(opts && opts.blast) && ((player.blockHeld && !airGuardLost()) || (player.parryT > 0 && airParryOk())) && fromPos){
     TMP.subVectors(fromPos, playerPos()); TMP.y = 0;
     const guard = player.blockHeld && !airGuardLost();
     if (TMP.lengthSq() > 0.001 && TMP.normalize().dot(fwd()) > 0.1){
@@ -223,9 +252,18 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
         if (melee && CFG.player.blockChip > 0) hurtPlayer(dmg * CFG.player.blockChip, null, true, false, true);
         return 'blocked';
       }
-      else if (guard) dmg *= 0.5;   // guard crushed (out of stamina) — half damage bleeds through
+      else if (guard){
+        dmg *= 0.5;   // guard crushed (out of stamina) — half damage bleeds through
+        if (heavyMelee){ guardBreak(fromPos); broke = true; }
+      }
     }
   }
+  // already exhausted (the guard dropped when the bar ran dry): the same heavy blow from the front breaks it too
+  if (heavyMelee && !broke && player.exhausted){
+    TMP.subVectors(fromPos, playerPos()); TMP.y = 0;
+    if (TMP.lengthSq() < 0.001 || TMP.normalize().dot(fwd()) > 0.1){ guardBreak(fromPos); broke = true; }
+  }
+  if (open && !silent && !chip){ player.gbT = 0; }   // the next hit lands in full: the window closes on it
   dmg *= (1 - (player.up.dr || 0));   // UNSTOPPABLE damage reduction
   if (player.boon && player.boon.adrenal && player.hp < maxHp()*0.35) dmg *= 0.75;   // ADRENALINE boon — tougher when cornered
   if (player.atkT > 0 && G.hero !== 'mando' && stance().atkDR) dmg *= (1 - stance().atkDR);   // DJEM SO: armored commitment mid-swing
@@ -248,7 +286,7 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
   if (!silent && !chip && fromPos){
     const F = CFG.player.flinch, heavyHit = raw >= F.heavyDmg;
     const armored = player.atkT > 0 && G.hero !== 'mando' && stance().atkDR && !heavyHit;
-    if (!armored && G.gt - (player.flinchAt ?? -9) > F.immune){
+    if (!broke && !armored && G.gt - (player.flinchAt ?? -9) > F.immune){
       player.flinchT = player.flinchMax = melee ? (heavyHit ? F.heavy : F.light) : F.ranged;
       player.flinchAt = G.gt;
       // which way the blow drives the body (animation.js reels it that way, not always backwards)

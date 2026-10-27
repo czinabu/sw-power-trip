@@ -66,12 +66,13 @@ document.addEventListener('mousedown', (e) => {
     if (e.button === 2){
       if (mandoWeapon().twoHand) player.zoom = true;  // disruptor: raise the scope (only then is it a rifle)
       else if (player.weapon === 'darksaber'){
+        if (player.gbT > 0) return;   // guard broken: nothing guards for a beat
         if (shared.darkProj) return;   // the blade is out on the line: nothing in hand to guard with
         // DARKSABER guards & PARRIES like a lightsaber — RMB interrupts a swing at any point into the guard
         cancelSwing();
         player.blockHeld = true; player.blockT = 0;
         if (!(player.parryLockT > 0)) player.parryT = CFG.player.parryWindow + (stance().parryBonus || 0) + (player.up.parry || 0) + diffWindow();
-      } else player.blockHeld = true;                 // beskar brace — pure damage soak, no parry
+      } else if (!(player.gbT > 0)) player.blockHeld = true;   // beskar brace — pure damage soak, no parry
     }
     return;
   }
@@ -83,7 +84,7 @@ document.addEventListener('mousedown', (e) => {
     else if (!airCut()) tryAttack();   // in the air with the blade out: the AERIAL CUT, a dash at the foe ahead (jedi/aerial.js)
   }
   if (e.button === 2 && G.mode === 'play'){
-    if (player.exhausted){   // guard broken — can't defend until stamina recovers
+    if (player.exhausted || player.gbT > 0){   // guard broken — can't defend until stamina recovers
       if (G.gt - player.lastWinded > 0.5){ player.lastWinded = G.gt; floater(playerPos(), 'GUARD BROKEN', '#ff6a3a'); sfx(120, 0.12, 'square', 0.06, 70); }
     } else {
       const cancelled = cancelSwing();   // RMB interrupts a swing at any point — feint straight into the guard
