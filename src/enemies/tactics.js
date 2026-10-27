@@ -32,7 +32,7 @@ const roll = p => Math.random() < p * tacticsRamp();
 /* ---------------- trooper melee: held swings and feints (foes without a duel profile) ---------------- */
 // called as a plain melee foe commits to a wind-up (ai.js has set e.wu / e.st). Sets e.troop, or clears it.
 export function planTroopMelee(e){
-  const p = TROOP_MELEE[e.type];
+  const p = e.swing || TROOP_MELEE[e.type];   // (the Warbringer carries its own, longer hold: data/duel.js)
   e.troop = null;
   if (!p || e.converted) return;
   const tr = { hold: 0, feint: false };

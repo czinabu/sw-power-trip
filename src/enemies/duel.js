@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { CFG } from '../data/config.js';
 import { stamDelay } from '../player/stamina.js';
-import { DUEL, DUEL_PROFILES, GUARD_POSE, WIND } from '../data/duel.js';
+import { DUEL, DUEL_PROFILES, WARBRINGER, WARBRINGER_PROFILE, GUARD_POSE, WIND } from '../data/duel.js';
 import { scene, camera } from '../engine/renderer.js';
 import { sfx, S } from '../audio/sfx.js';
 import { V3, rand, clamp, TMP, dampToward } from '../utils.js';
@@ -22,6 +22,7 @@ import { tacticsRamp } from './tactics.js';
 import { tutEvent } from '../game/tutor-bus.js';
 import { dropToken } from './director.js';
 import { tellFx } from '../fx/tells.js';
+import { players } from '../player/players.js';
 
 const LINES = ['L', 'R', 'H'];
 const GUARDING = { chase: 1, recover: 1 };
@@ -69,8 +70,8 @@ export function cutLine(sw){
 }
 
 /* ---------------- setup ---------------- */
-export function initDuel(e){
-  const p = DUEL_PROFILES[e.type];
+export function initDuel(e, profile){
+  const p = profile || DUEL_PROFILES[e.type];
   if (!p) return;
   e.dp = p;
   e.posture = 0; e.postureAt = -9;
@@ -81,6 +82,12 @@ export function initDuel(e){
   e.lastSide = null;
   e.rhyN = 0; e.rhyAt = -9;   // your cutting rhythm at it (DUEL.rhythm)
   if (p.stam){ e.breathMax = e.breath = p.stam * skill(e); e.breathAt = -9; e.winded = false; }
+}
+// the Warbringer: posture and breath on a brute's body, and its swing held longer (data/duel.js WARBRINGER). Co-op
+// raises the bar: each extra hero adds WARBRINGER.coop of it again.
+export function initWarbringer(e){
+  initDuel(e, { ...WARBRINGER_PROFILE, posture: Math.round(WARBRINGER.posture * (1 + WARBRINGER.coop * (players.length - 1))) });
+  e.swing = WARBRINGER.swing;
 }
 const showsGuard = e => e.dp && e.dp.block >= 0.4;
 
@@ -109,7 +116,7 @@ export function updateDuel(e, dt, dist){
     g.position.x += e.dodgeX * DUEL.dodgeStep * dt; g.position.z += e.dodgeZ * DUEL.dodgeStep * dt;
     g.rotation.x = -0.25 * Math.max(0, e.dodgeT) / 0.3;
   }
-  const guarding = GUARDING[e.state] && dist < DUEL.guardRange && !e.converted;
+  const guarding = !p.brace && GUARDING[e.state] && dist < DUEL.guardRange && !e.converted;   // (a bracing foe holds no guard: no pose, no arc)
   // hold the weapon on the guarded line (the readable tell), back to the carry otherwise
   if (guarding && !(e.dodgeT > 0)) guardPose(e, dt);
   // the guard arc: a pale crescent on the covered side, brighter as you close in
@@ -127,15 +134,18 @@ export function updateDuel(e, dt, dist){
   }
   // posture bar over the head while the guard is under pressure, and its breath under it once it has spent some
   const spent = e.breath != null && e.breath < e.breathMax - 0.5;
-  if ((e.posture > 0.5 || spent) && !e.dead && dist < DUEL.guardRange * 2){
+  if ((e.posture > 0.5 || spent || p.brace) && !e.dead && (p.brace || dist < DUEL.guardRange * 2)){   // the Warbringer's bar is always up, like its health bar
     if (!e.postBar) makePostureBar(e);
     const b = e.postBar, k = clamp(e.posture / p.posture, 0, 1);
     b.visible = true;
-    b.position.set(g.position.x, g.position.y + 2.55 * (e.t.scale || 1), g.position.z);
+    // the Warbringer's bar hangs just under its health bar, a little wider so it reads from across the arena
+    if (p.brace) b.position.set(g.position.x, g.position.y + 2.7 * g.scale.x - 0.38, g.position.z);
+    else b.position.set(g.position.x, g.position.y + 2.55 * (e.t.scale || 1), g.position.z);
+    if (p.brace) b.scale.set(1.9, 1.9, 1);
     b.quaternion.copy(camera.quaternion);
     b.userData.fill.scale.x = Math.max(0.001, k);
     b.userData.fill.position.x = -(1 - k) * 0.55;
-    b.userData.fill.material.color.setHex(k > 0.75 ? 0xff6a3a : 0xffd24a);
+    b.userData.fill.material.color.setHex(e.state === 'stagger' && p.brace ? 0xffffff : k > 0.75 ? 0xff6a3a : 0xffd24a);   // broken: the bar flashes white, the opening to punish
     const br = b.userData.breath;
     br.visible = e.breath != null;
     if (br.visible){
@@ -290,6 +300,15 @@ export function duelDefend(e, line, kind, heavy, at){
   const R = DUEL.rhythm;
   e.rhyN = G.gt - e.rhyAt < R.gap ? e.rhyN + 1 : 1; e.rhyAt = G.gt;
   if ((efx * dx + efz * dz) / dl < 0.35) return null;   // a blow from the flank or behind always lands
+  // BRACING (the Warbringer): it turns nothing, the blow lands, but the strain builds: light cuts a little, a finisher,
+  // heavy punch or Djem So cut in full (the stance's own multiplier), and every blow takes a little breath
+  if (p.brace){
+    const P = DUEL.posture, W = WARBRINGER, light = kind === 'cut' || kind === 'punch';
+    const base = kind === 'finisher' ? P.finisher : kind === 'punchHeavy' ? P.punchHeavy : kind === 'punch' ? P.punch : P.cut;
+    drainBreath(e, kind === 'finisher' ? W.drain.finisher : W.drain.cut);
+    addPosture(e, base * (light ? W.cut : 1) * (G.hero !== 'mando' ? stance().postureMul || 1 : heavy ? P.heavyMul : 1), dx / dl, dz / dl);
+    return null;
+  }
   if (G.gt < (e.openUntil || 0)) return null;           // caught recovering from its own swing: the guard isn't up yet
   if (e.winded) return null;                             // out of breath: nothing left to guard with
   const m = diffMul() * skill(e);
@@ -360,9 +379,10 @@ export function addPosture(e, amt, awayX, awayZ){
   e.posture += amt; e.postureAt = G.gt;
   if (e.posture < e.dp.posture) return false;
   e.posture = 0; e.lineStreak = 0; e.counterQueued = false;
-  staggerEnemy(e, awayX, awayZ, 'GUARD BROKEN');
+  staggerEnemy(e, awayX, awayZ, e.dp.brace ? 'POSTURE BROKEN' : 'GUARD BROKEN');
   tutEvent('guardBreak', e);
   e.st += 0.3;   // a broken guard stays open a touch longer than a parried swing
+  if (e.dp.brace){ e.st = WARBRINGER.open; e.openUntil = G.gt + e.st; }   // the Warbringer's break: a long opening, every blow lands harder
   const g = e.group, cp = V3(g.position.x, g.position.y + 1.6, g.position.z);
   clashFlash(cp, 0xffd24a, true);
   sparks(cp, 0xffd24a, 16, 13, { life: 0.36 });
