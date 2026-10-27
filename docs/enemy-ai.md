@@ -59,7 +59,7 @@ Melee foes take turns, the way Arkham and Fallen Order fights work (`ENGAGE` in 
 - At most **two** melee foes hold an attack token at once (Padawan: one). Deeper waves and survival don't add more.
 - **Online co-op:** each foe picks one hero to go after (`src/enemies/targets.js`, tuning in `TARGET` in
   `src/data/coop.js`): the nearest, plus a penalty for every other foe already on that hero, so a crowd splits. It keeps
-  its pick through an attack and re-picks every second or two. Attack tokens and ranged slots are counted **per hero**,
+  its pick through an attack and re-picks every second or two. Attack tokens and ranged slots are counted **per hero** (two heroes: up to four melee foes; bosses, champions and revives scale in `SCALE`, `src/data/coop.js`),
   so each hero gets the same fight as solo. The flow field leads to this browser's hero, so a foe after the partner
   walks straight in and steers round cover. Solo there is one hero and none of this changes anything.
 - Everyone else stalks a ring `ringPad` beyond its reach, circling with its guard up, and never swings from there.

@@ -22,7 +22,7 @@ import { tacticsRamp } from './tactics.js';
 import { tutEvent } from '../game/tutor-bus.js';
 import { dropToken } from './director.js';
 import { tellFx } from '../fx/tells.js';
-import { players } from '../player/players.js';
+import { heroesHere } from '../player/players.js';
 
 const LINES = ['L', 'R', 'H'];
 const GUARDING = { chase: 1, recover: 1 };
@@ -86,7 +86,7 @@ export function initDuel(e, profile){
 // the Warbringer: posture and breath on a brute's body, and its swing held longer (data/duel.js WARBRINGER). Co-op
 // raises the bar: each extra hero adds WARBRINGER.coop of it again.
 export function initWarbringer(e){
-  initDuel(e, { ...WARBRINGER_PROFILE, posture: Math.round(WARBRINGER.posture * (1 + WARBRINGER.coop * (players.length - 1))) });
+  initDuel(e, { ...WARBRINGER_PROFILE, posture: Math.round(WARBRINGER.posture * (1 + WARBRINGER.coop * (heroesHere() - 1))) });
   e.swing = WARBRINGER.swing;
 }
 const showsGuard = e => e.dp && e.dp.block >= 0.4;

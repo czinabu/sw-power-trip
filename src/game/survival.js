@@ -13,6 +13,8 @@ import { burst } from '../fx/particles.js';
 import { floater } from '../fx/floaters.js';
 import { shared, G, enemies, bolts, player } from '../state.js';
 import { playerPos, maxHp } from '../player/helpers.js';
+import { SCALE, heroScale } from '../data/coop.js';
+import { heroesHere } from '../player/players.js';
 import { makeBossBar, spawnEnemy } from '../enemies/spawn.js';
 import { removeEnemy } from '../enemies/cleanup.js';
 import { initWarbringer } from '../enemies/duel.js';
@@ -90,7 +92,7 @@ export function spawnChampion(){
   const e = enemies[enemies.length-1]; if (!e) return;
   e.champion = true; e.warbringer = true; e.leapCd = rand(3.5, 5.5);
   initWarbringer(e);                                              // a posture bar and breath, and a longer held overhead (co-op: a taller bar)
-  e.hp = Math.round(e.hp * 4.5);                                  // a wall of HP
+  e.hp = Math.round(e.hp * 4.5 * heroScale(SCALE.bossHp, heroesHere()));   // a wall of HP (more with a partner)
   e.maxHp = e.hp;
   e.t = Object.assign({}, e.t, { dmg: e.t.dmg * 1.4, score: 16 });   // per-enemy copy: hits harder, pays big (don't mutate the shared type)
   e.group.scale.multiplyScalar(1.55);
