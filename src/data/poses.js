@@ -191,16 +191,19 @@ export const SWING_STYLE = {
    (so the cut hits what is in front of you), the blade can wheel (twirl: turns about the hand) while it coils, and the
    step drives further (travel × the cut's root motion, at least `reach` metres). Only grounded, non-finisher, non-riposte,
    non-back cuts spin, and any cancel (guard, Force, dash) ends it at once.
+   A spin is EARNED and PAID FOR: it only comes on a link struck in rhythm (the flow link that chains out of the last cut's
+   follow-through, never a mashed or opening cut), at most once per `cd` seconds, and it costs `stam` × the form's swing
+   stamina on top (no stamina to spare, no spin). The longer cut (`dur`) is the recovery it trades.
    `mid` is the second link of a string (combo step 1); `move` is a strafe cut (A / D) on any other link. A spin cut is
    `dur`× longer than a plain one: the turn has to fit before the strike, and a full turn in a plain cut's time reads as a snap. Regular grip wheels the blade; a reverse grip keeps it laid along
    the forearm, so it spins with the body only. */
 export const SWING_SPINS = {
-  ataru:  { mid: { turns: 1, twirl: 0, travel: 1.5, reach: 1.3, dur: 1.45 },                  // acrobatic: a full pirouette between cuts
+  ataru:  { mid: { turns: 1, twirl: 0, travel: 1.5, reach: 1.3, dur: 1.45, stam: 0.5, cd: 2.5 },                  // acrobatic: a full pirouette between cuts
             move: null },
-  niman:  { mid: { turns: 0, twirl: 1, travel: 1.15, reach: 0.8, dur: 1.25 },                // balanced: a wrist-twirl flourish, feet stay put
-            move: { turns: 1, twirl: 0, travel: 1.3, reach: 1.2, dur: 1.3 } },               // strafing cuts turn through
+  niman:  { mid: { turns: 0, twirl: 1, travel: 1.15, reach: 0.8, dur: 1.25, stam: 0.4, cd: 3 },                // balanced: a wrist-twirl flourish, feet stay put
+            move: { turns: 1, twirl: 0, travel: 1.3, reach: 1.2, dur: 1.3, stam: 0.6, cd: 3 } },               // strafing cuts turn through
   djemso: { mid: null,                                                                       // heavy: no flourish, but a strafing cut
-            move: { turns: 1, twirl: 0, travel: 1.5, reach: 1.5, dur: 1.2 } },              // wheels its weight round
+            move: { turns: 1, twirl: 0, travel: 1.5, reach: 1.5, dur: 1.2, stam: 0.5, cd: 4 } },              // wheels its weight round
 };
 
 /* ---------------- DEFLECT SPINS: turning a catch into a spin ----------------

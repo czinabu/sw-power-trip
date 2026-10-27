@@ -12,7 +12,7 @@ export const ROADMAP = [
   { title: 'Missions', status: 'done',
     items: ['Missions tab: pick any single mission', 'Hoth trench defence, Jakku salvage raid', 'Lothal escort: walk a droid out under fire'] },
   { title: 'Balance pass', status: 'done',
-    items: ['Campaign waves 2 and 3 eased: fewer bodies in the late waves'] },
+    items: ['Saber spins are earned: rhythm links only, on a cooldown, for extra stamina', 'Campaign waves 2 and 3 eased: fewer bodies in the late waves'] },
   { title: 'Menus', status: 'done',
     items: ['Main menu: play choices first, fits on one screen', 'How to Play: basics first, details on hover', 'Roadmap panel'] },
   { title: 'Save and load', status: 'done',
