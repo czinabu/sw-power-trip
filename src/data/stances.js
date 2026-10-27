@@ -22,32 +22,34 @@ export const STANCES = {
             comboGap: 1.25, fovKick: 6,
             moveAtk: 1.5,         // PASSIVE: keeps most of its footwork mid-swing (every other form plants its feet) — kite while you cleave
             finisherArc: 1.1,     // the finisher cleaves ~10% wider — built for crowds
+            backLineDmg: 1.6,     // ROLE: hunts the back line — officers, snipers, grenadiers and jet troopers take +60% (see backLineMul)
+            postureMul: 0.8,      // light cuts: each blocked cut puts 0.8× the usual strain on a guard
             deflectScatter: 0.1,  // LORE: Ataru is a duelling form with little answer to blaster fire — deflects spray (rad)
             castMul: 0.65,        // SYNERGY: snappy Force casts — the gesture fires ~35% faster
             gait: { amp: 1.0, lift: 1.3, bob: 0.45, lean: 1.25 },   // MOVEMENT: light, high-kneed, springy — a duelist on the balls of their feet
-            syn: 'CROWDS · snappy Force casts · keeps moving while attacking · WEAK vs armor' },
+            syn: 'BACK LINE · +60% vs officers, snipers, grenadiers, jet troopers · snappy Force casts · keeps moving · soft on guards · WEAK vs armor' },
   medium: { name: 'NIMAN — BALANCED', form: 'niman', formNo: 'VI', blade: 0x3aff8c,
             dmg: 1.04, heavyDmg: 0.99, speed: 0.92, knock: 0.85, stamina: 11, lunge: 1.15, move: 1.0, accel: 1.0, twist: 0.55, bladeLen: 1.0,
-            radiusMult: 1.0, cdMult: 0.65, parryBonus: 0.10, comboGap: 1.0, fovKick: 0,
+            radiusMult: 1.0, cdMult: 0.85, defCdMult: 0.5, postureMul: 1.0, parryBonus: 0.10, comboGap: 1.0, fovKick: 0,
             parryRefund: 16,      // PASSIVE: the duelist's form — a clean parry feeds extra Force back
             blockStamMul: 0.55,   // SYNERGY: economical guard — blocking/parrying drains far less stamina
             deflectScatter: 0.05, // LORE: Niman, the jack of all forms — deflects go back roughly down the line (rad)
             gait: { amp: 1.08, lift: 1.0, bob: 0.4, lean: 1.0 },   // MOVEMENT: smooth, balanced, even strides
-            syn: 'VERSATILE · −35% cooldowns · widest parry · cheap guard · parries refund +Force' },
+            syn: 'VERSATILE · −50% defence cooldowns (barrier, mend, repulse) · −15% others · widest parry · cheap guard · parries refund +Force' },
   strong: { name: 'DJEM SO — STRONG', form: 'djemso', formNo: 'V', blade: 0xb24bff,
             // HEAVY & momentum-driven, not slow-motion: still the slowest swing but it now flows; the big LUNGE
             // carries the blade through. High dmg, shreds armor, weak Force synergy (forceRegen < 1, no powerDmg).
             // clearly the SLOWEST swing (well under medium's 1.0) — heavy, deliberate, weighty — but the big LUNGE
             // and high damage make each committed stroke land hard, so it reads as power, not sluggishness.
             dmg: 2.2, heavyDmg: 1.8, speed: 0.64, knock: 2.2, stamina: 18, lunge: 1.4, move: 0.85, accel: 0.6, twist: 1.0, bladeLen: 1.14,
-            radiusMult: 0.8, forceRegen: 0.7, comboGap: 0.7, fovKick: -4,
+            radiusMult: 0.8, postureMul: 1.5, forceRegen: 0.7, comboGap: 0.7, fovKick: -4,
             atkDR: 0.15,          // PASSIVE: armored commitment — soak 15% damage WHILE mid-swing
             finisherLunge: 1.6,   // the 3rd hit lunges harder, carrying the heavy blade through
             finisherKnock: true,  // the finisher ALWAYS floors what it hits (brutes included)
             deflectScatter: 0.02, // LORE: Form V's Shien variant — redirected fire goes home to the shooter (rad)
             powerScale: 1.35, powerCostMul: 1.3,   // SYNERGY: Force powers hit with BRUTE scale (+35% radius/knock) but cost +30% Force
             gait: { amp: 1.2, lift: 0.78, bob: 0.85, lean: 0.8 },   // MOVEMENT: long, heavy, planted strides — a juggernaut's weighty stomp
-            syn: 'BRUTES & BOSS · 15% DR mid-swing · finisher floors · BIG but costly Force powers' },
+            syn: 'BRUTES & BOSS · breaks guards fast · 15% DR mid-swing · finisher floors · BIG but costly Force powers' },
   // THE DARKSABER — the Mando's signature melee (selected automatically when the darksaber is equipped, not a
   // switchable Jedi form). Heavy-like, but the highest damage in the game, a touch faster & more mobile than Djem So.
   darksaber: { name: 'DARKSABER', form: 'darksaber', blade: 0xc9a6ff,
@@ -59,6 +61,11 @@ export const STANCES = {
             deflectScatter: 0.12, // no Jedi training: a bolt off the darksaber goes back loosely (rad)
             syn: 'DARKSABER · devastating but SLOW & clumsy · huge stamina · tiny parry — time it, do not spam' },
 };
+// Ataru's role: bonus damage on the foes that hold the back line (officer, sniper, grenadier, jet trooper)
+export const backLineMul = (st, e) => (st.backLineDmg && e && e.t && (e.t.officer || e.t.sniper || e.t.grenade || e.t.fly)) ? st.backLineDmg : 1;
+// Force-power cooldown multiplier for a stance; Niman cuts DEFENSIVE powers harder than the rest
+const DEFENCE_POWERS = ['barrier', 'mend', 'repulse'];
+export const cdMul = (st, id) => (st.defCdMult && DEFENCE_POWERS.includes(id) ? st.defCdMult : st.cdMult) || 1;
 export const STANCE_ORDER = ['fast', 'medium', 'strong'];   // the darksaber is NOT here — it's auto-selected, never cycled
 
 /* directional swing patterns — right-arm driven.

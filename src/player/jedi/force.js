@@ -11,6 +11,7 @@ import { burst } from '../../fx/particles.js';
 import { floater, screenFlash } from '../../fx/floaters.js';
 import { shared, G, enemies, bolts, barrels, vfx, player } from '../../state.js';
 import { flashLight } from '../../fx/lights.js';
+import { cdMul } from '../../data/stances.js';
 import { forcePower, fwd, playerPos, stance, maxHp } from '../helpers.js';
 import { inReach, distToBody } from '../../enemies/bodyshape.js';
 import { ensureJudgeLines } from './judgement-fx.js';
@@ -336,7 +337,7 @@ export function forceRepulse(){
   const up = !!player.up.repulseUp;                        // the FINAL upgrade supercharges it
   const psc = st.powerScale || 1;                          // ...but erupt with BRUTE scale
   const radius = A.radius * (up ? 1.4 : 1) * psc, dmg = A.dmg * (up ? 1.9 : 1) * (player.up.dmg || 1) * forcePower(), knock = A.knock * (up ? 1.35 : 1) * psc * forcePower();
-  player.force -= cost; player.cds.repulse = A.cd * (st.cdMult || 1);
+  player.force -= cost; player.cds.repulse = A.cd * cdMul(st, 'repulse');
   castGesture('push', 0.34);
   const pp = playerPos(), col = stance().blade;
   spawnPlayerRing(pp.clone(), radius, col);
@@ -396,7 +397,7 @@ export function forceBarrier(){
   if (!G.unlocked.barrier || player.cds.barrier > 0 || player.force < cost || G.mode !== 'play') return;
   // the cooldown only starts once the bubble drops, so uptime can never reach 100% (Ataru's −35% cooldown plus
   // mastery used to let a 4.5s, 80% bubble come back every 4.6s — permanent near-immunity)
-  player.force -= cost; player.cds.barrier = A.cd * (stance().cdMult || 1) + A.dur;
+  player.force -= cost; player.cds.barrier = A.cd * cdMul(stance(), 'barrier') + A.dur;
   player.barrierT = A.dur;
   ensureBarrierMesh();
   castGesture('push', 0.3);
@@ -420,7 +421,7 @@ export function forceMend(){
   const cost = fcost(A.cost);
   if (!G.unlocked.mend || player.cds.mend > 0 || player.mendT > 0 || player.force < cost || G.mode !== 'play') return;
   if (player.hp >= maxHp()){ floater(playerPos(), 'UNHURT', '#7bffae'); return; }   // don't waste it at full health
-  player.force -= cost; player.cds.mend = A.cd * (stance().cdMult || 1);
+  player.force -= cost; player.cds.mend = A.cd * cdMul(stance(), 'mend');
   player.mendT = player.mendMax = MEND_CHANNEL;   // begin the channel — the heal lands when it completes
   const pp = playerPos();
   spawnGroundShock(pp.clone().setY(0.1), 0x6fd0ff, 2.4, 0.55, 0.5);   // a BLUE force ring blooms as you start
