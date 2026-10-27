@@ -108,7 +108,7 @@ export function startLevel(idx, opts){
   player.vis.rotation.set(0,0,0);
   player.vis.position.y = 0;
   player.stam = maxStam();
-  player.exhausted = false;
+  player.exhausted = false; player.gbT = 0;
   document.getElementById('stamvig').style.opacity = '0';
   player.blockHeld = false;
   player.parryT = 0; player.parryLockT = 0;

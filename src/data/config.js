@@ -20,6 +20,7 @@ export const CFG = {
     parryWindow: 0.16,               // a TIMED window — opens the instant you click RMB
     parryWhiffLock: 0.42,            // a window that catches nothing leaves the guard unable to parry for this long (no spamming RMB)
     blockChip: 0.22,                 // fraction of a BLOCKED melee blow that still gets through the guard (a parry takes none)
+    guardBreak: { stagger: 0.7, window: 1.3 },   // a heavy MELEE blow on an empty guard: reel this long, and for `window` s nothing guards, so the next hit lands in full
     blockHeavy: 20,                  // blows at least this strong cost proportionally more stamina to block
     riposteTime: 0.9,                // the counter must follow the parry promptly
     comboDamage: [30, 30, 56],      // damage per combo step (3rd is finisher) — toned down for a stiffer challenge
