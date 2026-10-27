@@ -18,12 +18,15 @@ import { playerPos } from '../helpers.js';
    (Mando keeps its own kit; Focus is Jedi-only.)
    ============================================================ */
 export const FOCUS = {
-  thresh: [34, 67, 98], dmg: [1, 1.12, 1.25, 1.42], regen: [1, 1.3, 1.6, 2.0], move: [1, 1.0, 1.05, 1.12],
+  thresh: [34, 67, 98], dmg: [1, 1.12, 1.2, 1.3], regen: [1, 1.3, 1.6, 2.0], move: [1, 1.0, 1.05, 1.12],
   decay: 16, ebb: 13, hitLoss: 0.55, gainHit: 4, gainFin: 7, gainDeflect: 7, gainParry: 16, gainKill: 6,
+  ripBonus: 0.8,   // UNLEASHED: a parry's riposte window runs this much longer, and the riposte cut costs no stamina
   names: ['', 'FOCUSED', 'ATTUNED', 'UNLEASHED'],
 };
 export function focusTier(){ const f = player.focus || 0; return f >= FOCUS.thresh[2] ? 3 : f >= FOCUS.thresh[1] ? 2 : f >= FOCUS.thresh[0] ? 1 : 0; }
 export function focusDmgMul(){ return G.hero === 'mando' ? 1 : FOCUS.dmg[focusTier()]; }
+export function freeRiposte(){ return G.hero !== 'mando' && focusTier() >= 3; }
+export function riposteWindow(base){ return freeRiposte() ? base + FOCUS.ripBonus : base; }
 export function focusRegenMul(){ return G.hero === 'mando' ? 1 : FOCUS.regen[focusTier()]; }
 export function focusMoveMul(){ return G.hero === 'mando' ? 1 : FOCUS.move[focusTier()]; }
 export function addFocus(n){ if (G.hero === 'mando' || G.mode !== 'play') return; player.focus = clamp((player.focus || 0) + n, 0, 100); player.focusHitT = 0; }

@@ -42,6 +42,8 @@ export const ROADMAP = [
     items: ['A posture bar and breath under its health bar: parries and Djem So finishers wear it down', 'A full bar breaks it open for a long punish; its held overhead is parry-or-dodge', 'Taller bar in co-op; same in survival, campaign and sandbox'] },
   { title: 'Co-op combat scaling', status: 'done',
     items: ['Melee turns and ranged slots count per hero: two heroes face up to four swinging foes', 'Bosses, champions and duel opponents gain 60% health per extra hero, as the Warbringer\'s posture bar does', 'One extra squad revive per wave for each extra hero; squads stay rank and file only', 'Solo is untouched, in every mode'] },
+  { title: 'Wave lull and Focus cap', status: 'done',
+    items: ['Long waves split in two with a 3.6s lull and a SECOND WAVE beat: Mustafar 4, Exegol 1 to 4, survival wave 15 on', 'Top Focus tier now +30% damage (was +42%); UNLEASHED parries get a longer riposte window and a free riposte cut', 'Jedi only; Mando, missions, sandbox and training unchanged'] },
   { title: 'Balance, round two', status: 'next',
     items: ['Survival scaling and mission pulses, from real playtest notes'] },
   { title: 'Co-op, fully', status: 'later',
