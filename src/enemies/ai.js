@@ -14,6 +14,7 @@ import { damageEnemy, hostileTargetFor, easeWeaponHome, telegraphWindup, stagger
 import { fireBolt } from './bolts.js';
 import { damageBoss } from '../boss/boss.js';
 import { spawnGroundShock } from '../fx/vfx.js';
+import { tellFx } from '../fx/tells.js';
 import { segBlockedBySolids, clampToArena, collideSolids } from '../world/collision.js';
 import { hurtPlayer } from '../player/damage.js';
 import { blockedOnBlade } from '../player/jedi/clash.js';
@@ -153,8 +154,7 @@ export function updateEnemies(dt){
         if (e.warbringer && !e.converted && dist > 4.5 && dist < 17 && (e.leapCd = (e.leapCd || 3) - dt) <= 0){
           e.state = 'leapwind'; e.st = 0.55;
           e.leapTarget = { x: hp.x, z: hp.z }; e.leapFrom = { x: g.position.x, z: g.position.z };
-          spawnGroundShock(V3(hp.x, 0.1, hp.z), 0xff5a3a, 5, 0.55, 0.5);   // a warning ring marks the landing zone
-          S.windup(g.position, true);
+          tellFx('dodge', hp, 5, 0.55);   // the shared dodge-only tell marks the landing zone
           break;
         }
         // PATHING — a grounded foe hunting the player checks its route a few times a second: straight in when the way
@@ -294,7 +294,7 @@ export function updateEnemies(dt){
         e.stepWant = (!t.fly && dist > t.range + ENGAGE.ringPad + 1.5) ? esp * dt : 0;
         // (grounded y comes from the surface height set after collision — so foes can WALK UP the dais; flyers hover)
         if (dist < t.range && !stalking){
-          if (t.bomber){ e.state = 'fuse'; e.st = t.fuse; sfx(880, 0.08, 'square', 0.05, 880); }   // light the fuse
+          if (t.bomber){ e.state = 'fuse'; e.st = t.fuse; tellFx('area', g.position, t.blastR, t.fuse); }   // light the fuse
           // COVER GATE: a hidden ranged ground trooper won't commit to a windup it can't land — it just keeps
           // peeking (cover-seeking movement above) until exposed or the anti-turtle valve kicks in.
           else if (t.ranged && !t.fly && !e.converted && !exposed && !t.grenade){ /* no clear shot — keep peeking, or flank for one */ }

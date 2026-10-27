@@ -18,6 +18,7 @@ import { fireBolt } from '../enemies/bolts.js';
 import { updateBossLightFX } from './light.js';
 import { buildBoss } from './mesh.js';
 import { spawnGroundShock } from '../fx/vfx.js';
+import { TELLS, tellFx } from '../fx/tells.js';
 import { clampToArena } from '../world/collision.js';
 import { hurtPlayer, perfectDodge } from '../player/damage.js';
 import { queueSpawn } from '../game/flow.js';
@@ -234,6 +235,7 @@ export function updateBoss(dt){
         showBanner('', md ? 'JET CHARGE — he closes the distance!' : 'DARK BLINK — he will not let you kite!', 1.3);
       } else if (shared.boss.phase >= 2 && shared.boss.pulseCd <= 0 && dist < 9){
         shared.boss.state = 'pulse'; shared.boss.st = 0.7;
+        tellFx('dodge', g.position, 7, 0.7);   // the nova is dodge-only: the shared red tell
         shared.boss.pulseCd = BOSS_CFG.pulse.cd;
       } else if (dist > BOSS_CFG.combo.range - 0.5){
         shared.boss.state = 'chase'; shared.boss.st = 4;
@@ -498,7 +500,7 @@ export function updateBoss(dt){
 /* expanding shockwave ring (boss pulse) — dash or jump to avoid */
 function spawnRing(pos, r0){
   const m = new THREE.Mesh(new THREE.TorusGeometry(1, 0.3, 8, 40),
-    new THREE.MeshBasicMaterial({ color: 0xbb33ff, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false }));
+    new THREE.MeshBasicMaterial({ color: TELLS.dodge.color, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false }));
   m.rotation.x = Math.PI/2; m.position.copy(pos); m.position.y = 0.4;
   scene.add(m);
   rings.push({ mesh: m, r: (r0 != null ? r0 : 1), center: pos.clone(), hitPlayer: false });   // r0<1 = a later wave in a NOVA stack

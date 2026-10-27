@@ -14,6 +14,7 @@ import { damageBoss } from '../boss/boss.js';
 import { hurtPlayer } from '../player/damage.js';
 import { toon, toonUnique, inkify, hullGeo, inkHull } from './ink.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { TELLS } from '../fx/tells.js';
 
 // the world theme's hazard colours (set by buildArena); null = the original look
 let hzPal = null;
@@ -57,7 +58,7 @@ export function updateVents(dt){
     v.cycle = (v.cycle + dt) % 3.0;
     const active = v.cycle > 2.0;          // 1s active per 3s cycle
     const warn = v.cycle > 1.5 && !active;
-    v.core.material.color.setHex(active ? v.cols.active : warn ? 0xddaa22 : v.cols.idle);
+    v.core.material.color.setHex(active ? v.cols.active : warn ? TELLS.area.color : v.cols.idle);
     if (active){
       if (Math.random() < 0.4) burst(V3(v.group.position.x + rand(-1.5,1.5), 0.3, v.group.position.z + rand(-1.5,1.5)), v.cols.active, 1, 2, 9, 0.8);
       const pp = playerPos();
@@ -154,7 +155,7 @@ export function updateHazardZones(dt){
     if (active){
       if (Math.random() < dt*7) burst(V3(hz.cx + rand(-1,1)*spread, 0.3, hz.cz + rand(-1,1)*spread), hz.color, 1, 2.5, 8, 0.7);
     } else if (warn && Math.random() < dt*2.5){
-      burst(V3(hz.cx + rand(-1,1)*spread*0.7, 0.15, hz.cz + rand(-1,1)*spread*0.7), 0xddaa22, 1, 1.2, 4, 0.4);
+      burst(V3(hz.cx + rand(-1,1)*spread*0.7, 0.15, hz.cz + rand(-1,1)*spread*0.7), TELLS.area.color, 1, 1.2, 4, 0.4);
     }
     if (!active) continue;
     if (hazardContains(hz, pp.x, pp.z) && pp.y < 1.6) hurtPlayer(hz.dmg*dt + 0.001, V3(hz.cx, 0, hz.cz), true);

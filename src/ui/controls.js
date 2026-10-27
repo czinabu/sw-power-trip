@@ -107,6 +107,8 @@ const TIPS = {
   ],
 };
 
+import { TELLS, tellCss } from '../fx/tells.js';
+
 let showAll = false;
 export function toggleControlsDetail(hero){ showAll = !showAll; renderControls(hero); }
 function keycaps(keys){
@@ -123,6 +125,8 @@ export function renderControls(hero){
     html += '</div>';
   }
   html += '<div class="cg wide adv"><h4>GOOD TO KNOW</h4><ul class="tips">' + TIPS[hero].map(t => '<li>' + t + '</li>').join('') + '</ul></div>';
+  html += '<div class="cg wide"><h4>ATTACK TELLS</h4><ul class="tells">' + Object.keys(TELLS).map(k =>
+    '<li><i style="background:' + tellCss(k) + '"></i><b>' + TELLS[k].name + '</b><span>' + TELLS[k].note + '</span></li>').join('') + '</ul></div>';
   el.innerHTML = html;
   el.classList.toggle('all', showAll);
   const more = document.getElementById('howtomore');

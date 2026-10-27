@@ -390,3 +390,11 @@ body.fovpreview #fovpill{background:rgba(1,4,10,.82)}
 #runsummary .ro-tab{width:100%;margin-top:12px;border-collapse:collapse;font-size:12px;letter-spacing:.8px;font-variant-numeric:tabular-nums}
 #runsummary .ro-tab th{font-size:10px;letter-spacing:1.6px;color:var(--ink-dim);font-weight:500;text-align:left;padding:3px 6px}
 #runsummary .ro-tab td{padding:4px 6px;color:var(--ink-soft);border-top:1px solid var(--edge)}
+
+/* How to Play: the attack-tell legend (colours come from fx/tells.js) */
+.ctl .tells{display:grid;grid-template-columns:repeat(3,1fr);gap:8px 22px;margin:0;padding:0;list-style:none}
+.ctl .tells li{display:grid;grid-template-columns:14px 1fr;gap:2px 10px;align-items:center;font-size:13px;color:var(--ink-dim)}
+.ctl .tells i{width:12px;height:12px;border-radius:50%;box-shadow:0 0 8px currentColor}
+.ctl .tells b{color:var(--ink);letter-spacing:1.5px;font-size:12px}
+.ctl .tells span{grid-column:2}
+@media (max-width:720px){.ctl .tells{grid-template-columns:1fr}}
