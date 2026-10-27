@@ -134,7 +134,7 @@ export function updateHud(){
   const L = LEVELS[G.levelIdx];
   let alive = 0;
   for (const e of enemies) if (!e.dead && !e.converted) alive++;
-  const total = alive + G.spawnQueue.length;
+  const total = alive + G.spawnQueue.filter(s => !s.barrier).length;
   // run progress: where you are · which wave · what's left
   const hostiles = total > 0 ? '<span class="wi-h">' + total + ' HOSTILE' + (total === 1 ? '' : 'S') + ' REMAIN</span>' : '';
   document.body.classList.toggle('training', !!G.training);

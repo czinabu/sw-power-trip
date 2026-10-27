@@ -13,7 +13,7 @@ import { shared, G, enemies, barrels, keys, player } from '../../state.js';
 import { fwd, playerPos, stance } from '../helpers.js';
 import { damageEnemy, flinchEnemy, nearestEnemyInCone, staggerEnemy, interruptEnemy } from '../../enemies/damage.js';
 import { damageBoss } from '../../boss/boss.js';
-import { FOCUS, focusTier, focusDmgMul, addFocus } from './focus.js';
+import { FOCUS, focusTier, focusDmgMul, addFocus, freeRiposte } from './focus.js';
 import { spawnHitSpark, spawnGroundShock } from '../../fx/vfx.js';
 import { inkSprite, sparks, clashFlash } from '../../fx/ink.js';
 import { scorchGround } from '../../fx/scorch.js';
@@ -54,7 +54,7 @@ export function tryAttack(flow = false){
   const step = (G.gt - player.lastAtkEnd < 0.9 * (st.comboGap || 1)) ? (player.comboStep + 1) % 3 : 0;
   // both the Jedi saber and the Mando DARKSABER spend stamina per swing (medium-high for the heavy darksaber)
   if (G.hero !== 'mando' || player.weapon === 'darksaber'){
-    const cost = st.stamina * (step === 2 ? 1.4 : 1);
+    const cost = (player.riposteT > 0 && freeRiposte()) ? 0 : st.stamina * (step === 2 ? 1.4 : 1);   // UNLEASHED: the riposte is free
     if (player.stam < cost){
       if (G.gt - player.lastWinded > 0.6){ player.lastWinded = G.gt; floater(playerPos(), 'WINDED', '#ffaa66'); }
       return;
