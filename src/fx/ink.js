@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { scene, camera } from '../engine/renderer.js';
 import { rand } from '../utils.js';
 import { acquireParticle } from './particles.js';
+import { scorchGround } from './scorch.js';
 import { G, player } from '../state.js';
 
 /* ============================================================
@@ -266,6 +267,7 @@ export function explosion(pos, radius, big = false){
   groundRing(pos, 0xff7a2a, radius + 4, 0.55 * (big ? 1.4 : 1), 0.7, { delay: 0.04 });
   sparks(pos, 0xffd06a, big ? 22 : 14, big ? 22 : 17, { life: 0.5, up: 0.6, size: 0.7 });
   sparks(pos, 0xff8a2a, big ? 12 : 8, 12, { life: 0.4, up: 0.5, size: 0.6 });
+  scorchGround(pos, radius * (big ? 1.25 : 1.1));   // the burn it leaves (fx/scorch.js)
 }
 
 /* RISING MOTES — a column of small glints drifting up (healing, channelling) */

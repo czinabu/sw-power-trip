@@ -32,6 +32,43 @@ export function toon(color, o = {}){
   return m;
 }
 
+/* the arena GROUND: the same cel bands, plus two things that stop a 9 m painted tile from reading as wallpaper:
+   broad light/dark patches tied to world position (tens of metres across), and, on organic ground (sand, snow,
+   grass…, o.mix), a second copy of the tile, turned and rescaled, that takes over in patches so the repeat breaks
+   up. Laid-out floors (flagstones, deck plates, boards) keep their grid and only get the patches. */
+const groundCache = new Map();
+export function toonGround(color, o = {}){
+  const id = color + '|' + (o.map ? o.map.uuid : '') + '|' + (o.mix ? 1 : 0) + '|' + (o.macro ?? 0.08);
+  if (groundCache.has(id)) return groundCache.get(id);
+  const m = new THREE.MeshToonMaterial({ color, gradientMap: ramp() });
+  if (o.map) m.map = o.map;
+  const macro = (o.macro ?? 0.08).toFixed(3), mix = o.mix && o.map;
+  m.onBeforeCompile = sh => {
+    sh.vertexShader = 'varying vec3 vGWorld;\n' + sh.vertexShader
+      .replace('#include <project_vertex>', '#include <project_vertex>\n  vGWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+    sh.fragmentShader = `varying vec3 vGWorld;
+      float gHash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+      float gNoise(vec2 p){
+        vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
+        return mix(mix(gHash(i), gHash(i + vec2(1.0, 0.0)), f.x), mix(gHash(i + vec2(0.0, 1.0)), gHash(i + vec2(1.0, 1.0)), f.x), f.y);
+      }
+      ` + sh.fragmentShader.replace('#include <map_fragment>', `
+      #ifdef USE_MAP
+        vec4 gTex = texture2D(map, vMapUv);
+        ${mix ? `
+        vec2 gUvB = mat2(0.8, -0.6, 0.6, 0.8) * vMapUv * 0.73 + vec2(0.37, 0.71);
+        float gSel = smoothstep(0.46, 0.54, gNoise(vGWorld.xz * 0.06 + 3.1));
+        gTex = mix(gTex, texture2D(map, gUvB), gSel);` : ''}
+        diffuseColor *= gTex;
+      #endif
+      float gMac = gNoise(vGWorld.xz * 0.025) * 0.65 + gNoise(vGWorld.xz * 0.08 + 7.0) * 0.35;
+      diffuseColor.rgb *= 1.0 + (gMac - 0.5) * 2.0 * ${macro};`);
+  };
+  m.customProgramCacheKey = () => 'toon-ground' + (mix ? 'm' : '') + macro;
+  groundCache.set(id, m);
+  return m;
+}
+
 /* a toon material of its own (not cached): for things the game recolours or flashes per object (barrels) */
 export function toonUnique(color, o = {}){
   const m = new THREE.MeshToonMaterial({ color, gradientMap: ramp() });

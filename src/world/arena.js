@@ -11,7 +11,7 @@ import { buildAmbient } from '../fx/ambient.js';
 import { themeFor } from '../data/worlds.js';
 import { paintSky, paintFloor } from './paint.js';
 import { buildBackdrop } from './backdrop.js';
-import { bakeArena, toon } from './ink.js';
+import { bakeArena, toon, toonGround } from './ink.js';
 import { resetCamBlockers } from './camblock.js';
 import { applyAtmosphere, clearAtmosphere } from './atmosphere.js';
 import { buildTempleArena } from './arenas/temple.js';
@@ -27,6 +27,8 @@ import { buildGrasslandArena } from './arenas/grassland.js';
 import { buildIcefrontArena } from './arenas/icefront.js';
 import { buildGraveyardArena } from './arenas/graveyard.js';
 import { buildNav } from '../enemies/nav.js';
+import { clearScorch } from '../fx/scorch.js';
+import { buildAir, clearAir } from './air.js';
 
 /* ============================================================
    ARENA
@@ -40,6 +42,8 @@ export const arenaBuilt = [];   // callbacks run when a build finishes (engine/p
 scene.add(shared.arenaGroup);
 
 export function buildArena(L){
+  clearScorch();   // last arena's burn marks
+  clearAir();
   scene.remove(shared.arenaGroup);
   disposeArena(shared.arenaGroup);
   shared.arenaGroup = new THREE.Group();
@@ -216,6 +220,7 @@ function disposeArena(g){
 
 /* a themed world: painted sky, lights + fog (atmosphere.js), painted floor, an outer ground that runs out to the
    horizon, and the backdrop landmarks (baked here with a thicker outline so they read at distance) */
+const ORGANIC = new Set(['sand', 'snow', 'ice', 'grass', 'ash', 'basalt']);   // ground without a laid-out grid: its tile can be turned to break the repeat
 function buildWorld(L, T){
   const lt = T.light, sunSpec = T.sky.sun && { ...T.sky.sun, az: T.sky.sun.az ?? Math.atan2(lt.dir[2], lt.dir[0]) };
   const tx = painted(T, () => ({ sky: paintSky({ ...T.sky, sun: sunSpec }), floor: paintFloor(T.floor) }));
@@ -227,14 +232,16 @@ function buildWorld(L, T){
   sky.userData.noBake = true;
   shared.arenaGroup.add(sky);
   applyAtmosphere(T, L, sky);
+  const sunDir = sunSpec ? new THREE.Vector3(Math.cos(sunSpec.az) * Math.cos(sunSpec.el), Math.sin(sunSpec.el), Math.sin(sunSpec.az) * Math.cos(sunSpec.el)) : null;
+  buildAir(T, L, sky, sunDir);   // drifting clouds, ground mist, light shafts (world/air.js)
 
   const floorTex = tx.floor;
   floorTex.repeat.set(W/9, D/9);
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(W, D, 8, long ? 40 : 8), toon(0xffffff, { map: floorTex }));
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(W, D, 8, long ? 40 : 8), toonGround(0xffffff, { map: floorTex, mix: ORGANIC.has(T.floor.kind) }));
   floor.rotation.x = -Math.PI/2; floor.receiveShadow = true; floor.userData.noBake = true;
   shared.arenaGroup.add(floor);
   // the ground past the edge: a plain ring (no outline), a hair lower so the floor always wins where they overlap
-  const outer = new THREE.Mesh(new THREE.RingGeometry(W*0.5, Math.max(W, D)*(roam && !long ? 1.6 : 1.2), 48, 1), toon(T.outer ?? T.floor.base));
+  const outer = new THREE.Mesh(new THREE.RingGeometry(W*0.5, Math.max(W, D)*(roam && !long ? 1.6 : 1.2), 48, 1), toonGround(T.outer ?? T.floor.base, { macro: 0.1 }));
   outer.rotation.x = -Math.PI/2; outer.position.y = -0.04; outer.receiveShadow = true; outer.userData.noBake = true;
   shared.arenaGroup.add(outer);
   // a dark ink line marks the playable edge (the same square the movement clamp uses; a long arena is walled in instead)

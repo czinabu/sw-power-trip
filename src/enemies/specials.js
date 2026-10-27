@@ -14,6 +14,7 @@ import { damageEnemy, flinchEnemy } from './damage.js';
 import { damageBoss } from '../boss/boss.js';
 import { spawnGroundShock } from '../fx/vfx.js';
 import { TELLS } from '../fx/tells.js';
+import { scorchGround } from '../fx/scorch.js';
 import { hurtPlayer } from '../player/damage.js';
 import { enemyDmgScale } from '../game/survival.js';
 import { blastAllies } from '../allies/squad.js';
@@ -25,6 +26,7 @@ export function bomberExplode(e){
   const pos = e.group.position.clone(), A = e.t;
   burst(V3(pos.x, pos.y+1.2, pos.z), 0xffae2a, 26, 13, 8); burst(V3(pos.x, pos.y+1.2, pos.z), 0xff5a1a, 16, 10, 6);
   spawnGroundShock(V3(pos.x, 0.1, pos.z), TELLS.area.color, A.blastR + 1, 0.5, 0.7);
+  scorchGround(pos, A.blastR * 1.1);
   flashLight(0xffae2a, 6, A.blastR*2, V3(pos.x, 1.2, pos.z), 0.3);
   screenFlash('radial-gradient(ellipse at center, rgba(255,170,60,.38), transparent 60%)', 0.55, 0.28);
   G.shake = Math.max(G.shake, 0.8); G.hitstop = Math.max(G.hitstop, 0.05); S.boom(pos, 1.3);
@@ -64,6 +66,7 @@ export function warbringerSlam(e, pos){
   burst(V3(pos.x, 0.5, pos.z), 0xff6a3a, 26, 14, 7); burst(V3(pos.x, 0.5, pos.z), 0xffd24a, 14, 9, 5);
   spawnGroundShock(V3(pos.x, 0.1, pos.z), TELLS.dodge.color, R + 2, 0.5, 0.7);
   spawnGroundShock(V3(pos.x, 0.1, pos.z), 0xffd24a, R + 7, 0.75, 0.4);
+  scorchGround(pos, 5.5, { heat: 0.6 });   // the crater it leaves
   flashLight(0xff6a3a, 7, R*2, V3(pos.x, 1, pos.z), 0.32);
   G.shake = Math.max(G.shake, 1.1); G.hitstop = Math.max(G.hitstop, 0.06); S.boom(pos, 1.6);
   for (const o of enemies){ if (o === e || o.dead) continue; if (o.group.position.distanceTo(pos) < R) flinchEnemy(o, o.group.position.clone().sub(pos), 0.6); }
