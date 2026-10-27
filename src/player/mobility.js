@@ -5,6 +5,7 @@
 import { MOBILITY, MANDO_MOBILITY } from '../data/mobility.js';
 import { MOVE } from '../data/movement.js';
 import { CFG } from '../data/config.js';
+import { stamDelay } from './stamina.js';
 import { floater } from '../fx/floaters.js';
 import { V3 } from '../utils.js';
 import { burst } from '../fx/particles.js';
@@ -85,7 +86,7 @@ export function groundRoll(){
     return false;
   }
   if (player.atkT > 0) cancelSwing();   // ROLL-CANCEL: bail a swing into the roll
-  player.stam -= cost; player.stamDelay = Math.max(player.stamDelay || 0, CFG.player.stamDelay);
+  player.stam -= cost; player.stamDelay = Math.max(player.stamDelay || 0, stamDelay());
   const dir = stickOr(fwd().clone().negate());
   const df = dir.dot(fwd()), drr = dir.dot(rightV());
   const side = Math.abs(drr) >= Math.abs(df) * 0.8;

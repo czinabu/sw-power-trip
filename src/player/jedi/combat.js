@@ -2,6 +2,7 @@
 // Saber swings, parry, swing damage, and the Force kick.
 
 import { CFG } from '../../data/config.js';
+import { stamDelay } from '../stamina.js';
 import { SWING_PATTERNS, backLineMul } from '../../data/stances.js';
 import { SWING_SPINS, DEFLECT_SPINS } from '../../data/poses.js';
 import { sfx, S } from '../../audio/sfx.js';
@@ -58,7 +59,7 @@ export function tryAttack(flow = false){
       return;
     }
     player.stam -= cost;
-    player.stamDelay = CFG.player.stamDelay;
+    player.stamDelay = stamDelay();
   }
   player.comboStep = step;
   // a cut out of a SLIDE ends the skid in a low sweep (parkour.js); any cut struck out of a parkour move carries its momentum
@@ -168,7 +169,7 @@ export function cancelSwing(){
   player.lastAtkEnd = G.gt;
   player.cancelT = G.gt;   // timestamp — a parry landed just after this counts as a CANCEL-RIPOSTE (extra payoff)
   if (player.darkT > 0){ player.darkT = 0; player.darkApplied = false; }   // also checks the darksaber ability slash
-  if (k > 0.6){ player.stam = Math.max(0, player.stam - 14); player.stamDelay = CFG.player.stamDelay; }   // late cancels cost stamina
+  if (k > 0.6){ player.stam = Math.max(0, player.stam - 14); player.stamDelay = stamDelay(); }   // late cancels cost stamina
   // a small SABER-COLOURED spark at the hilt + a reversed-swish whoosh — reads as a CHECKED stroke, not a Force push
   // (no forward-travelling ring here on purpose: that looked like a push and was confusing the saber-throw input)
   const pp = playerPos();

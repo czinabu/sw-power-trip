@@ -2,6 +2,7 @@
 // updatePlayer(): the per-frame player update, run as meters → movement → Mando weapons/flight → Force jump → gravity/landing → animation.
 
 import { CFG } from '../data/config.js';
+import { stamRegen } from './stamina.js';
 import { abil } from '../data/mastery.js';
 import { sfx } from '../audio/sfx.js';
 import { V3, rand, clamp } from '../utils.js';
@@ -57,7 +58,7 @@ function updatePlayerMeters(dt, pp, st){
   if (G.gt - player.lastHurt > CFG.player.hpRegenDelay)
     player.hp = clamp(player.hp + CFG.player.hpRegen * dt, 0, maxHp());
   if (player.stamDelay > 0) player.stamDelay -= dt;
-  else player.stam = clamp(player.stam + CFG.player.stamRegen * player.up.stamRegen * (player.exhausted ? 0.85 : 1) * dt, 0, maxStam());
+  else player.stam = clamp(player.stam + stamRegen() * player.up.stamRegen * (player.exhausted ? 0.85 : 1) * dt, 0, maxStam());
   if (player.dashT > 0) player.dashT -= dt;
   updateDashCharges(dt);   // Force dash charges refill (player/mobility.js)
   updateJetCharges(dt);    // the Mando's air-dodge charges (mando/mobility.js)

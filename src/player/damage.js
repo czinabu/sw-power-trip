@@ -2,6 +2,7 @@
 // hurtPlayer() and kill streaks.
 
 import { CFG } from '../data/config.js';
+import { stamDelay } from './stamina.js';
 import { abil } from '../data/mastery.js';
 import { sfx, S } from '../audio/sfx.js';
 import { V3, rand, clamp, TMP } from '../utils.js';
@@ -72,7 +73,7 @@ export function perfectDodge(fromPos){
 export function jarStamina(n){
   if (G.gt - (player._jarT || -9) < DUEL.jarGap) return;
   player._jarT = G.gt;
-  player.stam = Math.max(0, player.stam - n); player.stamDelay = CFG.player.stamDelay;
+  player.stam = Math.max(0, player.stam - n); player.stamDelay = stamDelay();
 }
 
 /* BLADE CLASH — your cut is mid-arc when a foe's strike lands from in front: the blades meet, neither blow lands,
@@ -159,7 +160,7 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
           dmg *= (1 - Math.min(0.88, dr));
           player.stam = Math.max(0, player.stam - 5 * player.up.blockStam);
           noteDefense('blocks', fromPos, opts);
-          player.stamDelay = CFG.player.stamDelay;
+          player.stamDelay = stamDelay();
           // ENERGY SHIELD soak — a blue ripple across the disc + a metallic beskar ring underneath
           burst(cpp, 0x6fd0ff, 8, 9, 4, 0.8); burst(cpp, 0xcfe0ec, 5, 5, 3);
           spawnHitSpark(cpp, 0x9fe6ff, 0.9);
@@ -212,7 +213,7 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
         // a heavy blow (a brute's maul) jars the guard far harder than a grunt's chop
         const heavy = Math.max(1, dmg / CFG.player.blockHeavy);
         player.stam = Math.max(0, player.stam - CFG.player.blockStamCost * heavy * player.up.blockStam * (stance().blockStamMul || 1));
-        player.stamDelay = CFG.player.stamDelay;
+        player.stamDelay = stamDelay();
         burst(V3(pp.x + fwd().x, 1.5, pp.z + fwd().z), stance().blade, 5, 4, 3);
         G.shake = Math.max(G.shake, 0.15 * heavy);
         player.vel.addScaledVector(fwd(), -2.5 * heavy);   // the blow drives you back a step

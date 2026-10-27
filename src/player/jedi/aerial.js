@@ -4,6 +4,7 @@
 // the Jump Attack's job); only the foe it sends flying can bowl over whoever it is knocked into.
 
 import { CFG } from '../../data/config.js';
+import { stamDelay } from '../stamina.js';
 import { SWING_PATTERNS, backLineMul } from '../../data/stances.js';
 import { sfx, S } from '../../audio/sfx.js';
 import { V3, clamp, TMP } from '../../utils.js';
@@ -65,7 +66,7 @@ export function airCut(){
   if (!keys['w'] || (player.vel.x + player.moveVel.x) * f0.x + (player.vel.z + player.moveVel.z) * f0.z < AIR_CUT.minFwd) return false;
   const st = stance(), cost = st.stamina * AIR_CUT.stamCost, fcost = AIR_CUT.forceCost * (player.up.abilityCostMul || 1);
   if (player.cds.airCut > 0 || player.stam < cost || player.force < fcost) return false;   // (not ready: the press is a plain air swing)
-  player.stam -= cost; player.stamDelay = CFG.player.stamDelay;
+  player.stam -= cost; player.stamDelay = stamDelay();
   player.force -= fcost; player.cds.airCut = AIR_CUT.cd;
   player.atkT = 0; player.swing = null; player.queuedAtk = false;
   player.gliding = false;

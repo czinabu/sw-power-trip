@@ -3,6 +3,7 @@
 
 import * as THREE from 'three';
 import { CFG } from '../data/config.js';
+import { stamDelay } from '../player/stamina.js';
 import { abil } from '../data/mastery.js';
 import { scene } from '../engine/renderer.js';
 import { sfx, S } from '../audio/sfx.js';
@@ -159,7 +160,7 @@ export function updateBolts(dt){
       } else if (d < 2.5 && shielding){
         // GAUNTLET SHIELD — catch the bolt on the disc and HURL it back at the nearest threat. Costs stamina per catch.
         player.stam = Math.max(0, player.stam - 5 * player.up.blockStam);
-        player.stamDelay = CFG.player.stamDelay;
+        player.stamDelay = stamDelay();
         b.friendly = true; b.speed *= 1.35; b.dmg = Math.max(8, Math.round(b.dmg * 0.85));
         const tgt = nearestEnemyInCone(40, -1);
         if (tgt && tgt !== shared.boss) b.dir.subVectors(tgt.group.position, b.mesh.position).setY(0).normalize();
@@ -174,7 +175,7 @@ export function updateBolts(dt){
         // absorbed on the guard — costs stamina, no reflection
         deflectAnim(b.mesh.position);
         player.stam = Math.max(0, player.stam - 7 * player.up.blockStam * (stance().blockStamMul || 1));
-        player.stamDelay = CFG.player.stamDelay;
+        player.stamDelay = stamDelay();
         spawnHitSpark(b.mesh.position.clone(), stance().blade, 0.8);
         G.shake = Math.max(G.shake, 0.12);
         S.block(b.mesh.position); floater(pp, 'BLOCK', '#9cc8e8'); noteDefense('blocks', null, { src: b.src });

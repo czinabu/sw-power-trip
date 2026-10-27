@@ -3,6 +3,7 @@
 
 import * as THREE from 'three';
 import { CFG } from '../data/config.js';
+import { stamDelay } from '../player/stamina.js';
 import { LEVELS } from '../data/levels.js';
 import { BOSS_CFG, BOSS_MANDO, BOSS_GAIT } from '../data/bosses.js';
 import { updateLegs } from '../enemies/gait.js';
@@ -353,7 +354,7 @@ export function updateBoss(dt){
         // caught on the blade — a tug of war that ends in a reflect
         shared.boss.lightCatch += dt;
         player.stam = Math.max(0, player.stam - 16*dt);
-        player.stamDelay = CFG.player.stamDelay;
+        player.stamDelay = stamDelay();
         endPt = V3(pp.x + fwd().x*1.1, 1.55, pp.z + fwd().z*1.1);
         if (Math.random() < 0.6) burst(endPt, 0xbfe8ff, 1, 4, 4, 0.7);
         if (shared.boss.lightCatch >= L.catchTime || player.stam <= 0){
