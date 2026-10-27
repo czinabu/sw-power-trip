@@ -97,8 +97,9 @@ export function tryAttack(flow = false){
   if (ripNow){ player.riposteT = 0; player.cancelRiposte = false; }
   player.swing = { t: 0, applied: false, step, dur, pat, dir: dirKey, back: backStrike, riposte: ripNow, cancelRip, flow, mom };
   player.deflectAnim = null;   // a cut takes the blade over from any catch in progress
-  const spin = pickSpin(st.form, step, dirKey, { ripNow, backStrike, mom });
-  if (spin){ player.swing.spin = spin; player.swing.dur *= spin.dur; player.atkT = player.swing.dur; }
+  const spin = pickSpin(st.form, step, dirKey, { ripNow, backStrike, mom, flow, st });
+  if (spin){
+    player.stam -= spin.stam * st.stamina; player._spinT = G.gt; player.swing.spin = spin; player.swing.dur *= spin.dur; player.atkT = player.swing.dur; }
   // cinematic lunge toward nearest target in view — STRONG's finisher lunges harder; a RIPOSTE drives in hardest
   const lunge = ripNow ? 2.0 : ((step === 2 && st.finisherLunge) ? st.finisherLunge : st.lunge);
   const tgt = backStrike ? nearestEnemyInCone(CFG.player.comboRange, -0.35, true)
@@ -120,13 +121,15 @@ export function tryAttack(flow = false){
   if (flow && G.hero !== 'mando') sfx(1250, 0.06, 'sine', 0.022, 1900);   // a faint ring: the link landed in rhythm
 }
 /* SPINS (data/poses.js SWING_SPINS) — which flourish, if any, this cut carries. Jedi only, on the ground, and never on a
-   finisher (it has its own spin), a riposte, a back strike or a momentum strike. */
+   finisher (it has its own spin), a riposte, a back strike or a momentum strike. It must be a rhythm (flow) link, off
+   cooldown, with the stamina to pay its surcharge. */
 function pickSpin(form, step, dirKey, o){
   if (G.hero === 'mando' || !player.grounded || player.flip || step === 2 || o.ripNow || o.backStrike || o.mom) return null;
   const S = SWING_SPINS[form];
-  if (!S) return null;
-  if (step === 1 && S.mid) return S.mid;
-  return (dirKey === 'left' || dirKey === 'right') ? S.move : null;
+  if (!S || !o.flow) return null;
+  const sp = (step === 1 && S.mid) || ((dirKey === 'left' || dirKey === 'right') ? S.move : null);
+  if (!sp || G.gt - (player._spinT || -9) < sp.cd || player.stam < sp.stam * o.st.stamina) return null;
+  return sp;
 }
 // a spinning cut drives further: the lunge is scaled up, and a cut with no step of its own (nothing to close on) still
 // travels `reach` metres — forward, or to the side a strafe cut sweeps toward
