@@ -18,7 +18,7 @@ import { spawnHitSpark, spawnGroundShock } from '../../fx/vfx.js';
 import { inkSprite, sparks, clashFlash } from '../../fx/ink.js';
 import { scorchGround } from '../../fx/scorch.js';
 import { DUEL } from '../../data/duel.js';
-import { cutLine, duelDefend, isGuarding, guardImpact } from '../../enemies/duel.js';
+import { cutLine, duelDefend, isGuarding, guardImpact, rallyParry } from '../../enemies/duel.js';
 import { bodyRadius } from './bladehit.js';
 import { bounceOff, contactPoint } from './clash.js';
 import { inReach } from '../../enemies/bodyshape.js';
@@ -192,12 +192,14 @@ export function applySwingDamage(step, only){
     S.slam(); beskarClang();
   }
   const riposte = !!(sw0 && sw0.riposte) && !(only && only.length === 0);
+  // a riposte into a duellist still in the EXCHANGE gets turned (enemies/duel.js rallyParry): no riposte flash for it
+  const rallied = riposte && only && only.some(o => o.exch && o.rallyT > G.gt);
   if (riposte){   // parry reward: the answer lands twice as hard (more with Riposte Master)
     const cancelRip = !!sw0.cancelRip;   // parried straight out of a swing-cancel → a CRUSHING answer
     dmg *= 2 * (player.up.riposte || 1) * (cancelRip ? 1.6 : 1);
     knock *= cancelRip ? 1.8 : 1;
   }
-  if (riposte && !sw0.ripFx){
+  if (riposte && !sw0.ripFx && !rallied){
     sw0.ripFx = true;   // the flash and the sting play once, on the first thing the riposte meets
     masteryXp('riposte');
     const cancelRip = !!sw0.cancelRip;
@@ -246,6 +248,9 @@ export function applySwingDamage(step, only){
     tryHit(e.group.position, () => {
       // a duellist's guard may turn it (a riposte, the answer to a parry, always lands)
       // (a guard the blade already met on the way in has had its say: player/jedi/clash.js)
+      if (riposte && rallyParry(e, sw0, sw0 && sw0.hitAt && sw0.hitAt.get(e) && sw0.hitAt.get(e).at)){
+        turned++; if (!blocker){ blocker = e; blockAt = sw0.hitAt && sw0.hitAt.get(e) && sw0.hitAt.get(e).at; } return false;
+      }
       if (!riposte && !back){
         const pre = sw0 && sw0.duel && sw0.duel.get(e);
         const at = pre === undefined && only && only.length ? contactPoint(e) : undefined;

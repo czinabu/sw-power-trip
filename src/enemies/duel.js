@@ -67,8 +67,58 @@ export function drainBreath(e, amt){
 export function cutLine(sw){
   if (!sw || !sw.pat) return 'H';
   if (sw.step === 2 || sw.riposte) return 'H';
-  if (sw.pat.h === 'low' && !/^rise/.test(sw.pat.id)) return 'Lo';   // a sweep at the knees or a thrust aimed low (the rising cuts come up across a side)
-  return sw.pat.yF < -0.5 ? 'L' : sw.pat.yF > 0.5 ? 'R' : 'H';
+  return patLine(sw.pat);
+}
+// the line a cut pattern comes in on, whatever the swing
+function patLine(pat){
+  if (pat.h === 'low' && !/^rise/.test(pat.id)) return 'Lo';   // a sweep at the knees or a thrust aimed low (the rising cuts come up across a side)
+  return pat.yF < -0.5 ? 'L' : pat.yF > 0.5 ? 'R' : 'H';
+}
+
+/* ============================================================
+   THE EXCHANGE (DUEL.exchange) — parry, riposte, re-parry, strike back: the back and forth of a prequel duel.
+   ============================================================ */
+// you parried its strike: does it keep the exchange going (true: it recovers to meet your riposte) or reel (false)?
+export function rallyOnParry(e){
+  const p = e.dp, X = DUEL.exchange;
+  if (!p || !p.rally || p.brace || e.dead || e.converted) return false;
+  const n = e.exch && G.gt - e.exch.at < X.gap ? e.exch.n : 0;
+  // the beats have run long: the blades bind
+  if (n >= X.lockAt && p.lock && startLock(e, 'body')){ e.exch = null; e.rallyT = 0; return true; }
+  if (Math.random() >= p.rally * diffMul() * skill(e) * Math.pow(X.decay, n) || !spend(e, X.breath)){
+    if (n >= 1) e.flourishNext = G.gt + DUEL.flourish.after;   // the exchange is over: it resets with a twirl
+    e.exch = null; return false;
+  }
+  e.exch = { n: n + 1, at: G.gt };
+  e.rallyT = G.gt + X.window;
+  e.state = 'recover'; e.st = X.recover; e.plan = null; e.counterQueued = false;
+  e.group.userData.bodyMat.emissiveIntensity = 0;
+  const g = e.group;
+  if (n >= 1) floater(V3(g.position.x, g.position.y + 1.7, g.position.z), 'EXCHANGE ×' + (n + 1), '#ffe9a8');
+  return true;
+}
+// your riposte meets a foe still in the exchange: its weapon is there on the riposte's line, it turns it and comes
+// straight back at you, a little faster than the beat before
+export function rallyParry(e, sw, at){
+  if (!e.exch || !(e.rallyT > G.gt) || e.dead || e.state === 'stagger' || e.state === 'lock') return false;
+  const X = DUEL.exchange, n = e.exch.n;
+  e.rallyT = 0; e.exch.at = G.gt;
+  const line = sw && sw.pat ? patLine(sw.pat) : 'H';
+  e.guard = e.blockLine = line; e.blockAt = G.gt;
+  const g = e.group, pp = playerPos(), dx = pp.x - g.position.x, dz = pp.z - g.position.z, dl = Math.hypot(dx, dz) || 1;
+  const cp = at || V3(g.position.x + dx / dl * 0.7, g.position.y + 1.5, g.position.z + dz / dl * 0.7);
+  clashFlash(cp, G.hero === 'mando' ? 0xffd28a : stance().blade, true);
+  sparks(cp, 0xffe9b0, 12, 12, { life: 0.3 });
+  S.clash(cp, true);
+  sfx(1700 + n * 220, 0.08, 'triangle', 0.035, 1200);   // each beat rings a little higher
+  G.hitstop = Math.max(G.hitstop, 0.07); G.shake = Math.max(G.shake, 0.35);
+  G.slowmo = Math.min(G.slowmo, 0.55); G.slowmoT = Math.max(G.slowmoT, 0.1);
+  floater(V3(g.position.x, g.position.y + 1.3, g.position.z), 'RE-PARRIED', '#ffd24a');
+  // and back at you: the next strike of the exchange, quicker each beat (ai.js fires it once a turn is free)
+  e.exchWind = X.windup[Math.min(n - 1, X.windup.length - 1)];
+  e.counterQueued = true; e.counterAt = -9;
+  e.state = 'recover'; e.st = Math.min(e.st, 0.05);
+  return true;
 }
 
 /* ---------------- setup ---------------- */
@@ -122,8 +172,8 @@ export function updateDuel(e, dt, dist){
   // hold the weapon on the guarded line (the readable tell), back to the carry otherwise
   if (guarding && !(e.dodgeT > 0)){
     readCut(e, dist);
-    guardPose(e, dt);
-  }
+    if (!flourish(e, dt, dist)) guardPose(e, dt);
+  } else if (e.flourishT > 0 || e.fl0) endFlourish(e);
   // the guard arc: a pale crescent on the covered side, brighter as you close in
   if (showsGuard(e)){
     if (!g.userData.guardArc) makeGuardArc(e);
@@ -204,6 +254,43 @@ function guardPose(e, dt){
     u.weaponArm.rotation.x = dampToward(u.weaponArm.rotation.x, p[0], dt, k);
     u.weaponArm.rotation.z = dampToward(u.weaponArm.rotation.z, p[1], dt, k);
   }
+}
+
+/* FLOURISH — a duellist between exchanges twirls its blade in a circle off its guard (a staff spins whole turns) and
+   settles back into the stance (DUEL.flourish). Anything it has to answer cuts it short. */
+function flourish(e, dt, dist){
+  const F = DUEL.flourish, u = e.group.userData;
+  if (!e.dp.lock) return false;   // only the true duellists show off
+  if (e.flourishNext == null) e.flourishNext = G.gt + rand(F.every[0], F.every[1]);
+  const busy = (e.blockLine && G.gt - e.blockAt < DUEL.read.hold) || e.counterQueued || e.winded || e.rallyT > G.gt;
+  if (!(e.flourishT > 0)){
+    if (busy || G.gt < e.flourishNext || dist < F.range[0] || dist > F.range[1]) return false;
+    e.flourishT = F.dur; e.flourishNext = G.gt + F.dur + rand(F.every[0], F.every[1]);
+    e.fl0 = u.staff ? [u.staff.rotation.z, u.staff.rotation.x] : u.weaponArm ? [u.weaponArm.rotation.x, u.weaponArm.rotation.z] : [0, 0];
+    sfx(rand(240, 300), 0.22, 'sine', 0.02, rand(520, 640));   // the hum of the blade whirling
+  }
+  if (busy){ endFlourish(e); return false; }
+  e.flourishT -= dt;
+  const k = 1 - Math.max(0, e.flourishT) / F.dur, w = Math.sin(Math.PI * k), a = k * Math.PI * 2;
+  if (u.staff){
+    // two whole turns, eased in and out, then back to where it started
+    u.staff.rotation.z = e.fl0[0] + (k * k * (3 - 2 * k)) * Math.PI * 4;
+    u.staff.rotation.x = e.fl0[1] + (0.3 - e.fl0[1]) * w;
+  } else if (u.weaponArm){
+    // the blade drawn up and round in a circle off the guard, twice, and back
+    u.weaponArm.rotation.x = e.fl0[0] + (-1.45 - e.fl0[0]) * w + Math.sin(a * 2) * 0.55 * w;
+    u.weaponArm.rotation.z = e.fl0[1] + (Math.cos(a * 2) - 1) * 0.5 * w;
+  }
+  if (e.flourishT <= 0) endFlourish(e);
+  return true;
+}
+function endFlourish(e){
+  const u = e.group.userData;
+  if (e.flourishT > 0 || e.fl0){
+    // a spun staff comes back to the same angle less its whole turns, so the guard doesn't unwind it
+    if (u.staff) u.staff.rotation.z = e.fl0 ? e.fl0[0] + (((u.staff.rotation.z - e.fl0[0]) % (Math.PI * 2)) + Math.PI * 3) % (Math.PI * 2) - Math.PI : u.staff.rotation.z;
+  }
+  e.flourishT = 0; e.fl0 = null;
 }
 
 /* READ — your cut is still in its chamber and this guard has seen which line it's on (DUEL.read). The block is decided
@@ -473,22 +560,33 @@ export function deflectPlayerBolt(e, b){
 /* ============================================================
    SABER LOCK — blades bind. Mash LMB to drive through (your form decides how hard each press pushes), break it with a
    kick (E) for stamina or a Force push (F) for Force. Win: the foe reels, guard broken, your riposte is up. Lose: its
-   blade gets through. Hold too long and the bind breaks apart.
+   blade gets through. Hold too long and the bind breaks apart. Where the blades met sets the kind of bind (high, low,
+   mid, or body to body out of a long exchange: DUEL.lockKinds), how it looks, how hard it bears down and how it ends.
    ============================================================ */
-export const LOCK = { foe: null, bal: 0, t: 0, fx: 0, buzz: 0 };
+export const LOCK = { foe: null, bal: 0, t: 0, fx: 0, buzz: 0, kind: 'mid' };
+const lockKind = () => DUEL.lockKinds[LOCK.kind] || DUEL.lockKinds.mid;
+// the kind of bind a clash at `at` makes (no contact point: the height of your cut)
+export function lockKindAt(at){
+  const A = DUEL.lockKinds.at, sw = player.swing;
+  if (!at) return sw && sw.h === 'high' ? 'high' : sw && sw.h === 'low' ? 'low' : 'mid';
+  const y = at.y - playerPos().y;
+  return y > A.high ? 'high' : y < A.low ? 'low' : 'mid';
+}
 let lockEl = null, lockFill = null;
 function lockBar(show){
   if (!lockEl){ lockEl = document.getElementById('lockbar'); lockFill = lockEl && lockEl.querySelector('.lb-fill'); }
   if (lockEl) lockEl.classList.toggle('on', show);
 }
-export function startLock(e){
+export function startLock(e, kind){
   if (LOCK.foe || !e.dp || !e.dp.lock) return false;
-  LOCK.foe = e; LOCK.bal = 0; LOCK.t = 0; LOCK.fx = 0; LOCK.buzz = 0;
+  LOCK.foe = e; LOCK.bal = 0; LOCK.t = 0; LOCK.fx = 0; LOCK.buzz = 0; LOCK.kind = DUEL.lockKinds[kind] ? kind : 'mid';
+  const K = lockKind();
+  e.flourishT = 0; e.fl0 = null;
   e.state = 'lock'; e.st = 99; e.plan = null;
   player.saberLock = true; player.atkT = 0; player.swing = null; player.queuedAtk = false; player.parryT = 0;
   const pp = playerPos(), g = e.group;
   TMP.subVectors(g.position, pp); TMP.y = 0; const d = TMP.length() || 1; TMP.divideScalar(d);
-  g.position.x = pp.x + TMP.x * 1.75; g.position.z = pp.z + TMP.z * 1.75;   // close in, blade to blade
+  g.position.x = pp.x + TMP.x * K.dist; g.position.z = pp.z + TMP.z * K.dist;   // close in, blade to blade (body to body)
   g.rotation.y = Math.atan2(-TMP.x, -TMP.z);
   const cp = lockPoint();
   clashFlash(cp, stance().blade, true);
@@ -497,13 +595,14 @@ export function startLock(e){
   G.hitstop = Math.max(G.hitstop, 0.12); G.shake = Math.max(G.shake, 0.6);
   G.slowmo = Math.min(G.slowmo, 0.35); G.slowmoT = Math.max(G.slowmoT, 0.25);
   if (!G.seenLock){ G.seenLock = true; showBanner('SABER LOCK', 'Mash LMB to drive through · E to kick out · F to Force-shove', 2.6); }
+  if (K.label) floater(V3(cp.x, cp.y + 0.45, cp.z), K.label, '#ffe9a8');
   lockBar(true);
   if (G.stats) G.stats.locks = (G.stats.locks || 0) + 1;
   return true;
 }
 function lockPoint(){
   const pp = playerPos(), q = LOCK.foe ? LOCK.foe.group.position : pp;
-  return V3((pp.x + q.x) / 2, pp.y + 1.55, (pp.z + q.z) / 2);
+  return V3((pp.x + q.x) / 2, pp.y + lockKind().y, (pp.z + q.z) / 2);
 }
 export function updateSaberLock(dt){
   const e = LOCK.foe;
@@ -511,18 +610,19 @@ export function updateSaberLock(dt){
   if (e.dead || e.state !== 'lock' || G.mode !== 'play'){ endLock(); return; }
   if (player.dashT > 0 || player.flinchT > 0.3){ splitLock(); return; }   // dashed (or knocked) out of it
   LOCK.t += dt;
-  LOCK.bal -= e.dp.push * diffMul() * dt * (0.8 + LOCK.t * 0.15);   // it bears down harder the longer it lasts
+  const K = lockKind();
+  LOCK.bal -= e.dp.push * K.push * diffMul() * dt * (0.8 + LOCK.t * 0.15);   // it bears down harder the longer it lasts
   const g = e.group, pp = playerPos(), u = g.userData;
-  // face to face, weapon high and forward, leaning in
+  // face to face, weapon on the bind's line, leaning in (body to body: chest to chest)
   g.rotation.y = Math.atan2(pp.x - g.position.x, pp.z - g.position.z);
-  g.rotation.x = dampToward(g.rotation.x, 0.14 + Math.max(0, -LOCK.bal) * 0.12, dt, 10);
-  if (u.weaponArm){ u.weaponArm.rotation.x = dampToward(u.weaponArm.rotation.x, -1.75 + Math.sin(G.gt * 31) * 0.04, dt, 14); u.weaponArm.rotation.z = dampToward(u.weaponArm.rotation.z, -0.35, dt, 14); }
-  if (u.staff){ u.staff.rotation.z = dampToward(u.staff.rotation.z, -1.3, dt, 14); u.staff.rotation.x = dampToward(u.staff.rotation.x, 0.6, dt, 14); }
+  g.rotation.x = dampToward(g.rotation.x, (LOCK.kind === 'body' ? 0.24 : 0.14) + Math.max(0, -LOCK.bal) * 0.12, dt, 10);
+  if (u.weaponArm){ u.weaponArm.rotation.x = dampToward(u.weaponArm.rotation.x, K.arm[0] + Math.sin(G.gt * 31) * 0.04, dt, 14); u.weaponArm.rotation.z = dampToward(u.weaponArm.rotation.z, K.arm[1], dt, 14); }
+  if (u.staff){ u.staff.rotation.z = dampToward(u.staff.rotation.z, K.staff[0], dt, 14); u.staff.rotation.x = dampToward(u.staff.rotation.x, K.staff[1], dt, 14); }
   g.userData.bodyMat.emissive.setHex(0xff3a1a); g.userData.bodyMat.emissiveIntensity = 0.3 + Math.max(0, -LOCK.bal) * 0.8;
   // your blade braced against it (the catch pose, held at the bind)
   if (G.hero !== 'mando' || player.weapon === 'darksaber'){
     const dx = g.position.x - pp.x, dz = g.position.z - pp.z, fy = player.faceYaw;
-    if (!player.deflectAnim) player.deflectAnim = { t: 0, dur: 0.3, pose: null, side: (dx * -Math.cos(fy) + dz * Math.sin(fy)) / (Math.hypot(dx, dz) || 1) * 0.3, h: 0.25 };
+    if (!player.deflectAnim) player.deflectAnim = { t: 0, dur: 0.3, pose: null, side: (dx * -Math.cos(fy) + dz * Math.sin(fy)) / (Math.hypot(dx, dz) || 1) * 0.3, h: K.h };
     player.deflectAnim.t = Math.min(player.deflectAnim.t, 0.07);
   }
   // the bind sizzles: sparks spit from the contact, a crackling buzz, the lens trembles
@@ -531,7 +631,7 @@ export function updateSaberLock(dt){
   if ((LOCK.buzz -= dt) <= 0){ LOCK.buzz = 0.11; sfx(rand(90, 120), 0.12, 'sawtooth', 0.03, rand(140, 180)); }
   G.shake = Math.max(G.shake, 0.1 + Math.abs(LOCK.bal) * 0.15);
   if (lockFill) lockFill.style.left = (50 + clamp(LOCK.bal, -1, 1) * 50) + '%';
-  if (LOCK.bal >= 1) winLock('OVERPOWERED');
+  if (LOCK.bal >= 1) winLock(K.win);
   else if (LOCK.bal <= -1) loseLock();
   else if (LOCK.t > DUEL.lock.time) splitLock();
 }
@@ -566,12 +666,17 @@ export function lockPush(){
   return true;
 }
 function winLock(label, knock){
-  const e = LOCK.foe, pp = playerPos(), g = e.group;
+  const e = LOCK.foe, pp = playerPos(), g = e.group, K = lockKind();
   const dx = g.position.x - pp.x, dz = g.position.z - pp.z, dl = Math.hypot(dx, dz) || 1;
   endLock();
   e.state = 'recover';
-  staggerEnemy(e, dx / dl, dz / dl, label);
-  e.st += 0.4; e.posture = 0;
+  // a low bind won throws it aside, off its feet's line, with its knees giving; the others drive it straight back
+  const sd = K.side ? (Math.random() < 0.5 ? 1 : -1) : 0;
+  const sx = dx / dl - dz / dl * sd * 0.9, sz = dz / dl + dx / dl * sd * 0.9, sl = Math.hypot(sx, sz) || 1;
+  staggerEnemy(e, sx / sl, sz / sl, label);
+  if (K.side && !e.t.heavy) e.buckle = 0.4;
+  knock = Math.max(knock || 0, K.knock || 0);
+  e.st += 0.4 + (K.open || 0); e.posture = 0;
   drainBreath(e, DUEL.breath.lock);   // a bind lost takes the wind out of it
   tutEvent('guardBreak', e);   // winning the bind breaks its guard too
   if (knock) damageEnemy(e, 8, V3(dx / dl, 0, dz / dl), knock);
@@ -585,13 +690,13 @@ function winLock(label, knock){
   if (G.stats) G.stats.locksWon = (G.stats.locksWon || 0) + 1;
 }
 function loseLock(){
-  const e = LOCK.foe, g = e.group;
+  const e = LOCK.foe, g = e.group, K = lockKind();
   endLock();
   e.state = 'recover'; e.st = 0.25; e.counterQueued = true;
   player.parryT = 0;
   hurtPlayer(DUEL.lock.loseDmg * enemyDmgScale(), g.position, false, true, false, { unblockable: true, noClash: true });
   player.flinchT = player.flinchMax = CFG.player.flinch.heavy; player.flinchHeavy = true;
-  floater(playerPos(), 'OVERPOWERED', '#ff6a3a');
+  floater(playerPos(), K.lose, '#ff6a3a');
 }
 function splitLock(){
   const e = LOCK.foe, pp = playerPos(), g = e.group;
@@ -609,4 +714,5 @@ export function endLock(){
   player.deflectAnim = null;
   lockBar(false);
   if (e && e.state === 'lock' && !e.dead){ e.state = 'recover'; e.st = 0.4; }
+  if (e) e.flourishNext = G.gt + DUEL.flourish.after + 0.6;   // the bind broken, it resets its stance with a twirl
 }

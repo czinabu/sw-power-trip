@@ -24,16 +24,18 @@
               and it can't guard or answer until it has backed off and caught its breath. Absent = no breath to manage.
      parry    chance it PARRIES a cut that comes in on the rhythm of a mash (DUEL.rhythm): your blade is thrown wide,
               you lose stamina and it ripostes. Spacing your cuts (or changing line) never gets parried.
-     elite    its skill climbs with run depth (DUEL.eliteRamp): a little gentler than listed early on, past it at the end */
+     elite    its skill climbs with run depth (DUEL.eliteRamp): a little gentler than listed early on, past it at the end
+     rally    chance it keeps an EXCHANGE going when you parry it (DUEL.exchange): instead of reeling it recovers in time to
+              turn your riposte and come straight back at you, faster each beat */
 export const DUEL_PROFILES = {
   // the rank and file: barely a guard, rarely an answer (they learn a few tricks as the run deepens: `ramp`)
   grunt:   { block: 0.06, posture: 28,  feint: 0.2,  delay: 0.3,  chain: 0, counter: 0.05, thrust: 0,    dodge: 0, ramp: true },
   phalanx: { block: 0,    posture: 60,  feint: 0.15, delay: 0.35, chain: 1, counter: 0.3,  thrust: 0,    dodge: 0, ramp: true },
   // the duellists: a guard, breath to manage, and a parry for anyone who mashes
   duelist: { block: 0.55, posture: 70,  feint: 0.25, delay: 0.25, chain: 1, counter: 0.45, thrust: 0.1,  dodge: 0.1, lock: true, push: 0.38,
-             stam: 100, parry: 0.5, elite: true },
+             stam: 100, parry: 0.5, elite: true, rally: 0.45 },
   acolyte: { block: 0.72, posture: 95,  feint: 0.3,  delay: 0.3,  chain: 2, counter: 0.6,  thrust: 0.15, dodge: 0.2, deflect: 0.75, lock: true, push: 0.5,
-             stam: 130, parry: 0.7, elite: true },
+             stam: 130, parry: 0.7, elite: true, rally: 0.65 },
 };
 
 /* THE WARBRINGER (survival's champion, game/survival.js spawnChampion; the sandbox and campaign mid-bosses call the
@@ -93,6 +95,14 @@ export const DUEL = {
      wave `full`, up to `max` by wave `top` (campaign waves add up; survival counts its own). Block, counter, parry and
      breath scale with it, so the late game belongs to whoever has learned to read a guard. */
   eliteRamp: { from: 0.8, full: 9, max: 1.25, top: 22 },
+  /* THE EXCHANGE — a prequel duel's back and forth. Parry a duellist's strike and, by its `rally` (× `decay` for each beat
+     already traded, × its skill), it doesn't reel: it recovers in `recover` s, turns your riposte if it comes inside
+     `window` s, and strikes straight back with a wind-up from `windup` (one per beat, quicker each time) for you to
+     parry again. Each beat costs it `breath`. A beat later than `gap` s after the last starts a new exchange. At
+     `lockAt` beats the blades bind (a saber lock) instead. Any other blow, a block instead of a parry, or a foe cutting
+     in from the side breaks the rhythm. The exchanging foe still needs a free attack turn to strike back, so a crowd
+     keeps its two-at-a-time limit. */
+  exchange: { decay: 0.8, recover: 0.22, window: 1.1, windup: [0.34, 0.3, 0.27, 0.24], breath: 10, gap: 3, lockAt: 4 },
   // ENEMY OFFENCE
   feintAt: 0.7,           // a feint breaks off this far into its wind-up...
   feintRewind: 0.26,      // ...and the real strike winds up this fast from the other side
@@ -104,6 +114,23 @@ export const DUEL = {
   dodgeStep: 7,           // backstep speed when it slips a cut
   // SABER LOCK — blades bind; mash LMB to drive through, or break it with a kick (E) or a Force push (F)
   lock: { chance: 0.7, time: 3.2, press: 0.15, stam: 3, kickStam: 22, pushCost: 18, loseDmg: 16, heavyPress: 1.35, fastPress: 0.85 },
+  /* LOCK KINDS — where the blades bind sets how the lock looks and how it ends (enemies/duel.js startLock). A clash more
+     than `at.high` m above your feet binds HIGH, one under `at.low` binds LOW; an exchange run to `lockAt` beats ends
+     CORPS-À-CORPS, hilt to hilt. label: called out as it binds. win / lose: called out at the end. h: your catch height.
+     y: the bind's height. dist: how close you stand. arm / staff: its weapon at the bind (as GUARD_POSE). push: how hard
+     it bears down (× its profile push). Winning: open adds to its stagger (thrown high, wide open), side throws it aside
+     with its knees buckling, knock shoves it clear. */
+  lockKinds: {
+    at: { high: 1.75, low: 1.2 },
+    mid:  { label: null,            win: 'OVERPOWERED',  lose: 'OVERPOWERED', h: 0.25,  y: 1.55, dist: 1.75, arm: [-1.75, -0.35], staff: [-1.3, 0.6],  push: 1 },
+    high: { label: 'HIGH BIND',     win: 'THROWN HIGH',  lose: 'BEATEN DOWN', h: 0.7,   y: 1.95, dist: 1.7,  arm: [-2.65, -0.1],  staff: [-1.6, 1.25], push: 0.9,  open: 0.45 },
+    low:  { label: 'LOW BIND',      win: 'SWEPT ASIDE',  lose: 'SWEPT',       h: -0.45, y: 0.95, dist: 1.8,  arm: [-0.75, -0.6],  staff: [0.9, -0.9],  push: 1.1,  side: true },
+    body: { label: 'CORPS-À-CORPS', win: 'SHOVED CLEAR', lose: 'SHOULDERED',  h: 0.05,  y: 1.35, dist: 1.15, arm: [-1.2, -1.0],   staff: [-1.1, 0.2],  push: 1.25, knock: 16 },
+  },
+  /* FLOURISH — a duellist between exchanges twirls its blade (or spins its staff) and settles back into its stance: every
+     `every` s while it circles you `range` m out, and `after` s after an exchange ends or a lock breaks. It lasts `dur` s
+     and drops the moment it has to guard (a cut read) or strike. */
+  flourish: { every: [4, 7], range: [1.6, 6.5], after: 0.5, dur: 0.75 },
 };
 
 /* POSES — what a duellist's weapon shows you (enemies/duel.js eases into these; tools/enemy-lab.html ?pose=guardL…windT

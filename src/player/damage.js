@@ -24,7 +24,7 @@ import { overlay, setOverlayState } from '../ui/menus.js';
 import { diffDmgMul, diffWindow } from '../data/difficulty.js';
 import { masteryXp } from '../game/progression.js';
 import { DUEL } from '../data/duel.js';
-import { startLock } from '../enemies/duel.js';
+import { startLock, lockKindAt } from '../enemies/duel.js';
 import { contactPoint, recoilSwing, knockWeapon, formWeight, theirSparks } from './jedi/clash.js';
 import { mandoCatch } from './mando/melee.js';
 import { tutEvent } from '../game/tutor-bus.js';
@@ -118,7 +118,7 @@ export function bladeClash(fromPos, foe, at){
     if (!foe) return false;
   }
   // a duellist's blade BINDS with yours instead: a saber lock (enemies/duel.js)
-  if (foe && foe.dp && foe.dp.lock && Math.random() < DUEL.lock.chance && startLock(foe)) return true;
+  if (foe && foe.dp && foe.dp.lock && Math.random() < DUEL.lock.chance && startLock(foe, lockKindAt(at))) return true;
   const pp = playerPos();
   TMP.subVectors(fromPos, pp); TMP.y = 0; TMP.normalize();
   const dir = TMP.clone();
