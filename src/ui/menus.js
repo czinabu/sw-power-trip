@@ -89,7 +89,7 @@ function beginPlay(){
   document.getElementById('runsummary').style.display = 'none';
   document.body.classList.remove('in-menu');
   setHowTo(false); setSettings(false);
-  if ((G.modeSel === 'endless' && !survivalUnlocked()) || (G.modeSel === 'sandbox' && !sandboxUnlocked())) G.modeSel = 'campaign';   // safety — never launch a locked mode
+  if ((G.modeSel === 'endless' && !survivalUnlocked() && !G.coopJoin) || (G.modeSel === 'sandbox' && !sandboxUnlocked())) G.modeSel = 'campaign';   // safety — never launch a locked mode
   if (G.mode === 'menu' || G.mode === 'victory'){
     G.mode = 'play'; G.slowmo = 1;
     if (G.modeSel === 'endless') startEndless(); else if (G.modeSel === 'training') startTutorial(); else if (G.modeSel === 'mission') startMission(G.missionId); else if (G.modeSel === 'sandbox') startSandbox(); else if (canResume()) resumeRun(); else startLevel(0);
@@ -349,6 +349,12 @@ export function beginFromMenu(){
 }
 document.getElementById('trainYes').addEventListener('click', (e) => { e.stopPropagation(); overlay.classList.remove('asktrain'); setModeSel('training'); launch(); });
 document.getElementById('trainNo').addEventListener('click', (e) => { e.stopPropagation(); overlay.classList.remove('asktrain'); launch(); });
+// co-op guest: start a Survival run that follows the host's (net/foes.js); startEndless sees G.coopJoin
+export function launchCoopRun(){
+  G.coopJoin = true; G.modeSel = 'endless';
+  setOverlayState('menu');
+  launch();
+}
 // take the pointer lock and start (or resume) play; where the lock never works, play unlocked
 function launch(){
   audioInit();

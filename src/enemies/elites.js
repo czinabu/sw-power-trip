@@ -38,8 +38,13 @@ export function applyElite(e, g){
   e.hp = Math.round(e.hp * m.hp); e.maxHp = e.hp;
   e.spd *= m.spd;
   g.scale.multiplyScalar(m.scale);
+  dressElite(g, id);
+}
+// an elite's look: armor in the trait's hue and a slowly spinning additive halo at the feet. Also how a co-op partner's
+// browser dresses the foes it is shown (net/foes.js), which come with their final size already
+export function dressElite(g, id){
+  const m = ELITES[id];
   g.userData.bodyMat.color.lerp(_eliteCol.setHex(m.tint), 0.5);   // armor takes the trait's hue
-  // a slowly spinning additive halo at the feet — reads instantly as "this one is special"
   const ring = new THREE.Mesh(new THREE.TorusGeometry(0.62, 0.05, 6, 24),
     new THREE.MeshBasicMaterial({ color: m.tint, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false }));
   ring.rotation.x = Math.PI/2; ring.position.y = 0.08;

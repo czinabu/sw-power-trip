@@ -53,6 +53,7 @@ export function startLevel(idx, opts){
   const fresh = idx === 0 && !(opts && opts.resume);   // a brand-new campaign: reset the hero's build
   G.levelIdx = idx;
   G.endless = false; G.mut = null;   // campaign — never in survival mode (startEndless re-flags after this)
+  G.coopGuest = false;               // and not following a host's run until a join says so (startEndless)
   G.training = !!(opts && opts.training);
   G.mission = !!(opts && opts.mission);
   G.sandbox = !!(opts && opts.sandbox);
@@ -261,6 +262,7 @@ export function startWave(){
 }
 
 export function updateFlow(dt){
+  if (G.coopGuest) return;   // the host runs this run's spawns and waves: net/foes.js tells this browser what they did
   // the lull: once the first half of a long wave is down, hold the rest behind a short beat, then release it
   const bar = G.spawnQueue.find(s => s.barrier);
   if (bar && !G.spawnQueue.some(s => !s.barrier && !s.held) && !enemies.some(e => !e.dead && !e.converted)){

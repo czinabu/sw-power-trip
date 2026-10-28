@@ -339,7 +339,8 @@ body.fovpreview #fovpill{background:rgba(1,4,10,.82)}
 #coopstatus .code{display:inline-block;margin:0 6px;font:700 28px/1 var(--font-display);letter-spacing:6px;color:var(--gold)}
 #coopstatus.ok{color:#8fe8b0}
 #coopstatus.bad{color:#ff9a8a}
-#coopleave{display:none}
+#coopleave,#coopjoinrun{display:none}
+#coopjoinrun{margin-bottom:8px}
 @media (max-width:640px){.coop-grid{grid-template-columns:1fr}}
 
 /* ---------- PAUSE: same left column as the main menu so the cinematic cuts keep the hero in view; RESUME on top, the rest in a tidy grid ---------- */

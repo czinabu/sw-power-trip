@@ -175,3 +175,4 @@ The main menu's ONLINE CO-OP panel hosts a room (a 5-letter code) or joins one. 
 - `?peerhost=host&peerport=9000` in the page URL uses your own PeerServer (`npx peerjs --port 9000`) instead of the free cloud broker.
 - `api/turn.js` is a Vercel function that hands out Cloudflare TURN relay credentials for strict networks. Set `CF_TURN_KEY_ID` and `CF_TURN_API_TOKEN` on the Vercel project to turn it on; without them the game uses STUN only.
 - `npm run build && npm run smoke:coop` opens two browsers against a local PeerServer, connects them and checks each sees the other, that the partner is posed from the network, and that enemies go after both heroes.
+- `npm run smoke:coop-run` checks the shared Survival fight: the guest joins the host's run, shows its foes as puppets, and a blow on one reaches the host.
