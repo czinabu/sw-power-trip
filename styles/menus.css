@@ -352,10 +352,18 @@ body.fovpreview #fovpill{background:rgba(1,4,10,.82)}
 #overlay.st-pause .ov-head h1::after{margin-left:0;margin-right:0}
 #overlay.st-pause .ov-head h2{margin-top:18px;font-size:52px;letter-spacing:8px;text-shadow:0 0 40px rgba(60,170,255,.25)}
 #overlay.st-pause #ovctx{display:block;margin-top:10px;font:600 13px/1 var(--font-ui);letter-spacing:2.5px;color:var(--accent)}
-#overlay.st-pause .ov-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:26px;justify-content:stretch}
+#overlay.st-pause .ov-actions{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:26px;justify-content:stretch}
 #overlay.st-pause .ov-actions .btn{box-sizing:border-box;width:100%;padding:13px 12px;white-space:nowrap}
 #overlay.st-pause .ov-actions .go{grid-column:1/-1;margin-bottom:6px;width:100%}
 #overlay.st-pause #skipBtn{grid-column:1/-1}
+/* pause groups, top to bottom: resume · this run (save / load / restart) · options (settings / fullscreen / help / co-op) · leave */
+#overlay.st-pause #skipBtn{order:1}
+#overlay.st-pause #saveBtn,#overlay.st-pause #loadBtn,#overlay.st-pause #restartBtn{grid-column:span 2;order:2}
+#overlay.st-pause #saveBtn{margin-top:10px} #overlay.st-pause #loadBtn{margin-top:10px} #overlay.st-pause #restartBtn{margin-top:10px}
+#overlay.st-pause #settoggle,#overlay.st-pause #fsBtn,#overlay.st-pause #ctltoggle,#overlay.st-pause #coopBtn{grid-column:span 3;order:3}
+#overlay.st-pause #settoggle,#overlay.st-pause #fsBtn{margin-top:10px}
+#overlay.st-pause #homeBtn{grid-column:1/-1;order:4;margin-top:14px;color:#ffcfa0;border-color:rgba(200,120,60,.45)}
+#overlay.st-pause #homeBtn:hover{border-color:#ffb060;color:#ffe2c4}
 #overlay.st-pause #homeconfirm{align-items:flex-start;margin-top:26px}
 #overlay.st-pause .ov-foot{text-align:left;margin-top:22px;font-size:12px}
 #overlay.st-pause .ov-inner,#overlay.st-pause .ov-actions .btn{animation:rise .3s var(--ease) both}

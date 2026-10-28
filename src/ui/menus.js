@@ -385,15 +385,16 @@ document.addEventListener('pointerlockerror', () => {
   setOverlayState('pause');
   if (shared.lockWorked) document.getElementById('ovsub').textContent = 'CLICK RESUME TO LOCK THE CURSOR';
 });
-// PAUSE KEYS — Enter resumes from the pause screen in every browser. Where Esc is locked to the game (fullscreen in
+// PAUSE KEYS — Tab pauses and resumes in every browser (Esc exits fullscreen where it isn't locked). Enter resumes from the pause screen in every browser. Where Esc is locked to the game (fullscreen in
 // Chrome / Edge, see fullscreen.js) a quick Esc pauses and resumes too, so closing the pause screen with Esc no longer
 // drops you out of fullscreen. Runs in the capture phase so it sees the screen before Esc closes a panel on top of it.
 const panelOpen = () => howto.classList.contains('open') || settings.classList.contains('open') || document.getElementById('saves').classList.contains('open') || overlay.classList.contains('newconfirming') ||
   document.getElementById('roadmap').classList.contains('open') || document.getElementById('coop').classList.contains('open') || overlay.classList.contains('confirming') || overlay.classList.contains('asktrain');
 window.addEventListener('keydown', (e) => {
-  if (e.repeat || (e.key !== 'Escape' && e.key !== 'Enter')) return;
-  const esc = e.key === 'Escape';
-  if (esc && !escapeIsOurs()) return;   // the browser owns Esc here (pointer lock / fullscreen exit)
+  if (e.repeat || (e.key !== 'Escape' && e.key !== 'Enter' && e.key !== 'Tab')) return;
+  const tab = e.key === 'Tab', esc = e.key === 'Escape' || tab;   // Tab pauses exactly as a quick Esc does
+  if (e.key === 'Escape' && !escapeIsOurs()) return;   // the browser owns Esc here (pointer lock / fullscreen exit)
+  if (tab && (panelOpen() || document.activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName))) return;
   if (esc) e.preventDefault();
   const shown = overlay.style.display === 'flex';
   if (shown && _ovState === 'pause' && G.mode === 'play' && !panelOpen()){ e.preventDefault(); launch(); return; }
