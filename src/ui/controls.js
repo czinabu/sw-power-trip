@@ -22,7 +22,7 @@ const CONTROLS = {
       ['SHIFT', 'Landing roll', 'Just before a hard landing, or you stagger', 1],
     ]},
     { title: 'FIGHT', rows: [
-      ['LMB', 'Saber combo', 'The key you hold picks the cut\'s direction and where you aim picks its height: aim up for a high cut at the head, down for a low one at the legs (the ticks by the crosshair show it). A / D sweep sideways, W chops overhead (a thrust aimed low), W or S with A / D cut diagonally down or up, S whirls behind you; every third is a finisher'],
+      ['LMB', 'Saber combo', 'Flick the mouse the way you want the blade to travel just before you click: any angle round the clock (the needle through the crosshair shows the next cut). Where you aim picks its height: aim up for a high cut at the head, down for a low one at the legs (the ticks by the crosshair). With no flick, the keys pick it: A / D sweep sideways, W chops overhead (a thrust aimed low), W or S with A / D cut diagonally down or up, S whirls behind you; nothing held walks your form\'s string of cuts. A cut that starts where the last one finished flows on quicker. Every third is a finisher. Settings · CUT AIM: KEYS turns the flick off'],
       ['HOLD RMB', 'Block', 'Soaks most of a blow; heavy hits drain stamina'],
       ['TAP RMB', 'Parry and deflect', 'Time it as a blow or bolt lands; a missed parry can\'t be retried for a moment'],
       ['E', 'Kick', 'Shoves a foe back and cracks a duellist\'s guard'],
@@ -93,7 +93,7 @@ const TIPS = {
     'A swing turns blaster bolts back down the line they came from: Djem So sends them home to the shooter, Ataru sprays them. A timed parry (tap RMB) always sends a bolt straight back.',
     'Any swing can be cancelled into a block, a Force power or a dash.',
     'Getting hit knocks your swing loose. Cut into a foe\'s strike mid-swing and the blades clash: nobody is hurt and you both reel. Bosses clash too.',
-    '<b>Duellists</b> (Magnaguards, Sith acolytes) hold a guard: the pale arc beside them shows the line it covers (left, right, high, or low across the knees). They read your cut as you wind up and swing their weapon onto its line to meet it. A cut that meets a guard that holds stops dead on the blade and bounces back. Cut in on another line (aim high or low too), kick to break it, and don\'t throw the same cut twice: they read it.',
+    '<b>Duellists</b> (Magnaguards, Sith acolytes) hold a guard: the pale arc beside them shows the line it covers (left, right, high, or low across the knees). They read your cut as you wind up and swing their weapon onto its line to meet it. A cut that meets a guard that holds stops dead on the blade and bounces back. Cut in past the edge of the arc (aim the angle with a flick, high or low too), kick to break it, and don\'t throw the same angle twice: they read it.',
     'Swings only hit what\'s in front of you and plant your feet, so step into range before you cut. Parry, don\'t just block: a block lets some of the blow through. Hold your guard against a duellist and your blade moves to meet its strike on the line it\'s coming in on (it follows a feint too); parry it and your riposte cuts back on the side it left open. A skilled duellist may turn that riposte and come straight back at you: keep parrying and the exchange speeds up until someone slips or the blades lock. A lock binds high, low or (out of a long exchange) body to body, and each ends its own way.',
     'After each wave, spend <b>XP</b> on new abilities and on mastering the ones you have, and <b>skill points</b> on training.',
   ],

@@ -42,6 +42,7 @@ export const G = {
   skillSelect: false, skillPoints: 0, skillSpent: 0,   // between-wave skill-tree pause
   saberGrip: 'regular',   // player preference: 'regular' or 'reverse' lightsaber grip (visual only)
   swingMirror: false,   // player preference: flips which way strafe-L/R directional cuts sweep
+  cutMouse: true,        // player preference: a mouse flick just before a cut picks its angle (else the keys do)
   mouseSens: 1,          // player preference: mouse look sensitivity multiplier
   adsSens: 0.4,          // player preference: share of it while the disruptor is scoped in
   shakeScale: 1,         // player preference: screen shake strength (0 = off, 1.5 = extra)

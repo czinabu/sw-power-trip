@@ -92,21 +92,47 @@ export const SWING_PATTERNS = {
   thrust:   { id: 'thrust', yF:  0.05, yT:  0.0,  h: 'low', reach: 0.8, lunge: 1.35 },  // drawn back to the hip, driven straight through (in on the low line)
 };
 
-/* CUT AIM — Jedi Academy style: the movement key picks the cut's DIRECTION and where you aim picks its HEIGHT: tip the
-   view up past `pitchHigh` for a high cut, down past `pitchLow` for a low one (pitch is + looking down; a fight sits
-   around 0.2, and the lock-on leaves you this much room: data/config.js lockOn.pitchFree).
-     neutral   high: shoulder-to-hip diagonals · mid: flat cuts left and right · low: rising cuts (each alternates)
-     A / D     high: a cut at the head · mid: the flat sweep · low: a sweep at the knees
-     W         high / mid: the overhead · low: a lunging thrust
-     W + A / D the downward diagonals    S + A / D the rising cuts    S   the back strike (any height) */
-export const CUT_AIM = {
-  pitchHigh: 0.04, pitchLow: 0.42,
-  neutral: { high: ['diagR', 'diagL'], mid: ['right', 'left'], low: ['riseR', 'riseL'] },
-  side: { left: { high: 'leftHigh', mid: 'left', low: 'leftLow' }, right: { high: 'rightHigh', mid: 'right', low: 'rightLow' } },
-  forward: { high: 'forward', mid: 'forward', low: 'thrust' },
-  diag: { forward: { left: 'diagL', right: 'diagR' }, back: { left: 'riseL', right: 'riseR' } },
-  mirror: { left: 'right', right: 'left', leftHigh: 'rightHigh', rightHigh: 'leftHigh', leftLow: 'rightLow', rightLow: 'leftLow',
-            diagL: 'diagR', diagR: 'diagL', riseL: 'riseR', riseR: 'riseL' },
+/* CUT AIM — Jedi Academy style: where you aim picks the cut's HEIGHT: tip the view up past `pitchHigh` for a high cut,
+   down past `pitchLow` for a low one (pitch is + looking down; a fight sits around 0.2, and the lock-on leaves you this
+   much room: data/config.js lockOn.pitchFree). The cut's angle comes from CUT_ANGLE below. */
+export const CUT_AIM = { pitchHigh: 0.04, pitchLow: 0.42 };
+
+/* CUTS BUILT FROM AN ANGLE — a cut is the clock angle it comes FROM, in the frontal plane (degrees, counter-clockwise
+   from the weapon side: 0 = from the right, sweeping left · 90 = from overhead, straight down · 180 = from the left ·
+   225 / 315 = rising from the low left / low right), plus its height. Its keyframes are blended between the two tuned
+   cuts either side on the clock (`anchors`, regular grip; the reverse grip takes the nearest), then lifted or dropped
+   for a high or low cut (`high` / `low`: [hand y, blade y] per key; full on a flat cut, `vert` of it on a vertical
+   one, where the cut crosses every height anyway).
+     strings  a press with no direction given walks the form's string of angles (instead of left, right, left), each
+              cut starting near where the last one finished; the string picks up where it left off unless you've
+              stopped cutting for `reset` s.
+     flick    MOUSE AIM (Settings · CUT AIM): the way the mouse moved in the last moment before the press is the way the
+              blade travels (flick left: a cut from the right, sweeping left; flick down: an overhead). The motion
+              decays over `tau` s and must add up to `min` px to count; the cut's height comes from the view's tilt
+              from before the flick began (a flick down shouldn't turn an overhead into a low cut). */
+export const CUT_ANGLE = {
+  anchors: [[0, 'left'], [45, 'diagL'], [90, 'forward'], [135, 'diagR'], [180, 'right'], [225, 'riseR'], [315, 'riseL']],
+  high: [[0.3, 0.18], [0.26, 0.06], [0.3, 0.18]],
+  low:  [[-0.26, -0.54], [-0.26, -0.3], [-0.16, -0.14]],
+  vert: 0.35,
+  strings: {
+    fast:   [0, 225, 45, 180, 315, 135],   // Ataru: quick flat and diagonal cuts whipping side to side
+    medium: [135, 0, 225, 90, 315],        // Niman: round the clock, each cut flowing out of the last
+    strong: [135, 315, 90, 225, 45, 270],  // Djem So: heavy cuts down from the shoulder and back up the same line
+  },
+  reset: 1.2,
+  // the keys, with no flick: A / D the flat cuts · W + A / D the downward diagonals · S + A / D the rising cuts · W the
+  // overhead (aimed low: the lunging thrust) · S the back strike · nothing held: the form's string
+  keys: { left: 0, right: 180, fwdLeft: 45, fwdRight: 135, backLeft: 315, backRight: 225, forward: 90 },
+  flick: { tau: 0.09, min: 18 },
+  /* FLOW — a cut that starts within `within` degrees of where the last one finished (the far side of the clock from where
+     it came in), struck within `gap` s of it, flows straight on: the whole cut takes `speed` of its time and its wind-up
+     `chamber` of its share, with no wrap over the top. Every form's string flows; so do your own flicks if you chain
+     them round the clock. */
+  flow: { within: 55, gap: 1.2, speed: 0.86, chamber: 0.65 },
+  /* FOOTWORK — each cut moves the feet its own way: a step `side` m the way a flat cut sweeps (less as it turns
+     diagonal), `over` m further in under an overhead, `rise` m (back) off the rear foot into a rising cut. */
+  foot: { side: 0.28, over: 0.15, rise: -0.12 },
 };
 
 /* Progression is data-driven: see PROGRESSION CONFIG (auto-unlocks + the XP ability store) further below.
