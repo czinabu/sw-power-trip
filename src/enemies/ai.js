@@ -31,6 +31,7 @@ import { tickTactics, planTroopMelee, troopFeint, holdTremble, planShot, approac
 import { removeEnemy } from './cleanup.js';
 import { throwGrenade } from './grenades.js';
 import { updateLegs } from './gait.js';
+import { updateUpper } from './upper.js';
 import { MOVE } from '../data/movement.js';
 import { foeAllyTarget, hurtAlly } from '../allies/squad.js';
 import { heroFor } from './targets.js';
@@ -47,6 +48,7 @@ function fireAt(e, tgtPos, spread){
   const muzzle = V3(g.position.x, g.position.y+1.5, g.position.z);
   const aimDir = V3(tgtPos.x, tgtPos.y + 1.4, tgtPos.z).sub(muzzle).normalize();
   if (spread){ aimDir.x += rand(-spread, spread); aimDir.y += rand(-spread, spread) * 0.5; aimDir.z += rand(-spread, spread); aimDir.normalize(); }
+  e.kick = 1;   // the shoulders take the recoil (enemies/upper.js)
   fireBolt(muzzle, aimDir, t.boltSpeed * (G.mut === 'marksmen' ? 1.4 : 1), (e.converted ? t.dmg * CFG.convertDmgMult : t.dmg) * enemyDmgScale(), e.converted, false, e);
 }
 
@@ -670,5 +672,7 @@ export function updateEnemies(dt){
     }
     // LEGS — the hero's planted-foot gait on what the unit actually did this frame (enemies/gait.js)
     updateLegs(e, g, dt, e.dead || NO_FEET[e.state] ? 'off' : (t.fly || e.state === 'leap') ? 'air' : e.walking ? 'walk' : 'ground');
+    // UPPER BODY — aim, look, breathe, kick and flinch over the pose (enemies/upper.js)
+    updateUpper(e, g, dt, tgtPos, e.state === 'stasis' ? 'hold' : e.dead || NO_REACT[e.state] ? 'off' : 'on');
   }
 }

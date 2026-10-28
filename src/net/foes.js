@@ -16,6 +16,7 @@ import { damageEnemy } from '../enemies/damage.js';
 import { removeEnemy } from '../enemies/cleanup.js';
 import { makeBossBar } from '../enemies/spawn.js';
 import { updateLegs } from '../enemies/gait.js';
+import { updateUpper } from '../enemies/upper.js';
 import { burst } from '../fx/particles.js';
 import { ENDLESS_ARENAS, rotateEndlessArena, endlessWaveCleared } from '../game/survival.js';
 import { checkUnlocks } from '../game/flow.js';
@@ -193,6 +194,7 @@ export function updatePuppets(dt){
       }
     }
     updateLegs(e, g, dt, e.dead || NO_FEET[e.state] ? 'off' : (e.t.fly || e.state === 'leap') ? 'air' : e.walking ? 'walk' : 'ground');
+    updateUpper(e, g, dt, null, e.dead || NO_FEET[e.state] ? 'off' : 'on');   // breath, glances, the wind-up twist (enemies/upper.js)
   }
 }
 

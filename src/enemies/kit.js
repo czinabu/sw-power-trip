@@ -31,6 +31,7 @@ export const NPC_MATERIALS = {
   leather: { c: 0x2a2018, r: 0.8 },
   skin:    { c: 0x9c7a62, r: 0.75 },         // a bare face (the officer under its cap)
   cloth:   { c: 0x4a3f33, r: 0.95, side: THREE.DoubleSide },
+  mark:    { c: 0xc8601c, r: 0.6, m: 0.3 },   // rank and field paint (enemies/mesh.js markings)
 };
 
 const _inv = new THREE.Matrix4();
@@ -99,9 +100,10 @@ function bake(root){
   const insideLive = o => { for (let p = o.parent; p; p = p.parent) if (p.userData.live) return true; return false; };
   root.traverse(o => {
     if (!o.userData.slot) return;
-    const parent = o === root ? null : slotOf(o.parent);
-    // placed relative to its parent SLOT, through any plain groups between (the bosses' scaled-up body)
-    const s = { name: o.userData.slot, parent: parent && parent.userData.slot, ...relTo(o, parent),
+    const parent = o === root ? null : slotOf(o.parent), pj = o === root ? null : boneOf(o.parent);
+    // placed relative to its parent SLOT, through any plain groups between (the bosses' scaled-up body); a slot that
+    // hangs inside one of its parent's bones (the weapon arm on the chest) rides that bone instead
+    const s = { name: o.userData.slot, parent: parent && parent.userData.slot, parentBone: pj && pj.userData.bone || null, ...relTo(o, pj),
       byKey: new Map(), hulls: [], live: [], bones: [], boneIdx: new Map([[o, 0]]) };   // bone 0: the slot itself
     index.set(o, s); slots.push(s);
   });
@@ -128,7 +130,10 @@ function bake(root){
     const so = slotOf(o.parent), s = index.get(so);
     const rel = new THREE.Matrix4().multiplyMatrices(_inv.copy(so.matrixWorld).invert(), o.matrixWorld);
     if (o.userData.live){
-      const c = o.clone(); rel.decompose(c.position, c.quaternion, c.scale);
+      // a live glow inside a bone (a visor on the head) rides that bone
+      const j = boneOf(o.parent), c = o.clone();
+      (j.userData.bone ? new THREE.Matrix4().multiplyMatrices(_inv.copy(j.matrixWorld).invert(), o.matrixWorld) : rel).decompose(c.position, c.quaternion, c.scale);
+      c.userData.liveBone = j.userData.bone || null;
       s.live.push(c);
       return;
     }
@@ -165,17 +170,52 @@ export function bakeDesign(id, design, colors = {}){
   return baked;
 }
 
+/* WEAR on a unit's armour plates: chipped paint showing grey metal under it, and grime that climbs from the boots,
+   both seeded per unit so no two troopers in a squad are worn the same. Laid over the Ink surface the source
+   material carries (clone() drops shader hooks, so they are re-attached here). o.wear 0 (parade fresh) → 1 (beaten);
+   o.seed picks the pattern. The grime is measured from the unit's feet (uBase, set each frame by enemies/upper.js). */
+function wearArmor(m, src, o){
+  const base = src.onBeforeCompile, key = src.customProgramCacheKey();
+  const W = m.userData.wear = { uSeed: { value: o.seed ?? Math.random() * 97 }, uWear: { value: o.wear ?? 0.5 }, uBase: { value: 0 }, uScale: { value: 1 } };
+  m.onBeforeCompile = (sh, r) => {
+    base.call(m, sh, r);
+    Object.assign(sh.uniforms, W);
+    sh.vertexShader = 'varying vec3 vRest;\nvarying float vWY;\n' + sh.vertexShader
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\n  vRest = position;')
+      .replace('#include <project_vertex>', '#include <project_vertex>\n  vWY = (modelMatrix * vec4(transformed, 1.0)).y;');
+    sh.fragmentShader = `varying vec3 vRest;
+      varying float vWY;
+      uniform float uSeed, uWear, uBase, uScale;
+      float wHash(vec3 p){ return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
+      float wNoise(vec3 p){
+        vec3 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
+        return mix(mix(mix(wHash(i), wHash(i + vec3(1,0,0)), f.x), mix(wHash(i + vec3(0,1,0)), wHash(i + vec3(1,1,0)), f.x), f.y),
+                   mix(mix(wHash(i + vec3(0,0,1)), wHash(i + vec3(1,0,1)), f.x), mix(wHash(i + vec3(0,1,1)), wHash(i + vec3(1,1,1)), f.x), f.y), f.z);
+      }
+      ` + sh.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>
+      {
+        float n = wNoise(vRest * 9.0 + uSeed) * 0.65 + wNoise(vRest * 23.0 - uSeed) * 0.35;
+        float chip = step(0.8 - 0.14 * uWear, n);                          // hard-edged chips, Ink style
+        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.36, 0.38, 0.41), chip * 0.75);
+        float h = (vWY - uBase) / uScale;                                   // height above the feet, in model units
+        float grime = (1.0 - smoothstep(0.05, 0.75, h)) * (0.25 + 0.5 * wNoise(vRest * 4.0 + uSeed * 3.0));
+        diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(0.55, 0.48, 0.4), step(0.18, grime * uWear) * 0.8);
+      }`);
+  };
+  m.customProgramCacheKey = () => key + '-wear';
+}
+
 /* a fresh unit from a bake. Returns the root group; its userData holds bodyMat (this unit's own armour material)
    plus every slot by name and every tagged live object (tags ending in [] collect into arrays). */
-export function instantiate(baked){
+export function instantiate(baked, o = {}){
   const groups = new Map();
   let bodyMat = null;
-  const ud = {}, binds = [];
+  const ud = {}, binds = [], joints = new Map();   // joints: 'slot/bone' → its group
   for (const s of baked.slots){
     const g = new THREE.Group();
     g.position.copy(s.position); g.rotation.copy(s.rotation); g.scale.copy(s.scale);
     groups.set(s.name, g);
-    if (s.parent) groups.get(s.parent).add(g);
+    if (s.parent) (s.parentBone ? joints.get(s.parent + '/' + s.parentBone) : groups.get(s.parent)).add(g);
     if (s.name !== 'body') ud[s.name] = g;
     // the slot's bones (plain groups: a skeleton only reads their world matrices), exposed by name like the slots
     let bones = null;
@@ -184,7 +224,7 @@ export function instantiate(baked){
       for (const b of s.bones){
         const j = new THREE.Group();
         j.position.copy(b.position); j.rotation.copy(b.rotation); j.scale.copy(b.scale);
-        bones[b.parent].add(j); bones.push(j); ud[b.name] = j;
+        bones[b.parent].add(j); bones.push(j); ud[b.name] = j; joints.set(s.name + '/' + b.name, j);
       }
     }
     const Mesh = (geo, m) => {
@@ -198,7 +238,11 @@ export function instantiate(baked){
     for (const { key, mat, geo } of s.meshes){
       let m = mat;
       if (key === 'armor'){
-        if (!bodyMat){ bodyMat = mat.clone(); bodyMat.emissive.setHex(0); bodyMat.emissiveIntensity = 0; }
+        if (!bodyMat){
+          bodyMat = mat.clone(); bodyMat.emissive.setHex(0); bodyMat.emissiveIntensity = 0;
+          // clone() drops the shader hooks: carry the Ink surface (chrome on the plates) and add this unit's wear
+          wearArmor(bodyMat, mat, o);
+        }
         m = bodyMat;
       }
       const mesh = Mesh(geo, m);
@@ -214,7 +258,7 @@ export function instantiate(baked){
       const c = src.clone();
       if (c.isMesh && src.userData.live.unique) c.material = src.material.clone();
       if (!c.isMesh) c.traverse(o => { if (o.isMesh && o.userData.live && o.userData.live.unique) o.material = o.material.clone(); });
-      g.add(c);
+      (src.userData.liveBone ? joints.get(s.name + '/' + src.userData.liveBone) : g).add(c);
       const tag = src.userData.live.tag;
       if (!tag) continue;
       if (tag.endsWith('[]')){ const n = tag.slice(0, -2); (ud[n] = ud[n] || []).push(c); }

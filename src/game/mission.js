@@ -19,6 +19,7 @@ import { hurtPlayer } from '../player/damage.js';
 import { ENEMY_TYPES } from '../data/enemies.js';
 import { buildEnemyMesh } from '../enemies/mesh.js';
 import { updateLegs } from '../enemies/gait.js';
+import { updateUpper } from '../enemies/upper.js';
 import { spawnEnemy, makeBossBar } from '../enemies/spawn.js';
 import { removeEnemy } from '../enemies/cleanup.js';
 import { findClearSpawn } from '../world/collision.js';
@@ -609,6 +610,7 @@ function placeOnPath(s, q, dt = 0, spd = 0){
   g.position.set(x, y, z);
   g.rotation.set(0, s.yaw, 0);
   updateLegs(q, g, dt, b[2] === 'leap' ? 'air' : 'ground');   // its stride, lean and footing are the troopers' (enemies/gait.js)
+  updateUpper(q, g, dt, playerPos());   // and it keeps looking back at you (enemies/upper.js)
   q.tag.position.set(x, y + 2.7 * (q.def.scale || 1) + Math.sin(G.gt * 5) * 0.12, z);
 }
 // standing still: turn to face the hero
@@ -616,7 +618,7 @@ function faceHero(q, dt){
   const p = playerPos(), g = q.g, want = Math.atan2(p.x - g.position.x, p.z - g.position.z);
   g.rotation.y += Math.atan2(Math.sin(want - g.rotation.y), Math.cos(want - g.rotation.y)) * Math.min(1, dt * 5);
   g.rotation.x = 0;
-  updateLegs(q, g, dt);
+  updateLegs(q, g, dt); updateUpper(q, g, dt, playerPos());
 }
 function shove(q, s){
   const qp = q.g.position, pp = playerPos(), dx = pp.x - qp.x, dz = pp.z - qp.z, l = Math.hypot(dx, dz) || 1;
@@ -727,7 +729,7 @@ function walkVip(s, dt, spd = 0, rdt = dt){
   const dir = Math.atan2(b[0] - a[0], b[1] - a[1]);
   g.position.set(want.x, 0, want.z);
   g.rotation.y += Math.atan2(Math.sin(dir - g.rotation.y), Math.cos(dir - g.rotation.y)) * Math.min(1, (rdt || 1) * 8);
-  updateLegs(v, g, rdt, 'ground');
+  updateLegs(v, g, rdt, 'ground'); updateUpper(v, g, rdt, null);
   v.tag.position.set(g.position.x, 2.3 * (v.def.scale || 1) + Math.sin(G.gt * 5) * 0.1, g.position.z);
 }
 function vipDown(){

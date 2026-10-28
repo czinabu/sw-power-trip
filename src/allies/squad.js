@@ -19,6 +19,7 @@ import { SCALE } from '../data/coop.js';
 import { heroesHere } from '../player/players.js';
 import { buildEnemyMesh } from '../enemies/mesh.js';
 import { updateLegs } from '../enemies/gait.js';
+import { updateUpper } from '../enemies/upper.js';
 import { sweepHit } from '../enemies/bodyshape.js';
 import { fireBolt } from '../enemies/bolts.js';
 import { segBlockedBySolids, clampToArena, collideSolids, findClearSpawn } from '../world/collision.js';
@@ -245,6 +246,7 @@ function shoot(a, e){
   const dir = V3(tp.x - mx, tp.y + 1.3 * es - muzzle.y, tp.z - mz).normalize();
   const sp = a.role.spread;
   dir.x += rand(-sp, sp); dir.y += rand(-sp, sp) * 0.5; dir.z += rand(-sp, sp); dir.normalize();
+  a.kick = 1;
   fireBolt(muzzle, dir, a.role.boltSpeed, a.role.dmg * (SQUAD.dmg[diffKey()] || 1), true, true, a);
   bolts[bolts.length - 1].ally = a;
   bolts[bolts.length - 1].mesh.material.color.setHex(G.hero === 'mando' ? 0xffa040 : 0x4aa8ff);
@@ -296,7 +298,7 @@ function updateAlly(a, dt, medic, pp){
   a.tag.material.color.setHex(standing(a) ? MISSION_COLOR[G.hero] : 0xff5a4a);
   if (!standing(a)){
     g.rotation.x += (-1.2 - g.rotation.x) * Math.min(1, dt * 7);
-    updateLegs(a, g, dt, 'off');
+    updateLegs(a, g, dt, 'off'); updateUpper(a, g, dt, null, 'off');
     return;
   }
   if (g.rotation.x !== 0) g.rotation.x += (0 - g.rotation.x) * Math.min(1, dt * 8);
@@ -363,6 +365,7 @@ function updateAlly(a, dt, medic, pp){
     a.burstLeft = a.role.burst - 1; a.burstT = a.role.burstGap;
   }
   updateLegs(a, g, dt, sp2 < 3.2 ? 'walk' : 'ground');
+  updateUpper(a, g, dt, e ? e.group.position : null);   // rifle and eyes on its mark (enemies/upper.js)
 }
 
 /* ============================================================
