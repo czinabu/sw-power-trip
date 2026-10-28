@@ -52,7 +52,7 @@ export const ROADMAP = [
     items: ['Long waves split in two with a 3.6s lull and a SECOND WAVE beat: Mustafar 4, Exegol 1 to 4, survival wave 15 on', 'Top Focus tier now +30% damage (was +42%); UNLEASHED parries get a longer riposte window and a free riposte cut', 'Jedi only; Mando, missions, sandbox and training unchanged'] },
   { title: 'Saber duels, Jedi Academy style', status: 'now',
     items: ['Done: where you aim picks the cut\'s height (head, chest, legs), with the key for direction; 7 new cuts, hits land and react where the blade met',
-            'Done: duellists read your cut and swing their weapon onto its line to meet it; a fourth, low guard across the knees', 'Next: your guard meets their strike on its line',
+            'Done: duellists read your cut and swing their weapon onto its line to meet it; a fourth, low guard across the knees', 'Done: your held guard meets a duellist\'s strike on its line, and a parry\'s riposte cuts back on the side it left open',
             'Next: back-and-forth exchanges that still work in a crowd', 'Next: high, low and body-to-body locks, duellist flourishes'] },
   { title: 'Balance, round two', status: 'next',
     items: ['Survival scaling and mission pulses, from real playtest notes'] },

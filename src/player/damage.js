@@ -211,11 +211,12 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
     const guard = player.blockHeld && !airGuardLost();
     if (TMP.lengthSq() > 0.001 && TMP.normalize().dot(fwd()) > 0.1){
       const pp = playerPos();
-      if (player.parryT > 0 || (guard && player.stam > 0)) deflectAnim(V3(fromPos.x, pp.y + 1.4, fromPos.z));
+      if (player.parryT > 0 || (guard && player.stam > 0)) deflectAnim(V3(fromPos.x, pp.y + 1.4, fromPos.z), opts && opts.line);   // (a duellist's strike: caught on its line)
       if (player.parryT > 0){
         player.parryT = 0;   // a parry consumes the window
         player.riposteT = riposteWindow(CFG.player.riposteTime);
         player.cancelRiposte = (G.gt - (player.cancelT || -9)) < 0.45;   // parried straight out of a swing-cancel → a stronger answer
+        player.ripLine = (opts && opts.line) || null;   // a duellist's strike: the riposte cuts back on the line it left open (jedi/guardline.js)
         player.force = clamp(player.force + 12 + player.up.parryForce + (stance().parryRefund || 0), 0, CFG.player.maxForce);   // skillful defense feeds the Force (NIMAN refunds extra)
         G.hitstop = Math.max(G.hitstop, 0.24);
         G.shake = Math.max(G.shake, 1.0);

@@ -27,6 +27,7 @@ import { masteryXp } from '../../game/progression.js';
 import { momentumStrike } from '../parkour.js';
 import { MOVE } from '../../data/movement.js';
 import { pickCut } from './cutaim.js';
+import { lineCatch, ripostePattern } from './guardline.js';
 
 /* COMBO RHYTHM — fractions of a swing. A press before `open` is too early (and costs this link its flow); a single
    press from `open` on links in rhythm, and the next cut leaves at `at` (just after the follow-through). */
@@ -77,14 +78,16 @@ export function tryAttack(flow = false){
   // RIPOSTE — the strike that follows a parry is a DECISIVE committed forward counter (overrides the chosen cut),
   // not just a normal swing that happens to hit harder. It reads as a clear, distinct answer.
   const ripNow = player.riposteT > 0;
-  if (ripNow) pat = SWING_PATTERNS.forward;
+  // (after a duellist's parried strike it cuts back in on the line that strike left open: jedi/guardline.js)
+  const ripPat = ripNow && player.ripLine ? ripostePattern(player.ripLine) : null;
+  if (ripNow) pat = ripPat || SWING_PATTERNS.forward;
   // BACK STRIKE — attacking while retreating (S) whirls the blade behind you to punish
   // anything closing on your back, knocking it away. No aim-assist turn: you stay facing forward.
   const backStrike = dirKey === 'back' && !ripNow;
   // the riposte is spent on THIS cut (it lands on whatever the blade meets first; see applySwingDamage)
   const cancelRip = ripNow && !!player.cancelRiposte;
-  if (ripNow){ player.riposteT = 0; player.cancelRiposte = false; }
-  player.swing = { t: 0, applied: false, step, dur, pat, dir: dirKey, h: cut.h, back: backStrike, riposte: ripNow, cancelRip, flow, mom };
+  if (ripNow){ player.riposteT = 0; player.cancelRiposte = false; player.ripLine = null; }
+  player.swing = { t: 0, applied: false, step, dur, pat, dir: dirKey, h: cut.h, back: backStrike, riposte: ripNow, ripLine: !!ripPat, cancelRip, flow, mom };
   player.deflectAnim = null;   // a cut takes the blade over from any catch in progress
   const spin = pickSpin(st.form, step, dirKey, { ripNow, backStrike, mom, flow, st });
   if (spin){
@@ -353,11 +356,15 @@ export function forceKick(){
 
 /* DEFLECT ANIMATION — start a blade catch toward something arriving at `from` (a bolt, or a blocked blow). The
    catch itself (which cover, which side) is picked in anim/saber.js. A swing already in flight keeps the blade. */
-export function deflectAnim(from){
+export function deflectAnim(from, line){
   if (G.hero === 'mando' || player.atkT > 0 || !from) return;
   const cur = player.deflectAnim;
   if (cur && cur.spin && cur.t < cur.dur) return;   // a spin already sweeping the blade round covers the next bolt too
+  // a duellist's blow on the line the guard was already waiting on (jedi/guardline.js): that catch flicks it away
+  if (cur && cur.hold && line && cur.line === line && cur.pose){ cur.hold = false; cur.dur = 0.3; cur.t = 0.09; return; }
   player.deflectAnim = catchState(from);
+  const c = line && lineCatch(line);   // a duellist's strike is caught where its line comes in, not just toward its body
+  if (c){ player.deflectAnim.side = c.side; player.deflectAnim.h = c.h; }
   deflectSpin(player.deflectAnim);
 }
 const catchState = (from) => {

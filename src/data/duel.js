@@ -128,6 +128,17 @@ export const WIND = {
   staff: { R: [-2.0, 0.4],   L: [1.9, 0.5],     H: [-2.9, 1.2], T: [-1.4, -0.4] },
 };
 
+/* YOUR GUARD ON THEIR LINE (player/jedi/guardline.js). Hold the guard while a duellist within `range` winds up at you
+   and your blade goes to meet that strike where it will come in, the way Jedi Academy's blocks did: catch is where on
+   you each line arrives, in the deflect picker's terms (side: + your weapon side, h: against the chest; the foe faces
+   you, so its right comes in on your left, a thrust straight down the middle). A clean parry then cuts back on the
+   line it left open (riposte: the cut's pattern in data/stances.js SWING_PATTERNS). */
+export const GUARD_LINE = {
+  range: 4.5,
+  catch: { R: { side: -0.6, h: 0.1 }, L: { side: 0.6, h: 0.1 }, H: { side: 0.15, h: 0.65 }, T: { side: 0.05, h: -0.1 }, Lo: { side: 0.4, h: -0.6 } },
+  riposte: { R: 'diagR', L: 'diagL', H: 'thrust', T: 'forward', Lo: 'forward' },
+};
+
 /* THE MANDALORIAN'S CLOSE-QUARTERS KIT (E). No Jedi forms, but a bounty hunter who has fought every kind of thing:
    (the string's blows rock a foe back `shove` units and never launch it; a foe they kill crumples where it stands.
    Only the jet-powered moves, the charge and the dive kick, throw bodies. Each blow LANDS `contact` seconds after the

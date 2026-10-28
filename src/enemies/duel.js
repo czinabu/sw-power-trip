@@ -575,7 +575,7 @@ function winLock(label, knock){
   drainBreath(e, DUEL.breath.lock);   // a bind lost takes the wind out of it
   tutEvent('guardBreak', e);   // winning the bind breaks its guard too
   if (knock) damageEnemy(e, 8, V3(dx / dl, 0, dz / dl), knock);
-  player.riposteT = CFG.player.riposteTime + 0.3;
+  player.riposteT = CFG.player.riposteTime + 0.3; player.ripLine = null;
   const cp = lockPoint();
   clashFlash(cp, 0xffd24a, true);
   sparks(cp, 0xffe27a, 18, 15, { dir: V3(dx / dl, 0.2, dz / dl), cone: 0.8, life: 0.36 });

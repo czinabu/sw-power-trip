@@ -439,7 +439,8 @@ export function updateEnemies(dt){
               if (hooks.hurt) hooks.hurt(e, t.dmg * enemyDmgScale() * (thrust ? DUEL.thrustDmg : 1), g.position, thrust ? 'thrust' : e.dp && e.dp.brace ? 'brace' : 'melee', unblockable);   // their browser parries or takes it
             } else {
               // a THRUST drives through a held guard: parry it or get out of the way
-              const res = hurtPlayer(t.dmg * enemyDmgScale() * (thrust ? DUEL.thrustDmg : 1), g.position, false, true, false, unblockable ? { unblockable: true } : null);   // melee — blocked by high ground
+              const line = e.dp && e.plan ? e.plan.side : null;   // a duellist's strike comes in on a line: your guard meets it there (player/jedi/guardline.js)
+              const res = hurtPlayer(t.dmg * enemyDmgScale() * (thrust ? DUEL.thrustDmg : 1), g.position, false, true, false, unblockable || line ? { unblockable, line } : null);   // melee — blocked by high ground
               if (res === 'parried'){
                 // perfectly parried — the weapon is knocked wide and the foe STUMBLES, wide open
                 // the Warbringer's posture takes the parry; a full bar breaks it open (duel.js), otherwise it reels as any brute does
