@@ -95,6 +95,7 @@ import { updateCoop, partnerShown, partnerInfo } from './net/partner.js';
 import { allies, updateSquad, updateSquadHud, spawnSquad, addSquadmate, squadOrder } from './allies/squad.js';
 import { downed } from './game/revive.js';
 import './ui/coop-ui.js';
+import { updateFoes, updatePuppets } from './net/foes.js';
 import './ui/saves-ui.js';   // NEW GAME / SAVE GAME / LOAD GAME and the save-slot panel
 
 setHero(G.hero);   // initialise control text + crosshair for the default hero
@@ -123,7 +124,7 @@ function tick(){
       updateSandbox(dt);
       updateSquad(dt);   // the hero's squad, and anyone downed waiting to be got up (allies/squad.js, game/revive.js)
     }
-    updateEnemies(dt);
+    if (G.coopGuest) updatePuppets(dt); else updateEnemies(dt);   // co-op guest: the host's foes, followed rather than thought for (net/foes.js)
     updateBolts(dt);
     updateGrenades(dt);
     updateOrbs(dt);
@@ -143,6 +144,7 @@ function tick(){
   }
   updateSquadHud();
   updateTutorial(G.paused || G.skillSelect ? 0 : dt);   // the training lessons, and the unlock drills in a real run
+  updateFoes();
   updateCoop(rawDt);     // online co-op: send my pose, pose the partner's hero (net/partner.js)
   updateTrail(dt);
   updateJudgeFX();

@@ -13,19 +13,22 @@ import { burst } from '../fx/particles.js';
 import { floater } from '../fx/floaters.js';
 import { shared, G, enemies, bolts, player } from '../state.js';
 import { playerPos, maxHp } from '../player/helpers.js';
+import { SCALE, heroScale } from '../data/coop.js';
+import { heroesHere } from '../player/players.js';
 import { makeBossBar, spawnEnemy } from '../enemies/spawn.js';
 import { removeEnemy } from '../enemies/cleanup.js';
 import { initWarbringer } from '../enemies/duel.js';
 import { clearGrenades } from '../enemies/grenades.js';
 import { findClearSpawn, edgeSpawn } from '../world/collision.js';
 import { buildArena } from '../world/arena.js';
-import { startLevel, checkUnlocks } from './flow.js';
+import { startLevel, checkUnlocks, splitWaveWithLull } from './flow.js';
 import { MUTATORS } from '../data/mutators.js';
 import { payWaveClear } from './progression.js';
 import { openSkillTree } from '../ui/store-ui.js';
 import { showBanner } from '../ui/banners.js';
 import { squadSize, regroupSquad } from '../allies/squad.js';
 import { beginWave } from './readout.js';
+import { coopRun } from '../net/run.js';
 
 /* ============================================================
    SURVIVAL / ENDLESS MODE — escalating waves, mutators, milestone spikes, arena rotation, repeatable power-ups.
@@ -90,7 +93,7 @@ export function spawnChampion(){
   const e = enemies[enemies.length-1]; if (!e) return;
   e.champion = true; e.warbringer = true; e.leapCd = rand(3.5, 5.5);
   initWarbringer(e);                                              // a posture bar and breath, and a longer held overhead (co-op: a taller bar)
-  e.hp = Math.round(e.hp * 4.5);                                  // a wall of HP
+  e.hp = Math.round(e.hp * 4.5 * heroScale(SCALE.bossHp, heroesHere()));   // a wall of HP (more with a partner)
   e.maxHp = e.hp;
   e.t = Object.assign({}, e.t, { dmg: e.t.dmg * 1.4, score: 16 });   // per-enemy copy: hits harder, pays big (don't mutate the shared type)
   e.group.scale.multiplyScalar(1.55);
@@ -112,10 +115,16 @@ export function startEndless(){
   startLevel(0);                                   // full fresh setup (kit/build/stats) on the first arena (temple)
   G.endless = true; G.endlessWave = 0; G.arenaRot = 0; G.mut = null;
   G.eliteSurge = false; G.pendingChampion = false;
+  if (G.coopJoin){   // joining the host's run (net/foes.js): their arena, their foes; the host runs the waves
+    G.coopJoin = false; G.coopGuest = true;
+    if (coopRun.ar){ G.arenaRot = coopRun.ar; rotateEndlessArena(ENDLESS_ARENAS[coopRun.ar]); }
+    showBanner('CO-OP SURVIVAL', 'Fighting alongside the host.', 3.0);
+    return;
+  }
   showBanner('SURVIVAL', 'They will not stop coming. Neither will you.', 3.0);
 }
 // rebuild the arena in place at a milestone — clear the field, build, recentre the player (NO run reset)
-function rotateEndlessArena(L){
+export function rotateEndlessArena(L){
   for (const e of enemies) removeEnemy(e); enemies.length = 0;
   for (const b of bolts) scene.remove(b.mesh); bolts.length = 0;
   clearGrenades();
@@ -139,7 +148,9 @@ export function startEndlessWave(){
   const pulse = Math.max(4, Math.ceil(list.length/3));
   const surgeGap = Math.max(1.3, 2.6 - n*0.05);   // surges arrive faster as the run deepens — relentless late pressure
   let t = 0;
+  const q0 = G.spawnQueue.length;
   for (let i = 0; i < list.length; i++){ t += (i>0 && i%pulse===0) ? surgeGap : 0.2; G.spawnQueue.push({ type:list[i], t }); }
+  if (n >= 15) splitWaveWithLull(q0);   // deep survival waves breathe halfway
   if (G.pendingChampion){ G.pendingChampion = false; spawnChampion(); }
   shared.levelPhase = 'fighting';
   G.waveHits = 0; G.waveDmg = 0;   // how cleanly this wave is fought (payWaveClear)
