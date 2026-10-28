@@ -10,7 +10,7 @@ import { V3, rand, clamp, TMP } from '../../utils.js';
 import { burst } from '../../fx/particles.js';
 import { floater, screenFlash } from '../../fx/floaters.js';
 import { shared, G, enemies, barrels, keys, player } from '../../state.js';
-import { fwd, playerPos, stance } from '../helpers.js';
+import { fwd, rightV, playerPos, stance } from '../helpers.js';
 import { damageEnemy, flinchEnemy, nearestEnemyInCone, staggerEnemy, interruptEnemy } from '../../enemies/damage.js';
 import { damageBoss } from '../../boss/boss.js';
 import { FOCUS, focusTier, focusDmgMul, addFocus, freeRiposte } from './focus.js';
@@ -28,6 +28,7 @@ import { masteryXp } from '../../game/progression.js';
 import { momentumStrike } from '../parkour.js';
 import { MOVE } from '../../data/movement.js';
 import { pickCut } from './cutaim.js';
+import { CUT_ANGLE } from '../../data/stances.js';
 import { lineCatch, ripostePattern } from './guardline.js';
 
 /* COMBO RHYTHM — fractions of a swing. A press before `open` is too early (and costs this link its flow); a single
@@ -88,9 +89,16 @@ export function tryAttack(flow = false){
   // the riposte is spent on THIS cut (it lands on whatever the blade meets first; see applySwingDamage)
   const cancelRip = ripNow && !!player.cancelRiposte;
   if (ripNow){ player.riposteT = 0; player.cancelRiposte = false; player.ripLine = null; }
-  player.swing = { t: 0, applied: false, step, dur, pat, dir: dirKey, h: cut.h, back: backStrike, riposte: ripNow, ripLine: !!ripPat, cancelRip, flow, mom };
+  // FLOW (data/stances.js CUT_ANGLE.flow): an angle cut that starts where the last one finished flows straight on, quicker
+  const FL = CUT_ANGLE.flow, last = player.lastCut, ang = !ripNow && pat.ang != null ? pat.ang : null;
+  const flowCut = ang != null && !!last && G.gt - last.at < FL.gap && Math.abs((((ang - last.ang - 180) % 360) + 540) % 360 - 180) < FL.within;
+  player.lastCut = ang != null ? { ang, at: G.gt } : null;
+  const cutDur = flowCut ? dur * FL.speed : dur;
+  player.atkT = cutDur;
+  player.swing = { t: 0, applied: false, step, dur: cutDur, flowCut, pat, dir: dirKey, h: cut.h, flick: !!cut.flick, back: backStrike, riposte: ripNow, ripLine: !!ripPat, cancelRip, flow, mom };
   player.deflectAnim = null;   // a cut takes the blade over from any catch in progress
-  const spin = pickSpin(st.form, step, dirKey, { ripNow, backStrike, mom, flow, st });
+  const spin = pickSpin(st.form, step, cut.flick ? 'neutral' : dirKey, {   // (an aimed flick cut stays square: no strafe spin)
+    ripNow, backStrike, mom, flow, st });
   if (spin){
     player.stam -= spin.stam * st.stamina; player._spinT = G.gt; player.swing.spin = spin; player.swing.dur *= spin.dur; player.atkT = player.swing.dur; }
   // cinematic lunge toward nearest target in view — STRONG's finisher lunges harder; a RIPOSTE drives in hardest
@@ -110,6 +118,7 @@ export function tryAttack(flow = false){
     stepIntoCut(fwd(), 7 * lunge);   // step into the strike
   }
   if (spin) spinTravel(spin, dirKey);
+  else if (ang != null && !backStrike) cutFootwork(ang);
   S.swing(G.hero === 'mando' ? 'dark' : G.stance);   // the blade's whoosh, voiced by form
   if (flow && G.hero !== 'mando') sfx(1250, 0.06, 'sine', 0.022, 1900);   // a faint ring: the link landed in rhythm
 }
@@ -144,6 +153,16 @@ function spinTravel(spin, dirKey){
 // (locomotion.js moves it, anim/footing.js steps the feet). In the air it stays a shove.
 const GROUND_DRAG = 9;
 const MOM_LABEL = { slide: 'SLIDE CUT', wallrun: 'WALL STRIKE', vault: 'VAULT STRIKE', climb: 'LEDGE STRIKE', roll: 'ROLL STRIKE' };
+/* FOOTWORK (CUT_ANGLE.foot) — on top of the step into the cut, the feet go the cut's own way: a flat cut steps the way
+   the blade sweeps, an overhead drives in under it, a rising cut comes up off the back foot */
+function cutFootwork(ang){
+  const F = CUT_ANGLE.foot, sw = player.swing;
+  if (!player.grounded || !sw) return;
+  const a = ang * Math.PI / 180, c = Math.cos(a), s = Math.sin(a), f = fwd(), r = rightV();
+  const side = -c * F.side * Math.abs(c), on = s > 0 ? F.over * s : F.rise * -s;
+  const t = sw.travel || (sw.travel = { x: 0, z: 0, done: 0 });
+  t.x += r.x * side + f.x * on; t.z += r.z * side + f.z * on;
+}
 function stepIntoCut(dir, impulse){
   if (player.grounded && player.swing){
     player.swing.travel = { x: dir.x * impulse / GROUND_DRAG, z: dir.z * impulse / GROUND_DRAG, done: 0 };

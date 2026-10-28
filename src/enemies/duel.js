@@ -27,6 +27,19 @@ import { heroesHere } from '../player/players.js';
 const LINES = ['L', 'R', 'H', 'Lo'];   // the lines a guard covers (Lo: the legs)
 const SIDES = ['L', 'R', 'H'];         // the lines a foe strikes from
 const GUARDING = { chase: 1, recover: 1 };
+const GUARD_ANG = { R: 0, H: 90, L: 180, Lo: 270 };   // where on the clock each guard's arc is centred (DUEL.arc)
+const angDist = (a, b) => Math.abs((((a - b) % 360) + 540) % 360 - 180);
+/* where on the clock round the body an angle cut arrives (DUEL.arc): its angle, carried toward the top for a high flat
+   cut and the bottom for a low one; null for a keyed cut (thrust, back strike, finisher, riposte), which keeps its line */
+function arrival(sw){
+  const pat = sw && sw.pat;
+  if (!pat || pat.ang == null || sw.riposte || sw.step === 2 && !sw.flick) return null;
+  const A = DUEL.arc, c = Math.abs(Math.cos(pat.ang * Math.PI / 180));
+  const to = pat.h === 'high' ? 90 : pat.h === 'low' ? 270 : null;
+  if (to == null) return pat.ang;
+  const d = ((((to - pat.ang) % 360) + 540) % 360) - 180;   // the short way round toward it
+  return (pat.ang + Math.sign(d) * Math.min(Math.abs(d), (pat.h === 'high' ? A.high : A.low) * c) + 360) % 360;
+}
 const DIFF_MUL = { padawan: 0.7, knight: 1, master: 1.15 };
 const diffMul = () => DIFF_MUL[G.diff] || 1;
 
@@ -71,6 +84,7 @@ export function cutLine(sw){
 }
 // the line a cut pattern comes in on, whatever the swing
 function patLine(pat){
+  if (pat.line) return pat.line;   // an angle cut knows its own (player/jedi/cutaim.js anglePattern)
   if (pat.h === 'low' && !/^rise/.test(pat.id)) return 'Lo';   // a sweep at the knees or a thrust aimed low (the rising cuts come up across a side)
   return pat.yF < -0.5 ? 'L' : pat.yF > 0.5 ? 'R' : 'H';
 }
@@ -445,15 +459,18 @@ export function duelDefend(e, line, kind, heavy, at){
     floater(V3(g.position.x, g.position.y + 1.3, g.position.z), 'PARRIED', '#ff8a5a');
     return 'block';
   }
+  const ang = kind === 'cut' || kind === 'finisher' ? arrival(sw) : null;
   if (dec !== 'block' || !spend(e, DUEL.breath.block)){
     // it lands: the guard swings over to cover that line next time
     if (Math.random() < 0.6){ e.guard = line; e.guardT = rand(DUEL.guardShift[0], DUEL.guardShift[1]); }
     e.lineStreak = 0;
     return null;
   }
-  // BLOCKED — the guard turns it; posture takes the strain
-  e.lineStreak = (e.lastLine === line) ? e.lineStreak + 1 : 1;
-  e.lastLine = line; e.guard = line;
+  // BLOCKED — the guard turns it; posture takes the strain. The same cut again (the same line, or an angle cut within
+  // DUEL.arc.repeat of the last) builds its read of you
+  const same = ang != null && e.lastAng != null ? angDist(ang, e.lastAng) < DUEL.arc.repeat : e.lastLine === line;
+  e.lineStreak = same ? e.lineStreak + 1 : 1;
+  e.lastLine = line; e.lastAng = ang; e.guard = line;
   const P = DUEL.posture;
   const cost = (kind === 'finisher' ? P.finisher : kind === 'punchHeavy' ? P.punchHeavy : kind === 'punch' ? P.punch : P.cut) * (G.hero !== 'mando' ? stance().postureMul || 1 : heavy ? P.heavyMul : 1);   // saber forms set their own strain (Ataru 0.8, Niman 1, Djem So 1.5); fists and the darksaber keep the heavy multiplier
   // the flash goes where the blades cross (`at`, from player/jedi/clash.js), else just in front of the foe
@@ -480,8 +497,15 @@ function decide(e, line, kind, rhyN){
   const has = amt => e.breath == null || (!e.winded && e.breath >= amt);
   if (p.dodge && (kind === 'cut' || kind === 'punch') && Math.random() < p.dodge * m && has(DUEL.breath.dodge)) return 'dodge';
   if (p.parry && rhyN > R.after && kind !== 'finisher' && Math.random() < p.parry * m && has(DUEL.breath.block)) return 'parry';
-  const onLine = line === e.guard;
-  let chance = onLine ? p.block : p.block * DUEL.offLine;
+  // how squarely the guard covers it: on the line, or (an angle cut) how far inside its arc it arrives (DUEL.arc)
+  const ang = kind === 'cut' || kind === 'finisher' ? arrival(player.swing) : null;
+  let cover = line === e.guard ? 1 : 0;
+  if (ang != null){
+    const A = DUEL.arc, d = angDist(ang, GUARD_ANG[e.guard] ?? 90);
+    cover = 1 - THREE.MathUtils.smoothstep(d, A.cover, A.cover + A.feather);
+  }
+  const onLine = cover > 0.5;
+  let chance = p.block * (DUEL.offLine + (1 - DUEL.offLine) * cover);
   if (onLine && e.lineStreak >= DUEL.adaptAfter) chance = 0.95;   // it has your rhythm: same cut, same answer
   if (kind === 'finisher') chance *= 0.75;
   return Math.random() < chance * m && has(DUEL.breath.block) ? 'block' : null;

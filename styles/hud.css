@@ -174,6 +174,11 @@ body.mando #stancebox,body.mando #xh,body.mando #fcmeter{display:none!important}
 /* ---------- crosshair, reticle, gauges ---------- */
 #xh{position:fixed;top:50%;left:50%;width:6px;height:6px;margin:-3px;border-radius:50%;background:rgba(210,242,255,.92);box-shadow:0 0 8px var(--accent)}
 /* cut height: three short ticks right of the crosshair; the lit one is the height of your next cut (player/jedi/cutaim.js) */
+/* the cut dial (player/jedi/cutaim.js): a needle through the crosshair along the next cut, bright end where it comes from */
+#cutdial{position:fixed;top:50%;left:50%;width:0;height:0;pointer-events:none;z-index:7;opacity:.35;transition:opacity .08s}
+#cutdial.live{opacity:1}
+#cutdial i{position:absolute;left:-1px;top:-24px;width:2px;height:48px;border-radius:1px;background:linear-gradient(to bottom,rgba(210,242,255,.95),rgba(210,242,255,0) 70%);transform-origin:1px 24px}
+#cutdial.live i{box-shadow:0 0 6px var(--accent)}
 #cuth{position:fixed;top:50%;left:50%;width:7px;height:22px;margin:-11px 0 0 14px;pointer-events:none;z-index:7}
 #cuth i{position:absolute;left:0;width:7px;height:2px;border-radius:1px;background:rgba(210,242,255,.22);transition:background .08s,width .08s}
 #cuth .ch-high{top:0}#cuth .ch-mid{top:10px}#cuth .ch-low{top:20px}

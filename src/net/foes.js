@@ -110,6 +110,7 @@ function applyRec(e, rec){
   const [, , x, y, z, rx, ry, rz, sc, hp, maxHp, state, flags, , wA, sZ, em, ei, wZ, sX] = rec;
   e.want.pos.set(x, y, z); e.want.rx = rx; e.want.ry = ry; e.want.rz = rz;
   e.group.scale.setScalar(sc);
+  sendCtl(e);   // a control state put on it here since the last frame goes out before the snapshot overwrites it
   e.hp = hp; e.maxHp = maxHp; e.state = e.netState = state; e.walking = !!(flags & WALKING);
   const dying = !!(flags & DEAD);
   if (dying && !e.dead) burst(e.group.position, 0x888888, 6, 4, 3);
@@ -182,16 +183,18 @@ const NO_FEET = { ragdoll: 1, knockdown: 1, getup: 1, fade: 1, spawn: 1, grasped
 const damp = (a, b, k, dt) => a + (b - a) * (1 - Math.exp(-k * dt));
 const angDiff = (a, b) => Math.atan2(Math.sin(b - a), Math.cos(b - a));
 
+// a Force power or a blow here put the puppet into a control state (floored, thrown, stunned, frozen): tell the host,
+// which applies it to the real foe. The next snapshot then carries the result back.
+function sendCtl(e){
+  if (e.state === e.netState) return;
+  if (CTL[e.state] && !e.dead && connected()) send({ t: 'ctl', n: e.nid, s: e.state, st: r2(e.st || 0), v: [r2(e.vel.x), r2(e.vel.y), r2(e.vel.z)] });
+  e.netState = e.state;
+}
 /* the guest's stand-in for updateEnemies: follow the snapshot, and walk the legs on the motion that results */
 export function updatePuppets(dt){
   for (const e of enemies){
     if (!e.net) continue;
-    // a Force power or a blow here put the puppet into a control state (floored, thrown, stunned, frozen): tell the host,
-    // which applies it to the real foe. The next snapshot then carries the result back.
-    if (e.state !== e.netState){
-      if (CTL[e.state] && !e.dead && connected()) send({ t: 'ctl', n: e.nid, s: e.state, st: r2(e.st || 0), v: [r2(e.vel.x), r2(e.vel.y), r2(e.vel.z)] });
-      e.netState = e.state;
-    }
+    sendCtl(e);   // a power or a blow here put it in a control state: the host applies it to the real foe
     const g = e.group, w = e.want;
     g.position.x = damp(g.position.x, w.pos.x, 20, dt);
     g.position.y = damp(g.position.y, w.pos.y, 20, dt);

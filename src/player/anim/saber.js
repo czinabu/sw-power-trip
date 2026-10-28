@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import { SABER_GUARDS, SABER_SWINGS, SWING_STYLE, SABER_DEFLECTS } from '../../data/poses.js';
 import { AIR_GUARDS } from '../../data/agility.js';
+import { CUT_ANGLE } from '../../data/stances.js';
 import { solveArm, aimHeld, pointInChest, wristInChest, axisInChest, slerpDir, arcLerp } from './ik.js';
 
 const V = (a) => new THREE.Vector3(a[0], a[1], a[2]);
@@ -27,6 +28,29 @@ export function airGuard(grip, form, key){
   return (AIR[grip] && AIR[grip][form] && AIR[grip][form][key]) || null;
 }
 for (const g in SABER_SWINGS){ SWINGS[g] = {}; for (const p in SABER_SWINGS[g]) SWINGS[g][p] = SABER_SWINGS[g][p].map(vecPose); }
+/* ANGLE CUTS (data/stances.js CUT_ANGLE): the keyframes of a cut from `ang` degrees, blended between the tuned cuts
+   either side of it on the clock and lifted or dropped for its height. The reverse grip takes the nearest tuned cut. */
+const D2R = Math.PI / 180;
+const HEIGHT_ID = { left: { high: 'leftHigh', low: 'leftLow' }, right: { high: 'rightHigh', low: 'rightLow' } };
+function angleKeys(set, grip, ang, h){
+  const A = CUT_ANGLE.anchors;
+  ang = ((ang % 360) + 360) % 360;
+  let i = A.length - 1;
+  while (i > 0 && A[i][0] > ang) i--;
+  const [a0, id0] = A[i], [n1, id1] = A[(i + 1) % A.length], a1 = n1 <= a0 ? n1 + 360 : n1;
+  const t = (ang - a0) / (a1 - a0);
+  if (grip !== 'regular'){
+    const id = t < 0.5 ? id0 : id1, hid = HEIGHT_ID[id] && HEIGHT_ID[id][h];
+    return set[hid] || set[id] || set.right;
+  }
+  const k0 = set[id0], k1 = set[id1], off = CUT_ANGLE[h];
+  const w = CUT_ANGLE.vert + (1 - CUT_ANGLE.vert) * Math.abs(Math.cos(ang * D2R));
+  return k0.map((p, j) => {
+    const q = k1[j], hand = p.hand.clone().lerp(q.hand, t), blade = p.blade.clone().lerp(q.blade, t);
+    if (off){ hand.y += off[j][0] * w; blade.y += off[j][1] * w; }
+    return { hand, blade: blade.normalize(), twist: p.twist + (q.twist - p.twist) * t };
+  });
+}
 const DEFLECTS = {};
 for (const g in SABER_DEFLECTS){ DEFLECTS[g] = {}; for (const z in SABER_DEFLECTS[g]) DEFLECTS[g][z] = SABER_DEFLECTS[g][z].map(p => ({ ...vecPose(p), flick: V(p.flick || [0, 0, 0]) })); }
 /* the over-the-top wrap a blade takes when the next cut chambers on the far side from where the last one finished:
@@ -136,19 +160,19 @@ export function swingPose(R, held, grip, form, sw){
     const fin = sw.step === 2 && sw.dir === 'neutral' && !sw.riposte;
     const pid = sw.riposte && !sw.ripLine ? 'forward' : fin ? style.finisher.pattern : (sw.pat.id || 'right');   // (a riposte on a line: jedi/guardline.js)
     const set = SWINGS[grip] || SWINGS.regular;
-    const keys = set[pid] || set.right;
+    const keys = sw.pat.ang != null && !sw.riposte && !fin ? angleKeys(set, grip, sw.pat.ang, sw.h) : (set[pid] || set.right);
     // reach scales the chamber and follow-through out from the arc centre (committed forms swing bigger)
     const scaled = keys.map((kf, i) => i === 1 ? kf : { ...kf, hand: kf.hand.clone().sub(PIVOT).multiplyScalar(style.reach).add(PIVOT) });
     sw.anim = {
       keys: scaled, fin, spin: fin ? style.finisher.spin : 0, hop: fin ? style.finisher.hop : style.spinHop,
-      tc: style.tc * (sw.riposte ? 0.45 : 1), ts: style.ts, tf: style.tf,
+      tc: style.tc * (sw.riposte ? 0.45 : sw.flowCut ? CUT_ANGLE.flow.chamber : 1), ts: style.ts, tf: style.tf,
       start: { hand: saberPose.hand.clone(), blade: saberPose.blade.clone(), twist: saberPose.twist },
     };
     // FLOW: the blade carries on from wherever the last cut left it. Finishing on the far side from this cut's
     // chamber, it wraps over the top to get there (the films' twirl between strokes) instead of dragging back
     // across the front like a second, backwards cut.
     const st0 = sw.anim.start.hand, c0 = scaled[0].hand;
-    sw.anim.wrap = st0.x * c0.x < 0 && Math.abs(st0.x - c0.x) > 0.3;
+    sw.anim.wrap = !sw.flowCut && st0.x * c0.x < 0 && Math.abs(st0.x - c0.x) > 0.3;
     // the follow-through settles a little toward the form's guard instead of freezing (the recovery)
     const G0 = (GUARDS[grip] && GUARDS[grip][form]) || GUARDS.regular.niman;
     sw.anim.rest = G0.ready;

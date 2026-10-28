@@ -63,6 +63,13 @@ export const DUEL = {
   guardShift: [0.9, 1.8], // seconds a guard holds a line before shifting (it also shifts to cover a line it was just hit on)
   adaptAfter: 2,          // blocks on the SAME line in a row before it locks that line down (block → 0.95)
   guardRange: 7,          // the guard arc only shows on foes this close
+  /* GUARD ARCS — an angle cut (player/jedi/cutaim.js) arrives at a point on the clock round the foe's body: the angle it
+     comes from, carried `high` degrees toward the top for a high flat cut and `low` toward the bottom for a low one. A
+     guard covers the arc the pale crescent shows, centred on its line (R 0°, H 90°, L 180°, Lo 270°): full block odds
+     within `cover` degrees of the centre, fading to the off-line odds `feather` degrees further out, so a cut placed
+     just past the edge of its guard gets through. Blocked cuts within `repeat` degrees of the last one count as the
+     same cut for its read (adaptAfter): vary the angle and it can't lock you down. */
+  arc: { cover: 40, feather: 25, repeat: 30, high: 30, low: 60 },
   /* READING A CUT — a duellist that holds a guard sees your cut coming: while the blade is still in its chamber (before
      `by` of the swing) and you are within `range` and squared up to it, it decides then and there whether it will turn
      it (the same odds as ever), and if so its weapon swings over onto the line your cut comes in on (BLOCK_POSE) and

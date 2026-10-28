@@ -40,6 +40,7 @@ import { diffWindow } from '../data/difficulty.js';
 import { toggleHolster } from '../player/holster.js';
 import { forceStrike } from '../player/jedi/palm.js';
 import { squadOrder } from '../allies/squad.js';
+import { noteFlick } from '../player/jedi/cutaim.js';
 
 const inputActive = () => document.pointerLockElement === renderer.domElement || (shared.lockFallback && G.mode === 'play');
 document.addEventListener('mousemove', (e) => {
@@ -49,6 +50,7 @@ document.addEventListener('mousemove', (e) => {
   G.yaw -= e.movementX * 0.0023 * sens;
   // allow looking well UP (was capped at -0.15, so you couldn't aim high on the ground) as well as down
   G.pitch = clamp(G.pitch + e.movementY * 0.0021 * sens, -0.62, 1.2);
+  noteFlick(e.movementX, e.movementY);   // a flick just before a cut aims it (player/jedi/cutaim.js)
 });
 document.addEventListener('mousedown', (e) => {
   if (!inputActive()) return;
