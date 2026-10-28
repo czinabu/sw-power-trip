@@ -57,6 +57,7 @@ import './world/arena.js';
 import './world/textures.js';
 import { updateAmbient } from './fx/ambient.js';
 import { updateScorch } from './fx/scorch.js';
+import { updateSevered } from './enemies/scars.js';
 import './world/arenas/temple.js';
 import './world/arenas/foundry.js';
 import './world/arenas/plains.js';
@@ -152,6 +153,7 @@ function tick(){
   updateJudgeFX();
   updateAmbient(G.paused ? 0 : rawDt);
   updateScorch(dt);
+  updateSevered(dt);
   updateParticles(dt);
   updateVFX(dt);
   updateCamera(dt);

@@ -28,6 +28,7 @@ import { buildIcefrontArena } from './arenas/icefront.js';
 import { buildGraveyardArena } from './arenas/graveyard.js';
 import { buildNav } from '../enemies/nav.js';
 import { clearScorch } from '../fx/scorch.js';
+import { clearSevered } from '../enemies/scars.js';
 import { buildAir, clearAir } from './air.js';
 
 /* ============================================================
@@ -43,6 +44,7 @@ scene.add(shared.arenaGroup);
 
 export function buildArena(L){
   clearScorch();   // last arena's burn marks
+  clearSevered();  // and any severed arms still lying about
   clearAir();
   scene.remove(shared.arenaGroup);
   disposeArena(shared.arenaGroup);

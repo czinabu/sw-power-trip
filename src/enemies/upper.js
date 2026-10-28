@@ -17,7 +17,7 @@ const wrap = a => Math.atan2(Math.sin(a), Math.cos(a));
 
 export function updateUpper(o, g, dt, aim, mode = 'on'){
   const u = g.userData, W = u.bodyMat && u.bodyMat.userData.wear;
-  if (W){ W.uBase.value = g.position.y; W.uScale.value = g.scale.x * (u.vis ? u.vis.scale.y : 1); }
+  if (W){ W.uBase.value = g.position.y; W.uScale.value = g.scale.x * (u.vis ? u.vis.scale.y : 1); W.uNow.value = performance.now() / 1000; }   // (now: how long ago each saber cut was made, enemies/scars.js)
   const ch = u.chest, hd = u.head;
   if (!ch || !(dt > 0) || mode === 'hold') return;
   const U = o.upper || (o.upper = { yaw: 0, pitch: 0, hy: 0, hp: 0, twist: 0, kick: 0, fl: 0, fr: 0,
