@@ -124,6 +124,34 @@ export function upper(k){
   return k.within(k.group(c, [0, -WAIST, 0]));
 }
 
+/* A CAPE that swings (enemies/upper.js capeSwing): the outline is cut into bands down its length, each band skinned
+   to a bone of its own (cape0 at the shoulders, then cape1, cape2), and the skin is shared across each fold so it
+   curves rather than hinging. It hangs from `at` on the chest, tipped back by `tilt`; outline [[x, y]] runs from y 0
+   down. Like the legs, it bends the chest's own mesh, so a cape that moves costs no draw call of its own. */
+export const CAPE_BANDS = 3;
+export function cape(k, outline, at, tilt = 0.08, depth = 0.014){
+  const len = -Math.min(...outline.map(([, y]) => y)), seg = len / CAPE_BANDS;
+  let bone = k.bone('cape0', k.root, at, [tilt, 0, 0]);
+  for (let i = 0; i < CAPE_BANDS; i++){
+    if (i) bone = k.bone('cape' + i, bone, [0, -seg, 0], [0, 0, 0], { blend: seg * 0.45, reach: 1.2 });
+    const band = clipY(outline, -seg * (i + 1), -seg * i).map(([x, y]) => [x, y + seg * i]);
+    if (band.length > 2) k.add(plate(band, depth, 0), 'cloth', bone, [0, 0, 0], [0, 0, 0], { outline: false });
+  }
+}
+// the part of polygon `pts` between heights lo and hi (Sutherland–Hodgman against the two lines)
+function clipY(pts, lo, hi){
+  const cut = (P, keep, y) => {
+    const out = [];
+    for (let i = 0; i < P.length; i++){
+      const a = P[i], b = P[(i + 1) % P.length], ia = keep(a[1]), ib = keep(b[1]);
+      if (ia) out.push(a);
+      if (ia !== ib){ const t = (y - a[1]) / (b[1] - a[1]); out.push([a[0] + (b[0] - a[0]) * t, y]); }
+    }
+    return out;
+  };
+  return cut(cut(pts, y => y <= hi, hi), y => y >= lo, lo);
+}
+
 /* ---------------- helmets (built on a head bone at y 1.96) ---------------- */
 
 const HELMETS = {
@@ -371,7 +399,7 @@ export const MODELS = {
     const w = 0.92;
     legs(k, w, { shin: 'metal' }); hips(k, w); k = upper(k); torso(k, w, { pack: false });
     // cloak: a cape off both shoulders and a short mantle
-    k.add(plate([[-0.3,0],[0.3,0],[0.36,-1.2],[0.12,-1.32],[-0.12,-1.32],[-0.36,-1.2]], 0.014, 0.004), 'cloth', k.root, [0, 1.86, -0.21], [0.1, 0, 0], { outline: false });
+    cape(k, [[-0.3,0],[0.3,0],[0.36,-1.2],[0.12,-1.32],[-0.12,-1.32],[-0.36,-1.2]], [0, 1.86, -0.21], 0.1);
     k.add(loft([{ y:1.62, w:0.66, d:0.44 }, { y:1.82, w:0.52, d:0.36 }, { y:1.9, w:0.3, d:0.26 }], chamfer(0.45)), 'cloth');
     sideArm(k, w, 1, [-0.75, 0, -0.1], { bend: -0.6, fore: 'metal' });
     sideArm(k, w, -1, [-0.6, 0, -0.2], { bend: -0.6, fore: 'metal' });
@@ -389,7 +417,7 @@ export const MODELS = {
   acolyte(k, t){
     const w = 0.96;
     legs(k, w); hips(k, w); k = upper(k); torso(k, w, { pack: false });
-    k.add(plate([[-0.32,0],[0.32,0],[0.4,-1.45],[0.14,-1.6],[-0.14,-1.6],[-0.4,-1.45]], 0.014, 0.004), 'cloth', k.root, [0, 1.86, -0.22], [0.08, 0, 0], { outline: false });
+    cape(k, [[-0.32,0],[0.32,0],[0.4,-1.45],[0.14,-1.6],[-0.14,-1.6],[-0.4,-1.45]], [0, 1.86, -0.22], 0.08);
     k.add(loft([{ y:1.6, w:0.64, d:0.44 }, { y:1.82, w:0.5, d:0.36 }, { y:1.9, w:0.3, d:0.26 }], chamfer(0.45)), 'cloth');
     k.add(plate([[-0.22,0],[0.22,0],[0.26,-0.62],[-0.26,-0.62]], 0.014, 0.004), 'cloth', k.root, [0, 1.12, 0.17], [-0.05, 0, 0], { outline: false });   // tabard
     sideArm(k, w, -1, [-0.3, 0, 0.12], { bend: -0.5 });
@@ -475,6 +503,7 @@ export const MODELS = {
     for (let i = 0; i < 3; i++) k.glow(new THREE.BoxGeometry(0.022, 0.022, 0.01), i ? 0x4a8cff : 0xff3a2a, k.root, [0.11*w + i*0.035, 1.66 - (i % 2)*0.012, 0.197]);
     for (const x of [-0.12, -0.16]) k.add(loft([{ y:0, w:0.025, d:0.025 }, { y:0.07, w:0.025, d:0.025 }], ngon(6)), 'metal', k.root, [x*w, 1.64, 0.18], [0,0,0], { outline: false });   // code cylinders
     k.add(loft([{ y:1.86, w:0.27, d:0.22 }, { y:1.95, w:0.22, d:0.18 }], chamfer(0.45)), 'armor2');   // the high collar
+    cape(k, [[-0.27,0],[0.27,0],[0.31,-0.98],[0.18,-1.04],[-0.18,-1.04],[-0.31,-0.98]], [0, 1.84, -0.19], 0.16);   // a short service cape off both shoulders
     sideArm(k, w, -1, [0.35, 0, 0.0], { bend: -1.2 });   // hand tucked at the small of its back
     weaponArm(k, t, w);
     helmet(k, 'officer', t);
@@ -498,7 +527,7 @@ export const MODELS = {
   lancer(k, t){
     const w = 0.98;
     legs(k, w); hips(k, w); k = upper(k); torso(k, w, { box: false }); pauldrons(k, w, 'armor2', 1.0);
-    k.add(plate([[-0.28,0],[0.28,0],[0.32,-0.9],[0,-1.0],[-0.32,-0.9]], 0.014, 0.004), 'cloth', k.root, [0, 1.86, -0.22], [0.1, 0, 0], { outline: false });   // short cape
+    cape(k, [[-0.28,0],[0.28,0],[0.32,-0.9],[0,-1.0],[-0.32,-0.9]], [0, 1.86, -0.22], 0.1);   // short cape
     sideArm(k, w, -1, [-0.55, 0, 0.0], { bend: -0.9 });   // the off hand forward, on the haft line
     weaponArm(k, t, w);
     const h = helmet(k, 'purge', t);

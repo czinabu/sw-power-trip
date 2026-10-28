@@ -34,6 +34,13 @@ export const CUSTOMIZE = {
       { id: 'long',    name: 'Long',     set: parts({ hair: 'long' }) },
       { id: 'braid',   name: 'Padawan',  set: parts({ hair: 'braid' }) },
     ] },
+    { id: 'beard', label: 'FACIAL HAIR', kind: 'part', options: [
+      { id: 'none',      name: 'Clean',     set: parts({ beard: 'none' }) },
+      { id: 'stubble',   name: 'Stubble',   set: parts({ beard: 'stubble' }) },
+      { id: 'moustache', name: 'Moustache', set: parts({ beard: 'moustache' }) },
+      { id: 'goatee',    name: 'Goatee',    set: parts({ beard: 'goatee' }) },
+      { id: 'full',      name: 'Full beard', set: parts({ beard: 'full' }) },
+    ] },
     { id: 'hairColor', label: 'HAIR COLOUR', kind: 'color', options: [
       { id: 'black',  name: 'Black',  set: pal({ hair: 0x140e0a }) },
       { id: 'brown',  name: 'Brown',  set: pal({ hair: 0x3a2414 }) },
@@ -41,6 +48,14 @@ export const CUSTOMIZE = {
       { id: 'blond',  name: 'Blond',  set: pal({ hair: 0xb89656 }) },
       { id: 'grey',   name: 'Grey',   set: pal({ hair: 0x85817c }) },
       { id: 'white',  name: 'White',  set: pal({ hair: 0xd8d4cc }) },
+    ] },
+    { id: 'eyes', label: 'EYES', kind: 'color', options: [
+      { id: 'brown', name: 'Brown', set: pal({ eyes: 0x2a1a10 }) },
+      { id: 'hazel', name: 'Hazel', set: pal({ eyes: 0x5a4220 }) },
+      { id: 'green', name: 'Green', set: pal({ eyes: 0x2f5a34 }) },
+      { id: 'blue',  name: 'Blue',  set: pal({ eyes: 0x2c5a8a }) },
+      { id: 'grey',  name: 'Grey',  set: pal({ eyes: 0x5e6670 }) },
+      { id: 'sith',  name: 'Sith gold', set: pal({ eyes: 0xd8a020 }) },
     ] },
     { id: 'hood', label: 'HOOD', kind: 'part', options: [
       { id: 'down', name: 'Down', set: parts({ head: 'bald' }) },

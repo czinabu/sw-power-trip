@@ -26,6 +26,7 @@ export const MATERIALS = {
   leather: { c: 0x23170f, r: 0.65 },
   skin:    { c: 0x5c3826, r: 0.55 },
   hair:    { c: 0x140e0a, r: 0.8 },
+  eyes:    { c: 0x2a1a10, r: 0.3 },
   boot:    { c: 0x1a120c, r: 0.6 },
   trim:    { c: 0xb08a4a, r: 0.4, m: 0.7 },
   // Mandalorian

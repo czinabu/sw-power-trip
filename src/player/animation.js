@@ -23,6 +23,7 @@ import { advanceGait, gaitLegs, gaitHipOffset, releaseGait } from './anim/gait.j
 import { MOCAP_ON, MOCAP_LAND_T, mocapLand, mocapAirLegs, airPhase, mocapCut } from './anim/mocap.js';
 import { footingLegs, releaseFooting } from './anim/footing.js';
 import { stepCloth } from './model/cloth.js';
+import { blink, gripHands } from './model/life.js';
 import { jediAirLegs, jediAgilityArms, jediAgilityPost, mandoAgilityPost, landingStyle, slamPitch, headToReticle } from './anim/agility.js';
 
 const smooth01 = k => { k = clamp(k, 0, 1); return k * k * (3 - 2 * k); };
@@ -48,9 +49,25 @@ export function animatePlayer(dt, pp, st, f, r, moving){
   mocapUpper(R, player._gait);
   secondaryMotion(dt, vis, R);
   stepCloth(player, dt, player.group.position.y + 0.02);   // the robe panels and cape hem (model/cloth.js), after the pose
+  blink(player, dt); gripHands(player, dt, handGrip());   // the eyes blink, the fingers close on what they hold (model/life.js)
   player.arcMesh.material.opacity = Math.max(0, player.arcMesh.material.opacity - dt*4);
 
   // (the saber hum is driven from audio/director.js)
+}
+
+/* how closed each hand is (model/life.js): 1 a fist on a hilt or a grip, 0 an open palm thrown at the foe. The Jedi's
+   free hand rests half open, opens flat to push, claws as it pulls and hooks to pour out lightning; with the saber
+   holstered both hands are his weapon. The Mando's are always on a weapon, the off hand on the rifle's foregrip */
+function handGrip(){
+  if (G.hero === 'mando'){
+    const w = player.weapon;
+    return { R: 1, L: w === 'dual' || w === 'fists' ? 1 : w === 'disruptor' ? 0.8 : 0.45 };
+  }
+  const bare = player.holstered, pulling = player.castKind === 'pull';
+  const thrown = player.castT > 0 ? (pulling ? 0.2 + 0.5 * (1 - clamp(player.castT / (player.castMax || 1), 0, 1)) : 0) : null;
+  const power = player.palmT > 0 ? 0 : player.judgeT > 0 ? 0.55 : thrown;
+  const free = power ?? (player.blockHeld ? 0.08 : 0.25);
+  return { L: bare ? free : power ?? 0.45 + 0.55 * saberPose.two, R: bare ? free : 1 };
 }
 
 // Body facing, plus the whole-body moves: slam dive, flips/twirls, and the Jedi's lean into velocity.

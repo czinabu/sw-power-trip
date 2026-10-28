@@ -7,6 +7,8 @@
 //   · RECOIL — a shot (o.kick, set where it fires) snaps the shoulders back
 //   · FLINCH — a hit (o.flinch / o.flinchDir, enemies/damage.js) knocks the chest the way the blow pushed
 //   · WIND-UP — a melee foe draws its weapon shoulder back as it coils and whips it through on the strike
+//   · CAPE — a cape (enemies/mesh.js cape) streams back off the shoulders as the unit runs, swings out on a turn or a
+//     sidestep and settles in folds when it stops, each band lagging the one above it
 // mode 'off' (dead, floored, held in the Force) eases it all back to the rest pose; 'hold' freezes it (stasis).
 // It also tells the unit's armour wear (kit.js wearArmor) where the feet are, so the grime starts at the boots.
 
@@ -64,4 +66,36 @@ export function updateUpper(o, g, dt, aim, mode = 'on'){
   const kick = U.kick * U.kick;
   ch.rotation.set(U.pitch + breath - kick * 0.16 + U.fl * 0.3, U.yaw + U.twist, -U.fr * 0.25);
   if (hd) hd.rotation.set(U.hx0 + U.hp - breath * 0.6 + kick * 0.05 + U.fl * 0.2 - snap * 0.55, U.hy - U.twist * 0.6 - snap * (U.snapSide || 0) * 0.4, -U.fr * 0.15 + snap * (U.snapSide || 0) * 0.35);
+  if (u.cape0) capeSwing(U, g, u, dt, mode);
+}
+
+/* the cape's bands are springs: each is pushed toward an angle set by how the body moves (forward speed lifts it
+   back, sideways speed and turning swing it out the other way) and lags behind it, the lower bands more loosely,
+   so it streams, swings and settles rather than tracking the body stiffly. A band never folds in through the body */
+const LIFT = [0.5, 0.32, 0.3], SWAY = [0.5, 0.35, 0.3], STIFF = [55, 38, 28];
+function capeSwing(U, g, u, dt, mode){
+  const bones = [u.cape0, u.cape1, u.cape2];
+  const C = U.cape || (U.cape = { px: g.position.x, pz: g.position.z, ry: g.rotation.y, rest: bones.map(b => b ? b.rotation.x : 0),
+                                  a: [0, 0, 0], va: [0, 0, 0], z: [0, 0, 0], vz: [0, 0, 0] });
+  const h = Math.min(dt, 1 / 30), s = g.scale.x || 1;
+  let vx = (g.position.x - C.px) / dt / s, vz = (g.position.z - C.pz) / dt / s;
+  const sp = Math.hypot(vx, vz);
+  if (sp > 14){ vx = vz = 0; }   // a teleport or a respawn: no gust
+  const turn = wrap(g.rotation.y - C.ry) / dt;
+  C.px = g.position.x; C.pz = g.position.z; C.ry = g.rotation.y;
+  const y = g.rotation.y, fwd = vx * Math.sin(y) + vz * Math.cos(y), side = vx * Math.cos(y) - vz * Math.sin(y);
+  const run = mode === 'off' ? 0 : clamp(fwd * 0.085, -0.04, 0.75) + Math.min(0.15, Math.abs(side) * 0.03);
+  const out = mode === 'off' ? 0 : clamp(-side * 0.05 - turn * 0.12, -0.45, 0.45);
+  const flutter = Math.min(1, sp / 6) * 0.05;
+  for (let i = 0; i < 3; i++){
+    const b = bones[i];
+    if (!b) continue;
+    const k = STIFF[i], c = 2 * Math.sqrt(k) * 0.55;   // a little under-damped: it overshoots and swings back once
+    const want = run * LIFT[i] + flutter * Math.sin(U.t * 8 + i * 1.3);
+    C.va[i] += (k * (want - C.a[i]) - c * C.va[i]) * h; C.a[i] += C.va[i] * h;
+    C.vz[i] += (k * (out * SWAY[i] - C.z[i]) - c * C.vz[i]) * h; C.z[i] += C.vz[i] * h;
+    C.a[i] = Math.max(C.a[i], i ? -0.12 : -0.04);   // never in through the back or the legs
+    b.rotation.x = C.rest[i] + C.a[i];
+    b.rotation.z = C.z[i];
+  }
 }
