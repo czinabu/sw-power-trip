@@ -20,6 +20,7 @@ import { updateMandoFlight } from './mando/flight.js';
 import { updateJetSlam } from './mando/gadgets.js';
 import { animatePlayer } from './animation.js';
 import { updateLockOn } from './lockon.js';
+import { updateGuardLine } from './jedi/guardline.js';
 import { holstered } from './holster.js';
 import { updateDashCharges } from './mobility.js';
 import { updateJetCharges } from './mando/mobility.js';
@@ -42,6 +43,7 @@ export function updatePlayer(dt){
   } else updateForceStrike(dt);   // the holstered Force strike string (jedi/palm.js)
   updateForceJump(dt, pp, f, r);
   updateGravityAndLanding(dt, pp);
+  updateGuardLine();   // a held guard waits on a duellist's line (jedi/guardline.js)
   animatePlayer(dt, pp, st, f, r, moving);
 }
 

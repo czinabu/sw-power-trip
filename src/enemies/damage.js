@@ -33,7 +33,7 @@ export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick, opts){
     if (opts && opts.ally) return;
     queueHit(e, dmg, knockDir, knockPow, isFinisher, tick);
     if (dmg > 0 && !tick){
-      spawnHitSpark(V3(e.group.position.x, e.group.position.y + 1.3, e.group.position.z), e.t.eye, 0.8);
+      spawnHitSpark(opts && opts.at ? opts.at : V3(e.group.position.x, e.group.position.y + 1.3, e.group.position.z), e.t.eye, 0.8);
       G.hitstop = Math.max(G.hitstop, 0.03); G.shake = Math.max(G.shake, 0.14);
     }
     return;
@@ -84,7 +84,7 @@ export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick, opts){
   e.hp -= dmg;
   e.flash = Math.max(e.flash, tick ? 0.06 : 0.16);
   const p = e.group.position;
-  const cp = V3(p.x, p.y + 1.45, p.z);                       // contact point at the torso
+  const cp = opts && opts.at ? opts.at.clone() : V3(p.x, p.y + 1.45, p.z);   // where the blade met it (bladehit.js), else the torso
   const col = (G.hero === 'mando') ? 0xffb84a : stance().blade;
   const power = clamp(dmg / 38, 0.45, 1.7);
   const meaty = !!knockDir && !tick;                         // saber/blaster/rocket land with weight; DoT ticks stay light
@@ -98,7 +98,7 @@ export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick, opts){
     if (meaty){
       // a spray of sparks off the hit + a bright impact flash & ring — every connect reads as a real hit
       const kd = knockDir.clone().setY(0).normalize();
-      if (e.hp > 0) hitReact(e, kd, 0.18 + power * 0.22, opts && opts.fold);   // the body rocks with the blow
+      if (e.hp > 0) hitReact(e, kd, 0.18 + power * 0.22, opts && opts.fold, opts);   // the body rocks with the blow
       sparks(cp, 0xffffff, Math.round(3 + power*3), 9 + power*5, { dir: kd, cone: 0.8, life: 0.24 });
       sparks(V3(cp.x + kd.x*0.4, cp.y, cp.z + kd.z*0.4), col, Math.round(3 + power*3), 7 + power*5, { dir: kd, cone: 1, life: 0.3 });
       spawnHitSpark(cp, col, power);
@@ -184,14 +184,31 @@ export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick, opts){
    the flank, twisting off a side hit) and springs back with a little overshoot. Laid ON TOP of whatever the foe is
    doing (ai.js runs the spring), so a swinging foe visibly eats the hit too. fold > 0 doubles it over instead (a knee
    to the gut). amt ~0.3 a jab, ~0.6 a heavy blow. */
-export function hitReact(e, dir, amt, fold = 0){
+export function hitReact(e, dir, amt, fold = 0, at){
   if (!e || e.dead || !dir) return;
   const g = e.group, fx = Math.sin(g.rotation.y), fz = Math.cos(g.rotation.y);
   const l = Math.hypot(dir.x, dir.z) || 1, dx = dir.x / l, dz = dir.z / l;
   const hf = dx*fx + dz*fz, hr = dx*(-fz) + dz*fx;
   const k = amt * (e.t.heavy ? 0.4 : 1) * 24;
   const r = e.hr || (e.hr = { x: 0, z: 0, y: 0, vx: 0, vz: 0, vy: 0 });
+  if (at && at.cut && at.zone != null && !fold){ zoneReact(e, r, k, hf, hr, at); return; }
   r.vx += (fold ? fold : hf) * k; r.vz += hr * k * 0.9; r.vy += -hr * k * 0.5;
+}
+/* WHERE A CUT LANDS (at: player/jedi/bladehit.js — zone 0 legs · 1 torso · 2 head, cut = the tip's travel): the body
+   answers that blow, not a generic shove. The flat of the cut twists it the way the blade went; a cut at the head snaps
+   the head and shoulders back off it; a cut at the legs buckles the knees and pitches it toward the cut side; a
+   falling cut folds the shoulders down, a rising one rocks it up and back. */
+const ZONE = { head: { back: 1.25, twist: 0.5, roll: 0.7 }, torso: { back: 0.8, twist: 1.0, roll: 0.9 }, legs: { back: 0.35, twist: 0.4, roll: 1.3, buckle: 0.4 } };
+function zoneReact(e, r, k, hf, hr, at){
+  const g = e.group, fx = Math.sin(g.rotation.y), fz = Math.cos(g.rotation.y);
+  const c = at.cut, cl = Math.hypot(c.x, c.y, c.z) || 1;
+  const side = (c.x * (-fz) + c.z * fx) / cl, vert = c.y / cl;   // the cut's sweep across the foe (+ toward its right), and up / down
+  const Z = at.zone === 2 ? ZONE.head : at.zone === 0 ? ZONE.legs : ZONE.torso;
+  r.vx += (hf * Z.back + (at.zone === 2 ? -0.35 : 0) + Math.max(0, -vert) * 0.45 - Math.max(0, vert) * 0.35) * k;
+  r.vz += (hr * 0.5 + side * Z.roll) * k * 0.9;
+  r.vy += -side * Z.twist * k * 0.6;
+  if (Z.buckle && !e.t.heavy) e.buckle = Math.max(e.buckle || 0, Z.buckle);   // the knees give (enemies/gait.js)
+  if (at.zone === 2){ e.headSnap = 1; e.headSide = side; }                    // the head whips off the cut (enemies/upper.js)
 }
 // a ranged hit makes a foe physically REACT — recoil back, flinch, maybe drop a wind-up
 export function flinchEnemy(e, dir, push){

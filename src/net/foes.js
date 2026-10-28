@@ -45,7 +45,8 @@ function snapshot(){
       r2(g.scale.x), Math.round(e.hp), Math.round(e.maxHp), e.state,
       (e.dead ? DEAD : 0) | (e.walking ? WALKING : 0) | (e.warbringer ? WARBRINGER : 0), e.elite || '',
       u.weaponArm ? r2(u.weaponArm.rotation.x) : 0, u.staff ? r2(u.staff.rotation.z) : 0,
-      u.bodyMat ? u.bodyMat.emissive.getHex() : 0, u.bodyMat ? r2(u.bodyMat.emissiveIntensity) : 0]);
+      u.bodyMat ? u.bodyMat.emissive.getHex() : 0, u.bodyMat ? r2(u.bodyMat.emissiveIntensity) : 0,
+      u.weaponArm ? r2(u.weaponArm.rotation.z) : 0, u.staff ? r2(u.staff.rotation.x) : 0]);   // (the weapon's other axis: which line a guard or block covers)
   }
   return { t: 'e', run: 1, ar: G.arenaRot, w: G.endlessWave, wt: G.waveTotal, ph: shared.levelPhase, mut: G.mut, list };
 }
@@ -96,7 +97,7 @@ function makePuppet(rec){
 }
 
 function applyRec(e, rec){
-  const [, , x, y, z, rx, ry, rz, sc, hp, maxHp, state, flags, , wA, sZ, em, ei] = rec;
+  const [, , x, y, z, rx, ry, rz, sc, hp, maxHp, state, flags, , wA, sZ, em, ei, wZ, sX] = rec;
   e.want.pos.set(x, y, z); e.want.rx = rx; e.want.ry = ry; e.want.rz = rz;
   e.group.scale.setScalar(sc);
   e.hp = hp; e.maxHp = maxHp; e.state = state; e.walking = !!(flags & WALKING);
@@ -104,8 +105,8 @@ function applyRec(e, rec){
   if (dying && !e.dead) burst(e.group.position, 0x888888, 6, 4, 3);
   e.dead = dying;
   const u = e.group.userData;
-  if (u.weaponArm) u.weaponArm.rotation.x = wA;
-  if (u.staff) u.staff.rotation.z = sZ;
+  if (u.weaponArm){ u.weaponArm.rotation.x = wA; if (wZ != null) u.weaponArm.rotation.z = wZ; }
+  if (u.staff){ u.staff.rotation.z = sZ; if (sX != null) u.staff.rotation.x = sX; }
   if (u.bodyMat){ u.bodyMat.emissive.setHex(em); u.bodyMat.emissiveIntensity = ei; }
 }
 

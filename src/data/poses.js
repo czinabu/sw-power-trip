@@ -125,6 +125,44 @@ export const SABER_SWINGS = {
       { hand: [0.06, 0.16, 0.55],  blade: [0.3, 0.45, 0.85],   twist: 0 },
       { hand: [0.42, -0.3, 0.24],  blade: [0.6, -0.55, 0.5],   twist: 0.42 },
     ],
+    // AIMED CUTS (data/stances.js CUT_AIM). High: the flat sweep lifted to the head, the blade canted up. Low: the hands
+    // drop to the hip and the blade angles down to sweep the knees (the hips sink into it). Rising: up from the floor on
+    // one side to the far shoulder. The thrust draws the hilt back to the hip and drives the point straight out.
+    leftHigh:  [
+      { hand: [0.4, 0.52, -0.02],  blade: [0.6, 0.5, -0.62],   twist: 0.5 },
+      { hand: [0.08, 0.32, 0.52],  blade: [-0.12, 0.12, 0.98], twist: -0.05 },
+      { hand: [-0.3, 0.26, 0.28],  blade: [-0.86, 0.06, -0.3], twist: -0.55 },
+    ],
+    rightHigh: [
+      { hand: [-0.26, 0.48, 0.18], blade: [-0.8, 0.46, -0.3],  twist: -0.5 },
+      { hand: [0.06, 0.32, 0.52],  blade: [0.12, 0.12, 0.98],  twist: 0.05 },
+      { hand: [0.46, 0.26, 0.06],  blade: [0.86, 0.06, -0.42], twist: 0.55 },
+    ],
+    leftLow:   [
+      { hand: [0.42, -0.04, 0.02], blade: [0.6, -0.22, -0.72], twist: 0.45 },
+      { hand: [0.1, -0.2, 0.52],   blade: [-0.1, -0.24, 0.96],  twist: -0.05 },
+      { hand: [-0.3, -0.22, 0.3],  blade: [-0.86, -0.26, -0.2], twist: -0.5 },
+    ],
+    rightLow:  [
+      { hand: [-0.24, -0.06, 0.24], blade: [-0.8, -0.22, -0.42], twist: -0.45 },
+      { hand: [0.08, -0.2, 0.52],  blade: [0.1, -0.24, 0.96],   twist: 0.05 },
+      { hand: [0.44, -0.22, 0.1],  blade: [0.86, -0.26, -0.25], twist: 0.5 },
+    ],
+    riseL:     [
+      { hand: [0.38, -0.32, 0.14], blade: [0.5, -0.72, 0.36],  twist: 0.4 },
+      { hand: [0.08, 0.0, 0.55],   blade: [-0.25, 0.32, 0.92], twist: 0 },
+      { hand: [-0.28, 0.4, 0.24],  blade: [-0.55, 0.72, -0.2], twist: -0.42 },
+    ],
+    riseR:     [
+      { hand: [-0.2, -0.3, 0.26],  blade: [-0.5, -0.72, 0.36], twist: -0.4 },
+      { hand: [0.06, 0.0, 0.55],   blade: [0.25, 0.32, 0.92],  twist: 0 },
+      { hand: [0.44, 0.36, 0.1],   blade: [0.6, 0.72, -0.2],   twist: 0.42 },
+    ],
+    thrust:    [
+      { hand: [0.32, -0.06, -0.12], blade: [0.08, 0.06, 1],   twist: 0.45 },
+      { hand: [0.1, 0.08, 0.66],   blade: [-0.02, 0.02, 1],    twist: -0.15 },
+      { hand: [0.08, 0.08, 0.72],  blade: [-0.04, 0.0, 1],     twist: -0.2 },
+    ],
   },
   // REVERSE GRIP: the cut starts with the blade laid back along the forearm, then the elbow and a hard body turn
   // whip it round so the TIP sweeps the way the cut travels (a strafe-right cut carries the tip to the right);
@@ -159,6 +197,43 @@ export const SABER_SWINGS = {
       { hand: [-0.22, 0.4, 0.26],  blade: [-0.45, -0.3, -0.85], twist: -0.5 },
       { hand: [0.1, 0.12, 0.48],   blade: [0.2, -0.35, 0.9],    twist: 0 },
       { hand: [0.44, -0.24, 0.18], blade: [0.7, -0.55, 0.4],    twist: 0.5 },
+    ],
+    // AIMED CUTS: the strafe cuts lifted to the head or dropped to the knees, the tip still trailing the fist; the rising
+    // cuts lead with the knuckles up from the hip; the thrust is the Shien stab driven forward past the fist
+    leftHigh:  [
+      { hand: [0.38, 0.54, 0.08],  blade: [0.35, 0.05, -0.94],  twist: 0.55 },
+      { hand: [0.1, 0.4, 0.46],    blade: [-0.1, 0.05, 1],      twist: 0 },
+      { hand: [-0.3, 0.34, 0.3],   blade: [-0.92, 0.1, 0.25],   twist: -0.65 },
+    ],
+    rightHigh: [
+      { hand: [-0.24, 0.5, 0.28],  blade: [-0.4, 0.05, -0.9],   twist: -0.6 },
+      { hand: [0.08, 0.4, 0.46],   blade: [0.1, 0.05, 1],       twist: 0.05 },
+      { hand: [0.46, 0.34, 0.14],  blade: [0.92, 0.1, 0.25],    twist: 0.6 },
+    ],
+    leftLow:   [
+      { hand: [0.4, -0.04, 0.1],   blade: [0.35, -0.3, -0.88],  twist: 0.5 },
+      { hand: [0.1, -0.18, 0.46],  blade: [-0.1, -0.3, 0.95],   twist: 0 },
+      { hand: [-0.3, -0.18, 0.3],  blade: [-0.92, -0.3, 0.2],   twist: -0.6 },
+    ],
+    rightLow:  [
+      { hand: [-0.24, -0.04, 0.3], blade: [-0.4, -0.3, -0.86],  twist: -0.55 },
+      { hand: [0.08, -0.18, 0.46], blade: [0.1, -0.3, 0.95],    twist: 0.05 },
+      { hand: [0.46, -0.18, 0.14], blade: [0.92, -0.3, 0.2],    twist: 0.55 },
+    ],
+    riseL:     [
+      { hand: [0.36, -0.3, 0.2],   blade: [0.3, -0.85, 0.42],   twist: 0.45 },
+      { hand: [0.1, 0.02, 0.48],   blade: [-0.2, -0.2, 0.95],   twist: 0 },
+      { hand: [-0.26, 0.36, 0.28], blade: [-0.7, 0.2, 0.5],     twist: -0.5 },
+    ],
+    riseR:     [
+      { hand: [-0.2, -0.28, 0.3],  blade: [-0.3, -0.85, 0.42],  twist: -0.45 },
+      { hand: [0.1, 0.02, 0.48],   blade: [0.2, -0.2, 0.95],    twist: 0 },
+      { hand: [0.44, 0.34, 0.16],  blade: [0.7, 0.2, 0.5],      twist: 0.5 },
+    ],
+    thrust:    [
+      { hand: [0.32, 0.0, -0.08],  blade: [0.05, -0.3, -0.95],  twist: 0.4 },
+      { hand: [0.1, 0.06, 0.62],   blade: [0, -0.35, 0.94],     twist: -0.1 },
+      { hand: [0.08, 0.04, 0.7],   blade: [0, -0.4, 0.92],      twist: -0.15 },
     ],
   },
 };
