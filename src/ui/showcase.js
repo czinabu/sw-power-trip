@@ -296,7 +296,21 @@ export function showcaseActive(){
   return G.mode === 'menu' && !G.fovPreview && document.getElementById('overlay').style.display !== 'none';
 }
 
+// TEMPORARY flicker hunt: ?dbg=noink,noskin,noblade,nolight,nocull hides parts of the figure (not for merging)
+const DBG = new Set((new URLSearchParams(location.search).get('dbg') || '').split(','));
+let dbgDone = false;
 export function renderShowcase(dt){
+  if (!dbgDone && shown){
+    dbgDone = true;
+    fig.group.traverse(o => {
+      if (!o.isMesh) return;
+      if (DBG.has('noink') && o.material && o.material.side === THREE.BackSide) o.visible = false;
+      if (DBG.has('noskin') && o.isSkinnedMesh) o.visible = false;
+      if (DBG.has('nocull')) o.frustumCulled = false;
+    });
+    if (DBG.has('noblade')){ fig.blade.blade.visible = false; fig.blade.glow.visible = false; }
+    if (DBG.has('nolight')) fig.blade.light.visible = false;
+  }
   if (!warm){ warm = true; compileLive(); prewarmJudgeFX(); }   // keep the arena's shaders ready, so BEGIN doesn't hitch
   if (!shown){ dress(G.hero); setTheme(G.hero, true); }
   // hero picked → spin the stand once, swapping the figure at the brightest point of the beam
