@@ -7,6 +7,7 @@ import { stamDelay } from '../player/stamina.js';
 import { LEVELS } from '../data/levels.js';
 import { BOSS_CFG, BOSS_MANDO, BOSS_GAIT } from '../data/bosses.js';
 import { updateLegs } from '../enemies/gait.js';
+import { updateUpper } from '../enemies/upper.js';
 import { scene } from '../engine/renderer.js';
 import { sfx, S } from '../audio/sfx.js';
 import { V3, rand, TMP } from '../utils.js';
@@ -483,6 +484,7 @@ export function updateBoss(dt){
   const sNow = shared.boss.state;
   updateLegs(shared.boss, g, dt, sNow === 'dying' ? 'off' : (sNow === 'gapclose' || sNow === 'pulse' || sNow === 'retreat') ? 'air'
     : (shared.boss.phase < 3 && (sNow === 'chase' || sNow === 'intro' || sNow === 'think')) ? 'walk' : 'ground');
+  updateUpper(shared.boss, g, dt, null);   // (his armour's wear: the grime starts at his boots)
   const cdRate = shared.boss.enraged ? 1.6 : 1;   // ENRAGE — abilities come off cooldown faster in phase III
   // the signature's cooldown only runs once the channel is over, so even enraged he fights between casts
   if (shared.boss.state !== 'lightning' && shared.boss.state !== 'retreat') shared.boss.lightningCd -= dt*cdRate;

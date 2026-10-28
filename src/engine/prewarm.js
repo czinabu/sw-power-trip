@@ -6,7 +6,7 @@ import { scene, compileLive } from './renderer.js';
 import { arenaBuilt } from '../world/arena.js';
 import { ENEMY_TYPES } from '../data/enemies.js';
 import { SQUAD } from '../data/allies.js';
-import { buildEnemyMesh } from '../enemies/mesh.js';
+import { buildEnemyMesh, variantsOf } from '../enemies/mesh.js';
 import { buildBoss } from '../boss/mesh.js';
 import { inkProbe } from '../fx/ink.js';
 import { ensureBossLight } from '../boss/light.js';
@@ -67,7 +67,7 @@ arenaBuilt.push(prewarmShaders);
    A model is built (lofted, merged, skinned) the first time its type spawns. Do them all up front, one per idle
    slice, while the menu is up, so no spawn pays for it. */
 const jobs = [];
-for (const t of Object.values(ENEMY_TYPES)) jobs.push(() => buildEnemyMesh(t));
+for (const t of Object.values(ENEMY_TYPES)) for (const variant of variantsOf(t)) jobs.push(() => buildEnemyMesh(t, { variant }));   // every marking
 for (const roster of Object.values(SQUAD.roster)) for (const d of roster) jobs.push(() => buildEnemyMesh({ model: d.model, color: d.color, eye: d.eye, cloth: d.cloth, scale: d.scale || 1, ranged: true }));
 jobs.push(() => buildBoss('sith'), () => buildBoss('mando'));
 const idle = window.requestIdleCallback ? f => requestIdleCallback(f, { timeout: 1500 }) : f => setTimeout(f, 60);
