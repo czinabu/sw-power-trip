@@ -61,6 +61,11 @@ export const DUEL = {
   guardShift: [0.9, 1.8], // seconds a guard holds a line before shifting (it also shifts to cover a line it was just hit on)
   adaptAfter: 2,          // blocks on the SAME line in a row before it locks that line down (block → 0.95)
   guardRange: 7,          // the guard arc only shows on foes this close
+  /* READING A CUT — a duellist that holds a guard sees your cut coming: while the blade is still in its chamber (before
+     `by` of the swing) and you are within `range` and squared up to it, it decides then and there whether it will turn
+     it (the same odds as ever), and if so its weapon swings over onto the line your cut comes in on (BLOCK_POSE) and
+     holds there `hold` s, so the blades meet where they would in a real duel. `rate` is how fast the weapon gets there. */
+  read: { range: 4.6, by: 0.32, face: 0.55, hold: 0.55, rate: 26 },
   // POSTURE — what each kind of blow costs a guard (blocked cuts build it; posture drains back when left alone)
   posture: { cut: 14, finisher: 26, heavyMul: 1.6, kick: 45, parry: 55, punch: 12, punchHeavy: 30, charge: 50, regen: 9, regenDelay: 1.6 },
   jarGap: 0.45,           // seconds: blade contacts (clash, bounce) closer together than this cost stamina once, not each
@@ -104,10 +109,18 @@ export const DUEL = {
 /* POSES — what a duellist's weapon shows you (enemies/duel.js eases into these; tools/enemy-lab.html ?pose=guardL…windT
    previews them). Sword arms: [weaponArm.rotation.x (raise), .z (out to its side + / across the body -)].
    Staffs: [staff.rotation.z, .x]. */
-// guard: where the weapon is held tells you the covered line. weaponArm x raises it, z swings it out (+) or across (-)
+// guard: where the weapon is held tells you the covered line. weaponArm x raises it, z swings it out (+) or across (-).
+// Lo is the low guard: the arm held forward, down and across so the blade (or the staff's lower end) covers the knees.
 export const GUARD_POSE = {
-  sword: { R: [-1.15, 0.55], L: [-1.25, -0.85], H: [-2.35, 0.25] },
-  staff: { R: [0.0, 0.25],   L: [1.25, 0.6],    H: [-1.0, 1.2] },   // staff: [rotation.z, rotation.x]
+  sword: { R: [-1.15, 0.55], L: [-1.25, -0.85], H: [-2.35, 0.25], Lo: [-0.7, -0.45] },
+  staff: { R: [0.0, 0.25],   L: [1.25, 0.6],    H: [-1.0, 1.2],  Lo: [0.7, -0.7] },   // staff: [rotation.z, rotation.x]
+};
+/* BLOCKS — where the weapon goes to MEET a cut it has read (enemies/duel.js readCut): pushed further out onto the line
+   than the guard, so your blade crosses it where the cut was going. A high block is held across over the head, a
+   side block stands up beside the body on that side, a low block sweeps down point-first across the legs. */
+export const BLOCK_POSE = {
+  sword: { R: [-1.35, 0.85], L: [-1.45, -1.1], H: [-2.7, 0.05], Lo: [-0.6, -0.75] },
+  staff: { R: [-0.25, 0.45], L: [1.5, 0.75],   H: [-1.35, 1.35], Lo: [0.85, -0.95] },
 };
 // wind-up: where the weapon rears back to is where the strike comes FROM (T = a thrust, drawn back low)
 export const WIND = {

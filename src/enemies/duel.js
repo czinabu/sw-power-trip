@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { CFG } from '../data/config.js';
 import { stamDelay } from '../player/stamina.js';
-import { DUEL, DUEL_PROFILES, WARBRINGER, WARBRINGER_PROFILE, GUARD_POSE, WIND } from '../data/duel.js';
+import { DUEL, DUEL_PROFILES, WARBRINGER, WARBRINGER_PROFILE, GUARD_POSE, BLOCK_POSE, WIND } from '../data/duel.js';
 import { scene, camera } from '../engine/renderer.js';
 import { sfx, S } from '../audio/sfx.js';
 import { V3, rand, clamp, TMP, dampToward } from '../utils.js';
@@ -24,7 +24,8 @@ import { dropToken } from './director.js';
 import { tellFx } from '../fx/tells.js';
 import { heroesHere } from '../player/players.js';
 
-const LINES = ['L', 'R', 'H'];
+const LINES = ['L', 'R', 'H', 'Lo'];   // the lines a guard covers (Lo: the legs)
+const SIDES = ['L', 'R', 'H'];         // the lines a foe strikes from
 const GUARDING = { chase: 1, recover: 1 };
 const DIFF_MUL = { padawan: 0.7, knight: 1, master: 1.15 };
 const diffMul = () => DIFF_MUL[G.diff] || 1;
@@ -66,6 +67,7 @@ export function drainBreath(e, amt){
 export function cutLine(sw){
   if (!sw || !sw.pat) return 'H';
   if (sw.step === 2 || sw.riposte) return 'H';
+  if (sw.pat.h === 'low' && !/^rise/.test(sw.pat.id)) return 'Lo';   // a sweep at the knees or a thrust aimed low (the rising cuts come up across a side)
   return sw.pat.yF < -0.5 ? 'L' : sw.pat.yF > 0.5 ? 'R' : 'H';
 }
 
@@ -75,7 +77,7 @@ export function initDuel(e, profile){
   if (!p) return;
   e.dp = p;
   e.posture = 0; e.postureAt = -9;
-  e.guard = LINES[(Math.random() * 3) | 0];
+  e.guard = LINES[(Math.random() * LINES.length) | 0];
   e.guardT = rand(DUEL.guardShift[0], DUEL.guardShift[1]);
   e.lineStreak = 0; e.lastLine = null;
   e.counterAt = -9;
@@ -118,14 +120,17 @@ export function updateDuel(e, dt, dist){
   }
   const guarding = !p.brace && GUARDING[e.state] && dist < DUEL.guardRange && !e.converted;   // (a bracing foe holds no guard: no pose, no arc)
   // hold the weapon on the guarded line (the readable tell), back to the carry otherwise
-  if (guarding && !(e.dodgeT > 0)) guardPose(e, dt);
+  if (guarding && !(e.dodgeT > 0)){
+    readCut(e, dist);
+    guardPose(e, dt);
+  }
   // the guard arc: a pale crescent on the covered side, brighter as you close in
   if (showsGuard(e)){
     if (!g.userData.guardArc) makeGuardArc(e);
     const a = g.userData.guardArc;
     a.visible = guarding && !e.dead && !e.winded;   // winded: the guard is down
     if (a.visible){
-      const want = e.guard === 'R' ? 0 : e.guard === 'L' ? Math.PI : Math.PI / 2;
+      const want = e.guard === 'R' ? 0 : e.guard === 'L' ? Math.PI : e.guard === 'Lo' ? -Math.PI / 2 : Math.PI / 2;
       a.rotation.z = dampToward(a.rotation.z, want, dt, 14);
       e.arcFlash = Math.max(0, (e.arcFlash || 0) - dt * 4);
       a.material.opacity = clamp(1 - dist / DUEL.guardRange, 0.15, 0.6) + e.arcFlash;
@@ -185,17 +190,37 @@ function makePostureBar(e){
 }
 
 /* ---------------- weapon poses ---------------- */
+// the guard on its line, or (a cut read and about to be met: readCut) the block out on the cut's line, snapped there fast
 function guardPose(e, dt){
   const u = e.group.userData;
+  const blk = e.blockLine && G.gt - e.blockAt < DUEL.read.hold;
+  const P = blk ? BLOCK_POSE : GUARD_POSE, line = blk ? e.blockLine : e.guard, k = blk ? DUEL.read.rate : 9;
   if (u.staff){
-    const p = GUARD_POSE.staff[e.guard];
-    u.staff.rotation.z = dampToward(u.staff.rotation.z, p[0], dt, 9);
-    u.staff.rotation.x = dampToward(u.staff.rotation.x, p[1], dt, 9);
+    const p = P.staff[line];
+    u.staff.rotation.z = dampToward(u.staff.rotation.z, p[0], dt, k);
+    u.staff.rotation.x = dampToward(u.staff.rotation.x, p[1], dt, k);
   } else if (u.weaponArm){
-    const p = GUARD_POSE.sword[e.guard];
-    u.weaponArm.rotation.x = dampToward(u.weaponArm.rotation.x, p[0], dt, 9);
-    u.weaponArm.rotation.z = dampToward(u.weaponArm.rotation.z, p[1], dt, 9);
+    const p = P.sword[line];
+    u.weaponArm.rotation.x = dampToward(u.weaponArm.rotation.x, p[0], dt, k);
+    u.weaponArm.rotation.z = dampToward(u.weaponArm.rotation.z, p[1], dt, k);
   }
+}
+
+/* READ — your cut is still in its chamber and this guard has seen which line it's on (DUEL.read). The block is decided
+   now, with the same odds it would have at contact (decide), and a block or parry sends the weapon out onto that line
+   (guardPose) to be there when the blade arrives. The decision rides on the swing (sw.reads) for duelDefend to use. */
+function readCut(e, dist){
+  const sw = player.swing, Rd = DUEL.read;
+  if (!sw || sw.riposte || sw.back || sw.recoil || dist > Rd.range || sw.t > sw.dur * Rd.by) return;
+  if (sw.reads && sw.reads.has(e)) return;
+  if (!canGuard(e)) return;
+  const g = e.group, pp = playerPos(), f = fwd();
+  const dx = g.position.x - pp.x, dz = g.position.z - pp.z, dl = Math.hypot(dx, dz) || 1;
+  if ((f.x * dx + f.z * dz) / dl < Rd.face) return;   // the cut isn't aimed at it
+  const line = cutLine(sw), kind = sw.step === 2 ? 'finisher' : 'cut';
+  const dec = decide(e, line, kind, G.gt - e.rhyAt < DUEL.rhythm.gap ? e.rhyN + 1 : 1);
+  (sw.reads || (sw.reads = new Map())).set(e, { line, dec });
+  if (dec === 'block' || dec === 'parry'){ e.blockLine = line; e.blockAt = G.gt; }
 }
 export function windupPose(e, coil){
   const u = e.group.userData, s = e.plan.side, heavy = !!e.t.heavy;
@@ -233,7 +258,7 @@ export function strikePose(e, chop){
 // called the moment a duelling foe commits to a swing (ai.js has set e.wu / e.st / the telegraph)
 export function planAttack(e, quick){
   const p = e.dp, m = diffMul();
-  const sides = LINES.filter(l => l !== e.lastSide);
+  const sides = SIDES.filter(l => l !== e.lastSide);
   const plan = { side: sides[(Math.random() * sides.length) | 0], feint: false, hold: 0, chain: 0, thrust: false };
   spend(e, quick ? DUEL.breath.counter : DUEL.breath.swing);   // (it swings on an empty tank too, but the tank shows it)
   if (!quick){
@@ -312,8 +337,12 @@ export function duelDefend(e, line, kind, heavy, at){
   if (G.gt < (e.openUntil || 0)) return null;           // caught recovering from its own swing: the guard isn't up yet
   if (e.winded) return null;                             // out of breath: nothing left to guard with
   const m = diffMul() * skill(e);
+  // what it does with this blow: the call it made when it read the cut in the chamber (readCut), else made now
+  const sw = player.swing, rd = sw && sw.reads && sw.reads.get(e);
+  const dec = rd && rd.line === line ? rd.dec : decide(e, line, kind, e.rhyN);
+  if (rd) sw.reads.set(e, { line: null, dec: null });   // spent: a second contact on the same swing rolls afresh
   // a light cut seen coming: the agile ones slip it with a backstep
-  if (p.dodge && (kind === 'cut' || kind === 'punch') && Math.random() < p.dodge * m && spend(e, DUEL.breath.dodge)){
+  if (dec === 'dodge' && spend(e, DUEL.breath.dodge)){
     e.dodgeT = 0.3; e.dodgeX = -dx / dl; e.dodgeZ = -dz / dl;
     e.state = 'recover'; e.st = Math.max(e.st, 0.35);
     floater(V3(g.position.x, g.position.y + 1.2, g.position.z), 'SLIPPED', '#c8d4e0');
@@ -322,19 +351,14 @@ export function duelDefend(e, line, kind, heavy, at){
     return 'dodge';
   }
   // PARRY — a mash is read, whatever line it comes in on: the blade is thrown off and it answers at once
-  if (p.parry && e.rhyN > R.after && kind !== 'finisher' && Math.random() < p.parry * m && spend(e, DUEL.breath.block)){
+  if (dec === 'parry' && spend(e, DUEL.breath.block)){
     e.rhyN = 0; e.counterQueued = true; e.guard = line;
     const cp = at || V3(g.position.x + dx / dl * 0.7, g.position.y + 1.5, g.position.z + dz / dl * 0.7);
     punishMash(cp);
     floater(V3(g.position.x, g.position.y + 1.3, g.position.z), 'PARRIED', '#ff8a5a');
     return 'block';
   }
-  const onLine = line === e.guard;
-  let chance = onLine ? p.block : p.block * DUEL.offLine;
-  if (onLine && e.lineStreak >= DUEL.adaptAfter) chance = 0.95;   // it has your rhythm: same cut, same answer
-  if (kind === 'finisher') chance *= 0.75;
-  chance *= m;
-  if (Math.random() >= chance || !spend(e, DUEL.breath.block)){
+  if (dec !== 'block' || !spend(e, DUEL.breath.block)){
     // it lands: the guard swings over to cover that line next time
     if (Math.random() < 0.6){ e.guard = line; e.guardT = rand(DUEL.guardShift[0], DUEL.guardShift[1]); }
     e.lineStreak = 0;
@@ -359,6 +383,30 @@ export function duelDefend(e, line, kind, heavy, at){
   if (G.gt - e.counterAt > DUEL.counterCd && Math.random() < p.counter * m * (e.lineStreak >= DUEL.adaptAfter ? 1.5 : 1)
       && (e.breath == null || e.breath >= DUEL.breath.counter)) e.counterQueued = true;
   return 'block';
+}
+
+/* the roll behind a guard's answer to a blow on `line` ('dodge' | 'parry' | 'block' | null), with no side effects: the
+   agile slip a light blow, a mash (rhyN quick blows in a row) gets parried, and otherwise the guard holds by its odds on
+   the line it covers (block), much worse off it (offLine), near certain on a line you keep repeating (adaptAfter) */
+function decide(e, line, kind, rhyN){
+  const p = e.dp, m = diffMul() * skill(e), R = DUEL.rhythm;
+  const has = amt => e.breath == null || (!e.winded && e.breath >= amt);
+  if (p.dodge && (kind === 'cut' || kind === 'punch') && Math.random() < p.dodge * m && has(DUEL.breath.dodge)) return 'dodge';
+  if (p.parry && rhyN > R.after && kind !== 'finisher' && Math.random() < p.parry * m && has(DUEL.breath.block)) return 'parry';
+  const onLine = line === e.guard;
+  let chance = onLine ? p.block : p.block * DUEL.offLine;
+  if (onLine && e.lineStreak >= DUEL.adaptAfter) chance = 0.95;   // it has your rhythm: same cut, same answer
+  if (kind === 'finisher') chance *= 0.75;
+  return Math.random() < chance * m && has(DUEL.breath.block) ? 'block' : null;
+}
+// can it answer a blow from you at all right now (facing you, guard up, not caught open or winded, not a brace)?
+function canGuard(e){
+  const p = e.dp;
+  if (!p || p.brace || e.dead || e.converted || !GUARDING[e.state] || e.stunT > 0 || e.dodgeT > 0) return false;
+  if (G.gt < (e.openUntil || 0) || e.winded) return false;
+  const g = e.group, pp = playerPos();
+  const dx = pp.x - g.position.x, dz = pp.z - g.position.z, dl = Math.hypot(dx, dz) || 1;
+  return (Math.sin(g.rotation.y) * dx + Math.cos(g.rotation.y) * dz) / dl >= 0.35;
 }
 
 // your mashed cut is parried: the swing is thrown wide, the arm jars and the breath goes out of you

@@ -92,7 +92,7 @@ const TIPS = {
     'A swing turns blaster bolts back down the line they came from: Djem So sends them home to the shooter, Ataru sprays them. A timed parry (tap RMB) always sends a bolt straight back.',
     'Any swing can be cancelled into a block, a Force power or a dash.',
     'Getting hit knocks your swing loose. Cut into a foe\'s strike mid-swing and the blades clash: nobody is hurt and you both reel. Bosses clash too.',
-    '<b>Duellists</b> (Magnaguards, Sith acolytes) hold a guard: the pale arc beside them. A cut that meets a guard that holds stops dead on the blade and bounces back. Cut in on the other side, kick to break it, and don\'t throw the same cut twice: they read it.',
+    '<b>Duellists</b> (Magnaguards, Sith acolytes) hold a guard: the pale arc beside them shows the line it covers (left, right, high, or low across the knees). They read your cut as you wind up and swing their weapon onto its line to meet it. A cut that meets a guard that holds stops dead on the blade and bounces back. Cut in on another line (aim high or low too), kick to break it, and don\'t throw the same cut twice: they read it.',
     'Swings only hit what\'s in front of you and plant your feet, so step into range before you cut. Parry, don\'t just block: a block lets some of the blow through.',
     'After each wave, spend <b>XP</b> on new abilities and on mastering the ones you have, and <b>skill points</b> on training.',
   ],

@@ -89,7 +89,7 @@ export const SWING_PATTERNS = {
   rightLow: { id: 'rightLow', yF: -1.6,  yT:  1.5,  h: 'low', drop: 0.16, reach: 0.4 },
   riseL:    { id: 'riseL', yF:  1.1,  yT: -0.9,  h: 'low', drop: 0.08, reach: 0.4 },     // rising: low on the weapon side, up across to the left shoulder
   riseR:    { id: 'riseR', yF: -1.1,  yT:  0.9,  h: 'low', drop: 0.08, reach: 0.4 },
-  thrust:   { id: 'thrust', yF:  0.05, yT:  0.0,  h: 'mid', reach: 0.8, lunge: 1.35 },  // drawn back to the hip, driven straight through
+  thrust:   { id: 'thrust', yF:  0.05, yT:  0.0,  h: 'low', reach: 0.8, lunge: 1.35 },  // drawn back to the hip, driven straight through (in on the low line)
 };
 
 /* CUT AIM — Jedi Academy style: the movement key picks the cut's DIRECTION and where you aim picks its HEIGHT: tip the
