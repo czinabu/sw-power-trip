@@ -85,6 +85,7 @@ const CONTROLS = {
 };
 const TIPS = {
   jedi: [
+    '<b>Pause</b> with TAB (or ESC); TAB or ENTER resumes. TAB keeps you in fullscreen, where ESC may drop you out.',
     '<b>Stamina</b> is the violet gauge beside your crosshair. Swings and blocks spend it; run dry and your guard breaks.',
     '<b>Force</b> (bottom-left bar) powers your abilities and refills over time.',
     '<b>Focus</b> builds with clean hits and parries and boosts your damage. Taking a hit breaks it.',
@@ -97,6 +98,7 @@ const TIPS = {
     'After each wave, spend <b>XP</b> on new abilities and on mastering the ones you have, and <b>skill points</b> on training.',
   ],
   mando: [
+    '<b>Pause</b> with TAB (or ESC); TAB or ENTER resumes. TAB keeps you in fullscreen, where ESC may drop you out.',
     '<b>Heat</b> is the gauge beside your reticle. Fill it and you overheat; press <b>R</b> to vent early.',
     '<b>Jet fuel</b> shows on the lights of your jetpack. The reticle turns orange when it runs low.',
     '<b>Gadget power</b> (bottom-left bar) fuels flame, rockets and other gadgets.',
