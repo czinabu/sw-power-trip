@@ -26,6 +26,9 @@ export const downed = [];
 // so the killing blow knows whether going down is a second chance or the end
 const heroHelp = [];
 export function addHeroReviver(fn){ heroHelp.push(fn); }
+// more standing revivers each frame (the co-op partner, net/partner.js): fn returns a reviver, or null when none is standing
+const reviverSources = [];
+export function addReviverSource(fn){ reviverSources.push(fn); }
 
 const ringGeo = new THREE.RingGeometry(0.95, 1.12, 40), discGeo = new THREE.CircleGeometry(0.95, 40);
 function marker(color){
@@ -93,6 +96,7 @@ export function updateRevive(dt, revivers){
   const pp = playerPos();
   const all = revivers.slice();
   if (G.mode === 'play' && !player.downed) all.push({ kind: 'hero', pos: pp, hitAt: player.lastHurt });
+  for (const f of reviverSources){ const r = f(); if (r) all.push(r); }
   for (let i = downed.length - 1; i >= 0; i--){
     const b = downed[i], p = b.pos();
     b.t += dt;

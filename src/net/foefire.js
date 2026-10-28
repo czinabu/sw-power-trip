@@ -16,6 +16,7 @@ import { staggerEnemy } from '../enemies/damage.js';
 import { endLunge } from '../enemies/tactics.js';
 import { addPosture, drainBreath } from '../enemies/duel.js';
 import { DUEL } from '../data/duel.js';
+import { gainXp } from '../game/progression.js';
 import { hurtPlayer } from '../player/damage.js';
 import { blockedOnBlade } from '../player/jedi/clash.js';
 import { playerPos } from '../player/helpers.js';
@@ -116,6 +117,23 @@ on('blast', (m) => {
     player.vel.x += kx / l * push; player.vel.z += kz / l * push; player.vy = Math.max(player.vy, lift);
   }
 });
+
+/* ---------------- the partner's own shots: drawn here, the damage is done in their browser ---------------- */
+hooks.pbolt = (b, color, scale) => {
+  if (!asHost() && !asGuest()) return;
+  const p = b.mesh.position, d = b.dir;
+  send({ t: 'pb', p: [r2(p.x), r2(p.y), r2(p.z)], d: [r2(d.x * 100) / 100, r2(d.y * 100) / 100, r2(d.z * 100) / 100], s: b.speed, c: color, k: scale });
+};
+on('pb', (m) => {
+  if (!asHost() && !asGuest()) return;
+  fireBolt(V3(m.p[0], m.p[1], m.p[2]), V3(m.d[0], m.d[1], m.d[2]), m.s, 0, true, true);
+  const b = bolts[bolts.length - 1];
+  b.ghost = true; b.mesh.material.color.setHex(m.c); b.mesh.scale.set(m.k, m.k * 1.3, m.k);
+});
+
+/* ---------------- shared XP: a kill pays both heroes ---------------- */
+hooks.xp = (n) => { if (asHost() && n > 0) send({ t: 'xp', n: Math.round(n) }); };
+on('xp', (m) => { if (asGuest()) gainXp(m.n); });
 
 /* ---------------- warnings ---------------- */
 hooks.tell = (kind, pos, radius, dur) => {

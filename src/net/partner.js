@@ -13,6 +13,8 @@ import { stepCloth } from '../player/model/cloth.js';
 import { lookOf, loadPicks, disposeTree } from '../player/mesh.js';
 import { playerPos } from '../player/helpers.js';
 import { addPlayer, removePlayer, worldKey } from '../player/players.js';
+import { addHeroReviver, addReviverSource } from '../game/revive.js';
+import { refill } from '../allies/squad.js';
 import { readPose, makePoseTrack, pushPose, stepPose } from './pose.js';
 import { on, send, sendEvery, connected } from './session.js';
 
@@ -56,6 +58,18 @@ function nameTag(){
   return tag;
 }
 
+// a standing partner can get you up when you go down, and earns you a second chance each wave (game/revive.js)
+const standing = () => mate.here && !mate.down;
+addHeroReviver(standing);
+addReviverSource(() => standing() ? { kind: 'partner', pos: puppet.group.position, hitAt: null } : null);
+let reviveWave = -1;
+function coopRevives(){
+  G.coopRevive = standing() && G.mode === 'play';   // keeps the revive channel running when the squad isn't
+  if (!standing() || G.mode !== 'play') return;
+  const key = G.endless ? G.endlessWave : G.levelIdx;
+  if (G.reviveLeft == null || key !== reviveWave){ reviveWave = key; refill(); }
+}
+
 on('hello', (m) => { build(m.picks, m.hero); });
 on('s', (m) => {
   if (!built) build(m.picks, m.hero);
@@ -89,6 +103,7 @@ export function updateCoop(dt){
   const show = built && connected() && playing && G.mode !== 'menu';
   puppet.group.visible = show;
   mate.here = show && G.mode === 'play' && world === worldKey();
+  coopRevives();
   if (tag) tag.style.display = show ? 'block' : 'none';
   if (!show) return;
   const g = puppet.group;
@@ -100,6 +115,7 @@ export function updateCoop(dt){
   stepCloth(puppet, dt, g.position.y + 0.02);   // their robe and cape swing here too, after the pose
   // the name tag follows the head on screen
   const t = nameTag();
+  t.textContent = mate.down ? 'PARTNER DOWN: STAND NEXT TO THEM' : 'PARTNER';
   const v = new THREE.Vector3(g.position.x, g.position.y + 2.6, g.position.z).project(camera);
   if (v.z > 1){ t.style.display = 'none'; return; }
   t.style.left = ((v.x * 0.5 + 0.5) * innerWidth) + 'px';
