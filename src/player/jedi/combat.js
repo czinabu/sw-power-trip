@@ -26,6 +26,7 @@ import { tutEvent } from '../../game/tutor-bus.js';
 import { masteryXp } from '../../game/progression.js';
 import { momentumStrike } from '../parkour.js';
 import { MOVE } from '../../data/movement.js';
+import { pickCut } from './cutaim.js';
 
 /* COMBO RHYTHM — fractions of a swing. A press before `open` is too early (and costs this link its flow); a single
    press from `open` on links in rhythm, and the next cut leaves at `at` (just after the follow-through). */
@@ -69,24 +70,10 @@ export function tryAttack(flow = false){
   // slightly longer arcs read as deliberate sword strokes rather than a twitchy flurry
   const dur = (step === 2 ? 0.52 : 0.4) / (st.speed * (player.up.atkSpeed || 1));
   player.atkT = dur;
-  // Jedi Academy style: swing direction follows your movement at the moment of attack
-  let dirKey = 'neutral';
-  if (keys['d']) dirKey = 'right';
-  else if (keys['a']) dirKey = 'left';
-  else if (keys['w']) dirKey = 'forward';
-  else if (keys['s']) dirKey = 'back';
-  // directional input drives the cut; standing swings ALTERNATE sides (never the same twirl twice),
-  // and a finisher is an overhead chop.
-  let pat;
-  if (dirKey === 'neutral'){
-    if (step === 2) pat = SWING_PATTERNS.forward;
-    else { pat = player.swingFlip ? SWING_PATTERNS.diagL : SWING_PATTERNS.diagR; player.swingFlip = !player.swingFlip; }
-  } else if (G.swingMirror && (dirKey === 'left' || dirKey === 'right')){
-    // SWING preference: flip which side the strafe cut sweeps toward
-    pat = SWING_PATTERNS[dirKey === 'left' ? 'right' : 'left'];
-  } else {
-    pat = SWING_PATTERNS[dirKey];
-  }
+  // Jedi Academy style: the movement key picks the cut's direction, where you aim picks its height (cutaim.js)
+  const cut = pickCut(step);
+  const dirKey = cut.dir;
+  let pat = cut.pat;
   // RIPOSTE — the strike that follows a parry is a DECISIVE committed forward counter (overrides the chosen cut),
   // not just a normal swing that happens to hit harder. It reads as a clear, distinct answer.
   const ripNow = player.riposteT > 0;
@@ -97,13 +84,13 @@ export function tryAttack(flow = false){
   // the riposte is spent on THIS cut (it lands on whatever the blade meets first; see applySwingDamage)
   const cancelRip = ripNow && !!player.cancelRiposte;
   if (ripNow){ player.riposteT = 0; player.cancelRiposte = false; }
-  player.swing = { t: 0, applied: false, step, dur, pat, dir: dirKey, back: backStrike, riposte: ripNow, cancelRip, flow, mom };
+  player.swing = { t: 0, applied: false, step, dur, pat, dir: dirKey, h: cut.h, back: backStrike, riposte: ripNow, cancelRip, flow, mom };
   player.deflectAnim = null;   // a cut takes the blade over from any catch in progress
   const spin = pickSpin(st.form, step, dirKey, { ripNow, backStrike, mom, flow, st });
   if (spin){
     player.stam -= spin.stam * st.stamina; player._spinT = G.gt; player.swing.spin = spin; player.swing.dur *= spin.dur; player.atkT = player.swing.dur; }
   // cinematic lunge toward nearest target in view — STRONG's finisher lunges harder; a RIPOSTE drives in hardest
-  const lunge = ripNow ? 2.0 : ((step === 2 && st.finisherLunge) ? st.finisherLunge : st.lunge);
+  const lunge = ripNow ? 2.0 : ((step === 2 && st.finisherLunge) ? st.finisherLunge : st.lunge) * (pat.lunge || 1);
   const tgt = backStrike ? nearestEnemyInCone(CFG.player.comboRange, -0.35, true)
                          : nearestEnemyInCone(st.reach?.range ?? CFG.player.comboRange, 0.6);
   if (tgt && !backStrike){
@@ -262,7 +249,7 @@ export function applySwingDamage(step, only){
         const dres = pre !== undefined ? pre : duelDefend(e, line, finisher ? 'finisher' : 'cut', G.stance === 'strong' || isDark, at);
         if (dres === 'block' || dres === 'dodge'){ turned++; if (dres === 'block' && !blocker){ blocker = e; blockAt = at; } return false; }
       }
-      damageEnemy(e, dmg * (e.t.heavy ? st.heavyDmg : 1) * backLineMul(st, e), f.clone(), knock, finisher);
+      damageEnemy(e, dmg * (e.t.heavy ? st.heavyDmg : 1) * backLineMul(st, e), f.clone(), knock, finisher, false, sw0 && sw0.hitAt && sw0.hitAt.get(e));   // (where the blade met it: bladehit.js)
       foesHit++;
       if (!riposte && !e.dead) interruptEnemy(e, f, finisher || st.form === 'djemso' || isDark);   // striking first beats a wind-up
       if (mom === 'slide' && !riposte && !e.dead) staggerEnemy(e, f.x, f.z);   // a SLIDE CUT sweeps the legs out
@@ -275,6 +262,7 @@ export function applySwingDamage(step, only){
   }
   if (finisher && foesHit) tutEvent('finisher');
   if (foesHit && sw0 && sw0.dir !== 'neutral') tutEvent('cutHit', { dir: sw0.dir });   // which key picked the cut that landed (the training's cut lesson)
+  if (foesHit && sw0 && sw0.h && !finisher && !riposte) tutEvent('cutHeight', { h: sw0.h });   // and how high you aimed it (the aim lesson)
   if (shared.boss && shared.boss.hp > 0) tryHit(shared.boss.group.position, () => damageBoss(dmg * st.heavyDmg), shared.boss);
   for (let i = barrels.length-1; i >= 0; i--){
     const b = barrels[i];

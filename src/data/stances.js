@@ -80,6 +80,33 @@ export const SWING_PATTERNS = {
   back:     { id: 'back', yF:  0.6,  yT: -0.4,  xF: -0.1,  xT: -2.5,  zF: 0.3,  zT: -0.4, wF: 0.6,  wT: -0.8, reach: 0.15 },  // retreat: rising cut
   diagL:    { id: 'diagL', yF:  1.25, yT: -0.9,  xF: -2.55, xT: -0.6,  zF: -1.0, zT: 0.6,  wF: -0.8, wT: 0.6,  reach: 0.45 },  // diagonal shoulder→hip
   diagR:    { id: 'diagR', yF: -1.25, yT:  0.9,  xF: -2.55, xT: -0.6,  zF: 1.0,  zT: -0.6, wF: 0.8,  wT: -0.6, reach: 0.45 },
+  // AIMED HIGH / LOW (see CUT_AIM): the same sweeps carried at the head or down at the knees, the rising cuts that come
+  // up from the floor, and the thrust. h = the height the cut lives at (drives the line a guard has to cover and the
+  // hips' drop into a low cut); lunge scales the step into it.
+  leftHigh: { id: 'leftHigh', yF:  1.7,  yT: -1.6,  h: 'high', reach: 0.4 },
+  rightHigh:{ id: 'rightHigh', yF: -1.7,  yT:  1.6,  h: 'high', reach: 0.4 },
+  leftLow:  { id: 'leftLow', yF:  1.6,  yT: -1.5,  h: 'low', drop: 0.16, reach: 0.4 },
+  rightLow: { id: 'rightLow', yF: -1.6,  yT:  1.5,  h: 'low', drop: 0.16, reach: 0.4 },
+  riseL:    { id: 'riseL', yF:  1.1,  yT: -0.9,  h: 'low', drop: 0.08, reach: 0.4 },     // rising: low on the weapon side, up across to the left shoulder
+  riseR:    { id: 'riseR', yF: -1.1,  yT:  0.9,  h: 'low', drop: 0.08, reach: 0.4 },
+  thrust:   { id: 'thrust', yF:  0.05, yT:  0.0,  h: 'mid', reach: 0.8, lunge: 1.35 },  // drawn back to the hip, driven straight through
+};
+
+/* CUT AIM — Jedi Academy style: the movement key picks the cut's DIRECTION and where you aim picks its HEIGHT: tip the
+   view up past `pitchHigh` for a high cut, down past `pitchLow` for a low one (pitch is + looking down; a fight sits
+   around 0.2, and the lock-on leaves you this much room: data/config.js lockOn.pitchFree).
+     neutral   high: shoulder-to-hip diagonals · mid: flat cuts left and right · low: rising cuts (each alternates)
+     A / D     high: a cut at the head · mid: the flat sweep · low: a sweep at the knees
+     W         high / mid: the overhead · low: a lunging thrust
+     W + A / D the downward diagonals    S + A / D the rising cuts    S   the back strike (any height) */
+export const CUT_AIM = {
+  pitchHigh: 0.04, pitchLow: 0.42,
+  neutral: { high: ['diagR', 'diagL'], mid: ['right', 'left'], low: ['riseR', 'riseL'] },
+  side: { left: { high: 'leftHigh', mid: 'left', low: 'leftLow' }, right: { high: 'rightHigh', mid: 'right', low: 'rightLow' } },
+  forward: { high: 'forward', mid: 'forward', low: 'thrust' },
+  diag: { forward: { left: 'diagL', right: 'diagR' }, back: { left: 'riseL', right: 'riseR' } },
+  mirror: { left: 'right', right: 'left', leftHigh: 'rightHigh', rightHigh: 'leftHigh', leftLow: 'rightLow', rightLow: 'leftLow',
+            diagL: 'diagR', diagR: 'diagL', riseL: 'riseR', riseR: 'riseL' },
 };
 
 /* Progression is data-driven: see PROGRESSION CONFIG (auto-unlocks + the XP ability store) further below.

@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { shared, G, enemies, barrels, player } from '../../state.js';
 import { stance } from '../helpers.js';
-import { pointHit } from '../../enemies/bodyshape.js';
+import { pointHit, partsOf } from '../../enemies/bodyshape.js';
 import { meetBlades } from './clash.js';
 export { bodyRadius } from '../../enemies/bodyshape.js';
 
@@ -67,10 +67,18 @@ export function sweepBlade(sw, live){
       if (dx * dx + dz * dz < r * r){ cut.add(obj); out.push(obj); return; }
     }
   };
+  // WHERE it landed: the point the blade first met the body, which part (0 legs · 1 torso · 2 head, data/bodyshape.js) and
+  // which way the tip was travelling (the foe reels with the cut: enemies/damage.js hitReact)
+  const at = sw.hitAt || (sw.hitAt = new Map());
   for (const e of enemies){
     if (e.dead || e.converted || e.state === 'spawn' || cut.has(e)) continue;
     for (let k = 0; k < pts.length; k += 3){
-      if (pointHit(e, P.set(pts[k], pts[k + 1], pts[k + 2]), BODY.edge)){ cut.add(e); out.push(e); break; }
+      const part = pointHit(e, P.set(pts[k], pts[k + 1], pts[k + 2]), BODY.edge);
+      if (part){
+        cut.add(e); out.push(e);
+        at.set(e, { at: P.clone(), zone: part.head ? 2 : partsOf(e).indexOf(part) === 0 ? 0 : 1, cut: new THREE.Vector3().subVectors(T, PT) });
+        break;
+      }
     }
   }
   const boss = shared.boss;

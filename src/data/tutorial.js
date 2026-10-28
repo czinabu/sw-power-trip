@@ -10,7 +10,8 @@
 //   say    the teacher's line · keys: keycaps ('/' and '+' stay as separators, '·' splits groups) · do: the task
 //   ev     a training event to count (game/tutor-bus.js): doubleJump dash slide vault climb roll wallrun finisher parry
 //          deflect perfectDodge cancel pushHit kill headshot vent shieldReflect catch charge takedown bash rocketHit
-//          cutHit (data.dir: which key picked a cut that landed) guardBreak (a duellist's guard shattered)
+//          cutHit (data.dir: which key picked a cut that landed) cutHeight (data.h: high / mid / low, where it was aimed)
+//          guardBreak (a duellist's guard shattered)
 //   alt    a second event that also passes the step (sparDown: a sparring partner beaten to its last sliver)
 //   of     with ev 'kill': only foes of this type count · stance / weapon: only while in that saber form / loadout
 //   uniq   count each different value of this event field once (cutHit 'dir': three different cuts)
@@ -82,6 +83,9 @@ export const TRAINING = {
       spawn: CIRCLE.map(at => ({ type: 'grunt', at, dummy: true })) },
     { say: 'Your feet choose the cut. Strafe and the blade sweeps sideways, step in and it chops down, step back and it whirls behind you.',
       keys: 'A / D / W + LMB', do: 'Land cuts in 3 different directions: hold A, D or W as you click', ev: 'cutHit', uniq: 'dir', need: 3, respawn: true,
+      spawn: CIRCLE.map(at => ({ type: 'grunt', at, dummy: true, sparring: true })) },
+    { say: 'Where your eyes go, the blade follows. Lift your gaze and it cuts high; lower it and it sweeps low.',
+      keys: 'AIM + LMB', do: 'Land a high, a middle and a low cut: aim up, level, then down (the ticks by the crosshair show which)', ev: 'cutHeight', uniq: 'h', need: 3, respawn: true,
       spawn: CIRCLE.map(at => ({ type: 'grunt', at, dummy: true, sparring: true })) },
     { say: 'Three cuts make a form. Let the third one end it.',
       keys: 'LMB LMB LMB', do: 'Land 2 combo finishers', ev: 'finisher', need: 2,

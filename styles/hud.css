@@ -173,6 +173,11 @@ body.mando #stancebox,body.mando #xh,body.mando #fcmeter{display:none!important}
 
 /* ---------- crosshair, reticle, gauges ---------- */
 #xh{position:fixed;top:50%;left:50%;width:6px;height:6px;margin:-3px;border-radius:50%;background:rgba(210,242,255,.92);box-shadow:0 0 8px var(--accent)}
+/* cut height: three short ticks right of the crosshair; the lit one is the height of your next cut (player/jedi/cutaim.js) */
+#cuth{position:fixed;top:50%;left:50%;width:7px;height:22px;margin:-11px 0 0 14px;pointer-events:none;z-index:7}
+#cuth i{position:absolute;left:0;width:7px;height:2px;border-radius:1px;background:rgba(210,242,255,.22);transition:background .08s,width .08s}
+#cuth .ch-high{top:0}#cuth .ch-mid{top:10px}#cuth .ch-low{top:20px}
+#cuth[data-h=high] .ch-high,#cuth[data-h=mid] .ch-mid,#cuth[data-h=low] .ch-low{background:rgba(210,242,255,.95);width:10px;box-shadow:0 0 6px var(--accent)}
 /* floaters */
 .fl{position:fixed;font:700 16px/1 var(--font-ui);letter-spacing:0.5px;text-shadow:0 0 6px #000,0 1px 2px #000;transform:translate(-50%,-50%);transition:all .7s ease-out;pointer-events:none}
 /* mando aiming reticle: DYNAMIC line gap, colour & ring driven by --gap / --col / --ringScale / --ringOp */

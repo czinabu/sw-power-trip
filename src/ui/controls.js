@@ -22,7 +22,7 @@ const CONTROLS = {
       ['SHIFT', 'Landing roll', 'Just before a hard landing, or you stagger', 1],
     ]},
     { title: 'FIGHT', rows: [
-      ['LMB', 'Saber combo', 'The key you hold picks the cut: A / D sweep sideways, W chops overhead, S whirls behind you; every third is a finisher'],
+      ['LMB', 'Saber combo', 'The key you hold picks the cut\'s direction and where you aim picks its height: aim up for a high cut at the head, down for a low one at the legs (the ticks by the crosshair show it). A / D sweep sideways, W chops overhead (a thrust aimed low), W or S with A / D cut diagonally down or up, S whirls behind you; every third is a finisher'],
       ['HOLD RMB', 'Block', 'Soaks most of a blow; heavy hits drain stamina'],
       ['TAP RMB', 'Parry and deflect', 'Time it as a blow or bolt lands; a missed parry can\'t be retried for a moment'],
       ['E', 'Kick', 'Shoves a foe back and cracks a duellist\'s guard'],

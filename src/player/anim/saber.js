@@ -209,7 +209,7 @@ export function swingPose(R, held, grip, form, sw){
   // strike, peaking as the blade reaches the strike key, then carried out by the follow-through)
   const coil = k < A.tc ? easeOut(k / A.tc) : k < A.tc + hold ? 1 : k < A.ts ? 1 - (k - A.tc - hold) / (A.ts - A.tc - hold) : 0;
   const drive = k < A.tc + hold ? 0 : k < A.ts ? easeIn((k - A.tc - hold) / (A.ts - A.tc - hold)) : k < A.tf ? 1 - 0.6 * easeOut((k - A.ts) / (A.tf - A.ts)) : 0.4 * (1 - easeOut((k - A.tf) / (1 - A.tf)));
-  return { k, env: Math.sin(Math.PI * k), cut, spin: A.spin, hop: A.hop, drop: style.drop || 0, fin: A.fin, strike: k > A.tc && k < A.tf, coil, drive, side: A.side };
+  return { k, env: Math.sin(Math.PI * k), cut, spin: A.spin, hop: A.hop, drop: (style.drop || 0) + (A.fin ? 0 : sw.pat.drop || 0), fin: A.fin, strike: k > A.tc && k < A.tf, coil, drive, side: A.side };
 }
 
 /* DEFLECT — the blade snaps to catch a bolt and flicks it away. Which catch is picked from where the bolt arrives
