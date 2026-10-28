@@ -37,7 +37,8 @@ import { clearSquad } from '../allies/squad.js';
 import { clearDowned } from './revive.js';
 import { resetReadout, beginWave } from './readout.js';
 
-/* =====================================================   LEVEL / WAVE FLOW
+/* ============================================================
+   LEVEL / WAVE FLOW
    ============================================================ */
 // opts.at() picks where it arrives (default: anywhere on the edge ring) · opts.then(e) is handed the new foe
 export function queueSpawn(typeName, opts){
@@ -262,7 +263,6 @@ export function startWave(){
 
 export function updateFlow(dt){
   if (G.coopGuest) return;   // the host runs this run's spawns and waves: net/foes.js tells this browser what they did
-=======
   // the lull: once the first half of a long wave is down, hold the rest behind a short beat, then release it
   const bar = G.spawnQueue.find(s => s.barrier);
   if (bar && !G.spawnQueue.some(s => !s.barrier && !s.held) && !enemies.some(e => !e.dead && !e.converted)){
