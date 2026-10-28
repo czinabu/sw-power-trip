@@ -22,6 +22,7 @@ import { cutLine, duelDefend, isGuarding, guardImpact, rallyParry } from '../../
 import { bodyRadius } from './bladehit.js';
 import { bounceOff, contactPoint } from './clash.js';
 import { inReach } from '../../enemies/bodyshape.js';
+import { scarBody, severArm } from '../../enemies/scars.js';
 import { tutEvent } from '../../game/tutor-bus.js';
 import { masteryXp } from '../../game/progression.js';
 import { momentumStrike } from '../parkour.js';
@@ -259,6 +260,9 @@ export function applySwingDamage(step, only){
       }
       damageEnemy(e, dmg * (e.t.heavy ? st.heavyDmg : 1) * backLineMul(st, e), f.clone(), knock, finisher, false, sw0 && sw0.hitAt && sw0.hitAt.get(e));   // (where the blade met it: bladehit.js)
       foesHit++;
+      // the blade leaves its mark: a burnt cut where it crossed, and a killing blow may take the sword arm (enemies/scars.js)
+      scarBody(e.group, f, sw0 && sw0.dir, finisher || G.stance === 'strong' || isDark, sw0 && sw0.hitAt && sw0.hitAt.get(e));
+      if (e.dead) severArm(e, f, finisher ? 0.6 : G.stance === 'strong' || isDark ? 0.4 : 0.25);
       if (!riposte && !e.dead) interruptEnemy(e, f, finisher || st.form === 'djemso' || isDark);   // striking first beats a wind-up
       if (mom === 'slide' && !riposte && !e.dead) staggerEnemy(e, f.x, f.z);   // a SLIDE CUT sweeps the legs out
       if (riposte && !e.dead) staggerEnemy(e, f.x, f.z);   // a RIPOSTE floors what it answers — a true counter, wide open after
@@ -271,7 +275,7 @@ export function applySwingDamage(step, only){
   if (finisher && foesHit) tutEvent('finisher');
   if (foesHit && sw0 && sw0.dir !== 'neutral') tutEvent('cutHit', { dir: sw0.dir });   // which key picked the cut that landed (the training's cut lesson)
   if (foesHit && sw0 && sw0.h && !finisher && !riposte) tutEvent('cutHeight', { h: sw0.h });   // and how high you aimed it (the aim lesson)
-  if (shared.boss && shared.boss.hp > 0) tryHit(shared.boss.group.position, () => damageBoss(dmg * st.heavyDmg), shared.boss);
+  if (shared.boss && shared.boss.hp > 0) tryHit(shared.boss.group.position, () => { scarBody(shared.boss.group, f, sw0 && sw0.dir, finisher || isDark); return damageBoss(dmg * st.heavyDmg); }, shared.boss);
   for (let i = barrels.length-1; i >= 0; i--){
     const b = barrels[i];
     tryHit(b.mesh.position, () => { if (b.fuse < 0) b.fuse = 0.1; }, b);

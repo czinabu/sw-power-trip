@@ -547,7 +547,9 @@ export function buildEnemyMesh(t, o = {}){
   // touch taller or shorter (vis only: hitboxes keep the type's size), its armour a shade off and worn its own way
   const vis = instantiate(baked, { seed: Math.random() * 97, wear: o.wear ?? 0.15 + Math.random() * 0.8 }), g = new THREE.Group();
   vis.scale.setScalar(0.96 + Math.random() * 0.08);
-  vis.userData.bodyMat.color.multiplyScalar(0.93 + Math.random() * 0.1);
+  const tone = 0.93 + Math.random() * 0.1;
+  vis.userData.bodyMat.color.multiplyScalar(tone);
+  if (vis.userData.plateMat) vis.userData.plateMat.color.multiplyScalar(tone);
   g.add(vis);
   const u = g.userData = vis.userData;
   u.vis = vis;

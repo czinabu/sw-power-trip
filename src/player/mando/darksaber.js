@@ -17,6 +17,7 @@ import { damageBoss, bossStagger } from '../../boss/boss.js';
 import { spawnHitSpark } from '../../fx/vfx.js';
 import { clashFlash } from '../../fx/ink.js';
 import { aCost, mandoAimPoint } from './weapons.js';
+import { scarBody, severArm } from '../../enemies/scars.js';
 
 /* THE DARKSABER — the Mando's earned melee: a heavy arc-slash that cleaves the front, deflects bolts,
    and shatters a boss wind-up. Drawn only for the swing. */
@@ -64,6 +65,8 @@ export function updateDark(dt){
       if (!inReach(e, pp, A.range, d > 0.4 ? f : null, cosLim)) continue;   // the slash reaches any of the body in its arc
       TMP.normalize();
       damageEnemy(e, A.dmg * player.up.dmg, TMP.clone(), A.knock); flinchEnemy(e, f, 0.9);
+      scarBody(e.group, f, 'left', true);   // a darksaber sweep burns its line across the plates (enemies/scars.js)
+      if (e.dead) severArm(e, f, 0.4);
     }
     if (shared.boss && shared.boss.hp > 0){
       TMP.subVectors(shared.boss.group.position, pp); TMP.y = 0;
@@ -127,6 +130,7 @@ function darkCut(dp){
       // going out it knocks them along its flight; coming back it drags them a step toward you
       const kd = dp.phase === 'reel' ? TMP.set(dp.dir.x, 0, dp.dir.z).negate().normalize().clone() : TMP.set(dp.dir.x, 0, dp.dir.z).normalize().clone();
       damageEnemy(e, A.dmg * player.up.dmg, kd, A.knock); flinchEnemy(e, kd, 0.7);
+      scarBody(e.group, kd, 'left', false);
       spawnHitSpark(p.clone(), 0xc9a6ff, 1.1); S.saberHit(p, 1);
     }
   }

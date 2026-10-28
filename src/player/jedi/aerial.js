@@ -20,6 +20,7 @@ import { DUEL } from '../../data/duel.js';
 import { isGuarding, guardImpact } from '../../enemies/duel.js';
 import { inReach } from '../../enemies/bodyshape.js';
 import { SLAM_LAND_T, rushFlip } from '../anim/agility.js';
+import { scarBody, severArm } from '../../enemies/scars.js';
 
 /* wind: the beat with the blade drawn back (longer if a flip has to finish first) · dash: the flight in (homes on the
    foe), reaching full speed over `ramp`, skimming in at `level` above the foe's feet · range/cone: who it picks ·
@@ -100,10 +101,12 @@ function strike(pp, tgt){
   const dmg = CFG.player.comboDamage[2] * st.dmg * player.up.dmg * focusDmgMul() * AIR_CUT.dmgMul;
   const knock = AIR_CUT.knock * st.knock * player.up.knock;
   let hit = false;
-  if (tgt && tgt === shared.boss){ damageBoss(dmg * st.heavyDmg); hit = true; }
+  if (tgt && tgt === shared.boss){ damageBoss(dmg * st.heavyDmg); scarBody(tgt.group, dir, 'neutral', true); hit = true; }
   else if (tgt){
     if (isGuarding(tgt)) guardImpact(tgt, DUEL.posture.charge);   // the weight of the fall cracks a guard
     damageEnemy(tgt, dmg * (tgt.t.heavy ? st.heavyDmg : 1) * backLineMul(st, tgt), dir.clone(), knock, true);
+    scarBody(tgt.group, dir, 'neutral', true);   // the falling cut burns its line in (enemies/scars.js)
+    if (tgt.dead) severArm(tgt, dir, 0.5);
     if (!tgt.dead) flinchEnemy(tgt, dir, 0.7);   // rocked back, not floored: you still have to finish it
     // the foe goes flying the way the cut was travelling: anyone it crashes into goes down with it
     player.airCutFling = { e: tgt, t: AIR_CUT.fling, dir: dir.clone(), dmg: dmg * AIR_CUT.flingDmg, knock: knock * 0.5, hit: new Set([tgt]) };
