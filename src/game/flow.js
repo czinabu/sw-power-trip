@@ -37,8 +37,7 @@ import { clearSquad } from '../allies/squad.js';
 import { clearDowned } from './revive.js';
 import { resetReadout, beginWave } from './readout.js';
 
-/* ============================================================
-   LEVEL / WAVE FLOW
+/* =====================================================   LEVEL / WAVE FLOW
    ============================================================ */
 // opts.at() picks where it arrives (default: anywhere on the edge ring) · opts.then(e) is handed the new foe
 export function queueSpawn(typeName, opts){
@@ -224,6 +223,17 @@ export function checkUnlocks(bannerDelay){
   });
 }
 
+// A LONG wave is split in two with a deliberate lull: the first half spawns as usual, and once it is cleared the rest
+// is held for LULL seconds behind a "SECOND WAVE" beat (updateFlow). Call it right after queueing a wave's foes.
+export const LULL = 3.6;
+export function splitWaveWithLull(fromIdx){
+  const q = G.spawnQueue, n = q.length - fromIdx;
+  if (n < 6) return;
+  const at = fromIdx + Math.ceil(n / 2), t0 = q[at].t;
+  for (let i = at; i < q.length; i++){ q[i].t = Math.max(0.2, q[i].t - t0 + 0.2); q[i].held = true; }
+  q.splice(at, 0, { type: '__lull', barrier: true, t: 0, hold: LULL });
+}
+
 export function startWave(){
   const L = LEVELS[G.levelIdx];
   const w = L.waves[G.wave];
@@ -235,10 +245,12 @@ export function startWave(){
   // so pressure stays even across the wave. A surge that's cleared fast simply lets the next one arrive.
   const pulse = Math.max(4, Math.ceil(list.length / 3));
   let t = 0;
+  const q0 = G.spawnQueue.length;
   for (let i = 0; i < list.length; i++){
     t += (i > 0 && i % pulse === 0) ? 2.8 : 0.2;   // big gap between surges, quick trickle within one
     G.spawnQueue.push({ type: list[i], t });
   }
+  if (L.lullWaves && L.lullWaves.includes(G.wave)) splitWaveWithLull(q0);   // the longest campaign waves breathe halfway
   shared.levelPhase = 'fighting';
   G.waveHits = 0; G.waveDmg = 0;   // how cleanly this wave is fought (payWaveClear)
   beginWave('L' + (G.levelIdx + 1) + ' · WAVE ' + (G.wave + 1));
@@ -250,9 +262,23 @@ export function startWave(){
 
 export function updateFlow(dt){
   if (G.coopGuest) return;   // the host runs this run's spawns and waves: net/foes.js tells this browser what they did
+=======
+  // the lull: once the first half of a long wave is down, hold the rest behind a short beat, then release it
+  const bar = G.spawnQueue.find(s => s.barrier);
+  if (bar && !G.spawnQueue.some(s => !s.barrier && !s.held) && !enemies.some(e => !e.dead && !e.converted)){
+    if (!bar.began){
+      bar.began = true;
+      showBanner('', 'SECOND WAVE', bar.hold);
+      MUSIC.waveSting();
+      player.force = CFG.player.maxForce;
+    }
+    bar.hold -= dt;
+    if (bar.hold <= 0){ G.spawnQueue.splice(G.spawnQueue.indexOf(bar), 1); for (const s of G.spawnQueue) s.held = false; }
+  }
   // drain spawn queue → spawn at arena edge
   for (let i = G.spawnQueue.length-1; i >= 0; i--){
     const s = G.spawnQueue[i];
+    if (s.barrier || s.held) continue;
     s.t -= dt;
     if (s.t <= 0){
       if (s.type === 'warbringer') spawnChampion();   // a campaign mid-boss — picks its own arena-edge spot

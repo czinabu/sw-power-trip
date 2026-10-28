@@ -21,7 +21,7 @@ import { initWarbringer } from '../enemies/duel.js';
 import { clearGrenades } from '../enemies/grenades.js';
 import { findClearSpawn, edgeSpawn } from '../world/collision.js';
 import { buildArena } from '../world/arena.js';
-import { startLevel, checkUnlocks } from './flow.js';
+import { startLevel, checkUnlocks, splitWaveWithLull } from './flow.js';
 import { MUTATORS } from '../data/mutators.js';
 import { payWaveClear } from './progression.js';
 import { openSkillTree } from '../ui/store-ui.js';
@@ -148,7 +148,9 @@ export function startEndlessWave(){
   const pulse = Math.max(4, Math.ceil(list.length/3));
   const surgeGap = Math.max(1.3, 2.6 - n*0.05);   // surges arrive faster as the run deepens — relentless late pressure
   let t = 0;
+  const q0 = G.spawnQueue.length;
   for (let i = 0; i < list.length; i++){ t += (i>0 && i%pulse===0) ? surgeGap : 0.2; G.spawnQueue.push({ type:list[i], t }); }
+  if (n >= 15) splitWaveWithLull(q0);   // deep survival waves breathe halfway
   if (G.pendingChampion){ G.pendingChampion = false; spawnChampion(); }
   shared.levelPhase = 'fighting';
   G.waveHits = 0; G.waveDmg = 0;   // how cleanly this wave is fought (payWaveClear)

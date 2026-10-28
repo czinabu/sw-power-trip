@@ -12,7 +12,7 @@ import { shared, G, enemies, player } from '../state.js';
 import { MANDO } from '../data/mando.js';
 import { fwd, playerPos, stance, maxHp } from './helpers.js';
 import { flinchEnemy, staggerEnemy } from '../enemies/damage.js';
-import { FOCUS, addFocus } from './jedi/focus.js';
+import { FOCUS, addFocus, riposteWindow } from './jedi/focus.js';
 import { deflectAnim, cancelSwing } from './jedi/combat.js';
 import { sparks, clashFlash } from '../fx/ink.js';
 import { TELLS, tellCss } from '../fx/tells.js';
@@ -52,7 +52,7 @@ export function perfectDodge(fromPos){
     // a dash or guard flip that cost a charge gets it back (and the dash its Force); a roll was free to begin with
     if (player.dashSpent){ refundCharge(); player.dashSpent = false; }
     if (player.dodgeKind === 'dash') player.force = clamp(player.force + MOBILITY.dash.cost * P.refund, 0, CFG.player.maxForce);
-    player.riposteT = CFG.player.riposteTime;   // the next cut answers it
+    player.riposteT = riposteWindow(CFG.player.riposteTime);   // the next cut answers it
     player.cds.dash = 0; player.cds.roll = 0;
     addFocus(FOCUS.gainParry);
   }
@@ -214,7 +214,7 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
       if (player.parryT > 0 || (guard && player.stam > 0)) deflectAnim(V3(fromPos.x, pp.y + 1.4, fromPos.z));
       if (player.parryT > 0){
         player.parryT = 0;   // a parry consumes the window
-        player.riposteT = CFG.player.riposteTime;
+        player.riposteT = riposteWindow(CFG.player.riposteTime);
         player.cancelRiposte = (G.gt - (player.cancelT || -9)) < 0.45;   // parried straight out of a swing-cancel → a stronger answer
         player.force = clamp(player.force + 12 + player.up.parryForce + (stance().parryRefund || 0), 0, CFG.player.maxForce);   // skillful defense feeds the Force (NIMAN refunds extra)
         G.hitstop = Math.max(G.hitstop, 0.24);
