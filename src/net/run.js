@@ -16,3 +16,6 @@ export function queueHit(e, dmg, knockDir, knockPow, finisher, tick){
   }
   hitQueue.push([e.nid, dmg, knockDir ? +knockDir.x.toFixed(2) : 0, knockDir ? +knockDir.z.toFixed(2) : 0, knockPow || 0, finisher ? 1 : 0, tick ? 1 : 0]);
 }
+
+// what the foe code calls to tell the other browser (set by net/foefire.js; null in solo, so nothing changes there)
+export const hooks = { hurt: null, bolt: null, bx: null, blast: null, tell: null, gren: null };

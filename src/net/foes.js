@@ -2,7 +2,7 @@
 // The shared Survival fight, co-op phase 2. The HOST's browser owns the foes: it spawns them, runs their AI and the waves,
 // and sends where every foe is about 20 times a second (a snapshot). The GUEST's browser draws them as puppets (`e.net`)
 // that follow the snapshot and run no AI. What the guest does to a foe is sent back as a hit, which the host applies with
-// its own damageEnemy. Not here yet (the next phase steps): foes hurting the guest, their shots and tells, shared XP.
+// its own damageEnemy. Foes hurting the guest, their shots and tells are net/foefire.js. Not here yet: shared XP.
 
 import * as THREE from 'three';
 import { scene, camera } from '../engine/renderer.js';
@@ -29,6 +29,7 @@ const DEAD = 1, WALKING = 2, WARBRINGER = 4;
 let sentAt = 0, hostSent = false, runListeners = [];
 const byNid = new Map();   // the guest's puppets, by the host's number for each foe
 
+export const puppetOf = (nid) => byNid.get(nid) || null;
 export function onRunChange(fn){ runListeners.push(fn); }
 const runChanged = () => { for (const fn of runListeners) fn(coopRun); };
 

@@ -18,6 +18,7 @@ import { scorchGround } from '../fx/scorch.js';
 import { hurtPlayer } from '../player/damage.js';
 import { enemyDmgScale } from '../game/survival.js';
 import { blastAllies } from '../allies/squad.js';
+import { hooks } from '../net/run.js';
 
 // SABOTEUR detonation — a concussive blast: unblockable on the player (dash i-frames / distance save you), chains
 // to nearby foes, pops barrels. Fires when its fuse burns out OR when it's killed at close range.
@@ -37,6 +38,7 @@ export function bomberExplode(e){
   if (shared.boss && shared.boss.hp > 0 && shared.boss.group.position.distanceTo(pos) < A.blastR) damageBoss(28);
   for (const b of barrels){ if (b.mesh.position.distanceTo(pos) < A.blastR && b.fuse < 0) b.fuse = 0.15; }
   blastAllies(pos, A.blastR, A.dmg * enemyDmgScale());   // the hero's squad is caught in it too
+  if (hooks.blast) hooks.blast(pos, A.blastR, A.dmg * enemyDmgScale(), 'a');
   const pp = playerPos();
   if (pp.distanceTo(pos) < A.blastR && player.dashT <= 0){
     const kd = TMP.subVectors(pp, pos).setY(0).normalize().clone();
@@ -70,6 +72,7 @@ export function warbringerSlam(e, pos){
   flashLight(0xff6a3a, 7, R*2, V3(pos.x, 1, pos.z), 0.32);
   G.shake = Math.max(G.shake, 1.1); G.hitstop = Math.max(G.hitstop, 0.06); S.boom(pos, 1.6);
   for (const o of enemies){ if (o === e || o.dead) continue; if (o.group.position.distanceTo(pos) < R) flinchEnemy(o, o.group.position.clone().sub(pos), 0.6); }
+  if (hooks.blast) hooks.blast(pos, R, e.t.dmg * 1.3 * enemyDmgScale(), 's');
   const pp = playerPos();
   if (pp.distanceTo(pos) < R && player.dashT <= 0){
     const kd = TMP.subVectors(pp, pos).setY(0).normalize().clone();

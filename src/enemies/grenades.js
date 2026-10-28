@@ -16,6 +16,7 @@ import { scorchGround } from '../fx/scorch.js';
 import { shared, G, enemies, barrels, player } from '../state.js';
 import { playerPos } from '../player/helpers.js';
 import { hurtPlayer } from '../player/damage.js';
+import { hooks } from '../net/run.js';
 import { enemyDmgScale } from '../game/survival.js';
 import { damageEnemy } from './damage.js';
 import { damageBoss } from '../boss/boss.js';
@@ -46,6 +47,7 @@ export function throwGrenade(e, from, at, friendly){
   const T = clamp(d / 16, GRENADE.flight[0], GRENADE.flight[1]);
   grenades.push({ ball, core, ring, fill, from: from.clone(), to: V3(at.x, 0.16, at.z), T, t: 0, fuse: e.t.fuse, fuseMax: e.t.fuse + T,
     R, dmg: e.t.dmg, friendly: !!friendly, landed: false, vel: null, beep: 0 });
+  if (!friendly && hooks.gren) hooks.gren(e, from, at);   // co-op: thrown on the other screen too
   if (friendly) sfx(320, 0.12, 'triangle', 0.05, 180); else tellSound('area');
 }
 export function clearGrenades(){
@@ -91,6 +93,7 @@ function explode(n){
   scorchGround(n.ball.position, n.R * 1.1);
   flashLight(0xffae2a, 5, n.R * 2.4, V3(pos.x, 1.2, pos.z), 0.25);
   G.shake = Math.max(G.shake, 0.55); S.boom(pos, 1);
+  if (n.vis) return;   // co-op guest: only the picture; the host's blast event does the damage
   const turned = n.vel || n.friendly, foeDmg = turned ? GRENADE.pushedDmg : GRENADE.foeDmg, knock = turned ? GRENADE.pushedKnock : GRENADE.foeKnock;
   for (const o of enemies){
     if (o.dead || o.converted) continue;
@@ -101,6 +104,7 @@ function explode(n){
   for (const b of barrels){ if (b.mesh.position.distanceTo(pos) < n.R && b.fuse < 0) b.fuse = 0.15; }
   if (turned) return;   // turned back, or thrown by an ally: it's on your side now
   blastAllies(pos, n.R, n.dmg * enemyDmgScale());   // the hero's squad is caught in it too
+  if (hooks.blast) hooks.blast(pos, n.R, n.dmg * enemyDmgScale(), 'g');
   const pp = playerPos();
   if (Math.hypot(pp.x - pos.x, pp.z - pos.z) < n.R && pp.y < 3.2){   // a dash through it is a perfect dodge (hurtPlayer)
     screenFlash('radial-gradient(ellipse at center, rgba(255,170,60,.32), transparent 60%)', 0.5, 0.25);

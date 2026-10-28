@@ -11,6 +11,7 @@ import { damageEnemy } from './damage.js';
 import { damageBoss } from '../boss/boss.js';
 import { spawnGroundShock } from '../fx/vfx.js';
 import { hurtPlayer } from '../player/damage.js';
+import { hooks } from '../net/run.js';
 import { diffHpMul } from '../data/difficulty.js';
 import { ELITES } from '../data/enemies.js';
 
@@ -62,6 +63,7 @@ export function volatileBlast(pos, source){
       damageEnemy(o, 45, o.group.position.clone().sub(pos).setY(0).normalize(), 18);
   }
   if (shared.boss && shared.boss.hp > 0 && shared.boss.group.position.distanceTo(pos) < 5) damageBoss(30);
+  if (hooks.blast) hooks.blast(pos, 4.5, 16, 'v');
   const pp = playerPos();
   if (pp.distanceTo(pos) < 4.5 && player.dashT <= 0) hurtPlayer(16, pos);
 }

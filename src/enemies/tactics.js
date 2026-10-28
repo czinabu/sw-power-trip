@@ -12,6 +12,7 @@ import { floater } from '../fx/floaters.js';
 import { spawnGroundShock } from '../fx/vfx.js';
 import { G, enemies, player } from '../state.js';
 import { heroPosOf } from './targets.js';
+import { hooks } from '../net/run.js';
 import { segBlockedBySolids } from '../world/collision.js';
 import { hurtPlayer } from '../player/damage.js';
 import { enemyDmgScale } from '../game/survival.js';
@@ -245,14 +246,17 @@ export function updateLunge(e, dt, pp, remote = false){
   if (e.lungeLine) e.lungeLine.material.opacity = Math.max(0, e.lungeLine.material.opacity - dt * 3);
   if (Math.random() < 0.6) burst(V3(g.position.x, g.position.y + 1.3, g.position.z), e.t.eye, 1, 2, 1, 0.6);
   // caught along the path it swept this frame?
-  if (!e.lungeHit && !remote && Math.abs(pp.y - g.position.y) < 1.8){
+  if (!e.lungeHit && Math.abs(pp.y - g.position.y) < 1.8){
     const sx = g.position.x - ox, sz = g.position.z - oz, sl = sx*sx + sz*sz || 1;
     const k = clamp(((pp.x - ox) * sx + (pp.z - oz) * sz) / sl, 0, 1);
     if (Math.hypot(pp.x - (ox + sx*k), pp.z - (oz + sz*k)) < LUNGE.hitR){
       e.lungeHit = true;
+      if (remote){ if (hooks.hurt) hooks.hurt(e, e.t.dmg * LUNGE.dmgMul * enemyDmgScale(), g.position, 'lunge', true, d.x, d.z); }   // their browser takes it or parries
+      else {
       const res = hurtPlayer(e.t.dmg * LUNGE.dmgMul * enemyDmgScale(), g.position, false, true, false, { unblockable: true });
       if (res === 'parried' || res === 'clashed'){ endLunge(e); staggerEnemy(e, -d.x, -d.z); return; }
       if (res === 'hit'){ player.vel.x += d.x * 9; player.vel.z += d.z * 9; burst(V3(pp.x, 1.5, pp.z), 0xff5533, 8, 6, 3); }
+      }
     }
   }
   if (e.st > 0) return;
@@ -260,7 +264,7 @@ export function updateLunge(e, dt, pp, remote = false){
   e.state = 'recover'; e.st = e.lungeHit ? e.t.recover : LUNGE.miss;
   if (!e.lungeHit) floater(V3(g.position.x, g.position.y + 1.2, g.position.z), 'OVERSHOT', '#9fe6ff');
 }
-function endLunge(e){
+export function endLunge(e){
   e.lungeCd = rand(LUNGE.cd[0], LUNGE.cd[1]);
   e.lungeLocked = false;
   if (e.lungeLine) e.lungeLine.visible = false;
