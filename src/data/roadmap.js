@@ -21,7 +21,7 @@ export const ROADMAP = [
     items: ['Join with a code, see each other in the arena', 'Partner fully animated, in their own look', 'Enemies pick which hero to go after'] },
   { title: 'Sharper visuals', status: 'done',
     items: ['Smooth edges: antialiasing back on', 'Each world gets its own colour grade', 'Soft contact shadows (ambient occlusion, High)',
-            'Floors that don\'t repeat, wind-blown snow', 'Scorch marks that stay where blasts land', 'Ground mist, drifting clouds', 'High: no more ghosting or flicker (sun shafts and film grain off)'] },
+            'Floors that don\'t repeat, wind-blown snow', 'Scorch marks that stay where blasts land', 'Ground mist, drifting clouds', 'High: no more ghosting (sun shafts and film grain off)', 'Home-screen hero no longer flickers a black box in Firefox'] },
   { title: 'Living troopers', status: 'done',
     items: ['Troopers aim and look at their target, breathe, kick on each shot and flinch with a hit', 'Melee foes twist into the wind-up and whip through the strike',
             'No two alike: height, shade and battle wear per trooper', 'Sergeant pauldrons, veteran flashes, comms antennas',
