@@ -34,6 +34,7 @@ import { updateLegs } from './gait.js';
 import { MOVE } from '../data/movement.js';
 import { foeAllyTarget, hurtAlly } from '../allies/squad.js';
 import { heroFor } from './targets.js';
+import { hooks } from '../net/run.js';
 
 const NAV_EVERY = 0.1;      // seconds between a foe's route checks (the field itself refreshes in nav.js)
 const STUCK_AFTER = 0.5;    // window (s) over which a chasing foe must make headway, or it sidesteps to work itself free
@@ -433,7 +434,7 @@ export function updateEnemies(dt){
             } else if (onAlly){
               hurtAlly(tgtAlly, t.dmg * enemyDmgScale(), g.position);
             } else if (remote){
-              /* the partner's puppet: no damage here (co-op phase 2 sends the blow to their browser to parry or take) */
+              if (hooks.hurt) hooks.hurt(e, t.dmg * enemyDmgScale() * (thrust ? DUEL.thrustDmg : 1), g.position, thrust ? 'thrust' : e.dp && e.dp.brace ? 'brace' : 'melee', unblockable);   // their browser parries or takes it
             } else {
               // a THRUST drives through a held guard: parry it or get out of the way
               const res = hurtPlayer(t.dmg * enemyDmgScale() * (thrust ? DUEL.thrustDmg : 1), g.position, false, true, false, unblockable ? { unblockable: true } : null);   // melee — blocked by high ground

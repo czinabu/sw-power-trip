@@ -8,6 +8,7 @@
 import { V3 } from '../utils.js';
 import { sfx } from '../audio/sfx.js';
 import { burst } from './particles.js';
+import { hooks } from '../net/run.js';
 import { spawnGroundShock } from './vfx.js';
 
 export const TELLS = {
@@ -25,6 +26,7 @@ export function tellSound(kind){
 }
 // the flash at a foe's feet (or the landing mark): a ring in the kind's colour, a burst over it, and its sound
 export function tellFx(kind, pos, radius, dur = 0.45){
+  if (hooks.tell) hooks.tell(kind, pos, radius, dur);   // co-op: the other browser sees the warning too
   const T = TELLS[kind];
   spawnGroundShock(V3(pos.x, 0.1, pos.z), T.color, radius, dur, 0.8);
   burst(V3(pos.x, 1.8, pos.z), T.accent, 8, 5, 3, 0.8);

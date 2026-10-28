@@ -29,6 +29,7 @@ import { airGuardLost, airParryOk } from '../player/mobility.js';
 import { masteryXp } from '../game/progression.js';
 import { noteDefense } from '../game/readout.js';
 import { allySweep, hurtAlly, isFodder } from '../allies/squad.js';
+import { hooks } from '../net/run.js';
 
 /* ============================================================
    PROJECTILES — blaster bolts & boss orbs
@@ -50,7 +51,9 @@ export function fireBolt(pos, dir, speed, dmg, friendly, quiet, src){
   m.position.copy(pos);
   m.quaternion.setFromUnitVectors(V3(0,1,0), dir.clone().normalize());
   scene.add(m);
-  bolts.push({ mesh: m, dir: dir.clone().normalize(), speed, dmg, friendly, life: 4, src });
+  const b = { mesh: m, dir: dir.clone().normalize(), speed, dmg, friendly, life: 4, src };
+  bolts.push(b);
+  if (!friendly && src && src.nid != null && hooks.bolt) hooks.bolt(b);   // co-op: the other browser sees it too
   if (!quiet) S.enemyShot(pos, dmg > 20);   // the player's own shots play their gun's sound instead
 }
 /* REDIRECT — where a bolt off the blade goes. A timed parry sends it straight back at whoever fired it; a deflect off
@@ -232,6 +235,7 @@ export function updateBolts(dt){
         if (b.playerShot){ if (G.stats) G.stats.shotsHit++; hitMarker(shared.boss.hp <= 0 ? 'kill' : (isHead ? 'head' : 'hit')); }
       }
     }
+    if (b.bid && !b.bxd && (kill || b.friendly) && hooks.bx) hooks.bx(b);   // co-op: spent or turned here, so the other copy goes
     if (kill){ scene.remove(b.mesh); bolts.splice(i,1); }
   }
 }
