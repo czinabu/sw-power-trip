@@ -3,7 +3,7 @@
 // turntable on the right, instead of the live arena. Switching hero spins the turntable and swaps the figure.
 
 import * as THREE from 'three';
-import { renderer, composer, renderPass, scene, camera, bloomPass, compileLive, standPost } from '../engine/renderer.js';
+import { renderer, composer, renderPass, scene, camera, bloomPass, compileLive, standPost, setMSAA } from '../engine/renderer.js';
 import { G } from '../state.js';
 import { prewarmJudgeFX } from '../player/jedi/judgement-fx.js';
 import { buildHeroModel } from '../player/model/index.js';
@@ -296,7 +296,17 @@ export function showcaseActive(){
   return G.mode === 'menu' && !G.fovPreview && document.getElementById('overlay').style.display !== 'none';
 }
 
+// TEMPORARY flicker hunt: ?dbg=nobloom,nomsaa,dpr1,noring,nopool switches stage parts off (not for merging)
+const DBG = new Set((new URLSearchParams(location.search).get('dbg') || '').split(','));
+let dbgDone = false;
 export function renderShowcase(dt){
+  if (!dbgDone){
+    dbgDone = true;
+    if (DBG.has('nomsaa')) setMSAA(0);
+    if (DBG.has('dpr1')){ renderer.setPixelRatio(1); renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight); }
+    if (DBG.has('noring')) rimRing.visible = inRing.visible = ticks.visible = false;
+    if (DBG.has('nopool')) pool.visible = beam.visible = false;
+  }
   if (!warm){ warm = true; compileLive(); prewarmJudgeFX(); }   // keep the arena's shaders ready, so BEGIN doesn't hitch
   if (!shown){ dress(G.hero); setTheme(G.hero, true); }
   // hero picked → spin the stand once, swapping the figure at the brightest point of the beam
@@ -342,7 +352,9 @@ export function renderShowcase(dt){
   // (and the stand keeps its own bloom strength whatever the arena behind the menu set, see setSceneGlow)
   const th = bloomPass.threshold, st = bloomPass.strength; bloomPass.threshold = STAND_BLOOM; bloomPass.strength = 0.82;
   standPost(true);   // no ambient occlusion or arena colour grade on the stand
+  const bl = bloomPass.enabled; if (DBG.has('nobloom')) bloomPass.enabled = false;
   composer.render();
+  bloomPass.enabled = bl;
   standPost(false);
   bloomPass.threshold = th; bloomPass.strength = st;
   renderPass.scene = scene; renderPass.camera = camera;
