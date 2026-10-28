@@ -5,7 +5,7 @@
 //
 // Theme keys (data/worlds.js), all optional:
 //   mist:   false | { color, opacity, count, height }   (default: on, tinted from the fog)
-//   shafts: false | 0..1 strength                         (default: on wherever the sky has a sun)
+//   shafts: false | 0..1 strength                         (default: off)
 //   drift:  false | radians per second the upper cloud layer turns (default 0.004)
 
 import * as THREE from 'three';
@@ -131,10 +131,11 @@ export function buildAir(T, L, sky, sunDir){
     shared.arenaGroup.add(mistMesh);
     placeMist(0);
   }
-  // light shafts toward the painted sun
-  if (sunDir && T.shafts !== false){
+  // light shafts toward the painted sun. Off unless a theme sets a strength: the pass marches through the AO's depth
+  // buffer, which on some GPUs shows ghost copies of props and flickers on High
+  if (sunDir && typeof T.shafts === 'number' && T.shafts > 0){
     A.sunDir.copy(sunDir);
-    A.shafts = typeof T.shafts === 'number' ? T.shafts : 0.5;
+    A.shafts = T.shafts;
     shaftPass.uniforms.color.value.setHex(T.light.sun);
   }
 }
