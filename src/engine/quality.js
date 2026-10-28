@@ -14,7 +14,7 @@ const QUALITY_LEVELS = ['low', 'medium', 'high'];
 const QUALITY = {
   low:    { pixelRatio: 1,    shadowMap: 512,  msaa: 0, ao: false, bloom: false, grain: false },
   medium: { pixelRatio: 1.5,  shadowMap: 1024, msaa: 4, ao: false, bloom: true,  grain: false },
-  high:   { pixelRatio: 2,    shadowMap: 2048, msaa: 4, ao: true,  bloom: true,  grain: true  },
+  high:   { pixelRatio: 2,    shadowMap: 2048, msaa: 4, ao: true,  bloom: true,  grain: false },
 };
 let qualityIdx = QUALITY_LEVELS.indexOf(localStorage.getItem('jpt_quality'));
 if (qualityIdx < 0) qualityIdx = 2;   // default HIGH
