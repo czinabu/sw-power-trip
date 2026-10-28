@@ -22,6 +22,7 @@ import { missionChecklist } from '../game/mission.js';
 import { objectiveHud } from '../game/objectives.js';
 import { MOBILITY, MANDO_MOBILITY } from '../data/mobility.js';
 import { maxCharges, inCombat, formMob } from '../player/mobility.js';
+import { cutHeight } from '../player/jedi/cutaim.js';
 
 // give every power slot its icon once (key badge top-left, icon centre, name below)
 for (const id in SLOT_ICON){ const el = document.getElementById(id); if (el) el.querySelector('.key').insertAdjacentHTML('afterend', svgIcon(SLOT_ICON[id])); }
@@ -164,6 +165,9 @@ export function updateHud(){
   }
   { const ro = $('readout'), on = !!G.sandbox && G.mode === 'play' && readoutOn(); ro.style.display = on ? 'block' : 'none'; if (on) setHtml(ro, readoutLiveHtml()); }
   renderChecklist(G.mode === 'play' && !G.sandbox ? (G.training ? trainingChecklist() : G.mission ? missionChecklist() : null) : null);
+  // CUT HEIGHT (player/jedi/cutaim.js): three ticks beside the crosshair, the lit one is where your next cut goes
+  { const ch = $('cuth'), on = G.mode === 'play' && (G.hero === 'mando' ? player.weapon === 'darksaber' : !player.holstered);
+    if (ch){ ch.style.display = on ? '' : 'none'; if (on) ch.dataset.h = cutHeight(); } }
   if (G.hero !== 'mando'){   // holstered (4): LMB is a Force strike and RMB a ward instead of saber and block
     setText($('ab-atk').querySelector('.an'), player.holstered ? 'FORCE STRIKE' : 'SABER');
     setText($('ab-block').querySelector('.an'), player.holstered ? 'WARD' : 'BLOCK');

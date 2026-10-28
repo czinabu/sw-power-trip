@@ -1,7 +1,7 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
 // Enemy lab (dev only: `npm run dev`, then open /tools/enemy-lab.html).
 // Lines up every enemy type (or both bosses) under the game's own lights, so enemy model changes can be judged
-// without playing. URL params: ?set=troops|bosses  &pose=idle|windup|guardL|guardR|guardH|windL|windR|windH|windT (a duellist's guards and wind-ups)  &elite=swift|vital|volatile  &view=front|back
+// without playing. URL params: ?set=troops|bosses  &pose=idle|windup|guardL|guardR|guardH|guardLo|blockL|blockR|blockH|blockLo|windL|windR|windH|windT (a duellist's guards, blocks and wind-ups)  &elite=swift|vital|volatile  &view=front|back
 // &orbit=1 (slow turntable). The stats corner shows draw calls per frame.
 
 import * as THREE from 'three';
@@ -10,7 +10,7 @@ import { ENEMY_TYPES } from '../src/data/enemies.js';
 import { buildEnemyMesh } from '../src/enemies/mesh.js';
 import { buildBoss } from '../src/boss/mesh.js';
 import { ELITES } from '../src/data/enemies.js';
-import { GUARD_POSE, WIND } from '../src/data/duel.js';
+import { GUARD_POSE, BLOCK_POSE, WIND } from '../src/data/duel.js';
 
 const q = new URLSearchParams(location.search);
 const SET = q.get('set') || 'troops';
@@ -27,9 +27,9 @@ floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
 function pose(g, heavy){
   const u = g.userData;
   // a duellist's guard (the line it covers) and its wind-ups (the line it will strike from), as enemies/duel.js holds them
-  const duel = /^(guard|wind)([LRHT])$/.exec(POSE);
+  const duel = /^(guard|block|wind)(Lo|[LRHT])$/.exec(POSE);
   if (duel){
-    const P = duel[1] === 'guard' ? GUARD_POSE : WIND, s = duel[2];
+    const P = duel[1] === 'guard' ? GUARD_POSE : duel[1] === 'block' ? BLOCK_POSE : WIND, s = duel[2];
     if (u.staff && P.staff[s]){ u.staff.rotation.z = P.staff[s][0]; u.staff.rotation.x = P.staff[s][1]; }
     else if (u.weaponArm && P.sword[s]){ u.weaponArm.rotation.x = P.sword[s][0]; u.weaponArm.rotation.z = P.sword[s][1]; }
     return;

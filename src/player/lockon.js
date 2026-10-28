@@ -61,7 +61,9 @@ export function updateLockOn(dt){
   const pp = playerPos(), p = posOf(t);
   const want = Math.atan2(p.x - pp.x, p.z - pp.z);
   G.yaw += wrapAngle(want - G.yaw) * Math.min(1, L.yawPull * dt);
-  G.pitch += (L.pitch - G.pitch) * Math.min(1, L.pitchPull * dt);
+  // the view is held level only past `pitchFree` of it: inside that you still aim your cuts high or low (jedi/cutaim.js)
+  const po = G.pitch - L.pitch;
+  if (Math.abs(po) > L.pitchFree) G.pitch -= (po - Math.sign(po) * L.pitchFree) * Math.min(1, L.pitchPull * dt);
   if (m){
     const big = t === shared.boss ? 2.6 : (t.t && t.t.scale ? 1.2 * t.t.scale : 1.2);
     const v = V3(p.x, p.y + big, p.z).project(camera);

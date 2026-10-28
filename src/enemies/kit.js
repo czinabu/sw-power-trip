@@ -209,13 +209,18 @@ export function bakeDesign(id, design, colors = {}){
    both seeded per unit so no two troopers in a squad are worn the same. Laid over the Ink surface the source
    material carries (clone() drops shader hooks, so they are re-attached here). o.wear 0 (parade fresh) → 1 (beaten);
    o.seed picks the pattern. The grime is measured from the unit's feet (uBase, set each frame by enemies/upper.js). */
-function wearArmor(m, src, o){
-  const base = src.onBeforeCompile, key = src.customProgramCacheKey();
-  const W = m.userData.wear = { uSeed: { value: o.seed ?? Math.random() * 97 }, uWear: { value: o.wear ?? 0.5 }, uBase: { value: 0 }, uScale: { value: 1 },
+function makeWear(o){
+  return { uSeed: { value: o.seed ?? Math.random() * 97 }, uWear: { value: o.wear ?? 0.5 }, uBase: { value: 0 }, uScale: { value: 1 },
     // saber cuts (enemies/scars.js): each a short burnt line in the body's rest pose (xyz, when it was cut; direction,
     // half its length). Fresh, the line glows; it cools to a black char that stays
-    uScar: { value: Array.from({ length: SCARS }, () => new THREE.Vector4()) },
-    uScarDir: { value: Array.from({ length: SCARS }, () => new THREE.Vector4()) }, uNow: { value: 0 } };
+    uScar: { value: Array.from({ length: SCARS }, () => new THREE.Vector4(0, 0, 0, 0)) },
+    uScarDir: { value: Array.from({ length: SCARS }, () => new THREE.Vector4(0, 0, 0, 0)) }, uNow: { value: 0 } };
+}
+// both of a unit's plate materials (the armour and its darker trim) share one set of wear uniforms, so a cut runs on
+// across the seam between them
+function wearArmor(m, src, W){
+  const base = src.onBeforeCompile, key = src.customProgramCacheKey();
+  m.userData.wear = W;
   m.onBeforeCompile = (sh, r) => {
     base.call(m, sh, r);
     Object.assign(sh.uniforms, W);
@@ -250,9 +255,9 @@ function wearArmor(m, src, o){
           vec3 r = vRest - s.xyz;
           float t = clamp(dot(r, d.xyz), -d.w, d.w), dist = length(r - d.xyz * t);
           float taper = 1.0 - pow(abs(t) / d.w, 4.0), wob = wNoise(vRest * 31.0 + float(i) * 7.0);
-          float core = 1.0 - step(0.02 * taper + 0.008 * wob, dist);            // the cut itself, pointed at both ends
-          float halo = 1.0 - step(0.055 * taper + 0.025 * wob, dist);           // the scorched plate around it
-          scarChar = max(scarChar, max(core, halo * 0.6));
+          float core = 1.0 - step(0.016 * taper + 0.008 * wob, dist);            // the cut itself, pointed at both ends
+          float halo = 1.0 - step(0.04 * taper + 0.022 * wob, dist);          // the scorched plate around it
+          scarChar = max(scarChar, max(core, halo * 0.5));
           scarHot = max(scarHot, core * exp(-(uNow - s.w) * 1.3));
         }
         diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.05, 0.035, 0.03), scarChar);
@@ -267,7 +272,8 @@ function wearArmor(m, src, o){
    plus every slot by name and every tagged live object (tags ending in [] collect into arrays). */
 export function instantiate(baked, o = {}){
   const groups = new Map();
-  let bodyMat = null;
+  let bodyMat = null, plateMat = null, W = null;
+  const wear = () => W || (W = makeWear(o));
   const ud = {}, binds = [], joints = new Map();   // joints: 'slot/bone' → its group
   for (const s of baked.slots){
     const g = new THREE.Group();
@@ -299,9 +305,13 @@ export function instantiate(baked, o = {}){
         if (!bodyMat){
           bodyMat = mat.clone(); bodyMat.emissive.setHex(0); bodyMat.emissiveIntensity = 0;
           // clone() drops the shader hooks: carry the Ink surface (chrome on the plates) and add this unit's wear
-          wearArmor(bodyMat, mat, o);
+          wearArmor(bodyMat, mat, wear());
         }
         m = bodyMat;
+      } else if (key === 'armor2'){
+        // the trim plates are this unit's own too: they wear, and take saber cuts, with the armour
+        if (!plateMat){ plateMat = mat.clone(); wearArmor(plateMat, mat, wear()); }
+        m = plateMat;
       }
       const mesh = Mesh(geo, m);
       mesh.castShadow = true;
@@ -333,6 +343,6 @@ export function instantiate(baked, o = {}){
   }
   // the body's own skinned mesh: enemies/scars.js reads its skeleton to pin a cut to the plate it landed on
   const bodySkin = (binds.find(([m]) => m.parent === root && m.material === bodyMat) || [])[0] || null;
-  root.userData = { ...ud, bodyMat, bodySkin };
+  root.userData = { ...ud, bodyMat, plateMat, bodySkin };
   return root;
 }

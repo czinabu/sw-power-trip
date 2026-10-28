@@ -24,7 +24,7 @@ import { updateDirector, usesToken, dropToken, claimToken, rangedSlotFree, behin
 import { updateNav, navSteer, navClass, navClearance } from './nav.js';
 import { DUEL } from '../data/duel.js';
 import { diffTellMul } from '../data/difficulty.js';
-import { updateDuel, planAttack, quickStrike, windupPose, strikePose, maybeFeint, chainNext, updateSaberLock, drainBreath, addPosture } from './duel.js';
+import { updateDuel, planAttack, quickStrike, windupPose, strikePose, maybeFeint, chainNext, updateSaberLock, drainBreath, addPosture, rallyOnParry } from './duel.js';
 import { TROOP_MELEE, TROOP_FIRE, GRENADE } from '../data/tactics.js';
 import { tickTactics, planTroopMelee, troopFeint, holdTremble, planShot, approachSteer, tryOrder, updateOrder, tryLunge, updateLungeWind,
   updateLunge, dropLungeLine } from './tactics.js';
@@ -138,7 +138,8 @@ export function updateEnemies(dt){
         // DUELLING — a foe that just turned your blade answers at once (duel.js), if a turn is free for it
         if (e.counterQueued && tgtPos && !e.converted && !onAlly){
           e.counterQueued = false;
-          if (dist < t.range + 1.2 && claimToken(e)){ e.counterAt = G.gt; quickStrike(e, DUEL.counterWindup); break; }
+          const wind = e.exchWind || DUEL.counterWindup; e.exchWind = 0;   // (the exchange's next beat comes quicker: duel.js rallyParry)
+          if (dist < t.range + 1.2 && claimToken(e)){ e.counterAt = G.gt; quickStrike(e, wind); break; }
         }
         // a trooper that FEINTED comes again straight away, fast (tactics.js)
         if (e.feintAgain && tgtPos && !e.converted && !onAlly){
@@ -439,10 +440,13 @@ export function updateEnemies(dt){
               if (hooks.hurt) hooks.hurt(e, t.dmg * enemyDmgScale() * (thrust ? DUEL.thrustDmg : 1), g.position, thrust ? 'thrust' : e.dp && e.dp.brace ? 'brace' : 'melee', unblockable);   // their browser parries or takes it
             } else {
               // a THRUST drives through a held guard: parry it or get out of the way
-              const res = hurtPlayer(t.dmg * enemyDmgScale() * (thrust ? DUEL.thrustDmg : 1), g.position, false, true, false, unblockable ? { unblockable: true } : null);   // melee — blocked by high ground
+              const line = e.dp && e.plan ? e.plan.side : null;   // a duellist's strike comes in on a line: your guard meets it there (player/jedi/guardline.js)
+              const res = hurtPlayer(t.dmg * enemyDmgScale() * (thrust ? DUEL.thrustDmg : 1), g.position, false, true, false, unblockable || line ? { unblockable, line } : null);   // melee — blocked by high ground
               if (res === 'parried'){
                 // perfectly parried — the weapon is knocked wide and the foe STUMBLES, wide open
                 // the Warbringer's posture takes the parry; a full bar breaks it open (duel.js), otherwise it reels as any brute does
+                // a duellist may keep the EXCHANGE going: it recovers to meet your riposte instead of reeling (duel.js)
+                if (rallyOnParry(e)) break;
                 if (!(e.dp && e.dp.brace && addPosture(e, DUEL.posture.parry, -tx, -tz))) staggerEnemy(e, -tx, -tz);
                 drainBreath(e, DUEL.breath.parried);
                 break;

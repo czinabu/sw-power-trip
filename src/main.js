@@ -57,7 +57,7 @@ import './world/arena.js';
 import './world/textures.js';
 import { updateAmbient } from './fx/ambient.js';
 import { updateScorch } from './fx/scorch.js';
-import { updateSevered } from './enemies/scars.js';
+import { updateSevered, scarBody, severArm } from './enemies/scars.js';
 import './world/arenas/temple.js';
 import './world/arenas/foundry.js';
 import './world/arenas/plains.js';
@@ -175,6 +175,7 @@ window.GAME = { coopHooks, partnerShown, partnerInfo, CFG, ENEMY_TYPES, LEVELS, 
   hitMarker, spawnBlasterBolt, mandoWeapon, updateBolts, updateHud,
   hazardZones, updateHazardZones, hazardContains, setOverlayState, nav: { NAV, buildNav, updateNav, navSteer, navDist },
   duel: { DUEL, DUEL_PROFILES, MANDO_MELEE, LOCK, startLock, endLock, duelDefend, eliteRamp, foeBlade, bossBlade, contactPoint },
+  scars: { scarBody, severArm },
   tactics: { RAMP, TROOP_MELEE, TROOP_FIRE, PINCER, ORDERS, GRENADE, LUNGE, tacticsRamp, grenades, pushGrenades },
   squad: { allies, spawnSquad, addSquadmate, squadOrder, downed },
   get boss(){ return shared.boss; }, get saberProj(){ return shared.saberProj; }, get darkProj(){ return shared.darkProj; } };

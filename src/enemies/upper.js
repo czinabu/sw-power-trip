@@ -56,8 +56,12 @@ export function updateUpper(o, g, dt, aim, mode = 'on'){
     fl = (d.x * Math.sin(y) + d.z * Math.cos(y)) * k; fr = (d.x * Math.cos(y) - d.z * Math.sin(y)) * k;
   }
   U.fl = ease(U.fl, fl, dt, 30); U.fr = ease(U.fr, fr, dt, 30);
+  // a cut at the head (enemies/damage.js zoneReact) whips it back and off to the side the blade went, then it recovers
+  if (o.headSnap > 0){ U.snap = Math.max(U.snap || 0, o.headSnap); U.snapSide = o.headSide || 0; o.headSnap = 0; }
+  U.snap = Math.max(0, (U.snap || 0) - dt * 3.5);
+  const snap = mode === 'off' ? 0 : U.snap * U.snap;
   const heavy = o.t && o.t.heavy, breath = mode === 'off' ? 0 : Math.sin(U.t * (heavy ? 2.2 : 1.7)) * 0.018;
   const kick = U.kick * U.kick;
   ch.rotation.set(U.pitch + breath - kick * 0.16 + U.fl * 0.3, U.yaw + U.twist, -U.fr * 0.25);
-  if (hd) hd.rotation.set(U.hx0 + U.hp - breath * 0.6 + kick * 0.05 + U.fl * 0.2, U.hy - U.twist * 0.6, -U.fr * 0.15);
+  if (hd) hd.rotation.set(U.hx0 + U.hp - breath * 0.6 + kick * 0.05 + U.fl * 0.2 - snap * 0.55, U.hy - U.twist * 0.6 - snap * (U.snapSide || 0) * 0.4, -U.fr * 0.15 + snap * (U.snapSide || 0) * 0.35);
 }

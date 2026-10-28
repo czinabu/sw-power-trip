@@ -134,7 +134,7 @@ export function swingPose(R, held, grip, form, sw){
   const style = SWING_STYLE[form] || SWING_STYLE.niman;
   if (!sw.anim){
     const fin = sw.step === 2 && sw.dir === 'neutral' && !sw.riposte;
-    const pid = sw.riposte ? 'forward' : fin ? style.finisher.pattern : (sw.pat.id || 'right');
+    const pid = sw.riposte && !sw.ripLine ? 'forward' : fin ? style.finisher.pattern : (sw.pat.id || 'right');   // (a riposte on a line: jedi/guardline.js)
     const set = SWINGS[grip] || SWINGS.regular;
     const keys = set[pid] || set.right;
     // reach scales the chamber and follow-through out from the arc centre (committed forms swing bigger)
@@ -209,7 +209,7 @@ export function swingPose(R, held, grip, form, sw){
   // strike, peaking as the blade reaches the strike key, then carried out by the follow-through)
   const coil = k < A.tc ? easeOut(k / A.tc) : k < A.tc + hold ? 1 : k < A.ts ? 1 - (k - A.tc - hold) / (A.ts - A.tc - hold) : 0;
   const drive = k < A.tc + hold ? 0 : k < A.ts ? easeIn((k - A.tc - hold) / (A.ts - A.tc - hold)) : k < A.tf ? 1 - 0.6 * easeOut((k - A.ts) / (A.tf - A.ts)) : 0.4 * (1 - easeOut((k - A.tf) / (1 - A.tf)));
-  return { k, env: Math.sin(Math.PI * k), cut, spin: A.spin, hop: A.hop, drop: style.drop || 0, fin: A.fin, strike: k > A.tc && k < A.tf, coil, drive, side: A.side };
+  return { k, env: Math.sin(Math.PI * k), cut, spin: A.spin, hop: A.hop, drop: (style.drop || 0) + (A.fin ? 0 : sw.pat.drop || 0), fin: A.fin, strike: k > A.tc && k < A.tf, coil, drive, side: A.side };
 }
 
 /* DEFLECT — the blade snaps to catch a bolt and flicks it away. Which catch is picked from where the bolt arrives
@@ -249,7 +249,8 @@ export function deflectPose(dt, R, held, grip, form, d){
   // an anticipated twirl (jedi/combat.js anticipateDeflect) leads the catch by d.lead seconds: until the bolt lands the
   // blade stays on its guard and wheels toward the bottom; the catch itself runs from the landing on
   const lead = d.lead || 0, tp = Math.max(0, d.t - lead);
-  const P = d.pose, k = Math.min(1, tp / (d.dur - lead));
+  // a HELD catch (jedi/guardline.js: the guard waiting on a duellist's line) gets there fast and stays, no flick
+  const P = d.pose, k = d.hold ? Math.min(0.3, d.t / 0.1 * 0.3) : Math.min(1, tp / (d.dur - lead));
   if (k < 0.3){
     const t = easeOut(k / 0.3);
     arcLerp(P.from.hand, P.hand, t, PIVOT, saberPose.hand);

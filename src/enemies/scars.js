@@ -56,8 +56,10 @@ function boneAt(sm, v){
 }
 
 /* burn a cut where the hero's blade crossed `group`'s body. f: the blow's direction (the hero's facing); dirKey: the
-   cut's line ('left' / 'right' sweep across, else a diagonal); heavy: a finisher or a heavy form, more upright */
-export function scarBody(group, f, dirKey, heavy){
+   cut's line ('left' / 'right' sweep across, else a diagonal); heavy: a finisher or a heavy form, more upright.
+   hit: where the blade really met the body and which way its tip was going (player/jedi/bladehit.js sw.hitAt), when
+   the swing traced it; without it the cut is placed from the blade's line and the swing */
+export function scarBody(group, f, dirKey, heavy, hit){
   const u = group.userData, sm = u.bodySkin, W = u.bodyMat && u.bodyMat.userData.wear;
   if (!sm || !W) return;
   group.updateMatrixWorld(true);
@@ -73,6 +75,11 @@ export function scarBody(group, f, dirKey, heavy){
   if (heavy) _dir.multiplyScalar(0.35).addScaledVector(UP, Math.random() < 0.5 ? 1 : -1);
   else if (dirKey !== 'left' && dirKey !== 'right') _dir.addScaledVector(UP, rand(0.6, 1.1) * (Math.random() < 0.5 ? 1 : -1));
   else _dir.addScaledVector(UP, rand(-0.25, 0.25));
+  // the traced contact wins: the very spot, and the tip's own line across the plate (flattened onto the body's face)
+  if (hit && hit.at){
+    _w.copy(hit.at);
+    if (hit.cut && hit.cut.lengthSq() > 1e-6){ _b.copy(hit.cut).addScaledVector(f, -hit.cut.dot(f)); if (_b.lengthSq() > 1e-6) _dir.copy(_b); }
+  }
   _dir.normalize();
   const bi = boneAt(sm, _w);
   const rp = toRest(sm, bi, _w, _p);
@@ -80,7 +87,7 @@ export function scarBody(group, f, dirKey, heavy){
   const rd = toRest(sm, bi, _dir, _q, true);
   const k = (W.scarNext || 0) % SCARS; W.scarNext = k + 1;
   W.uScar.value[k].set(rp.x, rp.y, rp.z, scarClock());
-  W.uScarDir.value[k].set(rd.x, rd.y, rd.z, rand(0.11, 0.18) * (u.legScale || 1) * (heavy ? 1.2 : 1));
+  W.uScarDir.value[k].set(rd.x, rd.y, rd.z, rand(0.15, 0.22) * (u.legScale || 1) * (heavy ? 1.2 : 1));
 }
 
 /* ---------- severed sword arms ---------- */
