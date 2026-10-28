@@ -184,7 +184,7 @@ function standUp(a, share){
   floater(V3(a.group.position.x, 2.2, a.group.position.z), a.name + ' IS UP', '#7bffae');
 }
 // a wave (or objective) cleared: everyone up and patched, and the hero's second chance back
-function refill(){
+export function refill(){
   G.reviveLeft = (REVIVE.hero.revives[diffKey()] ?? 1) + SCALE.revives * (heroesHere() - 1);   // a partner in the fight earns more second chances
   for (const a of allies){ if (a.body) getUp(a.body, 'clear'); a.hp = a.maxHp; }
 }
@@ -263,7 +263,7 @@ function wantSpot(a, medic){
   return { x: pp.x - fz * o[0] + fx * o[1], z: pp.z + fx * o[0] + fz * o[1], r: SQUAD.leash };
 }
 export function updateSquad(dt){
-  if (!allies.length){ if (downed.length) updateRevive(dt, []); return; }
+  if (!allies.length){ if (downed.length || G.coopRevive) updateRevive(dt, []); return; }
   const pp = playerPos();
   SQ.fYaw = dampAngle(SQ.fYaw, G.yaw, 1.6, dt);
   allies.forEach((a, i) => { a.slot = i; });

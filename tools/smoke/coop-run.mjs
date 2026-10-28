@@ -80,8 +80,19 @@ try {
   const hp1 = await guest.evaluate(() => GAME.player.hp);
   await host.evaluate(([x, y, z, n]) => { const e = GAME.enemies.find(o => o.nid === n); GAME.coopHooks.hurt(e, 6, { x: x + 1, y, z }, 'melee', true); }, [...gp.slice(0, 3), target]);
   await guest.waitForFunction((hp) => GAME.player.hp < hp, hp1, poll);
+  // a power on the guest's side (a foe floored there) lands on the host's real foe
+  const t2 = shared[1];
+  await guest.evaluate((n) => { const e = GAME.enemies.find(o => o.nid === n); e.state = 'knockdown'; e.st = 3; }, t2);
+  await host.waitForFunction((n) => { const e = GAME.enemies.find(o => o.nid === n); return !e || e.dead || e.state === 'knockdown'; }, t2, poll);
+  // the partner's shots are drawn on the other screen
+  await host.evaluate(() => GAME.spawnBlasterBolt(new GAME.camera.position.constructor(0, 1.5, 0), new GAME.camera.position.constructor(1, 0, 0), 5, 0x66ccff, 1, {}));
+  await guest.waitForFunction(() => GAME.bolts.some(b => b.ghost), null, poll);
+  // a kill on the host pays the guest XP too
+  const xp0 = await guest.evaluate(() => GAME.G.xp || 0);
+  await host.evaluate((n) => { const e = GAME.enemies.find(o => o.nid === n); if (e) GAME.damageEnemy(e, 99999, null, 0, false, false); }, t2);
+  await guest.waitForFunction((x) => (GAME.G.xp || 0) > x, xp0, poll);
   ok = true;
-  console.log('ok   co-op run: the guest joined the host\'s Survival run, shows ' + shared.length + '+ of its foes as puppets, a blow on one reached the host, and a shot and a blow from one hurt the guest');
+  console.log('ok   co-op run: the guest joined the host\'s Survival run, shows ' + shared.length + '+ of its foes as puppets, a blow on one reached the host, and a shot and a blow from one hurt the guest, a power, the partner shots and shared XP work');
 } catch(e){ errors.push(e.message); for (const p of browser.contexts().flatMap(c => c.pages())) errors.push(JSON.stringify(await p.evaluate(() => ({ mode: GAME.G.mode, guest: GAME.G.coopGuest, foes: GAME.enemies.map(e => [e.nid, !!e.net]), status: document.getElementById('coopstatus').textContent })).catch(x => x.message))); }
 await browser.close(); server.close?.();
 if (!ok || errors.length){ console.error('FAIL co-op run\n' + errors.join('\n')); process.exit(1); }

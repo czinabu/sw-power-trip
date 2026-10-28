@@ -74,6 +74,16 @@ on('hits', (m) => {
   }
 });
 
+// a control effect from the guest's powers (floored, thrown, staggered, frozen), put on the real foe
+on('ctl', (m) => {
+  if (net.role !== 'host') return;
+  const e = enemies.find(o => o.nid === m.n);
+  if (!e || e.dead || e.converted || e.state === 'spawn' || e.state === 'fade') return;
+  if (!CTL[m.s] || (e.t.heavy && m.s !== 'recover' && m.s !== 'stagger')) return;
+  e.state = m.s; e.st = m.st;
+  if (m.v) e.vel.set(m.v[0], m.v[1], m.v[2]);
+});
+
 /* ---------------- guest: puppets ---------------- */
 function makePuppet(rec){
   const [nid, type, , , , , , , sc, hp, maxHp, state, flags, elite] = rec;
@@ -83,7 +93,7 @@ function makePuppet(rec){
   g.scale.setScalar(sc);
   if (elite) dressElite(g, elite);
   const e = { net: true, nid, type, t, group: g, hp, maxHp, state, st: 0, vel: V3(0, 0, 0), flash: 0, hitCd: 0, dead: false,
-    converted: false, convT: 0, struck: false, stumble: 0, burn: 0, flinch: 0, spd: t.speed, elite: elite || null, shieldHp: 0, shieldBroken: false,
+    netState: state, converted: false, convT: 0, struck: false, stumble: 0, burn: 0, flinch: 0, spd: t.speed, elite: elite || null, shieldHp: 0, shieldBroken: false,
     aimLine: null, want: { pos: V3(rec[2], rec[3], rec[4]), rx: rec[5], ry: rec[6], rz: rec[7] } };
   g.position.set(rec[2], rec[3], rec[4]);
   if (flags & WARBRINGER){
@@ -100,7 +110,7 @@ function applyRec(e, rec){
   const [, , x, y, z, rx, ry, rz, sc, hp, maxHp, state, flags, , wA, sZ, em, ei, wZ, sX] = rec;
   e.want.pos.set(x, y, z); e.want.rx = rx; e.want.ry = ry; e.want.rz = rz;
   e.group.scale.setScalar(sc);
-  e.hp = hp; e.maxHp = maxHp; e.state = state; e.walking = !!(flags & WALKING);
+  e.hp = hp; e.maxHp = maxHp; e.state = e.netState = state; e.walking = !!(flags & WALKING);
   const dying = !!(flags & DEAD);
   if (dying && !e.dead) burst(e.group.position, 0x888888, 6, 4, 3);
   e.dead = dying;
@@ -167,6 +177,7 @@ on('e', (m) => {
   }
 });
 
+const CTL = { knockdown: 1, ragdoll: 1, stagger: 1, recover: 1, stasis: 1 };   // the states a guest's powers put a foe in
 const NO_FEET = { ragdoll: 1, knockdown: 1, getup: 1, fade: 1, spawn: 1, grasped: 1 };   // the states the legs don't stand in (enemies/ai.js)
 const damp = (a, b, k, dt) => a + (b - a) * (1 - Math.exp(-k * dt));
 const angDiff = (a, b) => Math.atan2(Math.sin(b - a), Math.cos(b - a));
@@ -175,6 +186,12 @@ const angDiff = (a, b) => Math.atan2(Math.sin(b - a), Math.cos(b - a));
 export function updatePuppets(dt){
   for (const e of enemies){
     if (!e.net) continue;
+    // a Force power or a blow here put the puppet into a control state (floored, thrown, stunned, frozen): tell the host,
+    // which applies it to the real foe. The next snapshot then carries the result back.
+    if (e.state !== e.netState){
+      if (CTL[e.state] && !e.dead && connected()) send({ t: 'ctl', n: e.nid, s: e.state, st: r2(e.st || 0), v: [r2(e.vel.x), r2(e.vel.y), r2(e.vel.z)] });
+      e.netState = e.state;
+    }
     const g = e.group, w = e.want;
     g.position.x = damp(g.position.x, w.pos.x, 20, dt);
     g.position.y = damp(g.position.y, w.pos.y, 20, dt);

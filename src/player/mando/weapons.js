@@ -2,6 +2,7 @@
 // Mando aiming, blasters, rifle, heat/reload, flamethrower.
 
 import * as THREE from 'three';
+import { hooks } from '../../net/run.js';
 import { scene, camera } from '../../engine/renderer.js';
 import { sfx, S } from '../../audio/sfx.js';
 import { V3, rand, clamp, TMP } from '../../utils.js';
@@ -130,7 +131,8 @@ export function spawnBlasterBolt(origin, dir, dmg, color, scale, W, opts){
   if (b){ b.mesh.material.color.setHex(color); b.mesh.scale.set(scale, scale*1.3, scale);
     b.origin = origin.clone(); b.foStart = W.foStart; b.foEnd = W.foEnd;
     b.foMin = opts.foMin != null ? opts.foMin : W.foMin;   // for range damage falloff (bracing lifts the floor)
-    b.playerShot = true; }   // tag for accuracy tracking
+    b.playerShot = true;   // tag for accuracy tracking
+    if (hooks.pbolt) hooks.pbolt(b, color, scale); }   // co-op: the partner sees it fly
   if (G.stats) G.stats.shotsFired++;
   // muzzle flash fires every shot, drawn at the barrel of whichever gun is nearest the bolt's origin — pooled Ink
   // sprites, no per-shot PointLight (a light here would churn the light count; big blasts use flashLight()).

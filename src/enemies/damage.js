@@ -21,7 +21,7 @@ import { tutEvent } from '../game/tutor-bus.js';
 import { officerDown } from './tactics.js';
 import { hideIndicators } from './cleanup.js';
 import { SQUAD } from '../data/allies.js';
-import { queueHit } from '../net/run.js';
+import { queueHit, hooks } from '../net/run.js';
 
 /* opts.launch === false: a blow with no rocket behind it (the Mandalorian's fists, knee and blade). It never floors or
    throws a live foe (the caller staggers or shoves it), and a foe it kills crumples where it stands instead of flying. */
@@ -138,7 +138,11 @@ export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick, opts){
     G.hitstop = Math.max(G.hitstop, isFinisher ? 0.1 : 0.05);
     G.shake = Math.max(G.shake, 0.38);
     addStreak(e.t.score);
-    if (!e.converted){ gainXp(e.t.score * 4 * killBonus() * (e.elite ? 1.6 : 1)); if (G.stats) G.stats.kills++; }   // small per-kill bounty, ×1–3 on a kill streak, elites pay more
+    if (!e.converted){
+      const xp = e.t.score * 4 * killBonus() * (e.elite ? 1.6 : 1);
+      gainXp(xp); if (hooks.xp) hooks.xp(xp);   // co-op: the partner earns the kill too
+      if (G.stats) G.stats.kills++;
+    }   // small per-kill bounty, ×1–3 on a kill streak, elites pay more
     if (e.elite === 'volatile' && !e.converted){ if (e.group.userData.eliteRing) e.group.userData.eliteRing.visible = false; volatileBlast(p.clone(), e); }
     else if (G.mut === 'volatile' && !e.converted) volatileBlast(p.clone(), e);   // VOLATILE mutator: every corpse erupts
     S.kill(cp, !!e.t.heavy);

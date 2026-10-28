@@ -191,7 +191,7 @@ export function updateBolts(dt){
       }
       // a near miss tears past your ear
       if (!kill && !b.friendly && !b.whiz && d < 3.2 && near){ b.whiz = true; S.whiz(b.mesh.position); }
-    } else if (!kill && b.friendly){
+    } else if (!kill && b.friendly && !b.ghost){   // (a ghost is the partner's shot, only drawn here: their browser does the damage)
       // the bolt hits the FIRST body along its flight this frame, exactly where that body is (bodyshape.js): legs, arms
       // and shoulders count, the gap beside a foe doesn't, and only the head itself is a headshot
       let foe = null, hit = null;
