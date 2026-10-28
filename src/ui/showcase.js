@@ -3,7 +3,7 @@
 // turntable on the right, instead of the live arena. Switching hero spins the turntable and swaps the figure.
 
 import * as THREE from 'three';
-import { renderer, composer, renderPass, scene, camera, bloomPass, compileLive, standPost, setMSAA } from '../engine/renderer.js';
+import { renderer, composer, renderPass, scene, camera, bloomPass, compileLive, standPost } from '../engine/renderer.js';
 import { G } from '../state.js';
 import { prewarmJudgeFX } from '../player/jedi/judgement-fx.js';
 import { buildHeroModel } from '../player/model/index.js';
@@ -50,7 +50,7 @@ const POSES = {
 
 /* ---------- scene ---------- */
 const stage = new THREE.Scene();
-const cam = new THREE.PerspectiveCamera(28, innerWidth / innerHeight, 0.1, 60);
+const cam = new THREE.PerspectiveCamera(28, innerWidth / innerHeight, 2.5, 40);   // the stand is 6+ m away: a tight depth range keeps the figure's ink outlines from z-fighting through its surfaces
 cam.position.set(0, 1.9, 9.4);
 cam.lookAt(0, 1.3, 0);
 
@@ -296,20 +296,7 @@ export function showcaseActive(){
   return G.mode === 'menu' && !G.fovPreview && document.getElementById('overlay').style.display !== 'none';
 }
 
-// TEMPORARY flicker hunt: ?dbg=nobloom,nomsaa,dpr1,noring,nopool,noblink,nocloth,nofig,nobg,nospot switches stage parts off (not for merging)
-const DBG = new Set((new URLSearchParams(location.search).get('dbg') || '').split(','));
-let dbgDone = false;
 export function renderShowcase(dt){
-  if (!dbgDone){
-    dbgDone = true;
-    if (DBG.has('nomsaa')) setMSAA(0);
-    if (DBG.has('dpr1')){ renderer.setPixelRatio(1); renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight); }
-    if (DBG.has('noring')) rimRing.visible = inRing.visible = ticks.visible = false;
-    if (DBG.has('nofig')) fig.group.visible = false;
-    if (DBG.has('nobg')) bg.visible = false;
-    if (DBG.has('nospot')) spot.visible = false;
-    if (DBG.has('nopool')) pool.visible = beam.visible = false;
-  }
   if (!warm){ warm = true; compileLive(); prewarmJudgeFX(); }   // keep the arena's shaders ready, so BEGIN doesn't hitch
   if (!shown){ dress(G.hero); setTheme(G.hero, true); }
   // hero picked → spin the stand once, swapping the figure at the brightest point of the beam
@@ -339,8 +326,8 @@ export function renderShowcase(dt){
   R.torso.rotation.x = P.torso[0] + Math.sin(t * 1.7) * 0.025;
   R.head.rotation.y = P.head[1] + Math.sin(t * 0.6) * 0.08;
   R.hips.position.y = hipsY + (P.drop || 0) + Math.sin(t * 1.7) * 0.008;
-  if (!DBG.has('nocloth')) stepCloth(fig, dt, PED_H);
-  if (!DBG.has('noblink')) blink(fig, dt);   // and a blink now and then (model/life.js)
+  stepCloth(fig, dt, PED_H);
+  blink(fig, dt);   // and a blink now and then (model/life.js)
   // the stand's lights follow the hero colour
   accent.lerp(tmpC.setHex(THEMES[nextHero || shown].glow), Math.min(1, dt * 5));
   glowMat.color.copy(accent).multiplyScalar(2.2 + flare * 4);
@@ -355,9 +342,7 @@ export function renderShowcase(dt){
   // (and the stand keeps its own bloom strength whatever the arena behind the menu set, see setSceneGlow)
   const th = bloomPass.threshold, st = bloomPass.strength; bloomPass.threshold = STAND_BLOOM; bloomPass.strength = 0.82;
   standPost(true);   // no ambient occlusion or arena colour grade on the stand
-  const bl = bloomPass.enabled; if (DBG.has('nobloom')) bloomPass.enabled = false;
   composer.render();
-  bloomPass.enabled = bl;
   standPost(false);
   bloomPass.threshold = th; bloomPass.strength = st;
   renderPass.scene = scene; renderPass.camera = camera;
