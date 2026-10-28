@@ -6,8 +6,10 @@
 //   2. bake() merges every styled mesh into one mesh per material per SLOT (a slot is a group the game animates:
 //      the weapon arm, the staff, the shield, the boss's saber hand), plus ONE ink-outline hull per slot.
 //      Glows (eyes, thrusters, the bomb core, blades) stay as their own live meshes, since the game pulses them.
-//      A BONE (k.bone, the legs) is a joint inside a slot: its meshes still merge into the slot's, rigidly skinned to it,
-//      so it bends without costing a draw call of its own.
+//      A BONE (k.bone: the legs, the waist, the neck) is a joint inside a slot: its meshes still merge into the slot's,
+//      skinned to it, so it bends without costing a draw call of its own. A bone given a blend radius bends SMOOTHLY:
+//      the skin within that reach of the joint is shared with the bone across it, so a knee, a hip, the waist and the
+//      neck fold like one body instead of hinging as separate parts.
 //   3. instantiate() builds a fresh group from the cached bake: shared geometry and materials, except the armour
 //      material ('armor' key), which every unit gets its own copy of so hit flashes and elite tints stay per unit.
 //
@@ -57,9 +59,13 @@ function makeBuilder(colors){
     group(parent = this.root, p = [0,0,0], r = [0,0,0]){
       const g = new THREE.Group(); g.position.set(...p); g.rotation.set(...r); parent.add(g); return g;
     },
-    /* a joint inside the slot it sits in (a leg's hip, knee, ankle): its meshes skin to it (see bake) */
-    bone(name, parent = this.root, p = [0,0,0], r = [0,0,0]){
-      const g = this.group(parent, p, r); g.userData.bone = name; return g;
+    /* a joint inside the slot it sits in (a leg's hip, knee, ankle): its meshes skin to it (see bake).
+       o.blend: how far along the bone (either side of the joint) the skin is shared with its parent; o.reach: how far
+       out from the bone's line that sharing goes (keeps a hip from pulling the far side of the pelvis along) */
+    bone(name, parent = this.root, p = [0,0,0], r = [0,0,0], o = {}){
+      const g = this.group(parent, p, r); g.userData.bone = name;
+      if (o.blend) g.userData.blend = { R: o.blend, L: o.reach ?? 1 };
+      return g;
     },
     /* an animated group the game drives (weapon arm, staff, shield, boss hand). Its meshes bake separately. */
     slot(name, parent = this.root, p = [0,0,0], r = [0,0,0]){
@@ -114,12 +120,40 @@ function bake(root){
     s.boneIdx.set(o, s.bones.length + 1);
     s.bones.push({ name: o.userData.bone, parent: s.boneIdx.get(up), ...relTo(o, up) });
   });
-  // rigid skinning: every vertex follows the one bone its mesh hangs from (0 = the slot)
+  // each blended joint in its slot's space: where it is, the line of its bone, and how far its shared skin reaches
+  for (const [so, s] of index){
+    s.joints = [];
+    for (const [j, bi] of s.boneIdx){
+      if (!bi || !j.userData.blend) continue;
+      const M = new THREE.Matrix4().multiplyMatrices(_inv.copy(so.matrixWorld).invert(), j.matrixWorld);
+      const at = new THREE.Vector3().setFromMatrixPosition(M), axis = new THREE.Vector3().setFromMatrixColumn(M, 1);
+      const sc = axis.length(); axis.normalize();
+      s.joints.push({ bi, up: s.boneIdx.get(boneOf(j.parent)), at, axis, R: j.userData.blend.R * sc, L: j.userData.blend.L * sc });
+    }
+  }
+  // skinning: every vertex follows the bone its mesh hangs from (0 = the slot), and near a blended joint it shares
+  // up to half its weight with the bone on the other side, fading out over the joint's radius. Both sides meet at
+  // exactly half and half on the joint itself, so the skin stays closed however far the joint bends.
+  const _d = new THREE.Vector3(), _p = new THREE.Vector3();
+  const ss = x => x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x);
   const skin = (g, s, o) => {
     if (!s.bones.length) return g;
     const n = g.attributes.position.count, idx = new Uint16Array(n * 4), wt = new Float32Array(n * 4);
-    idx.fill(0); const b = s.boneIdx.get(boneOf(o.parent));
-    for (let i = 0; i < n; i++){ idx[i*4] = b; wt[i*4] = 1; }
+    const b = s.boneIdx.get(boneOf(o.parent)), pos = g.attributes.position;
+    const near = s.joints.filter(J => J.bi === b || J.up === b);   // this bone's own joint, and its children's
+    for (let i = 0; i < n; i++){
+      idx[i*4] = b; wt[i*4] = 1;
+      if (!near.length) continue;
+      _p.fromBufferAttribute(pos, i);
+      let best = 0, other = 0;
+      for (const J of near){
+        _d.subVectors(_p, J.at);
+        const t = _d.dot(J.axis), lat = _d.addScaledVector(J.axis, -t).length();
+        const w = 0.5 * (1 - ss(Math.abs(t) / J.R)) * (1 - ss((lat - J.L * 0.7) / (J.L * 0.3)));
+        if (w > best){ best = w; other = J.bi === b ? J.up : J.bi; }
+      }
+      if (best > 0.001){ idx[i*4+1] = other; wt[i*4] = 1 - best; wt[i*4+1] = best; }
+    }
     g.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(idx, 4));
     g.setAttribute('skinWeight', new THREE.Float32BufferAttribute(wt, 4));
     return g;
@@ -147,7 +181,7 @@ function bake(root){
     s.meshes = [...s.byKey].map(([key, { mat, geos }]) => ({ key, mat, geo: mergeGeometries(geos) }));
     s.hull = s.hulls.length ? mergeGeometries(s.hulls) : null;
     s.hullMat = hullMat;
-    delete s.byKey; delete s.hulls; delete s.boneIdx;
+    delete s.byKey; delete s.hulls; delete s.boneIdx; delete s.joints;
   }
   return slots;
 }

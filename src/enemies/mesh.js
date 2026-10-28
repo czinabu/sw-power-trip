@@ -25,13 +25,14 @@ const BOOT = [[-0.075,0.035],[-0.09,-0.075],[0.16,-0.085],[0.21,-0.05],[0.1,0.0]
 
 /* Each leg is three bones that enemies/gait.js poses (the hero's planted-foot gait): the thigh hangs from the hip,
    the shin from the knee, the boot from the ankle. They skin the body's own mesh (kit.js), so legs that move cost no
-   extra draw calls. At rest they hang straight, as the legs always stood. */
+   extra draw calls, and the skin is shared across each joint so a hip or a knee folds instead of hinging. At rest
+   they hang straight, as the legs always stood. */
 export const LEG_E = { hipY: 0.94, kneeY: 0.46, ankY: 0.1 };
 export function legBones(k, x){
   const n = x < 0 ? 'L' : 'R';
-  const thigh = k.bone('thigh' + n, k.root, [x, LEG_E.hipY, 0]);
-  const shin = k.bone('shin' + n, thigh, [0, LEG_E.kneeY - LEG_E.hipY, 0]);
-  const foot = k.bone('foot' + n, shin, [0, LEG_E.ankY - LEG_E.kneeY, 0]);
+  const thigh = k.bone('thigh' + n, k.root, [x, LEG_E.hipY, 0], [0,0,0], { blend: 0.12, reach: 0.15 });
+  const shin = k.bone('shin' + n, thigh, [0, LEG_E.kneeY - LEG_E.hipY, 0], [0,0,0], { blend: 0.09, reach: 0.16 });
+  const foot = k.bone('foot' + n, shin, [0, LEG_E.ankY - LEG_E.kneeY, 0], [0,0,0], { blend: 0.06, reach: 0.14 });
   return { thigh, shin, foot };
 }
 
@@ -117,8 +118,9 @@ function reachArm(k, w, s, target, o = {}){
 /* the upper body hangs from a CHEST bone at the waist (enemies/upper.js turns it to aim, breathe, kick and flinch).
    Returns a builder for it that places parts in the same body coordinates as before */
 const WAIST = 1.06;
+export const NECK = { blend: 0.07, reach: 0.1 };   // the neck bends; the helmet and the gorget stay hard
 export function upper(k){
-  const c = k.bone('chest', k.root, [0, WAIST, 0]);
+  const c = k.bone('chest', k.root, [0, WAIST, 0], [0,0,0], { blend: 0.12, reach: 0.6 });
   return k.within(k.group(c, [0, -WAIST, 0]));
 }
 
@@ -225,7 +227,7 @@ const HELMETS = {
 
 // the helmet rides a HEAD bone at the neck (enemies/upper.js turns it to look)
 function helmet(k, name, t, y = 1.96){
-  const h = k.bone('head', k.root, [0, y, 0]);
+  const h = k.bone('head', k.root, [0, y, 0], [0,0,0], NECK);
   k.add(loft([{ y:-0.04, w:0.14, d:0.14 }, { y:0.08, w:0.13, d:0.13 }], ngon(6, PI/6)), 'suit', h);   // neck
   HELMETS[name](k, h, t);
   if (k.v === 2) cheekMarks(k, h);
@@ -449,7 +451,7 @@ export const MODELS = {
       k.add(block(0.08, 0.1, 0.06, 0.3), 'metal', sh, [0, -0.76, 0.02]);
     }
     // the long droid head: snout forward, skull back, two small eyes
-    const h = k.bone('head', k.root, [0, 2.05, 0.06], [0.25, 0, 0]);
+    const h = k.bone('head', k.root, [0, 2.05, 0.06], [0.25, 0, 0], NECK);
     k.add(loft([{ y:-0.08, w:0.14, d:0.16 }, { y:0.05, w:0.16, d:0.18 }, { y:0.12, w:0.1, d:0.12 }], chamfer(0.35)), 'armor', h, [0, 0, -0.02]);
     k.add(loft([{ y:0, w:0.12, d:0.1 }, { y:0.3, w:0.07, d:0.06 }], chamfer(0.35)), 'armor', h, [0, -0.02, 0.03], [PI/2 - 0.2, 0, 0]);
     const eyes = k.live(new THREE.Group(), h, 'eye');
