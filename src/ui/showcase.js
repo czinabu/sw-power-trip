@@ -296,7 +296,7 @@ export function showcaseActive(){
   return G.mode === 'menu' && !G.fovPreview && document.getElementById('overlay').style.display !== 'none';
 }
 
-// TEMPORARY flicker hunt: ?dbg=nobloom,nomsaa,dpr1,noring,nopool switches stage parts off (not for merging)
+// TEMPORARY flicker hunt: ?dbg=nobloom,nomsaa,dpr1,noring,nopool,noblink,nocloth,nofig,nobg,nospot switches stage parts off (not for merging)
 const DBG = new Set((new URLSearchParams(location.search).get('dbg') || '').split(','));
 let dbgDone = false;
 export function renderShowcase(dt){
@@ -305,6 +305,9 @@ export function renderShowcase(dt){
     if (DBG.has('nomsaa')) setMSAA(0);
     if (DBG.has('dpr1')){ renderer.setPixelRatio(1); renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight); }
     if (DBG.has('noring')) rimRing.visible = inRing.visible = ticks.visible = false;
+    if (DBG.has('nofig')) fig.group.visible = false;
+    if (DBG.has('nobg')) bg.visible = false;
+    if (DBG.has('nospot')) spot.visible = false;
     if (DBG.has('nopool')) pool.visible = beam.visible = false;
   }
   if (!warm){ warm = true; compileLive(); prewarmJudgeFX(); }   // keep the arena's shaders ready, so BEGIN doesn't hitch
@@ -336,8 +339,8 @@ export function renderShowcase(dt){
   R.torso.rotation.x = P.torso[0] + Math.sin(t * 1.7) * 0.025;
   R.head.rotation.y = P.head[1] + Math.sin(t * 0.6) * 0.08;
   R.hips.position.y = hipsY + (P.drop || 0) + Math.sin(t * 1.7) * 0.008;
-  stepCloth(fig, dt, PED_H);
-  blink(fig, dt);   // and a blink now and then (model/life.js)
+  if (!DBG.has('nocloth')) stepCloth(fig, dt, PED_H);
+  if (!DBG.has('noblink')) blink(fig, dt);   // and a blink now and then (model/life.js)
   // the stand's lights follow the hero colour
   accent.lerp(tmpC.setHex(THEMES[nextHero || shown].glow), Math.min(1, dt * 5));
   glowMat.color.copy(accent).multiplyScalar(2.2 + flare * 4);
