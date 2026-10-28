@@ -10,7 +10,7 @@ import * as THREE from 'three';
 import { glow } from '../engine/renderer.js';
 import { loft, limb, plate, block, shard, chamfer, ngon, HEAD } from '../player/model/shapes.js';
 import { bakeDesign, instantiate } from '../enemies/kit.js';
-import { legs, hips, torso, pauldrons, sideArm, upper, NECK } from '../enemies/mesh.js';
+import { legs, hips, torso, pauldrons, sideArm, upper, cape, NECK } from '../enemies/mesh.js';
 
 const PI = Math.PI;
 const BODY = 1.4;   // the bosses are the trooper kit at 1.4x
@@ -43,8 +43,8 @@ function sith(k, L){
   b.add(block(0.18, 0.12, 0.04, 0.3), 'black', b.root, [0, 1.6, 0.19]);
   for (const s of [-1, 1]) seam(b, L.seam, b.root, [0.2*s, 1.58, 0.19], [0.008, 0.24, 0.008], [0, 0, 0.3*s]);
   seam(b, L.seam, b.root, [0, 1.12, 0.17], [0.28, 0.008, 0.008]);
-  // cape from both shoulders to the ankles
-  b.add(plate([[-0.44,0],[0.44,0],[0.56,-1.62],[0.2,-1.72],[-0.2,-1.72],[-0.56,-1.62]], 0.016, 0.004), 'cloth', b.root, [0, 1.86, -0.27], [0.08, 0, 0], { outline: false });
+  // cape from both shoulders to the ankles, streaming behind him as he comes (enemies/upper.js)
+  cape(b, [[-0.44,0],[0.44,0],[0.56,-1.62],[0.2,-1.72],[-0.2,-1.72],[-0.56,-1.62]], [0, 1.86, -0.27], 0.08, 0.016);
   sideArm(b, w, -1, [-0.18, 0, 0.1]);
   // helm: a skull-like dome, a flared neck guard, a fanged breather, burning eye slits — under a raised hood
   const h = b.bone('head', b.root, [0, 1.95, 0], [0,0,0], NECK);
@@ -80,6 +80,8 @@ function mando(k, L){
   seam(b, L.seam, b.root, [0, 1.21, 0.165], [0.3, 0.008, 0.008]);
   pauldrons(b, w, 'armor', 1.3);
   sideArm(b, w, -1, [-0.18, 0, 0.1]);
+  // a war-cloak off the left shoulder, hanging clear of the pack's tank (Boba's way)
+  cape(b, [[-0.14,0],[0.14,0],[0.2,-1.24],[0.04,-1.36],[-0.2,-1.28]], [-0.47, 1.86, -0.25], 0.1);
   // jetpack: core, twin domed tanks, nozzles with steady blue flames
   const jet = b.group(b.root, [0, 1.52, -0.32]);
   b.add(block(0.46, 0.6, 0.2, 0.3), 'suit', jet);

@@ -11,6 +11,8 @@ import { STYLE_DEFS } from '../src/player/model/styles.js';
 import { SAMPLE_LOOKS } from '../src/player/model/appearance.js';
 import { applySaberGrip } from '../src/player/model/weapons.js';
 import { settleCloth } from '../src/player/model/cloth.js';
+import { gripHands } from '../src/player/model/life.js';
+import { curlHand } from '../src/player/model/jedi.js';
 
 const q = new URLSearchParams(location.search);
 const STYLE = q.get('style') || 'ink';
@@ -39,7 +41,7 @@ const POSES = {
     legL: { hip: [-0.55, 0, -0.05], knee: [0.35, 0, 0] }, legR: { hip: [0.4, 0, 0.08], knee: [0.55, 0, 0] }, drop: -0.08,
   },
   jedi_push: {
-    label: 'Force push', hero: 'jedi',
+    label: 'Force push', hero: 'jedi', grip: { L: 0, R: 1 },
     armR: { sh: [-0.42, 0.05, -0.12], el: [-0.5, 0, 0] }, armL: { sh: [-1.55, 0.12, 0.12], el: [-0.12, 0, 0] },
     saber: [0.25, 0, -0.4], torso: [0, 0.16, 0], torsoZ: 0.22, visX: 0.12,
     legL: { hip: [-0.45, 0, -0.08], knee: [0.3, 0, 0] }, legR: { hip: [0.35, 0, 0.08], knee: [0.4, 0, 0] }, drop: -0.06,
@@ -56,7 +58,7 @@ const POSES = {
     torso: [0, 0, 0], legL: { hip: [-0.1, 0, -0.12], knee: [0.1, 0, 0] }, legR: { hip: [0.1, 0, 0.12], knee: [0.1, 0, 0] },
   },
   mando_rifle: {
-    label: 'Disruptor aim', hero: 'mando', weapon: 'disruptor',
+    label: 'Disruptor aim', hero: 'mando', weapon: 'disruptor', grip: { L: 0.8, R: 1 },
     armR: { sh: [-1.45, -0.12, -0.18], el: [-0.15, 0, 0] }, armL: { sh: [-1.45, -0.16, 0.12], el: [-0.55, 0, 0] },
     torso: [0, -0.1, 0], legL: { hip: [-0.25, 0, -0.1], knee: [0.15, 0, 0] }, legR: { hip: [0.2, 0, 0.1], knee: [0.25, 0, 0] },
   },
@@ -98,6 +100,7 @@ function figure(poseName){
   if (P.fly){ for (const g of t.jetGlow) g.material.opacity = 0.9; }
   t.blade.light.intensity = 2.5;   // the saber's real light floods a close-up; keep it low so the model reads
   t.yaw = P.yaw || 0;
+  gripHands(t, 1, P.grip || { L: 0.45, R: 1 });   // how closed each hand is (model/life.js)
   settleCloth(t);   // drape the robe panels and cape hem over the pose
   return t;
 }
@@ -137,4 +140,4 @@ renderer.setAnimationLoop(t => {
   placeLabels();
   composer.render();
 });
-window.LAB = { figs, POSES, scene, camera };
+window.LAB = { figs, POSES, scene, camera, curlHand };

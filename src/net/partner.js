@@ -10,6 +10,7 @@ import { G, player, enemies } from '../state.js';
 import { NET } from '../data/coop.js';
 import { buildHeroModel } from '../player/model/index.js';
 import { stepCloth } from '../player/model/cloth.js';
+import { blink } from '../player/model/life.js';
 import { lookOf, loadPicks, disposeTree } from '../player/mesh.js';
 import { playerPos } from '../player/helpers.js';
 import { addPlayer, removePlayer, worldKey } from '../player/players.js';
@@ -113,6 +114,7 @@ export function updateCoop(dt){
   g.rotation.y += angDiff(g.rotation.y, want.yaw) * (1 - Math.exp(-14 * dt));
   stepPose(track, puppet, performance.now());
   stepCloth(puppet, dt, g.position.y + 0.02);   // their robe and cape swing here too, after the pose
+  blink(puppet, dt);   // and they blink (model/life.js); their hands keep the grip they were built with
   // the name tag follows the head on screen
   const t = nameTag();
   t.textContent = mate.down ? 'PARTNER DOWN: STAND NEXT TO THEM' : 'PARTNER';

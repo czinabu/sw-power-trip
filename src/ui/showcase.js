@@ -9,6 +9,7 @@ import { prewarmJudgeFX } from '../player/jedi/judgement-fx.js';
 import { buildHeroModel } from '../player/model/index.js';
 import { applySaberGrip } from '../player/model/weapons.js';
 import { settleCloth, stepCloth } from '../player/model/cloth.js';
+import { blink } from '../player/model/life.js';
 import { lookOf, loadPicks, disposeTree } from '../player/mesh.js';
 
 const HERO_X = 0.72;     // where the figure stands across the screen (0 = left edge, 1 = right)
@@ -326,6 +327,7 @@ export function renderShowcase(dt){
   R.head.rotation.y = P.head[1] + Math.sin(t * 0.6) * 0.08;
   R.hips.position.y = hipsY + (P.drop || 0) + Math.sin(t * 1.7) * 0.008;
   stepCloth(fig, dt, PED_H);
+  blink(fig, dt);   // and a blink now and then (model/life.js)
   // the stand's lights follow the hero colour
   accent.lerp(tmpC.setHex(THEMES[nextHero || shown].glow), Math.min(1, dt * 5));
   glowMat.color.copy(accent).multiplyScalar(2.2 + flare * 4);
