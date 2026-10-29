@@ -52,7 +52,7 @@ export function setOverlayState(state){
     go.textContent = 'CONTINUE CAMPAIGN'; sub.textContent = resumeLabel();
   } else if (state === 'menu'){
     go.textContent = G.modeSel === 'endless' ? 'BEGIN SURVIVAL' : G.modeSel === 'training' ? 'BEGIN TRAINING' : G.modeSel === 'mission' ? 'BEGIN MISSION' : G.modeSel === 'sandbox' ? 'ENTER THE SANDBOX' : 'BEGIN CAMPAIGN';
-    sub.textContent = G.modeSel === 'endless' ? 'HOW LONG CAN YOU LAST?' : G.modeSel === 'training' ? 'LEARN THE WAYS OF YOUR ORDER' : G.modeSel === 'mission' ? missionTitle(G.missionId) : G.modeSel === 'sandbox' ? 'ANY FOE, ANY POWER' : 'CHOOSE YOUR LEGEND';
+    sub.textContent = G.modeSel === 'endless' ? 'HOW LONG CAN YOU HOLD?' : G.modeSel === 'training' ? 'LEARN THE MOVES' : G.modeSel === 'mission' ? missionTitle(G.missionId) : G.modeSel === 'sandbox' ? 'ANY FOE, ANY POWER' : 'CHOOSE YOUR LEGEND';
   } else if (state === 'pause'){
     go.textContent = 'RESUME'; sub.textContent = 'PAUSED';
     const where = G.training ? 'TRAINING' : G.sandbox ? 'SANDBOX' : G.mission ? missionTitle(G.missionId) : G.endless ? 'SURVIVAL' : 'CAMPAIGN';
@@ -113,10 +113,10 @@ export function refreshSurvivalLock(){
   const un = survivalUnlocked(), md = el.querySelector('.md');
   el.classList.toggle('locked', !un);
   if (md){
-    if (un){ md.textContent = 'endless waves, chase a high score'; el.title = ''; }
+    if (un){ md.textContent = 'Endless waves, one high score'; el.title = ''; }
     else { const j = localStorage.getItem('sw_camp_jedi') === '1', m = localStorage.getItem('sw_camp_mando') === '1';
       const mark = (ok) => ok ? '<span class="ok">✓</span>' : '<span class="no">✗</span>';
-      md.innerHTML = svgIcon('lock', 'lk') + 'win as Jedi ' + mark(j) + ' &amp; Mando ' + mark(m);
+      md.innerHTML = svgIcon('lock', 'lk') + 'Jedi ' + mark(j) + ' · Mando ' + mark(m);
       el.title = 'Survival unlocks once you have beaten the campaign with both heroes'; }
   }
 }
@@ -125,7 +125,7 @@ export function refreshSandboxLock(){
   const el = document.getElementById('mode-sandbox'); if (!el) return;
   const un = sandboxUnlocked(), md = el.querySelector('.md');
   el.classList.toggle('locked', !un);
-  if (md) md.innerHTML = un ? 'any foe, any power' : svgIcon('lock', 'lk') + 'beat the campaign';
+  if (md) md.innerHTML = un ? 'Any foe, any power' : svgIcon('lock', 'lk') + 'Beat the campaign';
   el.title = un ? '' : 'The sandbox unlocks once you have beaten the campaign with either hero';
 }
 export function setModeSel(m){
@@ -167,8 +167,8 @@ refreshSurvivalLock(); refreshSandboxLock();
 function refreshTrainingMark(){
   const md = document.querySelector('#mode-training .md'); if (!md) return;
   const j = trainingDone('jedi'), m = trainingDone('mando');
-  md.innerHTML = (j || m) ? 'learn the moves · Jedi ' + (j ? '<span class="ok">✓</span>' : '–') + ' Mando ' + (m ? '<span class="ok">✓</span>' : '–')
-                          : 'learn your hero\'s moves';
+  md.innerHTML = (j || m) ? 'Jedi ' + (j ? '<span class="ok">✓</span>' : '–') + ' · Mando ' + (m ? '<span class="ok">✓</span>' : '–')
+                          : 'Learn the moves';
 }
 refreshTrainingMark();
 // STORY MISSIONS mark which heroes have won them: a tick on the card for each, and the picked one's line under the list
