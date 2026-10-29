@@ -341,8 +341,8 @@ document.addEventListener('click', (e) => {
   else S.uiClick();
 }, true);
 overlay.addEventListener('click', (e) => {
-  // only the primary button or empty backdrop launches/resumes: a stray click on a label or setting shouldn't
-  if (e.target.closest('#runsummary, #setup, #customizer, #homeconfirm, #newconfirm, #trainconfirm, .ov-foot')) return;
+  // only the primary button launches/resumes — a click on empty backdrop, a label, a card or a setting must not
+  if (!e.target.closest('#goText')) return;
   if (overlay.classList.contains('customizing')) return;   // the stage turns the hero while customizing (ui/customizer.js)
   if (overlay.classList.contains('newconfirming')) return;
   beginFromMenu();
@@ -471,7 +471,7 @@ setTrainingExit(() => {
   setModeSel('campaign');
   goHome();
 });
-document.getElementById('skipBtn').addEventListener('click', () => skipStep());   // and the overlay click resumes play
+document.getElementById('skipBtn').addEventListener('click', () => skipStep());   
 document.getElementById('homeBtn').addEventListener('click', (e) => {
   e.stopPropagation(); audioInit();
   if (_ovState === 'pause') overlay.classList.add('confirming'); else goHome();

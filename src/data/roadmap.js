@@ -14,7 +14,7 @@ export const ROADMAP = [
   { title: 'Balance pass', status: 'done',
     items: ['Saber spins are earned: rhythm links only, on a cooldown, for extra stamina', 'Campaign waves 2 and 3 eased: fewer bodies in the late waves', 'Ataru hunts the back line (+60% vs officers, snipers, grenadiers, jet troopers)', 'Guard strain per form: Ataru 0.8×, Niman 1×, Djem So 1.5×', 'Niman cooldowns shift to defence: barrier, mend, repulse'] },
   { title: 'Menus', status: 'done',
-    items: ['Main menu: play choices first, fits on one screen', 'How to Play: basics first, details on hover', 'Roadmap panel', 'Pause menu grouped: run, options, leave', 'Menu copy tightened: no cut-off lines', 'TAB pauses and resumes, even in fullscreen'] },
+    items: ['Main menu: play choices first, fits on one screen', 'How to Play: basics first, details on hover', 'Roadmap panel', 'Pause menu grouped: run, options, leave', 'Menu copy tightened: no cut-off lines', 'TAB pauses and resumes, even in fullscreen', 'Only the main button starts play: stray clicks no longer launch or go fullscreen'] },
   { title: 'Save and load', status: 'done',
     items: ['New Game, Save Game and Load Game', 'Three save slots: wins, unlocks, bests and look', 'Campaign saves keep your upgrades mid-run'] },
   { title: 'Online co-op: two heroes', status: 'done',
