@@ -27,9 +27,9 @@ export function updateVFX(dt){
 // Drawn in Ink: concentric ripple rings with an ink rim and a hot leading edge, plus speed-line streaks.
 export function spawnPushWave(pos, dir, color, power){
   power = power || 1;
-  dir = dir.clone().setY(0).normalize();
-  const start = V3(pos.x + dir.x, (pos.y || 0) + 1.45, pos.z + dir.z);
-  const front = V3(pos.x + dir.x*2.2, (pos.y || 0) + 1.3, pos.z + dir.z*2.2);   // ripples form ahead of the palm, clear of the body
+  dir = dir.clone().normalize();   // pitch kept: a push aimed up at a jetpacker ripples up toward it (player/aim.js)
+  const start = V3(pos.x + dir.x, (pos.y || 0) + 1.45 + dir.y, pos.z + dir.z);
+  const front = V3(pos.x + dir.x*2.2, (pos.y || 0) + 1.3 + dir.y*2.2, pos.z + dir.z*2.2);   // ripples form ahead of the palm, clear of the body
   const ripple = (delay, op, lead) => {
     inkSprite({ pos: front, normal: dir, shape: 'ring', inner: 0.66, color, size: [0.8, 2.6 + 3*power], ease: 2,
                 life: 0.3, delay, op, fadeAt: 0.25, coreW: 0.12, coreHot: 1.1, inkW: 0.2,
