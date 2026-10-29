@@ -2,6 +2,7 @@
 // Entry point: imports every module in the original load order, then runs the main loop (tick) and exposes window.GAME.
 
 import * as THREE from 'three';
+import { heroAim, aimFrom, crosshairPoint, inAim, bossInAim, lastAim } from './player/aim.js';
 import { CFG } from './data/config.js';
 import { STANCES } from './data/stances.js';
 import { ENEMY_TYPES } from './data/enemies.js';
@@ -183,6 +184,7 @@ window.GAME = { shared, coopRun, coopHooks, partnerShown, partnerInfo, CFG, ENEM
   scars: { scarBody, severArm },
   tactics: { RAMP, TROOP_MELEE, TROOP_FIRE, PINCER, ORDERS, GRENADE, LUNGE, tacticsRamp, grenades, pushGrenades },
   squad: { allies, spawnSquad, addSquadmate, squadOrder, downed },
+  aim: { heroAim, aimFrom, crosshairPoint, inAim, bossInAim, lastAim },
   get boss(){ return shared.boss; }, get saberProj(){ return shared.saberProj; }, get darkProj(){ return shared.darkProj; } };
 
 /* the battle maps (data/battlemaps.js): what's built and what it costs, for the console and tools/smoke/maps.mjs */

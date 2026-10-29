@@ -13,6 +13,7 @@ import { stepCloth } from '../player/model/cloth.js';
 import { blink } from '../player/model/life.js';
 import { lookOf, loadPicks, disposeTree } from '../player/mesh.js';
 import { playerPos } from '../player/helpers.js';
+import { heroAim } from '../player/aim.js';
 import { addPlayer, removePlayer, worldKey } from '../player/players.js';
 import { addHeroReviver, addReviverSource } from '../game/revive.js';
 import { refill } from '../allies/squad.js';
@@ -22,7 +23,7 @@ import { on, send, sendEvery, connected } from './session.js';
 const puppet = { group: new THREE.Group() };
 const track = makePoseTrack();
 let built = false, picksKey = '', hero = 'jedi', playing = false, world = '', sent = 0;
-const want = { pos: new THREE.Vector3(), yaw: 0 };
+const want = { pos: new THREE.Vector3(), yaw: 0, ap: 0 };
 let tag = null;
 
 /* this partner in the players list: `pos` is where the puppet stands on this screen, so what enemies chase is what
@@ -77,7 +78,7 @@ on('s', (m) => {
   if (m.picks && keyOf(m.picks) !== picksKey) build(m.picks, m.hero);
   if (m.hero !== hero) dress(m.hero);
   if (!playing) puppet.group.position.set(m.x, m.y, m.z);   // first sight, or back from the menu: snap
-  want.pos.set(m.x, m.y, m.z); want.yaw = m.yaw;
+  want.pos.set(m.x, m.y, m.z); want.yaw = m.yaw; want.ap = +m.ap || 0;
   mate.vel.set(m.vx || 0, 0, m.vz || 0);
   mate.down = !!m.down;
   playing = !!m.play; world = m.w || '';
@@ -96,6 +97,7 @@ export function updateCoop(dt){
       const m = { t: 's', x: +p.x.toFixed(2), y: +p.y.toFixed(2), z: +p.z.toFixed(2), yaw: +player.group.rotation.y.toFixed(3),
         vx: +(player.moveVel.x + player.vel.x).toFixed(2), vz: +(player.moveVel.z + player.vel.z).toFixed(2),
         hero: G.hero, play: G.mode === 'play', down: !!player.downed || G.mode === 'dead', w: worldKey(),
+        ap: +heroAim().dir.y.toFixed(3),   // the aim's pitch (sine, + up): where their powers point up or down (player/aim.js)
         pose: player.rig ? readPose(player) : null };
       if (sent++ % NET.picksEvery === 0) m.picks = loadPicks();
       return m;
@@ -129,5 +131,10 @@ export const partnerShown = () => puppet.group.visible;
 export const partnerInfo = () => ({ shown: puppet.group.visible, here: mate.here, posed: !!track.to, hero,
   armR: puppet.rig ? puppet.rig.armR.sh.quaternion.toArray().map(n => +n.toFixed(3)) : null,
   hunters: enemies.filter(e => !e.dead && e.hero === mate).length });
+// the partner's aim: the unit direction their powers point, pitch included (a thrown saber, the flame, lightning)
+export function partnerAim(out = new THREE.Vector3()){
+  const y = Math.max(-1, Math.min(1, want.ap)), h = Math.sqrt(1 - y * y);
+  return out.set(Math.sin(want.yaw) * h, y, Math.cos(want.yaw) * h);
+}
 export function dropPartner(){ puppet.group.visible = false; playing = false; mate.here = false; if (tag) tag.style.display = 'none'; }
 on('status', (n) => { if (n.status !== 'connected'){ dropPartner(); removePlayer(mate); } });

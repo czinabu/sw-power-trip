@@ -123,7 +123,7 @@ export function updateRockets(dt){
     let hit = rk.life <= 0 || p.y <= 0.2;
     // contact fuse: it goes off the moment its path touches a body (swept, so a fast rocket can't pass through one)
     if (!hit) for (const e of enemies){ if (e.dead || e.converted) continue; const h = sweepHit(e, rk.prev || p, p, rk.big ? 0.45 : 0.3); if (h){ p.lerpVectors(rk.prev || p, p, h.t); hit = true; break; } }
-    if (!hit && shared.boss && shared.boss.hp > 0 && p.distanceTo(shared.boss.group.position.clone().setY(p.y)) < (rk.big ? 2.4 : 1.8)) hit = true;
+    if (!hit && shared.boss && shared.boss.hp > 0 && p.distanceTo(shared.boss.group.position.clone().setY(p.y)) < (rk.big ? 2.4 : 1.8) && p.y < shared.boss.group.position.y + 4.2) hit = true;   // (a rocket aimed over his head flies on)
     if (hit){ rocketExplode(p.clone(), rk.big); scene.remove(rk.mesh); rockets.splice(i,1); }
   }
 }

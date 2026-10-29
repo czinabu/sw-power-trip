@@ -8,7 +8,7 @@ import { V3, TMP } from '../../utils.js';
 import { burst } from '../../fx/particles.js';
 import { floater, screenFlash } from '../../fx/floaters.js';
 import { shared, G, enemies, bolts, player } from '../../state.js';
-import { collideSolids } from '../../world/collision.js';
+import { collideSolids, groundAt } from '../../world/collision.js';
 import { MANDO } from '../../data/mando.js';
 import { fwd, playerPos } from '../helpers.js';
 import { inReach, distToBody } from '../../enemies/bodyshape.js';
@@ -103,7 +103,7 @@ export function darksaberThrow(){
   const o = darkHand(), aim = mandoAimPoint();
   const dir = V3(aim.x - o.x, aim.y - o.y, aim.z - o.z);
   if (dir.lengthSq() < 0.01) dir.copy(fwd());
-  dir.normalize(); dir.y = Math.max(-0.35, Math.min(0.35, dir.y)); dir.normalize();   // a flat, skimming throw
+  dir.normalize();   // straight down the reticle: up at a jetpacker, down onto a foe below
   const home = { parent: m.parent, pos: m.position.clone(), quat: m.quaternion.clone(), scale: m.scale.clone() };
   scene.attach(m); m.visible = true;
   if (player.darkLight) player.darkLight.intensity = 6;
@@ -134,7 +134,7 @@ function darkCut(dp){
       spawnHitSpark(p.clone(), 0xc9a6ff, 1.1); S.saberHit(p, 1);
     }
   }
-  if (shared.boss && shared.boss.hp > 0 && !dp.hitSet.has(shared.boss) && p.distanceTo(shared.boss.group.position.clone().setY(p.y)) < 2.2){
+  if (shared.boss && shared.boss.hp > 0 && !dp.hitSet.has(shared.boss) && p.distanceTo(shared.boss.group.position.clone().setY(p.y)) < 2.2 && p.y < shared.boss.group.position.y + 4.2){
     dp.hitSet.add(shared.boss); damageBoss(A.dmg * player.up.dmg);
   }
 }
@@ -147,8 +147,9 @@ function updateDarkThrow(dt){
     const step = A.speed * dt;
     dp.pos.addScaledVector(dp.dir, step); dp.traveled += step;
     _dmid.copy(dp.pos); collideSolids(_dmid, 0.25, false);
-    const wall = _dmid.distanceToSquared(dp.pos) > 1e-6 || dp.pos.y < 0.4;
-    if (wall){ dp.pos.copy(_dmid); dp.pos.y = Math.max(0.4, dp.pos.y); spawnHitSpark(dp.pos.clone(), 0xe7dcff, 0.9); sfx(1400, 0.05, 'square', 0.04, 600); }
+    const floor = groundAt(dp.pos.x, dp.pos.z, Infinity) + 0.4;   // thrown down at the deck, it latches where it lands
+    const wall = _dmid.distanceToSquared(dp.pos) > 1e-6 || dp.pos.y < floor;
+    if (wall){ dp.pos.copy(_dmid); dp.pos.y = Math.max(floor, dp.pos.y); spawnHitSpark(dp.pos.clone(), 0xe7dcff, 0.9); sfx(1400, 0.05, 'square', 0.04, 600); }
     darkCut(dp);
     if (wall || dp.traveled >= A.range){ dp.phase = 'latch'; dp.t = 0; S.dash(); sfx(900, 0.06, 'square', 0.05, 320); }   // fire the line
   } else if (dp.phase === 'latch'){
