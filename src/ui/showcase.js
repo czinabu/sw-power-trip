@@ -136,7 +136,6 @@ let R, hipsY;
    vertices are skinned here every frame, and the original is kept hidden to drive the bones. On Firefox the GPU-skinned
    hands flashed a black box now and then as the stand turned. */
 let cpuSkinned = [];
-const TSW = new URLSearchParams(location.search).get('t') || '';   // TEMP bisect switch: gpu | nohull | nohand | nohands
 function cpuSkin(root){
   cpuSkinned = [];
   const swap = (sm, into) => {
@@ -162,7 +161,7 @@ function updateCpuSkin(){
   if (!cpuSkinned.length) return;
   stage.updateMatrixWorld(true);   // the bones' (and the hidden originals') world matrices
   for (const { sm, rm } of cpuSkinned){
-    rm.visible = sm.visible && !(TSW === 'nohull' && sm.parent.isSkinnedMesh) && !(TSW === 'nohand' && !sm.parent.isSkinnedMesh);
+    rm.visible = sm.visible;
     if (!chainVisible(rm)) continue;
     const bones = sm.skeleton.bones, inv = sm.skeleton.boneInverses, n = Math.min(bones.length, 4);
     for (let j = 0; j < n; j++){   // vertex → bone → back into the mesh's own space, one matrix per bone
@@ -189,8 +188,7 @@ function updateCpuSkin(){
 function build(picks){
   if (fig.vis){ fig.group.remove(fig.vis); disposeTree(fig.vis); }
   fig.group.add(buildHeroModel(fig, lookOf(picks)));
-  if (TSW !== 'gpu') cpuSkin(fig.vis);
-  if (TSW === 'nohands') fig.vis.traverse(o => { if (o.isSkinnedMesh) o.visible = false; });
+  cpuSkin(fig.vis);
   fig.blade.light.intensity = 2.2;   // the saber's real light floods a close-up; keep it low so the model reads
   const crystal = fig.look.jedi.saber;
   if (crystal != null){ fig.blade.glow.material.color.setHex(crystal); fig.blade.light.color.setHex(crystal); }
