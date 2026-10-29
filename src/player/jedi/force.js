@@ -13,7 +13,9 @@ import { shared, G, enemies, bolts, barrels, vfx, player } from '../../state.js'
 import { flashLight } from '../../fx/lights.js';
 import { cdMul } from '../../data/stances.js';
 import { forcePower, fwd, playerPos, stance, maxHp } from '../helpers.js';
-import { inReach, distToBody } from '../../enemies/bodyshape.js';
+import { inReach, distToBody, chestPos } from '../../enemies/bodyshape.js';
+import { heroAim, aimFrom, inAim, bossInAim, columnInAim, alongAim } from '../aim.js';
+import { groundAt } from '../../world/collision.js';
 import { ensureJudgeLines } from './judgement-fx.js';
 import { damageEnemy, flinchEnemy } from '../../enemies/damage.js';
 import { damageBoss, bossStun, bossStagger } from '../../boss/boss.js';
@@ -47,20 +49,20 @@ export function forcePush(){
   if (hooks.power) hooks.power('push', st.blade, A.range * 0.5);   // co-op: the partner sees the shove
   faceAbilityAim(A.range);                          // square up to the threat before the shove
   const f = fwd(), pp = playerPos();
+  const aim = heroAim();                           // the shove goes where the crosshair points, up or down
   const col = stance().blade;
   S.push();
   G.shake = Math.max(G.shake, 0.3);
   castGesture('push', 0.28);                       // off-hand palm-thrust
-  spawnPushWave(pp.clone(), f.clone(), col, 0.6);  // a modest shove — basic ability, not a grand blast
+  spawnPushWave(pp.clone(), aim.dir.clone(), col, 0.6);  // a modest shove — basic ability, not a grand blast
   const cosLim = Math.cos(A.angle);
   let pushed = 0;
   for (const e of enemies){
     if (e.dead || e.converted || e.state === 'spawn') continue;
-    TMP.subVectors(e.group.position, pp);
-    if (Math.abs(TMP.y) > A.range*0.4) continue;   // the shove goes level — not down onto foes far below
-    TMP.y = 0;
+    TMP.subVectors(e.group.position, pp); TMP.y = 0;
     const d = TMP.length();
-    if (!inReach(e, pp, A.range, d > 1.5 ? f : null, cosLim)) continue;   // any of the body in the cone, not just its centre
+    if (!inAim(e, aim, A.range, cosLim, 0.14)) continue;   // any of the body in the cone; a foe in the air only when aimed up at
+    if (d < 0.05) TMP.copy(f);
     TMP.normalize();
     const falloff = 1 - (d / A.range) * 0.5;
     damageEnemy(e, A.dmg * forcePower(), TMP.clone(), A.knock * falloff * forcePower());
@@ -69,11 +71,9 @@ export function forcePush(){
   }
   // launch barrels
   for (const b of barrels){
-    TMP.subVectors(b.mesh.position, pp); TMP.y = 0;
-    const d = TMP.length();
-    if (d > A.range) continue;
-    TMP.normalize();
-    if (TMP.dot(f) < cosLim) continue;
+    const bp = b.mesh.position;
+    if (!columnInAim(aim, bp, bp.y - 0.6, bp.y + 0.6, 0.5, A.range, cosLim, 0.14)) continue;
+    TMP.subVectors(bp, pp); TMP.y = 0; TMP.normalize();
     b.flying = true;
     b.vel.set(TMP.x*26, 5, TMP.z*26);
   }
@@ -89,8 +89,7 @@ export function forcePush(){
   if (pushGrenades(pp, f, A.range, cosLim)) floater(pp, 'RETURNED', '#7fd4ff');
   // PUSH the Sith's force lightning back into him
   if (shared.boss && shared.boss.hp > 0 && shared.boss.lightT > 0){
-    TMP.subVectors(shared.boss.group.position, pp); TMP.y = 0;
-    if (TMP.length() < A.range + 5 && TMP.normalize().dot(f) > cosLim - 0.25){
+    if (bossInAim(aim, A.range + 5, cosLim - 0.25, 0.3)){
       shared.boss.lightT = 0;
       if (shared.bossLight) shared.bossLight.visible = false;
       floater(pp, 'REFLECTED!', '#ffd24a');
@@ -235,16 +234,18 @@ export function saberThrow(){
   faceAbilityAim(A.range);   // line the throw up on the nearest target
   castGesture('push', 0.3);  // face the throw direction
   const f = fwd(), pp = playerPos();
+  // it leaves the hand at chest height and flies down the crosshair: up at a foe in the air, down onto one below
+  const start = V3(pp.x + f.x, pp.y + 1.5, pp.z + f.z), aim = aimFrom(start);
   const m = thrownSaber;
   thrownGlow.material.color.setHex(stance().blade);
   // one light that lives in the scene for good and only fades (adding a light per throw recompiles every material)
   const l = throwLight();
   l.color.setHex(stance().blade); l.intensity = 8;
   m.rotation.set(0, 0, Math.PI/2);
-  m.position.set(pp.x + f.x, 1.7, pp.z + f.z);
+  m.position.copy(start);
   m.visible = true;
   stowHandSaber(true);
-  shared.saberProj = { mesh: m, dir: f.clone(), traveled: 0, returning: false, hitSet: new Set() };
+  shared.saberProj = { mesh: m, dir: aim.dir.clone(), traveled: 0, returning: false, hitSet: new Set() };
   S.swing();
 }
 export function updateSaberThrow(dt){
@@ -254,9 +255,12 @@ export function updateSaberThrow(dt){
   if (!sp.returning){
     sp.mesh.position.addScaledVector(sp.dir, A.speed * dt);
     sp.traveled += A.speed * dt;
+    // it turns back at the end of its reach, or where it meets the floor or a prop (thrown down at the deck, it skips back)
+    const mp = sp.mesh.position, floor = groundAt(mp.x, mp.z, Infinity);
+    if (mp.y < floor + 0.3){ mp.y = floor + 0.3; sp.returning = true; sp.hitSet.clear(); }
     if (sp.traveled >= A.range){ sp.returning = true; sp.hitSet.clear(); }
   } else {
-    TMP.set(pp.x, 1.7, pp.z).sub(sp.mesh.position);
+    TMP.set(pp.x, pp.y + 1.5, pp.z).sub(sp.mesh.position);
     const d = TMP.length();
     if (d < 1.2){
       sp.mesh.visible = false; shared.saberProj = null; throwLight().intensity = 0;
@@ -282,8 +286,9 @@ export function updateSaberThrow(dt){
       damageEnemy(e, A.dmg, sp.dir.clone(), 12);
     }
   }
-  if (shared.boss && shared.boss.hp > 0 && !sp.hitSet.has(shared.boss) &&
-      sp.mesh.position.distanceTo(shared.boss.group.position.clone().setY(1.7)) < 2.4){
+  const bp = shared.boss && shared.boss.group.position, my = sp.mesh.position.y;
+  if (shared.boss && shared.boss.hp > 0 && !sp.hitSet.has(shared.boss) && my > bp.y - 0.6 && my < bp.y + 4.2 &&
+      Math.hypot(sp.mesh.position.x - bp.x, sp.mesh.position.z - bp.z) < 2.4){
     sp.hitSet.add(shared.boss); damageBoss(A.dmg);
   }
 }
@@ -299,7 +304,7 @@ export function forcePull(){
   if (hooks.power) hooks.power('pull', st.blade, A.range * 0.5);
   faceAbilityAim(A.range);     // face the crowd you're about to yank
   castGesture('pull', 0.36);   // reach out, then claw the hand back
-  const f = fwd(), pp = playerPos();
+  const f = fwd(), pp = playerPos(), aim = heroAim();
   S.pull();
   G.shake = Math.max(G.shake, 0.3);
   const cosLim = Math.cos(A.angle);
@@ -308,7 +313,7 @@ export function forcePull(){
     if (e.dead || e.converted || e.state === 'spawn' || e.state === 'stasis') continue;
     TMP.subVectors(e.group.position, pp); TMP.y = 0;
     const d = TMP.length();
-    if (d < 2.5 || !inReach(e, pp, A.range, f, cosLim)) continue;
+    if (d < 2.5 || !inAim(e, aim, A.range, cosLim, 0.14)) continue;   // a foe up on a ledge or in the air: aim up at it
     TMP.normalize();
     const ep = e.group.position;
     sparks(V3(ep.x, ep.y + 1.5, ep.z), stance().blade, 4, d * 2.4, { dir: TMP.clone().negate(), cone: 0.15, life: 0.3, grav: 0, stretch: 4 });   // yanked: streaks toward you
@@ -325,10 +330,10 @@ export function forcePull(){
   }
   // the Force reaching out and closing: ripple rings collapsing back toward the hand
   for (let i = 0; i < 3; i++){
-    const at = A.range * (0.75 - i*0.15);
-    inkSprite({ pos: V3(pp.x + f.x*at, 1.45, pp.z + f.z*at), normal: f, shape: 'ring', inner: 0.86, color: stance().blade,
+    const at = A.range * (0.75 - i*0.15), ad = aim.dir;
+    inkSprite({ pos: alongAim(aim, at), normal: ad, shape: 'ring', inner: 0.86, color: stance().blade,
                 size: [4.2 - i*0.5, 0.7], ease: 2, life: 0.3, delay: i*0.05, op: 0.9 - i*0.2, fadeAt: 0.5, coreW: 0.2, inkW: 0.22,
-                vel: f.clone().multiplyScalar(-at / 0.3) });
+                vel: ad.clone().multiplyScalar(-at / 0.3) });
   }
   if (n) floater(pp, 'PULL', '#7fd4ff');
 }
@@ -470,16 +475,13 @@ export function updateJudgement(dt){
   player.judgeTick -= dt;
   if (player.judgeTick > 0) return;
   player.judgeTick = A.tick;
-  const f = fwd(), pp = playerPos();
+  const pp = playerPos(), aim = heroAim();   // re-read every tick: sweep the storm up and down as well as across
   const cosLim = Math.cos(A.angle);
   const found = [];
   for (const e of enemies){
     if (e.dead || e.converted || e.state === 'spawn') continue;
-    TMP.subVectors(e.group.position, pp);
-    if (Math.abs(TMP.y) > A.range*0.5) continue;   // the storm arcs out level — not down to the ground from the air
-    TMP.y = 0;
-    const d = TMP.length();
-    if (d < 0.01 || !inReach(e, pp, A.range, f, cosLim)) continue;
+    const d = e.group.position.distanceTo(pp);
+    if (d < 0.01 || !inAim(e, aim, A.range, cosLim, 0.16)) continue;   // the arcs follow the crosshair: up into the air, down from it
     found.push({ e, d });
   }
   found.sort((a,b) => a.d - b.d);
@@ -490,18 +492,17 @@ export function updateJudgement(dt){
   for (const { e } of found.slice(0, maxT)){
     damageEnemy(e, dmg, null, 0);
     if (!e.dead && !e.t.heavy && e.state !== 'ragdoll' && e.state !== 'grasped'){ e.state = 'recover'; e.st = 0.3; }   // lightning locks them up
-    tpos.push(V3(e.group.position.x, 1.5, e.group.position.z));
+    tpos.push(chestPos(e));
   }
-  if (tpos.length < maxT && shared.boss && shared.boss.hp > 0){
-    TMP.subVectors(shared.boss.group.position, pp); TMP.y = 0;
-    if (TMP.length() < A.range && TMP.normalize().dot(f) > cosLim){
-      damageBoss(dmg);
-      tpos.push(V3(shared.boss.group.position.x, 2.2, shared.boss.group.position.z));
-    }
+  if (tpos.length < maxT && bossInAim(aim, A.range, cosLim, 0.16)){
+    damageBoss(dmg);
+    const bp = shared.boss.group.position;
+    tpos.push(V3(bp.x, bp.y + 2.2, bp.z));
   }
-  if (!tpos.length){   // nothing to chain to: the bolt lashes out into the open ground ahead, flickering about the aim
-    const reach = A.range * 0.6, side = new THREE.Vector3(-f.z, 0, f.x);
-    tpos.push(V3(pp.x + f.x*reach + side.x*rand(-1.2, 1.2), 1.1 + rand(-0.4, 0.5), pp.z + f.z*reach + side.z*rand(-1.2, 1.2)));
+  if (!tpos.length){   // nothing to chain to: the bolt lashes out along the aim (into the floor, or the open air), flickering about it
+    const f = aim.dir, side = new THREE.Vector3(-f.z, 0, f.x).normalize();
+    const end = alongAim(aim, A.range * 0.6);
+    tpos.push(V3(end.x + side.x*rand(-1.2, 1.2), end.y + rand(-0.4, 0.5), end.z + side.z*rand(-1.2, 1.2)));
   }
   player.judgeTargets = tpos;
   S.arc(tpos[0]);

@@ -7,7 +7,7 @@ import * as THREE from 'three';
 import { scene } from '../engine/renderer.js';
 import { G, player, shared } from '../state.js';
 import { V3, rand } from '../utils.js';
-import { fwd } from '../player/helpers.js';
+import { heroAim } from '../player/aim.js';
 import { puff, inkSprite, sparks } from '../fx/ink.js';
 import { FLAME } from '../player/mando/weapons.js';
 
@@ -16,7 +16,7 @@ const r2 = (n) => Math.round(n * 100) / 100;
 // what this browser is doing with its powers right now, for the pose message (undefined when nothing)
 export function fxOut(){
   const o = {};
-  if (player.flaming){ const f = player.aimDir || fwd(); o.fl = [r2(f.x), r2(f.y || 0), r2(f.z)]; }   // (3D when the hero aims up or down)
+  if (player.flaming){ const f = heroAim().dir; o.fl = [r2(f.x), r2(f.y || 0), r2(f.z)]; }   // (3D: up or down with the aim)
   if (shared.saberProj && shared.saberProj.mesh.visible){ const p = shared.saberProj.mesh.position; o.ts = [r2(p.x), r2(p.y), r2(p.z)]; }
   if (player.judgeT > 0 && player.judgeTargets && player.judgeTargets.length)
     o.jt = player.judgeTargets.slice(0, 6).map(v => [r2(v.x), r2(v.y), r2(v.z)]);

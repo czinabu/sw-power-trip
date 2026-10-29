@@ -12,7 +12,7 @@ import { V3, clamp, TMP } from '../../utils.js';
 import { floater } from '../../fx/floaters.js';
 import { shared, G, enemies, player } from '../../state.js';
 import { forcePower, fwd, playerPos, stance } from '../helpers.js';
-import { inReach } from '../../enemies/bodyshape.js';
+import { heroAim, inAim, bossInAim } from '../aim.js';
 import { damageEnemy, staggerEnemy } from '../../enemies/damage.js';
 import { bossStagger } from '../../boss/boss.js';
 import { sparks, motes } from '../../fx/ink.js';
@@ -26,25 +26,20 @@ const fcost = (base) => base * (player.up.abilityCostMul || 1);
 const tough = (e) => !!(e.t.heavy || e.warbringer || e.champion);
 const graspable = (e) => !e.dead && !e.converted && !e.sparring && e.state !== 'spawn' && e.state !== 'lock' && e.state !== 'fade';
 
-// where the aim points, pitch included (looking up raises the throw)
-function aimDir(){
-  const f = fwd();
-  f.y = clamp(-(G.pitch - 0.1) * 0.8, -0.35, 0.6);
-  return f.normalize();
-}
+// where the aim points, pitch included: down the crosshair (looking up raises the throw, onto a foe in the air too)
+const aimDir = () => heroAim().dir;
 // how many foes one grasp can hold: one, or grasp.multi with DARK LORD'S GRIP
 const maxHeld = () => player.up.graspMulti ? A().multi : 1;
 // the foes the grasp would take: the nearest liftable ones in a cone along the aim (a wider cone for a multi-grasp)
 function graspTargets(){
-  const g = A(), pp = playerPos(), f = fwd(), n = maxHeld();
+  const g = A(), pp = playerPos(), aim = heroAim(), n = maxHeld();
   const cosLim = Math.cos(n > 1 ? g.multiAngle : g.angle);
   const reach = g.range * (abil('pull').range / CFG.abilities.pull.range);   // Pull's reach mastery stretches it too
   const found = [];
   for (const e of enemies){
     if (!graspable(e) || tough(e)) continue;
-    TMP.subVectors(e.group.position, pp); TMP.y = 0;
-    const d = TMP.length();
-    if (!inReach(e, pp, reach, f, cosLim)) continue;
+    const d = e.group.position.distanceTo(pp);
+    if (!inAim(e, aim, reach, cosLim, 0.16)) continue;   // a jetpacker overhead: aim up at it to pluck it out of the air
     found.push({ e, d });
   }
   found.sort((a, b) => a.d - b.d);
@@ -52,14 +47,9 @@ function graspTargets(){
 }
 // the nearest tough foe in the aim: aiming the grasp at a brute says why nothing lifts
 function toughInAim(){
-  const g = A(), pp = playerPos(), f = fwd(), cosLim = Math.cos(g.angle);
-  for (const e of enemies) if (graspable(e) && tough(e) && inReach(e, pp, g.range, f, cosLim)) return e;
-  return shared.boss && shared.boss.hp > 0 && inReachBoss(pp, f, cosLim, g.range) ? shared.boss : null;
-}
-function inReachBoss(pp, f, cosLim, r){
-  TMP.subVectors(shared.boss.group.position, pp); TMP.y = 0;
-  const d = TMP.length();
-  return d < r && d > 0.01 && TMP.normalize().dot(f) > cosLim;
+  const g = A(), aim = heroAim(), cosLim = Math.cos(g.angle);
+  for (const e of enemies) if (graspable(e) && tough(e) && inAim(e, aim, g.range, cosLim, 0.16)) return e;
+  return bossInAim(aim, g.range, cosLim, 0.16) ? shared.boss : null;
 }
 
 /* C pressed. Held: start charging the grasp. Already holding someone: a tap YANKS them in. */
@@ -103,7 +93,7 @@ export function graspThrow(){
     // each body flies out along its own slot's line, so a volley spreads a little instead of stacking
     const rv = V3(-d.z, 0, d.x).multiplyScalar(b.slot * 0.12);
     e.state = 'ragdoll'; e.st = 0;
-    e.vel.copy(d).add(rv).normalize().multiplyScalar(g.throwSpeed); e.vel.y = Math.max(e.vel.y, 3);
+    e.vel.copy(d).add(rv).normalize().multiplyScalar(g.throwSpeed); if (d.y > -0.2) e.vel.y = Math.max(e.vel.y, 3);   // (hurled down from above, it's driven into the deck)
     damageEnemy(e, g.throwDmg * (stance().powerDmg || 1) * forcePower(), null, 0);   // the wrench of the throw itself (no launch: we set it)
     if (!e.dead){ e.state = 'ragdoll'; }
     floater(e.group.position, 'HURLED', '#7fd4ff');

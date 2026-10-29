@@ -432,13 +432,14 @@ function animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait){
     // left palm forward, lightning pouring from the fingers; the saber drops to a low trailing guard. Holstered, both
     // hands pour it out together, arms thrust forward and the fingers hooked (the Emperor's way)
     releaseSaberPose(R, dt);
-    R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -1.5, 12);
+    const ap = aimLift();   // the palm follows the crosshair up or down (player/aim.js)
+    R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -1.5 - ap, 12);
     R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, 0.15, 12);
     R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -0.1, 12);
     if (player.holstered){
       const sh = Math.sin(G.gt * 31) * 0.03;   // the arms shudder with the current
-      R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -1.4 + sh, 12);
-      R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -1.4 - sh, 12);
+      R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -1.4 - ap + sh, 12);
+      R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -1.4 - ap - sh, 12);
       R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, -0.15, 12);
       R.armR.el.rotation.x = dr(R.armR.el.rotation.x, -0.25, 12);
       R.torso.position.z = dr(R.torso.position.z, 0.1, 10);
@@ -584,6 +585,8 @@ function wristBlade(dt, R, out){
   b.scale.set(1, Math.max(0.01, k), 1);
 }
 
+// how far a power's casting arm tips off level toward the aim (player.aimPitch: + up), kept to what a shoulder can do
+const aimLift = () => clamp(player.aimPitch || 0, -0.9, 1.2);
 function animateForceCast(dt, dr, R){
   // --- force-cast gesture: the off-hand reaches out to project the power ---
   if (player.castT > 0){
@@ -592,12 +595,13 @@ function animateForceCast(dt, dr, R){
     const pk = Math.sin(r * Math.PI);                 // 0→1→0 envelope
     const pulling = player.castKind === 'pull';
     const out = pulling ? r : pk;                     // pull: extended at the start, then claws back
-    R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -1.55, 20);
+    const ap = aimLift();                             // thrown up at a foe in the air, or down at one below
+    R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -1.55 - ap, 20);
     R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, pulling ? -0.05 : 0.12, 20);
     R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -0.12 - (1 - out) * (pulling ? 1.35 : 0.18), 20);
     if (G.hero !== 'mando' && player.holstered){
       // saber holstered: no hilt to hold, so BOTH hands throw the power (Yoda's two open palms), a touch wider apart
-      R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -1.5, 20);
+      R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -1.5 - ap, 20);
       R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, pulling ? 0.05 : -0.08, 20);
       R.armR.el.rotation.x = dr(R.armR.el.rotation.x, -0.15 - (1 - out) * (pulling ? 1.35 : 0.18), 20);
     }
