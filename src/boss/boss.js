@@ -31,6 +31,8 @@ import { victory } from '../game/summary.js';
 import { showBanner } from '../ui/banners.js';
 import { diffHpMul } from '../data/difficulty.js';
 import { hideIndicators } from '../enemies/cleanup.js';
+import { players, localPlayer, targetable } from '../player/players.js';
+import { queueHit, hooks } from '../net/run.js';
 
 /* ============================================================
    BOSS — DARTH VEXIS
@@ -49,7 +51,7 @@ export function spawnBoss(){
   scene.add(g);
   bossMv.x = bossMv.z = bossMv.pivot = 0;
   shared.boss = {
-    group: g, hp, maxHp: hp, phase: 1, kind,
+    group: g, nid: 'B', hp, maxHp: hp, phase: 1, kind,
     armor: mando ? BOSS_MANDO.armor : BOSS_CFG.armor,
     state: 'intro', st: 2.5, swingsLeft: 0, flash: 0,
     lightningCd: 4, pulseCd: 3, blinkCd: 6, volleyCd: 5, summoned: false, summonCd: 12,
@@ -69,6 +71,11 @@ export function spawnBoss(){
 
 export function damageBoss(dmg, tick){
   if (!shared.boss || shared.boss.hp <= 0) return;
+  if (shared.boss.net){   // the host's boss (co-op): the blow goes to the host, which applies it; here only the spark and the feel
+    queueHit(shared.boss, dmg, null, 0, false, tick);
+    if (!tick){ burst(V3(shared.boss.group.position.x, 2.4, shared.boss.group.position.z), 0xffd24a, 5, 6, 4); S.impact(V3(shared.boss.group.position.x, 2.4, shared.boss.group.position.z), 0.7); }
+    return;
+  }
   const vulnerable = shared.boss.state === 'stunned' || shared.boss.state === 'vulnerable';
   // later PHASES toughen up — they shrug off high-tier ults/ordnance/Darksaber so they can't be melted instantly
   const cfg = (shared.boss.kind === 'mando' ? BOSS_MANDO : BOSS_CFG);
@@ -98,6 +105,7 @@ export function damageBoss(dmg, tick){
 }
 export function bossStun(){
   if (!shared.boss || shared.boss.hp <= 0) return;
+  if (shared.boss.net){ if (hooks.bctl) hooks.bctl('stun'); return; }
   shared.boss.state = 'stunned'; shared.boss.st = BOSS_CFG.lightning.reflectStun;
   G.shake = Math.max(G.shake, 1); G.hitstop = Math.max(G.hitstop, 0.1);
   showBanner('REFLECTED!', 'He is staggered — STRIKE NOW!', 2);
@@ -114,6 +122,7 @@ export function bossStun(){
 // one he RESISTS the next for a few seconds (a quick flinch instead). Parry/reflect openings bypass this (earned skill).
 export function bossStagger(){
   if (!shared.boss || shared.boss.hp <= 0 || shared.boss.state === 'stunned' || shared.boss.state === 'dying') return;
+  if (shared.boss.net){ if (hooks.bctl) hooks.bctl('stagger'); return; }
   const cfg = (shared.boss.kind === 'mando' ? BOSS_MANDO : BOSS_CFG);
   if (shared.boss.staggerImmuneT > 0){   // resisting — a small flinch, not a full opening
     floater(V3(shared.boss.group.position.x, 2.8, shared.boss.group.position.z), 'RESISTED', '#cc99ff');
@@ -174,9 +183,24 @@ function bossStride(wx, wz, dt){
   const against = bossMv.pivot > 0 || wx * bossMv.x + wz * bossMv.z < 0;
   if (dl > 1e-3){ const a = Math.min(dl, (against ? BOSS_GAIT.brake : BOSS_GAIT.accel) * dt) / dl; bossMv.x += dx * a; bossMv.z += dz * a; }
 }
+// which hero the boss fights right now: this one, or in co-op the nearer of the two (re-picked between attacks)
+function bossHero(b){
+  if (players.length === 1) return localPlayer;
+  if (b.hero && players.includes(b.hero) && targetable(b.hero) && b.state !== 'think') return b.hero;
+  let best = null, bd = Infinity;
+  for (const p of players){
+    if (!targetable(p)) continue;
+    const d = Math.hypot(p.pos.x - b.group.position.x, p.pos.z - b.group.position.z);
+    if (d < bd){ bd = d; best = p; }
+  }
+  b.hero = best || localPlayer;
+  return b.hero;
+}
 export function updateBoss(dt){
   if (!shared.boss) return;
-  const g = shared.boss.group, pp = playerPos();
+  if (shared.boss.net){ updateBossPuppet(dt); return; }
+  const hero = bossHero(shared.boss), remote = !hero.local;
+  const g = shared.boss.group, pp = hero.pos;
   shared.boss.st -= dt;
   // SAFETY NET — any damage path that drains him to 0 triggers death, even mid-attack.
   // Fixes the boss occasionally fighting on with an empty health bar.
@@ -275,7 +299,8 @@ export function updateBoss(dt){
         burst(V3(g.position.x + tx*2, 1.8, g.position.z + tz*2), 0xff3333, 10, 8, 3);
         G.shake = Math.max(G.shake, 0.35);
         S.swing('strong'); S.whoosh(g.position, true);
-        if (dist < BOSS_CFG.combo.range && player.dashT > 0) perfectDodge(g.position);   // dashed through it on the beat
+        if (remote){ if (dist < BOSS_CFG.combo.range && hooks.hurt) hooks.hurt(shared.boss, BOSS_CFG.combo.dmg, g.position, 'bossmelee', false); }   // their browser parries or takes it (net/foefire.js)
+        else if (dist < BOSS_CFG.combo.range && player.dashT > 0) perfectDodge(g.position);   // dashed through it on the beat
         else if (dist < BOSS_CFG.combo.range && player.dashT <= 0){
           const res = hurtPlayer(BOSS_CFG.combo.dmg, g.position, false, true);   // melee — high ground denies it
           if (res === 'clashed' && shared.boss.swingsLeft > 1){
@@ -351,7 +376,7 @@ export function updateBoss(dt){
       const handPt = V3(g.position.x + tx*0.6, 2.6, g.position.z + tz*0.6);
       // is the player guarding toward the boss?
       const facingBoss = (fwd().x*(-tx) + fwd().z*(-tz)) > 0.25;
-      const guarding = player.blockHeld && player.stam > 0 && facingBoss && player.dashT <= 0;
+      const guarding = !remote && player.blockHeld && player.stam > 0 && facingBoss && player.dashT <= 0;
       let endPt, col;
       if (guarding){
         // caught on the blade — a tug of war that ends in a reflect
@@ -375,7 +400,8 @@ export function updateBoss(dt){
         shared.boss.lightTick -= dt;
         if (shared.boss.lightTick <= 0){
           shared.boss.lightTick = L.tick;
-          if (player.dashT <= 0) hurtPlayer(L.tickDmg, null);   // arcs past the guard if you're not facing it
+          if (remote){ if (hooks.hurt) hooks.hurt(shared.boss, L.tickDmg, g.position, 'zap', false); }   // their browser takes it
+          else if (player.dashT <= 0) hurtPlayer(L.tickDmg, null);   // arcs past the guard if you're not facing it
           if (Math.random() < 0.7) burst(V3(pp.x, 1.4, pp.z), 0xcc66ff, 2, 4, 3);
         }
         shared.boss.lightCatch = Math.max(0, shared.boss.lightCatch - dt*0.6);
@@ -396,7 +422,7 @@ export function updateBoss(dt){
         // NOVA — later phases emit a stack of concentric waves; you must dash/jump EACH one, not just the first
         const rcfg = ((shared.boss.kind === 'mando' ? BOSS_MANDO.pulse : BOSS_CFG.pulse).rings) || [1];
         const n = rcfg[shared.boss.phase-1] || 1;
-        for (let i = 0; i < n; i++) spawnRing(g.position.clone(), 1 - i*6);
+        for (let i = 0; i < n; i++){ spawnRing(g.position.clone(), 1 - i*6); if (hooks.ring) hooks.ring(g.position, 1 - i*6); }
         G.shake = 0.9; S.slam(g.position);
       }
       if (shared.boss.st <= 0){ shared.boss.state = 'think'; g.position.y = 0; }
@@ -453,7 +479,7 @@ export function updateBoss(dt){
       if (shared.boss.lightTick <= 0 && shared.boss.volleyLeft > 0){
         shared.boss.lightTick = V.gap; shared.boss.volleyLeft--;
         const muzzle = V3(g.position.x + tx*0.9, 2.6, g.position.z + tz*0.9);
-        const lead = V3(pp.x + player.vel.x*V.lead, pp.y + 1.4, pp.z + player.vel.z*V.lead).sub(muzzle).normalize();
+        const lead = V3(pp.x + hero.vel.x*V.lead, pp.y + 1.4, pp.z + hero.vel.z*V.lead).sub(muzzle).normalize();
         fireBolt(muzzle, lead, V.boltSpeed, V.dmg, false, false, shared.boss);
         const bb = bolts[bolts.length-1]; if (bb){ bb.mesh.material.color.setHex(0xff7a2a); bb.mesh.scale.set(1.5,1.9,1.5); }
         burst(muzzle, 0xffae5a, 3, 7, 1, 0.5);
@@ -475,6 +501,7 @@ export function updateBoss(dt){
         shared.boss = null;
         document.getElementById('bosswrap').style.display = 'none';
         G.slowmo = 1;
+        if (hooks.bossDead) hooks.bossDead();   // co-op: the guest's fight ends too
         if (G.sandbox) showBanner('', 'BOSS DEFEATED', 1.6);   // the training room: no victory screen, just the floor back
         else victory();
         return;
@@ -503,6 +530,7 @@ export function updateBoss(dt){
 }
 
 /* expanding shockwave ring (boss pulse) — dash or jump to avoid */
+export function spawnBossRing(x, z, r0){ spawnRing(V3(x, 0, z), r0); }
 function spawnRing(pos, r0){
   const m = new THREE.Mesh(new THREE.TorusGeometry(1, 0.3, 8, 40),
     new THREE.MeshBasicMaterial({ color: TELLS.dodge.color, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false }));
@@ -527,4 +555,72 @@ export function updateRings(dt){
     }
     if (r.r > BOSS_CFG.pulse.maxR){ scene.remove(r.mesh); rings.splice(i,1); }
   }
+}
+
+/* ---------------- co-op ---------------- */
+// the answer from the other browser to a blow of the boss's: a parry or clash opens him up exactly as at home
+// (the host has already moved on along the chain, so the effect is applied to where he is now)
+export function bossBlowResult(res, ax, az){
+  const b = shared.boss;
+  if (!b || b.net || b.state === 'dying' || b.state === 'stunned') return;
+  if (res !== 'parried' && res !== 'clashed') return;
+  const g = b.group;
+  if (b.swingsLeft > 0 && b.state === 'windup'){   // the chain presses on: only deflected
+    b.st = BOSS_CFG.combo.windup * (res === 'clashed' ? BOSS_CFG.combo.clashGap : BOSS_CFG.combo.deflectGap);
+    g.position.x += ax * 0.8; g.position.z += az * 0.8;
+    G.shake = Math.max(G.shake, 0.45);
+    burst(V3(g.position.x, 2.4, g.position.z), 0xffd24a, 8, 7, 4);
+    floater(g.position, 'DEFLECTED · ' + b.swingsLeft + ' MORE', '#ffe9a8');
+  } else if (res === 'parried'){   // the chain's last blow: a full posture break
+    b.state = 'vulnerable'; b.st = BOSS_CFG.combo.breakTime; b.swingsLeft = 0;
+    G.shake = Math.max(G.shake, 0.8);
+    burst(V3(g.position.x, 2.4, g.position.z), 0xffd24a, 22, 10, 6);
+    floater(g.position, 'POSTURE BROKEN!', '#ffd24a');
+  }
+}
+
+// the guest's stand-in for the boss: built from the host's word, posed by it, no brain
+export function makeBossPuppet(kind, hp, maxHp){
+  const g = buildBoss(kind);
+  g.userData.gait = { bob: BOSS_GAIT.bob, lean: BOSS_GAIT.lean, step(o, at){
+    const p = playerPos(), d = Math.hypot(at.x - p.x, at.z - p.z);
+    if (d < BOSS_GAIT.thudRange){ G.shake = Math.max(G.shake, BOSS_GAIT.thud * (1 - d / BOSS_GAIT.thudRange * 0.6)); burst(V3(at.x, at.y + 0.1, at.z), BOSS_GAIT.dust, 3, 2, 2, 0.5); }
+  } };
+  scene.add(g);
+  shared.boss = { net: true, nid: 'B', group: g, hp, maxHp, phase: 1, kind, state: 'intro', st: 0, flash: 0, enraged: false,
+    want: { pos: V3(0, 0, 0), rx: 0, ry: 0, rz: 0 }, hand: 0, eyes: 1, em: 0, ei: 0, tp: null };
+  document.getElementById('bossname').textContent = kind === 'mando' ? BOSS_MANDO.name : BOSS_CFG.name;
+  document.getElementById('bosswrap').style.display = 'block';
+  showBanner(kind === 'mando' ? 'THE IRON MAGISTRATE' : 'DARTH VEXIS', 'Fighting alongside the host.', 3);
+  return shared.boss;
+}
+export function dropBossPuppet(){
+  const b = shared.boss;
+  if (!b || !b.net) return;
+  scene.remove(b.group);
+  if (shared.bossLight) shared.bossLight.visible = false;
+  shared.boss = null;
+  document.getElementById('bosswrap').style.display = 'none';
+}
+const dampB = (a, b2, k, dt) => a + (b2 - a) * (1 - Math.exp(-k * dt));
+function updateBossPuppet(dt){
+  const b = shared.boss, g = b.group, w = b.want, u = g.userData;
+  g.position.x = dampB(g.position.x, w.pos.x, 14, dt);
+  g.position.y = dampB(g.position.y, w.pos.y, 14, dt);
+  g.position.z = dampB(g.position.z, w.pos.z, 14, dt);
+  g.rotation.x = dampB(g.rotation.x, w.rx, 14, dt);
+  g.rotation.y += Math.atan2(Math.sin(w.ry - g.rotation.y), Math.cos(w.ry - g.rotation.y)) * (1 - Math.exp(-14 * dt));
+  if (u.hand) u.hand.rotation.z = b.hand;
+  if (u.eyes) u.eyes.scale.set(b.eyes, b.eyes, 1);
+  if (u.bodyMat){ u.bodyMat.emissive.setHex(b.em); u.bodyMat.emissiveIntensity = b.ei; }
+  if (b.state === 'dying'){ g.rotation.x += dt * 0.5; g.position.y -= dt * 0.4; }
+  // the Force lightning: a beam from his hand to the hero he is channelling it at
+  if (b.state === 'lightning' && b.kind !== 'mando' && b.tp){
+    const handPt = V3(g.position.x, 2.6, g.position.z);
+    updateBossLightFX(handPt, V3(b.tp[0], 1.5, b.tp[1]), 0xcc55ff);
+  } else if (shared.bossLight) shared.bossLight.visible = false;
+  const s = b.state;
+  updateLegs(b, g, dt, s === 'dying' ? 'off' : (s === 'gapclose' || s === 'pulse' || s === 'retreat') ? 'air' : (b.phase < 3 && (s === 'chase' || s === 'intro' || s === 'think')) ? 'walk' : 'ground');
+  updateUpper(b, g, dt, playerPos(), s === 'dying' || s === 'stunned' ? 'off' : 'on');
+  document.getElementById('bossbar').style.width = Math.max(0, b.hp / b.maxHp * 100) + '%';
 }

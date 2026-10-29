@@ -7,7 +7,7 @@
 //   blast        a bomb, slam or grenade going off: the guest checks its own hero against it
 //   tell / gren  the warning rings and the thrown grenade's landing mark, so the guest can see what is coming
 
-import { G, player, bolts, enemies } from '../state.js';
+import { G, shared, player, bolts, enemies } from '../state.js';
 import { V3 } from '../utils.js';
 import { scene } from '../engine/renderer.js';
 import { fireBolt } from '../enemies/bolts.js';
@@ -19,6 +19,8 @@ import { addPosture, drainBreath } from '../enemies/duel.js';
 import { DUEL } from '../data/duel.js';
 import { gainXp } from '../game/progression.js';
 import { hurtPlayer } from '../player/damage.js';
+import { bossBlowResult, spawnBossRing } from '../boss/boss.js';
+import { victory } from '../game/summary.js';
 import { blockedOnBlade } from '../player/jedi/clash.js';
 import { playerPos } from '../player/helpers.js';
 import { players } from '../player/players.js';
@@ -47,16 +49,24 @@ on('hurt', (m) => {
   if (!asGuest()) return;
   const src = puppetOf(m.n);
   const opts = m.u ? { unblockable: true, src } : { src };
-  const res = hurtPlayer(m.d, V3(m.x, m.y, m.z), false, true, false, opts);
+  const res = m.k === 'zap' ? hurtPlayer(m.d, null, false, false, false, opts) : hurtPlayer(m.d, V3(m.x, m.y, m.z), false, true, false, opts);
   if (res === 'hit' && m.k === 'lunge'){ player.vel.x += m.dx * 9; player.vel.z += m.dz * 9; }
   send({ t: 'hres', n: m.n, r: res, k: m.k });
 });
 
 on('hres', (m) => {
   if (net.role !== 'host') return;
+  const mate = players.find(p => !p.local);
+  if (m.n === 'B'){   // the boss's blow: a parry or clash opens him up
+    const bp = shared.boss && !shared.boss.net ? shared.boss.group.position : null;
+    if (!bp) return;
+    let bx = bp.x - (mate ? mate.pos.x : 0), bz = bp.z - (mate ? mate.pos.z : 0);
+    const bl = Math.hypot(bx, bz) || 1;
+    bossBlowResult(m.r, bx / bl, bz / bl);
+    return;
+  }
   const e = enemies.find(o => o.nid === m.n);
   if (!e || e.dead) return;
-  const mate = players.find(p => !p.local);
   let ax = e.group.position.x - (mate ? mate.pos.x : 0), az = e.group.position.z - (mate ? mate.pos.z : 0);
   const l = Math.hypot(ax, az) || 1; ax /= l; az /= l;   // away from the partner's hero
   if (m.r === 'parried' || m.r === 'clashed'){
@@ -78,7 +88,12 @@ hooks.bolt = (b) => {
 on('bolt', (m) => {
   if (!asGuest()) return;
   fireBolt(V3(m.p[0], m.p[1], m.p[2]), V3(m.d[0], m.d[1], m.d[2]), m.s, m.m, false, false, puppetOf(m.n));
-  bolts[bolts.length - 1].bid = m.i;
+  const nb = bolts[bolts.length - 1];
+  nb.bid = m.i;
+  if (m.n === 'B' && shared.boss){   // the Magistrate's barrage and volley bolts are drawn bigger and hotter
+    const volley = shared.boss.state === 'volley';
+    nb.mesh.material.color.setHex(volley ? 0xff7a2a : 0xffaa33); nb.mesh.scale.set(volley ? 1.5 : 1.3, volley ? 1.9 : 1.6, volley ? 1.5 : 1.3);
+  }
 });
 
 hooks.bx = (b) => {
@@ -158,6 +173,13 @@ on('lw', (m) => {
   paintLungeLine(e, m.x, m.z, m.y, m.l, !!m.k, m.p);
   e.lungeAt = performance.now();
 });
+
+/* ---------------- the boss: its shockwaves, its death ---------------- */
+hooks.ring = (pos, r0) => { if (asHost()) send({ t: 'ring', x: r2(pos.x), z: r2(pos.z), r: r0 }); };
+on('ring', (m) => { if (asGuest()) spawnBossRing(m.x, m.z, m.r); });
+hooks.bctl = (k) => { if (asGuest()) send({ t: 'bctl', k }); };
+hooks.bossDead = () => { if (asHost()) send({ t: 'bdead' }); };
+on('bdead', () => { if (asGuest() && G.mode === 'play'){ if (shared.boss && shared.boss.net) { /* the puppet falls with the snapshot */ } victory(); } });
 
 /* ---------------- warnings ---------------- */
 hooks.tell = (kind, pos, radius, dur) => {
