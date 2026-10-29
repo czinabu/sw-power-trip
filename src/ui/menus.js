@@ -455,7 +455,7 @@ export function goHome(){
   if (G.stats){ G.stats._ended = false; G.stats.summary = null; }
   document.getElementById('runsummary').style.display = 'none';
   startLevel(0);   // sweep the battlefield and reset the hero + kit, exactly as a fresh campaign would
-  G.mode = 'menu'; G.paused = false; G.slowmo = 1; G.slowmoT = 0; G.hitstop = 0;
+  G.mode = 'menu'; G.coopWasGuest = false; G.paused = false; G.slowmo = 1; G.slowmoT = 0; G.hitstop = 0;
   overlay.style.display = 'flex';
   refreshMenu();
   overlay.scrollTop = 0;

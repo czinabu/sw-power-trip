@@ -114,6 +114,9 @@ try {
   await host.waitForFunction((t) => GAME.G.gt > t + 1, gt0, poll);
   await guest.waitForFunction(() => { window.__gt0 = window.__gt0 || GAME.G.gt; return GAME.G.gt > window.__gt0 + 0.5; }, null, poll);
   await guest.evaluate(() => { GAME.G.paused = false; });
+  // a guest that falls out of the shared fight (dies and retries, restarts) is put back into it, its own foes gone
+  await guest.evaluate(() => { GAME.startEndless(); });
+  await guest.waitForFunction(() => GAME.G.coopGuest && GAME.enemies.length > 0 && GAME.enemies.every(e => e.net), null, poll);
   ok = true;
   console.log('ok   co-op run: the guest joined the host\'s Survival run, shows ' + shared.length + '+ of its foes as puppets, a blow on one reached the host, and a shot and a blow from one hurt the guest, a power, the partner shots and shared XP work');
 } catch(e){ errors.push(e.message); for (const p of browser.contexts().flatMap(c => c.pages())) errors.push(JSON.stringify(await p.evaluate(() => ({ mode: GAME.G.mode, guest: GAME.G.coopGuest, foes: GAME.enemies.map(e => [e.nid, !!e.net]), status: document.getElementById('coopstatus').textContent })).catch(x => x.message))); }

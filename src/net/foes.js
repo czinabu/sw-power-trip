@@ -167,12 +167,21 @@ on('e', (m) => {
   if (!m.run){
     const was = coopRun.on; coopRun.on = false;
     if (was) runChanged();
+    G.coopWasGuest = false;   // the host's run is over: nothing to go back to
     endGuest();
     return;
   }
   const changed = !coopRun.on || coopRun.w !== m.w || coopRun.ar !== m.ar || coopRun.k !== m.k || coopRun.lv !== m.lv || coopRun.mid !== (m.ms ? m.ms.id : '');
   Object.assign(coopRun, { on: true, k: m.k || 'e', mid: m.ms ? m.ms.id : '', lv: m.lv || 0, ar: m.ar, w: m.w, wt: m.wt, ph: m.ph, mut: m.mut });
   if (changed) runChanged();
+  // this guest fell out of the shared fight without the host's run ending (died and retried, restarted): it was playing its
+  // own foes and waves. Back in: its own foes go, and the host's take their place
+  if (!G.coopGuest && G.coopWasGuest && G.mode === 'play' && (m.k === 'e' ? G.endless : m.k === 'c' ? !G.endless && !G.mission && !G.training && !G.sandbox : false)){
+    for (const e of enemies) removeEnemy(e);
+    enemies.length = 0; byNid.clear(); G.spawnQueue.length = 0;
+    G.coopGuest = true;
+    showBanner('', 'BACK IN THE HOST\'S FIGHT', 2.0);
+  }
   if (!G.coopGuest || G.mode === 'menu') return;
 
   if (m.k === 'm'){   // a story mission: the host runs its objectives, this browser is shown them
@@ -315,7 +324,7 @@ on('pick', (m) => { if (net.role === 'host') coopRun.guestPicking = !!m.o; });
 
 on('status', (n) => {
   if (n.status === 'connected') return;
-  coopRun.on = false; coopRun.guestPicking = false; coopRun.live = false; runChanged();
+  coopRun.on = false; coopRun.guestPicking = false; coopRun.live = false; G.coopWasGuest = false; runChanged();
   if (G.coopGuest) endGuest();
   hostSent = false;
 });

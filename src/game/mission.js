@@ -66,7 +66,7 @@ export function startMission(id = 'refuge', fromObjective = 0, guest = false){
   const st = (fromObjective && def.objectives[fromObjective].start) || def.start;   // a retry may begin further along
   if (st){ playerPos().set(st[0], 0, st[1]); G.yaw = player.faceYaw = st[2] || 0; }
   if (guest){   // co-op guest: the host runs the objectives; this browser shows them (coopMissionSync)
-    G.coopGuest = true; G.coopJoin = false;
+    G.coopGuest = true; G.coopWasGuest = true; G.coopJoin = false;
     M.i = -1; M.run = -1;
     if (def.battle) startBattleFx(G.hero === 'mando' ? 0xffa040 : 0x4aa8ff);
     showBanner('CO-OP MISSION', 'Fighting alongside the host.', 3.0);
