@@ -262,6 +262,53 @@ export function startWave(){
   checkUnlocks(1600);
 }
 
+// a campaign wave is cleared: its XP and a second wind (also what a co-op guest does when the host's wave ends)
+function campaignWaveRewards(){
+  MUSIC.clearSting();
+  payWaveClear(140 + (G.waveTotal + 1) * 28);   // WAVE CLEAR — the main XP source (more for a clean wave), scales as the run deepens
+  // a real second wind on each wave clear — a meaningful patch-up + a Force / jetpack top-off
+  if (player.hp > 0 && player.hp < maxHp()){
+    const healed = Math.min(maxHp() - player.hp, Math.round(maxHp() * ((player.boon && player.boon.secwind) ? 0.68 : 0.38)));   // SECOND WIND boon heals extra
+    player.hp += healed;
+    const pp0 = playerPos();
+    floater(V3(pp0.x, 1.0, pp0.z), '+' + healed, '#7bffae');
+    burst(V3(pp0.x, 1.2, pp0.z), 0x7bffae, 12, 5, 4);
+  }
+  player.force = CFG.player.maxForce;                                       // top off the Force
+  if (G.hero === 'mando') player.jet = Math.min(player.jetMax, player.jet + player.jetMax * 0.6);   // refuel the jetpack
+}
+
+/* CO-OP CAMPAIGN (net/foes.js) — the host runs the level's waves; a guest follows. Joining puts the guest on the host's
+   level (their build starts from the kit that wave count earns); each wave and level change after that follows the host. */
+export function startCoopCampaign(lv, wave, waveTotal){
+  startLevel(0);   // a full fresh setup (kit, build, stats)
+  G.waveTotal = waveTotal;
+  if (lv > 0) startLevel(lv, { resume: true });   // the same level as the host, keeping that build
+  G.coopGuest = true; G.coopJoin = false;
+  G.wave = wave; shared.levelPhase = 'between'; shared.phaseT = 0;
+  checkUnlocks();
+  showBanner('CO-OP CAMPAIGN', 'Fighting alongside the host.', 3.0);
+}
+// the host's wave began (campaign): this browser's wave banner and readout
+export function coopCampaignWave(wave, waveTotal){
+  const L = LEVELS[G.levelIdx];
+  G.wave = wave; G.waveTotal = waveTotal;
+  shared.levelPhase = 'fighting'; G.waveHits = 0; G.waveDmg = 0;
+  beginWave('L' + (G.levelIdx + 1) + ' · WAVE ' + (wave + 1));
+  showBanner('', 'WAVE ' + (wave + 1) + ' / ' + L.waves.length, 1.5);
+  MUSIC.waveSting();
+  checkUnlocks(1600);
+}
+// the host's wave is down (campaign): this browser's own clear bonus and upgrade screen
+export function coopCampaignCleared(){
+  const L = LEVELS[G.levelIdx];
+  G.wave++;
+  campaignWaveRewards();
+  shared.levelPhase = 'between';
+  if (G.wave >= L.waves.length && !L.boss) showBanner('AREA CLEARED', 'The Force flows onward.', 1.6);
+  openSkillTree();
+}
+
 export function updateFlow(dt){
   if (G.coopGuest) return;   // the host runs this run's spawns and waves: net/foes.js tells this browser what they did
   // the lull: once the first half of a long wave is down, hold the rest behind a short beat, then release it
@@ -294,10 +341,10 @@ export function updateFlow(dt){
   const L = LEVELS[G.levelIdx];
   // a shared run waits in the lull until both heroes have closed their upgrade screens
   const holdForPicks = coopRun.live && (G.skillSelect || coopRun.guestPicking);
-  if (holdForPicks && shared.levelPhase === 'between') shared.phaseT = Math.max(shared.phaseT, 1.4);   // a beat after the last screen closes
+  if (holdForPicks && (shared.levelPhase === 'between' || shared.levelPhase === 'travel')) shared.phaseT = Math.max(shared.phaseT, 1.4);   // a beat after the last screen closes
   if (shared.levelPhase === 'between' && shared.phaseT <= 0 && !holdForPicks){
     if (G.endless) startEndlessWave(); else startWave();
-  } else if (shared.levelPhase === 'travel' && shared.phaseT <= 0){
+  } else if (shared.levelPhase === 'travel' && shared.phaseT <= 0 && !holdForPicks){
     shared.levelPhase = 'idle';
     startLevel(G.levelIdx + 1);
   } else if (shared.levelPhase === 'fighting'){
@@ -308,18 +355,7 @@ export function updateFlow(dt){
       if (enemies.length > 0) return;
       if (G.endless){ endlessWaveCleared(); return; }   // survival has its own clear/escalation path
       G.wave++;
-      MUSIC.clearSting();
-      payWaveClear(140 + (G.waveTotal + 1) * 28);   // WAVE CLEAR — the main XP source (more for a clean wave), scales as the run deepens
-      // a real second wind on each wave clear — a meaningful patch-up + a Force / jetpack top-off
-      if (player.hp > 0 && player.hp < maxHp()){
-        const healed = Math.min(maxHp() - player.hp, Math.round(maxHp() * ((player.boon && player.boon.secwind) ? 0.68 : 0.38)));   // SECOND WIND boon heals extra
-        player.hp += healed;
-        const pp0 = playerPos();
-        floater(V3(pp0.x, 1.0, pp0.z), '+' + healed, '#7bffae');
-        burst(V3(pp0.x, 1.2, pp0.z), 0x7bffae, 12, 5, 4);
-      }
-      player.force = CFG.player.maxForce;                                       // top off the Force
-      if (G.hero === 'mando') player.jet = Math.min(player.jetMax, player.jet + player.jetMax * 0.6);   // refuel the jetpack
+      campaignWaveRewards();
       if (G.wave < L.waves.length){
         shared.levelPhase = 'between'; shared.phaseT = 2.2;
         player.force = CFG.player.maxForce;

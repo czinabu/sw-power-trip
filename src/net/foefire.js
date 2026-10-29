@@ -28,9 +28,9 @@ import { spawnGroundShock } from '../fx/vfx.js';
 import { S } from '../audio/sfx.js';
 import { net, on, send, connected } from './session.js';
 import { hooks } from './run.js';
-import { puppetOf } from './foes.js';
+import { puppetOf, runKind } from './foes.js';
 
-const asHost = () => net.role === 'host' && connected() && G.endless && !G.coopGuest;
+const asHost = () => net.role === 'host' && connected() && !!runKind() && !G.coopGuest;
 const asGuest = () => net.role === 'guest' && connected() && G.coopGuest;
 const r2 = (n) => Math.round(n * 100) / 100;
 let bidN = 0;

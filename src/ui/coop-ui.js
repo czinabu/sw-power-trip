@@ -29,6 +29,7 @@ codeIn.addEventListener('input', () => { codeIn.value = cleanCode(codeIn.value);
 codeIn.addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Enter') join(codeIn.value); });
 codeIn.addEventListener('click', (e) => e.stopPropagation());
 
+const runName = () => coopRun.k === 'c' ? 'level ' + (coopRun.lv + 1) + ' of the campaign' : 'a Survival run';
 function render(){
   const s = net.status;
   statusEl.className = s === 'connected' ? 'ok' : s === 'failed' ? 'bad' : '';
@@ -36,9 +37,9 @@ function render(){
   else if (s === 'joining') statusEl.textContent = 'Joining room ' + net.code + '…';
   else if (s === 'connected'){
     const guest = net.role === 'guest';
-    statusEl.textContent = !coopRun.on ? (guest ? 'Connected. Waiting for the host to start a Survival run, then you can join it here.' : 'Connected. Start a Survival run and your friend can join it. Other modes you each play on your own.')
-      : guest ? (G.coopGuest ? 'Fighting alongside the host, wave ' + coopRun.w + '.' : G.mode === 'menu' ? 'The host is on wave ' + coopRun.w + ' of a Survival run.' : 'The host is in a Survival run. Go back to the main menu to join it.')
-      : 'Your friend can join your Survival run from this panel.';
+    statusEl.textContent = !coopRun.on ? (guest ? 'Connected. Waiting for the host to start a run, then you can join it here.' : 'Connected. Start a campaign or Survival run and your friend can join it. Other modes you each play on your own.')
+      : guest ? (G.coopGuest ? 'Fighting alongside the host, wave ' + (coopRun.k === 'c' ? coopRun.w + 1 : coopRun.w) + '.' : G.mode === 'menu' ? 'The host is on ' + runName() + ', wave ' + (coopRun.k === 'c' ? coopRun.w + 1 : coopRun.w) + '.' : 'The host is in a run. Go back to the main menu to join it.')
+      : 'Your friend can join your run from this panel.';
   }
   else if (s === 'failed') statusEl.textContent = net.error;
   else statusEl.textContent = '';

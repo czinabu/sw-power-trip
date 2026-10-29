@@ -19,7 +19,7 @@ import { updateLegs } from '../enemies/gait.js';
 import { updateUpper } from '../enemies/upper.js';
 import { burst } from '../fx/particles.js';
 import { ENDLESS_ARENAS, rotateEndlessArena, endlessWaveCleared } from '../game/survival.js';
-import { checkUnlocks } from '../game/flow.js';
+import { checkUnlocks, startLevel, coopCampaignWave, coopCampaignCleared } from '../game/flow.js';
 import { beginWave } from '../game/readout.js';
 import { showBanner } from '../ui/banners.js';
 import { MUSIC } from '../audio/music.js';
@@ -30,6 +30,8 @@ const DEAD = 1, WALKING = 2, WARBRINGER = 4;
 let sentAt = 0, hostSent = false, runListeners = [];
 const byNid = new Map();   // the guest's puppets, by the host's number for each foe
 
+// what shared run this browser is hosting: 'e' Survival, 'c' the campaign's waves, '' none (training, missions, the sandbox)
+export const runKind = () => G.endless ? 'e' : (!G.training && !G.mission && !G.sandbox) ? 'c' : '';
 export const coopLive = () => !!G.coopGuest || (hostSent && connected());
 export const puppetOf = (nid) => byNid.get(nid) || null;
 export function onRunChange(fn){ runListeners.push(fn); }
@@ -49,11 +51,11 @@ function snapshot(){
       u.bodyMat ? u.bodyMat.emissive.getHex() : 0, u.bodyMat ? r2(u.bodyMat.emissiveIntensity) : 0,
       u.weaponArm ? r2(u.weaponArm.rotation.z) : 0, u.staff ? r2(u.staff.rotation.x) : 0]);   // (the weapon's other axis: which line a guard or block covers)
   }
-  return { t: 'e', run: 1, ar: G.arenaRot, w: G.endlessWave, wt: G.waveTotal, ph: shared.levelPhase, mut: G.mut, list };
+  return { t: 'e', run: 1, k: G.endless ? 'e' : 'c', lv: G.levelIdx, ar: G.arenaRot, w: G.endless ? G.endlessWave : G.wave, wt: G.waveTotal, ph: shared.levelPhase, mut: G.mut, list };
 }
 
 function hostTick(){
-  const running = net.role === 'host' && connected() && G.endless && G.mode === 'play' && !G.coopGuest;
+  const running = net.role === 'host' && connected() && !!runKind() && G.mode === 'play' && !G.coopGuest;
   if (!running){
     if (hostSent && connected()){ send({ t: 'e', run: 0 }); }
     hostSent = false;
@@ -154,11 +156,18 @@ on('e', (m) => {
     endGuest();
     return;
   }
-  const changed = !coopRun.on || coopRun.w !== m.w || coopRun.ar !== m.ar;
-  Object.assign(coopRun, { on: true, ar: m.ar, w: m.w, wt: m.wt, ph: m.ph, mut: m.mut });
+  const changed = !coopRun.on || coopRun.w !== m.w || coopRun.ar !== m.ar || coopRun.k !== m.k || coopRun.lv !== m.lv;
+  Object.assign(coopRun, { on: true, k: m.k || 'e', lv: m.lv || 0, ar: m.ar, w: m.w, wt: m.wt, ph: m.ph, mut: m.mut });
   if (changed) runChanged();
   if (!G.coopGuest || G.mode === 'menu') return;
 
+  if (m.k === 'c'){   // the campaign: the host's level and wave
+    if (G.endless){ endGuest(); return; }
+    if (G.levelIdx !== m.lv){ dropPuppets(); startLevel(m.lv, { resume: true }); G.coopGuest = true; showBanner('', 'THE HOST MOVES ON', 1.6); }
+    if (m.ph === 'fighting' && (shared.levelPhase !== 'fighting' || G.wave !== m.w)) coopCampaignWave(m.w, m.wt);
+    else if (m.ph === 'between' && shared.levelPhase === 'fighting') coopCampaignCleared();
+    else if (m.ph === 'bossfight' && shared.levelPhase !== 'bossfight'){ shared.levelPhase = 'bossfight'; showBanner('', 'THE HOST FACES THE BOSS', 2.4); }
+  } else {
   // the host's arena and wave: follow them
   if (G.arenaRot !== m.ar){
     dropPuppets();
@@ -174,6 +183,7 @@ on('e', (m) => {
     MUSIC.waveSting();
   } else if (m.ph === 'between' && shared.levelPhase === 'fighting'){
     endlessWaveCleared();   // pays this browser's own clear bonus and opens its own upgrade screen
+  }
   }
 
   // the foes

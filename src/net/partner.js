@@ -67,7 +67,7 @@ let reviveWave = -1;
 function coopRevives(){
   G.coopRevive = standing() && G.mode === 'play';   // keeps the revive channel running when the squad isn't
   if (!standing() || G.mode !== 'play') return;
-  const key = G.endless ? G.endlessWave : G.levelIdx;
+  const key = G.endless ? G.endlessWave : G.levelIdx * 100 + G.wave;
   if (G.reviveLeft == null || key !== reviveWave){ reviveWave = key; refill(); }
 }
 
