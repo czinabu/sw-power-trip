@@ -132,9 +132,63 @@ const fig = { group: new THREE.Group() };
 fig.group.position.y = PED_H;
 table.add(fig.group);
 let R, hipsY;
+/* The stand skins the hands on the CPU: each skinned mesh (hands and their ink hulls) is swapped for a plain mesh whose
+   vertices are skinned here every frame, and the original is kept hidden to drive the bones. On Firefox the GPU-skinned
+   hands flashed a black box now and then as the stand turned. */
+let cpuSkinned = [];
+function cpuSkin(root){
+  cpuSkinned = [];
+  const swap = (sm, into) => {
+    const geo = sm.geometry.clone();
+    geo.deleteAttribute('skinIndex'); geo.deleteAttribute('skinWeight');
+    geo.setAttribute('position', geo.attributes.position.clone().setUsage(THREE.DynamicDrawUsage));
+    const rm = new THREE.Mesh(geo, sm.material);
+    rm.matrixAutoUpdate = false; rm.matrix.copy(sm.matrix); rm.matrixWorldNeedsUpdate = true;
+    rm.frustumCulled = false; rm.castShadow = false; rm.renderOrder = sm.renderOrder;
+    into.add(rm);
+    sm.layers.set(1);   // still updated with the tree, never drawn
+    cpuSkinned.push({ sm, rm });
+    for (const c of sm.children) if (c.isSkinnedMesh) swap(c, rm);
+    return rm;
+  };
+  const tops = [];
+  root.traverse(o => { if (o.isSkinnedMesh && !(o.parent && o.parent.isSkinnedMesh)) tops.push(o); });
+  for (const sm of tops) swap(sm, sm.parent);
+}
+const _bm = [new THREE.Matrix4(), new THREE.Matrix4(), new THREE.Matrix4(), new THREE.Matrix4()], _bt = new THREE.Matrix4();
+function chainVisible(o){ for (; o; o = o.parent) if (!o.visible) return false; return true; }
+function updateCpuSkin(){
+  if (!cpuSkinned.length) return;
+  stage.updateMatrixWorld(true);   // the bones' (and the hidden originals') world matrices
+  for (const { sm, rm } of cpuSkinned){
+    rm.visible = sm.visible;
+    if (!chainVisible(rm)) continue;
+    const bones = sm.skeleton.bones, inv = sm.skeleton.boneInverses, n = Math.min(bones.length, 4);
+    for (let j = 0; j < n; j++){   // vertex → bone → back into the mesh's own space, one matrix per bone
+      _bt.multiplyMatrices(bones[j].matrixWorld, inv[j]).multiply(sm.bindMatrix);
+      _bm[j].multiplyMatrices(sm.bindMatrixInverse, _bt);
+    }
+    const src = sm.geometry.attributes.position, idx = sm.geometry.attributes.skinIndex, wt = sm.geometry.attributes.skinWeight, dst = rm.geometry.attributes.position;
+    for (let i = 0; i < src.count; i++){
+      const x = src.getX(i), y = src.getY(i), z = src.getZ(i);
+      let ox = 0, oy = 0, oz = 0;
+      for (let c = 0; c < 4; c++){
+        const w = wt.getComponent(i, c);
+        if (w === 0) continue;
+        const e = _bm[idx.getComponent(i, c)].elements;
+        ox += w * (e[0] * x + e[4] * y + e[8] * z + e[12]);
+        oy += w * (e[1] * x + e[5] * y + e[9] * z + e[13]);
+        oz += w * (e[2] * x + e[6] * y + e[10] * z + e[14]);
+      }
+      dst.setXYZ(i, ox, oy, oz);
+    }
+    dst.needsUpdate = true;
+  }
+}
 function build(picks){
   if (fig.vis){ fig.group.remove(fig.vis); disposeTree(fig.vis); }
   fig.group.add(buildHeroModel(fig, lookOf(picks)));
+  cpuSkin(fig.vis);
   fig.blade.light.intensity = 2.2;   // the saber's real light floods a close-up; keep it low so the model reads
   const crystal = fig.look.jedi.saber;
   if (crystal != null){ fig.blade.glow.material.color.setHex(crystal); fig.blade.light.color.setHex(crystal); }
@@ -342,6 +396,7 @@ export function renderShowcase(dt){
   R.hips.position.y = hipsY + (P.drop || 0) + Math.sin(t * 1.7) * 0.008;
   stepCloth(fig, dt, PED_H);
   blink(fig, dt);   // and a blink now and then (model/life.js)
+  updateCpuSkin();
   // the stand's lights follow the hero colour
   accent.lerp(tmpC.setHex(THEMES[nextHero || shown].glow), Math.min(1, dt * 5));
   glowMat.color.copy(accent).multiplyScalar(2.2 + flare * 4);
