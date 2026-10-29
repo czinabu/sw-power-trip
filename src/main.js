@@ -96,9 +96,9 @@ import { updateCoop, partnerShown, partnerInfo } from './net/partner.js';
 import { allies, updateSquad, updateSquadHud, spawnSquad, addSquadmate, squadOrder } from './allies/squad.js';
 import { downed } from './game/revive.js';
 import './ui/coop-ui.js';
-import { updateFoes, updatePuppets } from './net/foes.js';
+import { updateFoes, updatePuppets, coopLive } from './net/foes.js';
 import './net/foefire.js';
-import { hooks as coopHooks } from './net/run.js';
+import { hooks as coopHooks, coopRun } from './net/run.js';
 import './ui/saves-ui.js';   // NEW GAME / SAVE GAME / LOAD GAME and the save-slot panel
 
 setHero(G.hero);   // initialise control text + crosshair for the default hero
@@ -117,19 +117,23 @@ function tick(){
   }
   if (G.hitstop > 0){ G.hitstop -= dt; dt *= 0.08; }
   dt *= G.slowmo;
-  if (G.paused || G.skillSelect) dt = 0;   // overlay up — freeze the simulation entirely (still renders)
-  if (!G.paused && !G.skillSelect && (G.mode === 'play' || G.mode === 'dead')){
-    G.gt += dt;
+  // overlay up: freeze the simulation entirely (still renders). In a shared fight the OTHER hero is still playing, so only
+  // this hero stops (and feels their own hitstop and slow motion): the foes, their shots and the waves run on real time
+  const frozen = G.paused || G.skillSelect, live = coopLive();
+  const wdt = live ? rawDt : frozen ? 0 : dt;
+  if (frozen) dt = 0;
+  if ((!frozen || live) && (G.mode === 'play' || G.mode === 'dead')){
+    G.gt += wdt;
     if (G.mode === 'play'){
       updatePlayer(dt);
-      updateFlow(dt);
+      updateFlow(wdt);
       updateMission(dt);
       updateSandbox(dt);
       updateSquad(dt);   // the hero's squad, and anyone downed waiting to be got up (allies/squad.js, game/revive.js)
     }
-    if (G.coopGuest) updatePuppets(dt); else updateEnemies(dt);   // co-op guest: the host's foes, followed rather than thought for (net/foes.js)
-    updateBolts(dt);
-    updateGrenades(dt);
+    if (G.coopGuest) updatePuppets(wdt); else updateEnemies(wdt);   // co-op guest: the host's foes, followed rather than thought for (net/foes.js)
+    updateBolts(wdt);
+    updateGrenades(wdt);
     updateOrbs(dt);
     updateBoss(dt);
     updateRings(dt);
@@ -165,7 +169,7 @@ function tick(){
 tick();
 
 /* expose configs + API for live tweaking and future edits (dev console) */
-window.GAME = { coopHooks, partnerShown, partnerInfo, CFG, ENEMY_TYPES, LEVELS, BOSS_CFG, BOSS_MANDO, STANCES, SKILLS, MANDO, MANDO_WEAPONS, G, enemies, player, pillars, solids, rockets, bolts,
+window.GAME = { shared, coopRun, coopHooks, partnerShown, partnerInfo, CFG, ENEMY_TYPES, LEVELS, BOSS_CFG, BOSS_MANDO, STANCES, SKILLS, MANDO, MANDO_WEAPONS, G, enemies, player, pillars, solids, rockets, bolts,
   startLevel, startWave, spawnEnemy, startTutorial, startMission, skipObjective, startSandbox, sandboxSpawn, sandboxClear, setSandboxKit, sandboxKitAll, missionState, skipStep, trainingProgress, spawnBoss, queueSpawn, checkUnlocks, switchStance, setHero,
   openSkillTree, damageEnemy, damageBoss, updateHud, nextStoreGoal, enemyHpScale, eliteChance, ELITES, cycleQuality, forceBarrier, forceMend, updatePlayer, updateEnemies, updateBolts, fireBolt, endRun, updateFlow, startEndless, startEndlessWave, genEndlessWave, MUTATORS, ENDLESS_POWERS, buyPower, keys, camera, SEE,
   tryAttack, castGesture, saberThrow, forcePush, forceSlam, forceRepulse, stance, applySwingDamage, spawnChampion, startWave, bomberExplode, MUSIC, audioInit,

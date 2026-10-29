@@ -91,6 +91,21 @@ try {
   const xp0 = await guest.evaluate(() => GAME.G.xp || 0);
   await host.evaluate((n) => { const e = GAME.enemies.find(o => o.nid === n); if (e) GAME.damageEnemy(e, 99999, null, 0, false, false); }, t2);
   await guest.waitForFunction((x) => (GAME.G.xp || 0) > x, xp0, poll);
+  // the host waits in the lull while the guest's upgrade screen is open, and goes on a moment after it closes
+  const w0 = await host.evaluate(() => GAME.G.endlessWave);
+  await host.evaluate(() => { GAME.shared.levelPhase = 'between'; GAME.shared.phaseT = 1.5; });
+  await guest.waitForFunction(() => GAME.G.skillSelect, null, poll);
+  await host.waitForFunction(() => GAME.coopRun.guestPicking, null, poll);
+  await host.waitForTimeout(2500);
+  if (await host.evaluate((w) => GAME.G.endlessWave !== w, w0)) throw new Error('the host started the next wave while the guest was still picking');
+  await guest.evaluate(() => { document.getElementById('skilltree').style.display = 'none'; GAME.G.skillSelect = false; });
+  await host.waitForFunction((w) => GAME.G.endlessWave !== w, w0, poll);
+  // a pause on one side does not freeze the other's fight: the host's foes keep moving while the guest's pause is up
+  await guest.evaluate(() => { GAME.G.paused = true; });
+  const gt0 = await host.evaluate(() => GAME.G.gt);
+  await host.waitForFunction((t) => GAME.G.gt > t + 1, gt0, poll);
+  await guest.waitForFunction(() => { window.__gt0 = window.__gt0 || GAME.G.gt; return GAME.G.gt > window.__gt0 + 0.5; }, null, poll);
+  await guest.evaluate(() => { GAME.G.paused = false; });
   ok = true;
   console.log('ok   co-op run: the guest joined the host\'s Survival run, shows ' + shared.length + '+ of its foes as puppets, a blow on one reached the host, and a shot and a blow from one hurt the guest, a power, the partner shots and shared XP work');
 } catch(e){ errors.push(e.message); for (const p of browser.contexts().flatMap(c => c.pages())) errors.push(JSON.stringify(await p.evaluate(() => ({ mode: GAME.G.mode, guest: GAME.G.coopGuest, foes: GAME.enemies.map(e => [e.nid, !!e.net]), status: document.getElementById('coopstatus').textContent })).catch(x => x.message))); }
