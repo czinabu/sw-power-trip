@@ -200,12 +200,13 @@ function setSwingMirror(on){
 }
 setSwingMirror(localStorage.getItem('sw_swingmirror') === '1');
 document.getElementById('swingctl').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setSwingMirror(!G.swingMirror); });
-// CUT AIM — a mouse flick just before the press picks the cut's angle (player/jedi/cutaim.js), or the keys alone do
+// CUT AIM — the keys pick the cut's angle (the default), or a mouse flick just before the press does (player/jedi/cutaim.js).
+// (sw_cutaim, not the old sw_cutmouse: that one was saved as MOUSE on every load while mouse was the default.)
 function setCutMouse(on){
-  G.cutMouse = on; try { localStorage.setItem('sw_cutmouse', on ? '1' : '0'); } catch(e){}
+  G.cutMouse = on; try { localStorage.setItem('sw_cutaim', on ? 'mouse' : 'keys'); } catch(e){}
   const v = document.getElementById('cutaimval'); if (v) v.textContent = on ? 'MOUSE' : 'KEYS';
 }
-setCutMouse(localStorage.getItem('sw_cutmouse') !== '0');
+setCutMouse(localStorage.getItem('sw_cutaim') === 'mouse');
 document.getElementById('cutaimctl').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setCutMouse(!G.cutMouse); });
 // SABER GRIP — regular or reverse (Shien) lightsaber grip; a look preference, swings hit the same either way
 export function setSaberGrip(grip){

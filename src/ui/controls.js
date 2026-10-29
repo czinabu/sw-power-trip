@@ -22,7 +22,7 @@ const CONTROLS = {
       ['SHIFT', 'Landing roll', 'Just before a hard landing, or you stagger', 1],
     ]},
     { title: 'FIGHT', rows: [
-      ['LMB', 'Saber combo', 'Flick the mouse the way you want the blade to travel just before you click: any angle round the clock (the needle through the crosshair shows the next cut). Where you aim picks its height: aim up for a high cut at the head, down for a low one at the legs (the ticks by the crosshair). With no flick, the keys pick it: A / D sweep sideways, W chops overhead (a thrust aimed low), W or S with A / D cut diagonally down or up, S whirls behind you; nothing held walks your form\'s string of cuts. A cut that starts where the last one finished flows on quicker. Every third is a finisher. Settings · CUT AIM: KEYS turns the flick off'],
+      ['LMB', 'Saber combo', 'The key you hold picks the cut (the needle through the crosshair shows the next one): A / D sweep sideways, W chops overhead (a thrust aimed low), W or S with A / D cut diagonally down or up, S whirls behind you; nothing held walks your form\'s string of cuts. Where you aim picks its height: aim up for a high cut at the head, down for a low one at the legs (the ticks by the crosshair). A cut that starts where the last one finished flows on quicker. Every third is a finisher. Settings · CUT AIM: MOUSE lets a flick of the mouse just before you click aim the cut at any angle round the clock'],
       ['HOLD RMB', 'Block', 'Soaks most of a blow; heavy hits drain stamina'],
       ['TAP RMB', 'Parry and deflect', 'Time it as a blow or bolt lands; a missed parry can\'t be retried for a moment'],
       ['E', 'Kick', 'Shoves a foe back and cracks a duellist\'s guard'],

@@ -59,7 +59,7 @@ export const ROADMAP = [
             'Locks bind high, low or body to body, each with its own look and ending; duellists twirl their blades and reset between exchanges', 'Same in every mode; co-op guests see the guards, blocks and flourishes'] },
   { title: 'Saber cuts, round two: aim and mastery', status: 'done',
     items: ['Cuts built from any angle round the clock plus a height, blended from the tuned cuts; a plain click walks your form\'s string of cuts instead of left, right, left',
-            'Flick the mouse to aim a cut\'s angle, with a needle through the crosshair; Settings · CUT AIM switches back to keys only',
+            'The keys pick the cut by default, with a needle through the crosshair; Settings · CUT AIM: MOUSE aims it with a flick of the mouse instead',
             'Foe guards cover an arc of the clock (the pale crescent): a cut placed past its edge gets through, and varying your angle stops a duellist reading you',
             'A cut that starts where the last one finished flows on quicker, and each angle moves the feet its own way', 'Same in every mode, for the Jedi and the darksaber'] },
   { title: 'Balance, round two', status: 'next',
