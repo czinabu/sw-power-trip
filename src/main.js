@@ -135,7 +135,7 @@ function tick(){
     updateBolts(wdt);
     updateGrenades(wdt);
     updateOrbs(dt);
-    updateBoss(dt);
+    updateBoss(live && shared.boss && shared.boss.state === 'dying' ? wdt : dt);   // co-op: a felled boss finishes dying even while this hero picks upgrades, so the partner's fight ends
     updateRings(dt);
     updateVents(dt);
     updateBarrels(dt);

@@ -23,6 +23,8 @@ import { checkUnlocks, startLevel, coopCampaignWave, coopCampaignCleared } from 
 import { beginWave } from '../game/readout.js';
 import { showBanner } from '../ui/banners.js';
 import { MUSIC } from '../audio/music.js';
+import { playerPos } from '../player/helpers.js';
+import { damageBoss, bossStagger, bossStun, makeBossPuppet, dropBossPuppet } from '../boss/boss.js';
 import { net, on, send, connected } from './session.js';
 import { coopRun, hitQueue } from './run.js';
 
@@ -33,7 +35,7 @@ const byNid = new Map();   // the guest's puppets, by the host's number for each
 // what shared run this browser is hosting: 'e' Survival, 'c' the campaign's waves, '' none (training, missions, the sandbox)
 export const runKind = () => G.endless ? 'e' : (!G.training && !G.mission && !G.sandbox) ? 'c' : '';
 export const coopLive = () => !!G.coopGuest || (hostSent && connected());
-export const puppetOf = (nid) => byNid.get(nid) || null;
+export const puppetOf = (nid) => nid === 'B' ? shared.boss : byNid.get(nid) || null;
 export function onRunChange(fn){ runListeners.push(fn); }
 const runChanged = () => { for (const fn of runListeners) fn(coopRun); };
 
@@ -51,7 +53,12 @@ function snapshot(){
       u.bodyMat ? u.bodyMat.emissive.getHex() : 0, u.bodyMat ? r2(u.bodyMat.emissiveIntensity) : 0,
       u.weaponArm ? r2(u.weaponArm.rotation.z) : 0, u.staff ? r2(u.staff.rotation.x) : 0]);   // (the weapon's other axis: which line a guard or block covers)
   }
-  return { t: 'e', run: 1, k: G.endless ? 'e' : 'c', lv: G.levelIdx, ar: G.arenaRot, w: G.endless ? G.endlessWave : G.wave, wt: G.waveTotal, ph: shared.levelPhase, mut: G.mut, list };
+  const bs = shared.boss, bu = bs && bs.group.userData;
+  const boss = bs && !bs.net ? [r2(bs.group.position.x), r2(bs.group.position.y), r2(bs.group.position.z), r2(bs.group.rotation.y), r2(bs.group.rotation.x),
+    Math.round(bs.hp), Math.round(bs.maxHp), bs.state, bs.phase, bs.kind, bs.enraged ? 1 : 0, bu.hand ? r2(bu.hand.rotation.z) : 0, bu.eyes ? r2(bu.eyes.scale.y) : 1,
+    bu.bodyMat ? bu.bodyMat.emissive.getHex() : 0, bu.bodyMat ? r2(bu.bodyMat.emissiveIntensity) : 0,
+    bs.hero && !bs.hero.local ? [r2(bs.hero.pos.x), r2(bs.hero.pos.z)] : [r2(playerPos().x), r2(playerPos().z)]] : null;
+  return { t: 'e', run: 1, boss, k: G.endless ? 'e' : 'c', lv: G.levelIdx, ar: G.arenaRot, w: G.endless ? G.endlessWave : G.wave, wt: G.waveTotal, ph: shared.levelPhase, mut: G.mut, list };
 }
 
 function hostTick(){
@@ -71,6 +78,7 @@ function hostTick(){
 on('hits', (m) => {
   if (net.role !== 'host') return;
   for (const [id, dmg, kx, kz, kpow, fin, tick] of m.h || []){
+    if (id === 'B'){ if (shared.boss && !shared.boss.net) damageBoss(dmg, !!tick); continue; }   // the boss
     const e = enemies.find(o => o.nid === id);
     if (!e || e.dead) continue;
     damageEnemy(e, dmg, kx || kz ? V3(kx, 0, kz) : null, kpow, !!fin, !!tick);
@@ -87,6 +95,11 @@ on('ctl', (m) => {
   if (m.v) e.vel.set(m.v[0], m.v[1], m.v[2]);
 });
 
+// a Force power or a parry on the guest's side opens the real boss up
+on('bctl', (m) => {
+  if (net.role !== 'host' || !shared.boss || shared.boss.net) return;
+  if (m.k === 'stagger') bossStagger(); else if (m.k === 'stun') bossStun();
+});
 // where the guest is holding a foe in its Force grasp
 on('gp', (m) => {
   if (net.role !== 'host') return;
@@ -144,8 +157,8 @@ function dropPuppets(){
 function endGuest(){
   if (!G.coopGuest) return;
   G.coopGuest = false;   // the run carries on here by itself: this browser's own waves take over
-  dropPuppets();
-  showBanner('', 'THE HOST LEFT THE FIGHT', 2.4);
+  dropPuppets(); dropBossPuppet();
+  if (G.mode === 'play') showBanner('', 'THE HOST LEFT THE FIGHT', 2.4);
 }
 
 on('e', (m) => {
@@ -185,6 +198,15 @@ on('e', (m) => {
     endlessWaveCleared();   // pays this browser's own clear bonus and opens its own upgrade screen
   }
   }
+
+  // the boss
+  if (m.boss){
+    const r = m.boss;
+    let b = shared.boss;
+    if (!b || !b.net) b = makeBossPuppet(r[9], r[5], r[6]);
+    b.want.pos.set(r[0], r[1], r[2]); b.want.ry = r[3]; b.want.rx = r[4];
+    b.hp = r[5]; b.maxHp = r[6]; b.state = r[7]; b.phase = r[8]; b.enraged = !!r[10]; b.hand = r[11]; b.eyes = r[12]; b.em = r[13]; b.ei = r[14]; b.tp = r[15];
+  } else if (shared.boss && shared.boss.net) dropBossPuppet();
 
   // the foes
   const seen = new Set();

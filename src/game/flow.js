@@ -50,6 +50,14 @@ export function queueSpawn(typeName, opts){
 // mission, game/mission.js, which also passes opts.mission; the sandbox, game/sandbox.js, with opts.sandbox);
 // opts.retry restarts the level from its checkpoint after a death (see the CHECKPOINT note below); opts.resume keeps
 // the build a loaded save put back (game/saves.js), even on level 1
+// the boss steps in after a beat; in a shared run it waits for both heroes to close their upgrade screens first
+function spawnBossWhenReady(still, ms){
+  setTimeout(function go(){
+    if (!still()) return;
+    if (coopRun.live && (G.skillSelect || coopRun.guestPicking)) return void setTimeout(go, 500);
+    spawnBoss();
+  }, ms);
+}
 export function startLevel(idx, opts){
   const fresh = idx === 0 && !(opts && opts.resume);   // a brand-new campaign: reset the hero's build
   G.levelIdx = idx;
@@ -169,7 +177,7 @@ export function startLevel(idx, opts){
     showBanner(place || lvl, L.sub, 2.6, place ? { kicker: lvl } : null); }
   if (bossRetry){
     G.wave = L.waves.length; shared.levelPhase = 'bossfight';
-    setTimeout(()=>{ if (G.mode === 'play' && G.levelIdx === idx && shared.levelPhase === 'bossfight' && !shared.boss) spawnBoss(); }, 2600);
+    spawnBossWhenReady(() => G.mode === 'play' && G.levelIdx === idx && shared.levelPhase === 'bossfight' && !shared.boss, 2600);
   }
 }
 // after a death: restart this level from its checkpoint (the boss itself, if that's what killed you)
@@ -364,7 +372,7 @@ export function updateFlow(dt){
         shared.levelPhase = 'bossfight';
         if (G.checkpoint){ G.checkpoint.boss = diffBossCheckpoint(); G.checkpoint.bossWaveTotal = G.waveTotal; }
         showBanner('', '...something approaches.', 2.4);
-        setTimeout(()=>{ if (G.mode === 'play' && !shared.boss) spawnBoss(); }, 2400);
+        spawnBossWhenReady(() => G.mode === 'play' && !shared.boss, 2400);
       } else {
         // LEVEL CLEARED — the upgrade screen still opens (this wave's skill point + a chance to shop), then the
         // 'travel' beat runs out on sim time (frozen while the overlay is up) and the next world loads.

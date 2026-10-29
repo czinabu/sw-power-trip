@@ -69,9 +69,26 @@ try {
   await guest.evaluate(() => { document.getElementById('skilltree').style.display = 'none'; GAME.G.skillSelect = false; });
   await host.evaluate(() => GAME.startLevel(1, { resume: true }));
   await guest.waitForFunction(() => GAME.G.levelIdx === 1 && GAME.G.coopGuest, null, poll);
+  // (on that level) a boss fight: the guest gets a boss puppet; its blows reach the host's boss; the host's boss blows and powers reach across
+  await guest.evaluate(() => { document.getElementById('skilltree').style.display = 'none'; GAME.G.skillSelect = false; });
+  await host.evaluate(() => { for (const e of GAME.enemies) GAME.damageEnemy(e, 99999, null, 0, false, false); GAME.G.spawnQueue.length = 0; GAME.shared.levelPhase = 'bossfight'; GAME.spawnBoss(); });
+  await guest.waitForFunction(() => GAME.boss && GAME.boss.net, null, poll);
+  const bhp = await host.evaluate(() => GAME.boss.hp);
+  await guest.evaluate(() => GAME.damageBoss(500, false));
+  await host.waitForFunction((h) => GAME.boss && GAME.boss.hp < h, bhp, poll);
+  const ghp = await guest.evaluate(() => GAME.player.hp);
+  await host.evaluate(() => { const b = GAME.boss; GAME.coopHooks.hurt(b, 7, b.group.position, 'bossmelee', false); });
+  await guest.waitForFunction((h) => GAME.player.hp < h, ghp, poll);
+  await host.evaluate(() => { const b = GAME.boss; b.state = 'chase'; b.st = 5; });
+  await guest.evaluate(() => GAME.bossStagger());
+  await host.waitForFunction(() => GAME.boss && GAME.boss.state === 'vulnerable', null, poll);
+  // the host's boss dies: the guest's fight ends too
+  await host.bringToFront();   // the death sequence runs on the host's frames, which a background page does not get
+  await host.evaluate(() => { GAME.damageBoss(1e9, true); });
+  await guest.waitForFunction(() => GAME.G.mode !== 'play' && !GAME.boss, null, poll);
   ok = true;
   console.log('ok   co-op campaign: the guest joined the host\'s level, shows its foes as puppets, and followed the wave clear');
-} catch(e){ errors.push(e.message); for (const p of browser.contexts().flatMap(c => c.pages())) errors.push(JSON.stringify(await p.evaluate(() => ({ mode: GAME.G.mode, guest: GAME.G.coopGuest, lv: GAME.G.levelIdx, wave: GAME.G.wave, foes: GAME.enemies.map(e => [e.nid, !!e.net]), status: document.getElementById('coopstatus').textContent })).catch(x => x.message))); }
+} catch(e){ errors.push(e.message); for (const p of browser.contexts().flatMap(c => c.pages())) errors.push(JSON.stringify(await p.evaluate(() => ({ mode: GAME.G.mode, guest: GAME.G.coopGuest, lv: GAME.G.levelIdx, wave: GAME.G.wave, foes: GAME.enemies.map(e => [e.nid, !!e.net]), boss: GAME.boss ? [GAME.boss.state, GAME.boss.hp, !!GAME.boss.net] : null, status: document.getElementById('coopstatus').textContent })).catch(x => x.message))); }
 await browser.close(); server.close?.();
 if (!ok || errors.length){ console.error('FAIL co-op campaign\n' + errors.join('\n')); process.exit(1); }
 process.exit(0);
