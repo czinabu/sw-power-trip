@@ -18,6 +18,7 @@ import { addHeroReviver, addReviverSource } from '../game/revive.js';
 import { refill } from '../allies/squad.js';
 import { readPose, makePoseTrack, pushPose, stepPose } from './pose.js';
 import { on, send, sendEvery, connected } from './session.js';
+import { fxOut, setPartnerFx, updatePartnerFx } from './partner-fx.js';
 
 const puppet = { group: new THREE.Group() };
 const track = makePoseTrack();
@@ -82,6 +83,7 @@ on('s', (m) => {
   mate.down = !!m.down;
   playing = !!m.play; world = m.w || '';
   if (m.pose) pushPose(track, puppet, m.pose, performance.now());
+  setPartnerFx(m.fx);
 });
 on('open', () => { sent = 0; send({ t: 'hello', hero: G.hero, picks: loadPicks() }); addPlayer(mate); });
 on('closed', () => { playing = false; removePlayer(mate); });
@@ -96,7 +98,7 @@ export function updateCoop(dt){
       const m = { t: 's', x: +p.x.toFixed(2), y: +p.y.toFixed(2), z: +p.z.toFixed(2), yaw: +player.group.rotation.y.toFixed(3),
         vx: +(player.moveVel.x + player.vel.x).toFixed(2), vz: +(player.moveVel.z + player.vel.z).toFixed(2),
         hero: G.hero, play: G.mode === 'play', down: !!player.downed || G.mode === 'dead', w: worldKey(),
-        pose: player.rig ? readPose(player) : null };
+        pose: player.rig ? readPose(player) : null, fx: fxOut() };
       if (sent++ % NET.picksEvery === 0) m.picks = loadPicks();
       return m;
     });
@@ -106,6 +108,7 @@ export function updateCoop(dt){
   mate.here = show && G.mode === 'play' && world === worldKey();
   coopRevives();
   if (tag) tag.style.display = show ? 'block' : 'none';
+  updatePartnerFx(dt, puppet.group, show);
   if (!show) return;
   const g = puppet.group;
   g.position.x = damp(g.position.x, want.pos.x, 14, dt);

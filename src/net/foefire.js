@@ -149,6 +149,18 @@ on('pb', (m) => {
   b.ghost = true; b.mesh.material.color.setHex(m.c); b.mesh.scale.set(m.k, m.k * 1.3, m.k);
 });
 
+/* ---------------- the partner's one-shot Force powers: a ring where they stand ---------------- */
+hooks.power = (k, color, r) => {
+  if (!asHost() && !asGuest()) return;
+  const p = playerPos();
+  send({ t: 'pw', k, c: color, r: r2(r), x: r2(p.x), z: r2(p.z) });
+};
+on('pw', (m) => {
+  if (!asHost() && !asGuest()) return;
+  spawnGroundShock(V3(m.x, 0.1, m.z), m.c, m.r, 0.45, 0.7);
+  burst(V3(m.x, 1.0, m.z), m.c, 10, 8, 4);
+});
+
 /* ---------------- shared XP: a kill pays both heroes ---------------- */
 hooks.xp = (n) => { if (asHost() && n > 0) send({ t: 'xp', n: Math.round(n) }); };
 on('xp', (m) => { if (asGuest()) gainXp(m.n); });

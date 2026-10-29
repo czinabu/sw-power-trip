@@ -317,7 +317,7 @@ export function mandoFlame(){   // keydown cue only — the stream itself is HEL
   if (player.force < 5){ if (G.gt - player.lastWinded > 0.5){ player.lastWinded = G.gt; floater(playerPos(), 'NO FUEL', '#ff6a3a'); } return; }
   S.jetIgnite();   // the pilot catches — the roar itself is a loop in audio/director.js
 }
-const FLAME = [[0, 0xfff1b8], [0.14, 0xffd34a], [0.36, 0xff8a2a], [0.6, 0xc8461e], [0.78, 0x4a3c36]];
+export const FLAME = [[0, 0xfff1b8], [0.14, 0xffd34a], [0.36, 0xff8a2a], [0.6, 0xc8461e], [0.78, 0x4a3c36]];
 // the flame's glow light lives in the scene from load at intensity 0, so the first burst doesn't change the light count
 const flameLight = new THREE.PointLight(0xff7a2a, 0, 11);
 scene.add(flameLight);

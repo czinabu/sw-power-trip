@@ -21,6 +21,7 @@ import { cancelSwing } from './combat.js';
 import { rushFlip } from '../anim/agility.js';
 import { spawnPushWave, spawnGroundShock } from '../../fx/vfx.js';
 import { inkSprite, sparks, motes, dustRing, barrierMaterial, bindBarrier } from '../../fx/ink.js';
+import { hooks } from '../../net/run.js';
 import { tutEvent } from '../../game/tutor-bus.js';
 import { pushGrenades } from '../../enemies/grenades.js';
 
@@ -43,6 +44,7 @@ export function forcePush(){
   if (!G.unlocked.push || player.cds.push > 0 || player.force < cost || G.mode !== 'play') return;
   if (player.atkT > 0) cancelSwing();   // flow straight out of a saber swing into the shove
   player.force -= cost; player.cds.push = A.cd * (st.cdMult || 1);
+  if (hooks.power) hooks.power('push', st.blade, A.range * 0.5);   // co-op: the partner sees the shove
   faceAbilityAim(A.range);                          // square up to the threat before the shove
   const f = fwd(), pp = playerPos();
   const col = stance().blade;
@@ -115,6 +117,7 @@ export function forceSlam(){
   if (player.cds.slam > 0 || player.force < slamCost){ sfx(220, 0.06, 'sine', 0.04, 160); return false; }   // a soft "not yet"
   if (player.landStagT > 0) player.landStagT = 0;   // the Force picks you up out of a buckled landing
   player.force -= slamCost; player.cds.slam = A.cd * (st.cdMult || 1);
+  if (hooks.power) hooks.power('slam', st.blade, 6);
   if (player.atkT > 0) cancelSwing();   // a swing turns into the jump attack
   player.airCut = null; player.gliding = false;
   const leap = player.grounded;
@@ -293,6 +296,7 @@ export function forcePull(){
   if (!G.unlocked.pull || player.cds.pull > 0 || player.force < cost || G.mode !== 'play') return;
   if (player.atkT > 0) cancelSwing();   // flow straight out of a saber swing into the pull
   player.force -= cost; player.cds.pull = A.cd * (st.cdMult || 1);
+  if (hooks.power) hooks.power('pull', st.blade, A.range * 0.5);
   faceAbilityAim(A.range);     // face the crowd you're about to yank
   castGesture('pull', 0.36);   // reach out, then claw the hand back
   const f = fwd(), pp = playerPos();
@@ -338,6 +342,7 @@ export function forceRepulse(){
   const psc = st.powerScale || 1;                          // ...but erupt with BRUTE scale
   const radius = A.radius * (up ? 1.4 : 1) * psc, dmg = A.dmg * (up ? 1.9 : 1) * (player.up.dmg || 1) * forcePower(), knock = A.knock * (up ? 1.35 : 1) * psc * forcePower();
   player.force -= cost; player.cds.repulse = A.cd * cdMul(st, 'repulse');
+  if (hooks.power) hooks.power('repulse', st.blade, radius);
   castGesture('push', 0.34);
   const pp = playerPos(), col = stance().blade;
   spawnPlayerRing(pp.clone(), radius, col);
