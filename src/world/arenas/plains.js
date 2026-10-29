@@ -35,7 +35,8 @@ export function buildPlainsArena(L){
   const mz = -shared.arenaHalf * 0.92;
   K.box(0, mz, 2.4, 2.0, 3.0, dark);
   K.deco(new THREE.CylinderGeometry(0.5, 1.6, 11, 6), dark, 0, 6.5, mz, 0, 0, 0.05);
-  solids.push({ x: 0, z: mz, r: 1.6, h: 11 });   // the spire collides as a column (not a wall-kick pillar)
+  solids.push({ x: 0, z: mz, r: 1.6, h: 12 });   // the spire collides as a column (not a wall-kick pillar)
+  solids.push({ x: 0, z: mz, r: 2.0, h: 4.2 }, { x: 0, z: mz, r: 1.5, h: 7.5 });   // (its lean puts the foot a little wider)
   for (let i = 0; i < 5; i++) K.deco(new THREE.BoxGeometry(0.18, 1.5 + R()*1.3, 0.18), voidGlow, -0.6 + R()*1.2, 3 + R()*6.5, mz - 0.3 + R()*0.6, 0, 0, -0.3 + R()*0.6);
   hazardZones.push({ kind:'point', cx:0, cz:mz, r:3.0, period:7, warnDur:1.3, activeDur:1.1, dmg:20, color:voidC, flash:true, t:2.4 });
   for (const sx of [-1, 1]) K.column(sx*4.6, mz - 1.0, 0.8, 5 + R()*2.5, stoneD, { taper: 0.7, seg: 7 });

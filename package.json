@@ -13,6 +13,7 @@
     "smoke:saves": "node tools/smoke/saves.mjs",
     "smoke:coop-run": "node tools/smoke/coop-run.mjs",
     "smoke:coop-campaign": "node tools/smoke/coop-campaign.mjs",
+    "smoke:collision": "node tools/smoke/collision.mjs",
     "smoke:coop-mission": "node tools/smoke/coop-mission.mjs"
   },
   "dependencies": {

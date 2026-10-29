@@ -4,7 +4,8 @@
 //
 // Collision is axis-aligned (boxes) or round (columns), so every solid here is placed axis-aligned. Anything the
 // player can see standing on the floor is either solid or a low CLIMBABLE step: nothing is decoration you walk
-// through.
+// through. Something overhead you could land on (a lintel, a beam, a wing) is a SLAB, solid only from its underside up
+// (world/collision.js). `npm run smoke:collision` lists any prop that is still a picture you pass through.
 
 import * as THREE from 'three';
 import { shared, pillars, solids } from '../../state.js';
@@ -26,6 +27,8 @@ export function arenaKit(){
     if (o.wallKick !== false) pillars.push({ x, z, r, h });
     return m;
   };
+  /* an overhead SLAB's collision (no mesh): solid from y0 up to h over the box footprint, walked under, stood on */
+  const slab = (x, z, hx, hz, y0, h, o = {}) => solids.push({ x, z, hx, hz, y0, h, box: true, ...o });
   const deco = (geo, mat, x, y, z, rx = 0, ry = 0, rz = 0) => {
     const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.rotation.set(rx, ry, rz);
     m.castShadow = true; m.receiveShadow = true; g.add(m); return m;
@@ -62,9 +65,9 @@ export function arenaKit(){
      only when you pass it sliding. */
   const slideGate = (x, z, span, post, bar) => {
     for (const s of [-1, 1]) column(x, z + s * span, 0.18, 1.7, post, { wallKick: false, seg: 8, taper: 1 });
-    deco(new THREE.BoxGeometry(0.22, 0.22, span * 2), bar, x, 1.15, z);
+    deco(new THREE.BoxGeometry(0.22, 0.22, span * 2), bar, x, 1.15, z).userData.passThrough = true;   // (the collision audit skips it)
   };
-  return { box, column, deco, gantry, rubble, slideGate };
+  return { box, column, slab, deco, gantry, rubble, slideGate };
 }
 
 /* polar → x,z (angle 0 = +x, π/2 = +z, the side the player spawns on) */

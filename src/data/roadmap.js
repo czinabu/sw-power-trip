@@ -64,6 +64,11 @@ export const ROADMAP = [
             'The keys pick the cut by default, with a needle through the crosshair; Settings · CUT AIM: MOUSE aims it with a flick of the mouse instead',
             'Foe guards cover an arc of the clock (the pale crescent): a cut placed past its edge gets through, and varying your angle stops a duellist reading you',
             'A cut that starts where the last one finished flows on quicker, and each angle moves the feet its own way', 'Same in every mode, for the Jedi and the darksaber'] },
+  { title: 'Solid maps', status: 'done',
+    items: ['No more walking through rocks, hills, roofs or ships: every prop in every map collides',
+            'Hills at the battle maps\' edges and domes on the spaceport roofs are ground you run up',
+            'Awnings, wings, lintels and beams: walk under them, land on them; edge scenery kept out of the play space',
+            'Same in every mode, co-op included'] },
   { title: 'Aim powers up and down', status: 'done',
     items: ['Push, Pull, Grasp, saber throw and Judgement follow the crosshair up and down; the flamethrower and darksaber throw follow the reticle',
             'A foe in the air is only hit when you aim up at it; aimed at the floor, a stream or shove runs on along it',
@@ -73,7 +78,7 @@ export const ROADMAP = [
   { title: 'Co-op, fully', status: 'later',
     items: ['Co-op survival runs with shared upgrades', 'Missions and bosses in co-op', '2 to 4 players', 'Enemies scale with squad size'] },
   { title: 'Beyond', status: 'later',
-    items: ['Assassinate missions', 'Mission medals and best times', 'Save files you can export and share', 'Duel mode', 'Local split-screen'] },
+    items: ['Hills and awnings stop blaster bolts', 'Assassinate missions', 'Mission medals and best times', 'Save files you can export and share', 'Duel mode', 'Local split-screen'] },
 ];
 
 export const ROADMAP_STATUS = { done: 'SHIPPED', now: 'IN PROGRESS', next: 'PLANNED', later: 'LATER' };

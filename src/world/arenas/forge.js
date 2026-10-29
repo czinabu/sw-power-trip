@@ -2,6 +2,7 @@
 // Training arena (Mandalorian): the Armorer's forge, an open covert yard under the night sky.
 
 import * as THREE from 'three';
+import { solids } from '../../state.js';
 import { arenaKit, seeded, at } from './kit.js';
 
 /* THE ARMORER'S FORGE (half-size 22). An open yard around the covert's forge, laid out as stations
@@ -38,6 +39,8 @@ export function buildForgeArena(L){
   for (const [x, z] of [[-1.9, -1.9], [1.9, -1.9], [-1.9, 1.9], [1.9, 1.9]]) K.column(x, z, 0.18, 5.6, metalD, { wallKick: false, seg: 6, taper: 1 });
   K.deco(new THREE.CylinderGeometry(1.1, 2.6, 1.4, 4, 1, true), metal, 0, 6.2, 0, 0, Math.PI/4).material.side = THREE.DoubleSide;
   K.deco(new THREE.CylinderGeometry(0.7, 0.7, 2.4, 10), metalD, 0, 8.0, 0);
+  K.slab(0, 0, 2.0, 2.0, 5.5, 6.9);                     // the hood over the hearth: walk under it, land on it
+  solids.push({ x: 0, z: 0, r: 0.7, y0: 6.8, h: 9.2 });   // and its flue
   for (const [x, z, r] of [[3.6, 1.2, 0.3], [-3.4, -1.6, -0.5]]){
     K.box(x, z, 0.5, 0.32, 0.55, metalD);
     K.deco(new THREE.BoxGeometry(1.5, 0.3, 0.55), beskar, x, 0.7, z, 0, r, 0);

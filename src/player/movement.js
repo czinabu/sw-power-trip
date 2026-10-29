@@ -193,7 +193,8 @@ function nearbyWallNormal(){
     // anything within STEP_UP of the top as a standable surface, so the wall-kick band stops just under that
     // instead of overlapping it (the old +0.6 upper bound overlapped STEP_UP's 0.5, leaving an ambiguous sliver
     // where a jump could resolve as either a mantle or a kick with no defined precedence).
-    if (pp.y > c.h - STEP_UP || pp.y < c.h - 2.6) continue;
+    if (c.mound || pp.y > c.h - STEP_UP || pp.y < c.h - 2.6) continue;
+    if (c.y0 && c.y0 > pp.y + 1.0) continue;   // an overhead slab: nothing to kick off at body height
     if (c.box){
       const nx = clamp(pp.x, c.x - c.hx, c.x + c.hx), nz = clamp(pp.z, c.z - c.hz, c.z + c.hz);
       const dx = pp.x - nx, dz = pp.z - nz, d = Math.hypot(dx, dz);

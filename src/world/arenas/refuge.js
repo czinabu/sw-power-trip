@@ -49,6 +49,8 @@ export function buildRefugeArena(L){
     K.box(cx, dz, 3.4, 4.5, 4.2, stoneD);
     K.deco(new THREE.BoxGeometry(7.4, 0.5, 9.6), stone, cx, 4.45, dz);
     K.deco(new THREE.BoxGeometry(5.2, 1.6, 7.2), stone, cx - 0.4, 5.5, dz);   // upper storey, set back
+    solids.push({ x: cx, z: dz, hx: 3.7, hz: 4.8, y0: 4.2, h: 4.7, box: true });   // the roof slab overhangs the walls
+    solids.push({ x: cx - 0.4, z: dz, hx: 2.6, hz: 3.6, h: 6.3, box: true });             // and the upper storey stands on it
     K.deco(new THREE.PlaneGeometry(1.7, 2.5), warm, cx + 3.42, 1.25, dz, 0, Math.PI/2, 0);   // the lit doorway
     K.deco(new THREE.BoxGeometry(0.5, 0.35, 2.6), stone, cx + 3.55, 2.65, dz);
     for (const sz of [-1, 1]){ K.column(cx + 3.9, dz + sz*1.6, 0.25, 1.4, stoneD, { wallKick: false, seg: 8 }); K.deco(new THREE.SphereGeometry(0.22, 8, 6), warm, cx + 3.9, 1.6, dz + sz*1.6); } }
@@ -100,7 +102,7 @@ export function buildRefugeArena(L){
 }
 
 /* THE TRANSPORT — a live prop (not baked, it lifts off): hull, cockpit, wings, engines and a lowered ramp.
-   shared.refugeShip = { group, ramp, glow, solid } for game/mission.js to animate. */
+   shared.refugeShip = { group, ramp, glow, hatch, solids } for game/mission.js to animate. */
 function buildTransport(){
   const [px, pz] = REFUGE_SPOTS.pad;
   const g = new THREE.Group(); g.userData.noBake = true;
@@ -132,10 +134,24 @@ function buildTransport(){
   hatch.position.set(0, 2.1, -5.02); hatch.rotation.y = Math.PI; g.add(hatch);
   g.position.set(px, 0.22, pz + 2);   // built nose north (+z), so the tail and its ramp face the field
   shared.arenaGroup.add(g);
-  // the hull blocks movement (wings are overhead); mission.js drops this when the ship lifts off
-  const solid = { x: px, z: pz + 2, hx: 2.4, hz: 6.2, h: 4.2, box: true };
-  solids.push(solid);
-  shared.refugeShip = { group: g, ramp, glow: glowM, hatch, solid };
+  // the ship collides as its hull (the nose too), the dorsal fin, the engine pods, the wings overhead (walk under them,
+  // land on them) and the lowered ramp as three steps up to the hatch. mission.js drops them all when the ship lifts off
+  const ox = px, oz = pz + 2, oy = 0.22, list = [
+    { x: ox, z: oz + 1.1, hx: 2.4, hz: 6.1, h: oy + 4.15, box: true },
+    { x: ox, z: oz + 5.0, hx: 2.2, hz: 0.9, h: oy + 4.75, box: true },   // the rounded nose rides over the hull's top
+    { x: ox, z: oz + 6.3, hx: 2.2, hz: 0.45, h: oy + 4.35, box: true },
+    { x: ox, z: oz - 2.6, hx: 0.25, hz: 2.0, h: oy + 6.4, box: true },
+  ];
+  for (const sx of [-1, 1]){
+    list.push({ x: ox + sx*3.0, z: oz - 4.6, hx: 1.0, hz: 1.8, h: oy + 3.0, box: true });
+    list.push({ x: ox + sx*4.6, z: oz - 1.2, hx: 2.7, hz: 1.8, y0: oy + 2.45, h: oy + 3.4, box: true });
+  }
+  for (let i = 0; i < 3; i++){   // the ramp: d along it from the hinge (1.15 up, at z −5) down to the deck
+    const d0 = i * 1.07, d1 = d0 + 1.07, slope = Math.sin(0.36), run = Math.cos(0.36);
+    list.push({ x: ox, z: oz - 5 - (d0 + d1)/2 * run, hx: 1.2, hz: 1.07 * run / 2, h: oy + 1.15 - d0 * slope, box: true, climbable: true });
+  }
+  solids.push(...list);
+  shared.refugeShip = { group: g, ramp, glow: glowM, hatch, solids: list };
 }
 
 /* an EVACUEE — a small robed figure (a youngling) or a little cloaked foundling in a helmet. Live, not baked. */

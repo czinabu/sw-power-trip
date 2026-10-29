@@ -61,7 +61,7 @@ export function buildDojoArena(L){
   // the corners: tall square posts where the walls meet
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) K.deco(new THREE.BoxGeometry(1.6, W, 1.6), woodD, sx*(H + 0.9), W/2, sz*(H + 0.9));
   // ceiling beams over the floor, high enough to stay out of a jetpack's way
-  for (const x of [-16, -8, 0, 8, 16]) K.deco(new THREE.BoxGeometry(0.7, 0.9, H*2 + 2.4), woodD, x, W + 0.2, 0);
+  for (const x of [-16, -8, 0, 8, 16]){ K.deco(new THREE.BoxGeometry(0.7, 0.9, H*2 + 2.4), woodD, x, W + 0.2, 0); K.slab(x, 0, 0.35, H, W - 0.25, W + 0.65); }
 
   // ---- the JEDI CREST on the north wall, over the centre line ----
   { const z = H + 0.55, y = 8.6;

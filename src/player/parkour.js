@@ -42,6 +42,7 @@ export function findLedge(pp, dir, minUp, maxUp){
   const reach = MOVE.grabDist + 0.55;   // body radius + grab
   let best = null, bestD = 1e9;
   for (const c of solids){
+    if (c.mound) continue;   // a hill is walked up, not climbed
     const up = c.h - pp.y;
     if (up <= minUp || up > maxUp) continue;
     const pr = probeSolid(c, pp);
@@ -263,7 +264,8 @@ function moveDir(){
 export function wallBeside(pp, range){
   let best = null, bestD = range;
   for (const c of solids){
-    if (c.h < pp.y + 1.4) continue;   // needs wall above the shoulders to run on
+    if (c.mound || c.h < pp.y + 1.4) continue;   // needs wall above the shoulders to run on
+    if (c.y0 && c.y0 > pp.y + 0.3) continue;      // an overhead slab has no face down where the feet are
     let d, nx, nz;
     if (c.box){
       const cx = clamp(pp.x, c.x - c.hx, c.x + c.hx), cz = clamp(pp.z, c.z - c.hz, c.z + c.hz);

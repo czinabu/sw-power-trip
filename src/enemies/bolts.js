@@ -95,7 +95,7 @@ export function updateBolts(dt){
         const hit = c.box
           ? (bx > c.x - c.hx && bx < c.x + c.hx && bz > c.z - c.hz && bz < c.z + c.hz)
           : (Math.hypot(bx - c.x, bz - c.z) < c.r);
-        if (hit && by < c.h){
+        if (hit && by < c.h && by >= (c.y0 || 0)){   // (an overhead slab: a bolt flies on under it)
           kill = true;
           spawnHitSpark(V3(bx, by, bz), b.friendly ? 0x6fd0ff : 0xff5a3a, 0.8);
           S.boltImpact(V3(bx, by, bz));

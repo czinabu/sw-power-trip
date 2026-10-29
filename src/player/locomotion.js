@@ -11,7 +11,7 @@ import { stance, maxHp } from './helpers.js';
 import { focusMoveMul } from './jedi/focus.js';
 import { slamImpact } from './jedi/force.js';
 import { spawnGroundShock } from '../fx/vfx.js';
-import { clampToArena, collideSolids } from '../world/collision.js';
+import { clampToArena, collideSolids, ceilHit, BODY_H } from '../world/collision.js';
 import { mandoSlamImpact } from './mando/gadgets.js';
 import { MOVE } from '../data/movement.js';
 import { MANDO_MOBILITY } from '../data/mobility.js';
@@ -196,6 +196,9 @@ export function updateGravityAndLanding(dt, pp){
   // resolve solid obstacles horizontally + find the surface underfoot (floor or a platform top)
   const wasGrounded = player.grounded;
   const support = collideSolids(pp, CFG.player.radius, player.vy <= 0.01);
+  if (ceilHit < Infinity){ pp.y = Math.min(pp.y, ceilHit - BODY_H); if (player.vy > 0) player.vy = 0; }   // the head met an awning / a wing from under it
+  // keep the feet on the ground walking down a hill (or off a low step) instead of skipping off it in little hops
+  if (wasGrounded && player.vy <= 0 && pp.y > support && pp.y - support < 0.3) pp.y = support;
   player.groundY = support;   // surface height directly beneath us — the pose code measures flight altitude from HERE
                               // (so hovering just over a tall pillar reads as low, not high)
   if (pp.y <= support + 0.001){

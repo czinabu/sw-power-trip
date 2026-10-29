@@ -47,6 +47,7 @@ export function buildTempleArena(L){
     K.column(x, z, rad, h, stone, { taper: 0.84 });
     K.deco(new THREE.BoxGeometry(rad*2.4, 0.4, rad*2.4), stoneD, x, 0.2, z);            // plinth
     K.deco(new THREE.BoxGeometry(rad*2.7, 0.45, rad*2.7), stoneD, x, h - 0.22, z);       // capital
+    K.slab(x, z, rad*1.35, rad*1.35, h - 0.45, h);                                       // (it overhangs the shaft: stand on all of it)
     if (i % 2 === 0){   // a hanging banner on every other column, on the courtyard side
       const ban = K.deco(new THREE.PlaneGeometry(1.0, 3.2),
         new THREE.MeshStandardMaterial({ color: pal.banner ?? 0x6e1f24, roughness: 0.9, side: THREE.DoubleSide }),

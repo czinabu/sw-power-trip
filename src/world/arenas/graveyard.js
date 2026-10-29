@@ -65,13 +65,16 @@ export function buildGraveyardArena(L){
   for (const [x, z, hx, hz, h] of [[-22, 62, 3, 2.5, 2.4], [-8, 70, 2.5, 2, 2.2], [24, 64, 3, 2.5, 2.4], [40, 56, 2.2, 2, 2.0]]){
     K.box(x, z, hx, hz, h, rust);
     K.deco(new THREE.ConeGeometry(Math.hypot(hx, hz)*1.08, 1.4, 4, 1, true), cloth, x, h + 0.62, z, 0, Math.PI/4, 0);
+    for (const [f, up] of [[0.5, 0.62], [0.2, 1.05]]) solids.push({ x, z, r: Math.min(hx, hz) * f * 1.4, h: h + up });   // the tent's peak
+    { const e = Math.hypot(hx, hz) * 0.76; K.slab(x, z, e, e, h - 0.15, h + 0.15, { soft: true }); }   // and its cloth skirt past the walls
     K.deco(new THREE.PlaneGeometry(1.2, 1.6), lamp, x, 0.85, z - hz - 0.02, 0, Math.PI, 0);
   }
   // the freighter: a saucer on the sand (collides as one wide drum), cockpit off the starboard side, a lit ramp
   K.column(6, 60, 6, 2.6, hull, { wallKick: false, seg: 20, taper: 0.94 });
   K.deco(new THREE.CylinderGeometry(4.6, 5.8, 0.8, 20), hullD, 6, 3.0, 60);
+  solids.push({ x: 6, z: 60, r: 5.2, h: 3.4 });   // the upper hull ring on the drum
   K.deco(new THREE.CylinderGeometry(1.0, 1.0, 3.6, 10), hullD, 12.6, 1.4, 56.6, Math.PI/2, 0, 0.5);
-  solids.push({ x: 12.6, z: 56.6, r: 1.3, h: 2.4 });   // the cockpit reaches the sand past the drum: it collides too
+  for (const t of [-0.75, 0, 0.75]) solids.push({ x: 12.6 - 0.48*1.8*t, z: 56.6 + 0.88*1.8*t, r: 1.1, h: 2.4 });   // the cockpit tube reaches the sand past the drum: it collides along its length
   K.deco(new THREE.BoxGeometry(2.4, 0.2, 3), lamp, 6, 0.12, 52.6);
   for (const [x, z, f] of [[-34, 50, 1], [30, 48, -1], [-12, 52, -1]]) F.crates(x, z, rust, hullD, f);
   for (const w of PLAN.scrap) F.wall(w, { body: rust, cap: hullD }, { jag: true });
@@ -95,19 +98,23 @@ export function buildGraveyardArena(L){
   { const [x, z] = PLAN.tie;
     K.column(x, z, 1.6, 3.0, imp, { wallKick: false, seg: 12, taper: 1 });
     K.deco(new THREE.SphereGeometry(1.9, 12, 10), imp, x, 1.9, z);
+    for (const [r, h] of [[1.85, 2.4], [1.2, 3.65]]) solids.push({ x, z, r, h });   // the ball is wider than the drum under it
     K.deco(new THREE.CircleGeometry(0.9, 8), dark, x, 1.9, z - 1.95, 0, Math.PI, 0);
     K.box(x + 4.6, z, 0.25, 3.0, 6.0, imp);
     K.deco(new THREE.CylinderGeometry(3.1, 3.1, 0.2, 6), hullD, x + 4.6, 3.0, z, 0, 0, Math.PI/2);
     K.box(x - 5, z + 1.5, 2.6, 2.6, 0.4, imp, { climbable: true });
-    K.deco(new THREE.CylinderGeometry(0.4, 0.4, 3.4, 8), hullD, x + 2.9, 1.9, z, 0, 0, Math.PI/2); }
+    K.deco(new THREE.CylinderGeometry(0.4, 0.4, 3.4, 8), hullD, x + 2.9, 1.9, z, 0, 0, Math.PI/2);
+    solids.push({ x: x + 2.9, z, hx: 1.7, hz: 0.4, h: 2.3, box: true }); }   // the strut from the ball to the wing
   // the downed fighter: a long vaultable fuselage and its wings in the sand
   { const [x, z] = PLAN.fighter;
     K.box(x, z, 0.9, 5, 1.4, hull);
     K.deco(new THREE.ConeGeometry(0.9, 2.6, 8), hull, x, 0.8, z + 6.2, Math.PI/2, 0, 0);
+    solids.push({ x, z: z + 5.9, hx: 0.75, hz: 1.0, h: 1.5, box: true });   // the nose
     K.deco(new THREE.BoxGeometry(0.5, 0.3, 1.6), red, x, 1.5, z - 1);
     for (const sx of [-1, 1]){
       K.box(x + sx*3.4, z - 2.6, 2.4, 0.8, 0.35, hullD, { climbable: true });
       K.deco(new THREE.CylinderGeometry(0.35, 0.35, 2.4, 8), hullD, x + sx*5.6, 0.5, z - 3.0, Math.PI/2, 0, 0);
+      solids.push({ x: x + sx*5.6, z: z - 3.0, hx: 0.35, hz: 1.2, h: 0.85, box: true });   // the wingtip engine
     } }
 
   // ---- the IMPERIAL SALVAGE YARD ----

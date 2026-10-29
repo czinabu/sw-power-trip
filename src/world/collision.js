@@ -6,6 +6,20 @@ import { burst } from '../fx/particles.js';
 import { shared, solids, hazardZones, vents, player } from '../state.js';
 import { damageEnemy } from '../enemies/damage.js';
 
+/* SOLID SHAPES (the `solids` list). Every one is a footprint standing on the floor up to its top `h`:
+     · a BOX { x, z, hx, hz, h, box: true } or a COLUMN { x, z, r, h }; climbable = a low step you walk over;
+     · either with `y0`: an overhead SLAB (a ship's wing, a lintel, a crane beam), solid only from y0 up to h, so a body
+       walks underneath it (its head clears y0) and stands on top of it. A `soft` slab (a cloth awning) is a one-way
+       platform: a body jumps up through it and lands on it from above, and never bonks its head on it;
+     · a MOUND { mound: true, x, z, a, b, cos, sin, base, h }: a smooth hill (a half-ellipsoid whose long axis a runs
+       along (cos, sin), rising from `base` to its top h). Ground you walk up and down, never a wall: always climbable. */
+export const BODY_H = 1.8;   // a standing body's height: an overhead slab whose underside clears it is walked under
+export function moundY(c, x, z){
+  const dx = x - c.x, dz = z - c.z, u = (dx*c.cos + dz*c.sin) / c.a, v = (dz*c.cos - dx*c.sin) / c.b, q = u*u + v*v;
+  return q >= 1 ? -1 : Math.max(0, c.base + (c.h - c.base) * Math.sqrt(1 - q));
+}
+export const mound = (x, z, a, b, ang, base, h) => ({ mound: true, climbable: true, x, z, a, b, cos: Math.cos(ang), sin: Math.sin(ang), base, h });
+
 // LINE-OF-SIGHT — does any real wall/pillar/crate (shallow CLIMBABLE steps don't count, same convention as the
 // avoidance steering) sit between two points? Approximated by projecting each solid's center onto the segment and
 // testing whether that closest-on-segment point falls inside the (slightly expanded) solid — cheap, and exact for
@@ -13,7 +27,7 @@ import { damageEnemy } from '../enemies/damage.js';
 export function segBlockedBySolids(ax, az, bx, bz){
   const dx = bx - ax, dz = bz - az, len2 = dx*dx + dz*dz || 1;
   for (const c of solids){
-    if (c.climbable) continue;
+    if (c.climbable || c.y0) continue;   // steps and hills don't hide you, and an overhead slab is seen under
     let t = ((c.x - ax)*dx + (c.z - az)*dz) / len2; t = clamp(t, 0, 1);
     const px = ax + dx*t, pz = az + dz*t;
     if (c.box){
@@ -47,11 +61,23 @@ export function clampToArena(pos, vel, enemy){
 
 /* ---------- SOLID OBSTACLES — pillars (cylinders) & crates (boxes) you can collide
    with and stand on top of. Resolves horizontal penetration in `pos` and returns the
-   height of the surface the body is standing over (0 = the arena floor). ---------- */
+   height of the surface the body is standing over (0 = the arena floor). A hill (mound) is ground: it holds the body
+   up wherever it is, whatever `climb` says. An overhead slab a body is under only stops its head: that is reported in
+   `ceilHit` (the lowest underside the head met this call, Infinity if none) for the caller to stop the rise. ---------- */
 export const STEP_UP = 0.5;   // feet within this of a top "mount" onto it (auto-mantle / land)
+export let ceilHit = Infinity;
+// a hard overhead slab the body is beside: true while the body is under it (a head that rises into its underside is
+// noted in ceilHit), false once the body is up level with it (then it's a wall, or a top to stand on, like any solid)
+function underSlab(c, pos, over){
+  if (pos.y >= c.y0) return false;
+  if (over && pos.y + BODY_H > c.y0) ceilHit = Math.min(ceilHit, c.y0);
+  return true;
+}
 export function collideSolids(pos, radius, climb){
   let support = 0;
+  ceilHit = Infinity;
   for (const c of solids){
+    if (c.mound){ const y = moundY(c, pos.x, pos.z); if (y > support) support = y; continue; }
     const top = c.h;
     if (c.box){
       const minX = c.x - c.hx, maxX = c.x + c.hx, minZ = c.z - c.hz, maxZ = c.z + c.hz;
@@ -60,6 +86,8 @@ export function collideSolids(pos, radius, climb){
       const nx = clamp(pos.x, minX, maxX), nz = clamp(pos.z, minZ, maxZ);
       const dx = pos.x - nx, dz = pos.z - nz, d2 = dx*dx + dz*dz;
       if (!((insideX && insideZ) || d2 < radius*radius)) continue;
+      if (c.soft){ if (climb && pos.y >= c.y0 - 0.4 && top > support) support = top; continue; }   // a canopy only catches a body coming down onto it
+      if (c.y0 && underSlab(c, pos, insideX && insideZ)) continue;
       if (climb && pos.y >= top - STEP_UP){ if (top > support) support = top; continue; }
       if (pos.y >= top) continue;   // feet already clear of the top (jumping off it): nothing to push out of
       if (insideX && insideZ){   // deep inside — eject through the nearest face
@@ -74,6 +102,8 @@ export function collideSolids(pos, radius, climb){
     } else {
       const dx = pos.x - c.x, dz = pos.z - c.z, d = Math.hypot(dx, dz), rr = c.r + radius;
       if (d >= rr) continue;
+      if (c.soft){ if (climb && pos.y >= c.y0 - 0.4 && top > support) support = top; continue; }
+      if (c.y0 && underSlab(c, pos, d < c.r)) continue;
       if (climb && pos.y >= top - STEP_UP){ if (top > support) support = top; continue; }
       if (pos.y >= top) continue;
       if (d > 0.001){ const push = rr - d; pos.x += dx/d*push; pos.z += dz/d*push; }
@@ -87,6 +117,7 @@ export function collideSolids(pos, radius, climb){
 export function groundAt(x, z, maxY){
   let g = 0;
   for (const c of solids){
+    if (c.mound){ const y = moundY(c, x, z); if (y > g && y <= maxY) g = y; continue; }
     if (c.h > maxY || c.h <= g) continue;
     if (c.box ? Math.abs(x - c.x) <= c.hx && Math.abs(z - c.z) <= c.hz : Math.hypot(x - c.x, z - c.z) <= c.r) g = c.h;
   }
@@ -100,6 +131,7 @@ export function groundAt(x, z, maxY){
 // check the ACTUAL solids after the arena is built and relocate the spawn if it landed inside/against one.
 function spotBlocked(x, z, margin){
   for (const c of solids){
+    if (c.mound || c.y0) continue;   // a body can stand on a hill, or under a slab
     if (c.box){
       const nx = clamp(x, c.x - c.hx, c.x + c.hx), nz = clamp(z, c.z - c.hz, c.z + c.hz);
       const dx = x - nx, dz = z - nz;

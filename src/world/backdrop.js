@@ -1,10 +1,14 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
 // Backdrops: everything OUTSIDE the playable square. Distant silhouettes and landmarks that tell you where you are
 // (mesas, spires, a volcano, a city, a temple, a downed walker, a Star Destroyer overhead). No collision, no gameplay:
-// they sit beyond arenaHalf, are built from plain meshes, and are baked into the Ink look with a thicker outline so
-// they still read at distance. A theme lists them as { kind, ...params } (see data/worlds.js).
+// they sit beyond arenaHalf (keepOut slides any piece that reaches into the play space back out), are built from plain
+// meshes, and are baked into the Ink look with a thicker outline so they still read at distance. The one exception is
+// the low ground at the edge (dunes, drifts, the sand piled round a wreck): where a hill runs in over the play space it
+// is real ground, a walkable mound in the arena's solids (returned in grp.userData.solids). A theme lists them as
+// { kind, ...params } (see data/worlds.js).
 
 import * as THREE from 'three';
+import { mound } from './collision.js';
 
 const PI = Math.PI;
 // seeded random so a theme's backdrop is the same every rebuild
@@ -36,6 +40,34 @@ function put(grp, geo, m, x, y, z, rx = 0, ry = 0, rz = 0, s){
 }
 // polar spots around the arena: angle a, radius r (world units)
 const P = (a, r) => [Math.cos(a)*r, Math.sin(a)*r];
+
+/* KEEP OUT OF THE PLAY SPACE. The ring of backdrop sits at a radius round the arena, but the arena is a rectangle: on
+   a diagonal its corner reaches out past that radius, so a wide cliff or mesa there would stand inside the play space,
+   where nothing collides with it. A piece (`objs`, measured by `from`) that reaches into the rectangle slides straight
+   out along whichever axis is the shorter way. Anything wholly above OUT_TOP (a hovering destroyer, a smoke plume) is
+   out of reach and stays put. */
+const OUT_TOP = 16, PAD = 0.6;
+let LIM = [1e9, 1e9];   // the play space's half-width and half-depth, for the build in progress
+const _b = new THREE.Box3(), _u = new THREE.Box3();
+function keepOut(objs, from = objs){
+  _u.makeEmpty();
+  for (const o of from){ o.updateMatrixWorld(true); _b.setFromObject(o); if (!_b.isEmpty() && _b.min.y < OUT_TOP) _u.union(_b); }
+  if (_u.isEmpty()) return;
+  const hx = LIM[0] + PAD, hz = LIM[1] + PAD;
+  if (_u.max.x <= -hx || _u.min.x >= hx || _u.max.z <= -hz || _u.min.z >= hz) return;
+  const cx = (_u.min.x + _u.max.x) / 2, cz = (_u.min.z + _u.max.z) / 2;
+  const mx = cx >= 0 ? hx - _u.min.x : -hx - _u.max.x, mz = cz >= 0 ? hz - _u.min.z : -hz - _u.max.z;
+  for (const o of objs){ if (Math.abs(mx) <= Math.abs(mz)) o.position.x += mx; else o.position.z += mz; o.updateMatrixWorld(true); }
+}
+// the meshes a builder has added since `n0` (one backdrop piece)
+const since = (grp, n0) => grp.children.slice(n0);
+/* a HILL that runs in over the play space is ground you walk on: a mound solid matching its half-ellipsoid
+   (scale [a, h, b] turned by -ang, standing at y) — or nothing, if it stays outside */
+function hill(grp, x, y, z, a, h, b, ang){
+  const r = Math.max(a, b);
+  if (Math.abs(x) - r >= LIM[0] || Math.abs(z) - r >= LIM[1]) return;
+  (grp.userData.solids ||= []).push(mound(x, z, a, b, ang, y, y + h));
+}
 // keep a clear arc (e.g. where the sun sits, or a landmark) — returns a spread of angles outside the skipped arcs
 function angles(n, R, skip = []){
   const out = [];
@@ -51,7 +83,7 @@ const BUILD = {
   /* layered rock mesas (desert): stacked tapered slabs */
   mesas(grp, o, half, R){
     for (const a of angles(o.count, R, o.skip)){
-      const r = half * (o.r[0] + R()*(o.r[1] - o.r[0])), [x, z] = P(a, r);
+      const r = half * (o.r[0] + R()*(o.r[1] - o.r[0])), [x, z] = P(a, r), n0 = grp.children.length;
       const h = o.h[0] + R()*(o.h[1] - o.h[0]), w = o.w[0] + R()*(o.w[1] - o.w[0]);
       let y = 0, ww = w;
       const tiers = 2 + Math.floor(R()*2);
@@ -60,17 +92,19 @@ const BUILD = {
         put(grp, new THREE.CylinderGeometry(ww*0.42, ww*0.5, th, 7), mat(t % 2 ? o.color : o.color2 || o.color), x, y + th/2, z, 0, R()*PI, 0, [1, 1, 0.7 + R()*0.5]);
         y += th; ww *= 0.72 + R()*0.15;
       }
+      keepOut(since(grp, n0));
     }
   },
   /* jagged spires / rock needles */
   spires(grp, o, half, R){
     for (const a of angles(o.count, R, o.skip)){
       const r = half * (o.r[0] + R()*(o.r[1] - o.r[0])), [x, z] = P(a, r);
-      const h = o.h[0] + R()*(o.h[1] - o.h[0]), w = o.w ? o.w[0] + R()*(o.w[1] - o.w[0]) : h * 0.16;
+      const h = o.h[0] + R()*(o.h[1] - o.h[0]), w = o.w ? o.w[0] + R()*(o.w[1] - o.w[0]) : h * 0.16, n0 = grp.children.length;
       // a jagged needle: a 4-sided cone squashed and leaned at random, with a shorter shard beside it
       put(grp, new THREE.ConeGeometry(w, h, 4), mat(o.color), x, h/2 - 0.5, z, (R()-0.5)*0.22, R()*PI, (R()-0.5)*0.22, [0.6 + R()*0.8, 1, 0.6 + R()*0.8]);
       if (R() < 0.7) put(grp, new THREE.ConeGeometry(w*0.6, h*(0.35 + R()*0.3), 4), mat(o.color2 || o.color), x + w*(R() < 0.5 ? 1 : -1), h*0.2, z + (R()-0.5)*w*1.5, (R()-0.5)*0.5, R()*PI, (R()-0.5)*0.5, [0.7 + R()*0.6, 1, 0.7 + R()*0.6]);
       if (o.glow && R() < 0.5) put(grp, new THREE.BoxGeometry(0.25, h*0.35, 0.25), glowMat(o.glow), x, h*0.35, z, 0, 0, (R()-0.5)*0.4);
+      keepOut(since(grp, n0));
     }
   },
   /* a near-continuous ring of faceted cliffs: encloses the arena (ice walls, canyon walls) */
@@ -78,14 +112,14 @@ const BUILD = {
     for (const a of angles(o.count, R, o.skip)){
       const r = half * (o.r[0] + R()*(o.r[1] - o.r[0])), [x, z] = P(a, r);
       const h = o.h[0] + R()*(o.h[1] - o.h[0]), w = half * (o.w || 0.3) * (0.8 + R()*0.5);
-      put(grp, new THREE.IcosahedronGeometry(1, 0), mat(R() < 0.5 ? o.color : o.color2 || o.color), x, h*0.35, z, R()*PI, R()*PI, R()*PI, [w, h, w*0.7]);
+      keepOut([put(grp, new THREE.IcosahedronGeometry(1, 0), mat(R() < 0.5 ? o.color : o.color2 || o.color), x, h*0.35, z, R()*PI, R()*PI, R()*PI, [w, h, w*0.7])]);
     }
   },
   /* city towers with lit windows */
   towers(grp, o, half, R){
     for (const a of angles(o.count, R, o.skip)){
       const r = half * (o.r[0] + R()*(o.r[1] - o.r[0])), [x, z] = P(a, r);
-      const h = o.h[0] + R()*(o.h[1] - o.h[0]), w = 2.5 + R()*4;
+      const h = o.h[0] + R()*(o.h[1] - o.h[0]), w = 2.5 + R()*4, n0 = grp.children.length;
       const t = put(grp, new THREE.BoxGeometry(w, h, w*(0.7 + R()*0.6)), mat(R() < 0.5 ? o.color : o.color2 || o.color), x, h/2, z, 0, -a, 0);
       if (R() < 0.5) put(grp, new THREE.CylinderGeometry(0.15, w*0.3, h*0.25, 4), mat(o.color), x, h + h*0.12, z, 0, -a, 0);
       if (o.windows){
@@ -95,13 +129,14 @@ const BUILD = {
           wm.position.set(0, -h/2 + 2 + k*4, -(w*(0.35)) - 0.6); wm.rotation.y = PI; t.add(wm);
         }
       }
+      keepOut(since(grp, n0));
     }
   },
   /* industrial smokestacks with a glowing lip and a frozen smoke plume */
   stacks(grp, o, half, R){
     for (const a of angles(o.count, R, o.skip)){
       const r = half * (o.r[0] + R()*(o.r[1] - o.r[0])), [x, z] = P(a, r);
-      const h = o.h[0] + R()*(o.h[1] - o.h[0]), w = 1.6 + R()*1.6;
+      const h = o.h[0] + R()*(o.h[1] - o.h[0]), w = 1.6 + R()*1.6, n0 = grp.children.length;
       put(grp, new THREE.CylinderGeometry(w*0.8, w, h, 10), mat(o.color), x, h/2, z);
       put(grp, new THREE.CylinderGeometry(w*0.85, w*0.85, 0.6, 10), mat(o.band || o.color), x, h*0.7, z);
       if (o.glow) put(grp, new THREE.TorusGeometry(w*0.75, 0.25, 6, 12), glowMat(o.glow), x, h, z, PI/2);
@@ -109,17 +144,19 @@ const BUILD = {
         const sz = w*(1.1 + k*0.55);
         put(grp, new THREE.IcosahedronGeometry(1, 1), mat(o.smoke), x + k*sz*0.55, h + 1 + k*sz*0.6, z + (R()-0.5)*sz*0.4, R(), R()*PI, R(), [sz, sz*0.75, sz]);
       }
+      const piece = since(grp, n0); keepOut(piece, piece.slice(0, 2));   // measured by the stack itself, the plume goes with it
     }
   },
   /* glowing crystal clusters (kyber) */
   crystals(grp, o, half, R){
     for (const a of angles(o.count, R, o.skip)){
       const r = half * (o.r[0] + R()*(o.r[1] - o.r[0])), [x, z] = P(a, r);
-      const n = 3 + Math.floor(R()*3);
+      const n = 3 + Math.floor(R()*3), n0 = grp.children.length;
       for (let k = 0; k < n; k++){
         const h = (o.h[0] + R()*(o.h[1] - o.h[0])) * (k ? 0.6 : 1), w = h*0.14;
         put(grp, new THREE.ConeGeometry(w, h, 6), mat(o.color, { e: o.glow, ei: 0.55 }), x + (R()-0.5)*w*4, h*0.4, z + (R()-0.5)*w*4, (R()-0.5)*0.7, R()*PI, (R()-0.5)*0.7);
       }
+      keepOut(since(grp, n0));
     }
   },
   /* a city/holy-city RAMPART just outside the arena edge: wall segments with crenellations and gate towers */
@@ -128,7 +165,7 @@ const BUILD = {
     for (let i = 0; i < n; i++){
       const a = (i / n) * PI * 2;
       if (o.gaps && o.gaps.some(g => Math.abs(Math.atan2(Math.sin(a - g), Math.cos(a - g))) < 0.2)) continue;
-      const [x, z] = P(a, r), len = 2 * PI * r / n * 1.02;
+      const [x, z] = P(a, r), len = 2 * PI * r / n * 1.02, n0 = grp.children.length;
       const seg = put(grp, new THREE.BoxGeometry(len, h * (0.75 + R()*0.4), 1.6), mat(o.color), x, h/2, z, 0, -a + PI/2, 0);
       if (R() < 0.7) for (let k = -2; k <= 2; k++) if (R() < 0.75){
         const m = new THREE.Mesh(new THREE.BoxGeometry(len*0.12, 0.9, 1.7), mat(o.color2 || o.color));
@@ -139,6 +176,7 @@ const BUILD = {
         put(grp, new THREE.BoxGeometry(3.2, th, 3.2), mat(o.color2 || o.color), x, th/2, z, 0, -a, 0);
         put(grp, new THREE.ConeGeometry(2.5, 2.4, 4), mat(o.roof || o.color), x, th + 1.2, z, 0, -a + PI/4, 0);
       }
+      keepOut(since(grp, n0));
     }
   },
   /* LANDMARK — a toppled colossal Jedi statue (Jedha): a hooded head on its side and a broken forearm */
@@ -230,7 +268,9 @@ const BUILD = {
     put(h, new THREE.BoxGeometry(10*s, 4*s, 7*s), m2, 0, 10.5*s, -22*s);                                // superstructure
     put(h, new THREE.BoxGeometry(14*s, 1.6*s, 2.4*s), m2, 0, 13.4*s, -24*s);                            // bridge
     for (const ex of [-5, 0, 5]) put(h, new THREE.CylinderGeometry(1.8*s, 2.2*s, 3*s, 10), m2, ex*s, 6*s, -35.5*s, PI/2);   // dead engines
-    put(grp, new THREE.SphereGeometry(1, 12, 6, 0, PI*2, 0, PI/2), mat(o.sand || 0xa4865c), x, -0.2, z, 0, -o.az, 0, [30*s, 5*s, 14*s]);   // sand piled at the impact
+    const sand = put(grp, new THREE.SphereGeometry(1, 12, 6, 0, PI*2, 0, PI/2), mat(o.sand || 0xa4865c), x, -0.2, z, 0, -o.az, 0, [30*s, 5*s, 14*s]);   // sand piled at the impact
+    keepOut([g, sand], [g]);   // the hull stays out of the play space; the sand round it may run in (then it's ground)
+    hill(grp, sand.position.x, -0.2, sand.position.z, 30*s, 5*s, 14*s, o.az);
   },
   /* LANDMARK — a Star Destroyer hanging in the sky (silhouette wedge with engine glow) */
   destroyer(grp, o, half){
@@ -270,18 +310,27 @@ const BUILD = {
   dunes(grp, o, half, R){
     for (const a of angles(o.count, R, o.skip)){
       const r = half * (o.r[0] + R()*(o.r[1] - o.r[0])), [x, z] = P(a, r), w = half*(0.25 + R()*0.2);
-      put(grp, new THREE.SphereGeometry(1, 10, 6, 0, PI*2, 0, PI/2), mat(o.color), x, -0.2, z, 0, -a, 0, [w, o.h * (0.6 + R()*0.6), w*0.45]);
+      const h = o.h * (0.6 + R()*0.6);
+      put(grp, new THREE.SphereGeometry(1, 10, 6, 0, PI*2, 0, PI/2), mat(o.color), x, -0.2, z, 0, -a, 0, [w, h, w*0.45]);
+      hill(grp, x, -0.2, z, w, h, w*0.45, a);   // a dune that runs in over the play space is walked up, not through
     }
   },
 };
 
-/* build a theme's backdrop into its own group (baked by the caller with a thick outline) */
-export function buildBackdrop(list, half, seed = 1){
+/* build a theme's backdrop into its own group (baked by the caller with a thick outline). halfZ: a long arena's
+   half-depth (the play space is half × halfZ). The hills that reach the play space come back in grp.userData.solids. */
+const PIECES = new Set(['mesas', 'spires', 'cliffs', 'towers', 'stacks', 'crystals', 'ramparts', 'wreck', 'lavaflows', 'dunes']);   // these keep each piece out themselves
+export function buildBackdrop(list, half, seed = 1, halfZ = half){
   const grp = new THREE.Group();
+  grp.userData.solids = [];
   const R = rng(seed);
+  LIM = [half, halfZ];
   for (const o of list || []){
     const fn = BUILD[o.kind];
-    if (fn) fn(grp, o, half, R);
+    if (!fn) continue;
+    const n0 = grp.children.length;
+    fn(grp, o, half, R);
+    if (!PIECES.has(o.kind)) keepOut(since(grp, n0));   // a single landmark (a statue, a walker, a volcano…)
   }
   return grp;
 }

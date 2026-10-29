@@ -36,7 +36,7 @@ import { syncHolster } from '../holster.js';
 // yourself. (The ray itself is cast in player/aim.js, which every aimed ability shares.)
 export const _look = new THREE.Vector3(), _lh = new THREE.Vector3();   // camera look dir + its horizontal (jetpack dive thrust)
 // the reticle's ray as mandoAimPoint last cast it (origin, direction)
-export const mandoAimRay = crosshairRay;
+export const mandoAimRay = () => crosshairRay();   // (a call, not an alias: the dev server loads aim.js after this module)
 export function mandoAimPoint(){
   const p = crosshairPoint(player.aimOff.x, player.aimOff.y);   // through the floating reticle
   player.lockOn = !!lastAim.target;
