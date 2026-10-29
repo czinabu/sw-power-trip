@@ -106,7 +106,7 @@ export const CUT_AIM = { pitchHigh: 0.04, pitchLow: 0.42 };
      strings  a press with no direction given walks the form's string of angles (instead of left, right, left), each
               cut starting near where the last one finished; the string picks up where it left off unless you've
               stopped cutting for `reset` s.
-     flick    MOUSE AIM (Settings · CUT AIM): the way the mouse moved in the last moment before the press is the way the
+     flick    MOUSE AIM (Settings · CUT AIM: MOUSE, off by default): the way the mouse moved in the last moment before the press is the way the
               blade travels (flick left: a cut from the right, sweeping left; flick down: an overhead). The motion
               decays over `tau` s and must add up to `min` px to count; the cut's height comes from the view's tilt
               from before the flick began (a flick down shouldn't turn an overhead into a low cut). */
