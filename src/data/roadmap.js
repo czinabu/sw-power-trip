@@ -30,6 +30,8 @@ export const ROADMAP = [
   { title: 'Faces, hands and capes', status: 'done',
     items: ['Hero eyes, brows, lips and a blink', 'Facial hair and eye colour options', 'Jointed hands: fists, open palms, hooked fingers',
             'Swinging capes on officers, duellists and bosses'] },
+  { title: 'Smoother on weaker machines', status: 'done',
+    items: ['Graphics step down on their own when play stays under ~40 fps, with a toast; P still sets it by hand', 'Remembered for the next visit; same in every mode, co-op included'] },
   { title: 'Visuals, later', status: 'later',
     items: ['Ink outlines on terrain and props'] },
   { title: 'Online co-op: fight together', status: 'now',

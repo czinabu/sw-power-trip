@@ -8,7 +8,7 @@ import { ENEMY_TYPES } from './data/enemies.js';
 import { LEVELS } from './data/levels.js';
 import { BOSS_CFG, BOSS_MANDO } from './data/bosses.js';
 import { camera, composer } from './engine/renderer.js';
-import { cycleQuality } from './engine/quality.js';
+import { cycleQuality, qualityGovernor } from './engine/quality.js';
 import { audioInit } from './audio/sfx.js';
 import { MUSIC } from './audio/music.js';
 import { updateAudio } from './audio/director.js';
@@ -165,6 +165,7 @@ function tick(){
   updateAudio(rawDt);    // saber hum, jetpack, flamethrower, ambience, muffle
   // the title screen draws its own stage (painted backdrop + the hero on a turntable) instead of the arena
   if (showcaseActive()) renderShowcase(rawDt); else { leaveShowcase(); composer.render(); }
+  qualityGovernor(!showcaseActive() && !G.paused && !G.skillSelect && G.mode === 'play');
 }
 tick();
 
