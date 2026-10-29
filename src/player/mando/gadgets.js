@@ -275,6 +275,7 @@ export function grappleHook(){
   }
   if (!tgt){   // try a solid (pillar / crate) to reel toward
     for (const c of solids){
+      if (c.mound) continue;
       const cx = c.x - o.x, cz = c.z - o.z; const along = cx*dir.x + cz*dir.z;
       if (along < 1.5 || along > bestT) continue;
       const perp = Math.abs(cx*-dir.z + cz*dir.x);

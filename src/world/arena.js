@@ -58,6 +58,8 @@ export function buildArena(L){
   shared.ambient = null;
   shared.dojoRemotes = null;      // the sandbox room's hovering remotes (world/arenas/dojo.js)
   shared.templeBrazier = null;   // cleared each rebuild; the temple layout re-assigns it (so we never flicker a stale mesh)
+  pillars.length = 0;
+  solids.length = 0;              // (cleared before the world: its backdrop hills that run into the play space are ground)
 
   const T = themeFor(L);
   shared.arenaLayout = (T && T.sound) || L.layout || 'temple';   // the training grounds borrow a campaign arena's sound
@@ -101,8 +103,6 @@ export function buildArena(L){
   // scattered pillars — atmosphere AND solid wall-jump surfaces for parkour.
   // Tall ones ring the edge for depth; squat ones sit in the play space, low enough to
   // leap onto and fight from.
-  pillars.length = 0;
-  solids.length = 0;
   // clear hazards up-front so AUTHORED builders can place their own (the random fallback at the end is non-authored only)
   for (const v of vents) scene.remove(v.group); vents.length = 0;
   for (const b of barrels) scene.remove(b.mesh); barrels.length = 0;
@@ -254,7 +254,8 @@ function buildWorld(L, T){
   shared.arenaGroup.add(edge);
   }
 
-  const back = buildBackdrop(T.backdrop, L.arena/2, T.seed || 1);
+  const back = buildBackdrop(T.backdrop, L.arena/2, T.seed || 1, D/2);
   shared.arenaGroup.add(back);
+  solids.push(...back.userData.solids);   // the edge's hills, where they run in over the play space
   bakeArena(back, T.inkFar ?? 0.16);
 }

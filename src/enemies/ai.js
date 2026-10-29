@@ -241,7 +241,7 @@ export function updateEnemies(dt){
           let hx = mx, hz = mz; const hl = Math.hypot(hx, hz) || 1; hx /= hl; hz /= hl;
           let threat = null, threatStr = 0, threatPerp = 0, threatOd = 0, threatRad = 0;
           for (const c of solids){
-            if (c.climbable) continue;   // shallow steps (the temple dais) are walked OVER, not steered around
+            if (c.climbable || c.y0) continue;   // shallow steps (the temple dais) and hills are walked OVER, slabs under
             const ox = c.x - g.position.x, oz = c.z - g.position.z;
             const od = Math.hypot(ox, oz) || 1;
             const orad = (c.box ? Math.hypot(c.hx, c.hz) : c.r) + er + 0.5;

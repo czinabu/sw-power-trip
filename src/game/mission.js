@@ -509,8 +509,11 @@ function liftOff(){
   });
 }
 function dropShipSolid(){
-  const sh = shared.refugeShip, i = sh ? solids.indexOf(sh.solid) : -1;
-  if (i >= 0){ solids.splice(i, 1); buildNav(); }
+  const sh = shared.refugeShip;
+  if (!sh) return;
+  let gone = false;
+  for (const s of sh.solids){ const i = solids.indexOf(s); if (i >= 0){ solids.splice(i, 1); gone = true; } }
+  if (gone) buildNav();
 }
 function shipGone(){ if (shared.refugeShip){ dropShipSolid(); shared.refugeShip.group.visible = false; } }
 
@@ -543,7 +546,7 @@ function paceAt(pace, gap){
 function supportAt(x, z){
   let top = 0;
   for (const c of solids){
-    if (c.h > 3.2 || c.h <= top) continue;
+    if (c.mound || c.y0 || c.h > 3.2 || c.h <= top) continue;
     if (c.box ? (Math.abs(x - c.x) < c.hx + 0.25 && Math.abs(z - c.z) < c.hz + 0.25) : Math.hypot(x - c.x, z - c.z) < c.r + 0.25) top = c.h;
   }
   return top;
@@ -552,7 +555,7 @@ function supportAt(x, z){
 function sightBlocked(ax, ay, az, bx, by, bz){
   const dx = bx - ax, dz = bz - az, l2 = dx*dx + dz*dz || 1;
   for (const c of solids){
-    if (c.h < Math.min(ay, by)) continue;
+    if (c.mound || c.y0 || c.h < Math.min(ay, by)) continue;   // (the pursuit's awnings and beams: seen under, past)
     let t = null;
     if (c.box){   // slab test against the footprint, shrunk a touch so a glancing corner doesn't count
       let t0 = 0, t1 = 1;

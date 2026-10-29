@@ -45,7 +45,7 @@ const inGrid = (ix, iz) => ix >= 0 && iz >= 0 && ix < nav.n && iz < nav.nz;
 function clearanceAt(x, z){
   let best = 99;
   for (const c of solids){
-    if (c.climbable) continue;
+    if (c.climbable || c.y0) continue;   // steps and hills are walked over, an overhead slab under
     let d;
     if (c.box){
       const dx = Math.max(Math.abs(x - c.x) - c.hx, 0), dz = Math.max(Math.abs(z - c.z) - c.hz, 0);

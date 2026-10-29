@@ -119,7 +119,7 @@ export function scorchGround(pos, size, o = {}){
   let s = size;
   if (g > 0){
     for (const c of solids){
-      if (c.h !== g) continue;
+      if (c.mound || c.h !== g) continue;
       const room = c.box ? Math.min(c.hx - Math.abs(pos.x - c.x), c.hz - Math.abs(pos.z - c.z)) : c.r - Math.hypot(pos.x - c.x, pos.z - c.z);
       if (room >= 0){ s = Math.min(s, room * 2); break; }
     }

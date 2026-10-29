@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { shared, solids } from '../../state.js';
 import { spawnVent, spawnBarrel } from '../hazards.js';
 import { V3 } from '../../utils.js';
+import { mound } from '../collision.js';
 import { arenaKit, seeded } from './kit.js';
 import { toon, inkify } from '../ink.js';
 
@@ -104,6 +105,7 @@ export function buildPursuitArena(L){
     const cx = x + w/2, cz = z + d/2, h = 5.6 + R() * 5.2;
     const m = R() < 0.5 ? wall : wallD;
     K.box(cx, cz, w/2, d/2, h, m);
+    const block = solids[solids.length - 1];
     const faces = [[0, -1], [0, 1], [-1, 0], [1, 0]];
     let street = false;
     for (const [fx, fz] of faces){
@@ -119,15 +121,23 @@ export function buildPursuitArena(L){
         if (R() < 0.18){
           const lit = R() < 0.4;
           K.deco(new THREE.BoxGeometry(1.3, 2.3, 0.1), lit ? warm : dark, wx, 1.15, wz, 0, ry, 0);
-          if (R() < 0.5) K.deco(new THREE.BoxGeometry(fx ? 1.3 : 2.2, 0.06, fx ? 2.2 : 1.3), cloth[Math.floor(R() * cloth.length)],
-            wx + fx * 0.65, 2.6, wz + fz * 0.65, fz ? -fz * 0.25 : 0, 0, fx ? fx * 0.25 : 0);
+          if (R() < 0.5){   // an awning over the door: walk under it, land on it
+            K.deco(new THREE.BoxGeometry(fx ? 1.3 : 2.2, 0.06, fx ? 2.2 : 1.3), cloth[Math.floor(R() * cloth.length)],
+              wx + fx * 0.65, 2.6, wz + fz * 0.65, fz ? -fz * 0.25 : 0, 0, fx ? fx * 0.25 : 0);
+            solids.push({ x: wx + fx * 0.65, z: wz + fz * 0.65, hx: fx ? 0.65 : 1.1, hz: fx ? 1.1 : 0.65, y0: 2.4, h: 2.78, box: true, soft: true });
+          }
         }
       }
     }
     // parapet and roof clutter (only where it can be seen: blocks on the street)
     if (!street) return;
     K.deco(new THREE.BoxGeometry(w + 0.3, 0.35, d + 0.3), trim, cx, h + 0.17, cz);
-    if (R() < 0.35){ const r = Math.min(w, d) * 0.32; K.deco(new THREE.SphereGeometry(r, 12, 8, 0, Math.PI*2, 0, Math.PI/2), roof, cx, h + 0.3, cz); }
+    block.h = h + 0.35;   // the roof you run on is the parapet's top
+    if (R() < 0.35){   // a dome on the roof: a hill you run up and over
+      const r = Math.min(w, d) * 0.32;
+      K.deco(new THREE.SphereGeometry(r, 12, 8, 0, Math.PI*2, 0, Math.PI/2), roof, cx, h + 0.3, cz);
+      solids.push(mound(cx, cz, r, r, 0, h + 0.3, h + 0.3 + r));
+    }
     else if (R() < 0.4) K.deco(new THREE.CylinderGeometry(0.06, 0.06, 2.4, 4), metal, cx + (R() - 0.5) * w * 0.6, h + 1.4, cz + (R() - 0.5) * d * 0.6);
   }
 
@@ -152,6 +162,7 @@ export function buildPursuitArena(L){
       K.deco(new THREE.CylinderGeometry(0.05, 0.05, 2.5, 4), trim, px, 1.25, pz);
     }
     K.deco(new THREE.BoxGeometry(alongZ ? 2.0 : 3.6, 0.06, alongZ ? 3.6 : 2.0), cloth[ci % cloth.length], x, 2.55, z, 0, 0, alongZ ? -side * 0.18 : 0);
+    solids.push({ x, z, hx: alongZ ? 1.0 : 1.8, hz: alongZ ? 1.8 : 1.0, y0: 2.35, h: 2.75, box: true, soft: true });   // the awning: walk under it, land on it
   };
   const crates = (x, z, tall) => {        // a stack: a low crate beside a taller one (a two-move climb)
     K.box(x, z, 0.75, 0.75, 1.1, crate);
@@ -163,6 +174,7 @@ export function buildPursuitArena(L){
   // ---- START YARD: your ride, parked ----
   K.box(-5.2, -151, 1.1, 2.4, 0.9, metal);
   K.deco(new THREE.BoxGeometry(1.8, 0.5, 1.4), glass, -5.2, 1.15, -149.6);
+  solids.push({ x: -5.2, z: -149.6, hx: 0.9, hz: 0.7, h: 1.4, box: true });   // the windscreen
   crates(5.5, -146, true); lamp(-7.6, -141); lamp(7.6, -141);
 
   // ---- MARKET STREET: stalls down both sides, carts and crates in the lane, a barricade half way ----
@@ -184,11 +196,12 @@ export function buildPursuitArena(L){
   // ---- WEST CROSS: a water tower, a dead speeder bike, crates ----
   K.column(-10, -98, 1.3, 3.2, metal, { seg: 10 });
   K.deco(new THREE.CylinderGeometry(1.6, 1.6, 2.2, 12), metal, -10, 4.3, -98);
+  solids.push({ x: -10, z: -98, r: 1.6, h: 5.4 });   // the tank, wider than its stand
   K.box(-6, -91.2, 1.6, 0.6, 1.0, imp);
   crates(-22, -97, true); lamp(4, -89);
 
   // ---- THE ALLEY: sheer walls both sides, laundry overhead, a fence across (gap at the east wall), crates ----
-  for (let z = -86; z < -48; z += 6) K.deco(new THREE.BoxGeometry(8, 0.03, 0.9), cloth[(z / 6) & 3], -19, 4.4 + (z & 1) * 0.6, z, 0.05, 0, 0);
+  for (let z = -86; z < -48; z += 6) K.deco(new THREE.BoxGeometry(8, 0.03, 0.9), cloth[(z / 6) & 3], -19, 4.4 + (z & 1) * 0.6, z, 0.05, 0, 0).userData.passThrough = true;   // laundry on a line: brushed through
   K.box(-20, -70, 3, 0.18, 2.1, trim);                                     // the fence: mantle it, or the gap at x −17…−15
   for (let x = -22.6; x < -17; x += 1.1) K.deco(new THREE.BoxGeometry(0.1, 2.3, 0.3), dark, x, 1.15, -70);
   crates(-21.5, -82, false); crates(-17, -57, true);
@@ -200,12 +213,13 @@ export function buildPursuitArena(L){
   K.box(-0.5, -65, 2.5, 5, 2.2, wallD);
   K.box(-0.5, -55, 2.5, 0.3, 1.0, imp);
   K.deco(new THREE.BoxGeometry(5, 0.1, 0.4), stripe, -0.5, 1.02, -55);
-  for (const z of [-82, -72, -62]) K.deco(new THREE.BoxGeometry(5, 0.03, 0.9), cloth[(z / 5) & 3], -0.5, 5.2, z, 0.05, 0, 0);
+  for (const z of [-82, -72, -62]) K.deco(new THREE.BoxGeometry(5, 0.03, 0.9), cloth[(z / 5) & 3], -0.5, 5.2, z, 0.05, 0, 0).userData.passThrough = true;
 
   // ---- CANAL WALK: low barriers down the middle (vault the line), the sides open; a vaporator ----
   for (const x of [-8, 0, 8, 16]) K.box(x, -44, 0.3, 2.8, 0.95, wallD);
   K.column(-14, -40, 0.4, 5.2, metal, { wallKick: false, seg: 8 });
   for (const y of [1.6, 3.2]) K.deco(new THREE.CylinderGeometry(0.75, 0.75, 0.25, 10), metal, -14, y, -40);
+  solids.push({ x: -14, z: -40, r: 0.75, h: 3.33 });   // its collector rings
   K.deco(new THREE.SphereGeometry(0.16, 8, 6), warm, -14, 5.4, -40);
   crates(22, -48, true); lamp(-20, -39.5);
 
@@ -225,12 +239,15 @@ export function buildPursuitArena(L){
   K.deco(new THREE.CylinderGeometry(2.5, 2.5, 0.1, 16), new THREE.MeshBasicMaterial({ color: 0x5aa0c0 }), 7, 0.82, 18);
   K.column(7, 18, 0.7, 4.6, wall, { seg: 8 });
   K.deco(new THREE.SphereGeometry(0.75, 10, 8), wall, 7, 5.1, 18);
+  solids.push({ x: 7, z: 18, r: 0.7, h: 5.8 });   // the statue's head
   for (const [x, z] of [[-20, 4], [20, 10], [16, 26], [-4, 26], [-20, 18]]){
     K.box(x, z, 1.2, 1.2, 0.9, trim);
     K.deco(new THREE.SphereGeometry(0.9, 8, 6), new THREE.MeshStandardMaterial({ color: 0x5a7a3a, roughness: 0.9 }), x, 1.3, z);
+    solids.push({ x, z, r: 0.85, h: 2.1 });   // the shrub in it
   }
   { const ax = -16; for (const sx of [-1, 1]) K.column(ax + sx * 8.6, 29.5, 0.6, 6.5, wallD, { seg: 8, taper: 1 });
-    K.deco(new THREE.BoxGeometry(18.4, 1.2, 1.4), wallD, ax, 7.0, 29.5); }
+    K.deco(new THREE.BoxGeometry(18.4, 1.2, 1.4), wallD, ax, 7.0, 29.5);
+    solids.push({ x: ax, z: 29.5, hx: 9.2, hz: 0.7, y0: 6.4, h: 7.6, box: true }); }   // the arch's lintel, overhead
   for (const [x, z] of [[-24, -4], [24, -4], [-24, 28], [24, 28]]) lamp(x, z);
 
   // ---- CAUSEWAY STREET: a raised walkway down the west side with two gaps, steps up at the south end ----
@@ -253,6 +270,7 @@ export function buildPursuitArena(L){
   spawnBarrel(V3(8, 0, 88)); spawnBarrel(V3(-10, 0, 78)); spawnBarrel(V3(21, 0, 78));
   for (const x of [-24.4, 24.4]) K.box(x, 83, 0.3, 0.3, 9, imp);
   K.deco(new THREE.BoxGeometry(48, 0.8, 0.8), imp, 0, 9.2, 83);
+  solids.push({ x: 0, z: 83, hx: 24, hz: 0.4, y0: 8.8, h: 9.6, box: true });   // the crane's beam, overhead
 
   // ---- THE STACK LANE (shortcut): crates up, a wall, a raised run, a barrier, then down into the bay ----
   crates(-22.6, 98, true);
@@ -264,6 +282,7 @@ export function buildPursuitArena(L){
   // ---- THE SERVICE CUT: steam vents firing in turn down a narrow passage, pipes on the walls ----
   for (const [x, z] of [[15.6, 97], [19.4, 104], [15.6, 111], [19.4, 117]]) spawnVent(V3(x, 0, z));
   for (const y of [1.2, 2.0]) K.deco(new THREE.CylinderGeometry(0.16, 0.16, 34, 8), metal, 21.8, y, 106, Math.PI/2, 0, 0);
+  solids.push({ x: 21.8, z: 106, hx: 0.16, hz: 17, h: 2.16, box: true });   // the pipes on the wall
   lamp(14, 92);
 
   // ---- THE DOCKING BAY: the landing pad, the quarry's ship on it, crates round the walls ----
@@ -300,4 +319,8 @@ function buildShip(x, z){
   g.position.set(x, 0.22, z); g.userData.noBake = true;
   shared.arenaGroup.add(g);
   solids.push({ x, z: z + 0.5, hx: 1.6, hz: 5, h: 4.0, box: true });
+  for (const sx of [-1, 1]){   // the wings and their fins, overhead: walk under them, land on them
+    solids.push({ x: x + sx * 3.6, z: z + 2.6, hx: 2.75, hz: 1.6, y0: 2.1, h: 3.7, box: true });
+    solids.push({ x: x + sx * 6.2, z: z + 3.0, hx: 0.2, hz: 1.2, y0: 2.5, h: 5.1, box: true });
+  }
 }

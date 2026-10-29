@@ -3,7 +3,7 @@
 
 import * as THREE from 'three';
 import { V3 } from '../../utils.js';
-import { hazardZones } from '../../state.js';
+import { hazardZones, solids } from '../../state.js';
 import { spawnBarrel } from '../hazards.js';
 import { arenaKit, seeded } from './kit.js';
 import { fieldKit, coverSpots, strike } from './field.js';
@@ -66,11 +66,15 @@ export function buildIcefrontArena(L){
   K.deco(new THREE.SphereGeometry(3.0, 14, 8, 0, Math.PI*2, 0, Math.PI/2), metal, 0, 6.5, 56);
   K.deco(new THREE.CylinderGeometry(0.35, 0.5, 4, 8), metalD, 0, 10.5, 56);
   K.deco(new THREE.SphereGeometry(0.7, 10, 8), shield, 0, 12.8, 56);
+  // the dome stands on the drum: it collides as stepped rings up to the mast and the globe on top
+  for (const [r, h] of [[2.95, 7.2], [2.6, 8.0], [2.0, 8.7], [1.2, 9.25], [0.7, 13.5]]) solids.push({ x: 0, z: 56, r, h });
   for (let i = 0; i < 6; i++) K.deco(new THREE.BoxGeometry(0.3, 1.1, 0.12), shield, Math.cos(i*1.05)*3.25, 3.8, 56 + Math.sin(i*1.05)*3.25, 0, -i*1.05 + Math.PI/2, 0);
   // the ion cannon (west): a ball turret on a squat drum
   K.column(-32, 58, 2.6, 4, metalD, { wallKick: false, seg: 10, taper: 0.9 });
   K.deco(new THREE.SphereGeometry(3.4, 14, 10), metal, -32, 6.2, 58);
   K.deco(new THREE.CylinderGeometry(0.5, 0.6, 5, 8), metalD, -32, 7.6, 54.6, Math.PI/2 - 0.5, 0, 0);
+  for (const [r, h] of [[3.3, 7.0], [3.0, 7.8], [2.4, 8.6], [1.6, 9.2], [0.8, 9.5]]) solids.push({ x: -32, z: 58, r, h });   // the ball turret, in rings
+  solids.push({ x: -32, z: 54.2, hx: 0.6, hz: 1.9, y0: 6.3, h: 8.8, box: true });                   // the barrel, overhead
   // the hangar blast wall along the back, with a lit door slot and two supply stacks
   K.box(26, 64, 14, 1.2, 4.6, rock);
   K.deco(new THREE.PlaneGeometry(10, 2.6), lamp, 26, 1.4, 62.78, 0, Math.PI, 0);
@@ -79,7 +83,7 @@ export function buildIcefrontArena(L){
   // ---- the TRENCH LINES — packed-snow berms topped with sandbags ----
   for (const w of [...PLAN.rear, ...PLAN.forward]) F.wall(w, { body: snowD, cap: bag }, { bags: true });
   // turret emplacements on the rear line
-  for (const x of [-30, 30]){ K.deco(new THREE.BoxGeometry(1.4, 0.8, 1.2), metalD, x, 1.7, 32); K.deco(new THREE.CylinderGeometry(0.12, 0.12, 2, 6), metalD, x, 1.9, 31, Math.PI/2, 0, 0); }
+  for (const x of [-30, 30]){ K.box(x, 32, 0.7, 0.6, 0.8, metalD, { y: 1.3 }); K.deco(new THREE.CylinderGeometry(0.12, 0.12, 2, 6), metalD, x, 1.9, 31, Math.PI/2, 0, 0); solids.push({ x, z: 31, hx: 0.15, hz: 1.0, h: 2.05, box: true }); }   // the gun barrel
 
   // ---- NO-MAN'S LAND ----
   for (const [x, z, r, h] of PLAN.rocks) F.rock(x, z, r, h, rock, ice);
@@ -88,6 +92,7 @@ export function buildIcefrontArena(L){
   { const [x, z] = PLAN.speeder;
     K.box(x, z, 1.4, 2.6, 1.2, metal);
     K.deco(new THREE.BoxGeometry(4.6, 0.22, 1.6), metal, x, 0.9, z + 0.6, 0, 0, 0.12);
+    solids.push({ x, z: z + 0.6, hx: 2.3, hz: 0.8, h: 1.25, box: true });   // the stubby wings stick out past the hull
     K.deco(new THREE.BoxGeometry(1.0, 0.5, 0.8), stripe, x, 1.35, z - 1.6);
     K.deco(new THREE.CylinderGeometry(0.16, 0.16, 1.8, 6), metalD, x - 1.2, 0.5, z - 2.4, Math.PI/2, 0, 0); }
   F.walkerHulk(PLAN.walker[0], PLAN.walker[1], false, { hull: metal, dark: metalD, plate: metal, crate: imp, glow: red });

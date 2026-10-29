@@ -33,6 +33,7 @@ export function fieldKit(K, R){
   const wall = (w, mats, o = {}) => {
     const b = wallBox(w), ax = w[4];
     K.box(b.x, b.z, b.hx, b.hz, b.h, mats.body);
+    const solid = solids[solids.length - 1];
     if (mats.cap) K.deco(new THREE.BoxGeometry(b.hx*2 + 0.1, 0.16, b.hz*2 + 0.14), mats.cap, b.x, b.h + 0.06, b.z);
     if (o.bags){   // sandbag rows: rounded bags laid along the top
       const len = b.hx*2 > b.hz*2 ? b.hx*2 : b.hz*2, n = Math.floor(len / 0.9);
@@ -40,6 +41,7 @@ export function fieldKit(K, R){
         const t = -len/2 + (i + 0.5) * len/n;
         K.deco(new THREE.CapsuleGeometry(0.26, 0.42, 2, 6), mats.cap || mats.body, b.x + (ax ? t : 0), b.h + 0.2, b.z + (ax ? 0 : t), 0, ax ? 0 : Math.PI/2, Math.PI/2);
       }
+      solid.h = b.h + 0.4;   // the bags are part of the wall: you stand on them, not sunk into them
     } else if (o.buttress && (ax ? b.hx : b.hz) > 3){
       const len = ax ? b.hx : b.hz;
       for (let t = -len + 1.6; t < len - 1; t += 3.2) K.deco(new THREE.BoxGeometry(ax ? 0.4 : 1.4, b.h + 0.1, ax ? 1.4 : 0.4), mats.cap || mats.body, b.x + (ax ? t : 0), (b.h + 0.1)/2, b.z + (ax ? 0 : t));
@@ -50,13 +52,17 @@ export function fieldKit(K, R){
       for (let y = 1.3; y < b.h - 0.5; y += 1.5) K.deco(new THREE.BoxGeometry(b.hx*2 + (ax ? 0.02 : 0.08), 0.12, b.hz*2 + (ax ? 0.08 : 0.02)), mats.cap || mats.body, b.x, y, b.z);
       for (let i = 0; i < 3; i++){
         const t = (R() - 0.5) * len * 1.6;
-        K.deco(new THREE.ConeGeometry(0.45 + R()*0.45, 1 + R()*1.4, 4), mats.body, b.x + (ax ? t : 0), b.h + 0.45, b.z + (ax ? 0 : t), (R() - 0.5)*0.6, R()*3, (R() - 0.5)*0.6);
+        const r = 0.45 + R()*0.45, h = 1 + R()*1.4, px = b.x + (ax ? t : 0), pz = b.z + (ax ? 0 : t);
+        K.deco(new THREE.ConeGeometry(r, h, 4), mats.body, px, b.h + 0.45, pz, (R() - 0.5)*0.6, R()*3, (R() - 0.5)*0.6);
+        solids.push({ x: px, z: pz, r: r*0.5, h: b.h + 0.45 + h*0.25 });   // the torn spike stands up off the top
       }
     }
     if (o.jag){   // a broken top: a few chunks stacked off the cap
       for (let i = 0; i < 3; i++){
         const t = (R() - 0.5) * (ax ? b.hx : b.hz) * 1.6;
-        K.deco(new THREE.BoxGeometry(0.6 + R()*0.8, 0.3 + R()*0.4, 0.8), mats.cap || mats.body, b.x + (ax ? t : 0), b.h + 0.2, b.z + (ax ? 0 : t), 0, ax ? 0 : Math.PI/2, (R() - 0.5)*0.4);
+        const l = 0.6 + R()*0.8, h = 0.3 + R()*0.4, px = b.x + (ax ? t : 0), pz = b.z + (ax ? 0 : t);
+        K.deco(new THREE.BoxGeometry(l, h, 0.8), mats.cap || mats.body, px, b.h + 0.2, pz, 0, ax ? 0 : Math.PI/2, (R() - 0.5)*0.4);
+        solids.push({ x: px, z: pz, hx: ax ? l/2 : 0.4, hz: ax ? 0.4 : l/2, h: b.h + 0.2 + h/2, box: true });   // a chunk you stand on
       }
     }
   };
@@ -71,6 +77,8 @@ export function fieldKit(K, R){
     K.column(x, z, r, h, mat, { taper: 0.45, seg: 7 });
     K.deco(new THREE.ConeGeometry(r*0.55, h*0.22, 6), mat2 || mat, x + r*0.1, h + h*0.08, z, 0.1, R()*3, 0.08);
     K.deco(new THREE.CylinderGeometry(r*1.25, r*1.45, 0.5, 7), mat2 || mat, x, 0.25, z, 0, R()*3, 0);
+    solids.push({ x: x + r*0.1, z, r: r*0.3, h: h*1.12 });                 // the broken crown
+    solids.push({ x, z, r: r*1.4, h: 0.5, climbable: true });             // the rubble skirt: a step up to the spire
   };
   /* a low DRIFT or dune you walk over: a climbable step under STEP_UP, drawn as a squashed mound */
   const drift = (x, z, hx, hz, mat) => {
@@ -96,13 +104,15 @@ export function fieldKit(K, R){
     const hull = hb(0, 0, 7.5, 3.0, 4.2, mats.hull);
     hull.rotation[alongX ? 'x' : 'z'] = 0.05;   // rolled a touch onto its side
     hb(9.6, 0.8, 2.1, 1.5, 2.6, mats.dark);                     // the head, nose down in the ground
-    { const [px, pz] = L(7.8, 0.6); K.deco(new THREE.CylinderGeometry(0.8, 0.8, 2.6, 8), mats.dark, px, 2.4, pz, alongX ? 0 : Math.PI/2, 0, alongX ? Math.PI/2 : 0); }   // neck
+    { const [px, pz] = L(7.8, 0.6); K.deco(new THREE.CylinderGeometry(0.8, 0.8, 2.6, 8), mats.dark, px, 2.4, pz, alongX ? 0 : Math.PI/2, 0, alongX ? Math.PI/2 : 0);   // neck
+      solids.push({ x: px, z: pz, hx: alongX ? 1.3 : 0.8, hz: alongX ? 0.8 : 1.3, h: 3.2, box: true }); }
     if (mats.glow){ const [px, pz] = L(11.8, 0.8); K.deco(new THREE.BoxGeometry(alongX ? 0.3 : 1.6, 0.4, alongX ? 1.6 : 0.3), mats.glow, px, 1.6, pz); }   // a dead viewport
     for (const [dx, dz, h] of [[-4.5, 3.85, 2.9], [3.8, 3.85, 1.8]]){ const [px, pz] = L(dx, dz); K.column(px, pz, 0.85, h, mats.dark, { taper: 0.9, seg: 8 }); }   // broken leg stumps
     for (const [dx, dz] of [[-4.0, -5.2], [4.4, -5.2]]) hb(dx, dz, 0.8, 2.2, 1.0, mats.dark);   // legs lying in the dirt (vault them)
     hb(-6.2, 3.9, 0.9, 0.9, 1.6, mats.crate || mats.dark);     // a cargo crate against the hull and the stump: the first hop up
     // armour plates along the hull's sides, and the gun chin
-    { const [px, pz] = L(0, 0); K.deco(new THREE.BoxGeometry(alongX ? 13 : 4.4, 0.8, alongX ? 4.4 : 13), mats.plate || mats.dark, px, 4.5, pz); }   // the armoured spine
+    { const [px, pz] = L(0, 0); K.deco(new THREE.BoxGeometry(alongX ? 13 : 4.4, 0.8, alongX ? 4.4 : 13), mats.plate || mats.dark, px, 4.5, pz);   // the armoured spine
+      solids.push({ x: px, z: pz, hx: alongX ? 6.5 : 2.2, hz: alongX ? 2.2 : 6.5, h: 4.9, box: true }); }
     { const [px, pz] = L(-2, -3.05); K.deco(new THREE.BoxGeometry(alongX ? 2.2 : 0.14, 1.6, alongX ? 0.14 : 2.2), mats.dark, px, 1.6, pz); }       // a side hatch, blown open
     for (let i = -2; i <= 2; i++){ const [px, pz] = L(i * 2.8, 3.05); K.deco(new THREE.BoxGeometry(alongX ? 2.4 : 0.2, 2.6, alongX ? 0.2 : 2.4), mats.plate || mats.dark, px, 2.3, pz); }
     { const [px, pz] = L(11.2, 0.8); K.deco(new THREE.BoxGeometry(alongX ? 1.2 : 0.4, 0.4, alongX ? 0.4 : 1.2), mats.dark, px, 0.9, pz); }
