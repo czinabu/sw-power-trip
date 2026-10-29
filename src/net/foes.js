@@ -81,8 +81,17 @@ on('ctl', (m) => {
   const e = enemies.find(o => o.nid === m.n);
   if (!e || e.dead || e.converted || e.state === 'spawn' || e.state === 'fade') return;
   if (!CTL[m.s] || (e.t.heavy && m.s !== 'recover' && m.s !== 'stagger')) return;
-  e.state = m.s; e.st = m.st;
+  e.state = m.s; e.st = m.st; e.heldAt = performance.now();
   if (m.v) e.vel.set(m.v[0], m.v[1], m.v[2]);
+});
+
+// where the guest is holding a foe in its Force grasp
+on('gp', (m) => {
+  if (net.role !== 'host') return;
+  const e = enemies.find(o => o.nid === m.n);
+  if (!e || e.dead || e.state !== 'grasped') return;
+  e.group.position.set(m.p[0], m.p[1], m.p[2]); e.group.rotation.set(m.r[0], m.r[1], m.r[2]);
+  e.vel.set(0, 0, 0); e.heldAt = performance.now();
 });
 
 /* ---------------- guest: puppets ---------------- */
@@ -109,10 +118,13 @@ function makePuppet(rec){
 
 function applyRec(e, rec){
   const [, , x, y, z, rx, ry, rz, sc, hp, maxHp, state, flags, , wA, sZ, em, ei, wZ, sX] = rec;
-  e.want.pos.set(x, y, z); e.want.rx = rx; e.want.ry = ry; e.want.rz = rz;
   e.group.scale.setScalar(sc);
   sendCtl(e);   // a control state put on it here since the last frame goes out before the snapshot overwrites it
-  e.hp = hp; e.maxHp = maxHp; e.state = e.netState = state; e.walking = !!(flags & WALKING);
+  e.hp = hp; e.maxHp = maxHp; e.walking = !!(flags & WALKING);
+  if (!e.held){   // a foe this player has in the Force grasp is theirs to place and pose until they let go
+    e.want.pos.set(x, y, z); e.want.rx = rx; e.want.ry = ry; e.want.rz = rz;
+    e.state = e.netState = state;
+  }
   const dying = !!(flags & DEAD);
   if (dying && !e.dead) burst(e.group.position, 0x888888, 6, 4, 3);
   e.dead = dying;
@@ -179,7 +191,7 @@ on('e', (m) => {
   }
 });
 
-const CTL = { knockdown: 1, ragdoll: 1, stagger: 1, recover: 1, stasis: 1 };   // the states a guest's powers put a foe in
+const CTL = { knockdown: 1, ragdoll: 1, stagger: 1, recover: 1, stasis: 1, grasped: 1 };   // the states a guest's powers put a foe in
 const NO_FEET = { ragdoll: 1, knockdown: 1, getup: 1, fade: 1, spawn: 1, grasped: 1 };   // the states the legs don't stand in (enemies/ai.js)
 const damp = (a, b, k, dt) => a + (b - a) * (1 - Math.exp(-k * dt));
 const angDiff = (a, b) => Math.atan2(Math.sin(b - a), Math.cos(b - a));
@@ -187,6 +199,16 @@ const angDiff = (a, b) => Math.atan2(Math.sin(b - a), Math.cos(b - a));
 // a Force power or a blow here put the puppet into a control state (floored, thrown, stunned, frozen): tell the host,
 // which applies it to the real foe. The next snapshot then carries the result back.
 function sendCtl(e){
+  // held in this player's grasp: they move the body (player/jedi/grasp.js), and the host is told where it is
+  if (e.state === 'grasped' && e.netState !== 'grasped') e.held = true;
+  if (e.held){
+    if (e.state !== 'grasped') e.held = false;
+    else if (connected() && performance.now() - (e.heldSent || 0) >= NET.sendMs){
+      e.heldSent = performance.now();
+      const gp = e.group.position, gr = e.group.rotation;
+      send({ t: 'gp', n: e.nid, p: [r2(gp.x), r2(gp.y), r2(gp.z)], r: [r2(gr.x), r2(gr.y), r2(gr.z)] });
+    }
+  }
   if (e.state === e.netState) return;
   if (CTL[e.state] && !e.dead && connected()) send({ t: 'ctl', n: e.nid, s: e.state, st: r2(e.st || 0), v: [r2(e.vel.x), r2(e.vel.y), r2(e.vel.z)] });
   e.netState = e.state;
@@ -197,6 +219,13 @@ export function updatePuppets(dt){
     if (!e.net) continue;
     sendCtl(e);   // a power or a blow here put it in a control state: the host applies it to the real foe
     const g = e.group, w = e.want;
+    // the marksman's beam and the lancer's line fade when the host stops sending them
+    if (e.aimLine && performance.now() - (e.aimAt || 0) > 200) e.aimLine.visible = false;
+    if (e.lungeLine && e.lungeLine.visible && performance.now() - (e.lungeAt || 0) > 200){
+      e.lungeLine.material.opacity = Math.max(0, e.lungeLine.material.opacity - dt * 3);
+      if (e.lungeLine.material.opacity <= 0) e.lungeLine.visible = false;
+    }
+    if (e.held){ updateLegs(e, g, dt, 'off'); continue; }   // the grasp moves it
     g.position.x = damp(g.position.x, w.pos.x, 20, dt);
     g.position.y = damp(g.position.y, w.pos.y, 20, dt);
     g.position.z = damp(g.position.z, w.pos.z, 20, dt);
@@ -230,6 +259,11 @@ export function updateFoes(){
     if (open !== pickSent){ pickSent = open; send({ t: 'pick', o: open ? 1 : 0 }); }
   } else pickSent = false;
   if (net.role === 'host'){
+    // a grasp whose holder went quiet (left, froze) lets go
+    for (const e of enemies){
+      if (e.state !== 'grasped'){ e.heldAt = null; continue; }   // (this host's own grasps carry no stamp: they are never let go here)
+      if (e.heldAt != null && !e.dead && performance.now() - e.heldAt > 1500){ e.state = 'knockdown'; e.st = 0.5; e.heldAt = null; }
+    }
     const waiting = coopRun.live && coopRun.guestPicking && shared.levelPhase === 'between' && !G.skillSelect;
     if (waiting && !waitShown) showBanner('', 'WAITING FOR YOUR PARTNER\'S UPGRADES', 2.4);
     waitShown = waiting;

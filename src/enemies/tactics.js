@@ -199,6 +199,16 @@ function lungeLine(e){
   scene.add(m); e.lungeLine = m;
   return m;
 }
+// the line on the ground a lancer's lunge will follow (also drawn from the host's word on a co-op guest, net/foefire.js)
+export function paintLungeLine(e, x, z, ry, len, locked, k){
+  const m = lungeLine(e);
+  m.visible = true;
+  m.position.set(x, 0.06, z);
+  m.rotation.y = ry;
+  m.scale.set(locked ? 0.7 : 0.45, 1, len);
+  m.material.opacity = 0.15 + k * 0.55;
+  m.material.color.setHex(locked ? TELLS.parry.color : TELLS.parry.accent);
+}
 export function cleanupTactics(e){
   if (e.lungeLine){ scene.remove(e.lungeLine); e.lungeLine.material.dispose(); e.lungeLine = null; }
 }
@@ -225,13 +235,8 @@ export function updateLungeWind(e, dt, pp){
   g.rotation.x = -0.28 * Math.min(1, k * 1.6);   // sinks onto the back foot
   if (u.weaponArm){ u.weaponArm.rotation.x = dampToward(u.weaponArm.rotation.x, -0.2, dt, 12); u.weaponArm.rotation.z = dampToward(u.weaponArm.rotation.z, -0.15, dt, 12); }   // the pike drawn back level
   u.bodyMat.emissive.setHex(TELLS.parry.accent); u.bodyMat.emissiveIntensity = 0.3 + k * 1.6;
-  const m = lungeLine(e);
-  m.visible = true;
-  m.position.set(g.position.x, 0.06, g.position.z);
-  m.rotation.y = g.rotation.y;
-  m.scale.set(e.lungeLocked ? 0.7 : 0.45, 1, e.lungeLen);
-  m.material.opacity = 0.15 + k * 0.55;
-  m.material.color.setHex(e.lungeLocked ? TELLS.parry.color : TELLS.parry.accent);
+  paintLungeLine(e, g.position.x, g.position.z, g.rotation.y, e.lungeLen, e.lungeLocked, k);
+  if (hooks.lunge) hooks.lunge(e, g.position, g.rotation.y, e.lungeLen, e.lungeLocked, k);   // co-op: the guest sees the line too
   if (e.st > 0) return;
   e.state = 'lunge'; e.st = Math.min(0.6, e.lungeLen / LUNGE.speed); e.lungeLocked = false;
   S.whoosh(g.position, true);

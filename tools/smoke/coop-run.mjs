@@ -84,6 +84,14 @@ try {
   const t2 = shared[1];
   await guest.evaluate((n) => { const e = GAME.enemies.find(o => o.nid === n); e.state = 'knockdown'; e.st = 3; }, t2);
   await host.waitForFunction((n) => { const e = GAME.enemies.find(o => o.nid === n); return !e || e.dead || e.state === 'knockdown'; }, t2, poll);
+  // a foe the guest holds in the Force grasp is placed on the host where the guest holds it
+  const t3 = shared[2];
+  await guest.evaluate((n) => { const e = GAME.enemies.find(o => o.nid === n); e.state = 'grasped'; e.group.position.set(3, 2, 3); }, t3);
+  await host.waitForFunction((n) => { const e = GAME.enemies.find(o => o.nid === n); return !e || e.dead || (e.state === 'grasped' && Math.abs(e.group.position.y - 2) < 0.3); }, t3, poll);
+  await guest.evaluate((n) => { const e = GAME.enemies.find(o => o.nid === n); e.state = 'knockdown'; e.st = 1; }, t3);
+  // the marksman's laser sight and the lancer's line are drawn on the guest
+  await host.evaluate((n) => { const e = GAME.enemies.find(o => o.nid === n), p = e.group.position; GAME.coopHooks.aim(e, p, { x: p.x + 5, y: p.y, z: p.z }, 0.5); GAME.coopHooks.lunge(e, p, 0, 6, true, 0.5); }, t3);
+  await guest.waitForFunction((n) => { const e = GAME.enemies.find(o => o.nid === n); return e && e.aimLine && e.aimLine.visible && e.lungeLine && e.lungeLine.visible; }, t3, poll);
   // the partner's shots are drawn on the other screen
   await host.evaluate(() => GAME.spawnBlasterBolt(new GAME.camera.position.constructor(0, 1.5, 0), new GAME.camera.position.constructor(1, 0, 0), 5, 0x66ccff, 1, {}));
   await guest.waitForFunction(() => GAME.bolts.some(b => b.ghost), null, poll);
