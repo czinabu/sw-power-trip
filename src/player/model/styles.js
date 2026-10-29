@@ -156,6 +156,10 @@ export function makeStyle(name = 'ink', colors = {}){
     if (cfg.crease){
       // the crease pass hashes positions to 1cm; work at 100x so small parts (visor slits, finials) keep their edges
       out = toCreasedNormals(out.clone().scale(100, 100, 100), cfg.crease).scale(0.01, 0.01, 0.01);
+      // a sliver triangle (the fingers' ridges have a few) comes out with a zero normal; the shader's normalize() of it is
+      // NaN, which the bloom blur smears into a black box on GPUs that don't clamp it (seen on Firefox)
+      const n = out.attributes.normal;
+      for (let i = 0; i < n.count; i++) if (!(n.getX(i) ** 2 + n.getY(i) ** 2 + n.getZ(i) ** 2 > 1e-6)) n.setXYZ(i, 0, 1, 0);
     }
     g.userData.styled = out;
     return out;
