@@ -35,6 +35,7 @@ import { resetAirCut } from '../player/jedi/aerial.js';
 import { hideThrownSaber, stowHandSaber } from '../player/jedi/force.js';
 import { clearSquad } from '../allies/squad.js';
 import { clearDowned } from './revive.js';
+import { coopRun } from '../net/run.js';
 import { resetReadout, beginWave } from './readout.js';
 
 /* ============================================================
@@ -291,7 +292,10 @@ export function updateFlow(dt){
   }
   shared.phaseT -= dt;
   const L = LEVELS[G.levelIdx];
-  if (shared.levelPhase === 'between' && shared.phaseT <= 0){
+  // a shared run waits in the lull until both heroes have closed their upgrade screens
+  const holdForPicks = coopRun.live && (G.skillSelect || coopRun.guestPicking);
+  if (holdForPicks && shared.levelPhase === 'between') shared.phaseT = Math.max(shared.phaseT, 1.4);   // a beat after the last screen closes
+  if (shared.levelPhase === 'between' && shared.phaseT <= 0 && !holdForPicks){
     if (G.endless) startEndlessWave(); else startWave();
   } else if (shared.levelPhase === 'travel' && shared.phaseT <= 0){
     shared.levelPhase = 'idle';

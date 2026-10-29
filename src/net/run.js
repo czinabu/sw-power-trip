@@ -4,7 +4,9 @@
 // own modules can read it without a cycle.
 
 /* the host's run, last heard of: on while the host is fighting a Survival run, with its arena and wave */
-export const coopRun = { on: false, ar: 0, w: 0, wt: 0, ph: '', mut: null };
+export const coopRun = { on: false, ar: 0, w: 0, wt: 0, ph: '', mut: null,
+  live: false,          // this browser is in a shared fight right now: the world keeps going whatever one hero's pause or hitstop does
+  guestPicking: false };   // host side: the guest has its upgrade screen open, so the next wave waits
 
 /* hits the guest has landed on puppet foes. A continuous source (the flamethrower, a held Force power) calls damageEnemy
    every frame, so ticks on one foe are summed into one entry; foes.js sends the lot about 20 times a second */

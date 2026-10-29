@@ -30,6 +30,7 @@ const DEAD = 1, WALKING = 2, WARBRINGER = 4;
 let sentAt = 0, hostSent = false, runListeners = [];
 const byNid = new Map();   // the guest's puppets, by the host's number for each foe
 
+export const coopLive = () => !!G.coopGuest || (hostSent && connected());
 export const puppetOf = (nid) => byNid.get(nid) || null;
 export function onRunChange(fn){ runListeners.push(fn); }
 const runChanged = () => { for (const fn of runListeners) fn(coopRun); };
@@ -220,17 +221,30 @@ export function updatePuppets(dt){
 }
 
 /* ---------------- both: once a frame ---------------- */
+let pickSent = false, waitShown = false;
 export function updateFoes(){
   hostTick();
+  coopRun.live = coopLive();
+  if (net.role === 'guest' && connected()){   // tell the host while the upgrade screen is open (the next wave waits for it)
+    const open = !!(G.coopGuest && G.skillSelect);
+    if (open !== pickSent){ pickSent = open; send({ t: 'pick', o: open ? 1 : 0 }); }
+  } else pickSent = false;
+  if (net.role === 'host'){
+    const waiting = coopRun.live && coopRun.guestPicking && shared.levelPhase === 'between' && !G.skillSelect;
+    if (waiting && !waitShown) showBanner('', 'WAITING FOR YOUR PARTNER\'S UPGRADES', 2.4);
+    waitShown = waiting;
+  }
   if (net.role === 'guest' && connected() && hitQueue.length){
     const now = performance.now();
     if (now - sentAt >= NET.sendMs){ sentAt = now; send({ t: 'hits', h: hitQueue.splice(0) }); }
   } else if (!connected()) hitQueue.length = 0;
 }
 
+on('pick', (m) => { if (net.role === 'host') coopRun.guestPicking = !!m.o; });
+
 on('status', (n) => {
   if (n.status === 'connected') return;
-  coopRun.on = false; runChanged();
+  coopRun.on = false; coopRun.guestPicking = false; coopRun.live = false; runChanged();
   if (G.coopGuest) endGuest();
   hostSent = false;
 });
