@@ -116,7 +116,7 @@ export function startEndless(){
   G.endless = true; G.endlessWave = 0; G.arenaRot = 0; G.mut = null;
   G.eliteSurge = false; G.pendingChampion = false;
   if (G.coopJoin){   // joining the host's run (net/foes.js): their arena, their foes; the host runs the waves
-    G.coopJoin = false; G.coopGuest = true;
+    G.coopJoin = false; G.coopGuest = true; G.coopWasGuest = true;
     if (coopRun.ar){ G.arenaRot = coopRun.ar; rotateEndlessArena(ENDLESS_ARENAS[coopRun.ar]); }
     showBanner('CO-OP SURVIVAL', 'Fighting alongside the host.', 3.0);
     return;

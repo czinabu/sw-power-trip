@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { scene } from '../engine/renderer.js';
 import { enemies } from '../state.js';
 import { playerPos } from '../player/helpers.js';
+import { players, targetable } from '../player/players.js';
 
 /* ============================================================
    THE VOICE PANEL — the line in character, then the plain task with its keys and a count
@@ -48,7 +49,7 @@ export function makeBeacon(x, z, y, color, r = 1){
   ring.rotation.x = -Math.PI/2; ring.position.y = 0.06;
   g.add(beam, ring);
   g.position.set(x, y || 0, z);
-  g.userData.ring = ring; g.userData.beam = beam;
+  g.userData.ring = ring; g.userData.beam = beam; g.userData.r = r;
   scene.add(g);
   return g;
 }
@@ -72,13 +73,28 @@ export function makeConsole(x, z, yaw, color){
   screen.position.set(0, 0.92, 0.29); screen.rotation.x = -0.35;
   const top = new THREE.Group(); top.add(body, screen); top.rotation.y = yaw || 0;
   m.add(top);
+  m.userData.con = true; m.userData.yaw = yaw || 0;
   return m;
 }
 
 /* ============================================================
    ZONES — is the hero (or a foe) standing in it
    ============================================================ */
-export function heroIn(x, z, r){ const p = playerPos(); return Math.hypot(p.x - x, p.z - z) < r; }
+// is a hero in it: this one, or in co-op either of the two
+export function heroIn(x, z, r){
+  for (const h of players){ if (h.local ? false : !targetable(h)) continue; const p = h.pos; if (Math.hypot(p.x - x, p.z - z) < r) return true; }
+  return false;
+}
+// the hero closest to a point (the local one when nobody else is up): what a chase, an escort or a foe-in-waiting reads
+export function nearHero(x, z){
+  let best = null, bd = Infinity;
+  for (const h of players){
+    if (!targetable(h) && !h.local) continue;
+    const d = Math.hypot(h.pos.x - x, h.pos.z - z);
+    if (d < bd){ bd = d; best = h; }
+  }
+  return best || players[0];
+}
 export function hostilesIn(x, z, r){
   let n = 0;
   for (const e of enemies) if (!e.dead && !e.converted && Math.hypot(e.group.position.x - x, e.group.position.z - z) < r) n++;

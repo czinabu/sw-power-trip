@@ -12,7 +12,7 @@ import { startLevel, retryLevel, retryIsBoss, startCoopCampaign } from '../game/
 import { coopRun } from '../net/run.js';
 import { startEndless } from '../game/survival.js';
 import { startTutorial, skipStep, setTrainingExit, trainingDone } from '../game/tutorial.js';
-import { startMission, retryMission, missionDone, missionTitle } from '../game/mission.js';
+import { startMission, startCoopMission, retryMission, missionDone, missionTitle } from '../game/mission.js';
 import { startSandbox, sandboxUnlocked } from '../game/sandbox.js';
 import { closeSandboxPanel } from './sandbox-ui.js';
 import { MISSIONS } from '../data/missions.js';
@@ -93,7 +93,7 @@ function beginPlay(){
   if ((G.modeSel === 'endless' && !survivalUnlocked() && !G.coopJoin) || (G.modeSel === 'sandbox' && !sandboxUnlocked())) G.modeSel = 'campaign';   // safety — never launch a locked mode
   if (G.mode === 'menu' || G.mode === 'victory'){
     G.mode = 'play'; G.slowmo = 1;
-    if (G.coopJoin && G.modeSel === 'campaign') startCoopCampaign(coopRun.lv, coopRun.w, coopRun.wt); else if (G.modeSel === 'endless') startEndless(); else if (G.modeSel === 'training') startTutorial(); else if (G.modeSel === 'mission') startMission(G.missionId); else if (G.modeSel === 'sandbox') startSandbox(); else if (canResume()) resumeRun(); else startLevel(0);
+    if (G.coopJoin && G.modeSel === 'mission') startCoopMission(G.missionId); else if (G.coopJoin && G.modeSel === 'campaign') startCoopCampaign(coopRun.lv, coopRun.w, coopRun.wt); else if (G.modeSel === 'endless') startEndless(); else if (G.modeSel === 'training') startTutorial(); else if (G.modeSel === 'mission') startMission(G.missionId); else if (G.modeSel === 'sandbox') startSandbox(); else if (canResume()) resumeRun(); else startLevel(0);
   } else if (G.mode === 'dead'){
     G.mode = 'play'; G.slowmo = 1;
     if (G.endless) startEndless(); else if (G.training) startTutorial(); else if (G.mission) retryMission(); else if (G.sandbox) startSandbox(); else retryLevel();   // survival retry = a fresh survival run
@@ -360,7 +360,8 @@ document.getElementById('trainYes').addEventListener('click', (e) => { e.stopPro
 document.getElementById('trainNo').addEventListener('click', (e) => { e.stopPropagation(); overlay.classList.remove('asktrain'); launch(); });
 // co-op guest: start a run that follows the host's (net/foes.js): Survival (startEndless sees G.coopJoin) or the campaign's level
 export function launchCoopRun(){
-  G.coopJoin = true; G.modeSel = coopRun.k === 'c' ? 'campaign' : 'endless';
+  G.coopJoin = true; G.modeSel = coopRun.k === 'm' ? 'mission' : coopRun.k === 'c' ? 'campaign' : 'endless';
+  if (coopRun.k === 'm') G.missionId = coopRun.mid;
   setOverlayState('menu');
   launch();
 }
@@ -454,7 +455,7 @@ export function goHome(){
   if (G.stats){ G.stats._ended = false; G.stats.summary = null; }
   document.getElementById('runsummary').style.display = 'none';
   startLevel(0);   // sweep the battlefield and reset the hero + kit, exactly as a fresh campaign would
-  G.mode = 'menu'; G.paused = false; G.slowmo = 1; G.slowmoT = 0; G.hitstop = 0;
+  G.mode = 'menu'; G.coopWasGuest = false; G.paused = false; G.slowmo = 1; G.slowmoT = 0; G.hitstop = 0;
   overlay.style.display = 'flex';
   refreshMenu();
   overlay.scrollTop = 0;

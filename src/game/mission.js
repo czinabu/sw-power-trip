@@ -27,19 +27,22 @@ import { buildNav } from '../enemies/nav.js';
 import { makeEvacuee } from '../world/arenas/refuge.js';
 import { startLevel, queueSpawn, checkUnlocks } from './flow.js';
 import { endRun } from './summary.js';
-import { showBanner } from '../ui/banners.js';
+import { showBanner, bannerTap } from '../ui/banners.js';
+import { hooks } from '../net/run.js';
 import { overlay, setOverlayState } from '../ui/menus.js';
 import { showPanel, hidePanel, makeBeacon, makeConsole, setMarkerColor, pulseMarker, removeMarker,
-         heroIn, hostilesIn, hostilesAlive, setObjectiveHud, objectiveHud, mmss } from './objectives.js';
+         heroIn, nearHero, hostilesIn, hostilesAlive, setObjectiveHud, objectiveHud, mmss } from './objectives.js';
 import { MISSIONS, MISSION_VOICE, MISSION_COLOR } from '../data/missions.js';
 import { spawnSquad, squadIn, squadStanding } from '../allies/squad.js';
 import { collideSolids } from '../world/collision.js';
+import { players, targetable } from '../player/players.js';
 import { diffDmgMul } from '../data/difficulty.js';
 import { startBattleFx, stopBattleFx, updateBattleFx } from '../fx/battle.js';
 
 const RED = 0xff4a3a, GREEN = 0x7bffae;
 const M = { on: false, def: null, i: 0, o: null, s: null, markers: [], props: [], fx: [], panelT: 0, waitT: 0, endT: 0, won: false,
-            failT: 0, quarry: null, qHp: 0, vip: null };
+            failT: 0, quarry: null, qHp: 0, vip: null,
+            run: 0, guest: false, begun: -1, net: null };   // run counts restarts (a co-op guest follows it); guest: following the host's mission
 
 // an objective as this hero plays it: its `hero` overrides laid over it, and per-hero words picked
 function forHero(o){
@@ -51,7 +54,7 @@ function forHero(o){
 export function missionDone(id, hero){ try { return localStorage.getItem('sw_mission_' + id + '_' + hero) === '1'; } catch(e){ return false; } }
 
 // start a mission from the top, or (retry) from the objective you fell on
-export function startMission(id = 'refuge', fromObjective = 0){
+export function startMission(id = 'refuge', fromObjective = 0, guest = false){
   const def = MISSIONS[id] || MISSIONS.refuge;
   clearMission();
   const sub = def.level.sub && typeof def.level.sub === 'object' ? def.level.sub[G.hero] : def.level.sub;
@@ -59,9 +62,16 @@ export function startMission(id = 'refuge', fromObjective = 0){
   for (const k of (def.grant && def.grant[G.hero]) || []) G.unlocked[k] = true;
   G.waveTotal = def.kit; checkUnlocks();                 // a mid-run kit: forms, Force jump / jetpack boosters, dual blasters
   G.waveTotal = 0;   // ...but foes as tough as the first wave (HP and elite odds climb with waveTotal)
-  Object.assign(M, { on: true, def, i: fromObjective, o: null, s: null, fx: [], panelT: 0, endT: 0, won: false, failT: 0, quarry: null, qHp: 0, vip: null });
+  Object.assign(M, { on: true, def, i: fromObjective, o: null, s: null, fx: [], panelT: 0, endT: 0, won: false, failT: 0, quarry: null, qHp: 0, vip: null, run: M.run + 1, guest, begun: -1, net: null });
   const st = (fromObjective && def.objectives[fromObjective].start) || def.start;   // a retry may begin further along
   if (st){ playerPos().set(st[0], 0, st[1]); G.yaw = player.faceYaw = st[2] || 0; }
+  if (guest){   // co-op guest: the host runs the objectives; this browser shows them (coopMissionSync)
+    G.coopGuest = true; G.coopWasGuest = true; G.coopJoin = false;
+    M.i = -1; M.run = -1;
+    if (def.battle) startBattleFx(G.hero === 'mando' ? 0xffa040 : 0x4aa8ff);
+    showBanner('CO-OP MISSION', 'Fighting alongside the host.', 3.0);
+    return;
+  }
   if (def.quarry) placeQuarry(def.objectives[fromObjective]);
   if (def.escort) placeVip(fromObjective);
   // a STRIKE TEAM mission: the squad forms up beside the hero (allies/squad.js), and the wider battle rages past the walls
@@ -73,13 +83,14 @@ export function startMission(id = 'refuge', fromObjective = 0){
   M.waitT = 2.8;
   setObjectiveHud({ kicker: 'MISSION · ' + def.title, title: forHero(def.objectives[fromObjective]).title, status: 'STAND READY', frac: null });
 }
+export function startCoopMission(id){ startMission(id, 0, true); }
 export function retryMission(){ startMission(M.def ? M.def.id : (G.missionId || 'refuge'), M.def ? M.i : 0); }
 export function missionTitle(id){ return (MISSIONS[id] || MISSIONS.refuge).title; }
 function clearMission(){
   for (const m of M.markers) removeMarker(m);
   M.markers = [];
   for (const p of M.props) scene.remove(p);
-  M.props = []; M.fx = []; M.quarry = null; M.vip = null;
+  M.props = []; M.fx = []; M.quarry = null; M.vip = null; M.guest = false; M.net = null; M.begun = -1;
   stopBattleFx();
   if (M.on) hidePanel();
   M.on = false;
@@ -276,7 +287,7 @@ const KINDS = {
       walkVip(s, 0);
     },
     update(o, s, dt){
-      const v = M.vip, vp = v.g.position, pp = playerPos();
+      const v = M.vip, vp = v.g.position, pp = nearHero(vp.x, vp.z).pos;
       const send = (g, from) => queueGroup(g, { at: from && (() => arcSpawn(from[0], from[1])), then: e => { if (e) e.goal = s.goal; } });
       for (const a of s.amb){
         if (a.fired || s.d < a.d) continue;
@@ -339,7 +350,7 @@ const KINDS = {
     },
     update(o, s, dt){
       if (s.clash) return clashUpdate(o, s, dt);
-      const q = M.quarry, pp = playerPos(), qp = q.g.position;
+      const q = M.quarry, qp = q.g.position, pp = leadHero(s.P).pos, np = nearHero(qp.x, qp.z).pos;   // (co-op: the one furthest along sets the pace, the nearest one sees it)
       const pd = projectPath(s.P, pp.x, pp.z), gap = s.d - pd;
       G.chaseSurgeT = G.gt + 0.25;   // parkour on the run surges you forward (player/parkour.js flowLink)
       // on a shortcut lane: off its line, cutting the corner — the clock holds while you're in it
@@ -361,8 +372,8 @@ const KINDS = {
         placeOnPath(s, q, dt, spd);
       }
       // can you see it: close enough, and nothing taller than the line of sight in between
-      const dist = Math.hypot(qp.x - pp.x, qp.y - pp.y, qp.z - pp.z);
-      const seen = dist < o.sight && !sightBlocked(pp.x, pp.y + 1.5, pp.z, qp.x, qp.y + 1.4, qp.z);
+      const dist = Math.hypot(qp.x - np.x, qp.y - np.y, qp.z - np.z);
+      const seen = dist < o.sight && !sightBlocked(np.x, np.y + 1.5, np.z, qp.x, qp.y + 1.4, qp.z);
       if (!seen && s.seen){ s.last.position.set(qp.x, 0, qp.z); s.last.visible = true; }
       if (seen) s.last.visible = false;
       s.seen = seen;
@@ -570,8 +581,7 @@ function sightBlocked(ax, ay, az, bx, by, bz){
   }
   return false;
 }
-function makeQuarry(){
-  const q = M.def.quarry[G.hero];
+function makeQuarry(q = M.def.quarry[G.hero]){
   const g = buildEnemyMesh(ENEMY_TYPES[q.foe]);
   g.scale.multiplyScalar(q.scale || 1);
   g.userData.bodyMat.color.lerp(new THREE.Color(q.tint), 0.5);
@@ -610,20 +620,22 @@ function placeOnPath(s, q, dt = 0, spd = 0){
   g.position.set(x, y, z);
   g.rotation.set(0, s.yaw, 0);
   updateLegs(q, g, dt, b[2] === 'leap' ? 'air' : 'ground');   // its stride, lean and footing are the troopers' (enemies/gait.js)
-  updateUpper(q, g, dt, playerPos());   // and it keeps looking back at you (enemies/upper.js)
+  updateUpper(q, g, dt, nearHero(g.position.x, g.position.z).pos);   // and it keeps looking back at you (enemies/upper.js)
   q.tag.position.set(x, y + 2.7 * (q.def.scale || 1) + Math.sin(G.gt * 5) * 0.12, z);
 }
 // standing still: turn to face the hero
 function faceHero(q, dt){
-  const p = playerPos(), g = q.g, want = Math.atan2(p.x - g.position.x, p.z - g.position.z);
+  const g = q.g, p = nearHero(g.position.x, g.position.z).pos, want = Math.atan2(p.x - g.position.x, p.z - g.position.z);
   g.rotation.y += Math.atan2(Math.sin(want - g.rotation.y), Math.cos(want - g.rotation.y)) * Math.min(1, dt * 5);
   g.rotation.x = 0;
-  updateLegs(q, g, dt); updateUpper(q, g, dt, playerPos());
+  updateLegs(q, g, dt); updateUpper(q, g, dt, p);
 }
 function shove(q, s){
-  const qp = q.g.position, pp = playerPos(), dx = pp.x - qp.x, dz = pp.z - qp.z, l = Math.hypot(dx, dz) || 1;
-  hurtPlayer(6, V3(qp.x, 1, qp.z), false, false);
-  player.vel.x += dx / l * 13; player.vel.z += dz / l * 13; player.vel.y = Math.max(player.vel.y, 5);
+  const qp = q.g.position, hh = nearHero(qp.x, qp.z), pp = hh.pos, dx = pp.x - qp.x, dz = pp.z - qp.z, l = Math.hypot(dx, dz) || 1;
+  if (hh.local){   // (a partner's shove is theirs to feel: only the flash and the sound reach them from here)
+    hurtPlayer(6, V3(qp.x, 1, qp.z), false, false);
+    player.vel.x += dx / l * 13; player.vel.z += dz / l * 13; player.vel.y = Math.max(player.vel.y, 5);
+  }
   burst(V3(qp.x, 1.2, qp.z), q.def.tint, 18, 9, 3, 0.9);
   G.shake = Math.max(G.shake, 0.5);
   floater(V3(pp.x, 1.8, pp.z), G.hero === 'mando' ? 'SHOCK BLAST' : 'FORCE SHOVE', '#ff9a8a');
@@ -700,14 +712,26 @@ function pathOf(pts){
   for (let k = 1; k < pts.length; k++) cum.push(cum[k-1] + Math.hypot(pts[k][0] - pts[k-1][0], pts[k][1] - pts[k-1][1]));
   return { pts, cum, len: cum[cum.length - 1] };
 }
-function placeVip(fromObjective){
-  const d = M.def.escort[G.hero];
+// the hero furthest along a leg: the one the chase's pace follows
+function leadHero(P){
+  let best = null, bd = -Infinity;
+  for (const h of players){
+    if (!targetable(h) && !h.local) continue;
+    const d = projectPath(P, h.pos.x, h.pos.z);
+    if (d > bd){ bd = d; best = h; }
+  }
+  return best || players[0];
+}
+function buildVip(d){
   const g = buildEnemyMesh({ model: d.model, color: d.color, eye: d.eye, cloth: d.cloth, scale: d.scale || 1 });
   const tag = new THREE.Mesh(new THREE.OctahedronGeometry(0.16, 0),
     new THREE.MeshBasicMaterial({ color: MISSION_COLOR[G.hero], toneMapped: false, depthTest: false, transparent: true }));
   tag.renderOrder = 998;
   scene.add(g, tag); M.props.push(g, tag);
-  M.vip = { g, tag, def: d, hp: d.hp, maxHp: d.hp };
+  return M.vip = { g, tag, def: d, hp: d.hp, maxHp: d.hp };
+}
+function placeVip(fromObjective){
+  const d = M.def.escort[G.hero], { g, tag } = buildVip(d);
   // it stands where its walk picks up: the start of the first escort leg from here on, or the end of the last one before
   const objs = M.def.objectives, next = objs.slice(fromObjective).find(o => o.kind === 'escort');
   const prev = objs.slice(0, fromObjective).reverse().find(o => o.kind === 'escort');
@@ -789,6 +813,7 @@ function missionComplete(){
   const def = M.def;
   try { localStorage.setItem('sw_mission_' + def.id + '_' + G.hero, '1'); } catch(e){}
   showPanel(MISSION_VOICE[G.hero], def.done[G.hero], '', 'Mission complete', { drill: true, done: true });
+  if (!M.guest && hooks.missionDone) hooks.missionDone();   // co-op: the guest's mission ends with it
   endRun(true);
   G.mode = 'victory'; G.slowmo = 1; G.slowmoT = 0;
   showBanner('MISSION COMPLETE', def.title, 999);
@@ -805,6 +830,11 @@ function missionComplete(){
 export function updateMission(dt){
   if (!M.on) return;
   if (!G.mission){ clearMission(); return; }   // left the mission (main menu, another mode)
+  if (M.guest){ updateMissionGuest(dt); return; }
+  bannerTap.fn = hooks.mbanner;   // co-op: what this banner says, the guest's screen says too
+  try { updateMissionHost(dt); } finally { bannerTap.fn = null; }
+}
+function updateMissionHost(dt){
   M.fx = M.fx.filter(f => f(dt));
   updateBattleFx(dt);
   if (M.panelT > 0 && (M.panelT -= dt) <= 0) hidePanel();
@@ -850,3 +880,77 @@ export function missionChecklist(){
 export const missionState = () => M;
 // how far through the mission (the atmosphere's mood follows it)
 export function missionProgress(){ return M.on ? M.i / Math.max(1, M.def.objectives.length - 1) : 0; }
+
+/* ============================================================
+   CO-OP — the host runs the mission; a guest is shown it (net/foes.js carries missionSnap in the host's snapshots)
+   ============================================================ */
+const r2 = (n) => Math.round(n * 100) / 100;
+// what the guest needs to see of this mission right now: which objective, the objective line, the markers, who is running and who is being walked
+export function missionSnap(){
+  if (!M.on || M.guest) return null;
+  const hud = objectiveHud(), q = M.quarry, v = M.vip;
+  return { id: M.def.id, run: M.run, hh: G.hero, i: M.i, b: M.o ? 1 : 0, f: M.failT > 0 ? 1 : 0,
+    hud: hud ? [hud.status || '', hud.frac == null ? -1 : r2(hud.frac), hud.warn ? 1 : 0] : null,
+    mk: M.markers.map(m => [m.userData.con ? 1 : 0, r2(m.position.x), r2(m.position.z), r2(m.userData.r || 1), m.userData.ring.material.color.getHex(),
+                            m.userData.beam.visible ? 1 : 0, m.visible ? 1 : 0, r2(m.userData.yaw || 0)]),
+    q: q ? [r2(q.g.position.x), r2(q.g.position.y), r2(q.g.position.z), r2(q.g.rotation.y), q.tag.visible ? 1 : 0] : null,
+    v: v ? [r2(v.g.position.x), r2(v.g.position.z), r2(v.g.rotation.y)] : null };
+}
+// guest: follow the host's mission
+export function coopMissionSync(ms){
+  if (!M.on || !M.guest || !ms || M.def.id !== ms.id) return;
+  if (ms.run !== M.run){   // the host started the mission (or this leg of it) over
+    for (const m of M.markers) removeMarker(m);
+    M.markers = [];
+    for (const p of M.props) scene.remove(p);
+    M.props = []; M.quarry = null; M.vip = null; M.begun = -1; M.i = -1; M.run = ms.run;
+  }
+  if (ms.i !== M.i){
+    if (M.i >= 0){ MUSIC.objectiveSting(); patchUp(); }   // the last objective is done: this hero's own breather too
+    M.i = ms.i;
+  }
+  if (ms.b && M.begun !== ms.i){
+    M.begun = ms.i;
+    M.o = forHero(M.def.objectives[ms.i]);
+    say(M.o);
+  }
+  M.net = ms;
+  while (M.markers.length > ms.mk.length) removeMarker(M.markers.pop());
+  ms.mk.forEach((r, k) => {
+    let m = M.markers[k];
+    if (m && !!m.userData.con !== !!r[0]){ removeMarker(m); m = null; }
+    if (!m) m = M.markers[k] = r[0] ? makeConsole(r[1], r[2], r[7], r[4]) : makeBeacon(r[1], r[2], 0, r[4], r[3] / 0.9);
+    m.position.set(r[1], 0, r[2]);
+    setMarkerColor(m, r[4]);
+    m.userData.beam.visible = !!r[5]; m.visible = !!r[6];
+  });
+  if (ms.q && !M.quarry && M.def.quarry) M.quarry = makeQuarry(M.def.quarry[ms.hh]);
+  else if (!ms.q && M.quarry){ const q = M.quarry; scene.remove(q.g, q.tag); M.props = M.props.filter(p => p !== q.g && p !== q.tag); M.quarry = null; }
+  if (ms.v && !M.vip && M.def.escort) buildVip(M.def.escort[ms.hh]);
+  const hud = ms.hud;
+  if (M.o && hud) setObjectiveHud({ kicker: 'MISSION · ' + M.def.title, title: M.o.title, frac: hud[1] < 0 ? null : hud[1], status: hud[0], warn: !!hud[2] });
+}
+function updateMissionGuest(dt){
+  M.fx = M.fx.filter(f => f(dt));
+  updateBattleFx(dt);
+  if (M.panelT > 0 && (M.panelT -= dt) <= 0) hidePanel();
+  const ms = M.net;
+  if (!ms) return;
+  for (const m of M.markers) if (m.visible) pulseMarker(m, dt, G.gt);
+  const k = 1 - Math.exp(-14 * dt), ang = (a, b) => Math.atan2(Math.sin(b - a), Math.cos(b - a));
+  if (M.quarry && ms.q){
+    const q = M.quarry, g = q.g, w = ms.q;
+    g.position.x += (w[0] - g.position.x) * k; g.position.y += (w[1] - g.position.y) * k; g.position.z += (w[2] - g.position.z) * k;
+    g.rotation.y += ang(g.rotation.y, w[3]) * k; g.rotation.x = 0;
+    q.tag.visible = !!w[4]; q.tag.position.set(g.position.x, g.position.y + 2.7 * (q.def.scale || 1) + Math.sin(G.gt * 5) * 0.12, g.position.z);
+    updateLegs(q, g, dt, 'ground'); updateUpper(q, g, dt, nearHero(g.position.x, g.position.z).pos);
+  }
+  if (M.vip && ms.v){
+    const v = M.vip, g = v.g, w = ms.v;
+    g.position.x += (w[0] - g.position.x) * k; g.position.z += (w[1] - g.position.z) * k; g.rotation.y += ang(g.rotation.y, w[2]) * k;
+    v.tag.position.set(g.position.x, 2.3 * (v.def.scale || 1) + Math.sin(G.gt * 5) * 0.1, g.position.z);
+    updateLegs(v, g, dt, 'ground'); updateUpper(v, g, dt, null);
+  }
+}
+// the host finished the mission: this browser's ends too
+export function coopMissionDone(){ if (M.on && M.guest && G.mode === 'play') missionComplete(); }

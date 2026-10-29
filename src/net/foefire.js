@@ -21,6 +21,8 @@ import { gainXp } from '../game/progression.js';
 import { hurtPlayer } from '../player/damage.js';
 import { bossBlowResult, spawnBossRing } from '../boss/boss.js';
 import { victory } from '../game/summary.js';
+import { coopMissionDone } from '../game/mission.js';
+import { showBanner } from '../ui/banners.js';
 import { blockedOnBlade } from '../player/jedi/clash.js';
 import { playerPos } from '../player/helpers.js';
 import { players } from '../player/players.js';
@@ -147,6 +149,18 @@ on('pb', (m) => {
   b.ghost = true; b.mesh.material.color.setHex(m.c); b.mesh.scale.set(m.k, m.k * 1.3, m.k);
 });
 
+/* ---------------- the partner's one-shot Force powers: a ring where they stand ---------------- */
+hooks.power = (k, color, r) => {
+  if (!asHost() && !asGuest()) return;
+  const p = playerPos();
+  send({ t: 'pw', k, c: color, r: r2(r), x: r2(p.x), z: r2(p.z) });
+};
+on('pw', (m) => {
+  if (!asHost() && !asGuest()) return;
+  spawnGroundShock(V3(m.x, 0.1, m.z), m.c, m.r, 0.45, 0.7);
+  burst(V3(m.x, 1.0, m.z), m.c, 10, 8, 4);
+});
+
 /* ---------------- shared XP: a kill pays both heroes ---------------- */
 hooks.xp = (n) => { if (asHost() && n > 0) send({ t: 'xp', n: Math.round(n) }); };
 on('xp', (m) => { if (asGuest()) gainXp(m.n); });
@@ -179,6 +193,11 @@ hooks.ring = (pos, r0) => { if (asHost()) send({ t: 'ring', x: r2(pos.x), z: r2(
 on('ring', (m) => { if (asGuest()) spawnBossRing(m.x, m.z, m.r); });
 hooks.bctl = (k) => { if (asGuest()) send({ t: 'bctl', k }); };
 hooks.bossDead = () => { if (asHost()) send({ t: 'bdead' }); };
+// story missions: the host's banners reach the guest, and its mission ending ends theirs
+hooks.mbanner = (a, b, c, o) => { if (asHost()) send({ t: 'mbn', a, b, c, k: o && o.kicker }); };
+on('mbn', (m) => { if (asGuest() && G.mission) showBanner(m.a, m.b, m.c, m.k ? { kicker: m.k } : undefined); });
+hooks.missionDone = () => { if (asHost()) send({ t: 'mdone' }); };
+on('mdone', () => { if (asGuest()) coopMissionDone(); });
 on('bdead', () => { if (asGuest() && G.mode === 'play'){ if (shared.boss && shared.boss.net) { /* the puppet falls with the snapshot */ } victory(); } });
 
 /* ---------------- warnings ---------------- */
