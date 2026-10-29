@@ -12,6 +12,7 @@ import { shared, G, enemies, bolts, vfx, keys, player } from '../../state.js';
 import { MANDO, MANDO_WEAPONS, weaponUnlocked } from '../../data/mando.js';
 import { abil } from '../../data/mastery.js';
 import { fwd, rightV, playerPos } from '../helpers.js';
+import { crosshairPoint, crosshairRay, lastAim, aimFrom, inAim, bossInAim } from '../aim.js';
 import { inReach, bodyRadius, sweepHit } from '../../enemies/bodyshape.js';
 import { damageEnemy } from '../../enemies/damage.js';
 import { updateMandoMelee } from './melee.js';
@@ -31,42 +32,15 @@ import { syncHolster } from '../holster.js';
    ============================================================ */
 // You shoot EXACTLY down the crosshair ray — NO aim assist. The bolt aims at the point on that ray where it
 // passes into an enemy's body (so it converges on whatever the crosshair is over — head, torso, arm or legs),
-// or a far point if the crosshair is on empty space. You must put the crosshair on the foe yourself.
-const _camDir = new THREE.Vector3(), _ray = new THREE.Raycaster(), _ndc = new THREE.Vector2(), _far = new THREE.Vector3();
-const AIM_FAR = 80;
+// the floor or prop it meets, or a far point if the crosshair is on open sky. You must put the crosshair on the foe
+// yourself. (The ray itself is cast in player/aim.js, which every aimed ability shares.)
 export const _look = new THREE.Vector3(), _lh = new THREE.Vector3();   // camera look dir + its horizontal (jetpack dive thrust)
 // the reticle's ray as mandoAimPoint last cast it (origin, direction)
-export const mandoAimRay = () => _ray.ray;
+export const mandoAimRay = crosshairRay;
 export function mandoAimPoint(){
-  _ndc.set((player.aimOff.x) * 2 / innerWidth, -(player.aimOff.y) * 2 / innerHeight);   // through the floating reticle
-  _ray.setFromCamera(_ndc, camera);
-  _camDir.copy(_ray.ray.direction);
-  const o = _ray.ray.origin, d = _camDir;
-  const dh2 = d.x*d.x + d.z*d.z;
-  let bestT = 1e9, hit = false;
-  // treat each foe as an upright cylinder (radius `rad`, from cy0 to cyTop); the crosshair must actually be over it
-  const consider = (cx, cz, cy0, cyTop, rad) => {
-    if (dh2 < 1e-6) return;
-    const t = ((cx - o.x)*d.x + (cz - o.z)*d.z) / dh2;   // ray param closest to the body's vertical axis (in XZ)
-    if (t < 1 || t > 80 || t > bestT) return;
-    const rx = o.x + d.x*t - cx, rz = o.z + d.z*t - cz;
-    if (rx*rx + rz*rz > rad*rad) return;                 // crosshair misses the body column
-    const ry = o.y + d.y*t;
-    if (ry < cy0 || ry > cyTop) return;                  // crosshair is above the head or below the feet
-    bestT = t; hit = true;
-  };
-  // foes: the crosshair has to be over the body itself (its real hitbox, bodyshape.js), and the shot converges a hand's
-  // depth INTO it, so a bolt from the gun (a little off the camera ray) still lands where the crosshair was
-  _far.copy(o).addScaledVector(d, AIM_FAR);
-  for (const e of enemies){ if (e.dead || e.converted || e.state === 'spawn') continue;
-    const h = sweepHit(e, o, _far, 0);
-    if (!h) continue;
-    const t = h.t * AIM_FAR + 0.15;
-    if (t >= 1 && t < bestT){ bestT = t; hit = true; } }
-  if (shared.boss && shared.boss.hp > 0){ const p = shared.boss.group.position; consider(p.x, p.z, p.y + 0.3, p.y + 3.6, 1.7); }
-  player.lockOn = hit;
-  const t = hit ? bestT : 40;
-  return V3(o.x + d.x*t, o.y + d.y*t, o.z + d.z*t);   // the ray point — EXACTLY where the crosshair is
+  const p = crosshairPoint(player.aimOff.x, player.aimOff.y);   // through the floating reticle
+  player.lockOn = !!lastAim.target;
+  return p;
 }
 /* ===== BLASTER WEAPONS — single / dual / disruptor, with ammo & reload ===== */
 export function aCost(base){ return base * (player.up.abilityCostMul || 1); }   // abilities start steep; upgrades drop the multiplier
@@ -331,11 +305,13 @@ export function updateFlame(dt){
   player.force = Math.max(0, player.force - A.fuel * (player.up.abilityCostMul || 1) * dt);
   const pp = playerPos();
   player.aiming = Math.max(player.aiming, 0.2);   // square the body up so the stream points where you look (no auto-target)
-  const f = fwd();
   const range = A.range * (player.up.flameRange || 1);
   const cosLim = Math.cos(A.angle);
-  const fy = pp.y + 1.4;   // the stream pours from the player's OWN height (so it tracks you into the air)
-  fl.position.set(pp.x + f.x*2.2, fy, pp.z + f.z*2.2);
+  // the stream pours from the wrist at the player's OWN height and runs down the reticle: tip it up at a jetpacker,
+  // down onto the troops below you from the air
+  const aim = aimFrom(V3(pp.x, pp.y + 1.4, pp.z)), f = aim.dir;
+  const fy = pp.y + 1.4;
+  fl.position.set(pp.x + f.x*2.2, fy + f.y*2.2, pp.z + f.z*2.2);
   // a roaring stream of fire fanning from the wrist: toon flame puffs that leave the nozzle white-hot and cool in hard
   // steps (yellow, orange, ember) into ink-rimmed smoke as they reach the end of the stream. Emitted by time, not frame.
   player.flameEmit = (player.flameEmit || 0) + dt * 64;
@@ -343,29 +319,24 @@ export function updateFlame(dt){
     const spread = rand(-A.angle, A.angle) * 0.8;
     const dx = f.x*Math.cos(spread) - f.z*Math.sin(spread), dz = f.x*Math.sin(spread) + f.z*Math.cos(spread);
     const spd = range * rand(2.2, 2.9), life = rand(0.32, 0.44);
-    puff(V3(pp.x + f.x*0.9, fy + rand(-0.1,0.15), pp.z + f.z*0.9), FLAME[0][1], rand(0.9, 1.3) + range*0.12, life,
-         V3(dx*spd, rand(0.6,2.2), dz*spd), { ramp: FLAME, drag: 2.2, grav: -3, grow0: 0.25, shade: 0.3, inkW: 0.12 });
+    puff(V3(pp.x + f.x*0.9, fy + f.y*0.9 + rand(-0.1,0.15), pp.z + f.z*0.9), FLAME[0][1], rand(0.9, 1.3) + range*0.12, life,
+         V3(dx*spd, f.y*spd + rand(0.6,2.2), dz*spd), { ramp: FLAME, drag: 2.2, grav: -3, grow0: 0.25, shade: 0.3, inkW: 0.12 });
   }
-  if (Math.random() < 0.5) sparks(V3(pp.x + f.x*1.2, fy, pp.z + f.z*1.2), 0xffd06a, 1, range * 2.2, { dir: f, cone: A.angle, life: 0.3, grav: -2, size: 0.4 });
+  if (Math.random() < 0.5) sparks(V3(pp.x + f.x*1.2, fy + f.y*1.2, pp.z + f.z*1.2), 0xffd06a, 1, range * 2.2, { dir: f, cone: A.angle, life: 0.3, grav: -2, size: 0.4 });
   // the roar is a continuous loop driven by player.flaming (audio/director.js)
   G.shake = Math.max(G.shake, 0.06);   // a steady rumble, no jitter
   // light tick damage + a steady gentle push (NO per-hit hitstop/sfx — that was the "spazz")
   const dmg = A.dmg * (player.up.flameDmg || 1) * dt;
   for (const e of enemies){
     if (e.dead || e.converted || e.state === 'spawn') continue;
-    TMP.subVectors(e.group.position, pp);
-    if (Math.abs(TMP.y) > range*0.45) continue;   // the stream fires level — it won't roast foes on the ground far below
-    TMP.y = 0;
+    TMP.subVectors(e.group.position, pp); TMP.y = 0;
     const d = TMP.length();
-    if (d < 0.1 || !inReach(e, pp, range, f, cosLim)) continue;   // the stream licks any of the body inside its fan
+    if (d < 0.1 || !inAim(e, aim, range, cosLim, 0.12)) continue;   // the stream licks any of the body inside its fan, up or down the aim
     TMP.normalize();
     damageEnemy(e, dmg, null, 0, false, true);                 // tick = true → no spazz
     if (!e.dead && !e.t.heavy) e.group.position.addScaledVector(TMP, A.knock*dt);   // gentle, steady shove
   }
-  if (shared.boss && shared.boss.hp > 0){
-    TMP.subVectors(shared.boss.group.position, pp); TMP.y = 0;
-    if (TMP.length() < range && TMP.normalize().dot(f) > cosLim) damageBoss(dmg, true);
-  }
+  if (bossInAim(aim, range, cosLim, 0.12)) damageBoss(dmg, true);
 }
 
 // Mando per-frame weapon upkeep: timers, free-aim drift + sway, reload, held auto-fire, flamethrower, darksaber.
