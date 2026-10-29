@@ -292,7 +292,7 @@ export function startCoopCampaign(lv, wave, waveTotal){
   startLevel(0);   // a full fresh setup (kit, build, stats)
   G.waveTotal = waveTotal;
   if (lv > 0) startLevel(lv, { resume: true });   // the same level as the host, keeping that build
-  G.coopGuest = true; G.coopJoin = false;
+  G.coopGuest = true; G.coopWasGuest = true; G.coopJoin = false;
   G.wave = wave; shared.levelPhase = 'between'; shared.phaseT = 0;
   checkUnlocks();
   showBanner('CO-OP CAMPAIGN', 'Fighting alongside the host.', 3.0);

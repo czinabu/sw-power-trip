@@ -178,3 +178,4 @@ The main menu's ONLINE CO-OP panel hosts a room (a 5-letter code) or joins one. 
 - `npm run build && npm run smoke:coop` opens two browsers against a local PeerServer, connects them and checks each sees the other, that the partner is posed from the network, and that enemies go after both heroes.
 - `npm run smoke:coop-run` checks the shared Survival fight: the guest joins the host's run, shows its foes as puppets, and a blow on one reaches the host.
 - `npm run smoke:coop-campaign` checks the shared campaign: the guest joins the host's level, shows its foes as puppets, and follows the host's wave clear.
+- `npm run smoke:coop-mission` checks a shared story mission: the guest joins the host's mission, follows its objectives, markers and quarry, and finishes with it.

@@ -3,6 +3,7 @@
 
 import * as THREE from 'three';
 import { scene } from '../../engine/renderer.js';
+import { hooks } from '../../net/run.js';
 import { sfx, S } from '../../audio/sfx.js';
 import { V3, rand, TMP, clamp } from '../../utils.js';
 import { burst } from '../../fx/particles.js';
@@ -49,6 +50,7 @@ export function mandoRocket(){
   m.position.copy(origin); m.quaternion.setFromUnitVectors(V3(0,1,0), dir);
   scene.add(m);
   rockets.push({ mesh: m, dir: dir.clone(), speed: A.speed, life: 3 });
+  if (hooks.pbolt) hooks.pbolt({ mesh: m, dir, speed: A.speed }, 0xff8a2a, 2.4);   // co-op: the partner sees it fly
   // launch FEEL: muzzle smoke + flash, a back-kick of recoil, a screen punch
   muzzleFlash(origin, dir, 0xffb04a, 1.1);
   for (let n = 0; n < 3; n++) puff(origin.clone().addScaledVector(dir, 0.5 + n*0.35), 0x8a8580, 0.45, 0.35, V3(rand(-1,1), rand(0.5,1.5), rand(-1,1)), { delay: n*0.03, op: 0.8 });
@@ -98,6 +100,7 @@ export function mandoJetMissile(){
   m.position.copy(origin); m.quaternion.setFromUnitVectors(V3(0,1,0), dir);
   scene.add(m);
   rockets.push({ mesh: m, dir: dir.clone(), speed: A.speed, life: 3.4, big: true });
+  if (hooks.pbolt) hooks.pbolt({ mesh: m, dir, speed: A.speed }, 0xff8a2a, 3.4);
   muzzleFlash(origin, dir, 0xffb04a, 1.6);
   for (let n = 0; n < 4; n++) puff(origin.clone().addScaledVector(dir, 0.6 + n*0.4), 0x8a8580, 0.6, 0.4, V3(rand(-1.5,1.5), rand(0.5,2), rand(-1.5,1.5)), { delay: n*0.03, op: 0.8 });
   player.vel.addScaledVector(f, -5);   // a serious kick

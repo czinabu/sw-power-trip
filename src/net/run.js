@@ -4,7 +4,7 @@
 // own modules can read it without a cycle.
 
 /* the host's run, last heard of: on while the host is fighting a Survival run, with its arena and wave */
-export const coopRun = { on: false, k: 'e', lv: 0, ar: 0, w: 0, wt: 0, ph: '', mut: null,
+export const coopRun = { on: false, k: 'e', mid: '', lv: 0, ar: 0, w: 0, wt: 0, ph: '', mut: null,
   live: false,          // this browser is in a shared fight right now: the world keeps going whatever one hero's pause or hitstop does
   guestPicking: false };   // host side: the guest has its upgrade screen open, so the next wave waits
 
@@ -20,4 +20,4 @@ export function queueHit(e, dmg, knockDir, knockPow, finisher, tick){
 }
 
 // what the foe code calls to tell the other browser (set by net/foefire.js; null in solo, so nothing changes there)
-export const hooks = { hurt: null, bolt: null, bx: null, blast: null, tell: null, gren: null, pbolt: null, xp: null, aim: null, lunge: null, ring: null, bctl: null, bossDead: null };
+export const hooks = { hurt: null, bolt: null, bx: null, blast: null, tell: null, gren: null, pbolt: null, xp: null, aim: null, lunge: null, ring: null, bctl: null, bossDead: null, missionDone: null, mbanner: null, power: null };
