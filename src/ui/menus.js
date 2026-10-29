@@ -8,7 +8,8 @@ import { AE } from '../audio/engine.js';
 import { shared, G, player } from '../state.js';
 import { applySaberGrip } from '../player/model/weapons.js';
 import { setHero } from '../player/hero.js';
-import { startLevel, retryLevel, retryIsBoss } from '../game/flow.js';
+import { startLevel, retryLevel, retryIsBoss, startCoopCampaign } from '../game/flow.js';
+import { coopRun } from '../net/run.js';
 import { startEndless } from '../game/survival.js';
 import { startTutorial, skipStep, setTrainingExit, trainingDone } from '../game/tutorial.js';
 import { startMission, retryMission, missionDone, missionTitle } from '../game/mission.js';
@@ -92,7 +93,7 @@ function beginPlay(){
   if ((G.modeSel === 'endless' && !survivalUnlocked() && !G.coopJoin) || (G.modeSel === 'sandbox' && !sandboxUnlocked())) G.modeSel = 'campaign';   // safety — never launch a locked mode
   if (G.mode === 'menu' || G.mode === 'victory'){
     G.mode = 'play'; G.slowmo = 1;
-    if (G.modeSel === 'endless') startEndless(); else if (G.modeSel === 'training') startTutorial(); else if (G.modeSel === 'mission') startMission(G.missionId); else if (G.modeSel === 'sandbox') startSandbox(); else if (canResume()) resumeRun(); else startLevel(0);
+    if (G.coopJoin && G.modeSel === 'campaign') startCoopCampaign(coopRun.lv, coopRun.w, coopRun.wt); else if (G.modeSel === 'endless') startEndless(); else if (G.modeSel === 'training') startTutorial(); else if (G.modeSel === 'mission') startMission(G.missionId); else if (G.modeSel === 'sandbox') startSandbox(); else if (canResume()) resumeRun(); else startLevel(0);
   } else if (G.mode === 'dead'){
     G.mode = 'play'; G.slowmo = 1;
     if (G.endless) startEndless(); else if (G.training) startTutorial(); else if (G.mission) retryMission(); else if (G.sandbox) startSandbox(); else retryLevel();   // survival retry = a fresh survival run
@@ -357,9 +358,9 @@ export function beginFromMenu(){
 }
 document.getElementById('trainYes').addEventListener('click', (e) => { e.stopPropagation(); overlay.classList.remove('asktrain'); setModeSel('training'); launch(); });
 document.getElementById('trainNo').addEventListener('click', (e) => { e.stopPropagation(); overlay.classList.remove('asktrain'); launch(); });
-// co-op guest: start a Survival run that follows the host's (net/foes.js); startEndless sees G.coopJoin
+// co-op guest: start a run that follows the host's (net/foes.js): Survival (startEndless sees G.coopJoin) or the campaign's level
 export function launchCoopRun(){
-  G.coopJoin = true; G.modeSel = 'endless';
+  G.coopJoin = true; G.modeSel = coopRun.k === 'c' ? 'campaign' : 'endless';
   setOverlayState('menu');
   launch();
 }

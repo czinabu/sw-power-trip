@@ -11,7 +11,8 @@
     "smoke:coop": "node tools/smoke/coop.mjs",
     "smoke:maps": "node tools/smoke/maps.mjs",
     "smoke:saves": "node tools/smoke/saves.mjs",
-    "smoke:coop-run": "node tools/smoke/coop-run.mjs"
+    "smoke:coop-run": "node tools/smoke/coop-run.mjs",
+    "smoke:coop-campaign": "node tools/smoke/coop-campaign.mjs"
   },
   "dependencies": {
     "peerjs": "^1.5.5",
