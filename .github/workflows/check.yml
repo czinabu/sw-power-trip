@@ -24,6 +24,7 @@ jobs:
       - run: npm run smoke:coop
       - run: npm run smoke:coop-run
       - run: npm run smoke:coop-campaign
+      - run: npm run smoke:coop-mission
       - run: npm run smoke:maps
       - if: failure()
         uses: actions/upload-artifact@v4
