@@ -49,6 +49,7 @@ export function bomberExplode(e){
 // MARKSMAN laser sight — a thin beam muzzle→aim that brightens as the shot charges (the dodge tell)
 const _aimGeo = new THREE.BoxGeometry(1, 1, 1);
 export function updateAimLine(e, from, to, charge){
+  if (hooks.aim) hooks.aim(e, from, to, charge);   // co-op: the guest sees the beam too
   if (!e.aimLine){
     e.aimLine = new THREE.Mesh(_aimGeo, new THREE.MeshBasicMaterial({ color: e.t.eye, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending, depthWrite: false }));
     scene.add(e.aimLine);

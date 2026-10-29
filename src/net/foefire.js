@@ -13,7 +13,8 @@ import { scene } from '../engine/renderer.js';
 import { fireBolt } from '../enemies/bolts.js';
 import { throwGrenade, grenades } from '../enemies/grenades.js';
 import { staggerEnemy } from '../enemies/damage.js';
-import { endLunge } from '../enemies/tactics.js';
+import { endLunge, paintLungeLine } from '../enemies/tactics.js';
+import { updateAimLine } from '../enemies/specials.js';
 import { addPosture, drainBreath } from '../enemies/duel.js';
 import { DUEL } from '../data/duel.js';
 import { gainXp } from '../game/progression.js';
@@ -134,6 +135,29 @@ on('pb', (m) => {
 /* ---------------- shared XP: a kill pays both heroes ---------------- */
 hooks.xp = (n) => { if (asHost() && n > 0) send({ t: 'xp', n: Math.round(n) }); };
 on('xp', (m) => { if (asGuest()) gainXp(m.n); });
+
+/* ---------------- the marksman's laser sight and the lancer's lunge line (sent at the pose rate per foe) ---------------- */
+const due = (e, key) => { const now = performance.now(); if (now - (e[key] || 0) < 50) return false; e[key] = now; return true; };
+hooks.aim = (e, from, to, charge) => {
+  if (!asHost() || !due(e, 'netAimAt')) return;
+  send({ t: 'aim', n: e.nid, a: [r2(from.x), r2(from.y), r2(from.z)], b: [r2(to.x), r2(to.y), r2(to.z)], c: r2(charge) });
+};
+on('aim', (m) => {
+  const e = asGuest() && puppetOf(m.n);
+  if (!e) return;
+  updateAimLine(e, V3(m.a[0], m.a[1], m.a[2]), V3(m.b[0], m.b[1], m.b[2]), m.c);
+  e.aimAt = performance.now();
+});
+hooks.lunge = (e, pos, ry, len, locked, k) => {
+  if (!asHost() || !due(e, 'netLwAt')) return;
+  send({ t: 'lw', n: e.nid, x: r2(pos.x), z: r2(pos.z), y: r2(ry), l: r2(len), k: locked ? 1 : 0, p: r2(k) });
+};
+on('lw', (m) => {
+  const e = asGuest() && puppetOf(m.n);
+  if (!e) return;
+  paintLungeLine(e, m.x, m.z, m.y, m.l, !!m.k, m.p);
+  e.lungeAt = performance.now();
+});
 
 /* ---------------- warnings ---------------- */
 hooks.tell = (kind, pos, radius, dur) => {
