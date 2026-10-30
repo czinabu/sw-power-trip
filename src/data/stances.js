@@ -20,7 +20,7 @@ import { G } from '../state.js';
    second is where it was. */
 export const STANCES = {
   fast:   { name: 'ATARU — FAST', form: 'ataru', formNo: 'IV', blade: 0x35c8ff,
-            dmg: 1.18, heavyDmg: 0.85, speed: 0.92, knock: 0.38, stamina: 6, lunge: 1.4, move: 1.25, accel: 1.7, twist: 0.4, bladeLen: 0.94,
+            dmg: 1.18, heavyDmg: 0.85, speed: 0.92, knock: 0.38, stamina: 6, lunge: 1.4, move: 1.15, accel: 1.3, twist: 0.4, bladeLen: 0.94,
             radiusMult: 1.45, forceRegen: 1.5, costMult: { push: 0.7, pull: 0.7 },
             comboGap: 1.25, fovKick: 6,
             reach: { lungeMax: 3.9, range: 6.5 },   // ROLE: the lunge closes up to 3.9m (others 2.4) and finds foes out to 6.5m (others 5), enough to cross the 3.2m stalker ring to an officer behind it
