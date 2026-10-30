@@ -76,10 +76,10 @@ try {
 
   /* ---------- co-op: the host's duel entrance reaches the guest; the guest's skip ends both ---------- */
   const host = await open('host'), guest = await open('guest');
-  await host.click('#coopBtn'); await host.click('#coophost');
+  await host.click('#mode-coop'); await host.click('#coophost');
   await host.waitForFunction(() => document.querySelector('#coopstatus .code'), null, poll);
   const code = await host.evaluate(() => document.querySelector('#coopstatus .code').textContent);
-  await guest.click('#coopBtn'); await guest.fill('#coopcode', code); await guest.click('#coopjoin');
+  await guest.click('#mode-coop'); await guest.fill('#coopcode', code); await guest.click('#coopjoin');
   for (const p of [host, guest]) await p.waitForFunction(() => /Connected/.test(document.getElementById('coopstatus').textContent), null, poll);
   await host.click('#coopclose'); await guest.click('#coopclose');
   await host.click('#hero-jedi'); await host.click('#mode-mission'); await host.click('#msn-refuge');
@@ -89,7 +89,7 @@ try {
     await host.waitForTimeout(800);
   }
   await guest.waitForFunction(() => document.getElementById('coopjoinrun').style.display !== 'none', null, poll);
-  await guest.click('#hero-mando'); await guest.click('#coopBtn'); await guest.click('#coopjoinrun');
+  await guest.click('#hero-mando'); await guest.click('#mode-coop'); await guest.click('#coopjoinrun');
   for (let i = 0; i < 5 && !(await guest.evaluate(() => GAME.G.mode === 'play')); i++){
     if (await guest.isVisible('#goText')) await guest.click('#goText', { timeout: 2000 }).catch(() => {});
     if (await guest.isVisible('#forms [data-go]')) await guest.click('#forms [data-go]', { timeout: 2000 }).catch(() => {});   // the Jedi's forms page before the fight: FIGHT

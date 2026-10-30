@@ -27,7 +27,7 @@ import { LEVELS } from '../data/levels.js';
 import { buildArena } from '../world/arena.js';
 import { findClearSpawn } from '../world/collision.js';
 import { playerPos, heldGrip } from '../player/helpers.js';
-import { canResume, resumeRun, resumeLabel } from '../game/saves.js';
+import { canResume, resumeRun, resumeLabel, resumeProgress } from '../game/saves.js';
 import { startCampaign, joinCampaign, closeCard, chapterLabel } from '../game/campaign.js';
 import { pad } from '../engine/gamepad.js';
 import { openPrefight } from './forms-ui.js';
@@ -57,7 +57,7 @@ export function setOverlayState(state){
     go.textContent = 'CONTINUE CAMPAIGN'; sub.textContent = resumeLabel();
   } else if (state === 'menu'){
     go.textContent = G.modeSel === 'endless' ? 'BEGIN SURVIVAL' : G.modeSel === 'training' ? 'BEGIN TRAINING' : G.modeSel === 'mission' ? 'BEGIN MISSION' : G.modeSel === 'sandbox' ? 'ENTER THE SANDBOX' : 'BEGIN CAMPAIGN';
-    sub.textContent = G.modeSel === 'endless' ? 'HOW LONG CAN YOU HOLD?' : G.modeSel === 'training' ? 'LEARN THE MOVES' : G.modeSel === 'mission' ? missionTitle(G.missionId) : G.modeSel === 'sandbox' ? (sandboxFull() ? 'ANY FOE, ANY POWER' : 'THE STORY SO FAR') : 'CHOOSE YOUR LEGEND';
+    sub.textContent = G.modeSel === 'endless' ? 'HOW LONG CAN YOU HOLD?' : G.modeSel === 'training' ? 'LEARN THE CONTROLS AND POWERS' : G.modeSel === 'mission' ? missionTitle(G.missionId) : G.modeSel === 'sandbox' ? (sandboxFull() ? 'ANY FOE, ANY POWER' : 'THE STORY SO FAR') : 'CHOOSE YOUR LEGEND';
   } else if (state === 'pause'){
     go.textContent = 'RESUME'; sub.textContent = 'PAUSED';
     const where = G.chapter >= 0 ? 'CAMPAIGN · ' + chapterLabel() : G.training ? 'TRAINING' : G.sandbox ? 'SANDBOX' : G.mission ? missionTitle(G.missionId) : G.endless ? 'SURVIVAL' : 'CAMPAIGN';
@@ -145,6 +145,7 @@ export function setModeSel(m){
   }
   G.modeSel = m;
   for (const k of ['campaign', 'mission', 'endless', 'training', 'sandbox']) document.getElementById('mode-' + k).classList.toggle('sel', m === k);
+  document.getElementById('setup').classList.toggle('camp', m === 'campaign');
   document.getElementById('setup').classList.toggle('missions', m === 'mission');   // the mission list opens under the modes
   if (_ovState === 'menu') setOverlayState('menu');   // headline + button follow the mode
 }
@@ -153,6 +154,7 @@ document.getElementById('mode-mission').addEventListener('click', (e) => { e.sto
 document.getElementById('mode-endless').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setModeSel('endless'); });
 document.getElementById('mode-training').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setModeSel('training'); });
 document.getElementById('mode-sandbox').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setModeSel('sandbox'); });
+// CO-OP is a tile but not a mode: it opens the room panel (ui/coop-ui.js)
 // MISSIONS: one card per story mission (data/missions.js) under the mode row; pick one, then BEGIN (or double-click it)
 const placeOf = (m) => m.level.name.replace(/^(MISSION|TRIAL)\s*—\s*/, '');
 document.getElementById('msnlist').innerHTML = Object.values(MISSIONS).map(m =>
@@ -173,13 +175,20 @@ for (const b of document.querySelectorAll('#msnlist [data-mission]')){
   b.addEventListener('dblclick', (e) => { e.stopPropagation(); setMission(b.dataset.mission); launchFromMenu(); });
 }
 { let id; try { id = localStorage.getItem('sw_mission'); } catch(e){} setMission(id || G.missionId); }
-refreshSurvivalLock(); refreshSandboxLock();
+refreshSurvivalLock(); refreshSandboxLock(); refreshCampaignMark();
+// CAMPAIGN shows how far this hero's saved run is, else the shape of the story
+function refreshCampaignMark(){
+  const md = document.querySelector('#mode-campaign .md'); if (!md) return;
+  const done = localStorage.getItem('sw_camp_' + G.hero) === '1';
+  md.innerHTML = canResume() ? resumeProgress() + ' · ' + resumeLabel().replace(/^CHAPTER \d+ · /, '')
+               : '13 chapters, three acts' + (done ? ' · <span class="ok">✓</span> beaten' : '');
+}
 // TRAINING marks which heroes have finished it
 function refreshTrainingMark(){
   const md = document.querySelector('#mode-training .md'); if (!md) return;
   const j = trainingDone('jedi'), m = trainingDone('mando');
   md.innerHTML = (j || m) ? 'Jedi ' + (j ? '<span class="ok">✓</span>' : '–') + ' · Mando ' + (m ? '<span class="ok">✓</span>' : '–')
-                          : 'Learn the moves';
+                          : 'Learn the controls and powers';
 }
 refreshTrainingMark();
 // STORY MISSIONS mark which heroes have won them: a tick on the card for each, and the picked one's line under the list
@@ -507,7 +516,7 @@ export function goHome(){
 }
 // the title screen's locks, ticks and headline, after anything that changes progress (a run ending, a loaded save, NEW GAME)
 export function refreshMenu(){
-  refreshSurvivalLock(); refreshSandboxLock(); refreshTrainingMark(); refreshMissionMark();
+  refreshSurvivalLock(); refreshSandboxLock(); refreshCampaignMark(); refreshTrainingMark(); refreshMissionMark();
   setOverlayState('menu');
 }
 // finishing the training grounds hands you back to the menu, with the campaign picked

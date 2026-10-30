@@ -70,6 +70,13 @@ function migrateUnlocked(su){
 // a loaded save's run waits on the menu (G.resumeRun) until BEGIN picks it up, as long as the same hero is picked
 export const canResume = () => !!(G.resumeRun && G.resumeRun.hero === G.hero);
 export const resumeLabel = () => savedChapter(G.resumeRun, G.hero);
+// 'ACT II · CH 6' for the saved run the menu would continue (the campaign tile)
+export function resumeProgress(){
+  const run = G.resumeRun; if (!run) return '';
+  const pos = run.chapter != null && run.chapter >= 0 ? run.chapter : CHAPTER_OF_LEVEL[run.idx] || 0, c = chapterOrder(run.actTwo)[pos];
+  return c ? 'ACT ' + ['I', 'II', 'III'][c.act] + ' · CH ' + (pos + 1) : '';
+}
+export const hasSaves = () => { for (let i = 0; i < SLOTS; i++) if (readSlot(i)) return true; return false; };
 export function resumeRun(){
   const run = G.resumeRun; G.resumeRun = null;
   restoreRun(run);
