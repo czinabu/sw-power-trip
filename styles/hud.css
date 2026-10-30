@@ -24,7 +24,7 @@ body.in-menu #hud,body.in-menu #boonstrip{opacity:0;transition:none}
 #xphud{align-self:flex-start;margin-top:4px;padding:5px 11px;border-radius:var(--r-chip);border:1px solid rgba(60,200,120,.35);
   background:rgba(8,26,18,.55);font:700 15px/1 var(--font-ui);color:var(--xp);text-shadow:0 0 10px var(--xp-glow);letter-spacing:1px}
 /* mid-fight notes: a skill point ready, a power mastered (game/upgrades.js) — small, under the XP chip, gone in a few s */
-#uptoasts{display:flex;flex-direction:column;gap:6px;margin-top:8px;align-items:flex-start;pointer-events:none}
+#uptoasts{position:fixed;top:96px;left:20px;display:flex;flex-direction:column;gap:6px;align-items:flex-start;pointer-events:none}
 .uptoast{display:flex;flex-direction:column;gap:2px;max-width:300px;padding:7px 12px;border-radius:var(--r-chip);border:1px solid rgba(120,190,255,.35);
   background:rgba(6,16,30,.72);animation:rise .3s var(--ease) both;transition:opacity .5s,transform .5s}
 .uptoast b{font:700 13px/1.1 var(--font-ui);letter-spacing:1.8px;color:var(--ink)}

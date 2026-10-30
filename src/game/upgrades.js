@@ -102,7 +102,7 @@ export function noteWavePoint(){
 }
 // skilled defence (progression.js masteryXp): every FEATS_PER_POINT of them is a bonus point, at most one per wave
 export function noteFeat(kind){
-  if (!FEAT_KINDS[kind] || !learning()) return;
+  if (!FEAT_KINDS[kind] || !learning() || (G.mission && G.chapter < 0)) return;   // (a lone mission has no page to spend on)
   G.feats = (G.feats || 0) + 1;
   if (G.feats < FEATS_PER_POINT || G.featWave === G.waveTotal) return;
   G.feats = 0; G.featWave = G.waveTotal;

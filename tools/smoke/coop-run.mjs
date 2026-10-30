@@ -102,7 +102,10 @@ try {
   await host.evaluate((n) => { const e = GAME.enemies.find(o => o.nid === n); if (e) GAME.damageEnemy(e, 99999, null, 0, false, false); }, t2);
   await guest.waitForFunction((x) => (GAME.G.xp || 0) > x, xp0, poll);
   // the host waits in the lull while the guest's upgrade screen is open, and goes on a moment after it closes
-  const w0 = await host.evaluate(() => GAME.G.endlessWave);
+  // (the upgrade page opens every third wave in survival: make this the host's third)
+  await host.evaluate(() => { GAME.G.endlessWave = 3; });   // (the host's foes are still up, so this wave stays on)
+  await guest.waitForFunction(() => GAME.G.endlessWave === 3, null, poll);
+  const w0 = 3;
   await host.evaluate(() => { GAME.shared.levelPhase = 'between'; GAME.shared.phaseT = 1.5; });
   await guest.waitForFunction(() => GAME.G.skillSelect, null, poll);
   await host.waitForFunction(() => GAME.coopRun.guestPicking, null, poll);
