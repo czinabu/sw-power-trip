@@ -83,7 +83,8 @@ export function refreshSandboxScope(){
       depth += 1;
     }
   }
-  const autoReached = (u) => u.level != null && G.hero !== 'mando'
+  const autoReached = (u) => u.chapter && G.hero !== 'mando' ? done.has(u.chapter)   // a form: the chapter that teaches it (data/forms.js FORM_PATH)
+    : u.level != null && G.hero !== 'mando'
     ? reachedWaves.some(([lv, w]) => lv > u.level || (lv === u.level && w >= u.wave))   // the campaign gates the Jedi's by level and wave (game/flow.js)
     : depth >= (u.stage || 0);
   const storeReached = (n) => depth >= (n.stage != null ? n.stage : (STORE_TIER_STAGE[n.tier] || 0));

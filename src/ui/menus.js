@@ -221,7 +221,8 @@ function setCutMouse(on){
 }
 setCutMouse(localStorage.getItem('sw_cutaim') === 'mouse');
 document.getElementById('cutaimctl').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setCutMouse(!G.cutMouse); });
-// SABER GRIP — regular or reverse (Shien) lightsaber grip; a look preference, swings hit the same either way
+// SABER GRIP — regular or reverse grip for Niman (and the Mando); a look preference, swings hit the same either way.
+// The other forms hold their own grip (data/forms.js): Shien reverse, the rest forward
 export function setSaberGrip(grip){
   G.saberGrip = grip === 'reverse' ? 'reverse' : 'regular';
   try { localStorage.setItem('sw_sabergrip', G.saberGrip); } catch(e){}

@@ -188,11 +188,11 @@ document.addEventListener('keydown', (e) => {
     // ADAPTIVE FORK KEYS — each either/or pair shares ONE bind (you only ever own one of the pair).
     if (k === 'x' && !e.repeat && G.mode === 'play'){ if (G.unlocked.slam) forceSlam(); else if (G.unlocked.mend) forceMend(); }   // UTIL: JUMP ATTACK or MEND
     if (k === 'r' && G.mode === 'play'){ if (G.unlocked.judge) forceJudgement(); else if (G.unlocked.repulse) forceRepulse(); }   // ULT: JUDGEMENT or REPULSE ('R' still restarts when dead/victory below)
-    if (k === 'g' && !e.repeat && G.mode === 'play'){   // GRIP — flip between a regular and a reverse (Shien) saber grip mid-fight
-      // in a Form V slot G swaps Djem So ⇄ Shien instead (the reverse-grip variant); a form with its own grip keeps it
+    if (k === 'g' && !e.repeat && G.mode === 'play'){   // GRIP — in a Form V slot G swaps Djem So ⇄ Shien (the reverse-grip variant); in Niman it flips
+      // between a regular and a reverse (Starkiller-style) grip; every other form holds its own forward grip (data/forms.js)
       const own = G.hero !== 'mando' && FORMS[G.stance] && FORMS[G.stance].grip;
       if (swapVariant()){ /* swapped: the new form brings its own grip and guard */ }
-      else if (own){ showBanner('', FORMS[G.stance].name + ' HOLDS A ' + own.toUpperCase() + ' GRIP', 1.0); sfx(200, 0.06, 'triangle', 0.03, 160); }
+      else if (own){ showBanner('', FORMS[G.stance].name + ' HOLDS A ' + (own === 'reverse' ? 'REVERSE' : 'FORWARD') + ' GRIP', 1.0); sfx(200, 0.06, 'triangle', 0.03, 160); }
       else {
         setSaberGrip(G.saberGrip === 'reverse' ? 'regular' : 'reverse');
         startSwitch();   // the saber turns straight into the new grip's guard
