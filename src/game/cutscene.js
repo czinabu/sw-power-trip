@@ -63,6 +63,7 @@ function makeActor(def, x, z, yaw){
   const g = buildEnemyMesh(t);
   g.scale.multiplyScalar(def.scale || 1);
   if (def.tint != null && g.userData.bodyMat) g.userData.bodyMat.color.lerp(new THREE.Color(def.tint), 0.5);
+  if (def.blade != null && g.userData.bladeGlow) g.userData.bladeGlow.material.color.setHex(def.blade);   // a form master's blade (game/mission.js)
   g.position.set(x, groundAt(x, z, 3.2), z); g.rotation.y = yaw;
   scene.add(g);
   return { g, own: true, scale: def.scale || 1, name: def.name || '', walk: null };

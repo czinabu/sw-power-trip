@@ -38,6 +38,26 @@ export const DUEL_PROFILES = {
              stam: 130, parry: 0.7, elite: true, rally: 0.65 },
 };
 
+/* A FORM MASTER — a duel objective with a `form` (the trials in data/missions.js) is a master of that lightsaber form
+   and fights the way the form does in the lore. Its form's profile below takes the place of its foe type's (the
+   mission's own `duel` tuning goes on top), its blade burns in the form's colour (data/stances.js), and its swings
+   and clashes take the form's sound (audio/sfx.js FORM_SOUND). On top of the profile keys above:
+     tire     each of your cuts it blocks costs you this much stamina (Soresu outlasts an attacker)
+     riposte  a counter after a block lands this much harder, and comes as often as `counter` says (Djem So)
+     flip     its slip is a backflip clear, carried `flip` m further than a backstep (Ataru)
+   The Mandalorian's champions keep their own weapons and profiles (missions' hero.mando). */
+export const FORM_DUEL = {
+  // the Wall: barely strikes, turns nearly everything, sends every bolt home and wears you out
+  soresu: { block: 0.9, posture: 210, feint: 0.1, delay: 0.2, chain: 1, counter: 0.3, thrust: 0, dodge: 0.05, deflect: 1,
+            lock: true, push: 0.45, stam: 190, parry: 0.55, elite: true, rally: 0.5, tire: 8 },
+  // the Acrobat: a light guard, flips out of your cuts and comes back in long, quick strings
+  ataru:  { block: 0.42, posture: 80, feint: 0.4, delay: 0.15, chain: 3, counter: 0.5, thrust: 0.2, dodge: 0.45, deflect: 0.35,
+            lock: true, push: 0.35, stam: 120, parry: 0.4, elite: true, rally: 0.55, flip: 2.2 },
+  // the Knight: meets a blow on the guard and answers it at once, harder; drives a saber lock
+  djemso: { block: 0.7, posture: 170, feint: 0.25, delay: 0.3, chain: 2, counter: 0.75, thrust: 0.15, dodge: 0.05, deflect: 0.6,
+            lock: true, push: 0.7, stam: 150, parry: 0.55, elite: true, rally: 0.6, riposte: 1.35 },
+};
+
 /* THE WARBRINGER (survival's champion, game/survival.js spawnChampion; the sandbox and campaign mid-bosses call the
    same function). A brute with a POSTURE bar instead of a guard: it never turns a blow, but a good parry or a heavy
    blow wears the bar down, and a full bar BREAKS it, leaving it wide open for a long, punishable stagger.
@@ -119,6 +139,7 @@ export const DUEL = {
   counterCd: 1.6,         // a foe counters at most this often
   thrustDmg: 1.35,        // a thrust hits this much harder than a cut
   dodgeStep: 7,           // backstep speed when it slips a cut
+  flipTime: 0.5, flipHeight: 1.3,   // an Ataru master's slip is a backflip this long and this high (FORM_DUEL flip)
   // SABER LOCK — blades bind; mash LMB to drive through, or break it with a kick (E) or a Force push (F)
   lock: { chance: 0.7, time: 3.2, press: 0.15, stam: 3, kickStam: 22, pushCost: 18, loseDmg: 16, heavyPress: 1.35, fastPress: 0.85 },
   /* LOCK KINDS — where the blades bind sets how the lock looks and how it ends (enemies/duel.js startLock). A clash more

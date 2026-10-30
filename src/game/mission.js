@@ -8,6 +8,9 @@ import { scene } from '../engine/renderer.js';
 import { sfx, S } from '../audio/sfx.js';
 import { MUSIC } from '../audio/music.js';
 import { V3 } from '../utils.js';
+import { FORM_DUEL } from '../data/duel.js';
+import { initDuel } from '../enemies/duel.js';
+import { STANCES } from '../data/stances.js';
 import { burst } from '../fx/particles.js';
 import { floater } from '../fx/floaters.js';
 import { shared, G, enemies, player, solids } from '../state.js';
@@ -451,7 +454,7 @@ const KINDS = {
           s.intro = true;
           const q = o.quarry && M.def.quarry[G.hero];
           if (playDuelIntro(q ? { mid: M.def.id, quarry: true, name: q.name, kicker: q.kicker, scale: q.scale, line: heroText(o.line) }
-                              : { mid: M.def.id, foe: o.foe, name: o.name, kicker: o.kicker, tint: o.tint, scale: o.scale, at: o.at, line: heroText(o.line) })) return;
+                              : { mid: M.def.id, foe: o.foe, name: o.name, kicker: o.kicker, tint: o.tint, blade: o.form ? STANCES[o.form].blade : null, scale: o.scale, at: o.at, line: heroText(o.line) })) return;
         }
         if (o.quarry && M.qHp) M.qHp = Math.max(0.55, M.qHp);   // the run wore it down, but it still has a fight in it
         s.foe = o.quarry ? spawnQuarryFoe(o) : spawnInquisitor(o, o.at, { line: heroText(o.line), kicker: o.kicker });
@@ -807,7 +810,14 @@ function spawnInquisitor(o, at = o.at, opts = {}){
   e.champion = true;
   e.hp = e.maxHp = Math.round(e.hp * o.hp * heroScale(SCALE.bossHp, heroesHere()));
   e.t = { ...e.t, dmg: e.t.dmg * o.dmg, score: 20 };   // a copy: never mutate the shared type
-  if (e.dp) e.dp = { ...e.dp, ...o.duel };
+  // a FORM MASTER (the trials): it fights in the form it teaches (data/duel.js FORM_DUEL), its blade in that form's colour
+  const F = o.form && e.dp && FORM_DUEL[o.form];
+  if (F){
+    e.form = o.form;
+    initDuel(e, { ...F, ...o.duel });
+    const glow = e.group.userData.bladeGlow;
+    if (glow) glow.material.color.setHex(STANCES[o.form].blade);
+  } else if (e.dp) e.dp = { ...e.dp, ...o.duel };
   e.group.scale.multiplyScalar(o.scale);
   e.group.userData.bodyMat.color.lerp(new THREE.Color(o.tint), 0.5);
   makeBossBar(e);

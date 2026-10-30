@@ -140,6 +140,7 @@ export function updateEnemies(dt){
           e.counterQueued = false;
           const wind = e.exchWind || DUEL.counterWindup; e.exchWind = 0;   // (the exchange's next beat comes quicker: duel.js rallyParry)
           if (dist < t.range + 1.2 && claimToken(e)){ e.counterAt = G.gt; quickStrike(e, wind); break; }
+          e.riposteNext = false;   // (no turn for it: the answer is gone)
         }
         // a trooper that FEINTED comes again straight away, fast (tactics.js)
         if (e.feintAgain && tgtPos && !e.converted && !onAlly){
@@ -398,7 +399,7 @@ export function updateEnemies(dt){
           } else {
             // melee: commit to a visible swing the player can time a parry against
             e.state = 'strike'; e.st = t.swing || 0.16; e.struck = false;
-            S.whoosh(g.position, heavy);   // the whoosh of the swing starting
+            if (e.form) S.swing(e.form, g.position); else S.whoosh(g.position, heavy);   // the whoosh of the swing starting (a form master's blade in its form's voice)
           }
         }
         break;
@@ -443,7 +444,8 @@ export function updateEnemies(dt){
             } else {
               // a THRUST drives through a held guard: parry it or get out of the way
               const line = e.dp && e.plan ? e.plan.side : null;   // a duellist's strike comes in on a line: your guard meets it there (player/jedi/guardline.js)
-              const res = hurtPlayer(t.dmg * enemyDmgScale() * (thrust ? DUEL.thrustDmg : 1), g.position, false, true, false, unblockable || line ? { unblockable, line } : null);   // melee — blocked by high ground
+              const rip = e.riposteNext && e.dp && e.dp.riposte || 1; e.riposteNext = false;   // a Djem So master's answer to a block (data/duel.js FORM_DUEL)
+              const res = hurtPlayer(t.dmg * enemyDmgScale() * (thrust ? DUEL.thrustDmg : 1) * rip, g.position, false, true, false, unblockable || line ? { unblockable, line } : null);   // melee — blocked by high ground
               if (res === 'parried'){
                 // perfectly parried — the weapon is knocked wide and the foe STUMBLES, wide open
                 // the Warbringer's posture takes the parry; a full bar breaks it open (duel.js), otherwise it reels as any brute does
@@ -646,7 +648,7 @@ export function updateEnemies(dt){
     // height is then applied so they STAND on the surface underfoot (flat floor = 0). Tall sheer crates still block.
     if (!e.dead && !e.t.fly && e.state !== 'ragdoll' && e.state !== 'knockdown' && e.state !== 'fade' && e.state !== 'spawn' && e.state !== 'leap' && e.state !== 'grasped'){
       const sup = collideSolids(g.position, 0.7 * (e.t.scale || 1), true);
-      g.position.y = sup;   // (the stride's bob is the legs': enemies/gait.js)
+      g.position.y = sup + (e.flipY || 0);   // (the stride's bob is the legs': enemies/gait.js; an Ataru master's backflip lifts it: duel.js)
     }
     // STUCK CHECK — over a short window, a chasing foe that covered under a third of the ground it tried to (pinned in
     // a corner, or jittering back and forth against one) picks the more open side, sidesteps there and re-routes

@@ -123,7 +123,7 @@ export function rallyParry(e, sw, at){
   const cp = at || V3(g.position.x + dx / dl * 0.7, g.position.y + 1.5, g.position.z + dz / dl * 0.7);
   clashFlash(cp, G.hero === 'mando' ? 0xffd28a : stance().blade, true);
   sparks(cp, 0xffe9b0, 12, 12, { life: 0.3 });
-  S.clash(cp, true);
+  S.clash(cp, true, e.form);
   sfx(1700 + n * 220, 0.08, 'triangle', 0.035, 1200);   // each beat rings a little higher
   G.hitstop = Math.max(G.hitstop, 0.07); G.shake = Math.max(G.shake, 0.35);
   G.slowmo = Math.min(G.slowmo, 0.55); G.slowmoT = Math.max(G.slowmoT, 0.1);
@@ -179,8 +179,16 @@ export function updateDuel(e, dt, dist){
   // a slipped cut: the backstep carries it clear
   if (e.dodgeT > 0){
     e.dodgeT -= dt;
-    g.position.x += e.dodgeX * DUEL.dodgeStep * dt; g.position.z += e.dodgeZ * DUEL.dodgeStep * dt;
-    g.rotation.x = -0.25 * Math.max(0, e.dodgeT) / 0.3;
+    if (p.flip){   // ATARU: a backflip clear, up and over (FORM_DUEL flip)
+      const k = clamp(1 - e.dodgeT / DUEL.flipTime, 0, 1), step = (DUEL.dodgeStep * 0.3 + p.flip) / DUEL.flipTime;
+      g.position.x += e.dodgeX * step * dt; g.position.z += e.dodgeZ * step * dt;
+      e.flipY = Math.sin(k * Math.PI) * DUEL.flipHeight;   // (ai.js puts it on top of the ground under it)
+      g.rotation.x = Math.atan2(Math.sin(-k * Math.PI * 2), Math.cos(k * Math.PI * 2));   // one full turn back, kept in ±π (net/foes.js turns puppets the short way)
+      if (e.dodgeT <= 0){ e.flipY = 0; g.rotation.x = 0; }
+    } else {
+      g.position.x += e.dodgeX * DUEL.dodgeStep * dt; g.position.z += e.dodgeZ * DUEL.dodgeStep * dt;
+      g.rotation.x = -0.25 * Math.max(0, e.dodgeT) / 0.3;
+    }
   }
   const guarding = !p.brace && GUARDING[e.state] && dist < DUEL.guardRange && !e.converted;   // (a bracing foe holds no guard: no pose, no arc)
   // hold the weapon on the guarded line (the readable tell), back to the carry otherwise
@@ -384,6 +392,7 @@ export function quickStrike(e, wind){
   e.state = 'windup'; e.wu = wind; e.st = wind;
   planAttack(e, true);
   S.windup(e.group.position, false);
+  if (e.riposteNext) floater(V3(e.group.position.x, e.group.position.y + 1.5, e.group.position.z), 'RIPOSTE', '#ffb35a');
   e.group.userData.bodyMat.emissive.setHex(0xff2a18);
 }
 // the feint check, run every wind-up frame: past the break point it snaps to the other side and comes in fast
@@ -395,7 +404,7 @@ export function maybeFeint(e, wk){
   pl.side = o[(Math.random() * o.length) | 0];
   e.lastSide = pl.side;
   e.wu = e.wuBase = DUEL.feintRewind; e.st = e.wu;
-  S.whoosh(e.group.position, false);
+  if (e.form) S.swing(e.form, e.group.position); else S.whoosh(e.group.position, false);
   sparks(V3(e.group.position.x, 1.9, e.group.position.z), e.t.eye, 4, 5, { life: 0.2 });
   return true;
 }
@@ -445,9 +454,9 @@ export function duelDefend(e, line, kind, heavy, at){
   if (rd) sw.reads.set(e, { line: null, dec: null });   // spent: a second contact on the same swing rolls afresh
   // a light cut seen coming: the agile ones slip it with a backstep
   if (dec === 'dodge' && spend(e, DUEL.breath.dodge)){
-    e.dodgeT = 0.3; e.dodgeX = -dx / dl; e.dodgeZ = -dz / dl;
-    e.state = 'recover'; e.st = Math.max(e.st, 0.35);
-    floater(V3(g.position.x, g.position.y + 1.2, g.position.z), 'SLIPPED', '#c8d4e0');
+    e.dodgeT = p.flip ? DUEL.flipTime : 0.3; e.dodgeX = -dx / dl; e.dodgeZ = -dz / dl;
+    e.state = 'recover'; e.st = Math.max(e.st, e.dodgeT + 0.05);
+    floater(V3(g.position.x, g.position.y + 1.2, g.position.z), p.flip ? 'FLIPPED CLEAR' : 'SLIPPED', '#c8d4e0');
     S.dash();
     if (Math.random() < p.counter * m) e.counterQueued = true;
     return 'dodge';
@@ -456,7 +465,7 @@ export function duelDefend(e, line, kind, heavy, at){
   if (dec === 'parry' && spend(e, DUEL.breath.block)){
     e.rhyN = 0; e.counterQueued = true; e.guard = line;
     const cp = at || V3(g.position.x + dx / dl * 0.7, g.position.y + 1.5, g.position.z + dz / dl * 0.7);
-    punishMash(cp);
+    punishMash(cp, e.form);
     floater(V3(g.position.x, g.position.y + 1.3, g.position.z), 'PARRIED', '#ff8a5a');
     return 'block';
   }
@@ -480,13 +489,14 @@ export function duelDefend(e, line, kind, heavy, at){
   e.arcFlash = 0.6;
   clashFlash(cp, G.hero === 'mando' ? 0xffd28a : stance().blade, false);
   sparks(cp, 0xffe9b0, 8, 10, { life: 0.26 });
-  S.clash(cp, false);
+  S.clash(cp, false, e.form);
   G.hitstop = Math.max(G.hitstop, 0.05); G.shake = Math.max(G.shake, 0.2);
+  if (p.tire && G.hero !== 'mando'){ player.stam = Math.max(0, player.stam - p.tire); player.stamDelay = stamDelay(); }   // SORESU: the wall wears you out
   if (e.lineStreak >= DUEL.adaptAfter) floater(V3(g.position.x, g.position.y + 1.3, g.position.z), 'READ YOU', '#ffb35a');
   else floater(V3(g.position.x, g.position.y + 1.3, g.position.z), 'BLOCKED', '#c8d4e0');
   // and the answer: a fast riposte, if it has the skill and the breath
   if (G.gt - e.counterAt > DUEL.counterCd && Math.random() < p.counter * m * (e.lineStreak >= DUEL.adaptAfter ? 1.5 : 1)
-      && (e.breath == null || e.breath >= DUEL.breath.counter)) e.counterQueued = true;
+      && (e.breath == null || e.breath >= DUEL.breath.counter)){ e.counterQueued = true; if (p.riposte) e.riposteNext = true; }   // DJEM SO: the answer lands harder
   return 'block';
 }
 
@@ -523,14 +533,14 @@ function canGuard(e){
 }
 
 // your mashed cut is parried: the swing is thrown wide, the arm jars and the breath goes out of you
-function punishMash(cp){
+function punishMash(cp, form){
   const R = DUEL.rhythm;
   player.stam = Math.max(0, player.stam - R.stam); player.stamDelay = stamDelay();
   player.flinchT = player.flinchMax = Math.max(player.flinchT || 0, R.flinch);
   player.queuedAtk = false;
   clashFlash(cp, 0xff8a5a, true);
   sparks(cp, 0xffc890, 12, 12, { life: 0.3 });
-  S.parry(cp);
+  S.parry(cp, form);
   G.hitstop = Math.max(G.hitstop, 0.09); G.shake = Math.max(G.shake, 0.45);
 }
 
@@ -617,7 +627,7 @@ export function startLock(e, kind){
   const cp = lockPoint();
   clashFlash(cp, stance().blade, true);
   sparks(cp, 0xffe9b0, 18, 14, { life: 0.4 });
-  S.clash(cp, true);
+  S.clash(cp, true, e.form);
   G.hitstop = Math.max(G.hitstop, 0.12); G.shake = Math.max(G.shake, 0.6);
   G.slowmo = Math.min(G.slowmo, 0.35); G.slowmoT = Math.max(G.slowmoT, 0.25);
   if (!G.seenLock){ G.seenLock = true; showBanner('SABER LOCK', 'Mash LMB to drive through · E to kick out · F to Force-shove', 2.6); }
@@ -712,7 +722,7 @@ function winLock(label, knock){
   sparks(cp, 0xffe27a, 18, 15, { dir: V3(dx / dl, 0.2, dz / dl), cone: 0.8, life: 0.36 });
   screenFlash('radial-gradient(ellipse at center, rgba(255,240,180,.5), transparent 65%)', 0.8, 0.3);
   G.hitstop = Math.max(G.hitstop, 0.16); G.slowmo = Math.min(G.slowmo, 0.3); G.slowmoT = Math.max(G.slowmoT, 0.3);
-  S.parry(cp);
+  S.parry(cp, LOCK.foe && LOCK.foe.form);
   if (G.stats) G.stats.locksWon = (G.stats.locksWon || 0) + 1;
 }
 function loseLock(){
@@ -731,7 +741,7 @@ function splitLock(){
   e.state = 'recover'; e.st = 0.5;
   flinchEnemy(e, V3(dx / dl, 0, dz / dl), 1.2);
   player.vel.x -= dx / dl * 6; player.vel.z -= dz / dl * 6;
-  S.clash(lockPoint(), false);
+  S.clash(lockPoint(), false, LOCK.foe && LOCK.foe.form);
 }
 export function endLock(){
   const e = LOCK.foe;
