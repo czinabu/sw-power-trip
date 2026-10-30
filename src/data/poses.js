@@ -39,7 +39,7 @@ export const SABER_GUARDS = {
     // the head and the Force hand at the foe, ready to come down past it. Saber and Force in one shape: the whole form.
     niman: {
       ready: { hand: [0.34, 0.56, -0.1], blade: [-0.24, 0.2, 0.95], twist: -0.32, torso: -0.12, pole: [0.85, 0.2, -0.5], palm: 1,
-               off: { hand: [-0.16, 0.12, 0.58], pole: [-0.5, -0.85, 0.15] },
+               off: { hand: [-0.46, 0.06, 0.42], pole: [-0.65, -0.75, 0.1] },   // out wide of the body, so it reads from the front and from the camera behind
                offMove: { hand: [-0.3, -0.1, 0.34], pole: OFF_POLE } },   // walking, the reaching hand drops to a loose carry
       // blade upright before the face, the off palm braced behind it — a Force-backed wall
       block: { hand: [0.1, 0.02, 0.42], blade: [-0.12, 1, 0.12], twist: 0, lean: 0.06, pole: POLE,
