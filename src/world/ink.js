@@ -181,10 +181,27 @@ export function bakeArena(group, width = 0.045, far = false){
   group.updateMatrixWorld(true);
   const buckets = new Map();
   const baked = [];
+  /* static GLOWS (window panes, lamps, beacons, molten channels: plain unlit colour) aren't inked, but a city's worth of
+     them is hundreds of draw calls, paid again in the shadow and ambient-occlusion passes. They merge per material
+     too, untouched otherwise: same material, same shadows, no outline */
+  const glows = new Map();
+  const glow = o => {
+    const g = new THREE.BufferGeometry(), sg = o.geometry;
+    g.setAttribute('position', sg.attributes.position.clone());
+    g.setAttribute('normal', sg.attributes.normal.clone());   // the ambient-occlusion pass draws normals
+    g.setIndex(sg.index ? sg.index.clone()
+      : new THREE.BufferAttribute(Uint32Array.from({ length: sg.attributes.position.count }, (_, i) => i), 1));
+    g.applyMatrix4(o.matrixWorld);
+    const key = o.material.uuid + (o.castShadow ? 's' : '') + (o.receiveShadow ? 'r' : '');
+    if (!glows.has(key)) glows.set(key, { mat: o.material, geos: [], cast: o.castShadow, receive: o.receiveShadow });
+    glows.get(key).geos.push(g);
+    baked.push(o);
+  };
   group.traverse(o => {
     if (!o.isMesh || o.userData.noBake || o.userData.baked) return;
     for (let p = o.parent; p && p !== group; p = p.parent) if (p.userData.noBake) return;
     const src = o.material;
+    if (src && src.isMeshBasicMaterial && staticGlow(o, group)){ glow(o); return; }
     if (!src || Array.isArray(src) || !(src.isMeshStandardMaterial || src.isMeshToonMaterial)) return;
     const mat = src.isMeshToonMaterial ? src
       : toon(src.color.getHex(), { side: src.side, emissive: src.emissive && src.emissive.getHex(), ei: src.emissiveIntensity });
@@ -223,5 +240,25 @@ export function bakeArena(group, width = 0.045, far = false){
       group.add(hull); calls++;
     }
   }
+  for (const b of glows.values()){
+    const merged = mergeGeometries(b.geos, false);
+    for (const g of b.geos) g.dispose();
+    if (!merged) continue;
+    const m = new THREE.Mesh(merged, b.mat);
+    m.castShadow = b.cast; m.receiveShadow = b.receive;
+    m.userData.baked = true;
+    group.add(m); calls++;
+  }
   return { meshes: baked.length, calls };
+}
+
+/* a glow that can merge: opaque plain colour on an ordinary, visible mesh nobody moves or draws specially (anything the
+   game animates is flagged userData.noBake, as for the inked props) */
+function staticGlow(o, group){
+  const m = o.material, g = o.geometry;
+  if (m.transparent || m.map || m.alphaMap || m.envMap || m.vertexColors || m.wireframe) return false;
+  if (o.isSkinnedMesh || o.isInstancedMesh || o.morphTargetInfluences || o.renderOrder || !o.frustumCulled) return false;
+  if (!g.attributes.position || !g.attributes.normal || g.morphAttributes.position) return false;
+  for (let p = o; p && p !== group; p = p.parent) if (!p.visible) return false;
+  return true;
 }
