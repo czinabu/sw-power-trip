@@ -8,6 +8,7 @@ import { renderer, scene, camera, hemi, sun, rim, glow, setSceneGlow, setGrade, 
 import { rand, clamp } from '../utils.js';
 import { shared, G, player } from '../state.js';
 import { playerPos } from '../player/helpers.js';
+import { HAZE } from './ink.js';
 import { SABER_LIGHT, DARK_LIGHT } from '../player/model/weapons.js';
 import { LEVELS } from '../data/levels.js';
 import { thunder } from '../audio/director.js';
@@ -85,6 +86,8 @@ export function applyAtmosphere(T, L, sky){
   const lt = T.light;
   scene.fog = new THREE.Fog(T.fog, L.arena * (T.fogStart ?? 0.5), L.arena * (T.fogEnd ?? 1.9));
   // ambient occlusion fades out before the fog thickens (engine/renderer.js)
+  // the backdrop's aerial haze (world/ink.js farHaze): how fast it builds past the fog's near distance, and its cap
+  HAZE.len.value = T.haze?.len ?? L.arena * 3; HAZE.max.value = T.haze?.max ?? 0.8;
   aoFade.near = Math.max(12, scene.fog.near * 0.5); aoFade.far = Math.max(aoFade.near + 10, scene.fog.near * 1.1);
   setGrade(gradeFor(T));
   renderer.setClearColor(T.clear ?? T.fog);

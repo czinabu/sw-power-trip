@@ -23,7 +23,7 @@ renderer.toneMappingExposure = 1.04;   // moodier, more filmic contrast
 document.body.appendChild(renderer.domElement);
 
 export const scene = new THREE.Scene();
-export const camera = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, 0.1, 400);
+export const camera = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, 0.1, 4000);   // far: the backdrop stands up to a kilometre or two out (world/backdrop.js)
 
 /* post-processing: scene → ambient occlusion → bloom (sabers, bolts and embers glow) → tone map → colour grade.
    ANTIALIASING: the canvas's own antialias does nothing once the scene is drawn into the composer's buffers, so the

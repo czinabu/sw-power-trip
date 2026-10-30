@@ -84,6 +84,8 @@ export const WORLD_DIRECTIONS = {
       backdrop: [
         { kind: 'ramparts', r: 1.6, segments: 26, h: 3.6, color: 0xae8c64, color2: 0x987a56, roof: 0x7a4e32, gaps: [-2.4] },
         { kind: 'statue', az: -2.4, r: 2.1, scale: 1.3, color: 0xa88a66, color2: 0x8e7052, dark: 0x4a3828, metal: 0x7a7266 },
+        // the holy city itself, packed between the walls and the mesas (towers stretch out to 2-5 half-widths)
+        { kind: 'towers', count: 34, r: [1.75, 2.6], h: [10, 22], color: 0xa8865e, color2: 0x96764f, skip: [[-2.4, 0.35], [-1.8, 0.2]] },
         { kind: 'mesas', count: 9, r: [2.2, 2.7], h: [20, 36], w: [18, 34], color: 0xae7a52, color2: 0x986a48, skip: [[-2.4, 0.45]] },
         { kind: 'dunes', count: 10, r: [1.75, 2.0], h: 4, color: 0xbc9064 },
         // the Empire is already here: a Star Destroyer hangs over the holy city (the threat the campaign walks toward)
@@ -103,7 +105,8 @@ export const WORLD_DIRECTIONS = {
       outer: 0x1e1414,
       pal: { metal: 0x565c66, metalD: 0x2e3238, rust: 0x6b4a32, stripe: 0xd9a43a, molten: 0xff7a1e, beacon: 0xff5040 },
       backdrop: [
-        { kind: 'volcano', az: 2.4, r: 2.6, scale: 0.75, color: 0x2a1a18, lava: 0xff6a1a },
+        { kind: 'volcano', az: 2.4, r: 2.6, scale: 0.75, size: 3000,   // a real Mustafar peak: kilometres across, kilometres off
+        color: 0x2a1a18, lava: 0xff6a1a },
         { kind: 'spires', count: 14, r: [1.6, 2.4], h: [10, 24], color: 0x241816, color2: 0x30201c, glow: 0xff5a14, skip: [[2.4, 0.4]] },
         { kind: 'stacks', count: 4, r: [1.6, 1.8], h: [18, 26], color: 0x2e2a2c, band: 0xd9a43a, glow: 0xff8a2a, smoke: 0x5a4440, skip: [[2.4, 0.5]] },
         { kind: 'lavaflows', count: 7, lava: 0xff6a1a, crust: 0x1a0c08, w: 1.4, reach: 3.0 },
@@ -123,7 +126,8 @@ export const WORLD_DIRECTIONS = {
       outer: 0x2c2834,
       pal: { stone: 0x6a6070, stoneD: 0x463c4c, dark: 0x1a1620, voidGlow: 0x9a3bff, beacon: 0x9a3bff },
       backdrop: [
-        { kind: 'pyramid', az: -Math.PI/2, r: 2.2, scale: 1.0, color: 0x1a1620, color2: 0x241e2a, glow: 0xb050ff },
+        { kind: 'pyramid', az: -Math.PI/2, r: 2.2, scale: 1.0, size: 1500,   // the Sith Citadel: a mountain of a building
+        color: 0x1a1620, color2: 0x241e2a, glow: 0xb050ff },
         { kind: 'spires', count: 14, r: [1.5, 2.3], h: [14, 34], color: 0x221e2a, color2: 0x2c2634, skip: [[-Math.PI/2, 0.45]] },
         { kind: 'cliffs', count: 12, r: [1.8, 2.5], h: [10, 18], w: 0.35, color: 0x24202c, color2: 0x1c1822, skip: [[-Math.PI/2, 0.5]] },
       ],
@@ -211,7 +215,8 @@ export const TRAINING_WORLDS = {
     pal: { stone: 0xb4b0a6, stoneD: 0x88847c, trim: 0xd8c48a, kyber: 0x5ad2ff },
     backdrop: [
       { kind: 'cliffs', count: 16, r: [1.5, 2.3], h: [10, 22], w: 0.32, color: 0x8a8ca0, color2: 0x7a7c92, skip: [[-1.6, 0.4]] },
-      { kind: 'temple', az: -1.6, r: 2.3, scale: 1.2, color: 0xb0aaa4, color2: 0xc4beb6, glow: 0x9ad8ff },
+      { kind: 'temple', az: -1.6, r: 2.3, scale: 1.2, size: 600,   // the Jedi Temple's ziggurat, its tallest spire ~800 m up
+      color: 0xb0aaa4, color2: 0xc4beb6, glow: 0x9ad8ff },
       { kind: 'crystals', count: 7, r: [1.15, 1.3], h: [3, 6], color: 0x8ad8ff, glow: 0x3aa8ff, skip: [[-1.6, 0.5]] },
     ],
     ambient: { kind: 'dust', color: 0xfff0d8, count: 110, size: 0.26 },
@@ -366,7 +371,8 @@ export const BATTLE_WORLDS = {
     pal: { hull: 0x8e8e88, hullD: 0x5e5e5a, rust: 0x7a5236, sand: 0xae8e60, cloth: 0x9a6a46, imperial: 0x3a3e46, stripe: 0xd9a43a,
            dark: 0x2a2622, lamp: 0xffc070, plasma: 0x6ad8ff, beacon: 0xff5040 },
     backdrop: [
-      { kind: 'wreck', az: -2.2, r: 1.75, scale: 1.2, color: 0x8a8a86, color2: 0x6e6e6a },
+      { kind: 'wreck', az: -2.2, r: 1.75, scale: 1.2, size: 2400,   // the Inflictor: a whole Star Destroyer, half buried
+         color: 0x8a8a86, color2: 0x6e6e6a },
       { kind: 'wreck', az: 0.5, r: 2.0, scale: 0.8, color: 0x8a8a86, color2: 0x6e6e6a, roll: -0.5 },
       { kind: 'mesas', count: 10, r: [1.6, 2.3], h: [10, 22], w: [10, 20], color: 0xb08a5e, color2: 0x9a7650, skip: [[-2.2, 0.5]] },
       { kind: 'dunes', count: 18, r: [1.05, 1.35], h: 5, color: 0xa4865c },

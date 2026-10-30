@@ -30,8 +30,9 @@ Survival mode rotates through the same three worlds.
 - **Fighters must read.** Enemies are white, grey and red armour with ink outlines, so floors stay mid-value and
   never white (that is what sank the frozen direction's level 1). Light comes from behind the default camera, so
   heroes and enemies are front-lit; the sun disc in the sky follows the light direction.
-- **Backdrops stay outside the playable square** (`arenaHalf`) and inside the sky dome (`1.7 × arena`). They have no
-  collision. Landmarks sit roughly 1.5 to 2.5 × `arenaHalf` from the centre so the fog softens but doesn't hide them.
+- **Backdrops stay outside the playable square** (`arenaHalf`). They have no collision. They are authored in a ring
+  1.5 to 2.7 × `arenaHalf` out, then `buildBackdrop` sends them to their real distance (see **Scale** below); the sky
+  dome, the outer ground and the camera's far plane grow to clear the furthest one.
 - **Mood follows the fight.** `beats` eases fog, fill and sky tint from the first wave to the last, and the boss
   pushes it all the way. `storm` throws a lightning strike plus a double flash, more often as the waves climb.
 - **Ink outlines:** `ink` (default 0.045) for arena props, `inkFar` (default 0.16) for the backdrop so it still
@@ -57,6 +58,24 @@ run). The three plans grow with the campaign:
 - Drums never sit in a hazard zone or vent radius, and vents never overlap each other.
 - The camera pulls in (`cameraClearance()`) when tall cover sits between it and the hero, instead of clipping.
 
+## Scale
+
+Everyone in the game is about 1.5× life size (heroes ~2.7 m, a trooper 2.6 m), so lore sizes are scaled by
+`HERO_SCALE` (1.5) in `world/backdrop.js`.
+
+- **Depth.** Each backdrop kind stretches the gap past the arena edge by its `DEPTH` (mesas 4, spires 3.5, cliffs 2.5,
+  towers 2…): a piece authored at 1 + x half-widths stands at 1 + x·depth, growing so it keeps its size on screen
+  from the middle. It reads as far because it barely moves as you cross the arena. Dunes, ramparts, lava and crystals
+  stay put; walkers (already film size) step back a little. An entry can set its own `depth`.
+- **Film size.** A landmark with `size` (longest ground-plan extent, metres) is built to that size and sent out by
+  the same factor: Star Destroyers 2,400 m (1.6 km × 1.5, the default for `destroyer`), the Mustafar peak 3,000 m, the
+  Sith Citadel 1,500 m, the Jedi Temple 600 m, the Inflictor wreck on Jakku 2,400 m. AT-ATs stand ~34 m.
+- **Haze.** The backdrop swaps scene fog for aerial perspective (`farHaze` in `world/ink.js`): it builds from the fog's
+  near distance toward `haze.max` (0.8) over `haze.len` metres (3 × arena), in the fog's colour, so silhouettes
+  survive kilometres out. Outlines on the backdrop thicken with distance so they still read.
+- **Camera.** The lens rides low and level over the right shoulder (`camera.ja`, `mandoLensUp`, a 64° FOV), so the
+  skyline rises out of frame instead of being looked down on.
+
 ## Battle maps
 
 Three large open fields for big battles with allied squads (`data/battlemaps.js`, looks in `BATTLE_WORLDS`). Any arena
@@ -75,7 +94,7 @@ wider than `BIG_ARENA` (100, `world/arena.js`) counts as one, and `shared.arenaB
   are in `world/arenas/field.js`.
 - Every gap between solids is at least 3 m so squads and brutes path anywhere a trooper can; walls under 1.93 can be
   vaulted, and the high ground (walker hull, bunker, engine rim, gantries) is a chain of hops.
-- What follows the hero there: the sun and its 120 m shadow box, the sky dome (300 m, like the pursuit route), the
+- What follows the hero there: the sun and its 120 m shadow box, the sky dome (300 m and up, grown to clear the backdrop, like the pursuit route), the
   drifting dust/snow (a 72 m box round the hero), wave arrivals (`edgeSpawn` picks a ring 28–40 m out, clamped inside
   the map), and the flow field (filled 46 m of walking distance out; foes beyond that walk straight in).
 - Fog starts nearer as a share of the arena (`fogStart` 0.3–0.45) so the far side softens into the haze.

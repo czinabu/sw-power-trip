@@ -77,22 +77,24 @@ export function toonUnique(color, o = {}){
 }
 
 const inkCache = new Map();
-/* the outline hull material: back faces pushed out along the normal, drawn in ink */
-export function inkHull(width){
-  const k = width.toFixed(3);
-  if (inkCache.has(k)) return inkCache.get(k);
+/* the outline hull material: back faces pushed out along the normal, drawn in ink. grow (metres): past this distance
+   from the lens the outline thickens with it, so a mountain hundreds of metres out keeps a visible line */
+export function inkHull(width, grow = 0){
+  const k = width.toFixed(3), g = grow.toFixed(1), id = k + '|' + g;
+  if (inkCache.has(id)) return inkCache.get(id);
   const m = new THREE.MeshBasicMaterial({ color: INK, side: THREE.BackSide });
+  const push = grow > 0 ? `${k} * max(1.0, distance((modelMatrix * vec4(position, 1.0)).xyz, cameraPosition) / ${g})` : k;
   // the hull is dropped right at the lens: if the camera grazes (or briefly clips into) a prop, the hull's back faces
   // would otherwise fill the view solid black instead of letting you see through
   m.onBeforeCompile = sh => {
     sh.vertexShader = 'varying float vInkDepth;\n' + sh.vertexShader
-      .replace('#include <begin_vertex>', `vec3 transformed = position + normal * ${k};`)
+      .replace('#include <begin_vertex>', `vec3 transformed = position + normal * ${push};`)
       .replace('#include <project_vertex>', '#include <project_vertex>\n  vInkDepth = -mvPosition.z;');
     sh.fragmentShader = 'varying float vInkDepth;\n' + sh.fragmentShader
       .replace('void main() {', 'void main() {\n  if (vInkDepth < 0.6) discard;');
   };
-  m.customProgramCacheKey = () => 'inkhull' + k;
-  inkCache.set(k, m);
+  m.customProgramCacheKey = () => 'inkhull' + id;
+  inkCache.set(id, m);
   return m;
 }
 
@@ -127,6 +129,31 @@ export function seeThrough(src){
   return m;
 }
 
+/* FAR HAZE — the backdrop stands hundreds of metres out, far past where the arena's fog goes solid. Its materials swap
+   the scene fog for aerial perspective: from the fog's near distance the haze builds toward `max` over `len` metres
+   (an exponential, so near hills tint a little and the far range a lot) but never swallows a silhouette. The colour
+   is still the scene fog's, so the mood beats and lightning tint the horizon with everything else. Set per world
+   by applyAtmosphere (world/atmosphere.js). */
+export const HAZE = { len: { value: 150 }, max: { value: 0.8 } };
+const hazeCache = new Map();
+export function farHaze(src){
+  if (hazeCache.has(src.uuid)) return hazeCache.get(src.uuid);
+  const m = src.clone();
+  const prev = src.onBeforeCompile, key = src.customProgramCacheKey();
+  m.onBeforeCompile = (sh, r) => {
+    prev.call(src, sh, r);
+    sh.uniforms.uHazeLen = HAZE.len; sh.uniforms.uHazeMax = HAZE.max;
+    sh.fragmentShader = 'uniform float uHazeLen;\nuniform float uHazeMax;\n' + sh.fragmentShader
+      .replace('#include <fog_fragment>', `#ifdef USE_FOG
+  float fogFactor = uHazeMax * (1.0 - exp(-max(vFogDepth - fogNear, 0.0) / uHazeLen));
+  gl_FragColor.rgb = mix(gl_FragColor.rgb, fogColor, fogFactor);
+#endif`);
+  };
+  m.customProgramCacheKey = () => key + '|haze';
+  hazeCache.set(src.uuid, m);
+  return m;
+}
+
 /* an outline hull for any geometry: position-only, welded so the normals average across corners */
 export function hullGeo(geo){
   const c = new THREE.BufferGeometry();
@@ -149,8 +176,8 @@ export function inkify(mesh, width = 0.04){
 /* BAKE an arena: every MeshStandardMaterial / MeshToonMaterial mesh under `group` is converted to the toon look,
    merged per material, and given one outline hull per material. Unlit glows (MeshBasicMaterial: lava, braziers,
    beacons, the sky), points, lines and anything flagged userData.noBake stay live and untouched.
-   width: outline thickness in world units. */
-export function bakeArena(group, width = 0.045){
+   width: outline thickness in world units. far: a backdrop (outlines grow with distance, see inkHull). */
+export function bakeArena(group, width = 0.045, far = false){
   group.updateMatrixWorld(true);
   const buckets = new Map();
   const baked = [];
@@ -191,7 +218,7 @@ export function bakeArena(group, width = 0.045){
     m.userData.baked = true;
     group.add(m); calls++;
     if (b.outline && width > 0){
-      const hull = new THREE.Mesh(hullGeo(merged), seeThrough(inkHull(width)));
+      const hull = new THREE.Mesh(hullGeo(merged), seeThrough(inkHull(width, far ? 40 : 0)));
       hull.userData.baked = true;
       group.add(hull); calls++;
     }

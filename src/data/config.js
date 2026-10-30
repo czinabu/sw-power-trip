@@ -84,7 +84,7 @@ export const CFG = {
     // LENS — a big-budget third-person framing: the hero fills about a third of the frame height, the lens rides at
     // shoulder height just off the right shoulder, and a moderate FOV keeps the backdrop large (a wide FOV shrinks
     // everything past the hero, which is what made the arenas read small)
-    fov: 72,                  // vertical degrees at rest, a touch wider than JA's 64° (cg_fov 80 at 4:3); the FOV setting overrides it
+    fov: 64,                  // vertical degrees at rest, JA's 64° (cg_fov 80 at 4:3): tight enough that the skyline looms; the FOV setting overrides it
     pivotY: 1.9,              // the lens orbits a point this high over the hero's feet (just over head height)
     minLensY: 1.3,            // looking up swings the lens down, but never lower than this over the hero's feet
     // JEDI — a port of Jedi Academy's third-person camera (OpenJK code/cgame/cg_view.cpp, CG_OffsetThirdPersonView) at
@@ -93,12 +93,13 @@ export const CFG = {
     // chase their ideal spot on their own damping, which is what gives JA its soft swing when you turn
     ja: {
       eye: 2.5,               // focus: the hero's eye (JA: origin + viewheight, 60 of 64 units up)
-      vertOffset: 0.68,       // cg_thirdPersonVertOffset 16: the aim point rides this far over the eye...
-      range: 4.2,             // cg_thirdPersonRange 80 is 3.4 m: ...the lens sits this far behind it, along the line of sight (backed off a bit)
+      vertOffset: -0.35,      // SCALE PASS: the aim point sits at the shoulder, under the eye (JA rides it 16 units over),
+                              // so the lens looks out level past the hero and the city rises out of frame, not down on a diorama...
+      range: 3.8,             // cg_thirdPersonRange 80 is 3.4 m: ...the lens sits this far behind it, along the line of sight
       targetDamp: 0.5,        // cg_thirdPersonTargetDamp: share of the gap the aim point closes every 50 ms
       cameraDamp: 0.3,        // cg_thirdPersonCameraDamp: the same for the lens; JA stiffens it toward 1 as the view
                               // tips toward straight up/down ((pitch / 115°)²) and on fast turns (over 1° per ms)
-      horz: 0.2,              // cg_thirdPersonHorzOffset (0 in JA): a hair right, so a foe dead ahead isn't hidden behind your back
+      horz: 0.6,              // cg_thirdPersonHorzOffset (0 in JA): over the right shoulder, so a foe dead ahead isn't hidden behind your back
       frame: 0.4,             // ON TOP OF JA: share of the crowd / calm / lock-on framing added to the range (JA's never
                               // moves); a boss still gets its full pull-back
     },
@@ -114,7 +115,8 @@ export const CFG = {
     // MANDO — Helldivers 2's rig: a closer boom held well off the right shoulder, so the hero stands left of centre with the
     // crosshair clear past them, and it tucks in tighter still while aiming
     mandoDist: 4.5,           // resting follow distance (aiming / flight scale it)
-    mandoLensUp: 0.85,        // the lens rides this much over the pivot, so the helmet sits under the crosshair's eye-line
+    mandoLensUp: 0.45,        // the lens rides this much over the pivot, so the helmet sits under the crosshair's eye-line (kept low: a
+                              // high lens looks down on the arena like a tabletop)
     mandoShoulder: 0.95,      // MANDO lens offset off the shoulder (never centred, see camera.js)...
     mandoShoulderAim: 1.25,   // ...wider while aiming / bracing, so the reticle is always clear of the helmet...
     mandoShoulderFly: 1.05,   // ...and in the air
