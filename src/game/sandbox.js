@@ -1,6 +1,7 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
-// SANDBOX: the post-campaign training room (the Jedi's temple training room, the Mandalorian's throne room). No waves and no clock: call in any foe (data/sandbox.js), switch any
-// ability on or off, clear the floor and go again. ui/sandbox-ui.js is the panel that drives it.
+// SANDBOX: the training room (the Jedi's temple training room, the Mandalorian's throne room). No waves and no clock: call in any foe (data/sandbox.js), switch any
+// ability on or off, clear the floor and go again. ui/sandbox-ui.js is the panel that drives it. It opens after Act I with
+// what the story has shown so far, and opens up entirely once the campaign is beaten (game/sandbox-unlocks.js).
 
 import { scene } from '../engine/renderer.js';
 import { V3 } from '../utils.js';
@@ -23,6 +24,8 @@ import { clearGrenades } from '../enemies/grenades.js';
 import { regroupSquad } from '../allies/squad.js';
 import { FORMS, LOADOUT_SLOTS, DEFAULT_LOADOUT, migrateForm, cleanLoadout } from '../data/forms.js';
 import { setLoadout } from '../player/jedi/stance.js';
+import { refreshSandboxScope, foeOffered, mapOffered, kitOffered, formOffered } from './sandbox-unlocks.js';
+export { sandboxUnlocked } from './sandbox-unlocks.js';
 
 // the panel's settings: how many foes a pick calls in, whether they come elite or stand still as dummies
 // (god mode is G.sandboxGod, so player/damage.js can read it)
@@ -30,12 +33,9 @@ import { setLoadout } from '../player/jedi/stance.js';
 export const SB = { count: 1, elite: false, dummy: false, map: savedMap() };
 function savedMap(){ try { const m = localStorage.getItem('sw_sandbox_map'); if (m && BATTLE_MAPS[m]) return m; } catch(e){} return 'room'; }
 
-// unlocked once the campaign has been beaten with either hero (summary.js records each win)
-export function sandboxUnlocked(){
-  try { return localStorage.getItem('sw_camp_jedi') === '1' || localStorage.getItem('sw_camp_mando') === '1'; } catch(e){ return false; }
-}
-
 export function startSandbox(){
+  refreshSandboxScope();
+  if (!mapOffered(SB.map)) SB.map = 'room';   // a world the story hasn't reached yet
   startLevel(0, { level: sandboxLevel(), sandbox: true });   // fresh hero and starting kit, in the hero's room (or the picked battle map)
   G.waveTotal = 0;   // foes at their base toughness (HP and elite odds climb with waveTotal)
   placeHero();
@@ -45,11 +45,14 @@ export function startSandbox(){
 }
 
 /* ---------- the forms loadout ---------- */
-// the room is for trying things: every ready form can go in any slot, and a slotted form is known
-export const SANDBOX_FORMS = Object.keys(FORMS).filter(id => FORMS[id].ready);
+// the room is for trying things: every form the story has shown can go in any slot, and a slotted form is known
+export const sandboxForms = () => Object.keys(FORMS).filter(formOffered);
 function savedForms(){
-  try { const v = JSON.parse(localStorage.getItem('sw_sandbox_forms')); if (Array.isArray(v)) return cleanLoadout(v); } catch(e){}
-  return DEFAULT_LOADOUT;
+  let list = DEFAULT_LOADOUT;
+  try { const v = JSON.parse(localStorage.getItem('sw_sandbox_forms')); if (Array.isArray(v)) list = v; } catch(e){}
+  list = cleanLoadout(list).map(id => id && formOffered(id) ? id : null);
+  if (!list.some(Boolean)) list[0] = 'niman';   // the starting form, always open
+  return list;
 }
 function applyForms(list){
   G.stanceUnlocked = G.stanceUnlocked || {};
@@ -60,7 +63,7 @@ function applyForms(list){
 // holding the form in hand can't be emptied
 export function cycleSandboxSlot(i){
   if (i < 0 || i >= LOADOUT_SLOTS) return;
-  const cur = G.loadout.slice(), opts = [...SANDBOX_FORMS, null];
+  const cur = G.loadout.slice(), opts = [...sandboxForms(), null];
   let at = opts.indexOf(cur[i]);
   for (let n = 0; n < opts.length; n++){
     at = (at + 1) % opts.length;
@@ -84,7 +87,7 @@ function placeHero(){
 }
 // switch arenas from the panel: the floor is cleared and the new one is built in place (the kit stays as it is)
 export function setSandboxMap(id){
-  if (id !== 'room' && !BATTLE_MAPS[id]) return;
+  if ((id !== 'room' && !BATTLE_MAPS[id]) || !mapOffered(id)) return;
   SB.map = id;
   try { localStorage.setItem('sw_sandbox_map', id); } catch(e){}
   if (!G.sandbox) return;
@@ -99,7 +102,8 @@ export function setSandboxMap(id){
 }
 
 /* ---------- the kit ---------- */
-const kitRows = () => SANDBOX_KIT[G.hero] || [];
+// only the rows the story has reached (game/sandbox-unlocks.js)
+const kitRows = () => (SANDBOX_KIT[G.hero] || []).filter(kitOffered);
 // the last kit this hero used here, or null the first time
 function savedKit(){
   try { const v = JSON.parse(localStorage.getItem('sw_sandbox_kit_' + G.hero)); if (Array.isArray(v)) return v.map(migrateForm); } catch(e){}   // older kits named the forms fast / strong
@@ -143,6 +147,7 @@ export function sandboxSpawn(id){
     const x = Math.max(-lim, Math.min(lim, p.x + fx*d + fz*side)), z = Math.max(-lim, Math.min(lim, p.z + fz*d - fx*side));
     return findClearSpawn(x, z, 0.9);
   };
+  if (!foeOffered(id)) return;
   if (id === 'boss'){
     if (shared.boss){ showBanner('', 'ONE BOSS AT A TIME', 1.2); return; }
     spawnBoss();
