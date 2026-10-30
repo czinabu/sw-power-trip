@@ -10,7 +10,7 @@
 // Pose sets key off hold + grip + form (docs/animation-guidelines.md), so a new weapon or form is new data here.
 
 /* each stance in data/stances.js names its form; the darksaber is its own (Mando) form */
-export const FORM_OF = { fast: 'ataru', medium: 'niman', strong: 'djemso', darksaber: 'darksaber' };
+export const FORM_OF = { ataru: 'ataru', niman: 'niman', djemso: 'djemso', darksaber: 'darksaber' };
 
 /* FOOTWORK per form — crouch (hip drop), splay (feet apart), lead (staggered feet), lean (forward pitch),
    width (robe flare). Read when the hero is settled and planted. */

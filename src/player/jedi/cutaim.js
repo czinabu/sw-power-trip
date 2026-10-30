@@ -53,7 +53,7 @@ function dirOf(ang){
 }
 // the form's string: the next angle in it, picked up where it left off unless you stopped cutting a while
 function stringAngle(advance){
-  const S = CUT_ANGLE.strings[G.hero === 'mando' ? 'strong' : G.stance] || CUT_ANGLE.strings.medium;
+  const S = CUT_ANGLE.strings[G.hero === 'mando' ? 'djemso' : G.stance] || CUT_ANGLE.strings.niman;
   const st = player.cutStr || (player.cutStr = { i: 0, at: -9 });
   if (G.gt - st.at > CUT_ANGLE.reset) st.i = 0;
   const ang = S[st.i % S.length];

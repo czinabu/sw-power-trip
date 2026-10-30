@@ -127,7 +127,7 @@ export function bladeClash(fromPos, foe, at){
   else cancelSwing();
   player.vel.addScaledVector(dir, -C.push * (boss ? 1.4 : 1) / formWeight());   // a heavy form gives less ground
   jarStamina(C.stam);
-  const heavy = !!foe && ((G.hero !== 'mando' && G.stance === 'strong') || G.hero === 'mando');
+  const heavy = !!foe && ((G.hero !== 'mando' && G.stance === 'djemso') || G.hero === 'mando');
   if (heavy) staggerEnemy(foe, dir.x, dir.z, 'CLASH!');
   else {
     if (foe){ flinchEnemy(foe, dir, C.knock * 0.12); knockWeapon(foe, 0.7); }

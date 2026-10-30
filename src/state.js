@@ -56,7 +56,8 @@ export const G = {
   streak: 0, streakT: 0,
   spawnQueue: [],
   unlocked: {},
-  stance: 'medium', stanceCd: 0,
+  stance: 'niman', stanceCd: 0,
+  loadout: ['ataru', 'niman', 'djemso'],   // the forms on 1 / 2 / 3 (data/forms.js DEFAULT_LOADOUT)
   hero: 'jedi',          // 'jedi' (saber/Force) or 'mando' (jetpack/blasters) — chosen on the menu
   // SURVIVAL / ENDLESS mode
   modeSel: 'campaign',   // menu pick: 'campaign' | 'endless' | 'training' | 'mission' | 'sandbox'

@@ -21,6 +21,7 @@ import { BATTLE_MAPS } from '../data/battlemaps.js';
 import { buildArena } from '../world/arena.js';
 import { clearGrenades } from '../enemies/grenades.js';
 import { regroupSquad } from '../allies/squad.js';
+import { migrateForm } from '../data/forms.js';
 
 // the panel's settings: how many foes a pick calls in, whether they come elite or stand still as dummies
 // (god mode is G.sandboxGod, so player/damage.js can read it)
@@ -70,7 +71,7 @@ export function setSandboxMap(id){
 const kitRows = () => SANDBOX_KIT[G.hero] || [];
 // the last kit this hero used here, or null the first time
 function savedKit(){
-  try { const v = JSON.parse(localStorage.getItem('sw_sandbox_kit_' + G.hero)); if (Array.isArray(v)) return v; } catch(e){}
+  try { const v = JSON.parse(localStorage.getItem('sw_sandbox_kit_' + G.hero)); if (Array.isArray(v)) return v.map(migrateForm); } catch(e){}   // older kits named the forms fast / strong
   return null;
 }
 function saveKit(){
