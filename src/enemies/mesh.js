@@ -305,7 +305,7 @@ function weaponArm(k, t, w){
     k.add(loft([{ y:0, w:0.065, d:0.065 }, { y:0.05, w:0.06, d:0.06 }], ngon(8, PI/8)), 'black', grip, [0, -0.14, 0]);
     k.add(block(0.03, 0.08, 0.03, 0.3), 'gun', grip, [0, 0.04, 0.045], [0,0,0], { outline: false });
     k.glow(new THREE.CylinderGeometry(0.022, 0.016, 1.12, 8), 0xffffff, grip, [0, -0.72, 0]);
-    k.glow(new THREE.CylinderGeometry(0.06, 0.045, 1.16, 8), t.eye, grip, [0, -0.72, 0], [0,0,0], { opacity: 0.55 });
+    k.glow(new THREE.CylinderGeometry(0.06, 0.045, 1.16, 8), t.eye, grip, [0, -0.72, 0], [0,0,0], { opacity: 0.55, tag: 'bladeGlow', unique: true });   // (a form master burns its form's colour: game/mission.js)
   } else if (t.weapon === 'pistol'){
     // a sidearm, its barrel down the line of the forearm (the arm levels it to fire)
     k.add(block(0.055, 0.3, 0.09, 0.3), 'gun', grip, [0, -0.17, 0.02]);
