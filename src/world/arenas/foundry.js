@@ -30,6 +30,8 @@ export function buildFoundryArena(L){
   const moltenC = pal.molten ?? 0xff7a1e;
   const molten = new THREE.MeshBasicMaterial({ color: moltenC, fog: false });   // bloom turns it into a glow
   const K = arenaKit(), R = seeded(23);
+  // the plan is authored at 52 m across; a bigger arena spreads every piece out by the same share (sizes stay)
+  const S = L.arena / 52;
 
   // ---- central SMELTER — base housing + stack (collides as one cylinder), a molten band and gold rings ----
   K.box(0, 0, 2.8, 2.8, 1.2, metalD);
@@ -40,7 +42,7 @@ export function buildFoundryArena(L){
   // ---- MOLTEN CHANNELS — the diagonals, from the smelter's edge out to r 12. They SURGE on a staggered cycle
   // (1.0s amber warning, 1.1s burn) so the four never flare together ----
   for (let i = 0; i < 4; i++){
-    const a = D + i * Math.PI/2, r0 = 3.6, r1 = 12, len = r1 - r0, [cx, cz] = at(a, (r0 + r1) / 2);
+    const a = D + i * Math.PI/2, r0 = 3.6, r1 = 12 * S, len = r1 - r0, [cx, cz] = at(a, (r0 + r1) / 2);
     K.deco(new THREE.PlaneGeometry(0.6, len), molten, cx, 0.05, cz, -Math.PI/2, 0, -a + Math.PI/2).castShadow = false;
     for (const s of [-1, 1]){   // a dark iron lip along both banks so the channel reads as a trench
       const [ox, oz] = [Math.cos(a + Math.PI/2) * 0.45 * s, Math.sin(a + Math.PI/2) * 0.45 * s];
@@ -49,13 +51,13 @@ export function buildFoundryArena(L){
     hazardZones.push({ kind:'line', cx, cz, dirX: Math.cos(a), dirZ: Math.sin(a), halfLen: len/2, halfW: 0.55,
       period: 5.5, warnDur: 1.0, activeDur: 1.1, dmg: 15, color: moltenC, t: i * 1.4 });
     // the channel ends in a LAVA-GEYSER vent
-    const [vx, vz] = at(a, 15.5);
+    const [vx, vz] = at(a, 15.5 * S);
     spawnVent(V3(vx, 0, vz));
   }
 
   // ---- two stepped catwalk PLATFORMS in the east and west lanes (climbable: 0.5 then 1.0) ----
   for (const sx of [-1, 1]){
-    const px = sx * 10.5;
+    const px = sx * 10.5 * S;
     K.box(px, 0, 2.4, 2.4, 0.5, metal, { climbable: true });
     K.box(px, 0, 1.6, 1.6, 1.0, metalD, { climbable: true });
     K.deco(new THREE.BoxGeometry(3.3, 0.08, 3.3), stripe, px, 1.0, 0);
@@ -64,7 +66,7 @@ export function buildFoundryArena(L){
   // ---- MACHINE BLOCKS — eight, flanking the four channel mouths; tall and low alternate ----
   const blocks = [];
   for (let i = 0; i < 4; i++) for (const s of [-1, 1]){
-    const a = D + i * Math.PI/2 + s * 0.35, [x, z] = at(a, 13.5);
+    const a = D + i * Math.PI/2 + s * 0.35, [x, z] = at(a, 13.5 * S);
     const tall = s > 0, hx = 1.4 + R()*0.3, hz = 1.1 + R()*0.2, h = tall ? 2.8 : 1.4;
     K.box(x, z, hx, hz, h, (i + (s > 0 ? 1 : 0)) % 3 === 0 ? rust : metal);
     K.deco(new THREE.BoxGeometry(0.2, 0.1, hz*1.8), stripe, x, h*0.5, z);   // a hazard-stripe pipe across it
@@ -74,17 +76,17 @@ export function buildFoundryArena(L){
   // ---- FUEL DRUMS — on the inner side of six blocks (the two by the north spawn lane are left out) ----
   for (const a of blocks){
     if (Math.sin(a) > 0.85) continue;   // the blocks either side of the north lane
-    const [x, z] = at(a, 11);
+    const [x, z] = at(a, 11 * S);
     spawnBarrel(V3(x, 0, z));
   }
 
   // ---- SUPPORT GIRDERS — six at r 17.5 (wall-kick, cavernous read), on the cardinal lines and between ----
   for (let i = 0; i < 6; i++){
-    const a = (i / 6) * Math.PI*2, [x, z] = at(a, 17.5), h = 9 + R()*3;
+    const a = (i / 6) * Math.PI*2, [x, z] = at(a, 17.5 * S), h = 9 + R()*3;
     K.column(x, z, 0.7, h, metalD, { seg: 6, taper: 1 });
     K.deco(new THREE.CylinderGeometry(0.91, 0.91, 0.5, 6), stripe, x, 1.0, z);
   }
 
   // ---- OVERWATCH CRANE — the gantry in the south lane, climbing toward the smelter ----
-  K.gantry(-1.8, -17, { a: metalD, b: metal, strut: stripe, beacon: pal.beacon ?? 0xff5040 });
+  K.gantry(-1.8, -17 * S, { a: metalD, b: metal, strut: stripe, beacon: pal.beacon ?? 0xff5040 });
 }

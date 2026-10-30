@@ -7,7 +7,7 @@ import { shared, solids, hazardZones } from '../../state.js';
 import { spawnVent, spawnBarrel } from '../hazards.js';
 import { arenaKit, seeded, at } from './kit.js';
 
-const RING = 22;   // radius of the cover pods
+const RING0 = 22;   // radius of the cover pods (at the authored size; see S below)
 
 /* LEVEL 3 — the THRONE (half-size 36), built around the boss. Rings, from the inside out:
      · the DUELLING GROUND (r < 11) stays completely open, so the Herald / the Magistrate and their dash, blink, pulse
@@ -29,6 +29,8 @@ export function buildPlainsArena(L){
   const voidC  = pal.voidGlow ?? 0x9a3bff;
   const voidGlow = new THREE.MeshBasicMaterial({ color: voidC, fog: false });   // ominous violet void-rifts (bloom)
   const K = arenaKit(), R = seeded(37);
+  // the plan is authored at 72 m across; a bigger arena spreads every piece out by the same share (sizes stay)
+  const S = L.arena / 72, RING = RING0 * S;
 
   // ---- the ALTAR — a broken spire at the far south with violet rifts, flanked by two shattered pillars. The boss
   // spawns at z = -(half-6), in front of it, and advances out ----
@@ -42,7 +44,7 @@ export function buildPlainsArena(L){
   for (const sx of [-1, 1]) K.column(sx*4.6, mz - 1.0, 0.8, 5 + R()*2.5, stoneD, { taper: 0.7, seg: 7 });
 
   // ---- SITH VENTS — the cardinals at r 12, the edge of the duelling ground ----
-  for (let i = 0; i < 4; i++){ const [x, z] = at(i * Math.PI/2, 12); spawnVent(V3(x, 0, z)); }
+  for (let i = 0; i < 4; i++){ const [x, z] = at(i * Math.PI/2, 12 * S); spawnVent(V3(x, 0, z)); }
 
   // ---- COVER PODS — a broken wall across the radial line plus a low step block on its inner side (step 1.1, then
   // the wall: a two-move parkour climb). Slot 7 (ESE) is the gantry ----
@@ -68,7 +70,7 @@ export function buildPlainsArena(L){
 
   // ---- two climbable RUIN PLATFORMS in the NW and SE diagonal lanes (0.5 then 1.0) ----
   for (const a of [3*Math.PI/4, -Math.PI/4]){
-    const [x, z] = at(a, 17);
+    const [x, z] = at(a, 17 * S);
     K.box(x, z, 2.4, 2.4, 0.5, stoneD, { climbable: true });
     K.box(x, z, 1.6, 1.6, 1.0, stone, { climbable: true });
   }
@@ -77,12 +79,12 @@ export function buildPlainsArena(L){
   for (let k = 0; k < 8; k++){
     const a = k * Math.PI/4;
     if (k === 2 || k === 6) continue;
-    const [x, z] = at(a, 26), h = 3.2 + R()*2.6;
+    const [x, z] = at(a, 26 * S), h = 3.2 + R()*2.6;
     K.column(x, z, 0.8, h, stone, { taper: 0.8, seg: 7 });
   }
 
   // ---- RUBBLE you step over ----
   for (const [x, z, len, ax] of [[6, 16, 1.6, true], [-17, -4, 1.8, false], [15, 15, 1.4, true], [-3, -13, 1.7, true], [-24, 14, 1.5, false], [9, -25, 1.6, false]]){
-    K.rubble(x, z, len, 0.3, stoneD, ax);
+    K.rubble(x*S, z*S, len, 0.3, stoneD, ax);
   }
 }

@@ -45,10 +45,13 @@ run). The three plans grow with the campaign:
 
 | Level | Plan | Hazards |
 |---|---|---|
-| 1 Jedha (half 21) | symmetric courtyard: walkable ziggurat, 8 columns at r 13, east/west walls, 4 L-ruins, gantry SE | summit brazier eruption, 3 drums by the walls |
-| 2 Mustafar (half 26) | safe cardinal lanes, danger diagonals: smelter, 4 molten channels each ending in a vent, 8 machine blocks, 2 catwalks, 6 girders, crane S | 4 channels, 4 vents, 6 drums inside the blocks |
-| 3 Exegol (half 36) | open duelling ground (r < 11) for the boss, 7 cover pods at r 22, 2 ruin platforms, columns at r 26, altar S | altar pulse, 4 vents at r 12, 7 drums |
+| 1 Jedha (half 28) | symmetric courtyard: walkable ziggurat, 8 columns at r 13, east/west walls, 4 L-ruins, gantry SE | summit brazier eruption, 3 drums by the walls |
+| 2 Mustafar (half 34) | safe cardinal lanes, danger diagonals: smelter, 4 molten channels each ending in a vent, 8 machine blocks, 2 catwalks, 6 girders, crane S | 4 channels, 4 vents, 6 drums inside the blocks |
+| 3 Exegol (half 43) | open duelling ground (r < 11) for the boss, 7 cover pods at r 22, 2 ruin platforms, columns at r 26, altar S | altar pulse, 4 vents at r 12, 7 drums |
 
+- The three plans are authored at 42, 52 and 72 m across (the radii above are at that size) and spread out to the
+  level's `arena` (56, 68, 86): every piece moves out by `arena / authored`, its size unchanged, so the lanes between
+  cover open up while heights, vaults and climbs stay what they were.
 - Every solid is axis-aligned (collision is boxes and columns). Anything visible on the floor is either solid or a
   low **climbable** step under `STEP_UP`; nothing is decoration you walk through.
 - Vaultable cover stays under the 1.93 single-jump apex. The gantry tiers are above it on purpose.
