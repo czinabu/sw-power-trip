@@ -104,6 +104,11 @@ document.addEventListener('mousedown', (e) => {
           if (keys['d']) d.add(rightV()); if (keys['a']) d.sub(rightV());
           if (d.lengthSq() < 0.01) d.copy(fwd()).multiplyScalar(-1);
           d.normalize(); player.vel.addScaledVector(d, 13);
+        } else if (G.stance === 'makashi'){
+          player.vel.addScaledVector(fwd(), -8);   // MAKASHI — the fencer's retreat: a quick step back off the line
+          pwin += 0.04;
+        } else if (G.stance === 'soresu'){
+          pwin += 0.08;                 // SORESU — straight back behind the blade, the guard already up
         } else if (G.stance === 'niman'){
           pwin += 0.06;                 // NIMAN — a clean cancel leaves a wider parry window after
         } else if (G.stance === 'djemso'){

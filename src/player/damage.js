@@ -154,7 +154,7 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
   const open = player.gbT > 0;   // guard just broken: no soak, catch, block or parry until it passes
   // an empty guard (dry, or already shattered by running dry) meets a heavy melee blow from the front
   let broke = false;
-  const heavyMelee = !!(melee && fromPos && !silent && !chip && !pierce && !open && raw >= CFG.player.flinch.heavyDmg);
+  const heavyMelee = !!(melee && fromPos && !silent && !chip && !pierce && !open && raw >= CFG.player.flinch.heavyDmg * (G.hero !== 'mando' && stance().breakRes || 1));   // (Makashi stands its ground)
   // a cut in flight meets a melee strike from in front: CLASH (before any guard, since a swing can't be guarding)
   if (melee && fromPos && !silent && !(opts && opts.noClash) && player.swing && !player.swing.recoil && player.atkT > 0 && (G.hero !== 'mando' || player.weapon === 'darksaber')){
     const k = player.swing.t / player.swing.dur, C = CFG.player.clash;
@@ -250,7 +250,8 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
         sfx(900, 0.07, 'square', 0.05, 500);
         noteDefense('blocks', fromPos, opts);
         // a block is not a parry: some of a melee blow still gets through the guard
-        if (melee && CFG.player.blockChip > 0) hurtPlayer(dmg * CFG.player.blockChip, null, true, false, true);
+        const chipMul = G.hero !== 'mando' ? stance().chipMul ?? 1 : 1;   // (Soresu's guard lets nothing through)
+        if (melee && CFG.player.blockChip > 0 && chipMul > 0) hurtPlayer(dmg * CFG.player.blockChip * chipMul, null, true, false, true);
         return 'blocked';
       }
       else if (guard){

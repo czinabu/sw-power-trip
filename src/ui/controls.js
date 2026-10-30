@@ -92,6 +92,7 @@ const TIPS = {
     '<b>Force</b> (bottom-left bar) powers your abilities and refills over time.',
     '<b>Focus</b> builds with clean hits and parries and boosts your damage. Taking a hit breaks it.',
     '<b>Forms:</b> Ataru for crowds, Niman for all-round play, Djem So for brutes and bosses.',
+    '<b>Sandbox forms:</b> Shii-Cho sweeps crowds and its finisher disarms blaster troopers; Makashi beats other blades but bolts cost it; Soresu holds its guard and sends bolts home. Pick yours in the sandbox panel (B).',
     'A swing turns blaster bolts back down the line they came from: Djem So sends them home to the shooter, Ataru sprays them. A timed parry (tap RMB) always sends a bolt straight back.',
     'Any swing can be cancelled into a block, a Force power or a dash.',
     'Getting hit knocks your swing loose. Cut into a foe\'s strike mid-swing and the blades clash: nobody is hurt and you both reel. Bosses clash too.',

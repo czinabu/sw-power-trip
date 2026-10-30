@@ -58,6 +58,7 @@ export function cycleSlot(dir){
 }
 
 /* ---------- stance switching ---------- */
+const IGNITE = { shiicho: 380, makashi: 820, soresu: 600, ataru: 740, niman: 540, djemso: 320 };   // the re-ignite's pitch
 export function switchStance(id, silent){
   if (!STANCES[id] || (G.stanceCd > 0 && !silent) || G.stance === id) return;
   if (!silent && !stanceUnlocked(id)){ floater(playerPos(), 'FORM LOCKED', '#ff9a66'); sfx(120, 0.1, 'square', 0.05, 70); return; }
@@ -73,7 +74,7 @@ export function switchStance(id, silent){
     const pp = playerPos();
     burst(V3(pp.x, 1.6, pp.z), st.blade, 10, 4, 3);
     floater(pp, st.name, hex(st.blade));
-    sfx(id === 'ataru' ? 740 : id === 'niman' ? 540 : 320, 0.22, 'sine', 0.1, id === 'djemso' ? 160 : 1480);
+    sfx(IGNITE[id] || 540, 0.22, 'sine', 0.1, id === 'djemso' || id === 'shiicho' ? 160 : 1480);
     sfx(90, 0.18, 'sawtooth', 0.06, 60);   // saber re-ignite growl
   }
 }

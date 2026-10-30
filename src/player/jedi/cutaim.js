@@ -78,7 +78,7 @@ export function pickCut(step, advance = true){
   else {
     dir = 'neutral';
     if (step === 2) id = 'forward';
-    else ang = stringAngle(advance);
+    else { const sa = stringAngle(advance); if (sa === 'thrust') id = 'thrust'; else ang = sa; }
   }
   if (id) return { pat: SWING_PATTERNS[id], dir, h };
   return { pat: anglePattern(mirror(ang), h), dir, h };

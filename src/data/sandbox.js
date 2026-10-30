@@ -3,9 +3,7 @@
 // game/sandbox.js runs the mode and ui/sandbox-ui.js draws the panel from these lists; edit freely.
 
 import { ENEMY_TYPES } from './enemies.js';
-import { stanceUnlocked } from './stances.js';
 import { G, player } from '../state.js';
-import { setStanceHud, switchStance } from '../player/jedi/stance.js';
 import { switchWeapon } from '../player/mando/weapons.js';
 import { applyJetTier, applyCellTier } from '../game/progression.js';
 import { BATTLE_MAPS } from './battlemaps.js';
@@ -41,8 +39,6 @@ export const SANDBOX_COUNTS = [1, 3, 5];
    is always on. Rows that share a key (`slot`) can't both be on: picking one switches its partner off, the same
    pairs the XP store makes you choose between. `needs` hides a row until another one is on. */
 const flag = (k) => ({ has: () => !!G.unlocked[k], set: (on) => { G.unlocked[k] = on; } });
-const form = (id) => ({ has: () => stanceUnlocked(id),
-  set: (on) => { (G.stanceUnlocked = G.stanceUnlocked || {})[id] = on; if (!on && G.stance === id) switchStance('niman', true); setStanceHud(); } });
 const weapon = (id, k) => ({ has: () => id === 'darksaber' ? !!player.up.darksaber : !!G.unlocked[k],
   set: (on) => {
     if (id === 'darksaber'){ player.up.darksaber = on; G.unlocked.dark = on; } else G.unlocked[k] = on;
@@ -51,8 +47,6 @@ const weapon = (id, k) => ({ has: () => id === 'darksaber' ? !!player.up.darksab
 
 export const SANDBOX_KIT = {
   jedi: [
-    { id: 'ataru',     nm: 'ATARU',            key: '1',        ...form('ataru') },
-    { id: 'djemso',    nm: 'DJEM SO',          key: '3',        ...form('djemso') },
     { id: 'fj',        nm: 'FORCE JUMP II',    key: 'HOLD SPACE', has: () => (player.up.fjTier || 0) >= 2, set: (on) => { player.up.fjTier = on ? 2 : 0; } },
     { id: 'pull',      nm: 'FORCE PULL',       key: 'C',        ...flag('pull') },
     { id: 'graspMulti', nm: "DARK LORD'S GRIP", key: 'HOLD C', needs: 'pull',

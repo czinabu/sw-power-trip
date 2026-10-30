@@ -21,7 +21,8 @@ import { BATTLE_MAPS } from '../data/battlemaps.js';
 import { buildArena } from '../world/arena.js';
 import { clearGrenades } from '../enemies/grenades.js';
 import { regroupSquad } from '../allies/squad.js';
-import { migrateForm } from '../data/forms.js';
+import { FORMS, LOADOUT_SLOTS, DEFAULT_LOADOUT, migrateForm, cleanLoadout } from '../data/forms.js';
+import { setLoadout } from '../player/jedi/stance.js';
 
 // the panel's settings: how many foes a pick calls in, whether they come elite or stand still as dummies
 // (god mode is G.sandboxGod, so player/damage.js can read it)
@@ -40,6 +41,36 @@ export function startSandbox(){
   placeHero();
   const kit = savedKit();
   if (kit) applyKit(kit); else sandboxKitAll(true);   // the first visit: everything (the first of each key-sharing pair)
+  if (G.hero !== 'mando') applyForms(savedForms());
+}
+
+/* ---------- the forms loadout ---------- */
+// the room is for trying things: every ready form can go in any slot, and a slotted form is known
+export const SANDBOX_FORMS = Object.keys(FORMS).filter(id => FORMS[id].ready);
+function savedForms(){
+  try { const v = JSON.parse(localStorage.getItem('sw_sandbox_forms')); if (Array.isArray(v)) return cleanLoadout(v); } catch(e){}
+  return DEFAULT_LOADOUT;
+}
+function applyForms(list){
+  G.stanceUnlocked = G.stanceUnlocked || {};
+  for (const id of list) if (id) G.stanceUnlocked[id] = true;
+  setLoadout(list);
+}
+// a click on a slot steps it to the next ready form not already slotted (then empty, then round again); the slot
+// holding the form in hand can't be emptied
+export function cycleSandboxSlot(i){
+  if (i < 0 || i >= LOADOUT_SLOTS) return;
+  const cur = G.loadout.slice(), opts = [...SANDBOX_FORMS, null];
+  let at = opts.indexOf(cur[i]);
+  for (let n = 0; n < opts.length; n++){
+    at = (at + 1) % opts.length;
+    const id = opts[at];
+    if (id && cur.includes(id)) continue;
+    if (!id && (cur[i] === G.stance || cur.filter(Boolean).length <= 1)) continue;
+    cur[i] = id; break;
+  }
+  applyForms(cur);
+  try { localStorage.setItem('sw_sandbox_forms', JSON.stringify(G.loadout)); } catch(e){}
 }
 
 /* ---------- the arena ---------- */
