@@ -47,7 +47,7 @@ try {
       await page.waitForTimeout(800);
     }
   }
-  for (const page of [host, guest]) await page.evaluate(() => { const b = document.querySelector('#chapcard.open [data-go]'); if (b) b.click(); });   // the campaign's chapter card
+  for (const page of [host, guest]) await page.evaluate(() => { const b = document.querySelector('#chapcard.open [data-go]'); if (b) b.click(); GAME.cutscene.skipScene(); });   // the campaign's chapter card, and its opening scene
   await host.evaluate(() => GAME.player.group.position.set(5, 0, 3));
   await guest.waitForFunction(() => GAME.partnerShown(), null, { timeout: 15000, polling: 250 });
   await host.waitForFunction(() => GAME.partnerShown(), null, { timeout: 15000, polling: 250 });

@@ -41,7 +41,7 @@ import { forceStrike } from '../player/jedi/palm.js';
 import { squadOrder } from '../allies/squad.js';
 import { noteFlick } from '../player/jedi/cutaim.js';
 
-const inputActive = () => document.pointerLockElement === renderer.domElement || (shared.lockFallback && G.mode === 'play');
+const inputActive = () => !G.cutscene && (document.pointerLockElement === renderer.domElement || (shared.lockFallback && G.mode === 'play'));   // (a cutscene takes no fight input)
 document.addEventListener('mousemove', (e) => {
   if (!inputActive()) return;
   // scoped in (the disruptor's 30° zoom) the look slows to the SCOPE SENS setting, or the reticle flies off the target
@@ -144,6 +144,7 @@ document.addEventListener('contextmenu', (e) => e.preventDefault());
 document.addEventListener('keydown', (e) => {
   if (e.target && e.target.tagName === 'INPUT' && e.target.type !== 'range') return;   // typing in a text box (the co-op room code) is not play
   const k = e.key.toLowerCase();
+  if (G.cutscene && G.mode === 'play' && k !== 'p' && k !== 'm') return;   // a cutscene: only its skip keys (game/cutscene.js), quality and music
   if (player.downed && G.mode === 'play' && k !== 'p' && k !== 'm' && k !== 'escape') return;   // down: wait for your squad
   keys[k] = true;
   if (k === 'alt') e.preventDefault();   // ALT is the STRAFE hold (player/animation.js): keep the browser from grabbing it for its menu bar

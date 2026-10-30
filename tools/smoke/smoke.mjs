@@ -106,6 +106,7 @@ for (const [hero, mode, mission] of [['jedi', 'campaign'], ['mando', 'campaign']
         player.hp = Math.max(player.hp, 1e3);
         // a campaign chapter opens on its card, and between waves the upgrade screen holds the game: take them straight back into the fight
         const card = document.querySelector('#chapcard.open [data-go]'); if (card) card.click();
+        if (G.cutscene) GAME.cutscene.skipScene();   // (the cutscenes have their own suite: tools/smoke/cutscenes.mjs)
         if (G.skillSelect){ const b = document.getElementById('continueBtn'); if (b) b.click(); }
         if (G.paused){ const o = document.getElementById('goText'); if (o) o.click(); }
         // turn toward the nearest live foe, the way a player would

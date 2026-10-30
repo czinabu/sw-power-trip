@@ -82,6 +82,9 @@ function updatePauseCam(){
   P.last = now;
 }
 
+// a cutscene ended (game/cutscene.js): the Jedi rig starts over from its ideal spot instead of swooping in from before it
+export function resetCameraRig(){ jaLive = false; camFov = camera.fov; }
+
 export function updateCamera(dt){
   // the FOV slider wants the real gameplay camera, so the cut slideshow stands down while it's dragged
   if ((G.paused || G.sbMenu) && G.mode === 'play' && !G.fovPreview){ updatePauseCam(); return; }
@@ -90,6 +93,7 @@ export function updateCamera(dt){
     camera.fov = pauseCam.fov; camera.updateProjectionMatrix();
     pauseCam = null;
   }
+  if (G.cutscene) return;   // a cutscene has the lens (game/cutscene.js)
   const C = CFG.camera;
   const pp = playerPos();
   const f = fwd();

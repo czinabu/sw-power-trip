@@ -6,7 +6,8 @@
 /* the host's run, last heard of: on while the host is fighting a Survival run, with its arena and wave */
 export const coopRun = { on: false, k: 'e', mid: '', lv: 0, ch: -1, a2: null, wf: 0, ar: 0, w: 0, wt: 0, ph: '', mut: null,
   live: false,          // this browser is in a shared fight right now: the world keeps going whatever one hero's pause or hitstop does
-  guestPicking: false };   // host side: the guest has its upgrade screen open, so the next wave waits
+  guestPicking: false,     // host side: the guest has its upgrade screen open, so the next wave waits
+  guestScene: false };     // host side: the guest is watching a cutscene (game/cutscene.js), so the foes hold
 
 /* hits the guest has landed on puppet foes. A continuous source (the flamethrower, a held Force power) calls damageEnemy
    every frame, so ticks on one foe are summed into one entry; foes.js sends the lot about 20 times a second */
