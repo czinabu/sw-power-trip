@@ -37,9 +37,9 @@ export const PAD_BINDS = {
     base: {
       A:  { key: ' ', label: 'Jump', note: 'Again in the air to double-jump · hold to Force leap and glide' },
       B:  { key: 'shift', label: 'Roll / dash', note: 'Any way you push the stick · again mid-roll or in the air to Force dash' },
-      X:  { key: 'e', label: 'Kick', note: 'Cracks a duellist\'s guard · in a saber lock, kicks out' },
       Y:  { key: 'f', label: 'Force Push', note: 'Holding a foe in a Grasp, throws them' },
-      RB: { key: 'c', label: 'Force Pull · hold to Grasp', note: 'Unlocks after wave 2' },
+      X:  { key: 'c', label: 'Force Pull · hold to Grasp', note: 'Unlocks after wave 2 · beside Push, so grab-then-throw is one roll of the thumb' },
+      RB: { key: 'e', label: 'Kick', note: 'Cracks a duellist\'s guard · in a saber lock, kicks out' },
       RT: { mouse: 0, label: 'Saber combo', note: 'The left stick picks the cut, as W A S D do · in a saber lock, mash it' },
       LT: { mouse: 2, label: 'Block · tap to parry', note: 'Hold LT and pull RT to throw the saber' },
       LB: { key: 'alt', label: 'Strafe (hold)', note: 'Face the crosshair while you move · also opens the LB powers' },
