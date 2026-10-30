@@ -101,7 +101,7 @@ function boom(pos, size){
 }
 
 // each lightsaber form's swing voice: quick and light, even, or heavy
-const SWING_VOICE = { shiicho: 'strong', makashi: 'fast', soresu: 'medium', ataru: 'fast', niman: 'medium', djemso: 'strong', shien: 'strong' };
+const SWING_VOICE = { shiicho: 'strong', makashi: 'fast', soresu: 'medium', ataru: 'fast', niman: 'medium', djemso: 'strong', shien: 'strong', juyo: 'fast', vaapad: 'strong' };
 
 const pw01 = v => clamp(v ?? 1, 0.4, 1.8);
 

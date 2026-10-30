@@ -13,6 +13,7 @@ import { MANDO } from '../data/mando.js';
 import { fwd, playerPos, stance, maxHp } from './helpers.js';
 import { flinchEnemy, staggerEnemy } from '../enemies/damage.js';
 import { FOCUS, addFocus, riposteWindow } from './jedi/focus.js';
+import { addFury } from './jedi/fury.js';
 import { deflectAnim, cancelSwing } from './jedi/combat.js';
 import { sparks, clashFlash } from '../fx/ink.js';
 import { TELLS, tellCss } from '../fx/tells.js';
@@ -234,6 +235,7 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
         masteryXp('parry');
         addFocus(FOCUS.gainParry);   // a perfect parry is the biggest FOCUS spike
         tutEvent('parry');
+        addFury(stance().furyParry);   // VAAPAD feeds on the attack it turned
         return 'parried';
       }
       if (guard && pierce){
@@ -258,6 +260,7 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
         }
         const chipMul = G.hero !== 'mando' ? stance().chipMul ?? 1 : 1;   // (Soresu's guard lets nothing through)
         if (melee && CFG.player.blockChip > 0 && chipMul > 0) hurtPlayer(dmg * CFG.player.blockChip * chipMul, null, true, false, true);
+        addFury(stance().furyBlock);
         return 'blocked';
       }
       else if (guard){
@@ -275,6 +278,7 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
   dmg *= (1 - (player.up.dr || 0));   // UNSTOPPABLE damage reduction
   if (player.boon && player.boon.adrenal && player.hp < maxHp()*0.35) dmg *= 0.75;   // ADRENALINE boon — tougher when cornered
   if (player.atkT > 0 && G.hero !== 'mando' && stance().atkDR) dmg *= (1 - stance().atkDR);   // DJEM SO: armored commitment mid-swing
+  if (G.hero !== 'mando' && stance().dmgTaken) dmg *= stance().dmgTaken;   // FORM VII gives its defence away for its fury
   if (player.cancelDR > 0) dmg *= 0.55;   // DJEM SO heavy cancel — soaks the blow during its committed recovery
   if (player.barrierT > 0){            // FORCE BARRIER soaks most of what gets through
     dmg *= (1 - abil('barrier').dr);

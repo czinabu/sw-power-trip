@@ -448,6 +448,8 @@ export function updateEnemies(dt){
                 // perfectly parried — the weapon is knocked wide and the foe STUMBLES, wide open
                 // the Warbringer's posture takes the parry; a full bar breaks it open (duel.js), otherwise it reels as any brute does
                 // a duellist may keep the EXCHANGE going: it recovers to meet your riposte instead of reeling (duel.js)
+                // VAAPAD finds the SHATTERPOINT: the next cut on this foe lands double (player/jedi/combat.js)
+                if (G.hero !== 'mando' && stance().shatter){ e.shatterUntil = G.gt + 4; burst(V3(g.position.x, 1.6, g.position.z), 0xd08bff, 10, 3, 2); }
                 if (rallyOnParry(e)) break;
                 if (!(e.dp && e.dp.brace && addPosture(e, DUEL.posture.parry, -tx, -tz))) staggerEnemy(e, -tx, -tz);
                 drainBreath(e, DUEL.breath.parried);
