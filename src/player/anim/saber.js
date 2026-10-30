@@ -51,6 +51,7 @@ function angleKeys(set, grip, ang, h){
     return { hand, blade: blade.normalize(), twist: p.twist + (q.twist - p.twist) * t };
   });
 }
+const OFF_KEYS = { fore: SWING_OFF.fore.map(V), back: SWING_OFF.back.map(V) };   // (data arrays → vectors once)
 const DEFLECTS = {};
 for (const g in SABER_DEFLECTS){ DEFLECTS[g] = {}; for (const z in SABER_DEFLECTS[g]) DEFLECTS[g][z] = SABER_DEFLECTS[g][z].map(p => ({ ...vecPose(p), flick: V(p.flick || [0, 0, 0]) })); }
 /* the over-the-top wrap a blade takes when the next cut chambers on the far side from where the last one finished:
@@ -266,7 +267,7 @@ export function swingPose(R, held, grip, form, sw){
   // and draws it back to the hip as the blade comes through (the counter-pull that turns the body), a backhand tucks it in
   // and flings it out the other way; it opens for balance on the follow-through and returns to the guard's place
   if (!style.two){
-    const O = SWING_OFF[A.side > 0 ? 'back' : 'fore'], fl = style.offFlare;
+    const O = OFF_KEYS[A.side > 0 ? 'back' : 'fore'], fl = style.offFlare;
     const guardOff = (A.rest.off && A.rest.off.hand) || OFF_REST;
     const key = i => _p.copy(guardOff).lerp(O[i], fl);
     if (ph === 0){ _t.copy(A.start.off).lerp(key(0), t); }
