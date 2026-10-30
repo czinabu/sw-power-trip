@@ -1,5 +1,5 @@
 #!/bin/bash
-# Vercel "Ignored Build Step": exit 0 = skip the build, exit 1 = run it.
+# Production (main) always builds. Preview builds only run when the latest
 # Production (main) always builds. Preview builds only run when the latest
 # commit message contains [preview], to stay inside the free plan's daily limit.
 
@@ -15,3 +15,4 @@ fi
 
 echo "Preview skipped: add [preview] to the commit message to build."
 exit 0
+# (Verified by pushing a commit without the tag.)
