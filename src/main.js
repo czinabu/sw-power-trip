@@ -87,6 +87,7 @@ import { showcaseActive, renderShowcase, leaveShowcase } from './ui/showcase.js'
 import './ui/customizer.js';
 import './data/difficulty.js';
 import './engine/input.js';
+import './engine/gamepad.js';
 import { updateCamera } from './engine/camera.js';
 import { SEE } from './world/ink.js';
 import { NAV, buildNav, updateNav, navSteer, navDist } from './enemies/nav.js';

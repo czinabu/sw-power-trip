@@ -8,6 +8,7 @@ import { scene } from '../engine/renderer.js';
 import { enemies } from '../state.js';
 import { playerPos } from '../player/helpers.js';
 import { players, targetable } from '../player/players.js';
+import { pad, padKeys } from '../engine/gamepad.js';
 
 /* ============================================================
    THE VOICE PANEL — the line in character, then the plain task with its keys and a count
@@ -23,7 +24,7 @@ function keycaps(keys){
 export function showPanel(who, say, keys, task, opts = {}){
   el('.tt-who').textContent = who;
   el('.tt-say').textContent = say;
-  el('.tt-keys').innerHTML = keycaps(keys);
+  el('.tt-keys').innerHTML = keycaps(keys && pad.active ? padKeys(keys) : keys);   // a pad shows its own buttons (engine/gamepad.js)
   el('.tt-task').textContent = task || '';
   el('.tt-count').textContent = opts.count || '';
   panel.classList.toggle('done', !!opts.done);

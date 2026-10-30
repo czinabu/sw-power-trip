@@ -407,3 +407,11 @@ body.fovpreview #fovpill{background:rgba(1,4,10,.82)}
 .ctl .tells b{color:var(--ink);letter-spacing:1.5px;font-size:12px}
 .ctl .tells span{grid-column:2}
 @media (max-width:720px){.ctl .tells{grid-template-columns:1fr}}
+/* ---------- CONTROLLER (engine/gamepad.js): the focus ring a pad moves round the menus, and pad-only prompts ---------- */
+.padfocus{outline:2px solid var(--accent)!important;outline-offset:3px;box-shadow:0 0 0 5px rgba(92,198,255,.18),0 0 18px rgba(92,198,255,.35)!important}
+.padonly{display:none}
+body.pad .padonly{display:inline}
+body.pad .kbonly{display:none}
+.ctl.padview .cr .ca small{display:block!important}
+.ctl.padview .cr .ca::after{content:none!important}
+.ctl.padview .ck kbd{min-width:30px}

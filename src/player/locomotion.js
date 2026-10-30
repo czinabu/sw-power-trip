@@ -18,6 +18,7 @@ import { MANDO_MOBILITY } from '../data/mobility.js';
 import { updateMantle, tryAutoMantle, updateWallRun, landingImpact, updateHang, updateForceSlide } from './parkour.js';
 import { doJump } from './movement.js';
 import { swingMoveMul, airControlMul, inCombat } from './mobility.js';
+import { padMove } from '../engine/gamepad.js';
 
 // Horizontal movement: WASD steering on the ground (or Mando air momentum), plus lunge/dash impulse velocity.
 // Returns whether there is movement input this frame (the pose code reads it).
@@ -40,6 +41,7 @@ export function updateMovement(dt, pp, st, f, r){
   if (keys['s']) want.sub(f);
   if (keys['d']) want.add(r);
   if (keys['a']) want.sub(r);
+  if (padMove.on) want.set(0, 0, 0).addScaledVector(f, padMove.y).addScaledVector(r, padMove.x);   // a gamepad's stick steers any way, not just 8
   const moving = want.lengthSq() > 0.01;
   // RUN / WALK (Jedi) — Q toggles between them; every life starts in RUN. Running forward (W) on the ground sprints:
   // faster and heavier to steer, and it never costs stamina, fight or no fight. In WALK the

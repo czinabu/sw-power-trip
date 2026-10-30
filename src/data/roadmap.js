@@ -5,6 +5,8 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'Controller support', status: 'done',
+    items: ['Play with a gamepad: both heroes, every power, strafe and slide, in every mode, co-op included', 'Menus, pause and the upgrade screen by pad', 'Stick sensitivity and invert Y in Settings; a CONTROLLER page in How to Play', 'PlayStation pads show their own button shapes'] },
   { title: 'Combat and movement', status: 'done',
     items: ['Hold Left Alt to strafe (Force slide moved to Z)', 'Grounded combat: rolls and parries', 'Saber stamina tuning, free running', 'Jedi and Mando camera rigs', 'Smoother first use: saber throw, bosses, squads, arena sound, pathing, saber-throw light'] },
   { title: 'Battle maps and squads', status: 'done',
@@ -42,7 +44,7 @@ export const ROADMAP = [
   { title: 'Online co-op: fight together', status: 'now',
     items: ['Done: the host runs the Survival enemies and waves, the joining player sees them and their blows land', 'Next: foes hurting the joining player, their shots and attack warnings, shared XP and revives'] },
   { title: 'More content', status: 'next',
-    items: ['More missions on the battle maps', 'New enemy types', 'Gamepad support', 'Upgrade picks that don\'t pause the fight'] },
+    items: ['More missions on the battle maps', 'New enemy types', 'Upgrade picks that don\'t pause the fight'] },
   { title: 'Combat readout', status: 'done',
     items: ['Per-wave damage by foe, low-stamina time, parries and blocks', 'Shown in the run summary and a live sandbox box'] },
   { title: 'Attack tells', status: 'done',
