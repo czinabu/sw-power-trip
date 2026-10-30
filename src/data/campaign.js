@@ -59,7 +59,7 @@ export const CHAPTERS = [
              mando: ['The foundlings reached the refuge, and the Magistrate\'s hunters followed.', 'One transport left. Hold the ramp.'] },
     lines: {
     duel: { jedi: [{ who: 'THE INQUISITOR', rival: true, say: 'You led me here, Knight. Every one of them is mine now.' }], mando: [{ who: 'THE INQUISITOR', rival: true, say: 'The children of the clan, and their tin guardian. I will take them all.' }] },
-    escape: { jedi: ['Let it go. The transport matters more than the kill.', { who: 'THE INQUISITOR', rival: true, say: 'Run, then. I know where your little ships are going.' }], mando: ['Let it run. The foundlings come first.', { who: 'THE INQUISITOR', rival: true, say: 'Fly away, children. I will be waiting where you land.' }] },
+    escape: { jedi: ['Let it go. The transport matters more than the kill.'], mando: ['Let it run. The foundlings come first.'] },
     clear: { jedi: ['The refuge has a keeper. It will want to know who you are.'], mando: ['A hunter of the old clans guards the covert door. It will have words with you.'] } } },
   { id: 'trial-first', act: 0, kind: 'mission', mission: 'trial-wall', world: 'THE HIDDEN REFUGE',
     title: { jedi: 'TRIAL OF THE WALL', mando: 'THE CHALLENGE' }, trial: true,

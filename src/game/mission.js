@@ -39,6 +39,7 @@ import { collideSolids } from '../world/collision.js';
 import { players, targetable } from '../player/players.js';
 import { diffDmgMul } from '../data/difficulty.js';
 import { startBattleFx, stopBattleFx, updateBattleFx } from '../fx/battle.js';
+import { playDuelIntro, resetScenes, playScene } from './cutscene.js';
 
 const RED = 0xff4a3a, GREEN = 0x7bffae;
 const M = { on: false, def: null, i: 0, o: null, s: null, markers: [], props: [], fx: [], panelT: 0, waitT: 0, endT: 0, won: false,
@@ -60,6 +61,7 @@ export function missionDone(id, hero){ try { return localStorage.getItem('sw_mis
 export function startMission(id = 'refuge', fromObjective = 0, guest = false, opts = {}){
   const def = MISSIONS[id] || MISSIONS.refuge, ch = opts.chapter || null;
   clearMission();
+  if (!opts.retry) resetScenes();   // a fresh start plays the mission's scenes again (a retry after a death or an escape doesn't)
   const sub = def.level.sub && typeof def.level.sub === 'object' ? def.level.sub[G.hero] : def.level.sub;
   if (ch){
     startLevel(G.levelIdx, { level: { ...def.level, name: ch.name, sub: ch.sub || sub }, mission: true, resume: true, chapter: true });   // the run's hero and build, on the mission's arena
@@ -93,7 +95,7 @@ export function startMission(id = 'refuge', fromObjective = 0, guest = false, op
   setObjectiveHud({ kicker: M.kick, title: forHero(def.objectives[fromObjective]).title, status: 'STAND READY', frac: null });
 }
 export function startCoopMission(id){ startMission(id, 0, true); }
-export function retryMission(){ startMission(M.def ? M.def.id : (G.missionId || 'refuge'), M.def ? M.i : 0, false, { chapter: M.chapter }); }
+export function retryMission(){ startMission(M.def ? M.def.id : (G.missionId || 'refuge'), M.def ? M.i : 0, false, { chapter: M.chapter, retry: true }); }
 export function missionTitle(id, hero = G.hero){ const t = (MISSIONS[id] || MISSIONS.refuge).title; return typeof t === 'object' ? t[hero] : t; }
 function clearMission(){
   for (const m of M.markers) removeMarker(m);
@@ -445,6 +447,12 @@ const KINDS = {
     update(o, s, dt){
       if (!s.foe){
         if ((s.dropT -= dt) > 0) return;
+        if (!s.intro){   // its entrance first (game/cutscene.js): the sim holds while it plays, so the foe steps in right after
+          s.intro = true;
+          const q = o.quarry && M.def.quarry[G.hero];
+          if (playDuelIntro(q ? { mid: M.def.id, quarry: true, name: q.name, kicker: q.kicker, scale: q.scale, line: heroText(o.line) }
+                              : { mid: M.def.id, foe: o.foe, name: o.name, kicker: o.kicker, tint: o.tint, scale: o.scale, at: o.at, line: heroText(o.line) })) return;
+        }
         if (o.quarry && M.qHp) M.qHp = Math.max(0.55, M.qHp);   // the run wore it down, but it still has a fight in it
         s.foe = o.quarry ? spawnQuarryFoe(o) : spawnInquisitor(o, o.at, { line: heroText(o.line), kicker: o.kicker });
         if (o.escape) s.foe.hpFloor = Math.max(1, s.foe.maxHp * o.escape);   // it won't fall here: at this much left it breaks off (escapeDuel)
@@ -708,6 +716,7 @@ function escapeDuel(o, e){
   G.shake = Math.max(G.shake, 0.8);
   S.roar(p);
   showBanner(o.name + ' ESCAPES', heroText(o.escapeLine) || '', 3.0);
+  playScene('inq-escape', { mark: [p.x, p.z] });   // its parting words, where it stood (game/cutscene.js)
   storyBeat('escape', { name: o.name });
 }
 function quarryEscaped(){
@@ -872,7 +881,7 @@ function updateMissionHost(dt){
   M.fx = M.fx.filter(f => f(dt));
   updateBattleFx(dt);
   if (M.panelT > 0 && (M.panelT -= dt) <= 0) hidePanel();
-  if (M.failT > 0){ if ((M.failT -= dt) <= 0) startMission(M.def.id, M.i, false, { chapter: M.chapter }); return; }   // it got away: this leg again
+  if (M.failT > 0){ if ((M.failT -= dt) <= 0) startMission(M.def.id, M.i, false, { chapter: M.chapter, retry: true }); return; }   // it got away: this leg again
   if (M.quarry && !(M.o && M.o.kind === 'pursuit')) faceHero(M.quarry, dt);   // between legs it stops and looks back
   if (M.won){ if ((M.endT -= dt) <= 0){ M.won = false; missionComplete(); } return; }
   if (M.waitT > 0){ MUSIC.setCue('regroup'); if ((M.waitT -= dt) <= 0) beginObjective(); return; }

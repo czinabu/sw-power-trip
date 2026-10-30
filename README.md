@@ -43,7 +43,7 @@ src/
   boss/              boss lightning FX and the boss itself
   net/               online co-op: room-code connection over WebRTC (session.js), the partner's hero (partner.js) and pose sync (pose.js); see below
   world/             arena builder, arenas/ (temple, foundry, plains layouts; hall and forge for training; refuge and pursuit for the story missions; dojo and throne for the sandbox; grassland, icefront and graveyard, the battle maps, with field.js for their shared pieces), Ink bake, painted skies/floors, backdrops, atmosphere, collision, hazards (see docs/world-guidelines.md)
-  game/              level/wave flow, survival mode, training (tutorial.js), story missions (mission.js, objectives.js), the sandbox (sandbox.js), progression, boons, end-of-run summary
+  game/              level/wave flow, survival mode, training (tutorial.js), story missions (mission.js, objectives.js), the campaign's chapters (campaign.js) and cutscenes (cutscene.js, words in data/cutscenes.js), the sandbox (sandbox.js), progression, boons, end-of-run summary
   ui/                banners, threat markers, HUD, store overlay, menus, the sandbox panel (sandbox-ui.js), the title screen's hero turntable (showcase.js), controls (How to Play data)
 ```
 
