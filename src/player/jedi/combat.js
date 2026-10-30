@@ -30,6 +30,7 @@ import { MOVE } from '../../data/movement.js';
 import { pickCut } from './cutaim.js';
 import { CUT_ANGLE } from '../../data/stances.js';
 import { lineCatch, ripostePattern } from './guardline.js';
+import { addFury, furyMul } from './fury.js';
 
 /* COMBO RHYTHM — fractions of a swing. A press before `open` is too early (and costs this link its flow); a single
    press from `open` on links in rhythm, and the next cut leaves at `at` (just after the follow-through). */
@@ -58,13 +59,17 @@ export function tryAttack(flow = false){
   const step = (G.gt - player.lastAtkEnd < 0.9 * (st.comboGap || 1)) ? (player.comboStep + 1) % 3 : 0;
   // both the Jedi saber and the Mando DARKSABER spend stamina per swing (medium-high for the heavy darksaber)
   if (G.hero !== 'mando' || player.weapon === 'darksaber'){
-    const cost = (player.riposteT > 0 && freeRiposte()) ? 0 : st.stamina * (step === 2 ? 1.4 : 1);   // UNLEASHED: the riposte is free
+    let cost = (player.riposteT > 0 && freeRiposte()) ? 0 : st.stamina * (step === 2 ? 1.4 : 1);   // UNLEASHED: the riposte is free
+    // JUYO burns Force with every swing; with too little Force left the swing takes it out of the body instead (×2 stamina)
+    const fs = G.hero !== 'mando' && st.forceSwing && cost > 0 ? st.forceSwing : 0;
+    if (fs && player.force < fs) cost *= 2;
     if (player.stam < cost){
       if (G.gt - player.lastWinded > 0.6){ player.lastWinded = G.gt; floater(playerPos(), 'WINDED', '#ffaa66'); }
       return;
     }
     player.stam -= cost;
     player.stamDelay = stamDelay();
+    if (fs && player.force >= fs) player.force -= fs;
   }
   player.comboStep = step;
   // a cut out of a SLIDE ends the skid in a low sweep (parkour.js); any cut struck out of a parkour move carries its momentum
@@ -186,7 +191,7 @@ export function cancelSwing(){
   player.lastAtkEnd = G.gt;
   player.cancelT = G.gt;   // timestamp — a parry landed just after this counts as a CANCEL-RIPOSTE (extra payoff)
   if (player.darkT > 0){ player.darkT = 0; player.darkApplied = false; }   // also checks the darksaber ability slash
-  if (k > 0.6){ player.stam = Math.max(0, player.stam - 14); player.stamDelay = stamDelay(); }   // late cancels cost stamina
+  if (k > 0.6 && !stance().castFlow){ player.stam = Math.max(0, player.stam - 14); player.stamDelay = stamDelay(); }   // late cancels cost stamina (Niman flows on: free)
   // a small SABER-COLOURED spark at the hilt + a reversed-swish whoosh — reads as a CHECKED stroke, not a Force push
   // (no forward-travelling ring here on purpose: that looked like a push and was confusing the saber-throw input)
   const pp = playerPos();
@@ -203,7 +208,7 @@ export function applySwingDamage(step, only){
   const sw0 = player.swing;
   const fxPass = !only || only.length === 0;
   const isDark = G.hero === 'mando' && player.weapon === 'darksaber';
-  let dmg = CFG.player.comboDamage[step] * st.dmg * player.up.dmg * focusDmgMul();   // FORCE FOCUS ramps saber damage
+  let dmg = CFG.player.comboDamage[step] * st.dmg * player.up.dmg * focusDmgMul() * furyMul();   // FORCE FOCUS ramps saber damage; Form VII's FURY too
   const finisher = step === 2;
   let knock = (finisher ? 15 : 6) * st.knock * player.up.knock;
   // a ringing BESKAR CLANG on every heavy darksaber blow (the finisher, or any hit while a foe is in range)
@@ -284,8 +289,13 @@ export function applySwingDamage(step, only){
         const dres = pre !== undefined ? pre : duelDefend(e, line, finisher ? 'finisher' : 'cut', G.stance === 'djemso' || isDark, at);
         if (dres === 'block' || dres === 'dodge'){ turned++; if (dres === 'block' && !blocker){ blocker = e; blockAt = at; } return false; }
       }
-      damageEnemy(e, dmg * (e.t.heavy ? st.heavyDmg : 1) * backLineMul(st, e) * swordMul(st, e), f.clone(), knock, finisher, false, sw0 && sw0.hitAt && sw0.hitAt.get(e));   // (where the blade met it: bladehit.js)
+      // VAAPAD — SHATTERPOINT: the foe whose attack you parried takes the next cut ×2, and it floors it
+      const shat = !!(st.shatter && e.shatterUntil > G.gt);
+      if (shat){ e.shatterUntil = 0; floater(e.group.position, 'SHATTERPOINT', '#d08bff'); G.hitstop = Math.max(G.hitstop, 0.1); }
+      damageEnemy(e, dmg * (e.t.heavy ? st.heavyDmg : 1) * backLineMul(st, e) * swordMul(st, e) * (shat ? st.shatter : 1), f.clone(), knock, finisher, false, sw0 && sw0.hitAt && sw0.hitAt.get(e));   // (where the blade met it: bladehit.js)
       foesHit++;
+      addFury(st.furyHit);   // JUYO (and a little VAAPAD): every cut that lands feeds the fury
+      if (shat && !e.dead) staggerEnemy(e, f.x, f.z);
       // the blade leaves its mark: a burnt cut where it crossed, and a killing blow may take the sword arm (enemies/scars.js)
       scarBody(e.group, f, sw0 && sw0.dir, finisher || G.stance === 'djemso' || isDark, sw0 && sw0.hitAt && sw0.hitAt.get(e));
       if (e.dead) severArm(e, f, finisher ? 0.6 : G.stance === 'djemso' || isDark ? 0.4 : 0.25);

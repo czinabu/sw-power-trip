@@ -32,6 +32,8 @@ const TRAIL = {   // life (s) · core (how hot the leading edge burns) · base (
   niman:     { life: 0.17, core: 0.75, base: 0.2 },
   djemso:    { life: 0.24, core: 0.6, base: 0.12 },
   shien:     { life: 0.2, core: 0.7, base: 0.18 },
+  juyo:      { life: 0.16, core: 0.95, base: 0.22 },   // hot, ragged streaks
+  vaapad:    { life: 0.19, core: 0.8, base: 0.16 },
   darksaber: { life: 0.2, core: 0.35, base: 0.15 },
 };
 const SUB = 4;   // Catmull-Rom subdivisions between frame samples

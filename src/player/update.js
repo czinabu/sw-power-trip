@@ -3,6 +3,7 @@
 
 import { CFG } from '../data/config.js';
 import { stamRegen } from './stamina.js';
+import { updateFury } from './jedi/fury.js';
 import { abil } from '../data/mastery.js';
 import { sfx } from '../audio/sfx.js';
 import { V3, rand, clamp } from '../utils.js';
@@ -52,6 +53,7 @@ function updatePlayerMeters(dt, pp, st){
   // cooldowns / meters
   for (const k in player.cds) player.cds[k] = Math.max(0, player.cds[k] - dt);
   G.stanceCd = Math.max(0, G.stanceCd - dt);
+  updateFury(dt);   // Form VII's fury drains when the pressure stops (jedi/fury.js)
   if (player.cancelDR > 0) player.cancelDR -= dt;       // DJEM SO cancel — brief damage soak through recovery
   if (player.swingLock > 0) player.swingLock -= dt;     // DJEM SO cancel — slow to swing again
   // NO Force regen while Force-gliding — otherwise regen would outpace the glide cost and the descent would be free

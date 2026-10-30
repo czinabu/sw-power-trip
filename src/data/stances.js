@@ -71,13 +71,16 @@ export const STANCES = {
             gait: { amp: 1.0, lift: 1.3, bob: 0.45, lean: 1.25 },   // MOVEMENT: light, high-kneed, springy — a duelist on the balls of their feet
             syn: 'BACK LINE · +60% vs officers, snipers, grenadiers, jet troopers · +35% air cuts · dash into a cut: Hawk-Bat Swoop · snappy Force casts · WEAK vs armor' },
   niman:  { name: 'NIMAN — BALANCED', form: 'niman', formNo: 'VI', blade: 0x3aff8c,
-            dmg: 1.5, heavyDmg: 1.42, speed: 0.64, knock: 0.85, stamina: 11, lunge: 1.15, move: 1.0, accel: 1.0, twist: 0.55, bladeLen: 1.0,
+            dmg: 1.5, heavyDmg: 1.42, speed: 0.64, knock: 0.85, stamina: 9, lunge: 1.15, move: 1.0, accel: 1.0, twist: 0.55, bladeLen: 1.0,
             radiusMult: 1.0, cdMult: 0.85, defCdMult: 0.5, postureMul: 1.0, parryBonus: 0.10, comboGap: 1.0, fovKick: 0,
             parryRefund: 16,      // PASSIVE: the duelist's form — a clean parry feeds extra Force back
+            powerCostMul: 0.85,   // LORE: saber and Force as one — powers cost 15% less…
+            castMul: 0.85,        // …snap off a little quicker…
+            castFlow: true,       // …and a power cast mid-string keeps the string going: no late-cancel stamina cost (combat.js)
             blockStamMul: 0.55,   // SYNERGY: economical guard — blocking/parrying drains far less stamina
             deflectScatter: 0.05, // LORE: Niman, the jack of all forms — deflects go back roughly down the line (rad)
             gait: { amp: 1.08, lift: 1.0, bob: 0.4, lean: 1.0 },   // MOVEMENT: smooth, balanced, even strides
-            syn: 'VERSATILE · −50% defence cooldowns (barrier, mend, repulse) · −15% others · widest parry · cheap guard · parries refund +Force' },
+            syn: 'VERSATILE · cheap swings and powers · cast mid-string · −50% defence cooldowns · cheap guard · parries refund +Force' },
   djemso: { name: 'DJEM SO — STRONG', form: 'djemso', formNo: 'V', blade: 0xb24bff,
             // HEAVY & momentum-driven, not slow-motion: still the slowest swing but it now flows; the big LUNGE
             // carries the blade through. High dmg, shreds armor, weak Force synergy (forceRegen < 1, no powerDmg).
@@ -104,6 +107,32 @@ export const STANCES = {
             deflectDmg: 1.5,      // …and lands half again as hard (enemies/bolts.js)
             gait: { amp: 1.1, lift: 0.9, bob: 0.6, lean: 1.0 },   // MOVEMENT: low and prowling, weight forward
             syn: 'BLASTERS · every deflect goes home and hits +50% · reverse grip · strong cuts · G: Djem So' },
+  /* FORM VII JUYO — the most ferocious form (Mace Windu's root, Vader's rage): bursts of savage, unpredictable cuts
+     driven by the Force itself. Each swing burns Force as well as breath, every cut that lands feeds FURY (up to +45%
+     damage), and it gives its defence away for it. Juyo and Vaapad fork: learning one closes the other for the run. */
+  juyo:   { name: 'JUYO — FURY', form: 'juyo', formNo: 'VII', blade: 0xff3a3a,
+            dmg: 1.75, heavyDmg: 1.35, speed: 0.78, knock: 1.1, stamina: 6, lunge: 1.4, move: 1.08, accel: 1.2, twist: 0.9, bladeLen: 1.0,
+            radiusMult: 1.1, postureMul: 1.3, comboGap: 1.2, fovKick: 4, parryBonus: -0.03, forceRegen: 1.1,
+            forceSwing: 5,        // ROLE: each swing burns this much Force on top of its stamina (no Force: double the stamina)
+            furyHit: 0.12,        // every cut that lands feeds fury (player/jedi/fury.js)…
+            furyDmg: 1.45,        // …up to +45% saber damage at full
+            dmgTaken: 1.25,       // LORE: it opens the user up: blows land 25% harder
+            deflectScatter: 0.12,
+            gait: { amp: 1.15, lift: 1.15, bob: 0.6, lean: 1.3 },   // MOVEMENT: driving forward, never still
+            syn: 'FURY · Force-fuelled swings · hits build fury (+45% dmg) · fast, savage strings · TAKES +25% damage' },
+  /* FORM VII VAAPAD — Mace Windu's own Form VII: Juyo's ferocity let in and turned outward. It feeds on the opponent's
+     aggression: every blow turned on its guard builds fury, a parry finds the attacker's SHATTERPOINT (the next cut on
+     that foe lands double and floors it). Juyo and Vaapad fork. */
+  vaapad: { name: 'VAAPAD — CONTROL', form: 'vaapad', formNo: 'VII', blade: 0xb04dff,
+            dmg: 1.6, heavyDmg: 1.4, speed: 0.72, knock: 1.0, stamina: 9, lunge: 1.25, move: 1.02, accel: 1.1, twist: 0.8, bladeLen: 1.0,
+            radiusMult: 1.0, postureMul: 1.2, comboGap: 1.1, fovKick: 1, parryBonus: 0.08, blockStamMul: 0.7,
+            furyBlock: 0.18, furyParry: 0.35, furyHit: 0.04,   // ROLE: its fury comes from what it turns aside…
+            furyDmg: 1.4,         // …up to +40% saber damage at full
+            shatter: 2.0,         // SHATTERPOINT: a parried attacker is marked; your next cut on it lands ×2 and floors it
+            dmgTaken: 1.1,        // walking the edge of the dark side: blows land 10% harder
+            deflectScatter: 0.06,
+            gait: { amp: 1.05, lift: 1.0, bob: 0.45, lean: 1.1 },   // MOVEMENT: poised, then explosive
+            syn: 'CONTROL · blocks and parries build fury (+40% dmg) · a parry finds the Shatterpoint: next cut ×2 · TAKES +10% damage' },
   // THE DARKSABER — the Mando's signature melee (selected automatically when the darksaber is equipped, not a
   // switchable Jedi form). Heavy-like, but the highest damage in the game, a touch faster & more mobile than Djem So.
   darksaber: { name: 'DARKSABER', form: 'darksaber', blade: 0xc9a6ff,
@@ -176,7 +205,9 @@ export const CUT_ANGLE = {
     shiicho: [0, 180, 0, 180, 90],        // Shii-Cho: big flat sweeps back and forth, then down the middle
     makashi: ['thrust', 135, 'thrust', 45, 225],   // Makashi: thrust, a short cut off it, thrust again
     soresu:  [135, 315, 0, 180],
-    shien:   [180, 0, 225, 315, 135],     // Shien: reverse-grip backhands whipped out to the weapon side and back across          // Soresu: short cuts that come straight back to guard: heavy cuts down from the shoulder and back up the same line
+    shien:   [180, 0, 225, 315, 135],
+    juyo:    [45, 225, 0, 315, 180, 90, 135],   // Juyo: a savage, broken rhythm: diagonals whipped off each other, no two alike
+    vaapad:  [135, 315, 180, 45, 90],          // Vaapad: answers on the line the attack came from, then explodes down the middle     // Shien: reverse-grip backhands whipped out to the weapon side and back across          // Soresu: short cuts that come straight back to guard: heavy cuts down from the shoulder and back up the same line
   },
   reset: 1.2,
   // the keys, with no flick: A / D the flat cuts · W + A / D the downward diagonals · S + A / D the rising cuts · W the
