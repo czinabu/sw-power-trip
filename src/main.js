@@ -90,6 +90,7 @@ import './data/difficulty.js';
 import './engine/input.js';
 import './engine/gamepad.js';
 import { updateCamera } from './engine/camera.js';
+import { updateCutscene } from './game/cutscene.js';
 import { SEE } from './world/ink.js';
 import { NAV, buildNav, updateNav, navSteer, navDist } from './enemies/nav.js';
 import { DUEL, DUEL_PROFILES, MANDO_MELEE } from './data/duel.js';
@@ -122,8 +123,9 @@ function tick(){
   dt *= G.slowmo;
   // overlay up: freeze the simulation entirely (still renders). In a shared fight the OTHER hero is still playing, so only
   // this hero stops (and feels their own hitstop and slow motion): the foes, their shots and the waves run on real time
-  const frozen = G.paused || G.skillSelect, live = coopLive();
-  const wdt = live ? rawDt : frozen ? 0 : dt;
+  const frozen = G.paused || G.skillSelect || G.cutscene, live = coopLive();
+  // a cutscene (either hero's, in co-op) holds the whole fight: foes, shots and waves stand still until it ends
+  const wdt = G.cutscene || coopRun.guestScene ? 0 : live ? rawDt : frozen ? 0 : dt;
   if (frozen) dt = 0;
   if ((!frozen || live) && (G.mode === 'play' || G.mode === 'dead')){
     G.gt += wdt;
@@ -153,7 +155,7 @@ function tick(){
     updateHud();
   }
   updateSquadHud();
-  updateTutorial(G.paused || G.skillSelect ? 0 : dt);   // the training lessons, and the unlock drills in a real run
+  updateTutorial(G.paused || G.skillSelect || G.cutscene ? 0 : dt);   // the training lessons, and the unlock drills in a real run
   updateFoes();
   updateCoop(rawDt);     // online co-op: send my pose, pose the partner's hero (net/partner.js)
   updateTrail(dt);
@@ -163,12 +165,13 @@ function tick(){
   updateSevered(dt);
   updateParticles(dt);
   updateVFX(dt);
+  updateCutscene();   // a cutscene's lens, actors and words (game/cutscene.js); the play camera stands down while one is on
   updateCamera(dt);
   MUSIC.updateState();   // adaptive score follows the fight (menu → combat → boss surge → victory/death)
   updateAudio(rawDt);    // saber hum, jetpack, flamethrower, ambience, muffle
   // the title screen draws its own stage (painted backdrop + the hero on a turntable) instead of the arena
   if (showcaseActive()) renderShowcase(rawDt); else { leaveShowcase(); composer.render(); }
-  qualityGovernor(!showcaseActive() && !G.paused && !G.skillSelect && G.mode === 'play');
+  qualityGovernor(!showcaseActive() && !G.paused && !G.skillSelect && !G.cutscene && G.mode === 'play');
 }
 tick();
 
@@ -196,6 +199,8 @@ import { BATTLE_MAPS } from './data/battlemaps.js';
 import { setSandboxMap } from './game/sandbox.js';
 Object.assign(window.GAME, { arena: arenaInfo, ENDLESS_ARENAS, BATTLE_MAPS, setSandboxMap, gfx: { renderer, composer, scene } });
 Object.assign(window.GAME, { startCampaign, startChapter, nextChapter, chapters });   // the campaign's chapters (game/campaign.js), for tests
+import { playScene, playOpening, playDuelIntro, playBossIntro, skipScene, sceneOn } from './game/cutscene.js';
+Object.assign(window.GAME, { cutscene: { playScene, playOpening, playDuelIntro, playBossIntro, skipScene, sceneOn } });   // the cutscenes (game/cutscene.js), for tests
 
 /* the form loadout (data/forms.js): the seven forms and what sits on 1 / 2 / 3 */
 import { FORMS } from './data/forms.js';

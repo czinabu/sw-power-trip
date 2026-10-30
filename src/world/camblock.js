@@ -118,6 +118,23 @@ function segHitsBox(a, b, box){
 }
 
 /* slab test: the t in [0,1] where segment a→b first enters box, or -1 if it never does (or starts inside) */
+/* LINE OF SIGHT — how far along the line from a to b the view runs before it first enters a prop (1 = nothing in the way).
+   Unlike cameraClearance, props merely between count: a cutscene (game/cutscene.js) uses it to pick a shot with a clear
+   view, before anything can fade. Only called when a shot is chosen, so it walks every prop near the line. */
+export function sightClear(ax, ay, az, bx, by, bz){
+  const mx = (ax + bx) / 2, my = (ay + by) / 2, mz = (az + bz) / 2, half = Math.hypot(bx - ax, by - ay, bz - az) / 2;
+  let k = 1;
+  for (const pr of props){
+    if (!pr.solid) continue;
+    const dx = mx - pr.c.x, dy = my - pr.c.y, dz = mz - pr.c.z, m = half + pr.r;
+    if (dx*dx + dy*dy + dz*dz > m*m) continue;
+    _a.set(ax, ay, az).applyMatrix4(pr.inv); _b.set(bx, by, bz).applyMatrix4(pr.inv);
+    const t = segEnterBox(_a, _b, pr.box);
+    if (t >= 0 && t < k) k = t;
+  }
+  return k;
+}
+
 function segEnterBox(a, b, box){
   let t0 = 0, t1 = 1;
   for (const ax of ['x', 'y', 'z']){

@@ -46,7 +46,7 @@ try {
     if (await host.isVisible('#goText')) await host.click('#goText', { timeout: 2000 }).catch(() => {});
     await host.waitForTimeout(800);
   }
-  const begin = (page) => page.evaluate(() => { const b = document.querySelector('#chapcard.open [data-go]'); if (b) b.click(); });   // the chapter card
+  const begin = (page) => page.evaluate(() => { const b = document.querySelector('#chapcard.open [data-go]'); if (b) b.click(); GAME.cutscene.skipScene(); });   // the chapter card, and its opening scene (tools/smoke/cutscenes.mjs tests those)
   await host.waitForFunction(() => document.querySelector('#chapcard.open'), null, poll); await begin(host);
   // the guest sees the run and joins it
   await guest.waitForFunction(() => document.getElementById('coopjoinrun').style.display !== 'none', null, poll);

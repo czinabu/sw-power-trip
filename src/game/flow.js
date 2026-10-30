@@ -36,6 +36,7 @@ import { resetAirCut } from '../player/jedi/aerial.js';
 import { hideThrownSaber, stowHandSaber } from '../player/jedi/force.js';
 import { clearSquad } from '../allies/squad.js';
 import { clearDowned } from './revive.js';
+import { playBossIntro } from './cutscene.js';
 import { coopRun } from '../net/run.js';
 import { resetReadout, beginWave } from './readout.js';
 import { nextChapter, retryChapter } from './campaign.js';
@@ -60,6 +61,7 @@ function spawnBossWhenReady(still, ms){
     if (!still()) return;
     if (coopRun.live && (G.skillSelect || coopRun.guestPicking)) return void setTimeout(go, 500);
     spawnBoss();
+    if (G.chapter >= 0) playBossIntro();   // the campaign's last boss gets his entrance (game/cutscene.js)
   }, ms);
 }
 export function startLevel(idx, opts){
