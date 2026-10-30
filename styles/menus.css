@@ -189,9 +189,13 @@ body.fovpreview #fovpill{background:rgba(1,4,10,.82)}
 .rm-phase{background:rgba(255,255,255,.025);border:1px solid var(--edge);border-radius:var(--r-lg);padding:10px 14px}
 .rm-now .rm-phase{border-color:var(--edge-lit);background:rgba(92,198,255,.06)}
 .rm-done .rm-phase{opacity:.8}
-.rm-phase h4{margin:0 0 4px;font-size:15px;letter-spacing:1.5px;color:var(--ink);font-weight:700}
+.rm-phase{padding:0}
+.rm-title{display:flex;align-items:center;width:100%;padding:9px 14px;background:none;border:0;font:inherit;font-size:15px;letter-spacing:1.5px;color:var(--ink);font-weight:700;text-align:left;cursor:pointer}
+.rm-title::after{content:'+';margin-left:auto;color:var(--ink-faint)}
+.rm-title[aria-expanded=true]::after{content:'\2212'}
+.rm-phase:hover{border-color:var(--edge-lit)}
 .rm-later{font-size:10px;letter-spacing:1.5px;color:var(--ink-faint);margin-left:6px}
-.rm-phase ul{margin:0;padding-left:18px;font-size:14px;line-height:1.4;color:var(--ink-soft)}
+.rm-phase ul{margin:0;padding:0 14px 10px 32px;font-size:14px;line-height:1.4;color:var(--ink-soft)}
 .rm-phase li{margin:2px 0}
 .ctl{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
 .ctl .cg{background:rgba(255,255,255,.025);border:1px solid var(--edge);border-radius:var(--r-lg);padding:12px 14px 10px}
