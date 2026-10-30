@@ -392,9 +392,10 @@ export function beginFromMenu(){
   }
   launchFromMenu();
 }
-// a Jedi sees the forms page first (ui/forms-ui.js): what each form does, and the three to carry; its FIGHT launches
+// a Jedi starting a mode from the title screen sees the forms page first (ui/forms-ui.js): what each form does, and the
+// three to carry; its FIGHT launches. RESUME, a retry and PLAY AGAIN go straight back in
 function launchFromMenu(){
-  if (G.hero !== 'mando' && !G.coopJoin) openPrefight(launch);
+  if (G.mode === 'menu' && G.hero !== 'mando' && !G.coopJoin) openPrefight(launch);
   else launch();
 }
 document.getElementById('trainYes').addEventListener('click', (e) => { e.stopPropagation(); overlay.classList.remove('asktrain'); setModeSel('training'); launchFromMenu(); });
