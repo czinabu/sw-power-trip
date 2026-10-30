@@ -1,7 +1,8 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
 // ROADMAP: shown on the main menu's ROADMAP panel, grouped by status. Every PR that ships a feature
 // or notable change updates this file: move finished items into 'done' (keep the list short, drop
-// the oldest) and add new plans under 'next' or 'later'. Keep entries to a few words.
+// the oldest) and add new plans under 'next' or 'later'. The panel shows only each title; the items are
+// the description, revealed when the title is clicked. One entry = { title, status, items: [short lines] }.
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
@@ -37,12 +38,18 @@ export const ROADMAP = [
             'The war beyond the walls: TIEs, X-wings and dropships overhead, AT-ATs and snowspeeders on Hoth, distant blasts, smoke and tracer fire',
             'Tall city blocks round the arenas: Jedha, the Mustafar works, Exegol\'s monoliths, Khel Dar',
             'Roomier campaign arenas: Jedha, Mustafar and Exegol spread out (56, 68, 86 m across)'] },
-  { title: 'Visuals, later', status: 'later',
-    items: ['Ink outlines on terrain and props'] },
   { title: 'Online co-op: fight together', status: 'now',
     items: ['Done: the host runs the Survival enemies and waves, the joining player sees them and their blows land', 'Next: foes hurting the joining player, their shots and attack warnings, shared XP and revives'] },
+  { title: 'Seven forms combat restructure', status: 'now',
+    items: ['Reworking saber combat around the seven lightsaber forms'] },
+  { title: 'Campaign story expansion', status: 'now',
+    items: ['A fuller story across the campaign missions'] },
+  { title: 'Performance', status: 'now',
+    items: ['Smoother frame rates on more machines'] },
+  { title: 'Controller support', status: 'now',
+    items: ['Play with a gamepad: movement, aim, abilities and menus'] },
   { title: 'More content', status: 'next',
-    items: ['More missions on the battle maps', 'New enemy types', 'Gamepad support', 'Upgrade picks that don\'t pause the fight'] },
+    items: ['More missions on the battle maps', 'New enemy types', 'Upgrade picks that don\'t pause the fight'] },
   { title: 'Combat readout', status: 'done',
     items: ['Per-wave damage by foe, low-stamina time, parries and blocks', 'Shown in the run summary and a live sandbox box'] },
   { title: 'Attack tells', status: 'done',
@@ -92,7 +99,7 @@ export const ROADMAP = [
   { title: 'Co-op, fully', status: 'later',
     items: ['Co-op survival runs with shared upgrades', 'Missions and bosses in co-op', '2 to 4 players', 'Enemies scale with squad size'] },
   { title: 'Beyond', status: 'later',
-    items: ['Hills and awnings stop blaster bolts', 'Assassinate missions', 'Mission medals and best times', 'Save files you can export and share', 'Duel mode', 'Local split-screen'] },
+    items: ['Ink outlines on terrain and props', 'Hills and awnings stop blaster bolts', 'Assassinate missions', 'Mission medals and best times', 'Save files you can export and share', 'Duel mode', 'Local split-screen'] },
 ];
 
 export const ROADMAP_STATUS = { done: 'SHIPPED', now: 'IN PROGRESS', next: 'PLANNED', later: 'LATER' };
