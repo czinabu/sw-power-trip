@@ -74,7 +74,7 @@ export const SABER_GUARDS = {
     // the body over the off shoulder, the free hand held out from the side, open; on Djem So's wide, rooted feet
     // (FOOTWORK_GRIP)
     niman: {
-      ready: { hand: [0.32, -0.18, 0.14], blade: [-0.5, 0.7, -0.5], twist: 0.08, torso: 0.04, lean: 0.06, pole: [0.6, -0.5, -0.6],
+      ready: { hand: [0.32, -0.18, 0.14], blade: [-0.76, 0.46, -0.45], twist: 0.08, torso: 0.04, lean: 0.06, pole: [0.6, -0.5, -0.6],
                off: { hand: [-0.52, -0.26, 0.14], pole: [-0.6, -0.75, -0.25] } },
       // forearm raised across the centre line, blade hanging straight down to cover the body
       block: { hand: [0.06, 0.2, 0.42], blade: [0.25, -0.96, 0.12], twist: 0, lean: 0.05, pole: [0.9, -0.2, -0.3],
