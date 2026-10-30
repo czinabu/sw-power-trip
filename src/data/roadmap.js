@@ -19,7 +19,7 @@ export const ROADMAP = [
             'Done: the missions and trials woven in, Act II\'s pick (Lothal or Hoth first), saves and co-op by chapter',
             'Done: the voice in your ear through the waves, the Inquisitor\'s taunts, its escape from the refuge, and an epilogue at the end',
             'Done: cutscenes: every chapter opens on a short in-engine scene, the Inquisitor (or VX-7) watches from across the archive, every duel foe gets an entrance, Vexis and the Magistrate get an arrival. Skippable, and shared in co-op',
-            'Next: new arenas (Jedha archive, Lothal prison yard, Hoth hangar, Exegol approach, throne room)',
+            'Done: new arenas: the burning archive on Jedha, the prison yard on Lothal, the last hangar on Hoth, the road to the Citadel and the Sith amphitheatre on Exegol',
             'Next: new foes and mini-bosses, the trials\' masters from the seven forms, the Mando\'s rival hunters'] },
   { title: 'Sandbox opens after Act I', status: 'done',
     items: ['Clear Act I with either hero and the sandbox opens, with the foes, powers, forms and worlds the story has shown so far',

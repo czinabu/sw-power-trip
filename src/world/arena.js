@@ -26,6 +26,10 @@ import { buildThroneArena } from './arenas/throne.js';
 import { buildGrasslandArena } from './arenas/grassland.js';
 import { buildIcefrontArena } from './arenas/icefront.js';
 import { buildGraveyardArena } from './arenas/graveyard.js';
+import { buildArchiveArena } from './arenas/archive.js';
+import { buildPrisonArena } from './arenas/prison.js';
+import { buildHangarArena } from './arenas/hangar.js';
+import { buildSithArena } from './arenas/sith.js';
 import { buildNav } from '../enemies/nav.js';
 import { clearScorch } from '../fx/scorch.js';
 import { clearSevered } from '../enemies/scars.js';
@@ -123,6 +127,11 @@ export function buildArena(L){
   else if (L.layout === 'grassland'){ buildGrasslandArena(LP); }
   else if (L.layout === 'icefront'){ buildIcefrontArena(LP); }
   else if (L.layout === 'graveyard'){ buildGraveyardArena(LP); }
+  else if (L.layout === 'approach'){ buildGrasslandArena(LP); }   // the Grass Sea's plan, in Exegol's ash (the spearhead chapter)
+  else if (L.layout === 'archive'){ buildArchiveArena(LP); }
+  else if (L.layout === 'prison'){ buildPrisonArena(LP); }
+  else if (L.layout === 'hangar'){ buildHangarArena(LP); }
+  else if (L.layout === 'sith'){ buildSithArena(LP); }
   else {
   // pick a spot at least `gap` clear of every other obstacle so cover stays SPREAD OUT — clustered obstacles
   // form walls that trap the enemy AI. Returns null if no open spot is found (so we just place fewer).
