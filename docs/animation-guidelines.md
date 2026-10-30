@@ -26,7 +26,7 @@ The game's three switchable stances, and how they move now:
 | 2 | **VI · Niman** | balanced, Force synergy | Side-on, the off arm reaching long at the foe with the palm open and the saber raised high over the weapon shoulder, blade laid forward over the head: the Force leads and the blade waits on it. The free hand reaches on the wind-up and pulls back as the blade comes through; a clean spinning finisher. |
 | 3 | **V · Djem So** | power vs brutes and bosses | Anakin's two-handed high guard, Vader's level wall block, big two-handed cuts that sink the hips, an overhead hammer finisher, and the riposte as the "block, then strike back". |
 
-Reverse-grip Niman borrows Djem So's wide feet (`FOOTWORK_GRIP` in `data/poses.js`): saber one-handed and low by the weapon hip, the blade rising up and across toward the off shoulder, the free hand resting just off the hilt.
+Reverse-grip Niman is Starkiller's guard on Djem So's wide feet (`FOOTWORK_GRIP` in `data/poses.js`): saber fist low by the weapon hip, the blade rising behind the body over the off shoulder, the free hand held out from the side.
 
 The stance ids in code stay `fast` / `medium` / `strong` (saves and unlocks key off them); each carries `form` in
 `src/data/stances.js`. **Vaapad (VII)** is still the natural candidate for a fourth or unlockable stance.
