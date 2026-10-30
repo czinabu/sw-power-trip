@@ -31,6 +31,7 @@ const TRAIL = {   // life (s) · core (how hot the leading edge burns) · base (
   ataru:     { life: 0.13, core: 0.9, base: 0.35 },
   niman:     { life: 0.17, core: 0.75, base: 0.2 },
   djemso:    { life: 0.24, core: 0.6, base: 0.12 },
+  shien:     { life: 0.2, core: 0.7, base: 0.18 },
   darksaber: { life: 0.2, core: 0.35, base: 0.15 },
 };
 const SUB = 4;   // Catmull-Rom subdivisions between frame samples

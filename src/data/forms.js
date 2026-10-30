@@ -11,6 +11,7 @@
    no       the form's numeral                     name / tag   HUD chip text (name over a one-word role)
    needs    forms that must be known first          anyOf        how many earlier forms must be known (Niman, VII)
    variant  Form V / VII: the variants share a numeral; `fork` = picking one locks the other for the run
+   grip     the form's own saber grip (Shien is the reverse-grip form); without one the hero's grip preference holds
    ready    has a stance in data/stances.js and can be slotted. The rest are planned (roadmap: Seven forms) and stay out
             of every loadout until their stance lands. */
 export const FORMS = {
@@ -19,7 +20,7 @@ export const FORMS = {
   soresu:  { no: 'III', name: 'SORESU',   tag: 'DEFENCE',  needs: ['shiicho'], ready: true },
   ataru:   { no: 'IV',  name: 'ATARU',    tag: 'FAST',     needs: ['makashi'], ready: true },
   djemso:  { no: 'V',   name: 'DJEM SO',  tag: 'STRONG',   needs: ['soresu'], variant: 'v', ready: true },
-  shien:   { no: 'V',   name: 'SHIEN',    tag: 'REDIRECT', needs: ['soresu'], variant: 'v' },
+  shien:   { no: 'V',   name: 'SHIEN',    tag: 'REDIRECT', needs: ['soresu'], variant: 'v', ready: true, grip: 'reverse' },
   niman:   { no: 'VI',  name: 'NIMAN',    tag: 'BALANCED', needs: [], anyOf: 4, ready: true },
   juyo:    { no: 'VII', name: 'JUYO',     tag: 'FURY',     needs: [], anyOf: 5, variant: 'vii', fork: true },
   vaapad:  { no: 'VII', name: 'VAAPAD',   tag: 'CONTROL',  needs: [], anyOf: 5, variant: 'vii', fork: true },
@@ -34,14 +35,23 @@ export const DEFAULT_LOADOUT = ['ataru', 'niman', 'djemso'];
 const LEGACY_FORM = { fast: 'ataru', medium: 'niman', strong: 'djemso' };
 export const migrateForm = (id) => LEGACY_FORM[id] || id;
 
-// a loadout as stored or handed in → exactly LOADOUT_SLOTS entries, each a ready form or null, no form twice
+// a loadout as stored or handed in → exactly LOADOUT_SLOTS entries, each a ready form or null, no form twice, and one
+// variant of a numeral at most (Djem So or Shien in the Form V slot: G swaps between them)
 export function cleanLoadout(list){
   const out = [], seen = new Set();
   for (let i = 0; i < LOADOUT_SLOTS; i++){
     const id = migrateForm(list && list[i]);
-    const ok = !!(id && FORMS[id] && FORMS[id].ready && !seen.has(id));
-    if (ok) seen.add(id);
+    const ok = !!(id && FORMS[id] && FORMS[id].ready && !seen.has(id) && !(FORMS[id].variant && seen.has('#' + FORMS[id].variant)));
+    if (ok){ seen.add(id); if (FORMS[id].variant) seen.add('#' + FORMS[id].variant); }
     out.push(ok ? id : null);
   }
   return out;
 }
+
+// the grip the saber is held in right now: the form's own, else the hero's preference (Settings / G)
+export const formGrip = (id, pref) => (FORMS[id] && FORMS[id].grip) || (pref === 'reverse' ? 'reverse' : 'regular');
+// the other variant of the same numeral that the hero knows (Djem So ⇄ Shien), or null
+export const otherVariant = (id, known) => {
+  const v = FORMS[id] && !FORMS[id].fork && FORMS[id].variant;
+  return v ? Object.keys(FORMS).find(o => o !== id && FORMS[o].variant === v && FORMS[o].ready && known(o)) || null : null;
+};

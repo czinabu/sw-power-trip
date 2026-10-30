@@ -81,6 +81,12 @@ export const MOBILITY = {
       roll: { speed: 1.0, iframes: 1.15, cd: 0.85, stam: 1.0 },
       swingMove: 1.15,
     },
+    shien: {    // Djem So's lighter sister: a quicker dash and a safe roll, still planted mid-swing
+      charges: 2, recharge: 1.1, dashCost: 1.1,
+      airControl: 0.95, airDmg: 1.1, airParry: false, evadeIframes: 1.0,
+      roll: { speed: 1.0, iframes: 1.2, cd: 0.8, stam: 1.0 },
+      swingMove: 1.25,
+    },
     djemso: {
       charges: 2, recharge: 1.3, dashCost: 1.4,
       airControl: 0.85, airDmg: 1.25, airParry: false, evadeIframes: 0.8,
