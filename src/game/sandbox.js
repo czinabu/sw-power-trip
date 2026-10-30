@@ -45,7 +45,8 @@ export function startSandbox(){
 }
 
 /* ---------- the forms loadout ---------- */
-// the room is for trying things: every form the story has shown can go in any slot, and a slotted form is known
+// the room is for trying things: every form the story has shown is known and can go in any slot (G swaps Djem So ⇄
+// Shien in place)
 export const sandboxForms = () => Object.keys(FORMS).filter(formOffered);
 function savedForms(){
   let list = DEFAULT_LOADOUT;
@@ -56,7 +57,7 @@ function savedForms(){
 }
 function applyForms(list){
   G.stanceUnlocked = G.stanceUnlocked || {};
-  for (const id of list) if (id) G.stanceUnlocked[id] = true;
+  for (const id of sandboxForms()) G.stanceUnlocked[id] = true;
   setLoadout(list);
 }
 // a click on a slot steps it to the next ready form not already slotted (then empty, then round again); the slot
@@ -68,7 +69,7 @@ export function cycleSandboxSlot(i){
   for (let n = 0; n < opts.length; n++){
     at = (at + 1) % opts.length;
     const id = opts[at];
-    if (id && cur.includes(id)) continue;
+    if (id && cur.some((c, j) => j !== i && c && (c === id || (FORMS[id].variant && FORMS[c].variant === FORMS[id].variant)))) continue;   // (one Form V at a time: G swaps it)
     if (!id && (cur[i] === G.stance || cur.filter(Boolean).length <= 1)) continue;
     cur[i] = id; break;
   }

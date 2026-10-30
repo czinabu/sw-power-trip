@@ -22,10 +22,17 @@ const GUARDS = {}, SWINGS = {};
 for (const g in SABER_GUARDS){ GUARDS[g] = {}; for (const f in SABER_GUARDS[g]) GUARDS[g][f] = { ready: vecPose(SABER_GUARDS[g][f].ready), block: vecPose(SABER_GUARDS[g][f].block) }; }
 const AIR = {};
 for (const g in AIR_GUARDS){ AIR[g] = {}; for (const f in AIR_GUARDS[g]){ AIR[g][f] = {}; for (const k in AIR_GUARDS[g][f]) AIR[g][f][k] = vecPose(AIR_GUARDS[g][f][k]); } }
-/* an agility guard (data/agility.js AIR_GUARDS) for this grip and form, or null to keep the form's ready guard */
+/* an agility guard (data/agility.js AIR_GUARDS) for this grip and form, or null to keep the form's ready guard. A form
+   without its own (the newer forms) borrows the same grip's Niman, Ataru or Djem So pose for that key, so it still
+   hangs from a ledge with its hands up or hammers down with the blade raised. */
+const AIR_BORROW = ['niman', 'ataru', 'djemso'];
 export function airGuard(grip, form, key){
-  if (!key) return null;
-  return (AIR[grip] && AIR[grip][form] && AIR[grip][form][key]) || null;
+  if (!key || !AIR[grip]) return null;
+  const A = AIR[grip];
+  if (A[form] && A[form][key]) return A[form][key];
+  if (form === 'darksaber') return null;
+  for (const f of AIR_BORROW) if (A[f] && A[f][key]) return A[f][key];
+  return null;
 }
 for (const g in SABER_SWINGS){ SWINGS[g] = {}; for (const p in SABER_SWINGS[g]) SWINGS[g][p] = SABER_SWINGS[g][p].map(vecPose); }
 /* ANGLE CUTS (data/stances.js CUT_ANGLE): the keyframes of a cut from `ang` degrees, blended between the tuned cuts

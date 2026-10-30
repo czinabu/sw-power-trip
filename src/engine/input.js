@@ -11,7 +11,8 @@ import { floater } from '../fx/floaters.js';
 import { shared, G, keys, player } from '../state.js';
 import { MANDO_WEAPON_ORDER, weaponUnlocked } from '../data/mando.js';
 import { fwd, rightV, playerPos, stance } from '../player/helpers.js';
-import { switchSlot, cycleSlot } from '../player/jedi/stance.js';
+import { switchSlot, cycleSlot, swapVariant } from '../player/jedi/stance.js';
+import { FORMS } from '../data/forms.js';
 import { tryAttack, cancelSwing, forceKick } from '../player/jedi/combat.js';
 import {
   forcePush, saberThrow, forcePull, forceRepulse, forceBarrier, forceMend, forceJudgement, forceSlam
@@ -188,10 +189,16 @@ document.addEventListener('keydown', (e) => {
     if (k === 'x' && !e.repeat && G.mode === 'play'){ if (G.unlocked.slam) forceSlam(); else if (G.unlocked.mend) forceMend(); }   // UTIL: JUMP ATTACK or MEND
     if (k === 'r' && G.mode === 'play'){ if (G.unlocked.judge) forceJudgement(); else if (G.unlocked.repulse) forceRepulse(); }   // ULT: JUDGEMENT or REPULSE ('R' still restarts when dead/victory below)
     if (k === 'g' && !e.repeat && G.mode === 'play'){   // GRIP — flip between a regular and a reverse (Shien) saber grip mid-fight
-      setSaberGrip(G.saberGrip === 'reverse' ? 'regular' : 'reverse');
-      startSwitch();   // the saber turns straight into the new grip's guard
-      showBanner('', G.saberGrip === 'reverse' ? 'REVERSE GRIP' : 'REGULAR GRIP', 0.8);
-      sfx(520, 0.06, 'triangle', 0.04, 760);
+      // in a Form V slot G swaps Djem So ⇄ Shien instead (the reverse-grip variant); a form with its own grip keeps it
+      const own = G.hero !== 'mando' && FORMS[G.stance] && FORMS[G.stance].grip;
+      if (swapVariant()){ /* swapped: the new form brings its own grip and guard */ }
+      else if (own){ showBanner('', FORMS[G.stance].name + ' HOLDS A ' + own.toUpperCase() + ' GRIP', 1.0); sfx(200, 0.06, 'triangle', 0.03, 160); }
+      else {
+        setSaberGrip(G.saberGrip === 'reverse' ? 'regular' : 'reverse');
+        startSwitch();   // the saber turns straight into the new grip's guard
+        showBanner('', G.saberGrip === 'reverse' ? 'REVERSE GRIP' : 'REGULAR GRIP', 0.8);
+        sfx(520, 0.06, 'triangle', 0.04, 760);
+      }
     }
     if (k === '1') switchSlot(0);   // the form loadout (data/forms.js): whatever sits in each slot
     if (k === '2') switchSlot(1);

@@ -26,7 +26,7 @@ import { CFG } from '../data/config.js';
 import { LEVELS } from '../data/levels.js';
 import { buildArena } from '../world/arena.js';
 import { findClearSpawn } from '../world/collision.js';
-import { playerPos } from '../player/helpers.js';
+import { playerPos, heldGrip } from '../player/helpers.js';
 import { canResume, resumeRun, resumeLabel } from '../game/saves.js';
 import { startCampaign, joinCampaign, closeCard, chapterLabel } from '../game/campaign.js';
 import { pad } from '../engine/gamepad.js';
@@ -225,7 +225,7 @@ document.getElementById('cutaimctl').addEventListener('click', (e) => { e.stopPr
 export function setSaberGrip(grip){
   G.saberGrip = grip === 'reverse' ? 'reverse' : 'regular';
   try { localStorage.setItem('sw_sabergrip', G.saberGrip); } catch(e){}
-  applySaberGrip(player, G.saberGrip, G.mode !== 'play');
+  applySaberGrip(player, heldGrip(), G.mode !== 'play');
   const gv = document.getElementById('gripval'); if (gv) gv.textContent = G.saberGrip.toUpperCase();
 }
 setSaberGrip(localStorage.getItem('sw_sabergrip') || 'regular');

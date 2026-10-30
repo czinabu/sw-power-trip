@@ -2,7 +2,7 @@
 // Lightsaber stance switching, the three-slot form loadout, and the stance HUD.
 
 import { STANCES, stanceUnlocked } from '../../data/stances.js';
-import { FORMS, LOADOUT_SLOTS, cleanLoadout } from '../../data/forms.js';
+import { FORMS, LOADOUT_SLOTS, cleanLoadout, otherVariant } from '../../data/forms.js';
 import { sfx } from '../../audio/sfx.js';
 import { V3 } from '../../utils.js';
 import { burst } from '../../fx/particles.js';
@@ -10,7 +10,8 @@ import { floater } from '../../fx/floaters.js';
 import { G, player } from '../../state.js';
 import { reigniteBlade } from '../../fx/trail.js';
 import { startSwitch } from '../anim/saber.js';
-import { playerPos, stance, bladeColor } from '../helpers.js';
+import { playerPos, stance, bladeColor, heldGrip } from '../helpers.js';
+import { applySaberGrip } from '../model/weapons.js';
 
 const hex = (c) => '#' + ('000000' + c.toString(16)).slice(-6);
 
@@ -57,8 +58,21 @@ export function cycleSlot(dir){
   }
 }
 
+/* ---------- G: the other variant of the form in hand ---------- */
+// Djem So ⇄ Shien share Form V's slot: G swaps the one in hand for the other (if it's known) in place. Returns false
+// when there's nothing to swap to, so G falls back to the grip preference.
+export function swapVariant(){
+  if (G.hero === 'mando') return false;
+  const other = otherVariant(G.stance, stanceUnlocked);
+  if (!other) return false;
+  const next = G.loadout.slice(); next[next.indexOf(G.stance)] = other;
+  G.loadout = cleanLoadout(next);
+  G.stanceCd = 0; switchStance(other);
+  return true;
+}
+
 /* ---------- stance switching ---------- */
-const IGNITE = { shiicho: 380, makashi: 820, soresu: 600, ataru: 740, niman: 540, djemso: 320 };   // the re-ignite's pitch
+const IGNITE = { shiicho: 380, makashi: 820, soresu: 600, ataru: 740, niman: 540, djemso: 320, shien: 440 };   // the re-ignite's pitch
 export function switchStance(id, silent){
   if (!STANCES[id] || (G.stanceCd > 0 && !silent) || G.stance === id) return;
   if (!silent && !stanceUnlocked(id)){ floater(playerPos(), 'FORM LOCKED', '#ff9a66'); sfx(120, 0.1, 'square', 0.05, 70); return; }
@@ -68,6 +82,7 @@ export function switchStance(id, silent){
   // blade re-tunes to the form
   player.blade.glow.material.color.setHex(bladeColor(st));
   player.blade.light.color.setHex(bladeColor(st));
+  applySaberGrip(player, heldGrip(), !!silent);   // Shien turns the hilt over into its reverse grip, and back out of it
   if (!silent){ reigniteBlade(); startSwitch(); }   // snap-hiss: the blade re-ignites in the new form's colour and turns into its guard
   setStanceHud();
   if (!silent){

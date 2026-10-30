@@ -10,7 +10,7 @@ import { G, keys, player } from '../state.js';
 import { MANDO, MANDO_WEAPONS } from '../data/mando.js';
 import { MANDO_MELEE } from '../data/duel.js';
 import { MOVE, GAIT } from '../data/movement.js';
-import { stance, maxStam } from './helpers.js';
+import { stance, maxStam, heldGrip } from './helpers.js';
 import { tryAttack, applySwingDamage, FLOW } from './jedi/combat.js';
 import { mandoAimPoint, mandoWeapon, mandoShielding } from './mando/weapons.js';
 import { DARK_DUR } from './mando/darksaber.js';
@@ -339,7 +339,7 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
 function animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait){
   const held = heldBlade();
   const form = FORM_OF[G.hero === 'mando' ? 'darksaber' : G.stance] || 'niman';
-  const grip = form === 'darksaber' ? 'regular' : (G.saberGrip === 'reverse' ? 'reverse' : 'regular');
+  const grip = form === 'darksaber' ? 'regular' : heldGrip();
   const dfl = player.deflectAnim;
   if (dfl){ dfl.t += dt; if (dfl.t >= dfl.dur || !held) player.deflectAnim = null; }
   if (player.atkT > 0){
@@ -549,7 +549,7 @@ function heldBlade(){
 export function footwork(){
   if (G.hero === 'mando' && player.weapon === 'fists') return FOOTWORK.brawler;
   if (G.hero === 'mando' && player.weapon === 'darksaber') return FOOTWORK.darksaber;
-  const form = FORM_OF[G.stance] || 'niman', alt = G.hero !== 'mando' && G.saberGrip === 'reverse' && FOOTWORK_GRIP.reverse[form];
+  const form = FORM_OF[G.stance] || 'niman', alt = G.hero !== 'mando' && heldGrip() === 'reverse' && FOOTWORK_GRIP.reverse[form];
   return FOOTWORK[alt || form];
 }
 const _IDQ = new THREE.Quaternion();

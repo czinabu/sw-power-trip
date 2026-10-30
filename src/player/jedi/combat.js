@@ -88,21 +88,27 @@ export function tryAttack(flow = false){
   const backStrike = dirKey === 'back' && !ripNow;
   // the riposte is spent on THIS cut (it lands on whatever the blade meets first; see applySwingDamage)
   const cancelRip = ripNow && !!player.cancelRiposte;
-  if (ripNow){ player.riposteT = 0; player.cancelRiposte = false; player.ripLine = null; }
+  const fluid = ripNow && !!player.fluidRip;   // Djem So's Fluid Riposte (off a block): lands 1.5×, not a parry's 2×
+  if (ripNow){ player.riposteT = 0; player.cancelRiposte = false; player.ripLine = null; player.fluidRip = false; }
   // FLOW (data/stances.js CUT_ANGLE.flow): an angle cut that starts where the last one finished flows straight on, quicker
   const FL = CUT_ANGLE.flow, last = player.lastCut, ang = !ripNow && pat.ang != null ? pat.ang : null;
   const flowCut = ang != null && !!last && G.gt - last.at < FL.gap && Math.abs((((ang - last.ang - 180) % 360) + 540) % 360 - 180) < FL.within;
   player.lastCut = ang != null ? { ang, at: G.gt } : null;
   const cutDur = flowCut ? dur * FL.speed : dur;
   player.atkT = cutDur;
-  player.swing = { t: 0, applied: false, step, dur: cutDur, flowCut, pat, dir: dirKey, h: cut.h, flick: !!cut.flick, back: backStrike, riposte: ripNow, ripLine: !!ripPat, cancelRip, flow, mom };
+  player.swing = { t: 0, applied: false, step, dur: cutDur, flowCut, pat, dir: dirKey, h: cut.h, flick: !!cut.flick, back: backStrike, riposte: ripNow, ripLine: !!ripPat, cancelRip, fluid, flow, mom };
   player.deflectAnim = null;   // a cut takes the blade over from any catch in progress
   const spin = pickSpin(st.form, step, cut.flick ? 'neutral' : dirKey, {   // (an aimed flick cut stays square: no strafe spin)
     ripNow, backStrike, mom, flow, st });
   if (spin){
     player.stam -= spin.stam * st.stamina; player._spinT = G.gt; player.swing.spin = spin; player.swing.dur *= spin.dur; player.atkT = player.swing.dur; }
   // cinematic lunge toward nearest target in view — STRONG's finisher lunges harder; a RIPOSTE drives in hardest
-  const lunge = ripNow ? 2.0 : ((step === 2 && st.finisherLunge) ? st.finisherLunge : st.lunge) * (pat.lunge || 1);
+  let lunge = ripNow ? 2.0 : ((step === 2 && st.finisherLunge) ? st.finisherLunge : st.lunge) * (pat.lunge || 1);
+  // HAWK-BAT SWOOP (Ataru): a cut out of a Force dash springs off the ground and drives in twice as far
+  if (mom === 'swoop'){
+    lunge *= 2; player.vy = Math.max(player.vy, 4.5); player.grounded = false;
+    floater(playerPos(), 'HAWK-BAT SWOOP', '#7fe0ff');
+  }
   const tgt = backStrike ? nearestEnemyInCone(CFG.player.comboRange, -0.35, true)
                          : nearestEnemyInCone(st.reach?.range ?? CFG.player.comboRange, 0.6);
   if (tgt && !backStrike){
@@ -216,7 +222,7 @@ export function applySwingDamage(step, only){
   const rallied = riposte && only && only.some(o => o.exch && o.rallyT > G.gt);
   if (riposte){   // parry reward: the answer lands twice as hard (more with Riposte Master)
     const cancelRip = !!sw0.cancelRip;   // parried straight out of a swing-cancel → a CRUSHING answer
-    dmg *= 2 * (player.up.riposte || 1) * (cancelRip ? 1.6 : 1);
+    dmg *= 2 * (player.up.riposte || 1) * (cancelRip ? 1.6 : 1) * (sw0.fluid ? 0.75 : 1);
     knock *= cancelRip ? 1.8 : 1;
   }
   if (riposte && !sw0.ripFx && !rallied){
@@ -237,6 +243,7 @@ export function applySwingDamage(step, only){
   // MOMENTUM — a cut out of a vault, climb, slide, wall-run or landing roll lands harder (data/movement.js MOVE.flow)
   const mom = sw0 && sw0.mom;
   if (mom){ dmg *= MOVE.flow.strikeDmg; knock *= MOVE.flow.strikeKnock; }
+  if (st.airCutDmg && !player.grounded) dmg *= st.airCutDmg;   // ATARU: a cut struck off the ground lands harder
   // FAST cleaves wide through crowds; STRONG is a narrow, focused blow. FAST's finisher fans ~10% wider still.
   const radius = (finisher ? CFG.player.hitRadius + 1 : CFG.player.hitRadius) * (st.radiusMult || 1)
                  * (finisher && st.finisherArc ? st.finisherArc : 1);
