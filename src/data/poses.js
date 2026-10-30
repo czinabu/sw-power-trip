@@ -16,7 +16,7 @@ export const FORM_OF = { fast: 'ataru', medium: 'niman', strong: 'djemso', darks
    width (robe flare). Read when the hero is settled and planted. */
 export const FOOTWORK = {
   ataru:     { crouch: -0.24, splay: 0.12, lead: 0.42, lean: 0.16, width: 0.86 },   // coiled, on the balls of the feet
-  niman:     { crouch: -0.05, splay: 0.14, lead: 0.16, lean: 0.03, width: 1.08 },   // upright and easy, weight even
+  niman:     { crouch: -0.2,  splay: 0.44, lead: 0.34, lean: 0.05, width: 1.25 },   // Obi-Wan's deep, wide, side-on stance
   djemso:    { crouch: -0.17, splay: 0.52, lead: 0.08, lean: 0.12, width: 1.3 },   // wide, rooted, square to the foe
   darksaber: { crouch: -0.2,  splay: 0.46, lead: 0.2,  lean: 0.18, width: 1.25 },    // braced against a blade that pulls
   brawler:   { crouch: -0.15, splay: 0.24, lead: 0.36, lean: 0.12, width: 1.1 },    // the holstered Mando: knees bent, left foot leading
@@ -37,12 +37,12 @@ export const SABER_GUARDS = {
       block: { hand: [0.18, 0.55, 0.3], blade: [-0.92, 0.28, 0.25], twist: -0.12, lean: 0.02, pole: [0.8, -0.2, -0.4],
                off: { hand: [-0.52, -0.05, 0.12], pole: [-0.3, -0.9, -0.3] } },
     },
-    // FORM VI NIMAN — the Force leads and the blade waits on it: turned side-on, the off arm reaches out long at the foe
-    // with the palm open, and the saber is raised high over the weapon shoulder, elbow up, the blade laid forward over
-    // the head and the Force hand at the foe, ready to come down past it. Saber and Force in one shape: the whole form.
+    // FORM VI NIMAN — Obi-Wan's signature guard: sunk into a deep, wide stance and turned side-on, the saber raised high
+    // over and behind the head with the blade laid level and pointing on at the foe, the off arm thrown out long toward
+    // them with the fingers open. The Force hand leads and the blade waits above it.
     niman: {
-      ready: { hand: [0.34, 0.56, -0.1], blade: [-0.24, 0.2, 0.95], twist: -0.32, torso: -0.12, pole: [0.85, 0.2, -0.5], palm: 1,
-               off: { hand: [-0.46, 0.06, 0.42], pole: [-0.65, -0.75, 0.1] },   // out wide of the body, so it reads from the front and from the camera behind
+      ready: { hand: [0.3, 0.72, -0.16], blade: [-0.38, 0.1, 0.92], twist: -0.45, torso: -0.14, lean: 0.04, pole: [0.9, 0.35, -0.25], palm: 1,
+               off: { hand: [-0.7, 0.36, 0.52], pole: [-0.5, -0.85, 0.15] },
                offMove: { hand: [-0.3, -0.1, 0.34], pole: OFF_POLE } },   // walking, the reaching hand drops to a loose carry
       // blade upright before the face, the off palm braced behind it — a Force-backed wall
       block: { hand: [0.1, 0.02, 0.42], blade: [-0.12, 1, 0.12], twist: 0, lean: 0.06, pole: POLE,
