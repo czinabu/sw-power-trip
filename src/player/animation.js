@@ -14,7 +14,7 @@ import { stance, maxStam } from './helpers.js';
 import { tryAttack, applySwingDamage, FLOW } from './jedi/combat.js';
 import { mandoAimPoint, mandoWeapon, mandoShielding } from './mando/weapons.js';
 import { DARK_DUR } from './mando/darksaber.js';
-import { FORM_OF, FOOTWORK, SWING_STYLE } from '../data/poses.js';
+import { FORM_OF, FOOTWORK, FOOTWORK_GRIP, SWING_STYLE } from '../data/poses.js';
 import { pistolPose, riflePose, rifleLowered, restGun } from './anim/guns.js';
 import { MIRROR } from './model/rig.js';
 import { solveArm } from './anim/ik.js';
@@ -547,7 +547,9 @@ function heldBlade(){
 }
 export function footwork(){
   if (G.hero === 'mando' && player.weapon === 'fists') return FOOTWORK.brawler;
-  return FOOTWORK[(G.hero === 'mando' && player.weapon === 'darksaber') ? 'darksaber' : (FORM_OF[G.stance] || 'niman')];
+  if (G.hero === 'mando' && player.weapon === 'darksaber') return FOOTWORK.darksaber;
+  const form = FORM_OF[G.stance] || 'niman', alt = G.hero !== 'mando' && G.saberGrip === 'reverse' && FOOTWORK_GRIP.reverse[form];
+  return FOOTWORK[alt || form];
 }
 const _IDQ = new THREE.Quaternion();
 const LAND_T = 0.34;

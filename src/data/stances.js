@@ -14,10 +14,13 @@ import { G } from '../state.js';
    MEDIUM = the versatile technician — even stats, lowest power cooldowns, the widest parry window.
    STRONG = the brute/boss breaker — enormous single-hit damage that shreds armor and knocks brutes
             flat, but slow, stamina-hungry, and a narrow arc that swarms punish.
-   radiusMult = swing cleave radius · parryBonus = extra parry window · heavyDmg = vs armored foes. */
+   radiusMult = swing cleave radius · parryBonus = extra parry window · heavyDmg = vs armored foes.
+   SWING PACE: every form swings a step slower than it first did (Ataru at Niman's old pace, Niman at Djem So's, Djem So
+   slower again: a committed, crossguard-style power stroke), with damage per cut raised by the same ratio so damage per
+   second is where it was. */
 export const STANCES = {
   fast:   { name: 'ATARU — FAST', form: 'ataru', formNo: 'IV', blade: 0x35c8ff,
-            dmg: 0.64, heavyDmg: 0.46, speed: 1.7, knock: 0.38, stamina: 6, lunge: 1.4, move: 1.25, accel: 1.7, twist: 0.4, bladeLen: 0.94,
+            dmg: 1.18, heavyDmg: 0.85, speed: 0.92, knock: 0.38, stamina: 6, lunge: 1.4, move: 1.25, accel: 1.7, twist: 0.4, bladeLen: 0.94,
             radiusMult: 1.45, forceRegen: 1.5, costMult: { push: 0.7, pull: 0.7 },
             comboGap: 1.25, fovKick: 6,
             reach: { lungeMax: 3.9, range: 6.5 },   // ROLE: the lunge closes up to 3.9m (others 2.4) and finds foes out to 6.5m (others 5), enough to cross the 3.2m stalker ring to an officer behind it
@@ -30,7 +33,7 @@ export const STANCES = {
             gait: { amp: 1.0, lift: 1.3, bob: 0.45, lean: 1.25 },   // MOVEMENT: light, high-kneed, springy — a duelist on the balls of their feet
             syn: 'BACK LINE · +60% vs officers, snipers, grenadiers, jet troopers · snappy Force casts · keeps moving · soft on guards · WEAK vs armor' },
   medium: { name: 'NIMAN — BALANCED', form: 'niman', formNo: 'VI', blade: 0x3aff8c,
-            dmg: 1.04, heavyDmg: 0.99, speed: 0.92, knock: 0.85, stamina: 11, lunge: 1.15, move: 1.0, accel: 1.0, twist: 0.55, bladeLen: 1.0,
+            dmg: 1.5, heavyDmg: 1.42, speed: 0.64, knock: 0.85, stamina: 11, lunge: 1.15, move: 1.0, accel: 1.0, twist: 0.55, bladeLen: 1.0,
             radiusMult: 1.0, cdMult: 0.85, defCdMult: 0.5, postureMul: 1.0, parryBonus: 0.10, comboGap: 1.0, fovKick: 0,
             parryRefund: 16,      // PASSIVE: the duelist's form — a clean parry feeds extra Force back
             blockStamMul: 0.55,   // SYNERGY: economical guard — blocking/parrying drains far less stamina
@@ -42,7 +45,7 @@ export const STANCES = {
             // carries the blade through. High dmg, shreds armor, weak Force synergy (forceRegen < 1, no powerDmg).
             // clearly the SLOWEST swing (well under medium's 1.0) — heavy, deliberate, weighty — but the big LUNGE
             // and high damage make each committed stroke land hard, so it reads as power, not sluggishness.
-            dmg: 2.2, heavyDmg: 1.8, speed: 0.64, knock: 2.2, stamina: 18, lunge: 1.4, move: 0.85, accel: 0.6, twist: 1.0, bladeLen: 1.14,
+            dmg: 2.93, heavyDmg: 2.4, speed: 0.48, knock: 2.2, stamina: 18, lunge: 1.4, move: 0.85, accel: 0.6, twist: 1.0, bladeLen: 1.14,
             radiusMult: 0.8, postureMul: 1.5, forceRegen: 0.7, comboGap: 0.7, fovKick: -4,
             atkDR: 0.15,          // PASSIVE: armored commitment — soak 15% damage WHILE mid-swing
             finisherLunge: 1.6,   // the 3rd hit lunges harder, carrying the heavy blade through
