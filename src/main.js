@@ -98,6 +98,7 @@ import { foeBlade, bossBlade, contactPoint } from './player/jedi/clash.js';
 import { updateCoop, partnerShown, partnerInfo } from './net/partner.js';
 import { allies, updateSquad, updateSquadHud, spawnSquad, addSquadmate, squadOrder } from './allies/squad.js';
 import { downed } from './game/revive.js';
+import { updateComms, clearComms, commsBusy, storyBeat } from './game/story.js';
 import './ui/coop-ui.js';
 import { updateFoes, updatePuppets, coopLive } from './net/foes.js';
 import './net/foefire.js';
@@ -153,6 +154,7 @@ function tick(){
     updateHud();
   }
   updateSquadHud();
+  updateComms(G.paused || G.skillSelect ? 0 : rawDt);   // the voice in your ear during a campaign chapter (game/story.js)
   updateTutorial(G.paused || G.skillSelect ? 0 : dt);   // the training lessons, and the unlock drills in a real run
   updateFoes();
   updateCoop(rawDt);     // online co-op: send my pose, pose the partner's hero (net/partner.js)
@@ -196,6 +198,7 @@ import { BATTLE_MAPS } from './data/battlemaps.js';
 import { setSandboxMap } from './game/sandbox.js';
 Object.assign(window.GAME, { arena: arenaInfo, ENDLESS_ARENAS, BATTLE_MAPS, setSandboxMap });
 Object.assign(window.GAME, { startCampaign, startChapter, nextChapter, chapters });   // the campaign's chapters (game/campaign.js), for tests
+Object.assign(window.GAME, { clearComms, commsBusy, storyBeat });   // the story's voice lines (game/story.js), for tests
 
 /* the form loadout (data/forms.js): the seven forms and what sits on 1 / 2 / 3 */
 import { FORMS } from './data/forms.js';

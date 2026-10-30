@@ -30,6 +30,8 @@
 //               duel: overrides of its duelling profile (data/duel.js) · rage: at this fraction of hp it presses harder
 //               (rageDuel: the profile then) · at: [x, z] where it lands · quarry: true fights the mission's quarry
 //               where it stopped running instead (its name and look come from the mission's `quarry`)
+//               escape (optional): at this fraction of hp it breaks off and is gone instead of falling, with
+//               escapeLine ({ jedi, mando }) under its banner
 //               trickle (optional): { every, cap, group } troops for the squad to hold off during the duel · from
 //   escort    walk the mission's `escort` (a droid, a courier) along a path to where it's needed
 //               path: [[x, z]…] its route · speed: m/s while it walks · leash: it waits for you when you're further
@@ -105,10 +107,12 @@ export const MISSIONS = {
         task: { jedi: 'Win the duel', mando: 'Win the duel' },
         foe: 'acolyte', name: 'THE INQUISITOR', hp: 5, dmg: 1.25, scale: 1.18, tint: 0xa01a22, at: [0, -6],
         duel: { block: 0.78, posture: 170, feint: 0.35, chain: 2, counter: 0.6 },
-        rage: 0.5, rageDuel: { feint: 0.5, delay: 0.4, chain: 3, thrust: 0.25 } },
+        rage: 0.5, rageDuel: { feint: 0.5, delay: 0.4, chain: 3, thrust: 0.25 },
+        // it breaks off at this much health instead of falling: the Long Chase is where you finish it
+        escape: 0.22, escapeLine: { jedi: 'It is wounded, and it saw which way the transports went.', mando: 'Wounded, and gone. It saw which way the transports went.' } },
     ],
-    done: { jedi: 'The younglings are safe and the refuge still stands. Well fought.',
-            mando: 'The foundlings are safe. The hunter is not. This is the Way.' },
+    done: { jedi: 'The younglings are safe and the refuge still stands. But the Inquisitor lives, and it will be back.',
+            mando: 'The foundlings are safe. The hunter got away. We will see it again.' },
   },
 
   // A STRIKE TEAM mission: `squad` squadmates form up beside the hero (allies/squad.js, data/allies.js), and `battle`

@@ -39,6 +39,7 @@ import { clearDowned } from './revive.js';
 import { coopRun } from '../net/run.js';
 import { resetReadout, beginWave } from './readout.js';
 import { nextChapter, retryChapter } from './campaign.js';
+import { storyBeat, clearComms, commsBusy } from './story.js';
 
 /* ============================================================
    LEVEL / WAVE FLOW
@@ -66,6 +67,7 @@ export function startLevel(idx, opts){
   const fresh = idx === 0 && !(opts && opts.resume);   // a brand-new campaign: reset the hero's build
   G.levelIdx = idx;
   if (!(opts && opts.chapter)) G.chapter = -1;
+  clearComms();
   G.endless = false; G.mut = null;   // campaign — never in survival mode (startEndless re-flags after this)
   G.coopGuest = false;               // and not following a host's run until a join says so (startEndless)
   G.training = !!(opts && opts.training);
@@ -282,6 +284,7 @@ export function startWave(){
   showBanner('', waveLine(), 1.5);
   MUSIC.waveSting();
   checkUnlocks(1600);
+  storyBeat('wave', { n: G.wave - (G.waveFrom || 0) });   // the chapter's line for this wave, if it has one (game/story.js)
 }
 // 'WAVE 2 / 4', counted within the chapter's stretch of the level
 const waveLine = () => 'WAVE ' + (G.wave - (G.waveFrom || 0) + 1) + ' / ' + ((G.waveEnd ?? LEVELS[G.levelIdx].waves.length) - (G.waveFrom || 0));
@@ -371,7 +374,7 @@ export function updateFlow(dt){
   if (holdForPicks && (shared.levelPhase === 'between' || shared.levelPhase === 'travel')) shared.phaseT = Math.max(shared.phaseT, 1.4);   // a beat after the last screen closes
   if (shared.levelPhase === 'between' && shared.phaseT <= 0 && !holdForPicks){
     if (G.endless) startEndlessWave(); else startWave();
-  } else if (shared.levelPhase === 'chapterdone' && shared.phaseT <= 0 && !holdForPicks){   // a mission chapter's close (game/campaign.js)
+  } else if (shared.levelPhase === 'chapterdone' && shared.phaseT <= 0 && !holdForPicks && (!commsBusy() || shared.phaseT < -8)){   // a chapter's close (game/campaign.js): its last line said, then the upgrade screen
     shared.levelPhase = 'travel'; shared.phaseT = 1.6;
     openSkillTree();
   } else if (shared.levelPhase === 'travel' && shared.phaseT <= 0 && !holdForPicks){
@@ -394,13 +397,14 @@ export function updateFlow(dt){
         shared.levelPhase = 'bossfight';
         if (G.checkpoint){ G.checkpoint.boss = diffBossCheckpoint(); G.checkpoint.bossWaveTotal = G.waveTotal; }
         showBanner('', '...something approaches.', 2.4);
+        storyBeat('boss');
         spawnBossWhenReady(() => G.mode === 'play' && !shared.boss, 2400);
       } else {
         // LEVEL CLEARED — the upgrade screen still opens (this wave's skill point + a chance to shop), then the
         // 'travel' beat runs out on sim time (frozen while the overlay is up) and the next world loads.
-        shared.levelPhase = 'travel'; shared.phaseT = 1.6;
         showBanner(G.chapter >= 0 ? 'CHAPTER COMPLETE' : 'AREA CLEARED', 'The Force flows onward.', 1.6);
-        openSkillTree();
+        if (G.chapter >= 0){ shared.levelPhase = 'chapterdone'; shared.phaseT = 2.2; storyBeat('clear'); }   // (a chapter: the voice's last word first)
+        else { shared.levelPhase = 'travel'; shared.phaseT = 1.6; openSkillTree(); }
       }
     }
   }

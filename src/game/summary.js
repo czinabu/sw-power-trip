@@ -9,6 +9,7 @@ import { icon } from '../ui/icons.js';
 import { overlay, survivalUnlocked, refreshSurvivalLock, setOverlayState } from '../ui/menus.js';
 import { closeReadout } from './readout.js';
 import { readoutSummaryHtml } from '../ui/readout-ui.js';
+import { campaignWon } from './campaign.js';
 
 /* ---------- END-OF-RUN SUMMARY + SCORE ---------- */
 export function endRun(won){
@@ -58,7 +59,8 @@ function renderRunSummary(){
   el.style.display = 'block';
 }
 
-export function victory(){
+export function victory(afterEpilogue){
+  if (!afterEpilogue && G.chapter >= 0 && G.mode === 'play'){ campaignWon(() => victory(true)); return; }   // the campaign's end: its epilogue first
   endRun(true);
   G.mode = 'victory';
   G.slowmo = 1; G.slowmoT = 0;   // the fight is won — drop out of slow motion

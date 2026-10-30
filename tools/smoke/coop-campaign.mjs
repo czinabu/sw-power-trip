@@ -74,6 +74,9 @@ try {
   await host.evaluate(() => GAME.startChapter(2)); await begin(host);
   await guest.waitForFunction(() => GAME.G.chapter === 2 && GAME.G.mission && GAME.G.coopGuest && GAME.missionState().def.id === 'refuge', null, poll);
   await begin(guest);
+  // the story's voice lines: what the host's chapter says, the guest hears too (game/story.js comms)
+  await host.evaluate(() => GAME.storyBeat('escape'));
+  await guest.waitForFunction(() => /transport matters|foundlings come first/.test(document.querySelector('#comms .cm-say').textContent), null, poll);
   // the host moves on to the next level: the guest follows, still a guest
   await guest.evaluate(() => { document.getElementById('skilltree').style.display = 'none'; GAME.G.skillSelect = false; });
   await host.evaluate(() => GAME.startLevel(1, { resume: true }));
