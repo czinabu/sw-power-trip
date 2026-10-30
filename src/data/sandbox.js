@@ -42,7 +42,7 @@ export const SANDBOX_COUNTS = [1, 3, 5];
    pairs the XP store makes you choose between. `needs` hides a row until another one is on. */
 const flag = (k) => ({ has: () => !!G.unlocked[k], set: (on) => { G.unlocked[k] = on; } });
 const form = (id) => ({ has: () => stanceUnlocked(id),
-  set: (on) => { (G.stanceUnlocked = G.stanceUnlocked || {})[id] = on; if (!on && G.stance === id) switchStance('medium', true); setStanceHud(); } });
+  set: (on) => { (G.stanceUnlocked = G.stanceUnlocked || {})[id] = on; if (!on && G.stance === id) switchStance('niman', true); setStanceHud(); } });
 const weapon = (id, k) => ({ has: () => id === 'darksaber' ? !!player.up.darksaber : !!G.unlocked[k],
   set: (on) => {
     if (id === 'darksaber'){ player.up.darksaber = on; G.unlocked.dark = on; } else G.unlocked[k] = on;
@@ -51,8 +51,8 @@ const weapon = (id, k) => ({ has: () => id === 'darksaber' ? !!player.up.darksab
 
 export const SANDBOX_KIT = {
   jedi: [
-    { id: 'fast',      nm: 'ATARU',            key: '1',        ...form('fast') },
-    { id: 'strong',    nm: 'DJEM SO',          key: '3',        ...form('strong') },
+    { id: 'ataru',     nm: 'ATARU',            key: '1',        ...form('ataru') },
+    { id: 'djemso',    nm: 'DJEM SO',          key: '3',        ...form('djemso') },
     { id: 'fj',        nm: 'FORCE JUMP II',    key: 'HOLD SPACE', has: () => (player.up.fjTier || 0) >= 2, set: (on) => { player.up.fjTier = on ? 2 : 0; } },
     { id: 'pull',      nm: 'FORCE PULL',       key: 'C',        ...flag('pull') },
     { id: 'graspMulti', nm: "DARK LORD'S GRIP", key: 'HOLD C', needs: 'pull',

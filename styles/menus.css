@@ -189,9 +189,13 @@ body.fovpreview #fovpill{background:rgba(1,4,10,.82)}
 .rm-phase{background:rgba(255,255,255,.025);border:1px solid var(--edge);border-radius:var(--r-lg);padding:10px 14px}
 .rm-now .rm-phase{border-color:var(--edge-lit);background:rgba(92,198,255,.06)}
 .rm-done .rm-phase{opacity:.8}
-.rm-phase h4{margin:0 0 4px;font-size:15px;letter-spacing:1.5px;color:var(--ink);font-weight:700}
+.rm-phase{padding:0}
+.rm-title{display:flex;align-items:center;width:100%;padding:9px 14px;background:none;border:0;font:inherit;font-size:15px;letter-spacing:1.5px;color:var(--ink);font-weight:700;text-align:left;cursor:pointer}
+.rm-title::after{content:'+';margin-left:auto;color:var(--ink-faint)}
+.rm-title[aria-expanded=true]::after{content:'\2212'}
+.rm-phase:hover{border-color:var(--edge-lit)}
 .rm-later{font-size:10px;letter-spacing:1.5px;color:var(--ink-faint);margin-left:6px}
-.rm-phase ul{margin:0;padding-left:18px;font-size:14px;line-height:1.4;color:var(--ink-soft)}
+.rm-phase ul{margin:0;padding:0 14px 10px 32px;font-size:14px;line-height:1.4;color:var(--ink-soft)}
 .rm-phase li{margin:2px 0}
 .ctl{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
 .ctl .cg{background:rgba(255,255,255,.025);border:1px solid var(--edge);border-radius:var(--r-lg);padding:12px 14px 10px}
@@ -440,3 +444,12 @@ body.fovpreview #fovpill{background:rgba(1,4,10,.82)}
 #chapcard .cc-opt b{display:block;font:700 22px/1 var(--font-display);letter-spacing:3px;color:var(--ink)}
 #chapcard .cc-opt span{display:block;margin-top:8px;font:500 15px/1.4 var(--font-body);color:var(--ink-soft)}
 @media (max-width:620px){ #chapcard .cc-title{font-size:36px} #chapcard .cc-pick{grid-template-columns:1fr} }
+
+/* ---------- CONTROLLER (engine/gamepad.js): the focus ring a pad moves round the menus, and pad-only prompts ---------- */
+.padfocus{outline:2px solid var(--accent)!important;outline-offset:3px;box-shadow:0 0 0 5px rgba(92,198,255,.18),0 0 18px rgba(92,198,255,.35)!important}
+.padonly{display:none}
+body.pad .padonly{display:inline}
+body.pad .kbonly{display:none}
+.ctl.padview .cr .ca small{display:block!important}
+.ctl.padview .cr .ca::after{content:none!important}
+.ctl.padview .ck kbd{min-width:30px}

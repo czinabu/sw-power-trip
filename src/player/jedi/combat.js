@@ -274,14 +274,14 @@ export function applySwingDamage(step, only){
       if (!riposte && !back){
         const pre = sw0 && sw0.duel && sw0.duel.get(e);
         const at = pre === undefined && only && only.length ? contactPoint(e) : undefined;
-        const dres = pre !== undefined ? pre : duelDefend(e, line, finisher ? 'finisher' : 'cut', G.stance === 'strong' || isDark, at);
+        const dres = pre !== undefined ? pre : duelDefend(e, line, finisher ? 'finisher' : 'cut', G.stance === 'djemso' || isDark, at);
         if (dres === 'block' || dres === 'dodge'){ turned++; if (dres === 'block' && !blocker){ blocker = e; blockAt = at; } return false; }
       }
       damageEnemy(e, dmg * (e.t.heavy ? st.heavyDmg : 1) * backLineMul(st, e), f.clone(), knock, finisher, false, sw0 && sw0.hitAt && sw0.hitAt.get(e));   // (where the blade met it: bladehit.js)
       foesHit++;
       // the blade leaves its mark: a burnt cut where it crossed, and a killing blow may take the sword arm (enemies/scars.js)
-      scarBody(e.group, f, sw0 && sw0.dir, finisher || G.stance === 'strong' || isDark, sw0 && sw0.hitAt && sw0.hitAt.get(e));
-      if (e.dead) severArm(e, f, finisher ? 0.6 : G.stance === 'strong' || isDark ? 0.4 : 0.25);
+      scarBody(e.group, f, sw0 && sw0.dir, finisher || G.stance === 'djemso' || isDark, sw0 && sw0.hitAt && sw0.hitAt.get(e));
+      if (e.dead) severArm(e, f, finisher ? 0.6 : G.stance === 'djemso' || isDark ? 0.4 : 0.25);
       if (!riposte && !e.dead) interruptEnemy(e, f, finisher || st.form === 'djemso' || isDark);   // striking first beats a wind-up
       if (mom === 'slide' && !riposte && !e.dead) staggerEnemy(e, f.x, f.z);   // a SLIDE CUT sweeps the legs out
       if (riposte && !e.dead) staggerEnemy(e, f.x, f.z);   // a RIPOSTE floors what it answers — a true counter, wide open after
@@ -316,14 +316,14 @@ export function applySwingDamage(step, only){
     if (riposte) player.force = clamp(player.force + 10 + (player.up.parryForce || 0), 0, CFG.player.maxForce);   // a landed counter feeds the Force
     if (isDark && !finisher) beskarClang();   // every darksaber strike rings on beskar
     // STRONG stance & DARKSABER & finishers land with real weight — a brief hitstop + heavy thud (general feedback)
-    const heavy = G.stance === 'strong' || isDark || finisher;
+    const heavy = G.stance === 'djemso' || isDark || finisher;
     if (heavy){
-      G.hitstop = Math.max(G.hitstop, (G.stance === 'strong' || isDark ? 0.06 : 0.04) + (finisher ? 0.03 : 0));
+      G.hitstop = Math.max(G.hitstop, (G.stance === 'djemso' || isDark ? 0.06 : 0.04) + (finisher ? 0.03 : 0));
       if (!riposte) S.heavy();
     }
     // the STRONG finisher is a BONE-CRUNCHING blow — a long hitstop freeze, a big camera quake, a brief
     // slow-mo beat, a fat arc flash AND a violent eruption of sparks/debris so the weight really lands
-    if (G.stance === 'strong' && finisher && !(sw0 && sw0.heavyFx)){
+    if (G.stance === 'djemso' && finisher && !(sw0 && sw0.heavyFx)){
       if (sw0) sw0.heavyFx = true;
       G.hitstop = Math.max(G.hitstop, 0.22);
       G.shake = Math.max(G.shake, 1.7);

@@ -19,7 +19,7 @@ import { G } from '../state.js';
    slower again: a committed, crossguard-style power stroke), with damage per cut raised by the same ratio so damage per
    second is where it was. */
 export const STANCES = {
-  fast:   { name: 'ATARU — FAST', form: 'ataru', formNo: 'IV', blade: 0x35c8ff,
+  ataru:  { name: 'ATARU — FAST', form: 'ataru', formNo: 'IV', blade: 0x35c8ff,
             dmg: 1.18, heavyDmg: 0.85, speed: 0.92, knock: 0.38, stamina: 6, lunge: 1.4, move: 1.15, accel: 1.3, twist: 0.4, bladeLen: 0.94,
             radiusMult: 1.45, forceRegen: 1.5, costMult: { push: 0.7, pull: 0.7 },
             comboGap: 1.25, fovKick: 6,
@@ -32,7 +32,7 @@ export const STANCES = {
             castMul: 0.65,        // SYNERGY: snappy Force casts — the gesture fires ~35% faster
             gait: { amp: 1.0, lift: 1.3, bob: 0.45, lean: 1.25 },   // MOVEMENT: light, high-kneed, springy — a duelist on the balls of their feet
             syn: 'BACK LINE · +60% vs officers, snipers, grenadiers, jet troopers · snappy Force casts · keeps moving · soft on guards · WEAK vs armor' },
-  medium: { name: 'NIMAN — BALANCED', form: 'niman', formNo: 'VI', blade: 0x3aff8c,
+  niman:  { name: 'NIMAN — BALANCED', form: 'niman', formNo: 'VI', blade: 0x3aff8c,
             dmg: 1.5, heavyDmg: 1.42, speed: 0.64, knock: 0.85, stamina: 11, lunge: 1.15, move: 1.0, accel: 1.0, twist: 0.55, bladeLen: 1.0,
             radiusMult: 1.0, cdMult: 0.85, defCdMult: 0.5, postureMul: 1.0, parryBonus: 0.10, comboGap: 1.0, fovKick: 0,
             parryRefund: 16,      // PASSIVE: the duelist's form — a clean parry feeds extra Force back
@@ -40,7 +40,7 @@ export const STANCES = {
             deflectScatter: 0.05, // LORE: Niman, the jack of all forms — deflects go back roughly down the line (rad)
             gait: { amp: 1.08, lift: 1.0, bob: 0.4, lean: 1.0 },   // MOVEMENT: smooth, balanced, even strides
             syn: 'VERSATILE · −50% defence cooldowns (barrier, mend, repulse) · −15% others · widest parry · cheap guard · parries refund +Force' },
-  strong: { name: 'DJEM SO — STRONG', form: 'djemso', formNo: 'V', blade: 0xb24bff,
+  djemso: { name: 'DJEM SO — STRONG', form: 'djemso', formNo: 'V', blade: 0xb24bff,
             // HEAVY & momentum-driven, not slow-motion: still the slowest swing but it now flows; the big LUNGE
             // carries the blade through. High dmg, shreds armor, weak Force synergy (forceRegen < 1, no powerDmg).
             // clearly the SLOWEST swing (well under medium's 1.0) — heavy, deliberate, weighty — but the big LUNGE
@@ -71,7 +71,6 @@ export const backLineMul = (st, e) => (st.backLineDmg && e && e.t && (e.t.office
 // Force-power cooldown multiplier for a stance; Niman cuts DEFENSIVE powers harder than the rest
 const DEFENCE_POWERS = ['barrier', 'mend', 'repulse'];
 export const cdMul = (st, id) => (st.defCdMult && DEFENCE_POWERS.includes(id) ? st.defCdMult : st.cdMult) || 1;
-export const STANCE_ORDER = ['fast', 'medium', 'strong'];   // the darksaber is NOT here — it's auto-selected, never cycled
 
 /* directional swing patterns — right-arm driven.
    y = shoulder yaw sweep · x = shoulder raise · z = shoulder roll (blade tilt) ·
@@ -119,9 +118,9 @@ export const CUT_ANGLE = {
   low:  [[-0.26, -0.54], [-0.26, -0.3], [-0.16, -0.14]],
   vert: 0.35,
   strings: {
-    fast:   [0, 225, 45, 180, 315, 135],   // Ataru: quick flat and diagonal cuts whipping side to side
-    medium: [135, 0, 225, 90, 315],        // Niman: round the clock, each cut flowing out of the last
-    strong: [135, 315, 90, 225, 45, 270],  // Djem So: heavy cuts down from the shoulder and back up the same line
+    ataru:  [0, 225, 45, 180, 315, 135],   // Ataru: quick flat and diagonal cuts whipping side to side
+    niman:  [135, 0, 225, 90, 315],        // Niman: round the clock, each cut flowing out of the last
+    djemso: [135, 315, 90, 225, 45, 270],  // Djem So: heavy cuts down from the shoulder and back up the same line
   },
   reset: 1.2,
   // the keys, with no flick: A / D the flat cuts · W + A / D the downward diagonals · S + A / D the rising cuts · W the
@@ -138,6 +137,6 @@ export const CUT_ANGLE = {
   foot: { side: 0.28, over: 0.15, rise: -0.12 },
 };
 
-/* Progression is data-driven: see PROGRESSION CONFIG (auto-unlocks + the XP ability store) further below.
-   NIMAN is always available; FAST/STRONG forms are auto-unlocked there. */
-export function stanceUnlocked(id){ return id === 'medium' || !!(G.stanceUnlocked && G.stanceUnlocked[id]); }
+/* Progression is data-driven: see JEDI_AUTO in data/store.js. NIMAN is always available; ATARU and DJEM SO are
+   auto-unlocked there. Which forms sit on 1 / 2 / 3 is the loadout (data/forms.js). */
+export function stanceUnlocked(id){ return id === 'niman' || !!(G.stanceUnlocked && G.stanceUnlocked[id]); }

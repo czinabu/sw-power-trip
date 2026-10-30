@@ -57,7 +57,7 @@ export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick, opts){
     const dpx = playerPos().x - e.group.position.x, dpz = playerPos().z - e.group.position.z;
     const dl = Math.hypot(dpx, dpz) || 1;
     if ((efx*dpx + efz*dpz)/dl > 0.3){   // attacker is in the shield's frontal arc
-      const guardBreak = !!isFinisher || (G.hero !== 'mando' && G.stance === 'strong') || !!(player.swing && player.swing.riposte);
+      const guardBreak = !!isFinisher || (G.hero !== 'mando' && G.stance === 'djemso') || !!(player.swing && player.swing.riposte);
       e.shieldHp -= dmg * (guardBreak ? 2.4 : 1.0);
       const sp = V3(e.group.position.x + efx*0.55, 1.45, e.group.position.z + efz*0.55);
       spawnHitSpark(sp, e.t.eye, 0.8); S.shieldHit(sp);

@@ -7,6 +7,7 @@ import { MISSIONS } from '../data/missions.js';
 import { switchStance } from '../player/jedi/stance.js';
 import { resumeChapter, chapterLabel } from './campaign.js';
 import { chapterOrder, forHero, CHAPTER_OF_LEVEL } from '../data/campaign.js';
+import { DEFAULT_LOADOUT, cleanLoadout, migrateForm } from '../data/forms.js';
 
 /* PROGRESS lives in localStorage keys spread across the game (campaign/mission/training wins, bests, the customizer's
    look, the sandbox's picks). A slot copies those keys, so loading one puts every mode's locks and ticks back exactly.
@@ -29,7 +30,7 @@ const clone = (v) => v == null ? v : JSON.parse(JSON.stringify(v));
 export function inCampaignRun(){ return G.mode === 'play' && (G.chapter >= 0 || (!G.endless && !G.training && !G.mission && !G.sandbox)); }
 function snapshotRun(){
   return {
-    idx: G.levelIdx, chapter: G.chapter, actTwo: G.actTwo, checkpoint: clone(G.checkpoint), stance: G.stance, weapon: player.weapon,
+    idx: G.levelIdx, chapter: G.chapter, actTwo: G.actTwo, checkpoint: clone(G.checkpoint), stance: G.stance, loadout: [...G.loadout], weapon: player.weapon,
     unlocked: clone(G.unlocked), stanceUnlocked: clone(G.stanceUnlocked), mandoChoiceShown: G.mandoChoiceShown,
     xp: G.xp, xpEarned: G.xpEarned, skillPoints: G.skillPoints, skillSpent: G.skillSpent,
     powerLv: clone(G.powerLv), mastery: clone(G.mastery), seenTypes: clone(G.seenTypes),
@@ -43,7 +44,8 @@ export function restoreRun(run){
   G.levelIdx = run.idx; G.checkpoint = clone(run.checkpoint) || { idx: run.idx, waveTotal: -1, boss: false };
   G.waveTotal = G.checkpoint.waveTotal;
   player.weapon = run.weapon || 'single';
-  G.unlocked = clone(run.unlocked) || {}; G.stanceUnlocked = clone(run.stanceUnlocked) || {}; G.mandoChoiceShown = !!run.mandoChoiceShown;
+  G.unlocked = clone(run.unlocked) || {}; G.stanceUnlocked = migrateUnlocked(run.stanceUnlocked);
+  G.loadout = cleanLoadout(run.loadout || DEFAULT_LOADOUT); G.mandoChoiceShown = !!run.mandoChoiceShown;
   G.xp = run.xp || 0; G.xpEarned = run.xpEarned || 0; G.skillPoints = run.skillPoints || 0; G.skillSpent = run.skillSpent || 0;
   G.powerLv = clone(run.powerLv) || {}; G.mastery = clone(run.mastery) || {}; G.seenTypes = clone(run.seenTypes) || {};
   G.boonOffer = null; G.boonPicked = false;
@@ -54,6 +56,13 @@ export function restoreRun(run){
   if (run.stats){ const { elapsed, ...st } = run.stats; G.stats = { ...st, startGt: G.gt - (elapsed || 0), summary: null }; }
 }
 
+// earned forms, keyed by form id (saves from before the forms had ids keyed them fast / strong)
+function migrateUnlocked(su){
+  const out = {};
+  for (const k in su || {}) if (su[k]) out[migrateForm(k)] = true;
+  return out;
+}
+
 // a loaded save's run waits on the menu (G.resumeRun) until BEGIN picks it up, as long as the same hero is picked
 export const canResume = () => !!(G.resumeRun && G.resumeRun.hero === G.hero);
 export const resumeLabel = () => savedChapter(G.resumeRun, G.hero);
@@ -61,7 +70,7 @@ export function resumeRun(){
   const run = G.resumeRun; G.resumeRun = null;
   restoreRun(run);
   resumeChapter(run);   // (a save from before the chapters picks up on the chapter that opens its level)
-  switchStance(run.stance || 'medium', true);
+  switchStance(migrateForm(run.stance) || 'niman', true);
 }
 // 'CHAPTER 3 · THE LAST EVACUATION' for a saved run, without starting it
 function savedChapter(run, hero){

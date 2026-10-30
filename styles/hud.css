@@ -72,7 +72,7 @@ body.mando #fpbar{background:linear-gradient(90deg,#d98a2b,#ffd9a0)}
 .stance.active::after{opacity:1;box-shadow:0 0 10px var(--c)}
 .stance.active .num{color:var(--c);border-color:var(--c)}
 .stance.active .sty{color:var(--c)}
-.stance.locked{opacity:.22;filter:grayscale(1)}
+.stance.locked,.stance.empty{opacity:.22;filter:grayscale(1)}
 
 .stance.locked.active{opacity:.5}
 /* the form's strengths: shown for a few seconds after you switch, then gets out of the way */

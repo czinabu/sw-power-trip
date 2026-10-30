@@ -663,7 +663,7 @@ export function updateSaberLock(dt){
 export function lockPress(){
   if (!LOCK.foe) return;
   const L = DUEL.lock;
-  const formMul = G.hero === 'mando' ? 1.1 : G.stance === 'strong' ? L.heavyPress : G.stance === 'fast' ? L.fastPress : 1;
+  const formMul = G.hero === 'mando' ? 1.1 : G.stance === 'djemso' ? L.heavyPress : G.stance === 'ataru' ? L.fastPress : 1;
   const dry = player.stam < L.stam;
   player.stam = Math.max(0, player.stam - L.stam); player.stamDelay = stamDelay();
   LOCK.bal += L.press * formMul * (dry ? 0.35 : 1);

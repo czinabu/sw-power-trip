@@ -2,7 +2,6 @@
 // Mouse and keyboard handlers.
 
 import { CFG } from '../data/config.js';
-import { STANCE_ORDER } from '../data/stances.js';
 import { renderer } from './renderer.js';
 import { cycleQuality } from './quality.js';
 import { audioInit, sfx } from '../audio/sfx.js';
@@ -12,7 +11,7 @@ import { floater } from '../fx/floaters.js';
 import { shared, G, keys, player } from '../state.js';
 import { MANDO_WEAPON_ORDER, weaponUnlocked } from '../data/mando.js';
 import { fwd, rightV, playerPos, stance } from '../player/helpers.js';
-import { switchStance } from '../player/jedi/stance.js';
+import { switchSlot, cycleSlot } from '../player/jedi/stance.js';
 import { tryAttack, cancelSwing, forceKick } from '../player/jedi/combat.js';
 import {
   forcePush, saberThrow, forcePull, forceRepulse, forceBarrier, forceMend, forceJudgement, forceSlam
@@ -98,16 +97,16 @@ document.addEventListener('mousedown', (e) => {
       let pwin = CFG.player.parryWindow + (stance().parryBonus || 0) + player.up.parry + diffWindow();
       if (cancelled){
         // STANCE-SPECIFIC CANCEL FEEL
-        if (G.stance === 'fast'){
+        if (G.stance === 'ataru'){
           // ATARU — a quick repositioning step in the way you're moving (or hop back if still)
           const d = V3(0,0,0);
           if (keys['w']) d.add(fwd()); if (keys['s']) d.sub(fwd());
           if (keys['d']) d.add(rightV()); if (keys['a']) d.sub(rightV());
           if (d.lengthSq() < 0.01) d.copy(fwd()).multiplyScalar(-1);
           d.normalize(); player.vel.addScaledVector(d, 13);
-        } else if (G.stance === 'medium'){
+        } else if (G.stance === 'niman'){
           pwin += 0.06;                 // NIMAN — a clean cancel leaves a wider parry window after
-        } else if (G.stance === 'strong'){
+        } else if (G.stance === 'djemso'){
           pwin += 0.1;                  // DJEM SO — committed cancel: the biggest parry window…
           player.cancelDR = 0.4;        // …soak damage through the heavy recovery…
           player.swingLock = 0.2;       // …but you're slow to swing again
@@ -134,9 +133,7 @@ document.addEventListener('wheel', (e) => {
     }
     return;
   }
-  const i = STANCE_ORDER.indexOf(G.stance);
-  const n = (i + (e.deltaY > 0 ? 1 : -1) + STANCE_ORDER.length) % STANCE_ORDER.length;
-  switchStance(STANCE_ORDER[n]);
+  cycleSlot(e.deltaY > 0 ? 1 : -1);   // the next earned form along the loadout
 }, { passive: false });
 document.addEventListener('contextmenu', (e) => e.preventDefault());
 document.addEventListener('keydown', (e) => {
@@ -191,9 +188,9 @@ document.addEventListener('keydown', (e) => {
       showBanner('', G.saberGrip === 'reverse' ? 'REVERSE GRIP' : 'REGULAR GRIP', 0.8);
       sfx(520, 0.06, 'triangle', 0.04, 760);
     }
-    if (k === '1') switchStance('fast');
-    if (k === '2') switchStance('medium');
-    if (k === '3') switchStance('strong');
+    if (k === '1') switchSlot(0);   // the form loadout (data/forms.js): whatever sits in each slot
+    if (k === '2') switchSlot(1);
+    if (k === '3') switchSlot(2);
   }
   if (k === 'r' && (G.mode === 'dead' || G.mode === 'victory')){
     const again = G.mode === 'victory';

@@ -18,7 +18,7 @@ import { closeSandboxPanel } from './sandbox-ui.js';
 import { MISSIONS } from '../data/missions.js';
 import { closeProgress } from './store-ui.js';
 import { DIFFS } from '../data/difficulty.js';
-import { renderControls, toggleControlsDetail } from './controls.js';
+import { renderControls, toggleControlsDetail, setControlsDevice } from './controls.js';
 import { svgIcon } from './icons.js';
 import { enterFullscreenIfWanted, escapeIsOurs } from './fullscreen.js';
 import { CFG } from '../data/config.js';
@@ -28,6 +28,7 @@ import { findClearSpawn } from '../world/collision.js';
 import { playerPos } from '../player/helpers.js';
 import { canResume, resumeRun, resumeLabel } from '../game/saves.js';
 import { startCampaign, joinCampaign, closeCard, chapterLabel } from '../game/campaign.js';
+import { pad } from '../engine/gamepad.js';
 
 /* ============================================================
    INPUT
@@ -243,6 +244,25 @@ function setAdsSens(v){
   const sl = document.getElementById('adssl'); if (sl && +sl.value !== G.adsSens) sl.value = G.adsSens;
 }
 { let v; try { v = parseFloat(localStorage.getItem('sw_adssens')); } catch(e){} setAdsSens(v); }
+// CONTROLLER — right-stick look speed and up/down invert (engine/gamepad.js)
+function setPadSens(v){
+  G.padSens = Math.max(0.4, Math.min(2.2, isNaN(v) ? 1 : v));
+  try { localStorage.setItem('sw_padsens', G.padSens); } catch(e){}
+  const sv = document.getElementById('padval'); if (sv) sv.textContent = G.padSens.toFixed(2) + '×';
+  const sl = document.getElementById('padsl'); if (sl && +sl.value !== G.padSens) sl.value = G.padSens;
+}
+{ let v; try { v = parseFloat(localStorage.getItem('sw_padsens')); } catch(e){} setPadSens(v); }
+function setPadInvert(on){
+  G.padInvert = on;
+  try { localStorage.setItem('sw_padinv', on ? '1' : '0'); } catch(e){}
+  const sv = document.getElementById('padinvval'); if (sv) sv.textContent = on ? 'ON' : 'OFF';
+}
+{ let v; try { v = localStorage.getItem('sw_padinv'); } catch(e){} setPadInvert(v === '1'); }
+document.getElementById('padinvctl').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setPadInvert(!G.padInvert); });
+{ const sl = document.getElementById('padsl');
+  sl.addEventListener('pointerdown', (e) => e.stopPropagation());
+  sl.addEventListener('click', (e) => e.stopPropagation());
+  sl.addEventListener('input', (e) => setPadSens(parseFloat(e.target.value))); }
 // SCREEN SHAKE — scales every camera shake, roll and hit kick (0 turns them off)
 function setShakeScale(v){
   G.shakeScale = Math.max(0, Math.min(1.5, isNaN(v) ? 1 : v));
@@ -311,14 +331,15 @@ document.addEventListener('pointerdown', audioInit);   // first gesture anywhere
 const howto = document.getElementById('howto');
 function setHowTo(open){
   howto.classList.toggle('open', open);
-  if (open) renderControls(G.hero);
+  if (open){ setControlsDevice(pad.active || pad.connected ? 'pad' : 'kb'); renderControls(G.hero); }
 }
 document.getElementById('ctltoggle').addEventListener('click', (e) => { e.stopPropagation(); setHowTo(true); });
 document.getElementById('howtoclose').addEventListener('click', (e) => { e.stopPropagation(); setHowTo(false); });
 howto.addEventListener('click', (e) => {
   e.stopPropagation();   // reading the help must never launch or resume the game
-  const tab = e.target.closest('[data-h]');
+  const tab = e.target.closest('[data-h]'), dev = e.target.closest('[data-dev]');
   if (tab) renderControls(tab.dataset.h);
+  else if (dev){ setControlsDevice(dev.dataset.dev); renderControls(document.querySelector('#howtohero .on').dataset.h); }
   else if (e.target.id === 'howtomore') toggleControlsDetail(document.querySelector('#howtohero .on').dataset.h);
   else if (e.target === howto) setHowTo(false);   // click the backdrop to close
 });
@@ -377,6 +398,7 @@ export function launchCoopRun(){
 // take the pointer lock and start (or resume) play; where the lock never works, play unlocked
 function launch(){
   audioInit();
+  if (pad.active){ shared.lockFallback = true; beginPlay(); return; }   // a pad press can't take the pointer lock: play unlocked (engine/gamepad.js)
   requestLock();
   enterFullscreenIfWanted();   // after the lock request: entering fullscreen uses up the click's user gesture
   setTimeout(() => {

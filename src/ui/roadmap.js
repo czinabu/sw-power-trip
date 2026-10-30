@@ -16,12 +16,22 @@ function render(){
     return `<div class="rm-col rm-${statuses[0]}">
       <div class="rm-st">${head}</div>
       ${phases.map((p) => `<div class="rm-phase">
-        <h4>${esc(p.title)}${p.status === 'later' ? ' <span class="rm-later">LATER</span>' : ''}</h4>
-        <ul>${p.items.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>
+        <button type="button" class="rm-title" aria-expanded="false">${esc(p.title)}${p.status === 'later' ? ' <span class="rm-later">LATER</span>' : ''}</button>
+        <ul hidden>${p.items.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>
       </div>`).join('')}
     </div>`;
   }).join('');
 }
+
+// Titles only; a click on a title shows or hides its description.
+document.getElementById('rmlist').addEventListener('click', (e) => {
+  const t = e.target.closest('.rm-title');
+  if (!t) return;
+  const open = t.getAttribute('aria-expanded') !== 'true';
+  t.setAttribute('aria-expanded', open);
+  t.nextElementSibling.hidden = !open;
+  t.parentElement.classList.toggle('open', open);
+});
 
 export function setRoadmap(open){
   panel.classList.toggle('open', open);

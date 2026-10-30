@@ -88,6 +88,7 @@ import { showcaseActive, renderShowcase, leaveShowcase } from './ui/showcase.js'
 import './ui/customizer.js';
 import './data/difficulty.js';
 import './engine/input.js';
+import './engine/gamepad.js';
 import { updateCamera } from './engine/camera.js';
 import { SEE } from './world/ink.js';
 import { NAV, buildNav, updateNav, navSteer, navDist } from './enemies/nav.js';
@@ -195,3 +196,8 @@ import { BATTLE_MAPS } from './data/battlemaps.js';
 import { setSandboxMap } from './game/sandbox.js';
 Object.assign(window.GAME, { arena: arenaInfo, ENDLESS_ARENAS, BATTLE_MAPS, setSandboxMap });
 Object.assign(window.GAME, { startCampaign, startChapter, nextChapter, chapters });   // the campaign's chapters (game/campaign.js), for tests
+
+/* the form loadout (data/forms.js): the seven forms and what sits on 1 / 2 / 3 */
+import { FORMS } from './data/forms.js';
+import { setLoadout } from './player/jedi/stance.js';
+Object.assign(window.GAME, { FORMS, setLoadout });
