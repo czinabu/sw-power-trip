@@ -26,6 +26,7 @@ import { inkSprite, sparks, motes, dustRing, barrierMaterial, bindBarrier } from
 import { hooks } from '../../net/run.js';
 import { tutEvent } from '../../game/tutor-bus.js';
 import { pushGrenades } from '../../enemies/grenades.js';
+import { flowReady, queuePullStrike } from './palm.js';
 
 /* trigger the off-hand reaching gesture used by every Force power */
 // a Jedi power's Force cost after the survival cost cuts (ATTUNEMENT, DEEP RESERVES, FORCE NEXUS) — the same
@@ -42,9 +43,12 @@ function faceAbilityAim(range){
 export function forcePush(){
   const A = abil('push');
   const st = stance();
-  const cost = fcost(A.cost * ((st.costMult && st.costMult.push) || 1) * (st.powerCostMul || 1));
+  // PALM PUSH: thrown right on the back of a landed unarmed blow it costs less and hits the near foes hard (jedi/palm.js)
+  const flow = flowReady(), FL = CFG.holster.flow;
+  const cost = fcost(A.cost * ((st.costMult && st.costMult.push) || 1) * (st.powerCostMul || 1)) * (flow ? FL.costMul : 1);
   if (!G.unlocked.push || player.cds.push > 0 || player.force < cost || G.mode !== 'play') return;
   if (player.atkT > 0) cancelSwing();   // flow straight out of a saber swing into the shove
+  if (flow){ player.palmT = 0; player.palm = null; player.palmQueued = false; player.lastPalmHit = -9; floater(playerPos(), 'PALM PUSH', '#7fd4ff'); tutEvent('palmPush'); }
   player.force -= cost; player.cds.push = A.cd * (st.cdMult || 1);
   if (hooks.power) hooks.power('push', st.blade, A.range * 0.5);   // co-op: the partner sees the shove
   faceAbilityAim(A.range);                          // square up to the threat before the shove
@@ -64,8 +68,8 @@ export function forcePush(){
     if (!inAim(e, aim, A.range, cosLim, 0.14)) continue;   // any of the body in the cone; a foe in the air only when aimed up at
     if (d < 0.05) TMP.copy(f);
     TMP.normalize();
-    const falloff = 1 - (d / A.range) * 0.5;
-    damageEnemy(e, A.dmg * forcePower(), TMP.clone(), A.knock * falloff * forcePower());
+    const falloff = 1 - (d / A.range) * 0.5, close = flow && d < FL.near;
+    damageEnemy(e, (A.dmg + (close ? FL.dmg : 0)) * forcePower(), TMP.clone(), A.knock * falloff * forcePower() * (close ? FL.knockMul : 1));
     pushed++;
     tutEvent('pushHit', e);
   }
@@ -297,9 +301,12 @@ export function updateSaberThrow(dt){
 export function forcePull(){
   const A = abil('pull');
   const st = stance();
-  const cost = fcost(A.cost * ((st.costMult && st.costMult.pull) || 1));
+  // PULL-IN: thrown right on the back of a landed unarmed blow it costs less, and the next strike meets them (jedi/palm.js)
+  const flow = flowReady();
+  const cost = fcost(A.cost * ((st.costMult && st.costMult.pull) || 1)) * (flow ? CFG.holster.flow.costMul : 1);
   if (!G.unlocked.pull || player.cds.pull > 0 || player.force < cost || G.mode !== 'play') return;
   if (player.atkT > 0) cancelSwing();   // flow straight out of a saber swing into the pull
+  if (flow) player.lastPalmHit = -9;
   player.force -= cost; player.cds.pull = A.cd * (st.cdMult || 1);
   if (hooks.power) hooks.power('pull', st.blade, A.range * 0.5);
   faceAbilityAim(A.range);     // face the crowd you're about to yank
@@ -335,7 +342,8 @@ export function forcePull(){
                 size: [4.2 - i*0.5, 0.7], ease: 2, life: 0.3, delay: i*0.05, op: 0.9 - i*0.2, fadeAt: 0.5, coreW: 0.2, inkW: 0.22,
                 vel: ad.clone().multiplyScalar(-at / 0.3) });
   }
-  if (n) floater(pp, 'PULL', '#7fd4ff');
+  if (n && flow){ queuePullStrike(); floater(pp, 'PULL-IN', '#7fd4ff'); tutEvent('pullStrike'); }
+  else if (n) floater(pp, 'PULL', '#7fd4ff');
 }
 
 /* FORCE REPULSE — a 360° concussive blast that hurls everything around you away (high-tier) */
