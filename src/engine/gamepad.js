@@ -9,6 +9,7 @@ import { shared, G, player } from '../state.js';
 import { clamp } from '../utils.js';
 import { noteFlick } from '../player/jedi/cutaim.js';
 import { audioInit } from '../audio/sfx.js';
+import { skipScene } from '../game/cutscene.js';
 
 /* the left stick as a camera-relative move: x = right, y = forward (player/locomotion.js reads it for a smooth
    direction; the W A S D keys are pressed too, for everything that reads those) */
@@ -105,7 +106,7 @@ function setStickKeys(x, y){
 /* ---------- WHERE THE PAD IS: in the fight, or in a menu ---------- */
 const ovUp = () => getComputedStyle(overlay).display !== 'none';
 const sandboxOpen = () => document.getElementById('sandbox').classList.contains('open');
-const playing = () => G.mode === 'play' && !G.paused && !G.skillSelect && !ovUp() && !sandboxOpen();
+const playing = () => G.mode === 'play' && !G.paused && !G.skillSelect && !G.cutscene && !ovUp() && !sandboxOpen();
 
 const dead = (v, d) => Math.abs(v) < d ? 0 : Math.sign(v) * (Math.abs(v) - d) / (1 - d);
 
@@ -283,7 +284,8 @@ function menu(btn, down, lx, ly, ry, dt){
   if (dir !== navHold.dir){ navHold.dir = dir; navHold.t = PAD_TUNE.navRepeat[0]; if (dir) step(dir); }
   else if (dir && (navHold.t -= dt) <= 0){ navHold.t = PAD_TUNE.navRepeat[1]; step(dir); }
 
-  if (down(0)){   // A — pick
+  if (down(0) && G.cutscene) skipScene();   // A — skip a cutscene (game/cutscene.js)
+  else if (down(0)){   // A — pick
     const list = candidates(); ensureFocus(list);
     if (focus){ if (focus.tagName === 'INPUT') focus.focus(); else focus.click(); }
   }
@@ -294,6 +296,7 @@ function menu(btn, down, lx, ly, ry, dt){
   if (down(9)){   // MENU — resume from pause; anywhere else on the overlay, the main button
     if (ovUp() && overlay.classList.contains('st-pause') && !panelUp()){ sendKey('tab', true); sendKey('tab', false); }
     else if (ovUp() && !panelUp()) document.getElementById('goText').click();
+    else if (G.cutscene) skipScene();   // a cutscene (game/cutscene.js)
     else if (G.cardUp){ const go = document.querySelector('#chapcard.open .go'); if (go) go.click(); }   // the chapter card's BEGIN (game/campaign.js)
     else if (G.skillSelect) document.getElementById('continueBtn').click();
   }

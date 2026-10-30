@@ -17,6 +17,7 @@ export const ROADMAP = [
   { title: 'Story campaign', status: 'now',
     items: ['Done: 13 chapters in three acts, with a chapter card before each, the story so far and the voice\'s briefing',
             'Done: the missions and trials woven in, Act II\'s pick (Lothal or Hoth first), saves and co-op by chapter',
+            'Done: cutscenes: every chapter opens on a short in-engine scene, the Inquisitor (or VX-7) watches from across the archive, every duel foe gets an entrance, Vexis and the Magistrate get an arrival. Skippable, and shared in co-op',
             'Next: briefings and voice lines through every wave, the Inquisitor\'s escape, new arenas (Jedha archive, Lothal prison yard, Hoth hangar, Exegol approach, throne room)',
             'Next: new foes and mini-bosses, the trials\' masters from the seven forms, the Mando\'s rival hunters'] },
   { title: 'Sandbox opens after Act I', status: 'done',

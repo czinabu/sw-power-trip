@@ -14,6 +14,7 @@ import { startLevel, checkUnlocks, chapterRewards, releaseUnlockBanners } from '
 import { startMission } from './mission.js';
 import { openSkillTree } from '../ui/store-ui.js';
 import { showBanner } from '../ui/banners.js';
+import { playOpening, resetScenes } from './cutscene.js';
 import { recordChapters } from './sandbox-unlocks.js';
 
 const ROMAN = ['I', 'II', 'III'];
@@ -46,7 +47,7 @@ export function startChapter(pos, opts = {}){
     startLevel(c.level, { level: { ...LEVELS[c.level], name, sub }, waves: c.waves, resume: !opts.fresh, retry: opts.retry, chapter: true });
   } else {
     if (!opts.retry) G.checkpoint = { idx: G.levelIdx, ch: pos, waveTotal: G.waveTotal, boss: false };
-    startMission(c.mission, 0, !!opts.guest, { chapter: { name, sub, kicker: 'CHAPTER ' + (pos + 1) + ' · ' + title, done: chapterCleared } });
+    startMission(c.mission, 0, !!opts.guest, { retry: !!opts.retry, chapter: { name, sub, kicker: 'CHAPTER ' + (pos + 1) + ' · ' + title, done: chapterCleared } });
   }
   if (opts.guest){ G.coopGuest = true; G.coopWasGuest = true; G.coopJoin = false; shared.levelPhase = G.mission ? 'mission' : 'between'; shared.phaseT = 0; }
   if (!opts.retry || opts.card) showCard(pos);
@@ -138,7 +139,11 @@ export function showCard(pos){
   const lines = [...(opensAct && pos !== ACT_TWO_AT ? [forHero(ACTS[c.act].open, G.hero)] : []), ...forHero(c.brief, G.hero)];   // (Act II's opening line was on its pick)
   openCard('<div class="cc-inner hero-' + G.hero + '">' + head(c, pos) + voice(lines) + roster(c.act, pos) +
     '<div class="cc-btns"><div class="btn primary go" data-go="1">' + (G.coopGuest ? 'READY' : 'BEGIN') + '</div></div>' +
-    '<div class="cc-hint">Enter or click to begin</div></div>', () => { closeCard(); S.reward(1); });
+    '<div class="cc-hint">Enter or click to begin</div></div>', () => {
+      closeCard(); S.reward(1);
+      playOpening(c.id, { k: 'CHAPTER ' + (pos + 1) + ' · ACT ' + ROMAN[c.act], h: chapterTitle(c), p: c.world });   // the chapter's opening scene (game/cutscene.js)
+    });
+  resetScenes();   // a new visit to the chapter: its scenes play again
   MUSIC.unlockSting();
 }
 // sandboxOpened: clearing Act I just opened the sandbox, so the card says so
