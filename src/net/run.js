@@ -21,4 +21,4 @@ export function queueHit(e, dmg, knockDir, knockPow, finisher, tick){
 }
 
 // what the foe code calls to tell the other browser (set by net/foefire.js; null in solo, so nothing changes there)
-export const hooks = { hurt: null, bolt: null, bx: null, blast: null, tell: null, gren: null, pbolt: null, xp: null, aim: null, lunge: null, ring: null, bctl: null, bossDead: null, missionDone: null, mbanner: null, power: null };
+export const hooks = { hurt: null, bolt: null, bx: null, blast: null, tell: null, gren: null, pbolt: null, xp: null, aim: null, lunge: null, ring: null, bctl: null, bossDead: null, missionDone: null, mbanner: null, comms: null, power: null };

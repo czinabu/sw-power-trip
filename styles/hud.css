@@ -341,6 +341,17 @@ body.sandbox #xpmeter,body.sandbox #xphud{display:none !important}   /* the sand
 .ro-none,.ro-hint{font-size:10.5px;letter-spacing:1.4px;color:var(--ink-faint)}
 .ro-hint{margin-top:6px}
 
+/* ---------- CAMPAIGN COMMS (game/story.js): the voice in your ear during a chapter, as a subtitle ---------- */
+#comms{position:fixed;left:50%;bottom:21%;transform:translate(-50%,6px);width:max-content;max-width:min(640px,calc(100vw - 32px));
+  padding:8px 16px 9px;box-sizing:border-box;text-align:center;border-radius:var(--r-lg);background:rgba(4,10,20,.62);
+  box-shadow:0 6px 22px rgba(0,0,0,.35);opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;z-index:4}
+#comms.on{opacity:1;transform:translate(-50%,0)}
+#comms .cm-who{font:700 11px/1 var(--font-ui);letter-spacing:2.6px;color:var(--gold);margin-bottom:5px}
+#comms .cm-say{font:500 17px/1.35 var(--font-body);color:var(--ink);text-shadow:0 1px 6px rgba(0,0,0,.8)}
+#comms.rival .cm-who{color:#ff5a5a}
+#comms.rival .cm-say{font-style:italic}
+@media (max-width:620px){ #comms{bottom:26%} #comms .cm-say{font-size:15px} }
+
 /* ---------- CUTSCENES (game/cutscene.js): letterbox bars, the chapter's title, a subtitle, the skip hint ---------- */
 body.cutscene #hud,body.cutscene #boonstrip,body.cutscene #threats,body.cutscene #comms{opacity:0 !important;transition:opacity .2s}
 #cutscene{position:fixed;inset:0;z-index:18;pointer-events:none;display:none}

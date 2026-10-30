@@ -9,12 +9,13 @@ import { renderer } from '../engine/renderer.js';
 import { audioInit, S } from '../audio/sfx.js';
 import { MUSIC } from '../audio/music.js';
 import { LEVELS } from '../data/levels.js';
-import { ACTS, ACT_TWO, ACT_TWO_AT, CHAPTER_OF_LEVEL, VOICE, chapterOrder, forHero } from '../data/campaign.js';
+import { ACTS, ACT_TWO, ACT_TWO_AT, CHAPTER_OF_LEVEL, VOICE, EPILOGUE, chapterOrder, forHero } from '../data/campaign.js';
 import { startLevel, checkUnlocks, chapterRewards, releaseUnlockBanners } from './flow.js';
 import { startMission } from './mission.js';
 import { openSkillTree } from '../ui/store-ui.js';
 import { showBanner } from '../ui/banners.js';
-import { playOpening, resetScenes } from './cutscene.js';
+import { storyBeat, clearComms } from './story.js';
+import { playOpening, resetScenes, playScene } from './cutscene.js';
 import { recordChapters } from './sandbox-unlocks.js';
 
 const ROMAN = ['I', 'II', 'III'];
@@ -83,6 +84,7 @@ export function followChapter(pos, actTwo){
 function chapterCleared(){
   G.waveTotal++;   // a mission counts as a step deeper into the run (foes, store tiers and the Mando's gear follow it)
   chapterRewards();
+  storyBeat('clear');
   if (G.coopGuest){ openSkillTree(); return; }
   shared.levelPhase = 'chapterdone'; shared.phaseT = 2.6;   // the voice's last word, then the upgrade screen and the road on (game/flow.js)
 }
@@ -142,6 +144,7 @@ export function showCard(pos){
     '<div class="cc-hint">Enter or click to begin</div></div>', () => {
       closeCard(); S.reward(1);
       playOpening(c.id, { k: 'CHAPTER ' + (pos + 1) + ' · ACT ' + ROMAN[c.act], h: chapterTitle(c), p: c.world });   // the chapter's opening scene (game/cutscene.js)
+      storyBeat('chapter');
     });
   resetScenes();   // a new visit to the chapter: its scenes play again
   MUSIC.unlockSting();
@@ -157,6 +160,27 @@ function showPick(pos, sandboxOpened){
     '</div>', (k) => { if (!ACT_TWO[k]) return; G.actTwo = k; S.reward(1); startChapter(pos); });
   MUSIC.unlockSting();
 }
+// THE END: the last chapter's boss is down. The epilogue's card, then the victory screen (game/summary.js victory)
+export function campaignWon(then){
+  storyBeat('epilogue');
+  clearComms();
+  G.slowmo = 1; G.slowmoT = 0;
+  const card = () => { if (G.mode === 'play') showEpilogue(then); else then(); };
+  // a last look at the hero (game/cutscene.js), then the card. Each screen plays its own in co-op (both get here)
+  setTimeout(() => { if (G.mode !== 'play' || !playScene('epilogue', { onDone: card, share: false })) card(); }, 1200);
+}
+function showEpilogue(then){
+  const E = EPILOGUE;
+  openCard('<div class="cc-inner hero-' + G.hero + '">' +
+    '<div class="cc-act">EPILOGUE</div><div class="cc-num">' + chapters().length + ' CHAPTERS · ' + (G.actTwo === 'hoth' ? 'HOTH' : 'LOTHAL') + ' FIRST</div>' +
+    '<h1 class="cc-title">' + esc(forHero(E.title, G.hero)) + '</h1><div class="cc-world">' + esc(forHero(E.world, G.hero)) + '</div>' +
+    voice(forHero(E.lines, G.hero)) +
+    '<div class="cc-acts">' + ['ACT I', 'ACT II', 'ACT III'].map((a, k) => '<div class="cc-done"><b>' + a + '</b> ' + esc(forHero(ACTS[k].title, G.hero)) + '</div>').join('') + '</div>' +
+    '<div class="cc-btns"><div class="btn primary go" data-go="1">CONTINUE</div></div>' +
+    '<div class="cc-hint">Enter or click to continue</div></div>', () => { closeCard(true); then(); });
+  MUSIC.unlockSting();
+}
+
 // Enter (or Space) takes the card's one button; the pick needs a click
 window.addEventListener('keydown', (e) => {
   if (!cardUp() || e.repeat || (e.key !== 'Enter' && e.key !== ' ')) return;

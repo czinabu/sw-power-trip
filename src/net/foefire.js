@@ -23,6 +23,7 @@ import { bossBlowResult, spawnBossRing } from '../boss/boss.js';
 import { victory } from '../game/summary.js';
 import { coopMissionDone } from '../game/mission.js';
 import { showBanner } from '../ui/banners.js';
+import { remoteComms } from '../game/story.js';
 import { blockedOnBlade } from '../player/jedi/clash.js';
 import { playerPos } from '../player/helpers.js';
 import { players } from '../player/players.js';
@@ -196,6 +197,8 @@ hooks.bossDead = () => { if (asHost()) send({ t: 'bdead' }); };
 // story missions: the host's banners reach the guest, and its mission ending ends theirs
 hooks.mbanner = (a, b, c, o) => { if (asHost()) send({ t: 'mbn', a, b, c, k: o && o.kicker }); };
 on('mbn', (m) => { if (asGuest() && G.mission) showBanner(m.a, m.b, m.c, m.k ? { kicker: m.k } : undefined); });
+hooks.comms = (list, now) => { if (asHost()) send({ t: 'cms', l: list, n: now ? 1 : 0 }); };
+on('cms', (m) => { if (asGuest()) remoteComms(m.l, !!m.n); });
 hooks.missionDone = () => { if (asHost()) send({ t: 'mdone' }); };
 on('mdone', () => { if (asGuest()) coopMissionDone(); });
 on('bdead', () => { if (asGuest() && G.mode === 'play'){ if (shared.boss && shared.boss.net) { /* the puppet falls with the snapshot */ } victory(); } });

@@ -28,6 +28,7 @@ import { makeEvacuee } from '../world/arenas/refuge.js';
 import { startLevel, queueSpawn, checkUnlocks } from './flow.js';
 import { endRun } from './summary.js';
 import { showBanner, bannerTap } from '../ui/banners.js';
+import { storyBeat } from './story.js';
 import { hooks } from '../net/run.js';
 import { overlay, setOverlayState } from '../ui/menus.js';
 import { showPanel, hidePanel, makeBeacon, makeConsole, setMarkerColor, pulseMarker, removeMarker,
@@ -38,7 +39,7 @@ import { collideSolids } from '../world/collision.js';
 import { players, targetable } from '../player/players.js';
 import { diffDmgMul } from '../data/difficulty.js';
 import { startBattleFx, stopBattleFx, updateBattleFx } from '../fx/battle.js';
-import { playDuelIntro, resetScenes } from './cutscene.js';
+import { playDuelIntro, resetScenes, playScene } from './cutscene.js';
 
 const RED = 0xff4a3a, GREEN = 0x7bffae;
 const M = { on: false, def: null, i: 0, o: null, s: null, markers: [], props: [], fx: [], panelT: 0, waitT: 0, endT: 0, won: false,
@@ -454,8 +455,11 @@ const KINDS = {
         }
         if (o.quarry && M.qHp) M.qHp = Math.max(0.55, M.qHp);   // the run wore it down, but it still has a fight in it
         s.foe = o.quarry ? spawnQuarryFoe(o) : spawnInquisitor(o, o.at, { line: heroText(o.line), kicker: o.kicker });
+        if (o.escape) s.foe.hpFloor = Math.max(1, s.foe.maxHp * o.escape);   // it won't fall here: at this much left it breaks off (escapeDuel)
+        storyBeat('duel', { name: o.name, quarry: !!o.quarry });
       }
       const e = s.foe, gone = e.dead || !enemies.includes(e);
+      if (o.escape && !gone && e.hp <= e.hpFloor + 0.01){ escapeDuel(o, e); return true; }
       if (!s.raged && !gone && e.hp <= e.maxHp * o.rage){
         s.raged = true;
         e.dp = { ...e.dp, ...o.rageDuel }; e.spd *= 1.15;
@@ -700,6 +704,20 @@ function breakAway(o, s){
   if (s.hold) endStandoff(s);   // fighting free of it ends a standoff too: it bolts through
   shove(M.quarry, s);
   showBanner('', M.quarry.def.name + ' BREAKS AWAY', 1.4);
+}
+// the refuge's Inquisitor: beaten, but not finished. It throws you back and is gone in the smoke (the story needs it
+// alive for the Long Chase)
+function escapeDuel(o, e){
+  const p = e.group.position.clone(), i = enemies.indexOf(e);
+  if (i >= 0) enemies.splice(i, 1);
+  dropFoe(e);
+  burst(V3(p.x, 1.0, p.z), 0x40444c, 34, 7, 3, 1.4);
+  burst(V3(p.x, 1.4, p.z), o.tint, 18, 9, 5, 0.8);
+  G.shake = Math.max(G.shake, 0.8);
+  S.roar(p);
+  showBanner(o.name + ' ESCAPES', heroText(o.escapeLine) || '', 3.0);
+  playScene('inq-escape', { mark: [p.x, p.z] });   // its parting words, where it stood (game/cutscene.js)
+  storyBeat('escape', { name: o.name });
 }
 function quarryEscaped(){
   const q = M.quarry.def;

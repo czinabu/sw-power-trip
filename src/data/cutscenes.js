@@ -105,10 +105,12 @@ export const BOSS = {
 
 // scenes played by id (playScene): `shots` is 'mark' (a look at the spot passed in, then back to the hero) or 'hero'
 export const SCENES = {
-  'inq-escape': { shots: 'mark', actor: INQ,
+  // (the refuge's duel foe is the Inquisitor for both heroes: VX-7 is the Mando's quarry later, at Khel Dar)
+  'inq-escape': { shots: 'mark', actor: { jedi: INQ.jedi, mando: INQ.jedi },
     jedi:  [['THE INQUISITOR', 'Not today, Knight. I have seen which way the ships went.']],
-    mando: [['VX-7', 'Damage critical. Withdrawing. Heading logged.']] },
+    mando: [['THE INQUISITOR', 'Keep your foundlings, hunter. For now. I have seen which way the ships went.']] },
+  // (the epilogue's card says the rest: game/campaign.js showEpilogue)
   epilogue: { shots: 'hero',
-    jedi:  [[VOICE.jedi, 'It is over. The younglings are safe, and the Order has its masters again.']],
-    mando: [[VOICE.mando, 'The foundlings are home. The clan is whole. This is the Way.']] },
+    jedi:  [[VOICE.jedi, 'It is over.']],
+    mando: [[VOICE.mando, 'It is done.']] },
 };
