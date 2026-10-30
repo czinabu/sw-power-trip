@@ -2,6 +2,7 @@
 // Lightsaber forms (STANCES), their order, and swing patterns.
 
 import { G } from '../state.js';
+import { STARTING_FORMS } from './forms.js';
 
 /* SABER STANCES — the lightsaber forms, Jedi Academy style. Switch with 1/2/3 or the mouse wheel.
    dmg/speed/knock scale the saber; heavyDmg applies vs brutes & the boss;
@@ -224,6 +225,7 @@ export const CUT_ANGLE = {
   foot: { side: 0.28, over: 0.15, rise: -0.12 },
 };
 
-/* Progression is data-driven: see JEDI_AUTO in data/store.js. NIMAN is always available; ATARU and DJEM SO are
-   auto-unlocked there. Which forms sit on 1 / 2 / 3 is the loadout (data/forms.js). */
-export function stanceUnlocked(id){ return id === 'niman' || !!(G.stanceUnlocked && G.stanceUnlocked[id]); }
+/* Progression is data-driven: the hero knows Shii-Cho from the start (data/forms.js STARTING_FORMS) and learns
+   the rest along FORM_PATH (data/forms.js, granted through JEDI_AUTO in data/store.js). Which forms sit on 1 / 2 / 3 is the
+   loadout (data/forms.js). */
+export function stanceUnlocked(id){ return STARTING_FORMS.includes(id) || !!(G.stanceUnlocked && G.stanceUnlocked[id]); }

@@ -17,7 +17,7 @@ import { shared, G, rockets, birds, detos, enemies, bolts, orbs, rings, vfx, pla
 import { weaponUnlocked } from '../data/mando.js';
 import { setHero } from '../player/hero.js';
 import { playerPos, maxHp, maxStam } from '../player/helpers.js';
-import { setStanceHud, switchStance } from '../player/jedi/stance.js';
+import { setStanceHud, switchStance, setLoadout } from '../player/jedi/stance.js';
 import { spawnEnemy } from '../enemies/spawn.js';
 import { damageEnemy } from '../enemies/damage.js';
 import { spawnBoss } from '../boss/boss.js';
@@ -26,7 +26,9 @@ import { buildArena } from '../world/arena.js';
 import { spawnChampion, startEndlessWave, endlessWaveCleared } from './survival.js';
 import { applyJetTier, payWaveClear } from './progression.js';
 import { MANDO_AUTO, JEDI_AUTO } from '../data/store.js';
-import { DEFAULT_LOADOUT } from '../data/forms.js';
+import { DEFAULT_LOADOUT, RUN_LOADOUT, STARTING_FORMS } from '../data/forms.js';
+import { queueMeditation, formsTaught, autoLoadout, tickMeditation, clearMeditation } from './meditation.js';
+import { chapterOrder } from '../data/campaign.js';
 import { openSkillTree } from '../ui/store-ui.js';
 import { showBanner } from '../ui/banners.js';
 import { diffBossCheckpoint } from '../data/difficulty.js';
@@ -142,7 +144,7 @@ export function startLevel(idx, opts){
   player.mendT = 0;
   player.cancelDR = 0; player.swingLock = 0; player.dashCharges = null; player.dashRecharge = 0; player.cancelRiposte = false;
   player.cds.mend = 0;
-  if (fresh) switchStance('niman', true);   // a fresh legend starts balanced
+  if (fresh) switchStance(G.training || G.mission || G.sandbox ? 'niman' : STARTING_FORMS[0], true);   // a run starts on Form I; the training grounds teach from Niman
   setStanceHud();
   G.yaw = Math.PI;  // face arena center
   player.faceYaw = Math.PI;
@@ -155,8 +157,11 @@ export function startLevel(idx, opts){
     //  Jedi: Saber + Block + Push + Dash (Pull auto-unlocks after wave 2).  Mando: Single blaster + weak jetpack +
     //  Brace (RMB) + Rocket (Dual auto-unlocks after wave 1, Flame after wave 2).
     G.unlocked = G.hero === 'jedi' ? { push: true, dash: true } : { rocket: true };
-    G.stanceUnlocked = {};   // NIMAN is always available; ATARU/DJEM SO auto-unlock
-    G.loadout = [...DEFAULT_LOADOUT];
+    G.stanceUnlocked = G.training ? { niman: true } : {};   // SHII-CHO is known from the start; the rest is learned (data/forms.js FORM_PATH). The training grounds teach from Niman
+    G.formFork = null; clearMeditation();   // the run's Form VII choice; nothing left waiting from the last run
+    // a run (campaign or survival) starts on the forms the hero knows and grows; the training grounds and the missions
+    // keep the old three (a mission then slots what its kit teaches)
+    G.loadout = [...(G.training || G.mission || G.sandbox ? DEFAULT_LOADOUT : RUN_LOADOUT)];
     G.waveTotal = -1; G.mandoChoiceShown = false;
     G.xp = 0; G.xpEarned = 0; G.skillPoints = 0; G.powerLv = {}; G.mastery = {}; G.seenTypes = {};
     G.boonOffer = null; G.boonPicked = false;
@@ -226,22 +231,40 @@ export function checkUnlocks(bannerDelay){
     }
     syncMandoChips();
   } else {
+    const meditates = formsTaught();
     for (const u of JEDI_AUTO){
       const reached = (G.endless || (G.mission && G.chapter < 0)) ? ((G.waveTotal || 0) >= u.stage)   // (a campaign chapter keeps the campaign's level/wave gates)
+                                : (u.chapter && G.chapter >= 0) ? chapterCleared(u.chapter)          // a form: the chapter that teaches it
                                 : (G.levelIdx > u.level || (G.levelIdx === u.level && G.wave >= u.wave));
-      if (reached && !u.has()){ u.grant(); announce.push(u); }
+      if (!reached || u.has()) continue;
+      if (u.fork && !meditates) continue;   // Form VII is a choice: only a run that can stop to make it offers it
+      u.grant(); announce.push(u);
     }
     syncJediChips();
     setStanceHud();
+  }
+  // a mission's forms come with its kit, already in hand: slot the best of them (no meditation, no fanfare)
+  if (G.hero !== 'mando' && G.mission && G.chapter < 0){
+    if (G.missionForms){   // chosen before the fight (ui/forms-ui.js): the mission hands them over
+      G.stanceUnlocked = G.stanceUnlocked || {};
+      for (const id of G.missionForms) if (id) G.stanceUnlocked[id] = true;
+      setLoadout(G.missionForms);
+    } else setLoadout(autoLoadout());
   }
   if (G.training || (G.mission && G.chapter < 0) || G.sandbox) return;   // the training grounds teach the starting kit, a mission and the sandbox hand out their kit up front: no fanfare
   if (G.cardUp){ heldUnlocks.push(...announce); return; }   // a chapter card is up: they wait for it to close (releaseUnlockBanners)
   announceUnlocks(announce, bannerDelay);
 }
+// a chapter of this run (by id) is behind the hero: the run is on a later chapter
+function chapterCleared(id){ const at = chapterOrder(G.actTwo).findIndex(c => c.id === id); return at >= 0 && G.chapter > at; }
 // unlocks that landed while a chapter card was up (game/campaign.js), announced once it closes
 const heldUnlocks = [];
 export function releaseUnlockBanners(){ announceUnlocks(heldUnlocks.splice(0), 1200); }
 function announceUnlocks(announce, bannerDelay){
+  // a learned form isn't a banner: it's a moment of meditation, where the hero can re-slot the loadout (meditation.js)
+  const forms = announce.filter(u => u.form);
+  if (forms.length) queueMeditation(forms.map(u => u.key));
+  announce = announce.filter(u => !u.form);
   announce.forEach((u, i) => {
     setTimeout(() => { if (G.mode !== 'play') return;
       showBanner(u.name, /^HOLD /.test(u.hud) ? '' : 'PRESS', 3.0, { kicker: 'UNLOCKED', key: u.hud });
@@ -340,6 +363,7 @@ export function coopCampaignCleared(){
 }
 
 export function updateFlow(dt){
+  tickMeditation();   // a learned form waits for the screens in front of it to close (meditation.js)
   if (G.coopGuest) return;   // the host runs this run's spawns and waves: net/foes.js tells this browser what they did
   // the lull: once the first half of a long wave is down, hold the rest behind a short beat, then release it
   const bar = G.spawnQueue.find(s => s.barrier);

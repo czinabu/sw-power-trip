@@ -2,6 +2,7 @@
 // Progression tables: auto-unlocks, XP store forks, survival power-ups.
 
 import { stanceUnlocked } from './stances.js';
+import { FORMS, FORM_PATH } from './forms.js';
 import { G, player } from '../state.js';
 import { maxHp } from '../player/helpers.js';
 import { setStanceHud } from '../player/jedi/stance.js';
@@ -46,10 +47,12 @@ export const JEDI_AUTO = [
   // FORCE PULL — auto-unlocks early (after wave 2); it's no longer in the starting kit
   { key:'pull',   level:0, wave:2, stage:1, hud:'C', name:'FORCE PULL',
     has:()=>!!G.unlocked.pull,        grant(){ G.unlocked.pull = true; } },
-  { key:'ataru',  level:0, wave:2, stage:2, hud:'1', name:'ATARU — FAST FORM',
-    has:()=>stanceUnlocked('ataru'),  grant(){ (G.stanceUnlocked = G.stanceUnlocked || {}).ataru = true; setStanceHud(); } },
-  { key:'djemso', level:1, wave:2, stage:4, hud:'3', name:'DJEM SO — STRONG FORM',
-    has:()=>stanceUnlocked('djemso'), grant(){ (G.stanceUnlocked = G.stanceUnlocked || {}).djemso = true; setStanceHud(); } },
+  // THE FORMS — learned along FORM_PATH (data/forms.js); game/meditation.js announces each and lets the hero re-slot.
+  // A Form VII entry isn't granted here: the run offers the fork and the hero picks which one it keeps.
+  ...FORM_PATH.map(p => ({ key: p.form, form: true, chapter: p.chapter, level: p.level, wave: p.wave, stage: p.stage,
+    hud: '', name: FORMS[p.form].name + ' · FORM ' + FORMS[p.form].no, fork: !!FORMS[p.form].fork,
+    has: () => stanceUnlocked(p.form) || (FORMS[p.form].fork && !!G.formFork),
+    grant(){ if (!FORMS[p.form].fork){ (G.stanceUnlocked = G.stanceUnlocked || {})[p.form] = true; setStanceHud(); } } })),
   // FORCE JUMP gets stronger automatically as the legend grows (like the Mando jetpack)
   { key:'fj1', level:0, wave:3, stage:3, hud:'HOLD SPACE', name:'FORCE JUMP I',
     has:()=>(player.up.fjTier||0) >= 1, grant(){ player.up.fjTier = 1; } },

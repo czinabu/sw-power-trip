@@ -42,6 +42,8 @@ export const G = {
   cutscene: false,       // a cutscene is playing (game/cutscene.js): the fight holds, the lens and the input are the scene's
   skillSelect: false, skillPoints: 0, skillSpent: 0,   // between-wave skill-tree pause
   saberGrip: 'regular',   // player preference: 'regular' or 'reverse' lightsaber grip (visual only)
+  formFork: null,        // this run's Form VII: 'juyo' or 'vaapad' once chosen (game/meditation.js)
+  missionForms: null,    // the three forms chosen before a mission (ui/forms-ui.js)
   swingMirror: false,   // player preference: flips which way strafe-L/R directional cuts sweep
   cutMouse: false,       // player preference: a mouse flick just before a cut picks its angle (off by default: the keys do)
   mouseSens: 1,          // player preference: mouse look sensitivity multiplier
