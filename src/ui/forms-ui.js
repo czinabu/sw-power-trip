@@ -18,7 +18,7 @@ const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 const hex = (c) => '#' + ('000000' + c.toString(16)).slice(-6);
 const ORDER = Object.keys(FORMS).filter(id => FORMS[id].ready);
 
-let ctx = null;   // { prefight, edit, known: Set, loadout, slot, note, closed: Set, onGo }
+let ctx = null;   // { prefight, edit, known: Set, loadout, slot, focus, note, closed: Set, onGo }
 
 /* ---------- what the page shows ---------- */
 // the forms the story has taught the hero, across every run (the same set the sandbox offers)
@@ -78,8 +78,35 @@ function card(id){
     '<ul class="fm-pros">' + (C.pros || []).map(t => '<li>' + esc(t) + '</li>').join('') + '</ul>' +
     '<ul class="fm-cons">' + (C.cons || []).map(t => '<li>' + esc(t) + '</li>').join('') + '</ul></div>';
 }
+// BEFORE THE FIGHT shows small tiles and one form's detail beside them; the full cards stay on the pause page
+function tile(id){
+  const F = FORMS[id], C = FORM_CODEX[id] || {}, known = ctx.known.includes(id), slotted = ctx.loadout.indexOf(id);
+  if (!known) return '<div class="fm-tile locked"><div class="fm-no">' + F.no + '</div><b>? ? ?</b></div>';
+  return '<div class="fm-tile' + (ctx.edit ? ' pick' : '') + (slotted >= 0 ? ' in' : '') + (id === ctx.focus ? ' sel' : '') + '" data-form="' + id + '" style="--c:' + hex(STANCES[id].blade) + '">' +
+    '<div class="fm-no">FORM ' + F.no + (slotted >= 0 ? '<span class="fm-in">SLOT ' + (slotted + 1) + '</span>' : '') + '</div>' +
+    '<b>' + esc(F.name) + '</b>' + (C.best ? '<div class="fm-best">' + esc(C.best) + '</div>' : '') + '</div>';
+}
+function detail(){
+  const id = ctx.focus;
+  if (!id || !ctx.known.includes(id)) return '<div class="fm-detail empty">Select a form to see what it is good and bad at.</div>';
+  const F = FORMS[id], C = FORM_CODEX[id] || {};
+  return '<div class="fm-detail" style="--c:' + hex(STANCES[id].blade) + '"><div class="fm-no">FORM ' + F.no + ' · ' + esc(F.tag) + '</div><b>' + esc(F.name) + '</b>' +
+    (C.best ? '<div class="fm-best">BEST AGAINST · ' + esc(C.best) + '</div>' : '') +
+    '<ul class="fm-pros">' + (C.pros || []).map(t => '<li>' + esc(t) + '</li>').join('') + '</ul>' +
+    '<ul class="fm-cons">' + (C.cons || []).map(t => '<li>' + esc(t) + '</li>').join('') + '</ul></div>';
+}
 function render(){
   const n = ctx.known.length;
+  if (ctx.prefight){
+    panel.innerHTML = '<div class="howto-panel fm-compact">' +
+      '<div class="howto-head"><div class="howto-title">BEFORE THE FIGHT</div>' +
+      '<div class="rm-sub">' + n + ' of ' + ORDER.length + ' forms learned</div><div class="howto-x" data-x="1">✕</div></div>' +
+      '<div class="fm-sec">YOUR THREE</div>' + slotRow() +
+      (ctx.note ? '<div class="fm-note">' + esc(ctx.note) + (ctx.edit ? ' Pick a slot, then a form for it.' : '') + '</div>' : '') +
+      '<div class="fm-sec">THE FORMS</div><div class="fm-body"><div class="fm-tiles">' + ORDER.map(tile).join('') + '</div>' + detail() + '</div>' +
+      '<div class="fm-actions"><div class="btn" data-x="1">BACK</div><div class="btn primary go" data-go="1">FIGHT</div></div></div>';
+    return;
+  }
   panel.innerHTML = '<div class="howto-panel">' +
     '<div class="howto-head"><div class="howto-title">' + (ctx.prefight ? 'BEFORE THE FIGHT' : 'LIGHTSABER FORMS') + '</div>' +
     '<div class="rm-sub">' + n + ' of ' + ORDER.length + ' forms learned</div><div class="howto-x" data-x="1">✕</div></div>' +
@@ -93,6 +120,7 @@ function render(){
 /* ---------- picking (the same rules as the meditation: one Form V, one Form VII) ---------- */
 function pick(id){
   const d = ctx.loadout, at = d.indexOf(id);
+  ctx.focus = id;
   if (at >= 0) d[at] = d[ctx.slot];   // a form already slotted swaps places with what was there
   d[ctx.slot] = id;
   ctx.loadout = cleanLoadout(d.map((x, i) => i === ctx.slot ? x : (x && FORMS[x].variant && FORMS[x].variant === FORMS[id].variant && x !== id ? null : x)));
@@ -106,6 +134,7 @@ export const formsOpen = () => panel.classList.contains('open');
 export function openPrefight(go){
   ctx = { prefight: true, slot: 0, onGo: go, ...prefightContext() };
   if (ctx.edit){ const e = ctx.loadout.indexOf(null); ctx.slot = e >= 0 ? e : 0; }
+  ctx.focus = ctx.loadout.find(Boolean) || null;
   render(); panel.classList.add('open');
 }
 export function openCodex(){
@@ -128,9 +157,12 @@ panel.addEventListener('click', (e) => {
   const t = e.target;
   if (t === panel || t.closest('[data-x]')){ close(); return; }
   if (t.closest('[data-go]')){ fight(); return; }
-  if (!ctx.edit) return;
   const s = t.closest('[data-slot]'), f = t.closest('[data-form]');
-  if (s){ ctx.slot = +s.dataset.slot; render(); return; }
+  if (!ctx.edit){   // show-only: a tile just shows its detail
+    if (ctx.prefight && f){ ctx.focus = f.dataset.form; render(); }
+    return;
+  }
+  if (s){ ctx.slot = +s.dataset.slot; ctx.focus = ctx.loadout[ctx.slot] || ctx.focus; render(); return; }
   if (f) pick(f.dataset.form);
 });
 document.addEventListener('keydown', (e) => {

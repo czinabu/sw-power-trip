@@ -512,4 +512,20 @@ body.pad .kbonly{display:none}
 .fm-pros li::before{content:'+';position:absolute;left:2px;color:#6fe39a;font-weight:700}
 .fm-cons li::before{content:'\2212';position:absolute;left:2px;color:#ff8a7a;font-weight:700}
 .fm-actions{display:flex;justify-content:flex-end;gap:10px;margin:16px -26px 0;position:sticky;bottom:-24px;padding:12px 26px 4px;background:linear-gradient(180deg,rgba(6,14,26,0),rgba(6,14,26,.98) 30%)}
+#forms .howto-panel.fm-compact{width:min(1000px,100%);max-height:calc(100vh - 48px);overflow:hidden;display:flex;flex-direction:column}
+.fm-compact .fm-body{display:grid;grid-template-columns:1fr minmax(260px,330px);gap:12px;min-height:0;flex:1 1 auto}
+.fm-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;align-content:start}
+.fm-tile{padding:8px 11px;border:1px solid var(--edge-mid);border-left:3px solid var(--c,var(--edge-mid));border-radius:var(--r);background:var(--panel);min-width:0}
+.fm-tile.pick,.fm-tile[data-form]{cursor:pointer}
+.fm-tile[data-form]:hover{background:var(--panel-hi);border-color:var(--c)}
+.fm-tile.in{background:var(--panel-hi)}
+.fm-tile.sel{border-color:var(--c);box-shadow:0 0 0 1px var(--c)}
+.fm-tile.locked{opacity:.4}
+.fm-tile b{display:block;margin-top:4px;font:700 17px/1 var(--font-display);letter-spacing:2px;color:var(--ink)}
+.fm-tile .fm-best{margin-top:5px;font-size:11px;letter-spacing:.6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fm-detail{padding:11px 14px;border:1px solid var(--edge-mid);border-left:3px solid var(--c,var(--edge-mid));border-radius:var(--r);background:var(--panel);overflow-y:auto;min-height:0}
+.fm-detail.empty{color:var(--ink-faint);font-size:13px}
+.fm-detail b{display:block;margin-top:5px;font:700 22px/1 var(--font-display);letter-spacing:2px;color:var(--ink)}
+.fm-compact .fm-actions{position:static;margin:12px 0 0;padding:0}
+@media (max-width:760px){ .fm-compact .fm-body{grid-template-columns:1fr;overflow-y:auto} .fm-tiles{grid-template-columns:repeat(2,1fr)} }
 @media (max-width:620px){ .fm-slots{grid-template-columns:1fr} }
