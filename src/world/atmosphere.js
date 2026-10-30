@@ -110,6 +110,9 @@ export function applyAtmosphere(T, L, sky){
 }
 
 /* an unthemed arena: stop driving the lights */
+/* how far the fight has climbed, 0 → 1, eased (the battle beyond the walls follows it: world/warfront.js) */
+export const fightMood = () => A.p || 0;
+
 export function clearAtmosphere(){ applyGlow(0); setGrade(); aoFade.near = 18; aoFade.far = 46; A.T = null; A.sky = null; A.strike = null; A.long = false; sun.target.position.set(0, 0, 0); }
 
 /* how far into this level's fight we are, 0 (first wave) → 1 (final wave / boss) */

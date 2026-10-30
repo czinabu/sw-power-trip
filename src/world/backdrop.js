@@ -68,6 +68,7 @@ function hill(grp, x, y, z, a, h, b, ang){
   if (Math.abs(x) - r >= LIM[0] || Math.abs(z) - r >= LIM[1]) return;
   (grp.userData.solids ||= []).push(mound(x, z, a, b, ang, y, y + h));
 }
+const rand2 = (R, a, b) => a + R() * (b - a);
 // keep a clear arc (e.g. where the sun sits, or a landmark) — returns a spread of angles outside the skipped arcs
 function angles(n, R, skip = []){
   const out = [];
@@ -306,6 +307,44 @@ const BUILD = {
       }
     }
   },
+  /* the DISTRICT round the arena: tall buildings packed along every side of the play space, just past the edge, so
+     the fight happens at the bottom of a city instead of on a stage. Everyone is ~1.5× life size, so a five-storey
+     block is 20 m here. `gap` keeps them clear of the camera's reach behind a hero at the edge (they have no
+     collision); streets open on the cardinals (`streets`, metres wide) and here and there between blocks. */
+  district(grp, o, half, R){
+    const halfZ = LIM[1], gap = o.gap ?? 10, street = o.streets ?? 10;
+    for (const [nx, nz] of [[0, 1], [0, -1], [1, 0], [-1, 0]]){
+      const along = nz ? half : halfZ, edge = nz ? halfZ : half;
+      let u = -along - gap - 8;
+      while (u < along + gap + 8){
+        const w = rand2(R, ...(o.w || [7, 14])), d = rand2(R, ...(o.d || [7, 12]));
+        if (Math.abs(u + w/2) < street/2 + w/2 || R() < (o.alleys ?? 0.12)){ u += w * 0.6; continue; }   // a street / an alley
+        const c = u + w/2, off = edge + gap + d/2;
+        const x = nz ? c : nx * off, z = nz ? nz * off : c, sx = nz ? w : d, sz = nz ? d : w;
+        const h = rand2(R, ...(o.h || [12, 26])), col = R() < 0.5 ? o.color : (o.color2 ?? o.color);
+        put(grp, new THREE.BoxGeometry(sx, h, sz), mat(col), x, h/2, z);
+        put(grp, new THREE.BoxGeometry(sx + 0.6, 0.8, sz + 0.6), mat(o.trim ?? o.color2 ?? o.color), x, h + 0.4, z);   // parapet
+        if (o.setback && R() < o.setback){   // a narrower storey stepped back on top
+          const h2 = h * rand2(R, 0.25, 0.5);
+          put(grp, new THREE.BoxGeometry(sx * 0.6, h2, sz * 0.6), mat(o.color2 ?? o.color), x, h + h2/2, z);
+        }
+        if (o.domes && R() < o.domes) put(grp, new THREE.SphereGeometry(Math.min(sx, sz) * 0.34, 12, 6, 0, PI*2, 0, PI/2), mat(o.roof ?? o.color2 ?? o.color), x, h + 0.8, z);
+        if (o.spires && R() < o.spires){ const sh = h * rand2(R, 0.4, 0.9); put(grp, new THREE.ConeGeometry(Math.min(sx, sz) * 0.2, sh, 4), mat(o.roof ?? o.color2 ?? o.color), x, h + sh/2 + 0.8, z, 0, PI/4, 0); }
+        if (o.windows){   // rows of lit (or dark) windows on the face toward the arena
+          const fx = -nx, fz = -nz, face = nz ? sx : sz;
+          for (let y = 3.5; y < h - 2; y += 4) for (let t = -face/2 + 1.5; t < face/2 - 1; t += 2.6) if (R() < (o.lit ?? 0.35)){
+            const wm = put(grp, new THREE.PlaneGeometry(1.1, 1.6), mat(o.windows, { e: o.windows, ei: 1.1 }), x + (nz ? t : fx * (sx/2 + 0.05)), y, z + (nz ? fz * (sz/2 + 0.05) : t), 0, nz ? (fz > 0 ? 0 : PI) : fx * PI/2, 0);
+            wm.userData.noOutline = true;
+          }
+        }
+        if (o.slits && R() < 0.6){   // a glowing slit down the face (Exegol)
+          const fx = -nx, fz = -nz;
+          put(grp, new THREE.BoxGeometry(nz ? 0.5 : 0.2, h * 0.6, nz ? 0.2 : 0.5), mat(o.slits, { e: o.slits, ei: 1.4 }), x + fx * (sx/2 + 0.05), h * 0.45, z + fz * (sz/2 + 0.05));
+        }
+        u += w + rand2(R, 0, 1.5);
+      }
+    }
+  },
   /* low DUNES / snow drifts just outside the edge so the floor doesn't end in a hard line */
   dunes(grp, o, half, R){
     for (const a of angles(o.count, R, o.skip)){
@@ -356,7 +395,7 @@ function stretch(objs, k, half, halfZ, whole, size){
 
 /* build a theme's backdrop into its own group (baked by the caller with a thick outline). halfZ: a long arena's
    half-depth (the play space is half × halfZ). The hills that reach the play space come back in grp.userData.solids. */
-const PIECES = new Set(['mesas', 'spires', 'cliffs', 'towers', 'stacks', 'crystals', 'ramparts', 'wreck', 'lavaflows', 'dunes']);   // these keep each piece out themselves
+const PIECES = new Set(['district', 'mesas', 'spires', 'cliffs', 'towers', 'stacks', 'crystals', 'ramparts', 'wreck', 'lavaflows', 'dunes']);   // these keep each piece out themselves
 export function buildBackdrop(list, half, seed = 1, halfZ = half){
   const grp = new THREE.Group();
   grp.userData.solids = [];

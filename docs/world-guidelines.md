@@ -76,6 +76,29 @@ Everyone in the game is about 1.5× life size (heroes ~2.7 m, a trooper 2.6 m), 
 - **Camera.** The lens rides low and level over the right shoulder (`camera.ja`, `mandoLensUp`, a 64° FOV), so the
   skyline rises out of frame instead of being looked down on.
 
+## The war beyond the walls
+
+`world/warfront.js` runs a battle past the arena edge, from a world's `warfront` entry (data/worlds.js), true to its
+place in the films: TIE patrols over occupied Jedha, shuttles over the Mustafar works, X-wings against the Sith fleet
+on Exegol, AT-ATs marching on Hoth with snowspeeders circling them, a quiet aftermath on Jakku. Worlds without one (the
+training grounds, the indoor sandbox rooms) stay quiet.
+
+- `flyers`: `{ kind: tie | xwing | speeder | dropship | freighter, count, wing, alt, speed, every, fire }`, each a
+  formation that crosses the sky and comes back on a new heading. `walkers`, `walkerAz`, `speedersPer`.
+- `blasts` (per second), `blastSize`, `flash`; `tracers: { rate, colors }`; `columns` (burning plumes), `smoke`, `wind`.
+- Ground action fills a ring `reach` [1.5, 4.5] half-widths out. Everything picks up as the fight climbs (the same
+  progress the mood beats use), and a blast thuds in after its flash (`distantBoom`).
+- Cost: one merged mesh plus one engine glow per ship, five meshes per walker, three instanced pools (tracers,
+  flashes, smoke).
+
+## The district
+
+A `district` backdrop entry packs tall blocks along every side of the play space, `gap` metres past the edge (kept
+beyond the camera's reach behind a hero at the edge, since backdrops have no collision), with streets on the
+cardinals and the odd alley: Jedha's sandstone city, the Mustafar plant halls, Exegol's monoliths, the town round the
+Khel Dar route. Layouts inside the arenas, and their collision, don't change. The battle maps stay open fields, as in
+the films.
+
 ## Battle maps
 
 Three large open fields for big battles with allied squads (`data/battlemaps.js`, looks in `BATTLE_WORLDS`). Any arena

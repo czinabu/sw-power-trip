@@ -87,6 +87,15 @@ export function thunder(){
   play({ bus: 'amb', src: 'noise', color: 'brown', at: lag, g: 0.3 - far * 0.12, a: 0.05, hold: 0.3, d: 2.6, filt: { type: 'lowpass', f: 600, f2: 70 }, drive: 0.3, pan, verb: 0.6, pri: 2 });
 }
 
+/* a blast in the battle beyond the walls (world/warfront.js): a low thud that arrives after the flash, by distance,
+   quieter and duller the further off it was */
+export function distantBoom(dist){
+  if (!AE.ready) return;
+  const far = Math.min(1, dist / 600), pan = rand(-0.6, 0.6);
+  play({ bus: 'amb', src: 'noise', color: 'brown', at: Math.min(2.5, dist / 343), g: 0.16 * (1 - far * 0.7), a: 0.02, hold: 0.08, d: 1.4,
+         filt: { type: 'lowpass', f: 420 - far * 250, f2: 60 }, drive: 0.4, pan, verb: 0.5, pri: 1 });
+}
+
 /* ---------- the per-frame update ---------- */
 export function updateAudio(dt){
   if (!AE.ready || !shared.AC || shared.AC.state !== 'running') return;
