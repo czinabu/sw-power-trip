@@ -43,7 +43,7 @@ for (const [hero, mode, map] of RUNS){
     const tap = async sel => { if (await page.isVisible(sel)) await page.click(sel, { timeout: 1500 }).catch(() => {}); };
     let started = false;
     for (let i = 0; i < 6 && !started; i++){
-      await tap('#goText'); await tap('#trainNo');
+      await tap('#goText'); await tap('#trainNo'); await tap('#forms [data-go]');
       started = await page.waitForFunction(() => GAME.G.mode === 'play' && !GAME.G.paused, null, { timeout: 4000 }).then(() => true, () => false);
     }
     if (!started) throw new Error('never left the menu\n' + log.slice(-10).join('\n'));
