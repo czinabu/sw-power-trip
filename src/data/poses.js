@@ -41,8 +41,8 @@ export const SABER_GUARDS = {
     // over and behind the head with the blade laid level and pointing on at the foe, the off arm thrown out long toward
     // them with the fingers open. The Force hand leads and the blade waits above it.
     niman: {
-      ready: { hand: [0.3, 0.72, -0.16], blade: [-0.38, 0.1, 0.92], twist: -0.45, torso: -0.14, lean: 0.04, pole: [0.9, 0.35, -0.25], palm: 1,
-               off: { hand: [-0.7, 0.36, 0.52], pole: [-0.5, -0.85, 0.15] },
+      ready: { hand: [0.26, 0.7, -0.1], blade: [-0.56, 0.08, 0.83], twist: 0.45, torso: 0.14, lean: 0.04, pole: [0.9, 0.35, -0.25], palm: 1,
+               off: { hand: [-0.57, 0.36, 0.55], pole: [-0.5, -0.85, 0.15] },
                offMove: { hand: [-0.3, -0.1, 0.34], pole: OFF_POLE } },   // walking, the reaching hand drops to a loose carry
       // blade upright before the face, the off palm braced behind it — a Force-backed wall
       block: { hand: [0.1, 0.02, 0.42], blade: [-0.12, 1, 0.12], twist: 0, lean: 0.06, pole: POLE,
