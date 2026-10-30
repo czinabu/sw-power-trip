@@ -6,6 +6,13 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'Upgrades without the menus', status: 'done',
+    items: ['No upgrade screen between waves: a clear earns a skill point and a small note in the corner, and the fight goes on',
+            'Powers master themselves as you use them: Push that you lean on grows into rank I and II, no XP spent',
+            'Skilled defence (parries, perfect dodges, clashes, catches, ripostes) adds up to bonus skill points',
+            'One page at a chapter\'s close (every 3 waves in Survival): training, new powers and mastery on one list, no tabs, named for the chapter'] },
+  { title: 'Home screen refresh', status: 'done',
+    items: ['Campaign tile shows the 13-chapter story and your saved place, like ACT II · CH 6', 'CO-OP is a mode tile; New Game and Load Game sit under Campaign, with Continue as the main button', 'Missions and Training blurbs say what they now are'] },
   { title: 'Controller support', status: 'done',
     items: ['Play with a gamepad: both heroes, every power, strafe and slide, in every mode, co-op included', 'Menus, pause and the upgrade screen by pad', 'Stick sensitivity and invert Y in Settings; a CONTROLLER page in How to Play', 'PlayStation pads show their own button shapes'] },
   { title: 'Combat and movement', status: 'done',
@@ -66,7 +73,7 @@ export const ROADMAP = [
   { title: 'Controller support', status: 'now',
     items: ['Play with a gamepad: movement, aim, abilities and menus'] },
   { title: 'More content', status: 'next',
-    items: ['More missions on the battle maps', 'New enemy types', 'Upgrade picks that don\'t pause the fight'] },
+    items: ['More missions on the battle maps', 'New enemy types'] },
   { title: 'Combat readout', status: 'done',
     items: ['Per-wave damage by foe, low-stamina time, parries and blocks', 'Shown in the run summary and a live sandbox box'] },
   { title: 'Attack tells', status: 'done',
@@ -134,7 +141,8 @@ export const ROADMAP = [
             'Push or Pull straight after a blow flows out of it: a cheap Palm Push, or a Pull that drags them onto the next strike',
             'Every mode, co-op included: the partner sees the strikes and the glowing hands'] },
   { title: 'Combat tutorial rework', status: 'next',
-    items: ['Teach the new combat in training: forms, holstered Force strikes, charged palm, spin kick and stomp, strike-into-power'] },
+    items: ['Teach the new combat in training: forms, holstered Force strikes, charged palm, spin kick and stomp, strike-into-power',
+            'Teach how upgrades come: powers grow with use, skill points from clears and good defence, spent at the chapter\'s end'] },
   { title: 'Balance, round two', status: 'next',
     items: ['Survival scaling and mission pulses, from real playtest notes'] },
   { title: 'Co-op, fully', status: 'later',

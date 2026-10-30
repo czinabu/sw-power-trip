@@ -21,6 +21,7 @@ import { mandoAimPoint, mandoAimRay, aCost } from './weapons.js';
 import { abil } from '../../data/mastery.js';
 import { sweepHit, distToBody, chestPos } from '../../enemies/bodyshape.js';
 import { tutEvent } from '../../game/tutor-bus.js';
+import { trainAbility } from '../../game/upgrades.js';
 
 // BACTA STIM (G) — the Mando's mirror of Force Mend: a quick injector channel that restores the same big chunk of
 // vitality (reuses the mendT channel + mendComplete). Steep Force + long cooldown; locked against HUNTER'S CREED.
@@ -28,7 +29,7 @@ export function bactaStim(){
   const A = abil('bacta');
   if (!G.unlocked.bacta || player.cds.bacta > 0 || player.mendT > 0 || player.force < aCost(A.cost) || G.mode !== 'play') return;
   if (player.hp >= maxHp()){ floater(playerPos(), 'UNHURT', '#7bffae'); return; }
-  player.force -= aCost(A.cost); player.cds.bacta = A.cd;
+  player.force -= aCost(A.cost); player.cds.bacta = A.cd; trainAbility('bacta');
   player.mendT = player.mendMax = A.channel;   // a FAST stim — quicker than the Jedi channel
   const pp = playerPos();
   spawnGroundShock(pp.clone().setY(0.1), 0x6fffc0, 2.0, 0.5, 0.5);
@@ -39,7 +40,7 @@ export function bactaStim(){
 export function mandoRocket(){
   const A = abil('rocket');
   if (!G.unlocked.rocket || player.cds.rocket > 0 || player.force < aCost(A.cost)) return;
-  player.force -= aCost(A.cost); player.cds.rocket = A.cd; player.aiming = 0.6;
+  player.force -= aCost(A.cost); player.cds.rocket = A.cd; player.aiming = 0.6; trainAbility('rocket');
   const pp = playerPos();
   const f = fwd();
   const origin = V3(pp.x + f.x*0.6, pp.y + 1.4, pp.z + f.z*0.6);
@@ -87,7 +88,7 @@ function rocketExplode(pos, big){
 export function mandoJetMissile(){
   const A = abil('jetmissile');
   if (!G.unlocked.jetmissile || player.cds.missile > 0 || player.force < aCost(A.cost)) return;
-  player.force -= aCost(A.cost); player.cds.missile = A.cd; player.aiming = 0.8;
+  player.force -= aCost(A.cost); player.cds.missile = A.cd; player.aiming = 0.8; trainAbility('jetmissile');
   player.missileT = MANDO.missileLean.time;   // he leans in over the launch (player/animation.js)
   const pp = playerPos(), f = fwd();
   const origin = V3();
@@ -135,7 +136,7 @@ export function updateRockets(dt){
 export function whistlingBirds(){
   const A = abil('birds');
   if (!G.unlocked.birds || player.cds.birds > 0 || player.force < aCost(A.cost)) return;
-  player.force -= aCost(A.cost); player.cds.birds = A.cd; player.aiming = 0.6;
+  player.force -= aCost(A.cost); player.cds.birds = A.cd; player.aiming = 0.6; trainAbility('birds');
   const pp = playerPos();
   // DISTRIBUTE the swarm — assign each bird a DIFFERENT nearby foe (round-robin), so they only pile onto one
   // target if there's only one in range
@@ -211,7 +212,7 @@ function detoTarget(A, from){
 export function thermalDetonator(){
   const A = abil('deto');
   if (!G.unlocked.deto || player.cds.deto > 0 || player.force < aCost(A.cost)) return;
-  player.force -= aCost(A.cost); player.cds.deto = A.cd; player.aiming = 0.6;
+  player.force -= aCost(A.cost); player.cds.deto = A.cd; player.aiming = 0.6; trainAbility('deto');
   const pp = playerPos();
   const from = V3(pp.x, pp.y + 1.5, pp.z), to = detoTarget(A, from);
   // lobbed to land on it: a short flight up close, a longer arc far out (all inside the fuse)
@@ -287,7 +288,7 @@ export function grappleHook(){
     }
   }
   if (!tgtPt){ if (G.gt - player.lastWinded > 0.4){ player.lastWinded = G.gt; floater(pp, 'NO ANCHOR', '#ff9a66'); } return; }
-  player.force -= aCost(A.cost); player.cds.grapple = A.cd; player.aiming = 0.6;
+  player.force -= aCost(A.cost); player.cds.grapple = A.cd; player.aiming = 0.6; trainAbility('grapple');
   yank = tgt && !tgt.t.heavy && tgt !== shared.boss;   // light foes get yanked TO you; heavy/boss/cover reel YOU in
   player.grappleActive = { tgt, tgtPt: tgtPt.clone(), yank, t: 0 };
   S.dash(); sfx(900, 0.06, 'square', 0.05, 320); sfx(160, 0.12, 'sawtooth', 0.06, 70);
@@ -325,7 +326,7 @@ export function updateGrapple(dt){
 export function jetSlam(){
   if (G.mode !== 'play' || !G.unlocked.slam || player.grounded || player.slamming || player.jet < abil('mslam').cost) return;
   const A = abil('mslam');
-  player.jet -= A.cost;
+  player.jet -= A.cost; trainAbility('mslam');
   player.aiming = 0.5;
   player.slamming = true; player.flip = null; player.slamWind = A.wind; player.slamTop = playerPos().y;
   player.vel.multiplyScalar(0.3); player.moveVel.multiplyScalar(0.3);

@@ -30,6 +30,7 @@ import { DEFAULT_LOADOUT, RUN_LOADOUT, STARTING_FORMS } from '../data/forms.js';
 import { queueMeditation, formsTaught, autoLoadout, tickMeditation, clearMeditation } from './meditation.js';
 import { chapterOrder } from '../data/campaign.js';
 import { openSkillTree } from '../ui/store-ui.js';
+import { earnWavePoint, noteWavePoint, resetUpgrades } from './upgrades.js';
 import { showBanner } from '../ui/banners.js';
 import { diffBossCheckpoint } from '../data/difficulty.js';
 import { catchDarksaber } from '../player/mando/darksaber.js';
@@ -165,7 +166,7 @@ export function startLevel(idx, opts){
     // keep the old three (a mission then slots what its kit teaches)
     G.loadout = [...(G.training || G.mission || G.sandbox ? DEFAULT_LOADOUT : RUN_LOADOUT)];
     G.waveTotal = -1; G.mandoChoiceShown = false;
-    G.xp = 0; G.xpEarned = 0; G.skillPoints = 0; G.powerLv = {}; G.mastery = {}; G.seenTypes = {};
+    G.xp = 0; G.xpEarned = 0; G.skillPoints = 0; G.powerLv = {}; G.mastery = {}; G.seenTypes = {}; resetUpgrades();
     G.boonOffer = null; G.boonPicked = false;
     player.up = { dmg: 1, forceRegen: 1, move: 1, knock: 1, parry: 0, lifesteal: 0, hpMax: 0, dashCdMult: 1, stamRegen: 1, maxStam: 0,
                   atkSpeed: 1, dr: 0, blockStam: 1, riposte: 1, parryForce: 0,
@@ -355,14 +356,15 @@ export function coopCampaignWave(wave, waveTotal){
   MUSIC.waveSting();
   checkUnlocks(1600);
 }
-// the host's wave is down (campaign): this browser's own clear bonus and upgrade screen
+// the host's wave is down (campaign): this browser's own clear bonus and skill point, and its upgrade page at the chapter's close
 export function coopCampaignCleared(){
   const L = LEVELS[G.levelIdx];
   G.wave++;
   campaignWaveRewards();
+  earnWavePoint();
   shared.levelPhase = 'between';
-  if (chapterEnds() && !bossDue(L)) showBanner(G.chapter >= 0 ? 'CHAPTER COMPLETE' : 'AREA CLEARED', 'The Force flows onward.', 1.6);
-  openSkillTree();
+  if (chapterEnds() && !bossDue(L)){ showBanner(G.chapter >= 0 ? 'CHAPTER COMPLETE' : 'AREA CLEARED', 'The Force flows onward.', 1.6); openSkillTree(); }
+  else noteWavePoint();
 }
 
 export function updateFlow(dt){
@@ -416,18 +418,20 @@ export function updateFlow(dt){
       if (G.endless){ endlessWaveCleared(); return; }   // survival has its own clear/escalation path
       G.wave++;
       campaignWaveRewards();
+      earnWavePoint();   // a skill point for the clear (game/upgrades.js); it is spent when the chapter ends
       if (!chapterEnds()){
         shared.levelPhase = 'between'; shared.phaseT = 2.2;
         player.force = CFG.player.maxForce;
-        openSkillTree();   // choose an upgrade before the next wave
+        noteWavePoint();   // no screen mid-chapter: a note in the corner, and the fight goes on
       } else if (bossDue(L)){
+        noteWavePoint();
         shared.levelPhase = 'bossfight';
         if (G.checkpoint){ G.checkpoint.boss = diffBossCheckpoint(); G.checkpoint.bossWaveTotal = G.waveTotal; }
         showBanner('', '...something approaches.', 2.4);
         storyBeat('boss');
         spawnBossWhenReady(() => G.mode === 'play' && !shared.boss, 2400);
       } else {
-        // LEVEL CLEARED — the upgrade screen still opens (this wave's skill point + a chance to shop), then the
+        // LEVEL CLEARED — the chapter's upgrade page opens (its skill points + a chance to shop), then the
         // 'travel' beat runs out on sim time (frozen while the overlay is up) and the next world loads.
         showBanner(G.chapter >= 0 ? 'CHAPTER COMPLETE' : 'AREA CLEARED', 'The Force flows onward.', 1.6);
         if (G.chapter >= 0){ shared.levelPhase = 'chapterdone'; shared.phaseT = 2.2; storyBeat('clear'); }   // (a chapter: the voice's last word first)

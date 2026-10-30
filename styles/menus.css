@@ -63,6 +63,11 @@
 #modeselect{display:grid;grid-template-columns:repeat(6,1fr)}
 #modeselect .modeopt{grid-column:span 2}
 #modeselect .modeopt.major{grid-column:span 3}
+#modeselect .modeopt.wide{grid-column:span 6}
+/* NEW GAME / LOAD GAME sit under the modes while CAMPAIGN is picked (the title screen's action row carries only CONTINUE/BEGIN) */
+#campsaves{display:none;gap:6px;margin-top:6px}
+#setup.camp #campsaves{display:flex}
+#campsaves .btn{flex:1 1 0;white-space:nowrap;padding:8px 6px;font-size:12px;letter-spacing:1.5px;background:rgba(8,18,33,.45)}
 #modeselect .modeopt:not(.major) .mt{font-size:15px}
 /* the mission list: shown under the modes only while MISSIONS is picked */
 #missionpick{display:none;margin-top:12px}
@@ -109,6 +114,7 @@
 #overlay.st-menu #homeBtn{display:none}
 /* NEW GAME on the title screen only, SAVE GAME on the pause screen only, LOAD GAME on both (and the end screens) */
 #overlay:not(.st-menu) #newBtn{display:none}
+#overlay.st-menu #newBtn,#overlay.st-menu #loadBtn,#overlay.st-menu #coopBtn{display:none}   /* the menu's own: #campNewBtn, #campLoadBtn, the CO-OP tile */
 #overlay:not(.st-pause) #saveBtn{display:none}
 /* leave-run confirm: swaps in for the action row so a stray click can't throw a run away */
 #homeconfirm{display:none;flex-direction:column;align-items:center;gap:12px;margin-top:28px;padding:16px 22px;cursor:default;

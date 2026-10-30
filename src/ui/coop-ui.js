@@ -17,7 +17,7 @@ const pingEl = document.getElementById('netping');
 const runBtn = document.getElementById('coopjoinrun');
 
 const setOpen = (open) => { panel.classList.toggle('open', open); if (open) render(); };
-document.getElementById('coopBtn').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setOpen(true); });
+for (const id of ['coopBtn', 'mode-coop']) document.getElementById(id).addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setOpen(true); });
 document.getElementById('coopclose').addEventListener('click', (e) => { e.stopPropagation(); setOpen(false); });
 panel.addEventListener('click', (e) => { e.stopPropagation(); if (e.target === panel) setOpen(false); });   // never launches or resumes the game
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && panel.classList.contains('open')) setOpen(false); });

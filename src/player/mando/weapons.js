@@ -26,6 +26,7 @@ import { tutEvent } from '../../game/tutor-bus.js';
 import { momentumShot } from '../parkour.js';
 import { mandoMelee } from './melee.js';
 import { syncHolster } from '../holster.js';
+import { trainHeld } from '../../game/upgrades.js';
 
 /* ============================================================
    MANDALORIAN — jetpack, dual blasters, flamethrower, wrist rockets
@@ -303,6 +304,7 @@ export function updateFlame(dt){
   fl.intensity += ((active ? 5.5 + Math.random()*1.5 : 0) - fl.intensity) * Math.min(1, dt*14);   // faded, never toggled: a light count change recompiles every shader (the first-flame hitch)
   if (!active) return;
   player.force = Math.max(0, player.force - A.fuel * (player.up.abilityCostMul || 1) * dt);
+  trainHeld('flame', dt);   // each second of fire teaches the flamethrower (game/upgrades.js)
   const pp = playerPos();
   player.aiming = Math.max(player.aiming, 0.2);   // square the body up so the stream points where you look (no auto-target)
   const range = A.range * (player.up.flameRange || 1);

@@ -33,10 +33,10 @@ const connected = (page) => page.waitForFunction(() => /Connected/.test(document
 let ok = false;
 try {
   const host = await open('host'), guest = await open('guest');
-  await host.click('#coopBtn'); await host.click('#coophost');
+  await host.click('#mode-coop'); await host.click('#coophost');
   await host.waitForFunction(() => document.querySelector('#coopstatus .code'), null, { timeout: 20000, polling: 250 });
   const code = await host.evaluate(() => document.querySelector('#coopstatus .code').textContent);
-  await guest.click('#coopBtn'); await guest.fill('#coopcode', code);
+  await guest.click('#mode-coop'); await guest.fill('#coopcode', code);
   await guest.click('#coopjoin');
   await Promise.all([connected(host), connected(guest)]);
   for (const [page, hero] of [[host, 'jedi'], [guest, 'mando']]){

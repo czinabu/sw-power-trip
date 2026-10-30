@@ -103,7 +103,7 @@ const TIPS = {
     'Getting hit knocks your swing loose. Cut into a foe\'s strike mid-swing and the blades clash: nobody is hurt and you both reel. Bosses clash too.',
     '<b>Duellists</b> (Magnaguards, Sith acolytes) hold a guard: the pale arc beside them shows the line it covers (left, right, high, or low across the knees). They read your cut as you wind up and swing their weapon onto its line to meet it. A cut that meets a guard that holds stops dead on the blade and bounces back. Cut in past the edge of the arc (aim the angle with a flick, high or low too), kick to break it, and don\'t throw the same angle twice: they read it.',
     'Swings only hit what\'s in front of you and plant your feet, so step into range before you cut. Parry, don\'t just block: a block lets some of the blow through. Hold your guard against a duellist and your blade moves to meet its strike on the line it\'s coming in on (it follows a feint too); parry it and your riposte cuts back on the side it left open. A skilled duellist may turn that riposte and come straight back at you: keep parrying and the exchange speeds up until someone slips or the blades lock. A lock binds high, low or (out of a long exchange) body to body, and each ends its own way.',
-    'After each wave, spend <b>XP</b> on new abilities and on mastering the ones you have, and <b>skill points</b> on training.',
+    'Your powers <b>master themselves</b> as you use them. Each wave cleared (and good defence) earns a <b>skill point</b>: when a chapter ends, spend them on training and <b>XP</b> on new powers.',
   ],
   mando: [
     '<b>Pause</b> with TAB (or ESC); TAB or ENTER resumes. TAB keeps you in fullscreen, where ESC may drop you out.',
@@ -113,7 +113,7 @@ const TIPS = {
     'The reticle turns <b>gold</b> when a target is under it.',
     'Hold RMB with the single blaster to raise a shield that deflects bolts. Firing drops it; it comes back half a second after you stop. Press E behind it to cut with the vibroblade and bash with the shield, which keeps it up but spends stamina.',
     '<b>Sith acolytes</b> bat blaster fire back. Close in: punch through their guard, charge them with W + E, catch their cuts with E and finish them with a takedown.',
-    'After each wave, spend <b>XP</b> on new gadgets and on mastering the ones you have, and <b>skill points</b> on weapon upgrades.',
+    'Your gadgets <b>master themselves</b> as you use them. Each wave cleared (and good defence) earns a <b>skill point</b>: when a chapter ends, spend them on weapon upgrades and <b>XP</b> on new gear.',
   ],
 };
 
