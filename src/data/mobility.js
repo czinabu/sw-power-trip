@@ -46,6 +46,24 @@ export const MOBILITY = {
      less extra damage up there, and its guard flips stay safe longer. Djem So and Niman fight on the ground: a better
      roll and steadier footwork. Each entry multiplies the base values above (1 = unchanged). */
   forms: {
+    shiicho: {   // plain and grounded: a standard roll, a little slower to dash, footwork that keeps sweeping
+      charges: 2, recharge: 1.1, dashCost: 1.1,
+      airControl: 0.95, airDmg: 1.1, airParry: false, evadeIframes: 0.9,
+      roll: { speed: 1.0, iframes: 1.1, cd: 0.9, stam: 1.0 },
+      swingMove: 1.3,     // the broad sweeps carry the feet into the crowd
+    },
+    makashi: {   // the fencer: quick light steps instead of rolls, a fast cheap dash, nothing in the air
+      charges: 2, recharge: 0.85, dashCost: 0.7,
+      airControl: 0.9, airDmg: 1.2, airParry: false, evadeIframes: 0.8,
+      roll: { speed: 1.1, iframes: 0.9, cd: 0.75, stam: 0.75 },
+      swingMove: 1.25,    // the lunge: thrusts step in on the line
+    },
+    soresu: {    // economy of motion: a short guarded slide, safest roll, barely moves while cutting
+      charges: 2, recharge: 1.2, dashCost: 1.2,
+      airControl: 0.9, airDmg: 1.2, airParry: false, evadeIframes: 0.9,
+      roll: { speed: 0.9, iframes: 1.4, cd: 0.8, stam: 0.85 },
+      swingMove: 0.8,
+    },
     ataru: {
       charges: 3, recharge: 0.8, dashCost: 0.5,
       airControl: 1.6,    // undoes the combat air penalty (0.6 × 1.6 ≈ 1)

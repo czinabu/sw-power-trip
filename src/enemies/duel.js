@@ -365,8 +365,9 @@ export function planAttack(e, quick){
   if (!quick){
     plan.thrust = Math.random() < p.thrust * m;
     const r = p.ramp ? tacticsRamp() : 1;   // the rank and file pick up their tricks as the run deepens (tactics.js)
-    plan.feint = !plan.thrust && Math.random() < p.feint * m * r;
-    plan.hold = Math.random() < p.delay * m * r ? rand(DUEL.delayHold[0], DUEL.delayHold[1]) : 0;
+    const rd = G.hero !== 'mando' ? stance().readMul || 1 : 1;   // Makashi reads intent: fewer feints and held strikes get through
+    plan.feint = !plan.thrust && Math.random() < p.feint * m * r * rd;
+    plan.hold = Math.random() < p.delay * m * r * rd ? rand(DUEL.delayHold[0], DUEL.delayHold[1]) : 0;
     plan.chain = p.chain ? (Math.random() * (p.chain + 1)) | 0 : 0;
     if (e.winded) plan.chain = 0;
   }
@@ -508,7 +509,8 @@ function decide(e, line, kind, rhyN){
   let chance = p.block * (DUEL.offLine + (1 - DUEL.offLine) * cover);
   if (onLine && e.lineStreak >= DUEL.adaptAfter) chance = 0.95;   // it has your rhythm: same cut, same answer
   if (kind === 'finisher') chance *= 0.75;
-  return Math.random() < chance * m && has(DUEL.breath.block) ? 'block' : null;
+  if (G.hero !== 'mando') chance *= stance().duelBlockMul || 1;   // Shii-Cho's broad cuts are easy to read
+  return Math.random() < Math.min(0.95, chance * m) && has(DUEL.breath.block) ? 'block' : null;
 }
 // can it answer a blow from you at all right now (facing you, guard up, not caught open or winded, not a brace)?
 function canGuard(e){

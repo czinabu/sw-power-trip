@@ -106,7 +106,7 @@ function seed(R, held){
    landings and the run; `rate` scales how fast the pose gets there. */
 export function guardPose(dt, R, held, grip, form, blocking, sway, over = null, rate = 1){
   if (!saberPose.live) seed(R, held);
-  const G0 = (GUARDS[grip] && GUARDS[grip][form]) || GUARDS.regular.niman;
+  const G0 = (GUARDS[grip] && (GUARDS[grip][form] || GUARDS[grip].niman)) || GUARDS.regular.niman;
   const g = (!blocking && over) || (blocking ? G0.block : G0.ready);
   switchT = Math.max(0, switchT - dt);
   const k = Math.min(1, dt * (blocking ? 18 : switchT > 0 ? SWITCH_RATE : 9) * rate);
@@ -189,7 +189,7 @@ export function swingPose(R, held, grip, form, sw){
     const st0 = sw.anim.start.hand, c0 = scaled[0].hand;
     sw.anim.wrap = !sw.flowCut && st0.x * c0.x < 0 && Math.abs(st0.x - c0.x) > 0.3;
     // the follow-through settles a little toward the form's guard instead of freezing (the recovery)
-    const G0 = (GUARDS[grip] && GUARDS[grip][form]) || GUARDS.regular.niman;
+    const G0 = (GUARDS[grip] && (GUARDS[grip][form] || GUARDS[grip].niman)) || GUARDS.regular.niman;
     sw.anim.rest = G0.ready;
     // which way across the body the cut travels (chest +x is the weapon side): spins and twirls turn into it. A cut
     // that runs straight down the middle has none of its own and turns toward the weapon side.
@@ -308,7 +308,7 @@ function pickDeflect(grip, d){
 }
 export function deflectPose(dt, R, held, grip, form, d){
   if (!saberPose.live) seed(R, held);
-  const G0 = (GUARDS[grip] && GUARDS[grip][form]) || GUARDS.regular.niman;
+  const G0 = (GUARDS[grip] && (GUARDS[grip][form] || GUARDS[grip].niman)) || GUARDS.regular.niman;
   const bg = G0.block;
   if (!d.pose){
     const p = pickDeflect(grip, d);

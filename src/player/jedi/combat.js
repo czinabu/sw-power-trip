@@ -3,7 +3,7 @@
 
 import { CFG } from '../../data/config.js';
 import { stamDelay } from '../stamina.js';
-import { SWING_PATTERNS, backLineMul } from '../../data/stances.js';
+import { SWING_PATTERNS, backLineMul, swordMul } from '../../data/stances.js';
 import { SWING_SPINS, DEFLECT_SPINS } from '../../data/poses.js';
 import { sfx, S } from '../../audio/sfx.js';
 import { V3, rand, clamp, TMP } from '../../utils.js';
@@ -277,7 +277,7 @@ export function applySwingDamage(step, only){
         const dres = pre !== undefined ? pre : duelDefend(e, line, finisher ? 'finisher' : 'cut', G.stance === 'djemso' || isDark, at);
         if (dres === 'block' || dres === 'dodge'){ turned++; if (dres === 'block' && !blocker){ blocker = e; blockAt = at; } return false; }
       }
-      damageEnemy(e, dmg * (e.t.heavy ? st.heavyDmg : 1) * backLineMul(st, e), f.clone(), knock, finisher, false, sw0 && sw0.hitAt && sw0.hitAt.get(e));   // (where the blade met it: bladehit.js)
+      damageEnemy(e, dmg * (e.t.heavy ? st.heavyDmg : 1) * backLineMul(st, e) * swordMul(st, e), f.clone(), knock, finisher, false, sw0 && sw0.hitAt && sw0.hitAt.get(e));   // (where the blade met it: bladehit.js)
       foesHit++;
       // the blade leaves its mark: a burnt cut where it crossed, and a killing blow may take the sword arm (enemies/scars.js)
       scarBody(e.group, f, sw0 && sw0.dir, finisher || G.stance === 'djemso' || isDark, sw0 && sw0.hitAt && sw0.hitAt.get(e));
@@ -285,6 +285,10 @@ export function applySwingDamage(step, only){
       if (!riposte && !e.dead) interruptEnemy(e, f, finisher || st.form === 'djemso' || isDark);   // striking first beats a wind-up
       if (mom === 'slide' && !riposte && !e.dead) staggerEnemy(e, f.x, f.z);   // a SLIDE CUT sweeps the legs out
       if (riposte && !e.dead) staggerEnemy(e, f.x, f.z);   // a RIPOSTE floors what it answers — a true counter, wide open after
+      // DISARMING SLASH (Shii-Cho) — the finisher knocks a blaster trooper's gun out of its hands for a while (enemies/ai.js)
+      if (finisher && st.disarm && e.t.ranged && !e.dead && !e.converted && !(e.disarmUntil > G.gt)){
+        e.disarmUntil = G.gt + st.disarm; floater(e.group.position, 'DISARMED', '#9cc4ff');
+      }
       // BESKAR EDGE — a heavy darksaber hit can DISARM/stagger a staff-wielding duelist
       if (isDark && (finisher || e.t.staff) && e.t.staff && !e.dead && Math.random() < (finisher ? 0.5 : 0.18)){
         staggerEnemy(e, f.x, f.z); floater(e.group.position, 'DISARMED', '#c9a6ff');

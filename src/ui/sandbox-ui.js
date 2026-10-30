@@ -8,7 +8,8 @@ import { SANDBOX_FOES, SANDBOX_COUNTS, SANDBOX_KIT, SANDBOX_MAPS } from '../data
 import { addSquadmate, dismissSquadmate, squadSize } from '../allies/squad.js';
 import { SQUAD } from '../data/allies.js';
 import { readoutOn, setReadoutOn, restartReadout } from '../game/readout.js';
-import { SB, sandboxSpawn, sandboxClear, sandboxHeal, setSandboxDummy, setSandboxKit, sandboxKitAll, kitAvailable, setSandboxMap } from '../game/sandbox.js';
+import { SB, sandboxSpawn, sandboxClear, sandboxHeal, setSandboxDummy, setSandboxKit, sandboxKitAll, kitAvailable, setSandboxMap, cycleSandboxSlot } from '../game/sandbox.js';
+import { FORMS, LOADOUT_SLOTS } from '../data/forms.js';
 
 const panel = document.getElementById('sandbox');
 const $ = (id) => document.getElementById(id);
@@ -40,6 +41,12 @@ function render(){
     const nm = typeof f.nm === 'object' ? f.nm[G.hero] : f.nm;
     return `<div class="sb-chip${f.special ? ' special' : ''}" data-foe="${f.id}">${nm}<span class="k">${f.id === 'boss' ? 'BOSS' : f.special ? 'MID-BOSS' : ''}</span></div>`;
   }).join('');
+  const jedi = G.hero !== 'mando';
+  $('sbformslbl').style.display = $('sbforms').style.display = jedi ? '' : 'none';
+  if (jedi) $('sbforms').innerHTML = Array.from({ length: LOADOUT_SLOTS }, (_, i) => {
+    const id = G.loadout[i], f = id && FORMS[id];
+    return `<div class="sb-chip${f ? ' on' : ''}" data-slot="${i}">${f ? 'FORM ' + f.no + ' · ' + f.name : 'EMPTY'}<span class="k">${i + 1}</span></div>`;
+  }).join('');
   $('sbkit').innerHTML = (SANDBOX_KIT[G.hero] || []).map(r => {
     const can = kitAvailable(r);
     return `<div class="sb-chip${r.has() ? ' on' : ''}${can ? '' : ' off-needs'}" data-kit="${r.id}" title="${can ? '' : 'Needs ' + r.needs}">${r.nm}<span class="k">${r.key}</span></div>`;
@@ -49,6 +56,8 @@ function render(){
 panel.addEventListener('click', (e) => {
   e.stopPropagation();   // nothing in here may reach the overlay's launch/resume handler
   const t = e.target;
+  const slot = t.closest('[data-slot]');
+  if (slot){ cycleSandboxSlot(+slot.dataset.slot); render(); return; }
   const n = t.closest('[data-n]'), foe = t.closest('[data-foe]'), kit = t.closest('[data-kit]'), map = t.closest('[data-map]');
   if (map){ if (map.dataset.map !== SB.map){ setSandboxMap(map.dataset.map); render(); } return; }
   if (n){ SB.count = +n.dataset.n; render(); return; }

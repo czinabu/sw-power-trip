@@ -19,6 +19,43 @@ import { G } from '../state.js';
    slower again: a committed, crossguard-style power stroke), with damage per cut raised by the same ratio so damage per
    second is where it was. */
 export const STANCES = {
+  /* FORM I SHII-CHO — the first form every initiate learns (Kit Fisto, Luke at Jabba's barge). Wide, simple sweeps built
+     for many foes at once; the string ends in the SARLACC SWEEP (a full turn: everything round you), and that finisher
+     knocks a blaster out of a trooper's hands (DISARMING SLASH). Its clumsier bladework is what duellists read. */
+  shiicho: { name: 'SHII-CHO — CROWDS', form: 'shiicho', formNo: 'I', blade: 0x4a86ff,
+            dmg: 1.35, heavyDmg: 1.0, speed: 0.7, knock: 1.1, stamina: 9, lunge: 1.15, move: 1.0, accel: 1.0, twist: 0.6, bladeLen: 1.0,
+            radiusMult: 1.35, comboGap: 1.0, fovKick: 0, postureMul: 1.0,
+            finisherArc: 1.3,     // ROLE: the Sarlacc Sweep reaches ~30% further, all the way round (SWING_STYLE.shiicho finisher spin)
+            disarm: 6,            // DISARMING SLASH: a finisher on a blaster trooper knocks its gun loose for this many seconds
+            duelBlockMul: 1.25,   // LORE: a skilled duellist reads Form I's broad cuts and turns 25% more of them
+            deflectScatter: 0.08, // basic blast deflection, taught early: bolts go back loosely (rad)
+            gait: { amp: 1.0, lift: 1.0, bob: 0.5, lean: 1.0 },   // MOVEMENT: plain, square, athletic
+            syn: 'CROWDS · Sarlacc Sweep finisher hits all around · finisher disarms blaster troopers · duellists read it' },
+  /* FORM II MAKASHI — the duellist's form (Dooku): one hand, side-on, precise and economical, made to beat other blades.
+     Narrow, quick cuts and thrusts; it reads a duellist's feints and stands its ground. Its weakness is blaster fire. */
+  makashi: { name: 'MAKASHI — DUELS', form: 'makashi', formNo: 'II', blade: 0xffb02e,
+            dmg: 1.55, heavyDmg: 0.9, speed: 0.8, knock: 0.5, stamina: 8, lunge: 1.3, move: 1.05, accel: 1.15, twist: 0.45, bladeLen: 1.0,
+            radiusMult: 0.7, parryBonus: 0.06, comboGap: 1.1, fovKick: 2, postureMul: 1.1, forceRegen: 0.9,
+            swordDmg: 1.4,        // ROLE: +40% against anything with a blade (duellists, acolytes, the Warbringer's kin excepted, the boss)
+            readMul: 0.5,         // reads intent: a duellist's feints and held strikes come half as often
+            breakRes: 1.5,        // stands its ground: a blow must hit 1.5x as hard to break its empty guard
+            deflectScatter: 0.16, // LORE: Makashi has little answer to blaster fire — deflects fly wild (rad)…
+            deflectStamMul: 1.5,  // …and every bolt caught on the blade costs half again the stamina
+            gait: { amp: 0.92, lift: 1.1, bob: 0.3, lean: 0.9 },   // MOVEMENT: light, upright, a fencer's measured steps
+            syn: 'DUELS · +40% vs blade users · reads feints · hard to guard-break · narrow arc · WEAK vs blasters' },
+  /* FORM III SORESU — the wall (Obi-Wan): tight, economical blocks that send blaster fire home and wear an attacker out.
+     It wins by outlasting; it has the least offence of any form. */
+  soresu:  { name: 'SORESU — DEFENCE', form: 'soresu', formNo: 'III', blade: 0xcfe2ff,
+            dmg: 0.95, heavyDmg: 0.9, speed: 0.66, knock: 0.6, stamina: 7, lunge: 0.9, move: 0.92, accel: 0.95, twist: 0.5, bladeLen: 1.0,
+            radiusMult: 0.95, parryBonus: 0.14, comboGap: 1.0, fovKick: -1, postureMul: 0.9,
+            blockStamMul: 0.4,    // ROLE: the cheapest guard in the game…
+            chipMul: 0,           // …that lets no chip through a block…
+            guardDeflect: 0.15,   // …and a HELD guard sends bolts back home from a wide front (facing dot), even walking
+            blockTire: 12,        // each melee blow it blocks costs the attacker this much breath (data/duel.js breath)
+            guardRegen: 1.4,      // stamina refills 40% faster while the guard is up
+            deflectScatter: 0.04, // the form built for blaster fire: deflects go back nearly true (rad)
+            gait: { amp: 0.9, lift: 0.9, bob: 0.35, lean: 0.85 },   // MOVEMENT: low, short, controlled
+            syn: 'DEFENCE · held guard returns bolts · cheapest guard, no chip · tires attackers · widest parry · LOW damage' },
   ataru:  { name: 'ATARU — FAST', form: 'ataru', formNo: 'IV', blade: 0x35c8ff,
             dmg: 1.18, heavyDmg: 0.85, speed: 0.92, knock: 0.38, stamina: 6, lunge: 1.4, move: 1.15, accel: 1.3, twist: 0.4, bladeLen: 0.94,
             radiusMult: 1.45, forceRegen: 1.5, costMult: { push: 0.7, pull: 0.7 },
@@ -68,6 +105,8 @@ export const STANCES = {
 };
 // Ataru's role: bonus damage on the foes that hold the back line (officer, sniper, grenadier, jet trooper)
 export const backLineMul = (st, e) => (st.backLineDmg && e && e.t && (e.t.officer || e.t.sniper || e.t.grenade || e.t.fly)) ? st.backLineDmg : 1;
+// Makashi's role: bonus damage on anything that fights with a blade (a duellist's profile, not a brute's brace)
+export const swordMul = (st, e) => (st.swordDmg && e && e.dp && !e.dp.brace) ? st.swordDmg : 1;
 // Force-power cooldown multiplier for a stance; Niman cuts DEFENSIVE powers harder than the rest
 const DEFENCE_POWERS = ['barrier', 'mend', 'repulse'];
 export const cdMul = (st, id) => (st.defCdMult && DEFENCE_POWERS.includes(id) ? st.defCdMult : st.cdMult) || 1;
@@ -105,7 +144,8 @@ export const CUT_AIM = { pitchHigh: 0.04, pitchLow: 0.42 };
    cuts either side on the clock (`anchors`, regular grip; the reverse grip takes the nearest), then lifted or dropped
    for a high or low cut (`high` / `low`: [hand y, blade y] per key; full on a flat cut, `vert` of it on a vertical
    one, where the cut crosses every height anyway).
-     strings  a press with no direction given walks the form's string of angles (instead of left, right, left), each
+     strings  a press with no direction given walks the form's string of angles (instead of left, right, left; 'thrust'
+              in a string is the lunging thrust), each
               cut starting near where the last one finished; the string picks up where it left off unless you've
               stopped cutting for `reset` s.
      flick    MOUSE AIM (Settings · CUT AIM: MOUSE, off by default): the way the mouse moved in the last moment before the press is the way the
@@ -120,7 +160,10 @@ export const CUT_ANGLE = {
   strings: {
     ataru:  [0, 225, 45, 180, 315, 135],   // Ataru: quick flat and diagonal cuts whipping side to side
     niman:  [135, 0, 225, 90, 315],        // Niman: round the clock, each cut flowing out of the last
-    djemso: [135, 315, 90, 225, 45, 270],  // Djem So: heavy cuts down from the shoulder and back up the same line
+    djemso: [135, 315, 90, 225, 45, 270],  // Djem So
+    shiicho: [0, 180, 0, 180, 90],        // Shii-Cho: big flat sweeps back and forth, then down the middle
+    makashi: ['thrust', 135, 'thrust', 45, 225],   // Makashi: thrust, a short cut off it, thrust again
+    soresu:  [135, 315, 0, 180],          // Soresu: short cuts that come straight back to guard: heavy cuts down from the shoulder and back up the same line
   },
   reset: 1.2,
   // the keys, with no flick: A / D the flat cuts · W + A / D the downward diagonals · S + A / D the rising cuts · W the
