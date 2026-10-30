@@ -41,17 +41,35 @@ export const CFG = {
   // HOLSTERED (4) — the Jedi clips the saber to his belt and fights with the Force alone; the Mando holsters his
   // weapon and fights with his fists and gadgets. Force / gadget power refills faster while holstered (`regen`), and the
   // Jedi's Force powers hit harder (`power`).
-  // The Jedi's LMB becomes a Force strike string: two palm strikes, then a burst. Per step: damage, reach (m),
-  // cone half-angle, knockback, stamina, and the time the strike takes (contact lands at `contact` of it).
+  // The Jedi's LMB becomes a Force-imbued strike string (jedi/palm.js): a jab, a cross, then a finisher the movement
+  // keys pick (`finish`). Per strike: damage, reach (m), cone half-angle, knockback, stamina, and the time the strike
+  // takes (contact lands at `contact` of it). `kind` is the animation; `launch` throws a light foe up off its feet.
   holster: {
     regen: 1.5,
     power: 1.2,   // the Jedi's Force powers hit this much harder (damage and knockback) with the saber holstered
     strike: [
-      { dmg: 16, range: 4.5, angle: 0.42, knock: 7,  stamina: 8,  dur: 0.32, contact: 0.4 },
-      { dmg: 16, range: 4.5, angle: 0.42, knock: 7,  stamina: 8,  dur: 0.32, contact: 0.4 },
-      { dmg: 30, range: 6,   angle: 0.75, knock: 15, stamina: 14, dur: 0.46, contact: 0.45, burst: true },
+      { kind: 'jab',   dmg: 14, range: 4,   angle: 0.42, knock: 6,  stamina: 7,  dur: 0.26, contact: 0.38 },
+      { kind: 'cross', dmg: 18, range: 4.5, angle: 0.42, knock: 8,  stamina: 8,  dur: 0.3,  contact: 0.4 },
     ],
+    finish: {
+      neutral: { kind: 'burst',    dmg: 30, range: 6,   angle: 0.75, knock: 15, stamina: 14, dur: 0.46, contact: 0.45, burst: true },   // both palms: a cone that turns bolts
+      forward: { kind: 'lunge',    dmg: 36, range: 5.5, angle: 0.4,  knock: 22, stamina: 15, dur: 0.44, contact: 0.5,  lunge: 11 },    // a driving palm that closes the gap
+      side:    { kind: 'backhand', dmg: 24, range: 4.5, angle: 1.35, knock: 14, stamina: 13, dur: 0.42, contact: 0.45, sweep: true },  // a wide sweep across the front rank
+      back:    { kind: 'upper',    dmg: 26, range: 3.5, angle: 0.6,  knock: 6,  stamina: 14, dur: 0.44, contact: 0.42, launch: 11 },   // a rising palm: light foes go up
+    },
     comboGap: 0.7,   // seconds after a strike in which the next press carries on the string
+    // HOLD LMB: gather the Force in both palms and let it go on release. Below `min` it's a plain strike; damage, reach,
+    // knockback and guard damage grow to full at `full` seconds; `max` lets it go on its own. A full charge staggers
+    // elites and stuns a boss, and like the burst it turns blaster fire back on the shooters.
+    charge: { min: 0.28, full: 1.0, max: 2.5, stamina: 16, dmg: [26, 64], range: [5, 9], angle: 0.5, knock: [16, 32], posture: [30, 80] },
+    // E mid-string: a spinning Force kick that clears the ring round you; E in the air: a Force stomp straight down
+    spin:  { dmg: 20, reach: 2.8, knock: 20, recover: 0.5, stamina: 10 },
+    stomp: { dmg: 24, radius: 4, knock: 18, fall: 26, stamina: 10 },
+    // STRIKE INTO POWER: Push or Pull within `window` s of a landed unarmed blow flows out of it. The PALM PUSH costs
+    // `costMul` of a Push and hits foes within `near` m for `dmg` more and harder; the pull-in yanks them onto the next
+    // strike, thrown on its own `strikeAt` s later
+    flow: { window: 0.7, costMul: 0.6, near: 6, dmg: 22, knockMul: 1.35, strikeAt: 0.3 },
+    refund: { hit: 2.5, finisher: 5, max: 10 },   // Force back per foe struck (a finisher or charge pays more), capped per blow
   },
   abilities: {
     // BASIC powers — cheap, available from the start

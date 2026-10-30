@@ -66,7 +66,7 @@ export const CHAPTERS = [
     brief: { jedi: ['The refuge\'s keeper will not hand the younglings to a knight it has not tested.', 'The Wall has held that door for twenty years. Show it you can hold one too.'],
              mando: ['A hunter of the old clans waits at the covert door. By our custom it may challenge whoever leads the foundlings out.', 'Answer it.'] },
     lines: {
-    clear: { jedi: ['The Wall stands aside. It says you hold a door the way it does.', 'It will take the younglings on. And it has heard where the other masters are.'], mando: ['The challenger yields, and the clan has one more blade.', 'It knows where the others went.'] } } },
+    clear: { jedi: ['The Wall stands aside. It says you hold a door the way it does.', 'It will take the younglings on, and it has shown you Soresu, the form that holds. It has heard where the other masters are, too.'], mando: ['The challenger yields, and the clan has one more blade.', 'It knows where the others went.'] } } },
 
   // ---------------- ACT II ----------------
   { id: 'lothal', act: 1, kind: 'mission', mission: 'grassland', pair: 'lothal', world: 'LOTHAL',
@@ -80,7 +80,7 @@ export const CHAPTERS = [
     brief: { jedi: ['You freed the Acrobat. Now the Acrobat wants to see what you are.', 'It will not stand still. Neither should you.'],
              mando: ['The ace is free, and wants to know who came for it.', 'Out here that means a fight. Keep it on the ground.'] },
     lines: {
-    clear: { jedi: ['The Acrobat laughs for the first time in a year. It will fly with us.'], mando: ['The ace is grounded and grinning. It rides with the clan.'] } } },
+    clear: { jedi: ['The Acrobat laughs for the first time in a year. It taught you Ataru the only way it knows, at full speed. It will fly with us.'], mando: ['The ace is grounded and grinning. It rides with the clan.'] } } },
   { id: 'hoth', act: 1, kind: 'mission', mission: 'icefront', pair: 'hoth', world: 'HOTH',
     title: 'THE TRENCH LINE',
     brief: { jedi: ['The Knight is holding Hoth\'s trenches with what is left of a rebel company.', 'Fight beside them. A general judges you by the line you hold.'],
@@ -92,13 +92,14 @@ export const CHAPTERS = [
     brief: { jedi: ['The line held. The Knight will meet you between the last transports.', 'It fights blade to blade, and punishes a careless block.'],
              mando: ['The champion won\'t follow anyone it hasn\'t fought.', 'Beskar to beskar, then.'] },
     lines: {
-    clear: { jedi: ['The Knight lowers its blade. Two masters found, and the Order is a little less scattered.'], mando: ['The champion takes your hand. The clan is nearly whole.'] } } },
+    clear: { jedi: ['The Knight lowers its blade, and teaches you its two edges: Djem So to break a blade, Shien to send a bolt home.', 'The Order is a little less scattered.'], mando: ['The champion takes your hand. The clan is nearly whole.'] } } },
   { id: 'jakku', act: 1, kind: 'mission', mission: 'graveyard', world: 'JAKKU',
     title: 'SALVAGE RIGHTS',
-    brief: { jedi: ['Vexis is building an army somewhere. The old nav cores in Jakku\'s wrecks remember where his ships go.', 'Pull the cores before his salvage crews burn them.'],
+    brief: { jedi: ['Vexis is building an army somewhere. The old nav cores in Jakku\'s wrecks remember where his ships go.', 'Pull the cores before his salvage crews burn them.',
+                    'One of those wrecks was a Republic cruiser, and its captain fought in Makashi. A holocron outlasts a crash better than its owner does. Keep your eyes open.'],
              mando: ['The Magistrate\'s beskar is forged somewhere. Jakku\'s wrecks remember the route.', 'Take the cores. Get out on the freighter.'] },
     lines: {
-    clear: { jedi: ['The cores are clean. Every route ends in the same place: Mustafar.'], mando: ['The cores give up the route. Mustafar.'] } } },
+    clear: { jedi: ['The cores are clean. Every route ends in the same place: Mustafar.', 'And you found the captain\'s holocron. Makashi: the duellist\'s form. Precision over power, the point before the edge. Study it on the way.'], mando: ['The cores give up the route. Mustafar.'] } } },
   { id: 'mustafar', act: 1, kind: 'waves', level: 1, waves: [0, 4], world: 'MUSTAFAR',
     title: 'THE MUSTAFAR FORGE', standIn: 'the foundry waves, until the forge mission',
     brief: { jedi: ['The cores point to Mustafar. His war machines are forged here.', 'Break the forge, and the army breaks with it.'],
@@ -109,7 +110,7 @@ export const CHAPTERS = [
       { jedi: ['Good. Keep moving. Stand still on this rock and it will cook you.'], mando: ['Keep moving. The ground here is not your friend.'] },
       { jedi: [{ who: 'THE INQUISITOR', rival: true, say: 'Still following, Knight? You are walking into a trap he built for you.' }], mando: [{ who: 'VX-7', rival: true, say: 'TARGET CONFIRMED. MANDALORIAN. BOUNTY: DOUBLED.' }] },
       { jedi: ['The last of the foundry guard. Then the forge falls.'], mando: ['Last of them. Then we bring the roof down.'] } ],
-    clear: { jedi: ['The forge is ash. But it was too easy.', 'This was never his army. It was a lure.'], mando: ['The forge is ash, and it was too easy.', 'This was bait.'] } } },
+    clear: { jedi: ['The forge is ash. But it was too easy.', 'This was never his army. It was a lure.', 'Sit with what you carry before we move. The forms you have learned are becoming one: Niman.'], mando: ['The forge is ash, and it was too easy.', 'This was bait.'] } } },
 
   // ---------------- ACT III ----------------
   { id: 'chase', act: 2, kind: 'mission', mission: 'pursuit', world: 'KHEL DAR',

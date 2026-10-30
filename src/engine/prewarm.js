@@ -13,6 +13,7 @@ import { ensureBossLight } from '../boss/light.js';
 import { ensureBarrierMesh } from '../player/jedi/force.js';
 import { ensureJudgeLines } from '../player/jedi/judgement-fx.js';
 import { shared } from '../state.js';
+import { holdLightCount } from '../fx/lights.js';
 
 /* ---------- 1. SHADERS ----------
    three.js builds a shader program the first time a material variant is drawn, and again for every material when the
@@ -51,12 +52,9 @@ export function prewarmShaders(){
   showLazy();
   for (const [o] of lazy) o.visible = true;
   for (const o of specimens) o.visible = true;
-  // the boss arrives with two point lights (his blade and his aura): that changes the light count, which recompiles
-  // every material. Compile with them here so the programs are cached before he walks in, then take them away.
-  const extra = [0, 1].map(() => new THREE.PointLight(0xffffff, 0, 10));
-  for (const l of extra) scene.add(l);
-  try { compileLive(); } catch(e){}
-  for (const l of extra) scene.remove(l);
+  // the boss's lights, the darksaber's, a partner's saber: while any are in, as many pooled flash lights stand down, so
+  // the light count (part of every program) stays the one compiled here (fx/lights.js)
+  holdLightCount();
   try { compileLive(); } catch(e){}
   for (const o of specimens) o.visible = false;
   for (const [o, v] of lazy) o.visible = v;

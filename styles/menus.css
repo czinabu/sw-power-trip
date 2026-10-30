@@ -323,6 +323,10 @@ body.fovpreview #fovpill{background:rgba(1,4,10,.82)}
 .sb-chip.on .k{color:var(--gold)}
 .sb-chip.off-needs{opacity:.35;cursor:not-allowed}
 .sb-chip.pop{animation:bump .3s var(--ease)}
+/* not reached in the story yet (before the campaign is beaten) */
+.sb-chip.locked,.sb-seg span.locked{opacity:.32;cursor:not-allowed;border-style:dashed}
+.sb-chip.locked:hover{border-color:var(--edge);color:var(--ink-soft)}
+.sb-story{font:600 12px/1.4 var(--font-ui);letter-spacing:1.2px;color:var(--gold);margin:-4px 0 12px}
 .sb-foot{display:flex;justify-content:flex-end;margin-top:16px}
 @media (max-width:760px){ .sb-cols{grid-template-columns:1fr} }
 
@@ -437,6 +441,7 @@ body.fovpreview #fovpill{background:rgba(1,4,10,.82)}
 #chapcard .cc-roster li.now .n{color:var(--cc)}
 #chapcard .cc-btns{margin-top:22px;display:flex;gap:12px}
 #chapcard .cc-hint{margin-top:10px;font-size:12px;letter-spacing:1.6px;color:var(--ink-faint)}
+#chapcard .cc-unlock{margin-top:18px;font:600 13px/1.4 var(--font-ui);letter-spacing:1.5px;color:var(--gold)}
 #chapcard .cc-pick{margin-top:22px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
 #chapcard .cc-opt{position:relative;cursor:pointer;padding:16px;border:1px solid var(--edge-mid);border-radius:var(--r);background:var(--panel-solid);
   --bc:var(--cc);transition:border-color .15s,background .15s}
