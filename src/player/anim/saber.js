@@ -379,7 +379,9 @@ export function applySaberPose(R, held, offFree = true, dt = 1 / 60){
   pointInChest(R.chest, held.node, _ax, _grip);
   _t.copy(saberPose.off).lerp(_grip, saberPose.two);
   _p.copy(saberPose.offPole);
-  if (saberPose.two > 0.5) _p.set(-0.4, -0.85, 0.1).normalize();
+  // two-handed, the off elbow flares out to its own side (as a real two-handed grip does), so the arm reads past the
+  // body from the camera behind instead of tucking out of sight in front of the chest
+  if (saberPose.two > 0.5) _p.set(-0.85, -0.5, -0.15).normalize();
   solveArm(R.armL, _t, _p);
   R.armL.wr.quaternion.identity();
 }
