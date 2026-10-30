@@ -18,7 +18,11 @@ import { STARTING_FORMS } from './forms.js';
    radiusMult = swing cleave radius · parryBonus = extra parry window · heavyDmg = vs armored foes.
    SWING PACE: every form swings a step slower than it first did (Ataru at Niman's old pace, Niman at Djem So's, Djem So
    slower again: a committed, crossguard-style power stroke), with damage per cut raised by the same ratio so damage per
-   second is where it was. */
+   second is where it was.
+   BALANCE (damage a second = dmg × speed, before each form's own edge): Djem So ~1.4 and ~3.4 on armour · Juyo ~1.4,
+   ~2.0 at full fury, at 8 stamina and 5 Force a swing · Makashi ~1.2, ~1.75 on blades · Shien, Vaapad ~1.15 · Ataru ~1.1,
+   ~1.75 on the back line · Niman ~1.0, the cheapest powers · Shii-Cho ~0.95 with the widest arc · Soresu ~0.7, the
+   best guard. Keep a form's edge where its role is; tools/form-balance.mjs prints the table. */
 export const STANCES = {
   /* FORM I SHII-CHO — the first form every initiate learns (Kit Fisto, Luke at Jabba's barge). Wide, simple sweeps built
      for many foes at once; the string ends in the SARLACC SWEEP (a full turn: everything round you), and that finisher
@@ -47,7 +51,7 @@ export const STANCES = {
   /* FORM III SORESU — the wall (Obi-Wan): tight, economical blocks that send blaster fire home and wear an attacker out.
      It wins by outlasting; it has the least offence of any form. */
   soresu:  { name: 'SORESU — DEFENCE', form: 'soresu', formNo: 'III', blade: 0xcfe2ff,
-            dmg: 0.95, heavyDmg: 0.9, speed: 0.66, knock: 0.6, stamina: 7, lunge: 0.9, move: 0.92, accel: 0.95, twist: 0.5, bladeLen: 1.0,
+            dmg: 1.05, heavyDmg: 0.9, speed: 0.66, knock: 0.6, stamina: 7, lunge: 0.9, move: 0.92, accel: 0.95, twist: 0.5, bladeLen: 1.0,
             radiusMult: 0.95, parryBonus: 0.14, comboGap: 1.0, fovKick: -1, postureMul: 0.9,
             blockStamMul: 0.4,    // ROLE: the cheapest guard in the game…
             chipMul: 0,           // …that lets no chip through a block…
@@ -59,7 +63,7 @@ export const STANCES = {
             syn: 'DEFENCE · held guard returns bolts · cheapest guard, no chip · tires attackers · widest parry · LOW damage' },
   ataru:  { name: 'ATARU — FAST', form: 'ataru', formNo: 'IV', blade: 0x35c8ff,
             dmg: 1.18, heavyDmg: 0.85, speed: 0.92, knock: 0.38, stamina: 6, lunge: 1.4, move: 1.15, accel: 1.3, twist: 0.4, bladeLen: 0.94,
-            radiusMult: 1.45, forceRegen: 1.5, costMult: { push: 0.7, pull: 0.7 },
+            radiusMult: 1.2, forceRegen: 1.5,   // (BALANCE: Shii-Cho keeps the widest arc: Ataru's role is the back line, not the crowd) costMult: { push: 0.7, pull: 0.7 },
             comboGap: 1.25, fovKick: 6,
             reach: { lungeMax: 3.9, range: 6.5 },   // ROLE: the lunge closes up to 3.9m (others 2.4) and finds foes out to 6.5m (others 5), enough to cross the 3.2m stalker ring to an officer behind it
             moveAtk: 1.5,         // PASSIVE: keeps most of its footwork mid-swing (every other form plants its feet) — kite while you cleave
@@ -72,7 +76,7 @@ export const STANCES = {
             gait: { amp: 1.0, lift: 1.3, bob: 0.45, lean: 1.25 },   // MOVEMENT: light, high-kneed, springy — a duelist on the balls of their feet
             syn: 'BACK LINE · +60% vs officers, snipers, grenadiers, jet troopers · +35% air cuts · dash into a cut: Hawk-Bat Swoop · snappy Force casts · WEAK vs armor' },
   niman:  { name: 'NIMAN — BALANCED', form: 'niman', formNo: 'VI', blade: 0x3aff8c,
-            dmg: 1.5, heavyDmg: 1.42, speed: 0.64, knock: 0.85, stamina: 9, lunge: 1.15, move: 1.0, accel: 1.0, twist: 0.55, bladeLen: 1.0,
+            dmg: 1.5, heavyDmg: 1.25, speed: 0.64, knock: 0.85, stamina: 9, lunge: 1.15, move: 1.0, accel: 1.0, twist: 0.55, bladeLen: 1.0,
             radiusMult: 1.0, cdMult: 0.85, defCdMult: 0.5, postureMul: 1.0, parryBonus: 0.10, comboGap: 1.0, fovKick: 0,
             parryRefund: 16,      // PASSIVE: the duelist's form — a clean parry feeds extra Force back
             powerCostMul: 0.85,   // LORE: saber and Force as one — powers cost 15% less…
@@ -112,7 +116,7 @@ export const STANCES = {
      driven by the Force itself. Each swing burns Force as well as breath, every cut that lands feeds FURY (up to +45%
      damage), and it gives its defence away for it. Juyo and Vaapad fork: learning one closes the other for the run. */
   juyo:   { name: 'JUYO — FURY', form: 'juyo', formNo: 'VII', blade: 0xff3a3a,
-            dmg: 1.75, heavyDmg: 1.35, speed: 0.78, knock: 1.1, stamina: 6, lunge: 1.4, move: 1.08, accel: 1.2, twist: 0.9, bladeLen: 1.0,
+            dmg: 1.75, heavyDmg: 1.35, speed: 0.78, knock: 1.1, stamina: 8, lunge: 1.4, move: 1.08, accel: 1.2, twist: 0.9, bladeLen: 1.0,
             radiusMult: 1.1, postureMul: 1.3, comboGap: 1.2, fovKick: 4, parryBonus: -0.03, forceRegen: 1.1,
             forceSwing: 5,        // ROLE: each swing burns this much Force on top of its stamina (no Force: double the stamina)
             furyHit: 0.12,        // every cut that lands feeds fury (player/jedi/fury.js)…
