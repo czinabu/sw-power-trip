@@ -74,7 +74,11 @@ const _aoRender = aoPass.render.bind(aoPass);
 aoPass.render = (...a) => {
   const u = aoPass.blendMaterial.uniforms;
   u.cameraNear.value = camera.near; u.cameraFar.value = camera.far; u.fadeNear.value = aoFade.near; u.fadeFar.value = aoFade.far;
-  _aoRender(...a);
+  // its depth/normal draw is a second render of the scene, and three.js would redraw the sun's shadow map for it too
+  // (every caster, again, each frame). The normals don't take shadows: keep the map the scene pass just drew
+  const sm = renderer.shadowMap, auto = sm.autoUpdate;
+  sm.autoUpdate = false;
+  try { _aoRender(...a); } finally { sm.autoUpdate = auto; }
 };
 composer.addPass(aoPass);
 
@@ -195,13 +199,17 @@ addEventListener('resize', () => {
 /* renderer.compile, but as the game draws: the scene is drawn into the composer's render target, where three.js builds a
    different shader variant (no tone mapping, linear output) than for the screen. Compiling against the screen, as a bare
    renderer.compile does, builds programs the game never uses and leaves the real ones to compile on first draw. */
+const _compileFog = new THREE.Fog(0x000000, 1, 2);
 export function compileLive(){
-  const prev = renderer.getRenderTarget();
+  const prev = renderer.getRenderTarget(), fog = scene.fog;
   renderer.setRenderTarget(composer.readBuffer);
+  // every arena has a linear fog, and fog is part of a program's variant: a warm-up from the title screen (no arena yet,
+  // so no fog) would otherwise build programs no fight ever uses, and the first level would build them all again
+  if (!fog) scene.fog = _compileFog;
   try {
     renderer.compile(scene, camera);
     // the AO pass's own programs (its depth/normal override, the AO, denoise and blend shaders) would otherwise
     // compile on the first frame it runs: run it once here into the composer's spare buffer
     if (aoPass.enabled) aoPass.render(renderer, composer.writeBuffer, composer.readBuffer);
-  } finally { renderer.setRenderTarget(prev); }
+  } finally { renderer.setRenderTarget(prev); scene.fog = fog; }
 }

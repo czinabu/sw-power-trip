@@ -180,6 +180,86 @@ export const AGILITY = {
     land:   { depth: 1.35, spring: 0.75, splay: 0.35 },              // sinks deep and wide, rises slowly
     run:    { arms: 'run', twist: 0.7, pump: 0.8 },
   },
+  // FORM VII JUYO — ferocious and acrobatic: twisting flips and spinning dashes that carry straight into the attack,
+  // a leap with the blade cocked to hammer down, and a landing that springs straight back in
+  juyo: {
+    dash: {
+      side: { spin: 1, tilt: 0.7, lift: 0.45, legs: 'split', arms: 'tuck', ease: 'twirl' },
+      fwd:  { pitch: 0.4, drop: 0.24, legs: 'slide', arms: null },                     // a predator's lunge
+      back: { somer: -1, lift: 0.5, legs: 'tuck', arms: 'tuck' },
+    },
+    roll: {
+      side: { roll: 1, lift: 0.1, legs: 'split', arms: 'layout' },
+      fwd:  { somer: 1, lift: -0.35, legs: 'tuck', arms: 'tuck' },
+      back: { somer: -1, lift: -0.35, legs: 'tuck', arms: 'tuck' },
+    },
+    jump:   { tuck: 0.9, spin: 1, arms: 'tuck' },
+    double: { somer: 1, twist: 1, lift: 0.35, legs: 'tuck', arms: 'hammer' },          // a twisting front flip, blade raised to hammer
+    evade: {
+      back: { somer: -1, twist: 1, lift: 0.45, legs: 'tuck', arms: 'tuck' },
+      fwd:  { somer: 1, twist: 0.5, lift: 0.35, legs: 'tuck', arms: 'tuck' },
+      side: { roll: 1, twist: 0.5, lift: 0.4, legs: 'split', arms: 'layout' },
+    },
+    wall:   { back: { somer: -1, twist: 1, legs: 'tuck', arms: 'tuck' }, fwd: { somer: 1, twist: 0.5, legs: 'tuck', arms: 'tuck' } },
+    glide:  { legs: 'tuck', pitch: 0.2, arms: 'hammer' },
+    rise:   { pitch: 0.2, arms: 'hammer' },
+    slam:   { pitch: 0.1, legs: 'tuck', arms: 'hammer', land: 'smash', kneel: 0.75 },
+    land:   { depth: 1.1, spring: 1.4 },                              // springs straight back in
+    run:    { arms: 'run', twist: 1.2, pump: 1.2 },
+  },
+  // FORM VII VAAPAD — controlled: little wasted motion, a clean sidestep, one decisive flip, a balanced landing
+  vaapad: {
+    dash: {
+      side: { bank: 0.2, drop: 0.14, legs: 'stride', arms: null },
+      fwd:  { pitch: 0.24, drop: 0.16, legs: 'slide', arms: null },
+      back: { pitch: -0.18, drop: 0.14, legs: 'slide', arms: null },
+    },
+    roll: {
+      side: { bank: 0.2, drop: 0.2, legs: 'slide', arms: null },
+      fwd:  { somer: 1, lift: -0.45, legs: 'tuck', arms: 'tuck' },
+      back: { somer: -1, lift: -0.45, legs: 'tuck', arms: 'tuck' },
+    },
+    jump:   { tuck: 0.6, arms: null },
+    double: { somer: 1, lift: 0.3, legs: 'tuck', arms: 'tuck' },
+    evade: {
+      back: { somer: -1, lift: 0.4, legs: 'tuck', arms: 'tuck' },
+      fwd:  { somer: 1, lift: 0.3, legs: 'tuck', arms: 'tuck' },
+      side: { roll: 1, lift: 0.3, legs: 'split', arms: 'layout' },
+    },
+    wall:   { back: { somer: -1, legs: 'tuck', arms: 'tuck' }, fwd: { somer: 1, legs: 'tuck', arms: 'tuck' } },
+    glide:  { legs: 'float', pitch: 0.04, arms: null },
+    rise:   { pitch: 0.06, arms: null },
+    slam:   { pitch: 0.06, legs: 'tuck', arms: 'hammer', land: 'smash', kneel: 0.8 },
+    land:   { depth: 1.0, spring: 1.05 },
+    run:    { arms: 'run', twist: 0.9, pump: 0.95 },
+  },
+  // FORM V SHIEN — Ahsoka and Starkiller: Djem So's sister, lighter on its feet. A low prowling slide, a spinning
+  // sidestep on the blade laid along the arm, tight twisting flips, and a crouched landing with the blade back.
+  shien: {
+    dash: {
+      side: { spin: 1, tilt: 0.35, lift: 0.2, legs: 'stride', arms: null, ease: 'twirl' },          // a spinning sidestep
+      fwd:  { pitch: 0.32, drop: 0.24, legs: 'slide', arms: null },                                  // a low lunge in
+      back: { pitch: -0.22, drop: 0.24, legs: 'slide', arms: null },
+    },
+    roll: {
+      side: { bank: 0.28, drop: 0.24, legs: 'slide', arms: null },
+      fwd:  { somer: 1, lift: -0.4, legs: 'tuck', arms: 'tuck' },
+      back: { somer: -1, lift: -0.4, legs: 'tuck', arms: 'tuck' },
+    },
+    jump:   { tuck: 0.6, spin: 0.5, arms: null },
+    double: { somer: 1, twist: 0.5, lift: 0.3, legs: 'tuck', arms: 'tuck' },          // a front tuck with a half twist
+    evade: {
+      back: { somer: -1, twist: 0.5, lift: 0.35, legs: 'tuck', arms: 'tuck' },
+      fwd:  { somer: 1, lift: 0.3, legs: 'tuck', arms: 'tuck' },
+      side: { roll: 1, lift: 0.3, legs: 'split', arms: 'layout' },
+    },
+    wall:   { back: { somer: -1, twist: 0.5, legs: 'tuck', arms: 'tuck' }, fwd: { somer: 1, legs: 'tuck', arms: 'tuck' } },
+    glide:  { legs: 'tuck', pitch: 0.12, arms: 'trail' },            // a crouched drop, blade trailing along the arm
+    rise:   { pitch: 0.12, arms: 'trail' },
+    slam:   { pitch: 0.1, legs: 'tuck', arms: 'plunge', land: 'plunge', kneel: 0.9 },   // a reverse-grip plunge into the ground
+    land:   { depth: 1.2, spring: 1.0, splay: 0.25 },
+    run:    { arms: 'run', twist: 0.9, pump: 0.95 },
+  },
 };
 
 /* MANDO — beskar and a jetpack, not acrobatics (Din Djarin). The ground dodge is a thruster-shoved slide, the hop

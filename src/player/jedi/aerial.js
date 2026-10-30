@@ -6,6 +6,7 @@
 import { CFG } from '../../data/config.js';
 import { stamDelay } from '../stamina.js';
 import { SWING_PATTERNS, backLineMul, swordMul } from '../../data/stances.js';
+import { furyMul } from './fury.js';
 import { sfx, S } from '../../audio/sfx.js';
 import { V3, clamp, TMP } from '../../utils.js';
 import { burst } from '../../fx/particles.js';
@@ -98,7 +99,7 @@ function strike(pp, tgt){
     }
   }
   if (tgt){ TMP.subVectors(tgt.group.position, pp); TMP.y = 0; if (TMP.lengthSq() > 0.01) dir.copy(TMP.normalize()); }
-  const dmg = CFG.player.comboDamage[2] * st.dmg * player.up.dmg * focusDmgMul() * AIR_CUT.dmgMul;
+  const dmg = CFG.player.comboDamage[2] * st.dmg * player.up.dmg * focusDmgMul() * AIR_CUT.dmgMul * (st.airCutDmg || 1) * furyMul();   // (Ataru's air cuts land harder)
   const knock = AIR_CUT.knock * st.knock * player.up.knock;
   let hit = false;
   if (tgt && tgt === shared.boss){ damageBoss(dmg * st.heavyDmg); scarBody(tgt.group, dir, 'neutral', true); hit = true; }

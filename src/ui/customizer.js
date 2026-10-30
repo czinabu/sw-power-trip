@@ -8,7 +8,7 @@ import { CUSTOMIZE, pickedOption, swatchOf } from '../data/customize.js';
 import { STANCES } from '../data/stances.js';
 import { loadPicks, savePicks, rebuildPlayerModel } from '../player/mesh.js';
 import { setHero } from '../player/hero.js';
-import { bladeColor } from '../player/helpers.js';
+import { bladeColor, heldGrip } from '../player/helpers.js';
 import { applySaberGrip } from '../player/model/weapons.js';
 import { restyleShowcase, focusShowcase, spinShowcase } from './showcase.js';
 import { overlay, setOverlayState } from './menus.js';
@@ -82,7 +82,7 @@ function dressPlayer(){
   saved = JSON.stringify(picks);
   // the player wears the new look from the next run: rebuild it, then put back what the old model carried
   rebuildPlayerModel(picks);
-  applySaberGrip(player, G.saberGrip, G.mode !== 'play');
+  applySaberGrip(player, heldGrip(), G.mode !== 'play');
   const st = STANCES[G.stance];
   if (st){ player.blade.glow.material.color.setHex(bladeColor(st)); player.blade.light.color.setHex(bladeColor(st)); }
   setHero(G.hero);

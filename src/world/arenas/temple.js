@@ -40,6 +40,7 @@ export function buildTempleArena(L){
   // ---- SUMMIT BRAZIER — the courtyard's glowing landmark; the flame is live (flickered in updateAmbient) ----
   K.deco(new THREE.CylinderGeometry(0.46, 0.3, 0.34, 12), stoneD, 0, 1.5 + 0.17, 0);
   shared.templeBrazier = K.deco(new THREE.ConeGeometry(0.38, 0.8, 10), new THREE.MeshBasicMaterial({ color: fireC }), 0, 1.5 + 0.66, 0);
+  shared.templeBrazier.userData.noBake = true;   // it flickers (fx/ambient.js)
   // the summit ERUPTS on a slow cycle (1.4s amber warning): it only punishes standing on top
   hazardZones.push({ kind:'point', cx:0, cz:0, r:2.3, period:8, warnDur:1.4, activeDur:1.0, dmg:24, color:fireC, flash:true, t:0 });
 

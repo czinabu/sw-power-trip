@@ -23,6 +23,7 @@ import { net, on, send, connected } from '../net/session.js';
 import { coopRun } from '../net/run.js';
 import { CUT, OPENINGS, DUELS, BOSS, SCENES } from '../data/cutscenes.js';
 import { BOSS_CFG, BOSS_MANDO } from '../data/bosses.js';
+import { missionState } from './mission.js';
 
 const hero = () => G.hero === 'mando' ? 'mando' : 'jedi';
 const pick = (v) => v && typeof v === 'object' && !Array.isArray(v) ? v[hero()] : v;
@@ -51,10 +52,12 @@ export function resetScenes(){ seen.clear(); }
 const lineTime = (line) => line ? Math.max(CUT.minLine, String(line[1]).length / CUT.readRate + 1.0) : 0;
 
 /* ---------- actors: a stand-in figure (built from a foe type), or something already on the field ---------- */
-const binders = {};
-// game code names a thing on the field a scene can frame by name (the chase's quarry, the boss): fn returns its group
+// things already on the field a scene can frame by name: each returns its group (looked up when a scene starts, never at load)
+const binders = {
+  boss: () => shared.boss && shared.boss.group,
+  quarry: () => { const M = missionState(); return M.quarry && M.quarry.g; },   // the chase's quarry, where it stands
+};
 export function bindActor(name, fn){ binders[name] = fn; }
-bindActor('boss', () => shared.boss && shared.boss.group);
 function makeActor(def, x, z, yaw){
   const t = ENEMY_TYPES[def.foe] || ENEMY_TYPES.duelist;
   const g = buildEnemyMesh(t);

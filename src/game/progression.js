@@ -53,7 +53,7 @@ export function payWaveClear(clearXp){
   floater(V3(pp.x, 2.4, pp.z), (flawless ? 'FLAWLESS' : 'CLEAN') + ' WAVE  +' + bonus + ' XP', flawless ? '#ffd24a' : '#8fe0ff');
 }
 // abilities open by TIER, gated by how deep into the run you are (waveTotal) — so power arrives in waves
-const STORE_TIER_STAGE = { 1: 0, 2: 1, 3: 3, 4: 6, 5: 8 };   // waveTotal each tier opens — earlier = snappier pacing
+export const STORE_TIER_STAGE = { 1: 0, 2: 1, 3: 3, 4: 6, 5: 8 };   // waveTotal each tier opens — earlier = snappier pacing
 function storeTierOpen(tier){ return (G.waveTotal || 0) >= (STORE_TIER_STAGE[tier] || 0); }
 
 // JETPACK PROGRESSION — starts WEAK & short (very limiting early); boosters add real lift & a bigger tank

@@ -8,7 +8,7 @@ import { STANCES } from './data/stances.js';
 import { ENEMY_TYPES } from './data/enemies.js';
 import { LEVELS } from './data/levels.js';
 import { BOSS_CFG, BOSS_MANDO } from './data/bosses.js';
-import { camera, composer } from './engine/renderer.js';
+import { camera, composer, renderer, scene } from './engine/renderer.js';
 import { cycleQuality, qualityGovernor } from './engine/quality.js';
 import { audioInit } from './audio/sfx.js';
 import { MUSIC } from './audio/music.js';
@@ -197,10 +197,10 @@ import { arenaInfo } from './world/arena.js';
 import { ENDLESS_ARENAS } from './game/survival.js';
 import { BATTLE_MAPS } from './data/battlemaps.js';
 import { setSandboxMap } from './game/sandbox.js';
-Object.assign(window.GAME, { arena: arenaInfo, ENDLESS_ARENAS, BATTLE_MAPS, setSandboxMap });
-Object.assign(window.GAME, { startCampaign, startChapter, nextChapter, chapters });
+Object.assign(window.GAME, { arena: arenaInfo, ENDLESS_ARENAS, BATTLE_MAPS, setSandboxMap, gfx: { renderer, composer, scene } });
+Object.assign(window.GAME, { startCampaign, startChapter, nextChapter, chapters });   // the campaign's chapters (game/campaign.js), for tests
 import { playScene, playOpening, playDuelIntro, playBossIntro, skipScene, sceneOn } from './game/cutscene.js';
-Object.assign(window.GAME, { cutscene: { playScene, playOpening, playDuelIntro, playBossIntro, skipScene, sceneOn } });   // the cutscenes, for tests   // the campaign's chapters (game/campaign.js), for tests
+Object.assign(window.GAME, { cutscene: { playScene, playOpening, playDuelIntro, playBossIntro, skipScene, sceneOn } });   // the cutscenes (game/cutscene.js), for tests
 
 /* the form loadout (data/forms.js): the seven forms and what sits on 1 / 2 / 3 */
 import { FORMS } from './data/forms.js';

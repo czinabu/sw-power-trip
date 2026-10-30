@@ -58,7 +58,7 @@ export function fireBolt(pos, dir, speed, dmg, friendly, quiet, src){
 }
 /* REDIRECT — where a bolt off the blade goes. A timed parry sends it straight back at whoever fired it; a deflect off
    a moving blade goes back down the same line, scattered by how much the form trains for blaster fire (STANCES
-   deflectScatter: Djem So carries Form V's Shien redirection and sends it home, Ataru is built for the duel and sprays
+   deflectScatter: Shien, the Form V variant built for it, sends it home dead on, Ataru is built for the duel and sprays
    it). A shooter that is gone, or behind you, gives way to the nearest foe ahead; with nobody there it flies back the
    way it came. The boss is never auto-aimed at: his own fire simply goes back the way it came. */
 function redirect(b, parried){
@@ -153,7 +153,7 @@ export function updateBolts(dt){
         // the guard pays for the catch: Soresu's held guard a little, Makashi (no answer to blasters) dearly
         const dsm = stance().deflectStamMul || 0;
         if (!parried && (guardSend || dsm)){ player.stam = Math.max(0, player.stam - (guardSend ? 7 * (stance().blockStamMul || 1) : 0) - 3 * dsm); player.stamDelay = stamDelay(); }
-        b.friendly = true; b.speed *= 1.4; b.dmg = parried ? 42 : 22;
+        b.friendly = true; b.speed *= 1.4; b.dmg = parried ? 42 : 22 * (stance().deflectDmg || 1);   // (Shien sends its deflects home harder)
         // it leaves from the blade itself (it was caught a touch early, so the catch reads at the saber, not in the air)
         if (bladePointNear(b.mesh.position, HIT)) b.mesh.position.copy(HIT);
         redirect(b, parried);

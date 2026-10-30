@@ -38,7 +38,7 @@ import { collideSolids } from '../world/collision.js';
 import { players, targetable } from '../player/players.js';
 import { diffDmgMul } from '../data/difficulty.js';
 import { startBattleFx, stopBattleFx, updateBattleFx } from '../fx/battle.js';
-import { playDuelIntro, bindActor, resetScenes } from './cutscene.js';
+import { playDuelIntro, resetScenes } from './cutscene.js';
 
 const RED = 0xff4a3a, GREEN = 0x7bffae;
 const M = { on: false, def: null, i: 0, o: null, s: null, markers: [], props: [], fx: [], panelT: 0, waitT: 0, endT: 0, won: false,
@@ -47,7 +47,6 @@ const M = { on: false, def: null, i: 0, o: null, s: null, markers: [], props: []
 
 // an objective as this hero plays it: its `hero` overrides laid over it, and per-hero words picked
 const heroText = (v) => v && typeof v === 'object' ? v[G.hero] : v;
-bindActor('quarry', () => M.quarry && M.quarry.g);   // a scene can frame the chase's quarry where it stands (game/cutscene.js)
 function forHero(o){
   const h = o.hero && o.hero[G.hero], r = h ? { ...o, ...h } : { ...o };
   if (r.title && typeof r.title === 'object') r.title = r.title[G.hero];
