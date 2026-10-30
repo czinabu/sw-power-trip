@@ -13,6 +13,7 @@ import { ACTS, ACT_TWO, ACT_TWO_AT, CHAPTER_OF_LEVEL, VOICE, EPILOGUE, chapterOr
 import { startLevel, checkUnlocks, chapterRewards, releaseUnlockBanners } from './flow.js';
 import { startMission } from './mission.js';
 import { openSkillTree } from '../ui/store-ui.js';
+import { earnWavePoint } from './upgrades.js';
 import { showBanner } from '../ui/banners.js';
 import { storyBeat, clearComms } from './story.js';
 import { playOpening, resetScenes, playScene } from './cutscene.js';
@@ -84,6 +85,7 @@ export function followChapter(pos, actTwo){
 function chapterCleared(){
   G.waveTotal++;   // a mission counts as a step deeper into the run (foes, store tiers and the Mando's gear follow it)
   chapterRewards();
+  earnWavePoint();   // a mission chapter's skill point (game/upgrades.js), spent on the page that opens next
   storyBeat('clear');
   if (G.coopGuest){ openSkillTree(); return; }
   shared.levelPhase = 'chapterdone'; shared.phaseT = 2.6;   // the voice's last word, then the upgrade screen and the road on (game/flow.js)

@@ -28,6 +28,7 @@
   <div id="objective">
     <div id="waveinfo"></div>
     <div id="xphud"><span class="xpk">XP</span><span id="xpval">0</span></div>
+    <div id="uptoasts"></div>   <!-- skill points and mastery ranks earned mid-fight (game/upgrades.js) -->
   </div>
   <div id="streak"></div>
   <div id="readout"></div>
@@ -315,22 +316,25 @@
         <div class="coin sp"><span class="cl">SKILL POINTS</span><b id="spbalval">0</b></div>
       </div>
     </header>
-    <div class="st-tabs" id="sttabs"></div>
     <section class="st-sec" id="boonsec">
-      <div class="storehdr" id="boonhdr"><span class="sh-t">BOON</span><span class="sh-h">Pick one, free</span></div>
+      <div class="storehdr" id="boonhdr"><span class="sh-t">BOON</span><span class="sh-h" id="boonhelp">Pick one, free</span></div>
       <div id="booncards" class="cardrow"></div>
     </section>
     <section class="st-sec" id="trainsec">
-      <div class="storehdr"><span class="sh-t" id="freehdr">TRAINING</span><span class="sh-h" id="freehelp">Spend skill points · you earn one each wave</span></div>
+      <div class="storehdr"><span class="sh-t" id="freehdr">TRAINING</span><span class="sh-h" id="freehelp">Spend skill points</span></div>
       <div id="skillcards" class="cardrow"></div>
     </section>
     <section class="st-sec" id="abilsec">
-      <div class="storehdr"><span class="sh-t" id="storehdr">ABILITIES</span><span class="sh-h">Spend XP · paired cards are a choice, the other locks for this run</span></div>
+      <div class="storehdr"><span class="sh-t" id="storehdr">NEW POWERS</span><span class="sh-h">Spend XP · paired cards are a choice, the other locks for this run</span></div>
       <div id="storecards" class="cardrow"></div>
     </section>
+    <section class="st-sec" id="powsec">
+      <div class="storehdr"><span class="sh-t">SURVIVAL POWERS</span><span class="sh-h">Spend XP · buy them again and again</span></div>
+      <div id="powcards" class="cardrow"></div>
+    </section>
     <section class="st-sec" id="mastsec">
-      <div class="storehdr"><span class="sh-t" id="masthdr">MASTERY</span><span class="sh-h">Spend XP · each rank upgrades a power you own</span></div>
-      <div id="masterycards" class="cardrow"></div>
+      <div class="storehdr"><span class="sh-t" id="masthdr">MASTERY</span><span class="sh-h">Your powers grow as you use them in a fight</span></div>
+      <div id="masterycards" class="mastlist"></div>
     </section>
     <div id="skillgoals"></div>
   </div>

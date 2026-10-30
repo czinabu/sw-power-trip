@@ -25,6 +25,7 @@ import { startLevel, checkUnlocks, splitWaveWithLull } from './flow.js';
 import { MUTATORS } from '../data/mutators.js';
 import { payWaveClear } from './progression.js';
 import { openSkillTree } from '../ui/store-ui.js';
+import { earnWavePoint, noteWavePoint, SURVIVAL_EVERY } from './upgrades.js';
 import { showBanner } from '../ui/banners.js';
 import { squadSize, regroupSquad } from '../allies/squad.js';
 import { beginWave } from './readout.js';
@@ -173,5 +174,7 @@ export function endlessWaveCleared(){
   if (G.hero === 'mando') player.jet = Math.min(player.jetMax, player.jet + player.jetMax*0.6);
   G.mut = null; G.eliteSurge = false;   // the mutator / surge ends with the wave
   shared.levelPhase = 'between'; shared.phaseT = 2.2;
-  openSkillTree();
+  earnWavePoint();
+  if (G.endlessWave % SURVIVAL_EVERY === 0) openSkillTree();   // the upgrade page every few waves; between them, a note in the corner
+  else noteWavePoint();
 }

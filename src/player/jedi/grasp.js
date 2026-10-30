@@ -19,6 +19,7 @@ import { sparks, motes } from '../../fx/ink.js';
 import { castGesture, forcePull } from './force.js';
 import { tryAttack } from './combat.js';
 import { forceStrike } from './palm.js';
+import { trainAbility } from '../../game/upgrades.js';
 
 const A = () => CFG.abilities.grasp;
 const fcost = (base) => base * (player.up.abilityCostMul || 1);
@@ -111,7 +112,7 @@ function yank(){
 function endGrasp(){
   const gr = player.grasp;
   player.grasp = null;
-  if (gr) player.cds.pull = abil('pull').cd * (stance().cdMult || 1);
+  if (gr){ player.cds.pull = abil('pull').cd * (stance().cdMult || 1); trainAbility('pull'); }
 }
 // lock the targets into the grasp. Each body gets a SLOT in a fan ahead of you (0 centre, ±1 to the sides).
 const SLOTS = [0, -1, 1, -2, 2];

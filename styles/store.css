@@ -130,36 +130,24 @@
 .card:not(.cant):not(.boon):not(.final){border-color:rgba(120,190,255,.38)}
 .coin.sp.has{box-shadow:0 0 16px rgba(255,210,90,.3)}
 
-/* ---- TABBED LAYOUT: one panel at a time, big readable cards centred in the space ---- */
-.st-scroll{padding:18px 28px 10px;gap:14px;overflow:hidden}
-.st-head{width:min(1280px,100%);padding-bottom:10px}
-.st-tabs{width:min(1280px,100%);display:flex;gap:8px;flex:none}
-.st-tab{flex:1;display:flex;align-items:center;justify-content:center;gap:10px;padding:11px 14px;border-radius:var(--r-lg);cursor:pointer;pointer-events:auto;
-  border:1px solid var(--edge);background:rgba(8,20,38,.55);color:var(--ink-dim);font:700 15px/1 var(--font-display);letter-spacing:2.2px;transition:border-color .15s,color .15s,background .15s}
-.st-tab:hover{color:var(--ink);border-color:var(--edge-lit)}
-.st-tab.on{color:var(--ink);border-color:var(--accent);background:linear-gradient(180deg,rgba(30,90,150,.45),rgba(10,30,56,.6));box-shadow:0 0 18px -4px rgba(60,180,255,.5)}
-.st-tab .tb{min-width:22px;padding:3px 7px;border-radius:var(--r-chip);font:700 12px/1 var(--font-ui);letter-spacing:0;text-align:center;background:var(--xp);color:#04140c}
-.st-tab .tb.sp{background:var(--gold);color:#201600}
-.st-tab .tb.zero{background:transparent;border:1px solid var(--edge);color:var(--ink-dim)}
-.st-sec{width:min(1280px,100%);flex:1;min-height:0;display:none;flex-direction:column;overflow-y:auto;padding:14px 4px 4px;background:none;border:0;animation:rise .25s var(--ease) both}
-.st-sec.act{display:flex}
-.storehdr{justify-content:center;text-align:center;flex:none}
-.storehdr .sh-t{display:none}
-.storehdr .sh-h{font-size:16px;color:var(--ink-soft)}
-.st-sec .cardrow{flex:1;grid-template-columns:repeat(auto-fit,minmax(250px,330px));justify-content:center;align-content:start;padding-top:4vh;gap:16px}
-.card{grid-template-columns:1fr;justify-items:center;text-align:center;padding:20px 18px 16px;row-gap:8px;align-content:center}
-.card>*,.card .c-tag,.card .c-nm,.card .c-ds,.card .c-ico{grid-column:1}
-.card .c-ico{grid-row:auto;width:56px;height:56px;font-size:30px;margin:8px 0 10px}
-.card .c-nm{font-size:19px}
-.card .c-ds{font-size:16px;line-height:1.4}
-.card .c-fl{display:block;font-size:13px}
-.card .c-cost,.card.skill .c-pick{margin-top:6px;padding:6px 18px;font-size:14px}
-.card .pips i{width:9px;height:9px}
-.forkgroup{grid-column:span 2;padding:6px}
-.forkgroup .card{flex:1}
+/* ---- ONE PAGE, NO TABS: every section stacked in one scroll, the things you can take first ---- */
+.st-scroll{padding:18px 28px 10px;gap:14px}
+.st-head{width:min(1180px,100%);padding-bottom:10px}
+.st-sec{width:min(1180px,100%);flex:none}
+.st-sec.empty{display:none}
+.st-sec .cardrow{grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+/* mastery: what your powers have learned from use — read-only rows, nothing to buy */
+.mastlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px 16px;text-align:left}
+.mrow2{display:grid;grid-template-columns:28px 1fr auto;align-items:center;column-gap:10px;row-gap:4px;padding:8px 10px;border-radius:var(--r-chip);border:1px solid var(--edge);background:rgba(8,20,38,.4)}
+.mrow2 .mi{grid-row:span 2;color:var(--ink-soft);display:flex;justify-content:center}
+.mrow2 .mi svg{width:22px;height:22px}
+.mrow2 b{font:700 14px/1.1 var(--font-display);letter-spacing:1.6px;color:var(--ink)}
+.mrow2 .rk{font:700 12px/1 var(--font-ui);letter-spacing:1px;color:var(--gold)}
+.mrow2 .mbar{grid-column:2 / span 2;height:5px;border-radius:3px;background:rgba(120,170,220,.15);overflow:hidden}
+.mrow2 .mbar i{display:block;height:100%;background:linear-gradient(90deg,#3a9fe0,#8fe0ff)}
+.mrow2 .mnext{grid-column:2 / span 2;font-size:12.5px;color:var(--ink-dim)}
+.mrow2.max{border-color:rgba(255,210,90,.4)} .mrow2.max .mbar i{background:var(--gold)}
 @media (max-width:760px){
-  .st-tabs{flex-wrap:wrap}.st-tab{flex:1 1 40%}
-  .st-sec .cardrow{grid-template-columns:1fr}
+  .st-sec .cardrow,.mastlist{grid-template-columns:1fr}
   .forkgroup{grid-column:auto}
 }
-@media (max-height:760px){.card .c-fl{display:none}.card .c-ico{width:44px;height:44px;font-size:24px;margin:2px 0 4px}.card{padding:12px}}
