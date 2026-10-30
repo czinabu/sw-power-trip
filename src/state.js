@@ -45,6 +45,8 @@ export const G = {
   cutMouse: false,       // player preference: a mouse flick just before a cut picks its angle (off by default: the keys do)
   mouseSens: 1,          // player preference: mouse look sensitivity multiplier
   adsSens: 0.4,          // player preference: share of it while the disruptor is scoped in
+  padSens: 1,            // player preference: gamepad right-stick look speed multiplier (engine/gamepad.js)
+  padInvert: false,      // player preference: gamepad look up/down inverted
   shakeScale: 1,         // player preference: screen shake strength (0 = off, 1.5 = extra)
   fov: 60,               // player preference: resting vertical FOV in degrees (the FOV slider, 50-90)
   sbMenu: false,         // the sandbox B panel is open (same cinematic cuts as the pause screen)

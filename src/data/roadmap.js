@@ -6,6 +6,8 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'Controller support', status: 'done',
+    items: ['Play with a gamepad: both heroes, every power, strafe and slide, in every mode, co-op included', 'Menus, pause and the upgrade screen by pad', 'Stick sensitivity and invert Y in Settings; a CONTROLLER page in How to Play', 'PlayStation pads show their own button shapes'] },
   { title: 'Combat and movement', status: 'done',
     items: ['Hold Left Alt to strafe (Force slide moved to Z)', 'Grounded combat: rolls and parries', 'Saber stamina tuning, free running', 'Jedi and Mando camera rigs', 'Smoother first use: saber throw, bosses, squads, arena sound, pathing, saber-throw light'] },
   { title: 'Battle maps and squads', status: 'done',

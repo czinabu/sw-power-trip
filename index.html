@@ -226,11 +226,11 @@
         <div class="btn" id="homeNo">KEEP PLAYING</div>
       </div>
     </div>
-    <div class="ov-foot"><kbd>Tab</kbd> pause · <kbd>Enter</kbd> resume · <kbd>M</kbd> music · <kbd>P</kbd> graphics</div>
+    <div class="ov-foot"><span class="kbonly"><kbd>Tab</kbd> pause · <kbd>Enter</kbd> resume · <kbd>M</kbd> music · <kbd>P</kbd> graphics</span><span class="padonly"><kbd class="pg" data-b="A"></kbd> select · <kbd class="pg" data-b="B"></kbd> back · <kbd class="pg" data-b="MENU"></kbd> pause / resume</span></div>
   </div>
   <div id="howto">
     <div class="howto-panel">
-      <div class="howto-head"><div class="howto-title">HOW TO PLAY</div><div class="howto-hero" id="howtohero"></div><div class="howto-x" id="howtoclose">✕</div></div>
+      <div class="howto-head"><div class="howto-title">HOW TO PLAY</div><div class="howto-hero" id="howtohero"></div><div class="howto-hero" id="howtodev"></div><div class="howto-x" id="howtoclose">✕</div></div>
       <div class="howto-more" id="howtomore"></div>
       <div class="ctl" id="ctl"></div>
     </div>
@@ -256,6 +256,8 @@
           <div class="setpill" id="cutaimctl" title="MOUSE: flick the mouse the way you want the blade to travel just before you cut. KEYS: the movement keys pick the cut">CUT AIM<span class="setval" id="cutaimval">KEYS</span></div>
           <div class="setpill" id="swingctl" title="Mirror which way your directional saber cuts sweep">SWING<span class="setval" id="swingval">NORMAL</span></div>
           <div class="setpill" id="gripctl" title="Hold the lightsaber in a regular or reverse grip">GRIP<span class="setval" id="gripval">REGULAR</span><span class="gfxhint">G</span></div>
+          <label class="setpill" title="Controller: how fast the right stick turns the view">STICK SENS<input type="range" id="padsl" min="0.4" max="2.2" step="0.05" value="1"><span class="setval" id="padval">1.0×</span></label>
+          <div class="setpill" id="padinvctl" title="Controller: push the right stick up to look down">INVERT Y<span class="setval" id="padinvval">OFF</span></div>
         </div>
       </div>
     </div>
