@@ -129,6 +129,15 @@ wider than `BIG_ARENA` (100, `world/arena.js`) counts as one, and `shared.arenaB
 
 - An arena's static props bake into one mesh per material plus one outline hull each: the Jedha courtyard goes from
   66 separate meshes to 8 draw calls, and the backdrop bakes the same way.
+- Static glows (opaque plain-colour `MeshBasicMaterial`: windows, lamps, beacons, molten channels) merge per material
+  in the same bake, without an outline: the Jedha pursuit route's ~250 window panes and lamps are a handful of draw
+  calls. **Anything the game moves, scales, hides or swaps later must be flagged `userData.noBake`** (as the temple
+  brazier is), or it is merged away with the rest.
+- The sun's shadow map is drawn once a frame: the ambient-occlusion pass (High) reuses it instead of redrawing it.
+- Every program bakes in the scene's point-light count. The count an arena was compiled with holds for the whole
+  fight (fx/lights.js): when a boss, the darksaber or a partner brings extra lights, as many pooled flash lights
+  stand down. So no second set of programs is built for the boss, and `compileLive` always compiles with fog on, as
+  every arena draws. `npm run perf` times each world's build, first frame and per-frame passes.
 - Painted textures are drawn once per world and reused on every rebuild (survival rotates arenas mid-run). Old arena
   geometry is disposed on rebuild.
 - Fuel drums are one vertex-coloured mesh plus one hull, built once per colour.
