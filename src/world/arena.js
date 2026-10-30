@@ -2,7 +2,7 @@
 // Arena group and buildArena(), which dispatches to the arena builders.
 
 import * as THREE from 'three';
-import { renderer, scene, hemi, sun } from '../engine/renderer.js';
+import { renderer, scene, camera, hemi, sun } from '../engine/renderer.js';
 import { V3, rand } from '../utils.js';
 import { shared, barrels, vents, pillars, solids, hazardZones } from '../state.js';
 import { spawnVent, spawnBarrel, setHazardStyle } from './hazards.js';
@@ -11,7 +11,7 @@ import { buildAmbient } from '../fx/ambient.js';
 import { themeFor } from '../data/worlds.js';
 import { paintSky, paintFloor } from './paint.js';
 import { buildBackdrop } from './backdrop.js';
-import { bakeArena, toon, toonGround } from './ink.js';
+import { bakeArena, toon, toonGround, farHaze } from './ink.js';
 import { resetCamBlockers } from './camblock.js';
 import { applyAtmosphere, clearAtmosphere } from './atmosphere.js';
 import { buildTempleArena } from './arenas/temple.js';
@@ -229,7 +229,8 @@ function buildWorld(L, T){
   const W = L.arena, D = L.arenaZ || L.arena, long = D > W, roam = long || W > BIG_ARENA;
   // a long arena's or a battle map's dome rides along with the camera (atmosphere.js), so it never has to reach past
   // the far plane
-  const sky = new THREE.Mesh(new THREE.SphereGeometry(roam ? 300 : L.arena*1.7, 32, 16),
+  const skyR = roam ? 300 : L.arena*1.7;   // (grown below to clear the backdrop)
+  const sky = new THREE.Mesh(new THREE.SphereGeometry(skyR, 32, 16),
     new THREE.MeshBasicMaterial({ map: tx.sky, side: THREE.BackSide, fog: false }));
   sky.userData.noBake = true;
   shared.arenaGroup.add(sky);
@@ -243,7 +244,8 @@ function buildWorld(L, T){
   floor.rotation.x = -Math.PI/2; floor.receiveShadow = true; floor.userData.noBake = true;
   shared.arenaGroup.add(floor);
   // the ground past the edge: a plain ring (no outline), a hair lower so the floor always wins where they overlap
-  const outer = new THREE.Mesh(new THREE.RingGeometry(W*0.5, Math.max(W, D)*(roam && !long ? 1.6 : 1.2), 48, 1), toonGround(T.outer ?? T.floor.base, { macro: 0.1 }));
+  const outerR = Math.max(W, D)*(roam && !long ? 1.6 : 1.2);
+  const outer = new THREE.Mesh(new THREE.RingGeometry(W*0.5, outerR, 48, 1), toonGround(T.outer ?? T.floor.base, { macro: 0.1 }));
   outer.rotation.x = -Math.PI/2; outer.position.y = -0.04; outer.receiveShadow = true; outer.userData.noBake = true;
   shared.arenaGroup.add(outer);
   // a dark ink line marks the playable edge (the same square the movement clamp uses; a long arena is walled in instead)
@@ -257,5 +259,17 @@ function buildWorld(L, T){
   const back = buildBackdrop(T.backdrop, L.arena/2, T.seed || 1, D/2);
   shared.arenaGroup.add(back);
   solids.push(...back.userData.solids);   // the edge's hills, where they run in over the play space
-  bakeArena(back, T.inkFar ?? 0.16);
+  bakeArena(back, T.inkFar ?? 0.16, true);
+  // the backdrop stands far past the arena's fog: it takes the far haze instead (world/ink.js), glows included
+  back.traverse(o => { if (o.isMesh || o.isPoints) o.material = farHaze(o.material); });
+  // the HORIZON: the sky dome and the ground run out past the furthest landmark
+  const reach = new THREE.Box3().setFromObject(back);
+  const far = reach.isEmpty() ? 0 : Math.max(-reach.min.x, reach.max.x, -reach.min.z, reach.max.z) * 1.15;
+  if (far > skyR){ sky.scale.setScalar(far / skyR); }
+  camera.far = Math.max(4000, far * 1.3); camera.updateProjectionMatrix();
+  if (far > outerR){
+    outer.geometry.dispose();
+    outer.geometry = new THREE.RingGeometry(W*0.5, far, 64, 1);
+    outer.material = farHaze(outer.material);
+  }
 }

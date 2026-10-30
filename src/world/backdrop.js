@@ -317,6 +317,43 @@ const BUILD = {
   },
 };
 
+/* DEPTH — the backdrop used to stand in a ring just past the arena walls (1.5 to 2.7 × arenaHalf), so a "distant"
+   mountain range was 50 m away and a Star Destroyer hung 50 m off: a diorama. Each kind now stretches the gap past
+   the edge by `depth` (a piece authored at r = 1 + x half-widths stands at 1 + x·depth), growing as it goes so it
+   keeps the same size on screen from the middle. It reads as truly far because it now parallaxes like it: hardly
+   moving as you cross the arena. The low ground (dunes, ramparts, lava, the crystals) stays where it is; AT-ATs are
+   already their real size and only step back a little. A theme entry can set its own `depth`.
+   SIZE — a landmark with a size from the films is built TO that size instead: `size` (or the kind's default below) is
+   its longest ground-plan extent in metres, and it moves out by the same factor, so it fills the same share of the sky
+   as authored but stands at its real distance. Everyone in the game is about 1.5× life size (a trooper is 2.6 m),
+   so lore sizes are scaled to match: an Imperial Star Destroyer (1,600 m) is 2,400 m here. */
+const DEPTH = { mesas: 4, spires: 3.5, cliffs: 2.5, towers: 2, stacks: 1.6, statue: 3, temple: 3, pyramid: 3,
+  volcano: 4, walker: 1.3 };
+export const HERO_SCALE = 1.5;
+const SIZE = { destroyer: 1600 * HERO_SCALE };
+const _b2 = new THREE.Box3();
+function stretch(objs, k, half, halfZ, whole, size){
+  if (!objs.length) return 1;
+  // a single landmark (a statue, a temple…) moves as one; a field of mesas or spires piece by piece
+  let cx = 0, cz = 0;
+  if (whole){ for (const o of objs){ cx += o.position.x; cz += o.position.z; } cx /= objs.length; cz /= objs.length; }
+  let fs = 0;
+  if (size){
+    _u.makeEmpty();
+    for (const o of objs){ o.updateMatrixWorld(true); _b2.setFromObject(o); _u.union(_b2); }
+    fs = _u.isEmpty() ? 0 : size / Math.max(_u.max.x - _u.min.x, _u.max.z - _u.min.z);
+  } else if (!(k > 1)) return 1;
+  for (const o of objs){
+    const x = whole ? cx : o.position.x, z = whole ? cz : o.position.z;
+    // how far out it stands, in half-widths of the (possibly long) play space it faces
+    const r = Math.hypot(x / half, z / halfZ);
+    const f = fs || (r > 1 ? (1 + (r - 1) * k) / r : 1);
+    if (f === 1) continue;
+    o.position.multiplyScalar(f); o.scale.multiplyScalar(f);
+  }
+  return fs || k;
+}
+
 /* build a theme's backdrop into its own group (baked by the caller with a thick outline). halfZ: a long arena's
    half-depth (the play space is half × halfZ). The hills that reach the play space come back in grp.userData.solids. */
 const PIECES = new Set(['mesas', 'spires', 'cliffs', 'towers', 'stacks', 'crystals', 'ramparts', 'wreck', 'lavaflows', 'dunes']);   // these keep each piece out themselves
@@ -329,8 +366,12 @@ export function buildBackdrop(list, half, seed = 1, halfZ = half){
     const fn = BUILD[o.kind];
     if (!fn) continue;
     const n0 = grp.children.length;
+    const s0 = grp.userData.solids.length;
     fn(grp, o, half, R);
     if (!PIECES.has(o.kind)) keepOut(since(grp, n0));   // a single landmark (a statue, a walker, a volcano…)
+    const whole = !PIECES.has(o.kind) || o.kind === 'wreck';
+    const f = stretch(since(grp, n0), o.depth ?? DEPTH[o.kind] ?? 1, half, halfZ, whole, o.size ?? SIZE[o.kind]);
+    if (f > 1 && whole) grp.userData.solids.length = s0;   // a landmark sent out to its real distance leaves no ground in reach
   }
   return grp;
 }
