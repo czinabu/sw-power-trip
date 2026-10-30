@@ -48,8 +48,8 @@ export const DUEL_PROFILES = {
    The Mandalorian's champions keep their own weapons and profiles (missions' hero.mando). */
 export const FORM_DUEL = {
   // the Wall: barely strikes, turns nearly everything, sends every bolt home and wears you out
-  soresu: { block: 0.9, posture: 210, feint: 0.1, delay: 0.2, chain: 1, counter: 0.3, thrust: 0, dodge: 0.05, deflect: 1,
-            lock: true, push: 0.45, stam: 190, parry: 0.55, elite: true, rally: 0.5, tire: 8 },
+  soresu: { block: 0.82, posture: 180, feint: 0.1, delay: 0.2, chain: 1, counter: 0.3, thrust: 0, dodge: 0.05, deflect: 1,
+            lock: true, push: 0.45, stam: 190, parry: 0.55, elite: true, rally: 0.5, tire: 6 },
   // the Acrobat: a light guard, flips out of your cuts and comes back in long, quick strings
   ataru:  { block: 0.42, posture: 80, feint: 0.4, delay: 0.15, chain: 3, counter: 0.5, thrust: 0.2, dodge: 0.45, deflect: 0.35,
             lock: true, push: 0.35, stam: 120, parry: 0.4, elite: true, rally: 0.55, flip: 2.2 },
