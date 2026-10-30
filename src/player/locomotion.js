@@ -46,7 +46,7 @@ export function updateMovement(dt, pp, st, f, r){
   // Jedi paces, a brisk purposeful walk, fight or no fight: the Vader walk, cutting down whatever comes into reach.
   const wasSprinting = player.sprinting;
   player.sprinting = G.hero !== 'mando' && !!player.sprintOn && !!keys['w'] && (player.grounded || wasSprinting)
-                     && !player.blockHeld && player.atkT <= 0 && !(player.flinchT > 0)
+                     && !keys['alt'] && !player.blockHeld && player.atkT <= 0 && !(player.flinchT > 0)
                      && !(player.landStagT > 0) && !(player.slideT > 0) && !player.mantle && !player.hang;
   player.walking = G.hero !== 'mando' && !player.sprintOn && player.grounded;
   // PIVOT — reversing hard at speed plants the feet: you brake to a stop before the new direction takes

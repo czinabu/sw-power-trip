@@ -56,7 +56,7 @@ export const TRAINING = {
     { say: 'Run with your whole body.',
       keys: 'Q · W', do: 'Sprint: run forward with W (Q switches to a walk and back)', poll: 'sprint', need: 1.5 },
     { say: 'Now drop low and let the Force carry you, far past where your legs would. The dash is for dodging; the slide is for distance, and it bowls over whoever stands in the way.',
-      keys: 'Q · W · ALT', do: 'Force-slide: press ALT during a sprint', ev: 'slide', need: 2 },
+      keys: 'Q · W · Z', do: 'Force-slide: press Z during a sprint', ev: 'slide', need: 2 },
     { say: 'Reach for the Force as you leave the ground, and it will hold you.',
       keys: 'HOLD SPACE', do: 'Force-leap and glide', poll: 'glide', need: 1.2 },
 
@@ -70,7 +70,7 @@ export const TRAINING = {
       keys: 'W + SPACE', do: 'Run at the east wall, jump alongside it and hold W', ev: 'wallrun', need: 2, mark: [12.2, 7.5] },
     { sec: 'THE GAUNTLET', say: 'Now all of it, without stopping. Under, over, up, down, along the wall, and back to me.',
       course: [
-        { at: [-8, 11], r: 1.6, slide: true, keys: 'Q · W · ALT', do: 'Sprint west and Force-slide under the bar', hint: 'SLIDE UNDER IT' },
+        { at: [-8, 11], r: 1.6, slide: true, keys: 'Q · W · Z', do: 'Sprint west and Force-slide under the bar', hint: 'SLIDE UNDER IT' },
         { at: [-12, -8.5], after: 'vault', keys: 'W · SPACE', do: 'Vault the blocks down the west lane', hint: 'VAULT THE BLOCKS' },
         { at: [-17.4, -16, 7.4], keys: 'SPACE · W', do: 'Climb the watchtower' },
         { at: [-17.4, -9.5], r: 3, after: 'roll', land: true, keys: 'SHIFT', do: 'Drop off the north side and roll as you land', hint: 'ROLL AS YOU LAND' },
@@ -145,7 +145,7 @@ export const TRAINING = {
       keys: 'HOLD SPACE + HOLD SHIFT', do: 'Boost through the air', poll: 'boost', need: 0.8 },
     { sec: 'THE COURSE', say: 'A hunter who cannot move is a target. Run my course: under, over, up and across.',
       course: [
-        { at: [-7, 11], r: 1.6, slide: true, keys: 'W · ALT', do: 'Run west and slide under the bar', hint: 'SLIDE UNDER IT' },
+        { at: [-7, 11], r: 1.6, slide: true, keys: 'W · Z', do: 'Run west and slide under the bar', hint: 'SLIDE UNDER IT' },
         { at: [-11, -4], after: 'vault', keys: 'W · SPACE', do: 'Climb over the crates down the west lane', hint: 'OVER THE CRATES' },
         { at: [0, -11.5], after: 'vault', keys: 'W · SPACE', do: 'Climb over the sandbag wall', hint: 'OVER THE WALL' },
         { at: [13.6, -9.4, 7.7], keys: 'HOLD SPACE', do: 'Jet to the top of the lookout' },

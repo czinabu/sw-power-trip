@@ -3,7 +3,7 @@
 // GRIP, a late store upgrade, up to grasp.multi foes at once, fanned out ahead of you). It hangs limp in
 // the air ahead of you and follows your aim; sweep it into other foes to bowl them over (brutes and the tougher
 // champions brace and only stumble). While held: F hurls it (them) the way you're aiming, a tap of C yanks it in onto
-// your blade for a saber strike, and the slide key (Left Alt) drops it. A short tap of C is still the plain Force Pull.
+// your blade for a saber strike, and the slide key (Z) drops it. A short tap of C is still the plain Force Pull.
 
 import { abil } from '../../data/mastery.js';
 import { CFG } from '../../data/config.js';

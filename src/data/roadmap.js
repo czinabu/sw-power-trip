@@ -6,7 +6,7 @@
 
 export const ROADMAP = [
   { title: 'Combat and movement', status: 'done',
-    items: ['Grounded combat: rolls and parries', 'Saber stamina tuning, free running', 'Jedi and Mando camera rigs', 'Smoother first use: saber throw, bosses, squads, arena sound, pathing, saber-throw light'] },
+    items: ['Hold Left Alt to strafe (Force slide moved to Z)', 'Grounded combat: rolls and parries', 'Saber stamina tuning, free running', 'Jedi and Mando camera rigs', 'Smoother first use: saber throw, bosses, squads, arena sound, pathing, saber-throw light'] },
   { title: 'Battle maps and squads', status: 'done',
     items: ['Three large battle maps', 'Allied squads, downed allies and revive', 'SPEARHEAD on the Grass Sea of Lothal'] },
   { title: 'Missions', status: 'done',

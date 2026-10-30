@@ -95,7 +95,7 @@ Knees bend with **+x** on the knee joint (the shin folds back); −x hyperextend
 Flips turn about the centre of mass, not the feet. A flip is described by turns about the body's axes (somer, twist,
 roll, spin) plus a leg shape (tuck, pike, layout, split, slide, kneeslide) and an air guard for the saber hand(s).
 
-The Force slide (Alt out of a sprint) is a real knee slide: the hips sit almost to the floor in the first fifth of it, the lead leg
+The Force slide (Z out of a sprint) is a real knee slide: the hips sit almost to the floor in the first fifth of it, the lead leg
 reaches out along the ground, the trail shin folds under, and the body leans back over it, rising out at the end
 (`kneeslide` in `anim/agility.js`; there's no slide in the capture library, so this one is authored).
 

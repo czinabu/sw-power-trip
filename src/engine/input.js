@@ -144,7 +144,7 @@ document.addEventListener('keydown', (e) => {
   const k = e.key.toLowerCase();
   if (player.downed && G.mode === 'play' && k !== 'p' && k !== 'm' && k !== 'escape') return;   // down: wait for your squad
   keys[k] = true;
-  if (k === 'alt') e.preventDefault();   // ALT is the slide: keep the browser from grabbing it for its menu bar
+  if (k === 'alt') e.preventDefault();   // ALT is the STRAFE hold (player/animation.js): keep the browser from grabbing it for its menu bar
   if (k === 'p' && !e.repeat){ cycleQuality(); return; }   // graphics quality — works anywhere
   if (k === 'm' && !e.repeat){ audioInit(); const on = MUSIC.toggle(); showBanner('', '♪ MUSIC ' + (on ? 'ON' : 'OFF'), 1.0); return; }   // music on/off (persists)
   if (k === ' ' && !e.repeat) doJump();
@@ -159,7 +159,7 @@ document.addEventListener('keydown', (e) => {
       if (k === 'x'){ if (G.unlocked.slam) jetSlam(); else if (G.unlocked.grapple) grappleHook(); }                 // MID: jetpack SLAM or GRAPPLE
       if (k === 'v'){ if (G.unlocked.birds) whistlingBirds(); else if (G.unlocked.deto) thermalDetonator(); }       // LATE: BIRDS or DETONATOR
       if (k === 'z') mandoJetMissile();
-      if ((k === 'c' || k === 'alt') && !e.repeat) trySlide();   // SLIDE out of a run (parkour.js): ALT, the Jedi's slide key, or C
+      if (k === 'c' && !e.repeat) trySlide();   // SLIDE out of a run (parkour.js)
       if (k === 'e' && !e.repeat) mandoMelee();   // close quarters: string, catch, charge, dive kick, takedown (melee.js)
       if (k === 'g' && !e.repeat) bactaStim();        // bacta stim self-heal (store unlock) — G sits right beside F, in reach of WASD
       if (k === 'r' && !e.repeat) startReload();
@@ -170,13 +170,13 @@ document.addEventListener('keydown', (e) => {
     }
   } else {
     // SHIFT dashes any way you're pressing (or rolls out of a hard landing). Sprinting has its own key: Q toggles it
-    // between run (the default) and walk (locomotion.js runs it). ALT out of a sprint slides.
+    // between run (the default) and walk (locomotion.js runs it). Z out of a sprint slides; hold ALT to strafe.
     if (k === 'shift' && !e.repeat) forceDash();
     if (k === 'q' && !e.repeat && G.mode === 'play'){
       player.sprintOn = !player.sprintOn;
       showBanner('', player.sprintOn ? 'RUN' : 'WALK', 0.6);
     }
-    if (k === 'alt' && !e.repeat && !graspDrop()) trySlide();   // the FORCE SLIDE out of a sprint (parkour.js); holding a foe, it drops them
+    if (k === 'z' && !e.repeat && !graspDrop()) trySlide();   // the FORCE SLIDE out of a sprint (parkour.js); holding a foe, it drops them
     if (k === 't' && !e.repeat) toggleLock();          // soft lock-on
     if (k === 'f'){ if (!(player.saberLock && lockPush()) && !graspThrow()) forcePush(); }   // in a saber lock: a point-blank shove that breaks it
     if (k === 'c' && !e.repeat) pullPress();   // tap = Force Pull on release; hold = Force GRASP (grasp.js)
