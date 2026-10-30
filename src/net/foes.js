@@ -29,6 +29,7 @@ import { followChapter } from '../game/campaign.js';
 import { damageBoss, bossStagger, bossStun, makeBossPuppet, dropBossPuppet } from '../boss/boss.js';
 import { net, on, send, connected } from './session.js';
 import { coopRun, hitQueue } from './run.js';
+import { STANCES } from '../data/stances.js';
 
 const DEAD = 1, WALKING = 2, WARBRINGER = 4;
 let sentAt = 0, hostSent = false, runListeners = [];
@@ -53,7 +54,8 @@ function snapshot(){
       (e.dead ? DEAD : 0) | (e.walking ? WALKING : 0) | (e.warbringer ? WARBRINGER : 0), e.elite || '',
       u.weaponArm ? r2(u.weaponArm.rotation.x) : 0, u.staff ? r2(u.staff.rotation.z) : 0,
       u.bodyMat ? u.bodyMat.emissive.getHex() : 0, u.bodyMat ? r2(u.bodyMat.emissiveIntensity) : 0,
-      u.weaponArm ? r2(u.weaponArm.rotation.z) : 0, u.staff ? r2(u.staff.rotation.x) : 0]);   // (the weapon's other axis: which line a guard or block covers)
+      u.weaponArm ? r2(u.weaponArm.rotation.z) : 0, u.staff ? r2(u.staff.rotation.x) : 0,   // (the weapon's other axis: which line a guard or block covers)
+      e.form || '']);   // a form master's form: its blade colour (game/mission.js)
   }
   const bs = shared.boss, bu = bs && bs.group.userData;
   const boss = bs && !bs.net ? [r2(bs.group.position.x), r2(bs.group.position.y), r2(bs.group.position.z), r2(bs.group.rotation.y), r2(bs.group.rotation.x),
@@ -119,6 +121,7 @@ function makePuppet(rec){
   const g = buildEnemyMesh(t);
   g.scale.setScalar(sc);
   if (elite) dressElite(g, elite);
+  if (rec[20] && STANCES[rec[20]] && g.userData.bladeGlow) g.userData.bladeGlow.material.color.setHex(STANCES[rec[20]].blade);   // a form master's blade
   const e = { net: true, nid, type, t, group: g, hp, maxHp, state, st: 0, vel: V3(0, 0, 0), flash: 0, hitCd: 0, dead: false,
     netState: state, converted: false, convT: 0, struck: false, stumble: 0, burn: 0, flinch: 0, spd: t.speed, elite: elite || null, shieldHp: 0, shieldBroken: false,
     aimLine: null, want: { pos: V3(rec[2], rec[3], rec[4]), rx: rec[5], ry: rec[6], rz: rec[7] } };
@@ -280,7 +283,7 @@ export function updatePuppets(dt){
     g.position.x = damp(g.position.x, w.pos.x, 20, dt);
     g.position.y = damp(g.position.y, w.pos.y, 20, dt);
     g.position.z = damp(g.position.z, w.pos.z, 20, dt);
-    g.rotation.x = damp(g.rotation.x, w.rx, 20, dt);
+    g.rotation.x += angDiff(g.rotation.x, w.rx) * (1 - Math.exp(-20 * dt));   // the short way round (an Ataru master's backflip wraps)
     g.rotation.z = damp(g.rotation.z, w.rz, 20, dt);
     g.rotation.y += angDiff(g.rotation.y, w.ry) * (1 - Math.exp(-20 * dt));
     if (g.userData.eliteRing) g.userData.eliteRing.rotation.z += dt * 2.5;
