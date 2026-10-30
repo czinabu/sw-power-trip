@@ -79,7 +79,7 @@ export function toggleHolster(){
   }
   if (player.atkT > 0) cancelSwing();
   player.holstered = !player.holstered;
-  player.deflectAnim = null; player.palmT = 0; player.palm = null; player.palmQueued = false;
+  player.deflectAnim = null; player.palmT = 0; player.palm = null; player.palmQueued = false; player.palmHold = null; player.pullStrikeT = 0;
   syncHolster();
   if (player.holstered){
     showBanner('', 'SABER HOLSTERED · THE FORCE ALONE', 1.0);

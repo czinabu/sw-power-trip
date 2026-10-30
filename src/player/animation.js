@@ -5,6 +5,7 @@ import { sweepBlade } from './jedi/bladehit.js';
 import * as THREE from 'three';
 import { CFG } from '../data/config.js';
 import { clamp, dampAngle, wrapAngle, V3 } from '../utils.js';
+import { chargeFrac } from './jedi/palm.js';
 import { burst } from '../fx/particles.js';
 import { G, keys, player } from '../state.js';
 import { MANDO, MANDO_WEAPONS } from '../data/mando.js';
@@ -65,7 +66,9 @@ function handGrip(){
   }
   const bare = player.holstered, pulling = player.castKind === 'pull';
   const thrown = player.castT > 0 ? (pulling ? 0.2 + 0.5 * (1 - clamp(player.castT / (player.castMax || 1), 0, 1)) : 0) : null;
-  const power = player.palmT > 0 ? 0 : player.judgeT > 0 ? 0.55 : thrown;
+  const pk = player.palmT > 0 && player.palm ? player.palm.B.kind : '';
+  // holstered: the jab and cross land as Force-wreathed fists, every other strike an open palm; a gathered charge cups them
+  const power = pk === 'jab' || pk === 'cross' ? 1 : player.palmT > 0 ? 0 : bare && player.palmHold ? 0.4 : player.judgeT > 0 ? 0.55 : thrown;
   const free = power ?? (player.blockHeld ? 0.08 : 0.25);
   return { L: bare ? free : power ?? (0.45 + 0.55 * saberPose.two) * (1 - 0.8 * saberPose.palm), R: bare ? free : 1 };
 }
@@ -307,7 +310,15 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
   });
   // JEDI FRONT KICK — the right leg SNAPS forward (hard-set, overriding the stride pose above) and the torso leans
   // back to counterweight it. `ext` is a 0→1→0 envelope so the leg shoots out and recovers within kickT.
-  if (G.hero !== 'mando' && player.kickT > 0){
+  if (G.hero !== 'mando' && player.kickT > 0 && player.kickKind === 'spin'){
+    // the holstered SPIN KICK: the right leg swings out wide at hip height as the body turns (forceHands spins it)
+    const ext = Math.sin((1 - clamp(player.kickT / (player.kickMax || 0.5), 0, 1)) * Math.PI);
+    R.legR.hip.rotation.x  = -1.1 * ext;
+    R.legR.hip.rotation.z  = -0.9 * ext;
+    R.legR.knee.rotation.x = 0.15 + (1 - ext) * 0.6;
+    R.legL.knee.rotation.x = 0.3 * ext;
+    R.torso.rotation.x = -0.12 * ext;
+  } else if (G.hero !== 'mando' && player.kickT > 0){
     const ext = Math.sin((1 - clamp(player.kickT / (player.kickMax || 0.4), 0, 1)) * Math.PI);
     R.legR.hip.rotation.x  = -1.55 * ext;
     R.legR.knee.rotation.x = 0.1 + (1 - ext) * 0.7;
@@ -494,8 +505,29 @@ function animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait){
    off a short hip turn, alternating hands, and the burst throws both. Plain joint poses, like the Force gestures. */
 function forceHands(dr, vis, R, planted, moving, ph, inten){
   const P = player.palm;
+  const guardArm = (A) => { A.sh.rotation.x = dr(A.sh.rotation.x, -0.7, 18); A.el.rotation.x = dr(A.el.rotation.x, -1.5, 18); };
+  // SPIN KICK: one full turn on the standing foot, arms flung wide for balance (the leg is posed with the kicks above)
+  if (player.kickKind === 'spin' && player.kickT > 0){
+    const k = 1 - clamp(player.kickT / (player.kickMax || 0.5), 0, 1);
+    vis.rotation.y = wrapAngle(Math.PI * 2 * Math.min(1, k * 1.25));
+    for (const [A, sy] of [[R.armL, -1], [R.armR, 1]]){
+      A.sh.rotation.x = dr(A.sh.rotation.x, -0.5, 24); A.sh.rotation.y = dr(A.sh.rotation.y, sy * 1.1, 24); A.el.rotation.x = dr(A.el.rotation.x, -0.5, 24);
+    }
+    return;
+  }
+  // GATHERING a charged palm: both hands cupped back at the right hip, the body coiled away from the foe
+  const gather = chargeFrac();
+  if (gather >= 0){
+    const sh = Math.sin(G.gt * 40) * 0.02 * gather;   // the hands tremble as the Force builds
+    for (const [A, sy] of [[R.armL, -1], [R.armR, 1]]){
+      A.sh.rotation.x = dr(A.sh.rotation.x, -0.35 + sh, 14); A.sh.rotation.y = dr(A.sh.rotation.y, sy * 0.1 + 0.35, 14); A.el.rotation.x = dr(A.el.rotation.x, -1.7, 14);
+    }
+    R.torso.rotation.y = dr(R.torso.rotation.y, -0.35 - 0.15 * gather, 10);
+    vis.rotation.y = dr(vis.rotation.y, 0, 14);
+    return;
+  }
   if (P && player.palmT > 0){
-    const k = 1 - player.palmT / player.palmMax, c = P.B.contact;
+    const k = 1 - player.palmT / player.palmMax, c = P.B.contact, kind = P.B.kind;
     const ext = k < c ? Math.sin((k / c) * Math.PI / 2) : 1 - (k - c) / (1 - c) * 0.85;   // out fast, back slower
     const ch = k < c * 0.4 ? 1 - k / (c * 0.4) : 0;                                      // the brief draw-back
     const arm = (A, out, sy) => {
@@ -503,13 +535,21 @@ function forceHands(dr, vis, R, planted, moving, ph, inten){
       A.sh.rotation.y = dr(A.sh.rotation.y, sy * (0.12 + out * 0.12), 40);
       A.el.rotation.x = dr(A.el.rotation.x, -1.6 + out * 1.5, 40);
     };
-    const guardArm = (A) => { A.sh.rotation.x = dr(A.sh.rotation.x, -0.7, 18); A.el.rotation.x = dr(A.el.rotation.x, -1.5, 18); };
-    if (P.hand === 'both'){ arm(R.armL, ext, -1); arm(R.armR, ext, 1); }
-    else if (P.hand === 'L'){ arm(R.armL, ext, -1); guardArm(R.armR); }
-    else { arm(R.armR, ext, 1); guardArm(R.armL); }
-    const turn = P.hand === 'L' ? 1 : P.hand === 'R' ? -1 : 0;
-    R.torso.rotation.y = dr(R.torso.rotation.y, turn * 0.28 * ext, 30);
-    R.torso.position.z = dr(R.torso.position.z, ext * (P.hand === 'both' ? 0.2 : 0.12), 30);
+    const A = P.hand === 'L' ? R.armL : R.armR, O = P.hand === 'L' ? R.armR : R.armL, sy = P.hand === 'L' ? -1 : 1;
+    if (kind === 'upper'){
+      // the rising palm: from low at the hip, up past the face to full reach overhead
+      A.sh.rotation.x = dr(A.sh.rotation.x, -0.2 - ext * 2.5, 40); A.sh.rotation.y = dr(A.sh.rotation.y, sy * 0.1, 40);
+      A.el.rotation.x = dr(A.el.rotation.x, -1.4 + ext * 1.1, 40); guardArm(O);
+      R.torso.rotation.x = dr(R.torso.rotation.x, -0.18 * ext, 30);
+    } else if (kind === 'backhand'){
+      // the sweep: the arm starts folded across the chest and lashes out straight to the side it swept to
+      A.sh.rotation.x = dr(A.sh.rotation.x, -1.35, 40); A.sh.rotation.y = dr(A.sh.rotation.y, sy * (-0.8 + ext * 1.9), 40);
+      A.el.rotation.x = dr(A.el.rotation.x, -1.5 + ext * 1.3, 40); guardArm(O);
+    } else if (P.hand === 'both'){ arm(R.armL, ext, -1); arm(R.armR, ext, 1); }
+    else { arm(A, ext, sy); guardArm(O); }
+    const turn = kind === 'backhand' ? -sy * 0.5 * (ext - 0.4) : P.hand === 'L' ? 1 : P.hand === 'R' ? -1 : 0;
+    R.torso.rotation.y = dr(R.torso.rotation.y, turn * (kind === 'backhand' ? 1 : 0.28 * ext), 30);
+    R.torso.position.z = dr(R.torso.position.z, ext * (kind === 'lunge' ? 0.28 : P.hand === 'both' ? 0.2 : 0.12), 30);
     vis.rotation.y = dr(vis.rotation.y, 0, 14);
     return;
   }

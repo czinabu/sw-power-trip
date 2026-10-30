@@ -10,6 +10,7 @@ import { MANDO, JEDI_FORCE, JUMP_HOLD_THRESH, forceJumpPow } from '../data/mando
 import { stance, maxHp } from './helpers.js';
 import { focusMoveMul } from './jedi/focus.js';
 import { slamImpact } from './jedi/force.js';
+import { stompImpact } from './jedi/palm.js';
 import { spawnGroundShock } from '../fx/vfx.js';
 import { clampToArena, collideSolids, ceilHit, BODY_H } from '../world/collision.js';
 import { mandoSlamImpact } from './mando/gadgets.js';
@@ -205,9 +206,13 @@ export function updateGravityAndLanding(dt, pp){
                               // (so hovering just over a tall pillar reads as low, not high)
   if (pp.y <= support + 0.001){
     const impact = Math.max(0, -player.vy);   // how hard you came down (drives the touchdown beat)
-    const slammed = player.slamming;
+    const slammed = player.slamming || player.stomp;
     pp.y = support; player.vy = 0;
-    if (player.slamming){
+    if (player.stomp){   // the holstered Jedi's Force stomp lands where you come down (jedi/palm.js)
+      player.stomp = false;
+      stompImpact();
+      player.moveVel.set(0, 0, 0);
+    } else if (player.slamming){
       (G.hero === 'mando' ? mandoSlamImpact : slamImpact)();
       player.slamming = false;
       player.vis.rotation.set(0, 0, 0); player.vis.position.y = 0;   // land CLEAN & square — clear any leftover dive tuck

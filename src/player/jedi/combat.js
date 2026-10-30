@@ -378,7 +378,7 @@ const JEDI_KICK = { reach: 1.75, arc: 0.62, dmg: 10, knock: 28, recover: 0.4 };
 export function forceKick(){
   if (G.mode !== 'play' || G.hero === 'mando' || player.kickT > 0 || player.judgeT > 0 || player.mendT > 0 || player.flip || player.slamming || player.hang || player.flinchT > 0) return;
   const A = JEDI_KICK;
-  player.kickT = player.kickMax = A.recover;
+  player.kickT = player.kickMax = A.recover; player.kickKind = 'front';
   const f = fwd(), pp = playerPos();
   player.vel.addScaledVector(f, 4);   // drive into the kick for weight
   const cosLim = Math.cos(A.arc);

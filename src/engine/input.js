@@ -38,7 +38,7 @@ import { startSwitch } from '../player/anim/saber.js';
 import { tutEvent } from '../game/tutor-bus.js';
 import { diffWindow } from '../data/difficulty.js';
 import { toggleHolster } from '../player/holster.js';
-import { forceStrike } from '../player/jedi/palm.js';
+import { strikePress, strikeRelease, holsteredKick } from '../player/jedi/palm.js';
 import { squadOrder } from '../allies/squad.js';
 import { noteFlick } from '../player/jedi/cutaim.js';
 
@@ -81,7 +81,7 @@ document.addEventListener('mousedown', (e) => {
   if (e.button === 1){ e.preventDefault(); toggleLock(); return; }   // middle mouse: soft lock-on (Jedi)
   // LMB while guarding (RMB held) hurls the saber; otherwise it's a normal swing (holstered: a Force strike)
   if (e.button === 0){
-    if (player.holstered) forceStrike();
+    if (player.holstered) strikePress();   // tap: the strike string · hold: a charged palm, let go on release (jedi/palm.js)
     else if (player.blockHeld && G.unlocked.throw) saberThrow();
     else if (!airCut()) tryAttack();   // in the air with the blade out: the AERIAL CUT, a dash at the foe ahead (jedi/aerial.js)
   }
@@ -125,7 +125,7 @@ document.addEventListener('mousedown', (e) => {
   }
 });
 document.addEventListener('mouseup', (e) => {
-  if (e.button === 0){ player.firing = false; player.trigHeld = false; }
+  if (e.button === 0){ player.firing = false; player.trigHeld = false; if (player.palmHold) strikeRelease(); }
   if (e.button === 2){ player.blockHeld = false; player.zoom = false; }
 });
 document.addEventListener('wheel', (e) => {
@@ -183,7 +183,7 @@ document.addEventListener('keydown', (e) => {
     if (k === 't' && !e.repeat) toggleLock();          // soft lock-on
     if (k === 'f'){ if (!(player.saberLock && lockPush()) && !graspThrow()) forcePush(); }   // in a saber lock: a point-blank shove that breaks it
     if (k === 'c' && !e.repeat) pullPress();   // tap = Force Pull on release; hold = Force GRASP (grasp.js)
-    if (k === 'e' && !e.repeat){ if (player.saberLock) lockKick(); else forceKick(); }   // FRONT KICK — always-available melee, shares 'E' with the Mando's punch
+    if (k === 'e' && !e.repeat){ if (player.saberLock) lockKick(); else if (!(player.holstered && holsteredKick())) forceKick(); }   // holstered: mid-string a spin kick, in the air a stomp   // FRONT KICK — always-available melee, shares 'E' with the Mando's punch
     if (k === 'v') forceBarrier();     // Force Barrier — the defensive bubble (its fork-sibling SABER THROW is RMB+LMB)
     // ADAPTIVE FORK KEYS — each either/or pair shares ONE bind (you only ever own one of the pair).
     if (k === 'x' && !e.repeat && G.mode === 'play'){ if (G.unlocked.slam) forceSlam(); else if (G.unlocked.mend) forceMend(); }   // UTIL: JUMP ATTACK or MEND

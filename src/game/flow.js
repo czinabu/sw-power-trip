@@ -134,6 +134,7 @@ export function startLevel(idx, opts){
   player.lockTarget = null;
   resetMandoMelee();
   player.judgeT = 0;
+  player.palmT = 0; player.palm = null; player.palmQueued = false; player.palmHold = null; player.pullStrikeT = 0; player.stomp = false;   // the holstered string (jedi/palm.js)
   player.judgeTargets = [];
   player.barrierT = 0; if (shared._barrierMesh) shared._barrierMesh.visible = false;
   player.mendT = 0;
