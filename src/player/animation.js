@@ -79,9 +79,10 @@ function poseBody(dt, dr, vis, planted, POSE, moving){
   // The one exception: running AWAY from the reticle he turns and runs like the Jedi does (backRun), shooting back
   // over his shoulder one-handed (anim/guns.js) instead of backpedalling square to the camera.
   const mandoAimLock = G.hero === 'mando' && (player.aiming > 0 || player.zoom || player.firing);
-  const inCombatPose = player.atkT > 0 || player.dashT > 0 || player.blockHeld || player.judgeT > 0 || player.castT > 0 || player.palmT > 0 || mandoAimLock;
+  const strafing = !!keys['alt'];   // HOLD ALT: squared to the crosshair whatever you do, Force Unleashed style
+  const inCombatPose = strafing || player.atkT > 0 || player.dashT > 0 || player.blockHeld || player.judgeT > 0 || player.castT > 0 || player.palmT > 0 || mandoAimLock;
   const wasBackRun = player.backRun;
-  player.backRun = mandoBackRun();
+  player.backRun = !strafing && mandoBackRun();
   if (wasBackRun && !player.backRun) player._unwindT = 0.35;   // turning back to the reticle: ease round, don't whip
   if (player._unwindT > 0) player._unwindT -= dt;
   let face = G.yaw;
