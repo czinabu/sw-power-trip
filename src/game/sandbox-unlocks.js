@@ -45,6 +45,20 @@ export function recordChapters(pos, onlyLast){
   return !was && sandboxUnlocked();
 }
 
+// the Missions list keeps a mission locked (and unspoiled) until a hero has cleared it in the campaign: its chapter is
+// in the cleared set, or either hero has won it (the campaign marks that, game/mission.js), or the campaign is beaten
+export function missionUnlocked(id){
+  const m = MISSIONS[id]; if (!m) return false;
+  if (sandboxFull()) return true;
+  const done = cleared(), ch = CHAPTERS.find(c => c.mission === id);
+  return (!!ch && done.has(ch.id)) || HEROES.some(h => { try { return localStorage.getItem('sw_mission_' + id + '_' + h) === '1'; } catch(e){ return false; } });
+}
+// 'CHAPTER 3' for the card of a locked mission: where the campaign reaches it ('' when no chapter does)
+export function missionChapterNo(id){
+  const i = chapterOrder(G.actTwo).findIndex(c => c.mission === id);
+  return i < 0 ? '' : 'CHAPTER ' + (i + 1);
+}
+
 /* ---------- what the story so far has shown ---------- */
 // a mission's foes: every { type: count } group anywhere in its objectives (pulses, guards, ambushes…), and every
 // named fighter's `foe` (duels, trials, the quarry, per-hero overrides)

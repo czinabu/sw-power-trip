@@ -14,7 +14,7 @@ import { startEndless } from '../game/survival.js';
 import { startTutorial, skipStep, setTrainingExit, trainingDone } from '../game/tutorial.js';
 import { startMission, startCoopMission, retryMission, missionDone, missionTitle } from '../game/mission.js';
 import { startSandbox, sandboxUnlocked } from '../game/sandbox.js';
-import { sandboxFull, sandboxProgress } from '../game/sandbox-unlocks.js';
+import { sandboxFull, sandboxProgress, missionUnlocked, missionChapterNo } from '../game/sandbox-unlocks.js';
 import { closeSandboxPanel } from './sandbox-ui.js';
 import { MISSIONS } from '../data/missions.js';
 import { closeProgress } from './store-ui.js';
@@ -57,7 +57,7 @@ export function setOverlayState(state){
     go.textContent = 'CONTINUE CAMPAIGN'; sub.textContent = resumeLabel();
   } else if (state === 'menu'){
     go.textContent = G.modeSel === 'endless' ? 'BEGIN SURVIVAL' : G.modeSel === 'training' ? 'BEGIN TRAINING' : G.modeSel === 'mission' ? 'BEGIN MISSION' : G.modeSel === 'sandbox' ? 'ENTER THE SANDBOX' : 'BEGIN CAMPAIGN';
-    sub.textContent = G.modeSel === 'endless' ? 'HOW LONG CAN YOU HOLD?' : G.modeSel === 'training' ? 'LEARN THE CONTROLS AND POWERS' : G.modeSel === 'mission' ? missionTitle(G.missionId) : G.modeSel === 'sandbox' ? (sandboxFull() ? 'ANY FOE, ANY POWER' : 'THE STORY SO FAR') : 'CHOOSE YOUR LEGEND';
+    sub.textContent = G.modeSel === 'endless' ? 'HOW LONG CAN YOU HOLD?' : G.modeSel === 'training' ? 'LEARN THE CONTROLS AND POWERS' : G.modeSel === 'mission' ? (missionOpen(G.missionId) ? missionTitle(G.missionId) : 'LOCKED MISSION') : G.modeSel === 'sandbox' ? (sandboxFull() ? 'ANY FOE, ANY POWER' : 'THE STORY SO FAR') : 'CHOOSE YOUR LEGEND';
   } else if (state === 'pause'){
     go.textContent = 'RESUME'; sub.textContent = 'PAUSED';
     const where = G.chapter >= 0 ? 'CAMPAIGN · ' + chapterLabel() : G.training ? 'TRAINING' : G.sandbox ? 'SANDBOX' : G.mission ? missionTitle(G.missionId) : G.endless ? 'SURVIVAL' : 'CAMPAIGN';
@@ -95,6 +95,7 @@ function beginPlay(){
   document.getElementById('runsummary').style.display = 'none';
   document.body.classList.remove('in-menu');
   setHowTo(false); setSettings(false);
+  if (G.modeSel === 'mission' && !G.coopJoin && !missionOpen(G.missionId)) G.modeSel = 'campaign';   // a locked mission never launches
   if ((G.modeSel === 'endless' && !survivalUnlocked() && !G.coopJoin) || (G.modeSel === 'sandbox' && !sandboxUnlocked())) G.modeSel = 'campaign';   // safety — never launch a locked mode
   if (G.mode === 'menu' || G.mode === 'victory'){
     G.mode = 'play'; G.slowmo = 1;
@@ -163,6 +164,8 @@ document.getElementById('msnlist').innerHTML = Object.values(MISSIONS).map(m =>
   </div>`).join('');
 // a campaign trial joins the list once either hero has reached it in the campaign (won it there)
 const trialSeen = (id) => !MISSIONS[id].trial || missionDone(id, 'jedi') || missionDone(id, 'mando');
+// a mission stays locked and unspoiled until the campaign has cleared it (game/sandbox-unlocks.js)
+const missionOpen = (id) => trialSeen(id) && missionUnlocked(id);
 export function setMission(id){
   if (!MISSIONS[id] || !trialSeen(id)) id = Object.keys(MISSIONS)[0];
   G.missionId = id; try { localStorage.setItem('sw_mission', id); } catch(e){}
@@ -198,12 +201,17 @@ function refreshMissionMark(){
   for (const id in MISSIONS){
     const card = document.getElementById('msn-' + id); if (!card) continue;
     card.style.display = trialSeen(id) ? '' : 'none';
-    card.querySelector('.mtn').textContent = missionTitle(id);   // a trial is named for the hero picked
+    const open = missionOpen(id), ch = missionChapterNo(id);
+    card.classList.toggle('locked', !open);
+    card.querySelector('.mtn').textContent = open ? missionTitle(id) : '???';   // a trial is named for the hero picked
+    card.querySelector('.mw').textContent = open ? placeOf(MISSIONS[id]) : (ch ? 'COMPLETE ' + ch + ' TO UNLOCK' : 'LOCKED');
+    for (const t of card.querySelectorAll('.msn-tag')) t.style.display = open ? '' : 'none';
     const w = card.querySelector('.won');
-    w.textContent = (missionDone(id, 'jedi') ? 'J✓' : '') + (missionDone(id, 'mando') ? ' M✓' : '');
+    w.textContent = open ? (missionDone(id, 'jedi') ? 'J✓' : '') + (missionDone(id, 'mando') ? ' M✓' : '') : '🔒';
   }
   const m = MISSIONS[G.missionId], info = document.getElementById('msninfo');
-  if (m && info) info.innerHTML = m.blurb.charAt(0).toUpperCase() + m.blurb.slice(1) + '.' + (mark(m.id) ? ' &nbsp;' + mark(m.id) : '');
+  if (m && info && !missionOpen(m.id)){ const ch = missionChapterNo(m.id); info.textContent = 'Locked. Clear ' + (ch ? ch.toLowerCase().replace(/^c/, 'C') : 'its chapter') + ' in the campaign to unlock this mission.'; }
+  else if (m && info) info.innerHTML = m.blurb.charAt(0).toUpperCase() + m.blurb.slice(1) + '.' + (mark(m.id) ? ' &nbsp;' + mark(m.id) : '');
 }
 // FIRST CAMPAIGN — once, a hero who hasn't trained (or beaten the campaign) is offered the training grounds first
 function shouldOfferTraining(){
