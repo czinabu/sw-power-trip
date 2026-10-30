@@ -44,6 +44,7 @@ try {
     for (let i = 0; i < 5; i++){
       if (await page.evaluate(() => GAME.G.mode === 'play')) break;
       if (await page.isVisible('#goText')) await page.click('#goText', { timeout: 2000 }).catch(() => {});
+      if (await page.isVisible('#forms [data-go]')) await page.click('#forms [data-go]', { timeout: 2000 }).catch(() => {});   // the Jedi's forms page before the fight (ui/forms-ui.js): FIGHT
       await page.waitForTimeout(800);
     }
   }

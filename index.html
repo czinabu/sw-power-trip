@@ -195,6 +195,7 @@
     <div class="ov-actions">
       <div class="btn primary go" id="goText">BEGIN</div>
       <div class="btn" id="skipBtn">SKIP LESSON</div>
+      <div class="btn" id="formsBtn">LIGHTSABER FORMS</div>
       <div class="btn" id="restartBtn">↻ RESTART RUN</div>
       <div class="btn" id="homeBtn">MAIN MENU</div>
       <div class="btn" id="newBtn">NEW GAME</div>
@@ -256,7 +257,7 @@
           <label class="setpill" title="Mouse look while scoped in with the disruptor, against the normal sensitivity">SCOPE SENS<input type="range" id="adssl" min="0.1" max="1" step="0.05" value="0.4"><span class="setval" id="adsval">40%</span></label>
           <div class="setpill" id="cutaimctl" title="MOUSE: flick the mouse the way you want the blade to travel just before you cut. KEYS: the movement keys pick the cut">CUT AIM<span class="setval" id="cutaimval">KEYS</span></div>
           <div class="setpill" id="swingctl" title="Mirror which way your directional saber cuts sweep">SWING<span class="setval" id="swingval">NORMAL</span></div>
-          <div class="setpill" id="gripctl" title="Hold the lightsaber in a regular or reverse grip">GRIP<span class="setval" id="gripval">REGULAR</span><span class="gfxhint">G</span></div>
+          <div class="setpill" id="gripctl" title="Niman's grip: regular or reverse (Shien always holds a reverse grip, the other forms a forward one)">GRIP<span class="setval" id="gripval">REGULAR</span><span class="gfxhint">G</span></div>
           <label class="setpill" title="Controller: how fast the right stick turns the view">STICK SENS<input type="range" id="padsl" min="0.4" max="2.2" step="0.05" value="1"><span class="setval" id="padval">1.0×</span></label>
           <div class="setpill" id="padinvctl" title="Controller: push the right stick up to look down">INVERT Y<span class="setval" id="padinvval">OFF</span></div>
         </div>
@@ -296,11 +297,13 @@
       <div class="rm-list" id="rmlist"></div>
     </div>
   </div>
+  <div id="forms"></div>   <!-- the lightsaber forms: before the fight and on pause (ui/forms-ui.js) -->
 </div>
 <div id="boonstrip"></div>
 <div id="threats"><div id="dmgind"><i></i></div></div>
 <div id="hitmark"><i></i><i></i><i></i><i></i></div>
 <div id="chapcard"></div>   <!-- the campaign's chapter card (game/campaign.js) -->
+<div id="meditate"></div>   <!-- learning a form: choose the loadout (game/meditation.js) -->
 <div id="skilltree">
   <div class="st-scroll">
     <header class="st-head">

@@ -34,6 +34,7 @@ async function play(page, hero){
   await page.click('#hero-' + hero); await page.click('#mode-campaign');
   for (let i = 0; i < 5 && !(await page.evaluate(() => GAME.G.mode === 'play')); i++){
     if (await page.isVisible('#goText')) await page.click('#goText', { timeout: 2000 }).catch(() => {});
+    if (await page.isVisible('#forms [data-go]')) await page.click('#forms [data-go]', { timeout: 2000 }).catch(() => {});   // the Jedi's forms page before the fight (ui/forms-ui.js): FIGHT
     await page.waitForTimeout(800);
   }
 }
@@ -84,12 +85,14 @@ try {
   await host.click('#hero-jedi'); await host.click('#mode-mission'); await host.click('#msn-refuge');
   for (let i = 0; i < 5 && !(await host.evaluate(() => GAME.G.mode === 'play')); i++){
     if (await host.isVisible('#goText')) await host.click('#goText', { timeout: 2000 }).catch(() => {});
+    if (await host.isVisible('#forms [data-go]')) await host.click('#forms [data-go]', { timeout: 2000 }).catch(() => {});   // the Jedi's forms page before the fight (ui/forms-ui.js): FIGHT
     await host.waitForTimeout(800);
   }
   await guest.waitForFunction(() => document.getElementById('coopjoinrun').style.display !== 'none', null, poll);
   await guest.click('#hero-mando'); await guest.click('#coopBtn'); await guest.click('#coopjoinrun');
   for (let i = 0; i < 5 && !(await guest.evaluate(() => GAME.G.mode === 'play')); i++){
     if (await guest.isVisible('#goText')) await guest.click('#goText', { timeout: 2000 }).catch(() => {});
+    if (await guest.isVisible('#forms [data-go]')) await guest.click('#forms [data-go]', { timeout: 2000 }).catch(() => {});   // the Jedi's forms page before the fight (ui/forms-ui.js): FIGHT
     await guest.waitForTimeout(800);
   }
   if (!(await guest.evaluate(() => GAME.G.coopGuest && GAME.G.mission))) fail('the guest did not join the host\'s mission');

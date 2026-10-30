@@ -8,6 +8,7 @@ import { switchStance } from '../player/jedi/stance.js';
 import { resumeChapter, chapterLabel } from './campaign.js';
 import { chapterOrder, forHero, CHAPTER_OF_LEVEL } from '../data/campaign.js';
 import { DEFAULT_LOADOUT, cleanLoadout, migrateForm } from '../data/forms.js';
+import { clearMeditation } from './meditation.js';
 
 /* PROGRESS lives in localStorage keys spread across the game (campaign/mission/training wins, bests, the customizer's
    look, the sandbox's picks). A slot copies those keys, so loading one puts every mode's locks and ticks back exactly.
@@ -31,7 +32,7 @@ export function inCampaignRun(){ return G.mode === 'play' && (G.chapter >= 0 || 
 function snapshotRun(){
   return {
     idx: G.levelIdx, chapter: G.chapter, actTwo: G.actTwo, checkpoint: clone(G.checkpoint), stance: G.stance, loadout: [...G.loadout], weapon: player.weapon,
-    unlocked: clone(G.unlocked), stanceUnlocked: clone(G.stanceUnlocked), mandoChoiceShown: G.mandoChoiceShown,
+    unlocked: clone(G.unlocked), stanceUnlocked: clone(G.stanceUnlocked), formFork: G.formFork || null, mandoChoiceShown: G.mandoChoiceShown,
     xp: G.xp, xpEarned: G.xpEarned, skillPoints: G.skillPoints, skillSpent: G.skillSpent,
     powerLv: clone(G.powerLv), mastery: clone(G.mastery), seenTypes: clone(G.seenTypes),
     up: clone(player.up), phoenixReady: !!player.phoenixReady, boon: clone(player.boon), boons: clone(player.boons), skills: clone(player.skills),
@@ -45,7 +46,9 @@ export function restoreRun(run){
   G.waveTotal = G.checkpoint.waveTotal;
   player.weapon = run.weapon || 'single';
   G.unlocked = clone(run.unlocked) || {}; G.stanceUnlocked = migrateUnlocked(run.stanceUnlocked);
+  if ((run.loadout || []).includes('niman') || run.stance === 'niman') G.stanceUnlocked.niman = true;   // a run saved when every hero started on Niman keeps it
   G.loadout = cleanLoadout(run.loadout || DEFAULT_LOADOUT); G.mandoChoiceShown = !!run.mandoChoiceShown;
+  G.formFork = run.formFork || null; clearMeditation();   // (forms the saved chapter has passed are taught again as it starts)
   G.xp = run.xp || 0; G.xpEarned = run.xpEarned || 0; G.skillPoints = run.skillPoints || 0; G.skillSpent = run.skillSpent || 0;
   G.powerLv = clone(run.powerLv) || {}; G.mastery = clone(run.mastery) || {}; G.seenTypes = clone(run.seenTypes) || {};
   G.boonOffer = null; G.boonPicked = false;
@@ -70,7 +73,7 @@ export function resumeRun(){
   const run = G.resumeRun; G.resumeRun = null;
   restoreRun(run);
   resumeChapter(run);   // (a save from before the chapters picks up on the chapter that opens its level)
-  switchStance(migrateForm(run.stance) || 'niman', true);
+  switchStance(migrateForm(run.stance) || 'shiicho', true);
 }
 // 'CHAPTER 3 · THE LAST EVACUATION' for a saved run, without starting it
 function savedChapter(run, hero){
