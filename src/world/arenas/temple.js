@@ -25,6 +25,8 @@ export function buildTempleArena(L){
   const trim   = new THREE.MeshStandardMaterial({ color: pal.trim ?? 0xb89a5a, roughness: 0.5, metalness: 0.55 });
   const fireC  = pal.brazier ?? 0xff8a2a;
   const K = arenaKit(), R = seeded(11);
+  // the plan is authored at 42 m across; a bigger arena spreads every piece out by the same share (sizes stay)
+  const S = L.arena / 42;
 
   // ---- central ZIGGURAT — stepped and walkable (each step under STEP_UP), summit 1.5. The base is deliberately tight:
   // a foe blocked at the base can still reach a player on the summit, so the dais is contested, never a safe perch ----
@@ -43,7 +45,7 @@ export function buildTempleArena(L){
 
   // ---- GRAND COLUMNS — eight at r 13, offset so the north spawn lane and the cardinal lanes stay open ----
   for (let i = 0; i < 8; i++){
-    const a = (i / 8) * Math.PI*2 + Math.PI/8, [x, z] = at(a, 13), h = 8.4 + R()*1.1, rad = 0.85;
+    const a = (i / 8) * Math.PI*2 + Math.PI/8, [x, z] = at(a, 13 * S), h = 8.4 + R()*1.1, rad = 0.85;
     K.column(x, z, rad, h, stone, { taper: 0.84 });
     K.deco(new THREE.BoxGeometry(rad*2.4, 0.4, rad*2.4), stoneD, x, 0.2, z);            // plinth
     K.deco(new THREE.BoxGeometry(rad*2.7, 0.45, rad*2.7), stoneD, x, h - 0.22, z);       // capital
@@ -62,26 +64,26 @@ export function buildTempleArena(L){
 
   // ---- BROKEN WALLS — east and west, along z (axis-aligned so collision matches the mesh), vaultable at 1.5 ----
   for (const sx of [-1, 1]){
-    K.box(sx*8.5, 0, 0.3, 2.0, 1.5, stoneD);
-    K.deco(new THREE.BoxGeometry(0.34, 0.3, 1.6), stone, sx*8.5, 1.6, -0.6 + R()*0.4, 0, 0.12*sx, 0);   // askew cap stone
+    K.box(sx*8.5*S, 0, 0.3, 2.0, 1.5, stoneD);
+    K.deco(new THREE.BoxGeometry(0.34, 0.3, 1.6), stone, sx*8.5*S, 1.6, -0.6 + R()*0.4, 0, 0.12*sx, 0);   // askew cap stone
   }
   // ---- CORNER RUINS — an L on each diagonal, corner outward, so the inside faces the dais and the outside faces the
   // edge where foes arrive. One arm is lower (1.2) to vault, one taller (1.65) to hide behind ----
   for (const [sx, sz] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]){
-    const cx = sx*7.5, cz = sz*7.5;
+    const cx = sx*7.5*S, cz = sz*7.5*S;
     K.box(cx - sx*1.3, cz, 1.3, 0.3, 1.65, stoneD);          // arm along x, toward the centre line
     K.box(cx, cz - sz*1.4, 0.3, 1.1, 1.2, stone);             // arm along z
     K.deco(new THREE.BoxGeometry(0.7, 0.3, 0.5), stone, cx - sx*0.5, 1.8, cz, 0, 0.3, 0);
   }
 
   // ---- OVERWATCH gantry — south-east, between two columns, clear of the cardinal lanes ----
-  K.gantry(10, -12, { a: stoneD, b: stone, strut: trim, beacon: fireC });
+  K.gantry(10*S, -12*S, { a: stoneD, b: stone, strut: trim, beacon: fireC });
 
   // ---- low RUBBLE you step over (toppled drums, all under STEP_UP) ----
   for (const [x, z, len, ax] of [[-4.5, 4.8, 1.6, true], [5.2, -5.0, 1.4, false], [-11.5, -6.5, 1.8, true], [12.0, 7.5, 1.5, false], [-2.5, -15.5, 1.7, true], [15.5, -2.5, 1.4, false]]){
-    K.rubble(x, z, len, 0.3, stoneD, ax);
+    K.rubble(x*S, z*S, len, 0.3, stoneD, ax);
   }
 
   // ---- FUEL DRUMS — beside the walls and the south lane, where foes bunch up on their way in ----
-  for (const [x, z] of [[10.2, -1.0], [-10.2, -1.0], [0, -10.2]]) spawnBarrel(V3(x, 0, z));
+  for (const [x, z] of [[10.2, -1.0], [-10.2, -1.0], [0, -10.2]]) spawnBarrel(V3(x*S, 0, z*S));
 }
