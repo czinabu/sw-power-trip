@@ -26,6 +26,7 @@ import { buildArena } from '../world/arena.js';
 import { spawnChampion, startEndlessWave, endlessWaveCleared } from './survival.js';
 import { applyJetTier, payWaveClear } from './progression.js';
 import { MANDO_AUTO, JEDI_AUTO } from '../data/store.js';
+import { DEFAULT_LOADOUT } from '../data/forms.js';
 import { openSkillTree } from '../ui/store-ui.js';
 import { showBanner } from '../ui/banners.js';
 import { diffBossCheckpoint } from '../data/difficulty.js';
@@ -134,7 +135,7 @@ export function startLevel(idx, opts){
   player.mendT = 0;
   player.cancelDR = 0; player.swingLock = 0; player.dashCharges = null; player.dashRecharge = 0; player.cancelRiposte = false;
   player.cds.mend = 0;
-  if (fresh) switchStance('medium', true);   // a fresh legend starts balanced
+  if (fresh) switchStance('niman', true);   // a fresh legend starts balanced
   setStanceHud();
   G.yaw = Math.PI;  // face arena center
   player.faceYaw = Math.PI;
@@ -147,6 +148,7 @@ export function startLevel(idx, opts){
     //  Brace (RMB) + Rocket (Dual auto-unlocks after wave 1, Flame after wave 2).
     G.unlocked = G.hero === 'jedi' ? { push: true, dash: true } : { rocket: true };
     G.stanceUnlocked = {};   // NIMAN is always available; ATARU/DJEM SO auto-unlock
+    G.loadout = [...DEFAULT_LOADOUT];
     G.waveTotal = -1; G.mandoChoiceShown = false;
     G.xp = 0; G.xpEarned = 0; G.skillPoints = 0; G.powerLv = {}; G.mastery = {}; G.seenTypes = {};
     G.boonOffer = null; G.boonPicked = false;

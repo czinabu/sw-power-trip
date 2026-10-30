@@ -108,7 +108,7 @@ export function meetBlades(sw, pts){
       continue;
     }
     const isDark = G.hero === 'mando' && player.weapon === 'darksaber';
-    const res = duelDefend(e, cutLine(sw), sw.step === 2 ? 'finisher' : 'cut', G.stance === 'strong' || isDark, cp);
+    const res = duelDefend(e, cutLine(sw), sw.step === 2 ? 'finisher' : 'cut', G.stance === 'djemso' || isDark, cp);
     (sw.duel || (sw.duel = new Map())).set(e, res);
     if (res === 'block'){ bounceOff(e, cp); return true; }
   }

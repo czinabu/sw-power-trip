@@ -31,7 +31,7 @@ const CONTROLS = {
       ['W + AIR + LMB', 'Aerial cut', 'Leaping forward: a short lunge and a cut at the foe ahead · costs Force, 3s cooldown · a standing jump just swings', 1],
       ['LMB', 'Saber lock', 'Blades bound: mash to drive through · E kicks out · F shoves', 1],
       ['T / MMB', 'Lock on', 'Keeps one foe framed; press again to release', 1],
-      ['1 / 2 / 3', 'Saber form', 'Or the mouse wheel'],
+      ['1 / 2 / 3', 'Saber form', 'The three forms in your loadout, or the mouse wheel'],
       ['G', 'Switch grip', 'Regular or reverse; swings hit the same either way', 1],
       ['4', 'Holster saber', 'Fight with the Force alone, both hands free: LMB throws palm strikes (every third is a burst), RMB wards, Force powers hit 20% harder and Force refills faster · 4 again draws', 1],
       ['H', 'Squad order', 'With a squad: hold the spot under the crosshair, H again to bring them back on you · stand by a downed squadmate to get them up · while you have one standing, a killing blow downs you instead and they come to get you up', 1],

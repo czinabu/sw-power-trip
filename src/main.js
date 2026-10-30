@@ -193,3 +193,8 @@ import { ENDLESS_ARENAS } from './game/survival.js';
 import { BATTLE_MAPS } from './data/battlemaps.js';
 import { setSandboxMap } from './game/sandbox.js';
 Object.assign(window.GAME, { arena: arenaInfo, ENDLESS_ARENAS, BATTLE_MAPS, setSandboxMap });
+
+/* the form loadout (data/forms.js): the seven forms and what sits on 1 / 2 / 3 */
+import { FORMS } from './data/forms.js';
+import { setLoadout } from './player/jedi/stance.js';
+Object.assign(window.GAME, { FORMS, setLoadout });
