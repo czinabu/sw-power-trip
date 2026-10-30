@@ -22,6 +22,9 @@ export const FOOTWORK = {
   brawler:   { crouch: -0.15, splay: 0.24, lead: 0.36, lean: 0.12, width: 1.1 },    // the holstered Mando: knees bent, left foot leading
 };
 
+/* a grip can stand on another form's feet: reverse-grip Niman takes Djem So's wide stance */
+export const FOOTWORK_GRIP = { reverse: { niman: 'djemso' } };
+
 const OFF_POLE = [-0.55, -0.8, -0.25], POLE = [0.55, -0.8, -0.25];
 
 /* ---------------- GUARDS: ready (idle) and block, per grip and form ---------------- */
@@ -67,12 +70,12 @@ export const SABER_GUARDS = {
       block: { hand: [0.16, 0.5, 0.36], blade: [-0.55, -0.75, 0.25], twist: -0.1, pole: [0.9, -0.1, -0.3],
                off: { hand: [-0.4, -0.1, 0.25], pole: OFF_POLE } },
     },
-    // Quinlan Vos' walk: saber arm loose at the side, fist by the hip, blade rising behind the arm and across the back
-    // past the off shoulder; off hand hanging easy at rest
+    // Djem So's carry, one-handed: the saber fist low by the weapon hip, the blade rising out of the pinky side up and
+    // across the body toward the off shoulder, the free hand resting just off the hilt where Djem So's would grip it, on
+    // Djem So's wide, rooted feet (FOOTWORK_GRIP)
     niman: {
-      ready: { hand: [0.3, -0.3, 0.08], blade: [-0.36, 0.78, -0.5], twist: 0.05, pole: [0.6, -0.5, -0.6],
-               off: { hand: [-0.3, -0.34, 0.1], pole: OFF_POLE },
-               offMove: { hand: [-0.22, -0.04, 0.38], pole: OFF_POLE } },   // moving, the free hand comes up, open and ready
+      ready: { hand: [0.22, -0.1, 0.3], blade: [-0.55, 0.8, 0.22], twist: 0.12, torso: 0.05, lean: 0.06, pole: [0.7, -0.6, -0.2],
+               off: { hand: [0.02, -0.14, 0.32], pole: [-0.8, -0.5, -0.15] } },
       // forearm raised across the centre line, blade hanging straight down to cover the body
       block: { hand: [0.06, 0.2, 0.42], blade: [0.25, -0.96, 0.12], twist: 0, lean: 0.05, pole: [0.9, -0.2, -0.3],
                off: { hand: [-0.16, 0.0, 0.38], pole: OFF_POLE } },
