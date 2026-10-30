@@ -50,6 +50,8 @@ export const G = {
   sbMenu: false,         // the sandbox B panel is open (same cinematic cuts as the pause screen)
   fovPreview: false,     // the FOV slider is being adjusted: settings fade away to show the live in-game view
   levelIdx: 0, wave: 0, waveTotal: -1,   // waveTotal = cumulative waves started (drives Mando ability unlocks)
+  waveFrom: 0, waveEnd: null,            // the stretch of the level's waves being played (a campaign chapter's, game/flow.js)
+  chapter: -1, actTwo: null, cardUp: false,   // the campaign's chapter (-1: not in one), Act II's pick, the chapter card is up (game/campaign.js)
   yaw: 0, pitch: 0.08,
   hitstop: 0, shake: 0, slowmo: 1, slowmoT: 0,
   gt: 0,

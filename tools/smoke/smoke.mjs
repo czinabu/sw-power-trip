@@ -104,7 +104,8 @@ for (const [hero, mode, mission] of [['jedi', 'campaign'], ['mando', 'campaign']
         const { G, player, enemies } = GAME;
         // keep the hero standing so the whole run is exercised (this checks for crashes, not balance)
         player.hp = Math.max(player.hp, 1e3);
-        // between waves the upgrade screen holds the game: take it straight back into the fight
+        // a campaign chapter opens on its card, and between waves the upgrade screen holds the game: take them straight back into the fight
+        const card = document.querySelector('#chapcard.open [data-go]'); if (card) card.click();
         if (G.skillSelect){ const b = document.getElementById('continueBtn'); if (b) b.click(); }
         if (G.paused){ const o = document.getElementById('goText'); if (o) o.click(); }
         // turn toward the nearest live foe, the way a player would

@@ -46,6 +46,8 @@ try {
     if (await host.isVisible('#goText')) await host.click('#goText', { timeout: 2000 }).catch(() => {});
     await host.waitForTimeout(800);
   }
+  const begin = (page) => page.evaluate(() => { const b = document.querySelector('#chapcard.open [data-go]'); if (b) b.click(); });   // the chapter card
+  await host.waitForFunction(() => document.querySelector('#chapcard.open'), null, poll); await begin(host);
   // the guest sees the run and joins it
   await guest.waitForFunction(() => document.getElementById('coopjoinrun').style.display !== 'none', null, poll);
   await guest.click('#coopclose'); await guest.click('#hero-mando');
@@ -55,6 +57,8 @@ try {
     await guest.waitForTimeout(800);
   }
   if (!(await guest.evaluate(() => GAME.G.coopGuest))) throw new Error('the guest did not join the host\'s run');
+  if (!(await guest.evaluate(() => GAME.G.chapter === 0 && document.querySelector('#chapcard.open')))) throw new Error('the guest did not join the host\'s chapter');
+  await begin(guest);
   if (!(await guest.evaluate(() => GAME.G.coopGuest))) throw new Error('the guest did not join the host\'s campaign');
   if (await guest.evaluate(() => GAME.G.endless)) throw new Error('the guest joined Survival, not the campaign');
   await host.waitForFunction(() => GAME.enemies.length >= 3, null, poll);
@@ -65,6 +69,11 @@ try {
   await host.evaluate(() => { for (const e of GAME.enemies) GAME.damageEnemy(e, 99999, null, 0, false, false); GAME.G.spawnQueue.length = 0; });
   await guest.waitForFunction(() => GAME.G.skillSelect, null, poll);
   await host.waitForFunction((w) => GAME.G.wave === w + 1, w0, poll);
+  // the host moves on to a mission chapter: the guest follows it there, shown the host's objectives
+  await guest.evaluate(() => { document.getElementById('skilltree').style.display = 'none'; GAME.G.skillSelect = false; });
+  await host.evaluate(() => GAME.startChapter(2)); await begin(host);
+  await guest.waitForFunction(() => GAME.G.chapter === 2 && GAME.G.mission && GAME.G.coopGuest && GAME.missionState().def.id === 'refuge', null, poll);
+  await begin(guest);
   // the host moves on to the next level: the guest follows, still a guest
   await guest.evaluate(() => { document.getElementById('skilltree').style.display = 'none'; GAME.G.skillSelect = false; });
   await host.evaluate(() => GAME.startLevel(1, { resume: true }));

@@ -27,6 +27,7 @@ import { buildArena } from '../world/arena.js';
 import { findClearSpawn } from '../world/collision.js';
 import { playerPos } from '../player/helpers.js';
 import { canResume, resumeRun, resumeLabel } from '../game/saves.js';
+import { startCampaign, joinCampaign, closeCard, chapterLabel } from '../game/campaign.js';
 
 /* ============================================================
    INPUT
@@ -45,7 +46,7 @@ export function setOverlayState(state){
   overlay.classList.remove('asktrain');
   if (state !== 'pause') document.getElementById('ovctx').textContent = '';
   document.getElementById('restartBtn').style.display = state === 'menu' ? 'none' : 'inline-flex';
-  document.getElementById('restartBtn').textContent = G.training ? '↻ RESTART TRAINING' : G.mission ? '↻ RESTART MISSION' : '↻ RESTART RUN';
+  document.getElementById('restartBtn').textContent = G.training ? '↻ RESTART TRAINING' : G.mission && G.chapter < 0 ? '↻ RESTART MISSION' : '↻ RESTART RUN';
   document.getElementById('skipBtn').style.display = state === 'pause' && G.training ? 'inline-flex' : 'none';
   const go = document.getElementById('goText'), sub = document.getElementById('ovsub');
   if (state === 'menu' && G.modeSel === 'campaign' && canResume()){   // a loaded save picks the campaign up where it was
@@ -55,10 +56,10 @@ export function setOverlayState(state){
     sub.textContent = G.modeSel === 'endless' ? 'HOW LONG CAN YOU HOLD?' : G.modeSel === 'training' ? 'LEARN THE MOVES' : G.modeSel === 'mission' ? missionTitle(G.missionId) : G.modeSel === 'sandbox' ? 'ANY FOE, ANY POWER' : 'CHOOSE YOUR LEGEND';
   } else if (state === 'pause'){
     go.textContent = 'RESUME'; sub.textContent = 'PAUSED';
-    const where = G.training ? 'TRAINING' : G.sandbox ? 'SANDBOX' : G.mission ? missionTitle(G.missionId) : G.endless ? 'SURVIVAL' : 'CAMPAIGN';
+    const where = G.chapter >= 0 ? 'CAMPAIGN · ' + chapterLabel() : G.training ? 'TRAINING' : G.sandbox ? 'SANDBOX' : G.mission ? missionTitle(G.missionId) : G.endless ? 'SURVIVAL' : 'CAMPAIGN';
     document.getElementById('ovctx').textContent = where + ' · ' + (G.hero === 'mando' ? 'MANDALORIAN' : 'JEDI');
   } else if (state === 'dead'){
-    go.textContent = G.endless ? 'NEW SURVIVAL RUN' : G.mission ? 'RETRY THIS OBJECTIVE' : G.sandbox ? 'BACK TO THE SANDBOX' : retryIsBoss() ? 'RETRY THE BOSS' : 'RETRY THIS LEVEL';
+    go.textContent = G.endless ? 'NEW SURVIVAL RUN' : G.mission ? 'RETRY THIS OBJECTIVE' : G.sandbox ? 'BACK TO THE SANDBOX' : retryIsBoss() ? 'RETRY THE BOSS' : G.chapter >= 0 ? 'RETRY THIS CHAPTER' : 'RETRY THIS LEVEL';
     sub.textContent = '';   // the run summary's own title carries the moment
   } else if (state === 'victory'){
     go.textContent = 'PLAY AGAIN';
@@ -93,7 +94,9 @@ function beginPlay(){
   if ((G.modeSel === 'endless' && !survivalUnlocked() && !G.coopJoin) || (G.modeSel === 'sandbox' && !sandboxUnlocked())) G.modeSel = 'campaign';   // safety — never launch a locked mode
   if (G.mode === 'menu' || G.mode === 'victory'){
     G.mode = 'play'; G.slowmo = 1;
-    if (G.coopJoin && G.modeSel === 'mission') startCoopMission(G.missionId); else if (G.coopJoin && G.modeSel === 'campaign') startCoopCampaign(coopRun.lv, coopRun.w, coopRun.wt); else if (G.modeSel === 'endless') startEndless(); else if (G.modeSel === 'training') startTutorial(); else if (G.modeSel === 'mission') startMission(G.missionId); else if (G.modeSel === 'sandbox') startSandbox(); else if (canResume()) resumeRun(); else startLevel(0);
+    if (G.coopJoin && G.modeSel === 'mission') startCoopMission(G.missionId);
+    else if (G.coopJoin && G.modeSel === 'campaign'){ if (coopRun.ch >= 0) joinCampaign(coopRun.ch, coopRun.a2, coopRun.w, coopRun.wt); else startCoopCampaign(coopRun.lv, coopRun.w, coopRun.wt); }
+    else if (G.modeSel === 'endless') startEndless(); else if (G.modeSel === 'training') startTutorial(); else if (G.modeSel === 'mission') startMission(G.missionId); else if (G.modeSel === 'sandbox') startSandbox(); else if (canResume()) resumeRun(); else startCampaign();
   } else if (G.mode === 'dead'){
     G.mode = 'play'; G.slowmo = 1;
     if (G.endless) startEndless(); else if (G.training) startTutorial(); else if (G.mission) retryMission(); else if (G.sandbox) startSandbox(); else retryLevel();   // survival retry = a fresh survival run
@@ -103,8 +106,8 @@ function beginPlay(){
   G.paused = false;   // unfreeze the sim on (re)entering play
 }
 // hero picker — select only (don't ignite); the player clicks elsewhere / GO to launch
-document.getElementById('hero-jedi').addEventListener('click', (e) => { e.stopPropagation(); setHero('jedi'); });
-document.getElementById('hero-mando').addEventListener('click', (e) => { e.stopPropagation(); setHero('mando'); });
+document.getElementById('hero-jedi').addEventListener('click', (e) => { e.stopPropagation(); setHero('jedi'); refreshMissionMark(); });
+document.getElementById('hero-mando').addEventListener('click', (e) => { e.stopPropagation(); setHero('mando'); refreshMissionMark(); });
 // mode picker — campaign vs survival
 // SURVIVAL is LOCKED until the campaign has been cleared as BOTH heroes (any difficulty).
 export function survivalUnlocked(){ try { return localStorage.getItem('sw_camp_jedi') === '1' && localStorage.getItem('sw_camp_mando') === '1'; } catch(e){ return false; } }
@@ -145,13 +148,15 @@ document.getElementById('mode-endless').addEventListener('click', (e) => { e.sto
 document.getElementById('mode-training').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setModeSel('training'); });
 document.getElementById('mode-sandbox').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setModeSel('sandbox'); });
 // MISSIONS: one card per story mission (data/missions.js) under the mode row; pick one, then BEGIN (or double-click it)
-const placeOf = (m) => m.level.name.replace(/^MISSION\s*—\s*/, '');
+const placeOf = (m) => m.level.name.replace(/^(MISSION|TRIAL)\s*—\s*/, '');
 document.getElementById('msnlist').innerHTML = Object.values(MISSIONS).map(m =>
   `<div class="msn brk" id="msn-${m.id}" data-mission="${m.id}">
-    <span class="mt">${m.title}${m.squad ? '<span class="msn-tag">SQUAD</span>' : ''}<span class="won"></span></span><span class="mw">${placeOf(m)}</span>
+    <span class="mt"><span class="mtn">${missionTitle(m.id)}</span>${m.squad ? '<span class="msn-tag">SQUAD</span>' : ''}${m.trial ? '<span class="msn-tag">TRIAL</span>' : ''}<span class="won"></span></span><span class="mw">${placeOf(m)}</span>
   </div>`).join('');
+// a campaign trial joins the list once either hero has reached it in the campaign (won it there)
+const trialSeen = (id) => !MISSIONS[id].trial || missionDone(id, 'jedi') || missionDone(id, 'mando');
 export function setMission(id){
-  if (!MISSIONS[id]) id = Object.keys(MISSIONS)[0];
+  if (!MISSIONS[id] || !trialSeen(id)) id = Object.keys(MISSIONS)[0];
   G.missionId = id; try { localStorage.setItem('sw_mission', id); } catch(e){}
   for (const el of document.querySelectorAll('#msnlist .msn')) el.classList.toggle('sel', el.dataset.mission === id);
   refreshMissionMark();
@@ -176,7 +181,10 @@ function refreshMissionMark(){
   const mark = (id) => { const j = missionDone(id, 'jedi'), m = missionDone(id, 'mando');
     return (j || m) ? 'Jedi ' + (j ? '<span class="ok">✓</span>' : '–') + ' Mando ' + (m ? '<span class="ok">✓</span>' : '–') : ''; };
   for (const id in MISSIONS){
-    const w = document.querySelector('#msn-' + id + ' .won'); if (!w) continue;
+    const card = document.getElementById('msn-' + id); if (!card) continue;
+    card.style.display = trialSeen(id) ? '' : 'none';
+    card.querySelector('.mtn').textContent = missionTitle(id);   // a trial is named for the hero picked
+    const w = card.querySelector('.won');
     w.textContent = (missionDone(id, 'jedi') ? 'J✓' : '') + (missionDone(id, 'mando') ? ' M✓' : '');
   }
   const m = MISSIONS[G.missionId], info = document.getElementById('msninfo');
@@ -442,7 +450,8 @@ function restartRun(){
   G.skillSelect = false; G.sbMenu = false;
   G.mode = 'play'; G.slowmo = 1; G.paused = false;
   document.body.classList.remove('in-menu'); setHowTo(false); setSettings(false);
-  if (G.endless) startEndless(); else if (G.training) startTutorial(); else if (G.mission) startMission(G.missionId); else if (G.sandbox) startSandbox(); else startLevel(0);   // a survival run restarts as survival, not the campaign
+  closeCard(true);
+  if (G.chapter >= 0) startCampaign(); else if (G.endless) startEndless(); else if (G.training) startTutorial(); else if (G.mission) startMission(G.missionId); else if (G.sandbox) startSandbox(); else startCampaign();   // a survival run restarts as survival, not the campaign
   if (!shared.lockFallback) requestLock();
 }
 document.getElementById('restartBtn').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); restartRun(); });
@@ -451,6 +460,7 @@ document.getElementById('restartBtn').addEventListener('click', (e) => { e.stopP
 export function goHome(){
   overlay.classList.remove('confirming');
   closeSandboxPanel(false);
+  closeCard(true);
   document.getElementById('skilltree').style.display = 'none';
   G.skillSelect = false; G.sbMenu = false;
   if (G.stats){ G.stats._ended = false; G.stats.summary = null; }

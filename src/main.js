@@ -64,6 +64,7 @@ import './world/arenas/foundry.js';
 import './world/arenas/plains.js';
 import { queueSpawn, startLevel, checkUnlocks, startWave, updateFlow } from './game/flow.js';
 import { startTutorial, updateTutorial, skipStep, trainingProgress } from './game/tutorial.js';
+import { startCampaign, startChapter, nextChapter, chapters } from './game/campaign.js';
 import { startMission, updateMission, skipObjective, missionState } from './game/mission.js';
 import { startSandbox, updateSandbox, sandboxSpawn, sandboxClear, setSandboxKit, sandboxKitAll } from './game/sandbox.js';
 import {
@@ -193,3 +194,4 @@ import { ENDLESS_ARENAS } from './game/survival.js';
 import { BATTLE_MAPS } from './data/battlemaps.js';
 import { setSandboxMap } from './game/sandbox.js';
 Object.assign(window.GAME, { arena: arenaInfo, ENDLESS_ARENAS, BATTLE_MAPS, setSandboxMap });
+Object.assign(window.GAME, { startCampaign, startChapter, nextChapter, chapters });   // the campaign's chapters (game/campaign.js), for tests

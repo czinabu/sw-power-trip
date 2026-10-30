@@ -22,11 +22,12 @@ export function endRun(won){
   const score = Math.max(0, Math.round(
     st.kills * 12 + waves * (endless ? 200 : 120) + st.bestStreak * 20 + (st.parries + st.deflects) * 15 +
     (st.bossKilled ? 1500 : 0) + (acc > 0 ? acc * 400 : 0) - st.dmgTaken * 0.35));
-  const key = endless ? 'sw_best_endless' : G.mission ? 'sw_best_mission' : 'sw_best_score';   // survival and missions keep their OWN bests
+  const mission = !!G.mission && G.chapter < 0;   // (a campaign chapter that is a mission still counts as the campaign)
+  const key = endless ? 'sw_best_endless' : mission ? 'sw_best_mission' : 'sw_best_score';   // survival and missions keep their OWN bests
   let best = 0; try { best = parseInt(localStorage.getItem(key) || '0', 10) || 0; } catch(e){}
   const newBest = score > best;
   if (newBest){ try { localStorage.setItem(key, String(score)); } catch(e){} best = score; }
-  st.summary = { won, elapsed, waves, acc, score, best, newBest, endless, mission: !!G.mission };
+  st.summary = { won, elapsed, waves, acc, score, best, newBest, endless, mission };
   renderRunSummary();
 }
 function renderRunSummary(){
