@@ -3,7 +3,7 @@
 // The screen names what was learned and lets the hero choose which three forms sit on 1 / 2 / 3. It is the only time a
 // run's loadout changes, so the choice means something. When the run reaches Form VII, the screen first asks which of
 // Juyo or Vaapad the hero keeps; the other is closed for the rest of the run (G.formFork).
-// It waits for whatever is in front of it (a chapter card, the upgrade screen, the pause menu) and freezes the fight
+// It waits for whatever is in front of it (a chapter card, a cutscene, the upgrade screen, the pause menu) and freezes the fight
 // while it is up, the same way those do.
 
 import { G, shared } from '../state.js';
@@ -33,7 +33,7 @@ export function queueMeditation(ids){
 }
 // game/flow.js, every frame of play: open once nothing else holds the screen
 export function tickMeditation(){
-  if (!pending.length || meditationUp() || G.mode !== 'play' || G.paused || G.skillSelect || G.cardUp) return;
+  if (!pending.length || meditationUp() || G.mode !== 'play' || G.paused || G.skillSelect || G.cardUp || G.cutscene) return;
   open();
 }
 // a new run, a load or the main menu: forget anything still waiting
@@ -105,6 +105,7 @@ function pick(id){
   renderSlots();
 }
 function rise(){
+  if (!draft) return;
   if (!draft.some(Boolean)) draft[0] = STARTING_FORMS[0];
   setLoadout(draft); draft = null; phase = null; learnedNow = [];
   setStanceHud();
@@ -114,6 +115,7 @@ function rise(){
 
 el.addEventListener('click', (e) => {
   e.stopPropagation(); audioInit();
+  if (!meditationUp()) return;
   const t = e.target, f = t.closest('[data-fork]'), s = t.closest('[data-slot]'), m = t.closest('[data-form]');
   if (f){
     G.formFork = f.dataset.fork;

@@ -33,6 +33,7 @@ check(await page.evaluate(() => { const r = document.querySelector('.ov-inner').
 
 // CAMPAIGN as the Mando, skipped to level 2 with a build
 await page.click('#hero-mando'); await page.click('#mode-campaign'); await page.click('#goText');
+if (await page.isVisible('#forms [data-go]')) await page.click('#forms [data-go]', { timeout: 2000 }).catch(() => {});   // the Jedi's forms page before the fight: FIGHT
 await playing();
 await page.evaluate(() => { const { G, player, startLevel } = GAME; G.xp = 777; player.up.dmg = 1.5; G.unlocked.flame = true; startLevel(1); });
 await page.waitForTimeout(500);
@@ -61,13 +62,14 @@ await page.waitForFunction(() => GAME.G.mode === 'menu');
 await shot('06-continue');
 check(await page.evaluate(() => document.getElementById('goText').textContent === 'CONTINUE CAMPAIGN' && GAME.G.hero === 'mando'), 'menu offers CONTINUE CAMPAIGN as the Mando');
 await page.click('#goText');
+if (await page.isVisible('#forms [data-go]')) await page.click('#forms [data-go]', { timeout: 2000 }).catch(() => {});   // the Jedi's forms page before the fight: FIGHT
 await playing();
 check(await page.evaluate(() => GAME.G.levelIdx === 1 && GAME.G.xp === 777 && GAME.player.up.dmg === 1.5 && GAME.G.unlocked.flame), 'continued on level 2 with the saved build');
 
 // a STORY MISSION save loads back onto that mission
 await pause(); await page.click('#homeBtn'); await page.click('#homeYes');
 await page.click('#hero-jedi'); await page.click('#mode-mission'); await page.click('#msn-pursuit'); await page.click('#goText');
-if (await page.isVisible('#forms [data-go]')) await page.click('#forms [data-go]');   // the Jedi's forms page before the fight (ui/forms-ui.js)
+if (await page.isVisible('#forms [data-go]')) await page.click('#forms [data-go]', { timeout: 2000 }).catch(() => {});   // the Jedi's forms page before the fight: FIGHT
 await playing();
 await pause(); await page.click('#saveBtn'); await page.click('[data-act="save"][data-i="1"]');
 await page.click('#savesclose'); await page.click('#homeBtn'); await page.click('#homeYes');
@@ -75,7 +77,7 @@ await page.click('#hero-mando'); await page.click('#mode-campaign');
 await page.click('#loadBtn'); await page.click('[data-act="load"][data-i="1"]');
 check(await page.evaluate(() => GAME.G.modeSel === 'mission' && GAME.G.missionId === 'pursuit' && GAME.G.hero === 'jedi' && document.getElementById('goText').textContent === 'BEGIN MISSION'), 'mission save loads onto that mission');
 await page.click('#goText');
-if (await page.isVisible('#forms [data-go]')) await page.click('#forms [data-go]');   // the Jedi's forms page before the fight (ui/forms-ui.js)
+if (await page.isVisible('#forms [data-go]')) await page.click('#forms [data-go]', { timeout: 2000 }).catch(() => {});   // the Jedi's forms page before the fight: FIGHT
 await playing();
 check(await page.evaluate(() => GAME.G.mission), 'the loaded mission starts');
 await pause(); await shot('07-pause-mission');
