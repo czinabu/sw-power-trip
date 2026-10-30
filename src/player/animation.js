@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { CFG } from '../data/config.js';
 import { clamp, dampAngle, wrapAngle, V3 } from '../utils.js';
 import { burst } from '../fx/particles.js';
-import { G, player } from '../state.js';
+import { G, keys, player } from '../state.js';
 import { MANDO, MANDO_WEAPONS } from '../data/mando.js';
 import { MANDO_MELEE } from '../data/duel.js';
 import { MOVE, GAIT } from '../data/movement.js';
