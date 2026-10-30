@@ -25,6 +25,7 @@ import { showBanner } from '../ui/banners.js';
 import { MUSIC } from '../audio/music.js';
 import { playerPos } from '../player/helpers.js';
 import { missionSnap, coopMissionSync, endMission } from '../game/mission.js';
+import { followChapter } from '../game/campaign.js';
 import { damageBoss, bossStagger, bossStun, makeBossPuppet, dropBossPuppet } from '../boss/boss.js';
 import { net, on, send, connected } from './session.js';
 import { coopRun, hitQueue } from './run.js';
@@ -33,8 +34,8 @@ const DEAD = 1, WALKING = 2, WARBRINGER = 4;
 let sentAt = 0, hostSent = false, runListeners = [];
 const byNid = new Map();   // the guest's puppets, by the host's number for each foe
 
-// what shared run this browser is hosting: 'e' Survival, 'c' the campaign's waves, 'm' a story mission, '' none (training, the sandbox)
-export const runKind = () => G.endless ? 'e' : G.mission ? 'm' : (!G.training && !G.sandbox) ? 'c' : '';
+// what shared run this browser is hosting: 'e' Survival, 'c' the campaign (its chapters, waves or missions), 'm' a story mission, '' none (training, the sandbox)
+export const runKind = () => G.endless ? 'e' : G.chapter >= 0 ? 'c' : G.mission ? 'm' : (!G.training && !G.sandbox) ? 'c' : '';
 export const coopLive = () => !!G.coopGuest || (hostSent && connected());
 export const puppetOf = (nid) => nid === 'B' ? shared.boss : byNid.get(nid) || null;
 export function onRunChange(fn){ runListeners.push(fn); }
@@ -59,7 +60,7 @@ function snapshot(){
     Math.round(bs.hp), Math.round(bs.maxHp), bs.state, bs.phase, bs.kind, bs.enraged ? 1 : 0, bu.hand ? r2(bu.hand.rotation.z) : 0, bu.eyes ? r2(bu.eyes.scale.y) : 1,
     bu.bodyMat ? bu.bodyMat.emissive.getHex() : 0, bu.bodyMat ? r2(bu.bodyMat.emissiveIntensity) : 0,
     bs.hero && !bs.hero.local ? [r2(bs.hero.pos.x), r2(bs.hero.pos.z)] : [r2(playerPos().x), r2(playerPos().z)]] : null;
-  return { t: 'e', run: 1, boss, k: G.endless ? 'e' : G.mission ? 'm' : 'c', ms: G.mission ? missionSnap() : undefined, lv: G.levelIdx, ar: G.arenaRot, w: G.endless ? G.endlessWave : G.wave, wt: G.waveTotal, ph: shared.levelPhase, mut: G.mut, list };
+  return { t: 'e', run: 1, boss, k: runKind(), ms: G.mission ? missionSnap() : undefined, lv: G.levelIdx, ch: G.chapter, a2: G.actTwo, wf: G.waveFrom, ar: G.arenaRot, w: G.endless ? G.endlessWave : G.wave, wt: G.waveTotal, ph: shared.levelPhase, mut: G.mut, list };
 }
 
 function hostTick(){
@@ -171,8 +172,9 @@ on('e', (m) => {
     endGuest();
     return;
   }
-  const changed = !coopRun.on || coopRun.w !== m.w || coopRun.ar !== m.ar || coopRun.k !== m.k || coopRun.lv !== m.lv || coopRun.mid !== (m.ms ? m.ms.id : '');
-  Object.assign(coopRun, { on: true, k: m.k || 'e', mid: m.ms ? m.ms.id : '', lv: m.lv || 0, ar: m.ar, w: m.w, wt: m.wt, ph: m.ph, mut: m.mut });
+  const ch = m.ch ?? -1;
+  const changed = !coopRun.on || coopRun.w !== m.w || coopRun.ar !== m.ar || coopRun.k !== m.k || coopRun.lv !== m.lv || coopRun.ch !== ch || coopRun.mid !== (m.ms ? m.ms.id : '');
+  Object.assign(coopRun, { on: true, k: m.k || 'e', mid: m.ms ? m.ms.id : '', lv: m.lv || 0, ch, a2: m.a2 || null, wf: m.wf || 0, ar: m.ar, w: m.w, wt: m.wt, ph: m.ph, mut: m.mut });
   if (changed) runChanged();
   // this guest fell out of the shared fight without the host's run ending (died and retried, restarted): it was playing its
   // own foes and waves. Back in: its own foes go, and the host's take their place
@@ -187,10 +189,13 @@ on('e', (m) => {
   if (m.k === 'm'){   // a story mission: the host runs its objectives, this browser is shown them
     if (!G.mission || !m.ms || G.missionId !== m.ms.id){ endGuest(); return; }
     coopMissionSync(m.ms);
-  } else if (m.k === 'c'){   // the campaign: the host's level and wave
-    if (G.endless || G.mission){ endGuest(); return; }
-    if (G.levelIdx !== m.lv){ dropPuppets(); startLevel(m.lv, { resume: true }); G.coopGuest = true; showBanner('', 'THE HOST MOVES ON', 1.6); }
-    if (m.ph === 'fighting' && (shared.levelPhase !== 'fighting' || G.wave !== m.w)) coopCampaignWave(m.w, m.wt);
+  } else if (m.k === 'c'){   // the campaign: the host's chapter (a stretch of a level's waves, or a mission), or its level and wave
+    if (G.endless || (G.mission && G.chapter < 0)){ endGuest(); return; }
+    if (ch >= 0){
+      if (G.chapter !== ch){ dropPuppets(); followChapter(ch, m.a2); }
+    } else if (G.levelIdx !== m.lv || G.chapter >= 0){ dropPuppets(); startLevel(m.lv, { resume: true }); G.coopGuest = true; showBanner('', 'THE HOST MOVES ON', 1.6); }
+    if (G.mission){ if (m.ms) coopMissionSync(m.ms); }   // a mission chapter: shown the host's objectives
+    else if (m.ph === 'fighting' && (shared.levelPhase !== 'fighting' || G.wave !== m.w)) coopCampaignWave(m.w, m.wt);
     else if (m.ph === 'between' && shared.levelPhase === 'fighting') coopCampaignCleared();
     else if (m.ph === 'bossfight' && shared.levelPhase !== 'bossfight'){ shared.levelPhase = 'bossfight'; showBanner('', 'THE HOST FACES THE BOSS', 2.4); }
   } else {

@@ -294,6 +294,7 @@ function menu(btn, down, lx, ly, ry, dt){
   if (down(9)){   // MENU — resume from pause; anywhere else on the overlay, the main button
     if (ovUp() && overlay.classList.contains('st-pause') && !panelUp()){ sendKey('tab', true); sendKey('tab', false); }
     else if (ovUp() && !panelUp()) document.getElementById('goText').click();
+    else if (G.cardUp){ const go = document.querySelector('#chapcard.open .go'); if (go) go.click(); }   // the chapter card's BEGIN (game/campaign.js)
     else if (G.skillSelect) document.getElementById('continueBtn').click();
   }
   // RIGHT STICK — scroll a long panel (How to Play, the roadmap, the upgrade screen)

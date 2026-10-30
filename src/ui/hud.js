@@ -19,6 +19,7 @@ import { readoutOn } from '../game/readout.js';
 import { svgIcon, SLOT_ICON } from './icons.js';
 import { trainingProgress, trainingChecklist } from '../game/tutorial.js';
 import { missionChecklist } from '../game/mission.js';
+import { chapterLabel } from '../game/campaign.js';
 import { objectiveHud } from '../game/objectives.js';
 import { MOBILITY, MANDO_MOBILITY } from '../data/mobility.js';
 import { maxCharges, inCombat, formMob } from '../player/mobility.js';
@@ -159,9 +160,10 @@ export function updateHud(){
       (mut ? '<span class="wi-h"><span class="wi-mut" style="color:' + mut.col + '">' + mut.name + '</span></span>' : ''));
   } else {
     const place = (L.name.split('—')[1] || L.name).trim();
+    const from = G.waveFrom || 0, end = G.waveEnd ?? L.waves.length;   // a campaign chapter counts its own stretch of the waves
     const wave = shared.boss ? 'BOSS FIGHT'
-                             : 'WAVE ' + Math.min(G.wave+1, L.waves.length) + ' / ' + L.waves.length;
-    setHtml($('waveinfo'), '<span class="wi-l">LEVEL ' + (G.levelIdx + 1) + ' · ' + place + '</span><span class="wi-w">' + wave + '</span>' +
+                             : 'WAVE ' + Math.min(G.wave - from + 1, end - from) + ' / ' + (end - from);
+    setHtml($('waveinfo'), '<span class="wi-l">' + (G.chapter >= 0 ? chapterLabel() : 'LEVEL ' + (G.levelIdx + 1) + ' · ' + place) + '</span><span class="wi-w">' + wave + '</span>' +
       (shared.boss ? '' : hostiles));
   }
   { const ro = $('readout'), on = !!G.sandbox && G.mode === 'play' && readoutOn(); ro.style.display = on ? 'block' : 'none'; if (on) setHtml(ro, readoutLiveHtml()); }

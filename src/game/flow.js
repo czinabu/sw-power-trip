@@ -38,6 +38,7 @@ import { clearSquad } from '../allies/squad.js';
 import { clearDowned } from './revive.js';
 import { coopRun } from '../net/run.js';
 import { resetReadout, beginWave } from './readout.js';
+import { nextChapter, retryChapter } from './campaign.js';
 
 /* ============================================================
    LEVEL / WAVE FLOW
@@ -50,7 +51,9 @@ export function queueSpawn(typeName, opts){
 // opts.level runs another level definition in place of LEVELS[idx] (the training grounds, game/tutorial.js; a story
 // mission, game/mission.js, which also passes opts.mission; the sandbox, game/sandbox.js, with opts.sandbox);
 // opts.retry restarts the level from its checkpoint after a death (see the CHECKPOINT note below); opts.resume keeps
-// the build a loaded save put back (game/saves.js), even on level 1
+// the build a loaded save put back (game/saves.js), even on level 1; opts.chapter: a campaign chapter (game/campaign.js)
+// is starting, which keeps G.chapter (anything else leaves the chapters); opts.waves: [from, to] plays only that stretch
+// of the level's waves (to is exclusive)
 // the boss steps in after a beat; in a shared run it waits for both heroes to close their upgrade screens first
 function spawnBossWhenReady(still, ms){
   setTimeout(function go(){
@@ -62,6 +65,7 @@ function spawnBossWhenReady(still, ms){
 export function startLevel(idx, opts){
   const fresh = idx === 0 && !(opts && opts.resume);   // a brand-new campaign: reset the hero's build
   G.levelIdx = idx;
+  if (!(opts && opts.chapter)) G.chapter = -1;
   G.endless = false; G.mut = null;   // campaign — never in survival mode (startEndless re-flags after this)
   G.coopGuest = false;               // and not following a host's run until a join says so (startEndless)
   G.training = !!(opts && opts.training);
@@ -139,7 +143,8 @@ export function startLevel(idx, opts){
   setStanceHud();
   G.yaw = Math.PI;  // face arena center
   player.faceYaw = Math.PI;
-  G.wave = 0;
+  G.wave = G.waveFrom = (opts && opts.waves) ? opts.waves[0] : 0;
+  G.waveEnd = (opts && opts.waves) ? opts.waves[1] : L.waves.length;
   G.streak = 0;
   document.getElementById('streak').style.opacity = '0';
   if (fresh){
@@ -167,10 +172,10 @@ export function startLevel(idx, opts){
   /* CHECKPOINT — a retry puts the run back where the level began: the same wave count, so the army isn't tougher
      and more elite for every death (enemy HP and elite odds climb with waveTotal). Died to the boss on Padawan or
      Knight → the retry goes straight to the boss instead of replaying all four waves. */
-  const cp = G.checkpoint, retry = !!(opts && opts.retry) && !G.training && !G.mission && !G.sandbox && cp && cp.idx === idx;
+  const cp = G.checkpoint, retry = !!(opts && opts.retry) && !G.training && !G.mission && !G.sandbox && cp && cp.idx === idx && (cp.ch == null || cp.ch === G.chapter);
   const bossRetry = retry && cp.boss;
   if (retry) G.waveTotal = bossRetry ? cp.bossWaveTotal : cp.waveTotal;
-  else if (!G.training && !G.mission && !G.sandbox) G.checkpoint = { idx, waveTotal: G.waveTotal, boss: false };
+  else if (!G.training && !G.mission && !G.sandbox) G.checkpoint = { idx, ch: G.chapter, waveTotal: G.waveTotal, boss: false };
   applyJetTier();   // size the jetpack to the current booster tier
   document.getElementById('xpval').textContent = (G.xp || 0);
   checkUnlocks();
@@ -178,12 +183,12 @@ export function startLevel(idx, opts){
   { const [lvl, place] = L.name.split('—').map(t => t.trim());   // 'LEVEL 1 — TEMPLE STEPS' → tag + headline
     showBanner(place || lvl, L.sub, 2.6, place ? { kicker: lvl } : null); }
   if (bossRetry){
-    G.wave = L.waves.length; shared.levelPhase = 'bossfight';
+    G.wave = G.waveEnd; shared.levelPhase = 'bossfight';
     spawnBossWhenReady(() => G.mode === 'play' && G.levelIdx === idx && shared.levelPhase === 'bossfight' && !shared.boss, 2600);
   }
 }
 // after a death: restart this level from its checkpoint (the boss itself, if that's what killed you)
-export function retryLevel(){ startLevel(G.levelIdx, { retry: true }); }
+export function retryLevel(){ if (G.chapter >= 0) retryChapter(); else startLevel(G.levelIdx, { retry: true }); }
 export function retryIsBoss(){ return !!(G.checkpoint && G.checkpoint.boss && G.checkpoint.idx === G.levelIdx && !G.endless && !G.training && !G.mission && !G.sandbox); }
 
 /* ---------- HUD chip sync + AUTOMATIC unlocks (weapons/stances/jetpack) ---------- */
@@ -219,14 +224,21 @@ export function checkUnlocks(bannerDelay){
     syncMandoChips();
   } else {
     for (const u of JEDI_AUTO){
-      const reached = (G.endless || G.mission) ? ((G.waveTotal || 0) >= u.stage)
+      const reached = (G.endless || (G.mission && G.chapter < 0)) ? ((G.waveTotal || 0) >= u.stage)   // (a campaign chapter keeps the campaign's level/wave gates)
                                 : (G.levelIdx > u.level || (G.levelIdx === u.level && G.wave >= u.wave));
       if (reached && !u.has()){ u.grant(); announce.push(u); }
     }
     syncJediChips();
     setStanceHud();
   }
-  if (G.training || G.mission || G.sandbox) return;   // the training grounds teach the starting kit, a mission and the sandbox hand out their kit up front: no fanfare
+  if (G.training || (G.mission && G.chapter < 0) || G.sandbox) return;   // the training grounds teach the starting kit, a mission and the sandbox hand out their kit up front: no fanfare
+  if (G.cardUp){ heldUnlocks.push(...announce); return; }   // a chapter card is up: they wait for it to close (releaseUnlockBanners)
+  announceUnlocks(announce, bannerDelay);
+}
+// unlocks that landed while a chapter card was up (game/campaign.js), announced once it closes
+const heldUnlocks = [];
+export function releaseUnlockBanners(){ announceUnlocks(heldUnlocks.splice(0), 1200); }
+function announceUnlocks(announce, bannerDelay){
   announce.forEach((u, i) => {
     setTimeout(() => { if (G.mode !== 'play') return;
       showBanner(u.name, /^HOLD /.test(u.hud) ? '' : 'PRESS', 3.0, { kicker: 'UNLOCKED', key: u.hud });
@@ -267,12 +279,18 @@ export function startWave(){
   G.waveHits = 0; G.waveDmg = 0;   // how cleanly this wave is fought (payWaveClear)
   beginWave('L' + (G.levelIdx + 1) + ' · WAVE ' + (G.wave + 1));
   G.waveTotal++;   // cumulative wave count drives Mando ability unlocks
-  showBanner('', 'WAVE ' + (G.wave+1) + ' / ' + L.waves.length, 1.5);
+  showBanner('', waveLine(), 1.5);
   MUSIC.waveSting();
   checkUnlocks(1600);
 }
+// 'WAVE 2 / 4', counted within the chapter's stretch of the level
+const waveLine = () => 'WAVE ' + (G.wave - (G.waveFrom || 0) + 1) + ' / ' + ((G.waveEnd ?? LEVELS[G.levelIdx].waves.length) - (G.waveFrom || 0));
+const chapterEnds = () => G.wave >= (G.waveEnd ?? LEVELS[G.levelIdx].waves.length);
+const bossDue = (L) => L.boss && (G.waveEnd ?? L.waves.length) >= L.waves.length;
 
-// a campaign wave is cleared: its XP and a second wind (also what a co-op guest does when the host's wave ends)
+// a campaign wave is cleared: its XP and a second wind (also what a co-op guest does when the host's wave ends, and a
+// mission chapter's close, game/campaign.js)
+export function chapterRewards(){ campaignWaveRewards(); }
 function campaignWaveRewards(){
   MUSIC.clearSting();
   payWaveClear(140 + (G.waveTotal + 1) * 28);   // WAVE CLEAR — the main XP source (more for a clean wave), scales as the run deepens
@@ -301,11 +319,10 @@ export function startCoopCampaign(lv, wave, waveTotal){
 }
 // the host's wave began (campaign): this browser's wave banner and readout
 export function coopCampaignWave(wave, waveTotal){
-  const L = LEVELS[G.levelIdx];
   G.wave = wave; G.waveTotal = waveTotal;
   shared.levelPhase = 'fighting'; G.waveHits = 0; G.waveDmg = 0;
   beginWave('L' + (G.levelIdx + 1) + ' · WAVE ' + (wave + 1));
-  showBanner('', 'WAVE ' + (wave + 1) + ' / ' + L.waves.length, 1.5);
+  showBanner('', waveLine(), 1.5);
   MUSIC.waveSting();
   checkUnlocks(1600);
 }
@@ -315,7 +332,7 @@ export function coopCampaignCleared(){
   G.wave++;
   campaignWaveRewards();
   shared.levelPhase = 'between';
-  if (G.wave >= L.waves.length && !L.boss) showBanner('AREA CLEARED', 'The Force flows onward.', 1.6);
+  if (chapterEnds() && !bossDue(L)) showBanner(G.chapter >= 0 ? 'CHAPTER COMPLETE' : 'AREA CLEARED', 'The Force flows onward.', 1.6);
   openSkillTree();
 }
 
@@ -354,9 +371,12 @@ export function updateFlow(dt){
   if (holdForPicks && (shared.levelPhase === 'between' || shared.levelPhase === 'travel')) shared.phaseT = Math.max(shared.phaseT, 1.4);   // a beat after the last screen closes
   if (shared.levelPhase === 'between' && shared.phaseT <= 0 && !holdForPicks){
     if (G.endless) startEndlessWave(); else startWave();
+  } else if (shared.levelPhase === 'chapterdone' && shared.phaseT <= 0 && !holdForPicks){   // a mission chapter's close (game/campaign.js)
+    shared.levelPhase = 'travel'; shared.phaseT = 1.6;
+    openSkillTree();
   } else if (shared.levelPhase === 'travel' && shared.phaseT <= 0 && !holdForPicks){
     shared.levelPhase = 'idle';
-    startLevel(G.levelIdx + 1);
+    if (G.chapter >= 0) nextChapter(); else startLevel(G.levelIdx + 1);
   } else if (shared.levelPhase === 'fighting'){
     let hostiles = 0;
     for (const e of enemies) if (!e.converted) hostiles++;
@@ -366,11 +386,11 @@ export function updateFlow(dt){
       if (G.endless){ endlessWaveCleared(); return; }   // survival has its own clear/escalation path
       G.wave++;
       campaignWaveRewards();
-      if (G.wave < L.waves.length){
+      if (!chapterEnds()){
         shared.levelPhase = 'between'; shared.phaseT = 2.2;
         player.force = CFG.player.maxForce;
         openSkillTree();   // choose an upgrade before the next wave
-      } else if (L.boss){
+      } else if (bossDue(L)){
         shared.levelPhase = 'bossfight';
         if (G.checkpoint){ G.checkpoint.boss = diffBossCheckpoint(); G.checkpoint.bossWaveTotal = G.waveTotal; }
         showBanner('', '...something approaches.', 2.4);
@@ -379,7 +399,7 @@ export function updateFlow(dt){
         // LEVEL CLEARED — the upgrade screen still opens (this wave's skill point + a chance to shop), then the
         // 'travel' beat runs out on sim time (frozen while the overlay is up) and the next world loads.
         shared.levelPhase = 'travel'; shared.phaseT = 1.6;
-        showBanner('AREA CLEARED', 'The Force flows onward.', 1.6);
+        showBanner(G.chapter >= 0 ? 'CHAPTER COMPLETE' : 'AREA CLEARED', 'The Force flows onward.', 1.6);
         openSkillTree();
       }
     }
