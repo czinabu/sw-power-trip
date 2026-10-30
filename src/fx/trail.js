@@ -25,9 +25,13 @@ trailMesh.frustumCulled = false;
 trailMesh.visible = false;
 scene.add(trailMesh);
 const TRAIL = {   // life (s) · core (how hot the leading edge burns) · base (how far down the blade the ribbon starts)
+  shiicho:   { life: 0.22, core: 0.65, base: 0.12 },   // broad, sweeping arcs
+  makashi:   { life: 0.11, core: 0.95, base: 0.4 },    // a thin, precise flick
+  soresu:    { life: 0.15, core: 0.7, base: 0.25 },
   ataru:     { life: 0.13, core: 0.9, base: 0.35 },
   niman:     { life: 0.17, core: 0.75, base: 0.2 },
   djemso:    { life: 0.24, core: 0.6, base: 0.12 },
+  shien:     { life: 0.2, core: 0.7, base: 0.18 },
   darksaber: { life: 0.2, core: 0.35, base: 0.15 },
 };
 const SUB = 4;   // Catmull-Rom subdivisions between frame samples

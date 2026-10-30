@@ -10,14 +10,18 @@
 // Pose sets key off hold + grip + form (docs/animation-guidelines.md), so a new weapon or form is new data here.
 
 /* each stance in data/stances.js names its form; the darksaber is its own (Mando) form */
-export const FORM_OF = { fast: 'ataru', medium: 'niman', strong: 'djemso', darksaber: 'darksaber' };
+export const FORM_OF = { shiicho: 'shiicho', makashi: 'makashi', soresu: 'soresu', ataru: 'ataru', niman: 'niman', djemso: 'djemso', shien: 'shien', darksaber: 'darksaber' };
 
 /* FOOTWORK per form — crouch (hip drop), splay (feet apart), lead (staggered feet), lean (forward pitch),
    width (robe flare). Read when the hero is settled and planted. */
 export const FOOTWORK = {
+  shiicho:   { crouch: -0.16, splay: 0.36, lead: 0.2,  lean: 0.08, width: 1.1 },    // square and athletic, feet under the shoulders
+  makashi:   { crouch: -0.12, splay: 0.16, lead: 0.5,  lean: 0.02, width: 0.9 },    // a fencer's line: narrow, lead foot well forward, upright
+  soresu:    { crouch: -0.2,  splay: 0.44, lead: 0.34, lean: 0.05, width: 1.25 },   // Obi-Wan's deep, wide, side-on stance
   ataru:     { crouch: -0.24, splay: 0.12, lead: 0.42, lean: 0.16, width: 0.86 },   // coiled, on the balls of the feet
-  niman:     { crouch: -0.2,  splay: 0.44, lead: 0.34, lean: 0.05, width: 1.25 },   // Obi-Wan's deep, wide, side-on stance
+  niman:     { crouch: -0.17, splay: 0.34, lead: 0.28, lean: 0.06, width: 1.15 },   // balanced and easy, ready to move or cast
   djemso:    { crouch: -0.17, splay: 0.52, lead: 0.08, lean: 0.12, width: 1.3 },   // wide, rooted, square to the foe
+  shien:     { crouch: -0.22, splay: 0.42, lead: 0.3,  lean: 0.14, width: 1.2 },    // low and coiled, weight forward over the lead foot
   darksaber: { crouch: -0.2,  splay: 0.46, lead: 0.2,  lean: 0.18, width: 1.25 },    // braced against a blade that pulls
   brawler:   { crouch: -0.15, splay: 0.24, lead: 0.36, lean: 0.12, width: 1.1 },    // the holstered Mando: knees bent, left foot leading
 };
@@ -37,16 +41,42 @@ export const SABER_GUARDS = {
       block: { hand: [0.18, 0.55, 0.3], blade: [-0.92, 0.28, 0.25], twist: -0.12, lean: 0.02, pole: [0.8, -0.2, -0.4],
                off: { hand: [-0.52, -0.05, 0.12], pole: [-0.3, -0.9, -0.3] } },
     },
-    // FORM VI NIMAN — Obi-Wan's signature guard: sunk into a deep, wide stance and turned side-on, the saber raised high
+    // FORM I SHII-CHO — the first guard every initiate learns (Kit Fisto, Luke at the Sarlacc): square to the foe, both
+    // hands on the hilt at the belly, the blade up at the foe's eyes
+    shiicho: {
+      ready: { hand: [0.08, -0.14, 0.3], blade: [-0.1, 0.84, 0.52], two: true, twist: -0.04, torso: 0, lean: 0.06, pole: [0.6, -0.7, -0.3] },
+      // a broad two-handed bar across the front, the blade near level
+      block: { hand: [0.18, 0.3, 0.4], blade: [-0.92, 0.36, 0.1], two: true, twist: 0.04, lean: 0.12, pole: [0.6, -0.8, 0] },
+    },
+    // FORM II MAKASHI — Dooku's guard: side-on, one hand, the arm out with the blade angled down the line at the foe,
+    // the off hand tucked away behind the back
+    makashi: {
+      ready: { hand: [0.2, 0.02, 0.5], blade: [-0.12, 0.2, 0.97], twist: 0.55, torso: 0.2, lean: 0.02, pole: [0.8, -0.5, -0.3],
+               off: { hand: [-0.28, -0.32, -0.24], pole: [-0.5, -0.8, -0.3] } },
+      // a small turn of the wrist: the blade stands up near the centre line and barely leaves it
+      block: { hand: [0.14, 0.12, 0.46], blade: [-0.06, 0.98, 0.16], twist: 0.4, lean: 0.02, pole: [0.8, -0.4, -0.3],
+               off: { hand: [-0.28, -0.32, -0.24], pole: [-0.5, -0.8, -0.3] } },
+    },
+    // FORM III SORESU — Obi-Wan's signature guard: sunk into a deep, wide stance and turned side-on, the saber raised high
     // over and behind the head with the blade laid level and pointing on at the foe, the off arm thrown out long toward
     // them with the fingers open. The Force hand leads and the blade waits above it.
-    niman: {
+    soresu: {
       ready: { hand: [0.26, 0.7, -0.1], blade: [-0.56, 0.08, 0.83], twist: 0.45, torso: 0.14, lean: 0.04, pole: [0.9, 0.35, -0.25], palm: 1,
                off: { hand: [-0.57, 0.36, 0.55], pole: [-0.5, -0.85, 0.15] },
                offMove: { hand: [-0.3, -0.1, 0.34], pole: OFF_POLE } },   // walking, the reaching hand drops to a loose carry
       // blade upright before the face, the off palm braced behind it — a Force-backed wall
       block: { hand: [0.1, 0.02, 0.42], blade: [-0.12, 1, 0.12], twist: 0, lean: 0.06, pole: POLE,
                off: { hand: [-0.12, 0.14, 0.38], pole: OFF_POLE } },
+    },
+    // FORM VI NIMAN — the Clone Wars general's guard: easy and balanced, saber in one hand at the middle, tip up at the
+    // foe, the off hand open and forward so a Push or a Pull is one gesture away
+    niman: {
+      ready: { hand: [0.24, 0.0, 0.32], blade: [-0.28, 0.72, 0.62], twist: 0.18, torso: 0.06, lean: 0.05, pole: [0.7, -0.6, -0.3], palm: 1,
+               off: { hand: [-0.4, 0.1, 0.42], pole: [-0.5, -0.85, 0.15] },
+               offMove: { hand: [-0.3, -0.1, 0.34], pole: OFF_POLE } },
+      // the blade up before the chest, the open palm beside it: the Force hand helps catch
+      block: { hand: [0.14, 0.12, 0.42], blade: [-0.3, 0.94, 0.14], twist: 0.04, lean: 0.06, pole: POLE,
+               off: { hand: [-0.22, 0.16, 0.4], pole: OFF_POLE } },
     },
     // FORM V DJEM SO — Anakin's high guard: both hands by the weapon shoulder, blade up and back, ready to hammer down
     djemso: {
@@ -86,6 +116,15 @@ export const SABER_GUARDS = {
       ready: { hand: [0.4, -0.24, 0.12], blade: [0.62, -0.45, -0.64], twist: -0.18, lean: 0.14, pole: [0.5, -0.3, -0.8],
                off: { hand: [-0.55, 0.15, 0.4], pole: [-0.7, -0.5, -0.3] } },
       block: { hand: [0.16, 0.26, 0.42], blade: [0.08, -1, 0.18], two: true, twist: 0, lean: 0.22, pole: [0.9, -0.1, -0.3] },
+    },
+    // SHIEN: the saber fist held forward at the weapon-side ribs, the blade laid back along the forearm and raked down
+    // behind the hip, the free hand out in front, open, measuring the shooter; low and coiled
+    shien: {
+      ready: { hand: [0.26, -0.04, 0.32], blade: [0.55, -0.5, -0.67], twist: 0.14, torso: 0.05, lean: 0.12, pole: [0.5, -0.6, -0.6],
+               off: { hand: [-0.3, 0.12, 0.44], pole: [-0.6, -0.6, -0.3] } },
+      // the forearm up across the body, blade hanging down in front: a wall the bolts glance off back down the line
+      block: { hand: [0.1, 0.24, 0.42], blade: [0.3, -0.94, 0.14], twist: 0.05, lean: 0.08, pole: [0.9, -0.2, -0.3],
+               off: { hand: [-0.2, 0.0, 0.36], pole: OFF_POLE } },
     },
     darksaber: {   // the darksaber always uses the regular hold (it's a sword, not a duelist's saber)
       ready: { hand: [0.22, 0.08, 0.24], blade: [0.1, 0.85, -0.3], two: true, twist: 0.2, lean: 0.08, pole: [0.7, -0.6, -0.2] },
@@ -261,6 +300,18 @@ export const SABER_SWINGS = {
    weight   — how far the hips shift onto the back foot in the wind-up and through onto the front one in the strike (m)
    offFlare — how far the free hand works against the blade (SWING_OFF) */
 export const SWING_STYLE = {
+  shiicho:   { tc: 0.24, ts: 0.4, tf: 0.74, reach: 1.15, two: true, spinHop: 0, drop: 0.06, offFlare: 0, overshoot: 0,
+               twist: 1.15, finisher: { pattern: 'right', spin: 1, hop: 0 },
+               load: 0.1, accel: 2.3, lag: 0.3, recover: 0.5, weight: 0.07 },   // broad two-handed sweeps that carry round the body
+    // Shii-Cho finishes with the SARLACC SWEEP: a full turn with the blade held out, through everything around you
+  makashi:   { tc: 0.18, ts: 0.39, tf: 0.62, reach: 0.8, two: false, spinHop: 0, drop: 0.02, offFlare: 0.2, overshoot: 0,
+               twist: 0.7, finisher: { pattern: 'thrust', spin: 0, hop: 0 },
+               load: 0.04, accel: 2.6, lag: 0.65, recover: 0.75, weight: 0.08 },   // small, exact, wrist-led cuts that snap back on the line
+    // Makashi finishes with a full lunge: the thrust, all the body behind the point
+  soresu:    { tc: 0.22, ts: 0.4, tf: 0.66, reach: 0.85, two: false, spinHop: 0, drop: 0.03, offFlare: 0.5, overshoot: 0,
+               twist: 0.8, finisher: { pattern: 'right', spin: 0, hop: 0 },
+               load: 0.06, accel: 2.2, lag: 0.35, recover: 0.8, weight: 0.05 },   // compact cuts that come straight back to the guard
+    // Soresu finishes on a plain, controlled backhand: no flourish, nothing left open
   ataru:     { tc: 0.16, ts: 0.4, tf: 0.7, reach: 0.95, two: false, spinHop: 0.16, drop: 0.0, offFlare: 0.75, overshoot: 0,
                twist: 1.25, finisher: { pattern: 'right', spin: 1, hop: 0.75 },
                load: 0.06, accel: 2.2, lag: 0.55, recover: 0.6, weight: 0.05 },   // whippy wrist cuts that spring back to the guard
@@ -273,6 +324,10 @@ export const SWING_STYLE = {
                twist: 0.85, finisher: { pattern: 'forward', spin: 0, hop: 0.12 },
                load: 0.12, accel: 2.8, lag: 0.15, recover: 0.45, weight: 0.09 },   // a deep load, the arms and hips driving a stiff wrist
     // Djem So finishes with a rising-then-crushing two-handed overhead
+  shien:     { tc: 0.26, ts: 0.41, tf: 0.72, reach: 1.05, two: false, spinHop: 0, drop: 0.08, offFlare: 0.6, overshoot: 0,
+               twist: 1.1, finisher: { pattern: 'right', spin: 1, hop: 0.15 },
+               load: 0.1, accel: 2.6, lag: 0.3, recover: 0.5, weight: 0.08 },   // reverse-grip backhands driven by a hard body turn
+    // Shien finishes with a spinning backhand, the blade laid along the arm whipping out at full reach
   darksaber: { tc: 0.34, ts: 0.46, tf: 0.72, reach: 1.2, two: true, spinHop: 0, drop: 0.16, offFlare: 0, overshoot: 0.35,
                twist: 0.8, finisher: { pattern: 'forward', spin: 0, hop: 0.1 },
                load: 0.1, accel: 2.6, lag: 0.08, recover: 0.4, weight: 0.08 },
@@ -301,12 +356,19 @@ export const SWING_OFF = {
    `dur`× longer than a plain one: the turn has to fit before the strike, and a full turn in a plain cut's time reads as a snap. Regular grip wheels the blade; a reverse grip keeps it laid along
    the forearm, so it spins with the body only. */
 export const SWING_SPINS = {
+  shiicho: { mid: null,                                                                       // plain: no flourish mid-string,
+             move: { turns: 1, twirl: 0, travel: 1.4, reach: 1.4, dur: 1.25, stam: 0.5, cd: 3 } },            // but a strafing sweep wheels right round
+  makashi: { mid: { turns: 0, twirl: 1, travel: 1.0, reach: 0.6, dur: 1.15, stam: 0.3, cd: 3 },              // a fencer's wrist twirl, feet stay put
+             move: null },
+  soresu:  { mid: null, move: null },                                                          // nothing wasted: no spins at all
   ataru:  { mid: { turns: 1, twirl: 0, travel: 1.5, reach: 1.3, dur: 1.45, stam: 0.5, cd: 2.5 },                  // acrobatic: a full pirouette between cuts
             move: null },
   niman:  { mid: { turns: 0, twirl: 1, travel: 1.15, reach: 0.8, dur: 1.25, stam: 0.4, cd: 3 },                // balanced: a wrist-twirl flourish, feet stay put
             move: { turns: 1, twirl: 0, travel: 1.3, reach: 1.2, dur: 1.3, stam: 0.6, cd: 3 } },               // strafing cuts turn through
   djemso: { mid: null,                                                                       // heavy: no flourish, but a strafing cut
             move: { turns: 1, twirl: 0, travel: 1.5, reach: 1.5, dur: 1.2, stam: 0.5, cd: 4 } },              // wheels its weight round
+  shien:  { mid: null,                                                                       // reverse grip: the blade stays on the arm,
+            move: { turns: 1, twirl: 0, travel: 1.4, reach: 1.3, dur: 1.25, stam: 0.5, cd: 3 } },             // so the whole body turns the cut
 };
 
 /* ---------------- DEFLECT SPINS: turning a catch into a spin ----------------
@@ -319,9 +381,13 @@ export const SWING_SPINS = {
    move. Niman (Form VI) keeps what is useful of both: an economical wrist-twirl of the blade, feet staying put. Djem So
    (Form V) is power and the straight line: it plants and answers, no spin. */
 export const DEFLECT_SPINS = {
+  soresu: { turns: 0, twirl: 1, dur: 0.38, cd: 1.1, volley: 0.9, step: 0,
+            anticipate: 0.7 },   // the blaster form: the twirl meets most sure catches at the bottom of the wheel
   ataru:  { turns: 1, twirl: 0, dur: 0.5, cd: 1.8, volley: 0.9, step: 1.0 },
   niman:  { turns: 0, twirl: 1, dur: 0.42, cd: 1.5, volley: 0.9, step: 0,
-            anticipate: 0.5 },   // on a share of catches the twirl starts BEFORE the bolt lands, so it strikes the blade at the bottom of the wheel
+            anticipate: 0.5 },
+  shiicho: { turns: 0, twirl: 0, dur: 0.4, cd: 2.5, volley: 0.9, step: 0.5 },
+  shien:   { turns: 1, twirl: 0, dur: 0.42, cd: 1.3, volley: 0.9, step: 0.4 },   // the bolt-hunter turns through a volley on the blade laid along its arm   // taught early and kept simple: a step into the catch   // on a share of catches the twirl starts BEFORE the bolt lands, so it strikes the blade at the bottom of the wheel
 };
 
 /* ---------------- DEFLECTS: where the blade goes to catch a blaster bolt ----------------

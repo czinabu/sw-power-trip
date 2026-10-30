@@ -22,10 +22,17 @@ const GUARDS = {}, SWINGS = {};
 for (const g in SABER_GUARDS){ GUARDS[g] = {}; for (const f in SABER_GUARDS[g]) GUARDS[g][f] = { ready: vecPose(SABER_GUARDS[g][f].ready), block: vecPose(SABER_GUARDS[g][f].block) }; }
 const AIR = {};
 for (const g in AIR_GUARDS){ AIR[g] = {}; for (const f in AIR_GUARDS[g]){ AIR[g][f] = {}; for (const k in AIR_GUARDS[g][f]) AIR[g][f][k] = vecPose(AIR_GUARDS[g][f][k]); } }
-/* an agility guard (data/agility.js AIR_GUARDS) for this grip and form, or null to keep the form's ready guard */
+/* an agility guard (data/agility.js AIR_GUARDS) for this grip and form, or null to keep the form's ready guard. A form
+   without its own (the newer forms) borrows the same grip's Niman, Ataru or Djem So pose for that key, so it still
+   hangs from a ledge with its hands up or hammers down with the blade raised. */
+const AIR_BORROW = ['niman', 'ataru', 'djemso'];
 export function airGuard(grip, form, key){
-  if (!key) return null;
-  return (AIR[grip] && AIR[grip][form] && AIR[grip][form][key]) || null;
+  if (!key || !AIR[grip]) return null;
+  const A = AIR[grip];
+  if (A[form] && A[form][key]) return A[form][key];
+  if (form === 'darksaber') return null;
+  for (const f of AIR_BORROW) if (A[f] && A[f][key]) return A[f][key];
+  return null;
 }
 for (const g in SABER_SWINGS){ SWINGS[g] = {}; for (const p in SABER_SWINGS[g]) SWINGS[g][p] = SABER_SWINGS[g][p].map(vecPose); }
 /* ANGLE CUTS (data/stances.js CUT_ANGLE): the keyframes of a cut from `ang` degrees, blended between the tuned cuts
@@ -106,7 +113,7 @@ function seed(R, held){
    landings and the run; `rate` scales how fast the pose gets there. */
 export function guardPose(dt, R, held, grip, form, blocking, sway, over = null, rate = 1){
   if (!saberPose.live) seed(R, held);
-  const G0 = (GUARDS[grip] && GUARDS[grip][form]) || GUARDS.regular.niman;
+  const G0 = (GUARDS[grip] && (GUARDS[grip][form] || GUARDS[grip].niman)) || GUARDS.regular.niman;
   const g = (!blocking && over) || (blocking ? G0.block : G0.ready);
   switchT = Math.max(0, switchT - dt);
   const k = Math.min(1, dt * (blocking ? 18 : switchT > 0 ? SWITCH_RATE : 9) * rate);
@@ -189,7 +196,7 @@ export function swingPose(R, held, grip, form, sw){
     const st0 = sw.anim.start.hand, c0 = scaled[0].hand;
     sw.anim.wrap = !sw.flowCut && st0.x * c0.x < 0 && Math.abs(st0.x - c0.x) > 0.3;
     // the follow-through settles a little toward the form's guard instead of freezing (the recovery)
-    const G0 = (GUARDS[grip] && GUARDS[grip][form]) || GUARDS.regular.niman;
+    const G0 = (GUARDS[grip] && (GUARDS[grip][form] || GUARDS[grip].niman)) || GUARDS.regular.niman;
     sw.anim.rest = G0.ready;
     // which way across the body the cut travels (chest +x is the weapon side): spins and twirls turn into it. A cut
     // that runs straight down the middle has none of its own and turns toward the weapon side.
@@ -308,7 +315,7 @@ function pickDeflect(grip, d){
 }
 export function deflectPose(dt, R, held, grip, form, d){
   if (!saberPose.live) seed(R, held);
-  const G0 = (GUARDS[grip] && GUARDS[grip][form]) || GUARDS.regular.niman;
+  const G0 = (GUARDS[grip] && (GUARDS[grip][form] || GUARDS[grip].niman)) || GUARDS.regular.niman;
   const bg = G0.block;
   if (!d.pose){
     const p = pickDeflect(grip, d);

@@ -18,7 +18,7 @@ const L = { hum: null, dark: null, jet: null, flame: null, amb: [], ambKey: '' }
 let nextEvt = 0, heartT = 0, lastMuffle = 0, prevMode = 'menu';
 
 /* hum pitch by saber form: lighter forms ride higher */
-const FORM_PITCH = { fast: 1.1, medium: 1, strong: 0.86 };
+const FORM_PITCH = { shiicho: 0.92, makashi: 1.06, soresu: 0.96, ataru: 1.1, niman: 1, djemso: 0.86, shien: 0.92 };
 
 function ensureLoops(){
   if (L.hum) return;

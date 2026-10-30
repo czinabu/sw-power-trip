@@ -30,8 +30,8 @@ codeIn.addEventListener('input', () => { codeIn.value = cleanCode(codeIn.value);
 codeIn.addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Enter') join(codeIn.value); });
 codeIn.addEventListener('click', (e) => e.stopPropagation());
 
-const runName = () => coopRun.k === 'm' ? 'the mission ' + missionTitle(coopRun.mid) : coopRun.k === 'c' ? 'level ' + (coopRun.lv + 1) + ' of the campaign' : 'a Survival run';
-const waveText = () => coopRun.k === 'm' ? '' : ', wave ' + (coopRun.k === 'c' ? coopRun.w + 1 : coopRun.w);
+const runName = () => coopRun.k === 'm' ? 'the mission ' + missionTitle(coopRun.mid) : coopRun.k === 'c' ? (coopRun.ch >= 0 ? 'chapter ' + (coopRun.ch + 1) : 'level ' + (coopRun.lv + 1)) + ' of the campaign' : 'a Survival run';
+const waveText = () => coopRun.k === 'm' || coopRun.mid ? '' : ', wave ' + (coopRun.k === 'c' ? coopRun.w - (coopRun.wf || 0) + 1 : coopRun.w);
 function render(){
   const s = net.status;
   statusEl.className = s === 'connected' ? 'ok' : s === 'failed' ? 'bad' : '';

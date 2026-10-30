@@ -3,12 +3,11 @@
 // game/sandbox.js runs the mode and ui/sandbox-ui.js draws the panel from these lists; edit freely.
 
 import { ENEMY_TYPES } from './enemies.js';
-import { stanceUnlocked } from './stances.js';
 import { G, player } from '../state.js';
-import { setStanceHud, switchStance } from '../player/jedi/stance.js';
 import { switchWeapon } from '../player/mando/weapons.js';
 import { applyJetTier, applyCellTier } from '../game/progression.js';
 import { BATTLE_MAPS } from './battlemaps.js';
+import { kitTier } from '../game/sandbox-unlocks.js';
 
 // each hero's room: the Jedi train in the temple's training room, the Mandalorian in the throne room at Sundari
 /* ARENAS — the panel's map row: the hero's own room, or any battle map (data/battlemaps.js) to try big fights on */
@@ -39,10 +38,14 @@ export const SANDBOX_COUNTS = [1, 3, 5];
 
 /* KIT — what each hero can switch on or off. The starting kit (saber, block, Push and dash; single blaster, brace)
    is always on. Rows that share a key (`slot`) can't both be on: picking one switches its partner off, the same
-   pairs the XP store makes you choose between. `needs` hides a row until another one is on. */
+   pairs the XP store makes you choose between. `needs` hides a row until another one is on.
+   Before the campaign is beaten a row shows only once the story has reached it (game/sandbox-unlocks.js): `from` names
+   the auto-unlock key or XP-store id that hands it out in the campaign (the row's own id when left out), and `tiers`
+   the auto-unlock keys of a tiered power, lowest first, so the row gives the highest tier reached. */
+const ROMAN = ['', 'I', 'II', 'III'];
+// a tiered row's name carries the tier it gives, e.g. JETPACK BOOSTER II
+const tiered = (base) => function(){ return base + ' ' + ROMAN[kitTier(this)]; };
 const flag = (k) => ({ has: () => !!G.unlocked[k], set: (on) => { G.unlocked[k] = on; } });
-const form = (id) => ({ has: () => stanceUnlocked(id),
-  set: (on) => { (G.stanceUnlocked = G.stanceUnlocked || {})[id] = on; if (!on && G.stance === id) switchStance('medium', true); setStanceHud(); } });
 const weapon = (id, k) => ({ has: () => id === 'darksaber' ? !!player.up.darksaber : !!G.unlocked[k],
   set: (on) => {
     if (id === 'darksaber'){ player.up.darksaber = on; G.unlocked.dark = on; } else G.unlocked[k] = on;
@@ -51,15 +54,14 @@ const weapon = (id, k) => ({ has: () => id === 'darksaber' ? !!player.up.darksab
 
 export const SANDBOX_KIT = {
   jedi: [
-    { id: 'fast',      nm: 'ATARU',            key: '1',        ...form('fast') },
-    { id: 'strong',    nm: 'DJEM SO',          key: '3',        ...form('strong') },
-    { id: 'fj',        nm: 'FORCE JUMP II',    key: 'HOLD SPACE', has: () => (player.up.fjTier || 0) >= 2, set: (on) => { player.up.fjTier = on ? 2 : 0; } },
+    { id: 'fj',        nm: tiered('FORCE JUMP'), key: 'HOLD SPACE', tiers: ['fj1', 'fj2'],
+      has: () => (player.up.fjTier || 0) >= 1, set(on){ player.up.fjTier = on ? kitTier(this) : 0; } },
     { id: 'pull',      nm: 'FORCE PULL',       key: 'C',        ...flag('pull') },
     { id: 'graspMulti', nm: "DARK LORD'S GRIP", key: 'HOLD C', needs: 'pull',
       has: () => !!player.up.graspMulti, set: (on) => { player.up.graspMulti = on; } },
     { id: 'throw',     nm: 'SABER THROW',      key: 'RMB+LMB',  ...flag('throw') },
     { id: 'barrier',   nm: 'FORCE BARRIER',    key: 'V',        ...flag('barrier') },
-    { id: 'slam',      nm: 'JUMP ATTACK',      key: 'X',        ...flag('slam') },
+    { id: 'slam',      nm: 'JUMP ATTACK',      key: 'X', from: 'jslam', ...flag('slam') },
     { id: 'mend',      nm: 'FORCE MEND',       key: 'X',        ...flag('mend') },
     { id: 'judge',     nm: 'FORCE JUDGEMENT',  key: 'R', slot: 'ult', ...flag('judge') },
     { id: 'repulse',   nm: 'FORCE REPULSE',    key: 'R', slot: 'ult', ...flag('repulse') },
@@ -72,10 +74,10 @@ export const SANDBOX_KIT = {
     { id: 'dual',       nm: 'DUAL BLASTERS',   key: '2',        ...weapon('dual', 'dual') },
     { id: 'disruptor',  nm: 'DISRUPTOR RIFLE', key: '3', slot: 'wpn', ...weapon('disruptor', 'disruptor') },
     { id: 'darksaber',  nm: 'THE DARKSABER',   key: '3', slot: 'wpn', ...weapon('darksaber') },
-    { id: 'jet',        nm: 'JETPACK BOOSTER II', key: 'SPACE', has: () => (player.up.jetTier || 0) >= 2,
-      set: (on) => { player.up.jetTier = on ? 2 : 0; applyJetTier(); player.jet = player.jetMax; } },
-    { id: 'cells',      nm: 'POWER CELLS III', key: 'LMB', has: () => (player.up.cellTier || 0) >= 3,
-      set: (on) => { player.up.cellTier = on ? 3 : 0; applyCellTier(); } },
+    { id: 'jet',        nm: tiered('JETPACK BOOSTER'), key: 'SPACE', tiers: ['jet1', 'jet2'], has: () => (player.up.jetTier || 0) >= 1,
+      set(on){ player.up.jetTier = on ? kitTier(this) : 0; applyJetTier(); player.jet = player.jetMax; } },
+    { id: 'cells',      nm: tiered('POWER CELLS'), key: 'LMB', tiers: ['cells1', 'cells2', 'cells3'], has: () => (player.up.cellTier || 0) >= 1,
+      set(on){ player.up.cellTier = on ? kitTier(this) : 0; applyCellTier(); } },
     { id: 'rocket',     nm: 'WRIST ROCKET',    key: 'Q',        ...flag('rocket') },
     { id: 'flame',      nm: 'FLAMETHROWER',    key: 'F',        ...flag('flame') },
     { id: 'grapple',    nm: 'GRAPPLING HOOK',  key: 'X', slot: 'x', ...flag('grapple') },

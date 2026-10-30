@@ -52,7 +52,7 @@ export function perfectDodge(fromPos){
     // a dash or guard flip that cost a charge gets it back (and the dash its Force); a roll was free to begin with
     if (player.dashSpent){ refundCharge(); player.dashSpent = false; }
     if (player.dodgeKind === 'dash') player.force = clamp(player.force + MOBILITY.dash.cost * P.refund, 0, CFG.player.maxForce);
-    player.riposteT = riposteWindow(CFG.player.riposteTime);   // the next cut answers it
+    player.riposteT = riposteWindow(CFG.player.riposteTime); player.fluidRip = false;   // the next cut answers it
     player.cds.dash = 0; player.cds.roll = 0;
     addFocus(FOCUS.gainParry);
   }
@@ -127,7 +127,7 @@ export function bladeClash(fromPos, foe, at){
   else cancelSwing();
   player.vel.addScaledVector(dir, -C.push * (boss ? 1.4 : 1) / formWeight());   // a heavy form gives less ground
   jarStamina(C.stam);
-  const heavy = !!foe && ((G.hero !== 'mando' && G.stance === 'strong') || G.hero === 'mando');
+  const heavy = !!foe && ((G.hero !== 'mando' && G.stance === 'djemso') || G.hero === 'mando');
   if (heavy) staggerEnemy(foe, dir.x, dir.z, 'CLASH!');
   else {
     if (foe){ flinchEnemy(foe, dir, C.knock * 0.12); knockWeapon(foe, 0.7); }
@@ -154,7 +154,7 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
   const open = player.gbT > 0;   // guard just broken: no soak, catch, block or parry until it passes
   // an empty guard (dry, or already shattered by running dry) meets a heavy melee blow from the front
   let broke = false;
-  const heavyMelee = !!(melee && fromPos && !silent && !chip && !pierce && !open && raw >= CFG.player.flinch.heavyDmg);
+  const heavyMelee = !!(melee && fromPos && !silent && !chip && !pierce && !open && raw >= CFG.player.flinch.heavyDmg * (G.hero !== 'mando' && stance().breakRes || 1));   // (Makashi stands its ground)
   // a cut in flight meets a melee strike from in front: CLASH (before any guard, since a swing can't be guarding)
   if (melee && fromPos && !silent && !(opts && opts.noClash) && player.swing && !player.swing.recoil && player.atkT > 0 && (G.hero !== 'mando' || player.weapon === 'darksaber')){
     const k = player.swing.t / player.swing.dur, C = CFG.player.clash;
@@ -214,7 +214,7 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
       if (player.parryT > 0 || (guard && player.stam > 0)) deflectAnim(V3(fromPos.x, pp.y + 1.4, fromPos.z), opts && opts.line);   // (a duellist's strike: caught on its line)
       if (player.parryT > 0){
         player.parryT = 0;   // a parry consumes the window
-        player.riposteT = riposteWindow(CFG.player.riposteTime);
+        player.riposteT = riposteWindow(CFG.player.riposteTime); player.fluidRip = false;
         player.cancelRiposte = (G.gt - (player.cancelT || -9)) < 0.45;   // parried straight out of a swing-cancel → a stronger answer
         player.ripLine = (opts && opts.line) || null;   // a duellist's strike: the riposte cuts back on the line it left open (jedi/guardline.js)
         player.force = clamp(player.force + 12 + player.up.parryForce + (stance().parryRefund || 0), 0, CFG.player.maxForce);   // skillful defense feeds the Force (NIMAN refunds extra)
@@ -250,7 +250,14 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
         sfx(900, 0.07, 'square', 0.05, 500);
         noteDefense('blocks', fromPos, opts);
         // a block is not a parry: some of a melee blow still gets through the guard
-        if (melee && CFG.player.blockChip > 0) hurtPlayer(dmg * CFG.player.blockChip, null, true, false, true);
+        // DJEM SO — FLUID RIPOSTE: a blow taken square on the held guard readies a counter (a lighter one than a parry's)
+        if (melee && G.hero !== 'mando' && stance().blockRiposte && !(player.riposteT > 0)){
+          player.riposteT = riposteWindow(CFG.player.riposteTime * 0.7); player.fluidRip = true;
+          player.ripLine = (opts && opts.line) || null;
+          floater(pp, 'FLUID RIPOSTE', '#c9a0ff');
+        }
+        const chipMul = G.hero !== 'mando' ? stance().chipMul ?? 1 : 1;   // (Soresu's guard lets nothing through)
+        if (melee && CFG.player.blockChip > 0 && chipMul > 0) hurtPlayer(dmg * CFG.player.blockChip * chipMul, null, true, false, true);
         return 'blocked';
       }
       else if (guard){

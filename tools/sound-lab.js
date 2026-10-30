@@ -41,7 +41,7 @@ btn(st, 'thunder', () => thunder());
 // ── loops ──
 const lp = section('Loops (need a world other than Menu)');
 let swingT = 0;
-for (const f of ['fast', 'medium', 'strong']) btn(lp, 'saber hum: ' + f, () => { G.hero = 'jedi'; G.stance = f; }, true);
+for (const f of ['ataru', 'niman', 'djemso']) btn(lp, 'saber hum: ' + f, () => { G.hero = 'jedi'; G.stance = f; }, true);
 btn(lp, 'darksaber hum', () => { G.hero = 'mando'; player.weapon = 'darksaber'; }, true);
 btn(lp, 'no hum', () => { G.hero = 'none'; player.weapon = 'single'; }, true);
 const lp2 = section('');

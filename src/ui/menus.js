@@ -14,19 +14,22 @@ import { startEndless } from '../game/survival.js';
 import { startTutorial, skipStep, setTrainingExit, trainingDone } from '../game/tutorial.js';
 import { startMission, startCoopMission, retryMission, missionDone, missionTitle } from '../game/mission.js';
 import { startSandbox, sandboxUnlocked } from '../game/sandbox.js';
+import { sandboxFull, sandboxProgress } from '../game/sandbox-unlocks.js';
 import { closeSandboxPanel } from './sandbox-ui.js';
 import { MISSIONS } from '../data/missions.js';
 import { closeProgress } from './store-ui.js';
 import { DIFFS } from '../data/difficulty.js';
-import { renderControls, toggleControlsDetail } from './controls.js';
+import { renderControls, toggleControlsDetail, setControlsDevice } from './controls.js';
 import { svgIcon } from './icons.js';
 import { enterFullscreenIfWanted, escapeIsOurs } from './fullscreen.js';
 import { CFG } from '../data/config.js';
 import { LEVELS } from '../data/levels.js';
 import { buildArena } from '../world/arena.js';
 import { findClearSpawn } from '../world/collision.js';
-import { playerPos } from '../player/helpers.js';
+import { playerPos, heldGrip } from '../player/helpers.js';
 import { canResume, resumeRun, resumeLabel } from '../game/saves.js';
+import { startCampaign, joinCampaign, closeCard, chapterLabel } from '../game/campaign.js';
+import { pad } from '../engine/gamepad.js';
 
 /* ============================================================
    INPUT
@@ -45,20 +48,20 @@ export function setOverlayState(state){
   overlay.classList.remove('asktrain');
   if (state !== 'pause') document.getElementById('ovctx').textContent = '';
   document.getElementById('restartBtn').style.display = state === 'menu' ? 'none' : 'inline-flex';
-  document.getElementById('restartBtn').textContent = G.training ? '↻ RESTART TRAINING' : G.mission ? '↻ RESTART MISSION' : '↻ RESTART RUN';
+  document.getElementById('restartBtn').textContent = G.training ? '↻ RESTART TRAINING' : G.mission && G.chapter < 0 ? '↻ RESTART MISSION' : '↻ RESTART RUN';
   document.getElementById('skipBtn').style.display = state === 'pause' && G.training ? 'inline-flex' : 'none';
   const go = document.getElementById('goText'), sub = document.getElementById('ovsub');
   if (state === 'menu' && G.modeSel === 'campaign' && canResume()){   // a loaded save picks the campaign up where it was
     go.textContent = 'CONTINUE CAMPAIGN'; sub.textContent = resumeLabel();
   } else if (state === 'menu'){
     go.textContent = G.modeSel === 'endless' ? 'BEGIN SURVIVAL' : G.modeSel === 'training' ? 'BEGIN TRAINING' : G.modeSel === 'mission' ? 'BEGIN MISSION' : G.modeSel === 'sandbox' ? 'ENTER THE SANDBOX' : 'BEGIN CAMPAIGN';
-    sub.textContent = G.modeSel === 'endless' ? 'HOW LONG CAN YOU HOLD?' : G.modeSel === 'training' ? 'LEARN THE MOVES' : G.modeSel === 'mission' ? missionTitle(G.missionId) : G.modeSel === 'sandbox' ? 'ANY FOE, ANY POWER' : 'CHOOSE YOUR LEGEND';
+    sub.textContent = G.modeSel === 'endless' ? 'HOW LONG CAN YOU HOLD?' : G.modeSel === 'training' ? 'LEARN THE MOVES' : G.modeSel === 'mission' ? missionTitle(G.missionId) : G.modeSel === 'sandbox' ? (sandboxFull() ? 'ANY FOE, ANY POWER' : 'THE STORY SO FAR') : 'CHOOSE YOUR LEGEND';
   } else if (state === 'pause'){
     go.textContent = 'RESUME'; sub.textContent = 'PAUSED';
-    const where = G.training ? 'TRAINING' : G.sandbox ? 'SANDBOX' : G.mission ? missionTitle(G.missionId) : G.endless ? 'SURVIVAL' : 'CAMPAIGN';
+    const where = G.chapter >= 0 ? 'CAMPAIGN · ' + chapterLabel() : G.training ? 'TRAINING' : G.sandbox ? 'SANDBOX' : G.mission ? missionTitle(G.missionId) : G.endless ? 'SURVIVAL' : 'CAMPAIGN';
     document.getElementById('ovctx').textContent = where + ' · ' + (G.hero === 'mando' ? 'MANDALORIAN' : 'JEDI');
   } else if (state === 'dead'){
-    go.textContent = G.endless ? 'NEW SURVIVAL RUN' : G.mission ? 'RETRY THIS OBJECTIVE' : G.sandbox ? 'BACK TO THE SANDBOX' : retryIsBoss() ? 'RETRY THE BOSS' : 'RETRY THIS LEVEL';
+    go.textContent = G.endless ? 'NEW SURVIVAL RUN' : G.mission ? 'RETRY THIS OBJECTIVE' : G.sandbox ? 'BACK TO THE SANDBOX' : retryIsBoss() ? 'RETRY THE BOSS' : G.chapter >= 0 ? 'RETRY THIS CHAPTER' : 'RETRY THIS LEVEL';
     sub.textContent = '';   // the run summary's own title carries the moment
   } else if (state === 'victory'){
     go.textContent = 'PLAY AGAIN';
@@ -93,7 +96,9 @@ function beginPlay(){
   if ((G.modeSel === 'endless' && !survivalUnlocked() && !G.coopJoin) || (G.modeSel === 'sandbox' && !sandboxUnlocked())) G.modeSel = 'campaign';   // safety — never launch a locked mode
   if (G.mode === 'menu' || G.mode === 'victory'){
     G.mode = 'play'; G.slowmo = 1;
-    if (G.coopJoin && G.modeSel === 'mission') startCoopMission(G.missionId); else if (G.coopJoin && G.modeSel === 'campaign') startCoopCampaign(coopRun.lv, coopRun.w, coopRun.wt); else if (G.modeSel === 'endless') startEndless(); else if (G.modeSel === 'training') startTutorial(); else if (G.modeSel === 'mission') startMission(G.missionId); else if (G.modeSel === 'sandbox') startSandbox(); else if (canResume()) resumeRun(); else startLevel(0);
+    if (G.coopJoin && G.modeSel === 'mission') startCoopMission(G.missionId);
+    else if (G.coopJoin && G.modeSel === 'campaign'){ if (coopRun.ch >= 0) joinCampaign(coopRun.ch, coopRun.a2, coopRun.w, coopRun.wt); else startCoopCampaign(coopRun.lv, coopRun.w, coopRun.wt); }
+    else if (G.modeSel === 'endless') startEndless(); else if (G.modeSel === 'training') startTutorial(); else if (G.modeSel === 'mission') startMission(G.missionId); else if (G.modeSel === 'sandbox') startSandbox(); else if (canResume()) resumeRun(); else startCampaign();
   } else if (G.mode === 'dead'){
     G.mode = 'play'; G.slowmo = 1;
     if (G.endless) startEndless(); else if (G.training) startTutorial(); else if (G.mission) retryMission(); else if (G.sandbox) startSandbox(); else retryLevel();   // survival retry = a fresh survival run
@@ -103,8 +108,8 @@ function beginPlay(){
   G.paused = false;   // unfreeze the sim on (re)entering play
 }
 // hero picker — select only (don't ignite); the player clicks elsewhere / GO to launch
-document.getElementById('hero-jedi').addEventListener('click', (e) => { e.stopPropagation(); setHero('jedi'); });
-document.getElementById('hero-mando').addEventListener('click', (e) => { e.stopPropagation(); setHero('mando'); });
+document.getElementById('hero-jedi').addEventListener('click', (e) => { e.stopPropagation(); setHero('jedi'); refreshMissionMark(); });
+document.getElementById('hero-mando').addEventListener('click', (e) => { e.stopPropagation(); setHero('mando'); refreshMissionMark(); });
 // mode picker — campaign vs survival
 // SURVIVAL is LOCKED until the campaign has been cleared as BOTH heroes (any difficulty).
 export function survivalUnlocked(){ try { return localStorage.getItem('sw_camp_jedi') === '1' && localStorage.getItem('sw_camp_mando') === '1'; } catch(e){ return false; } }
@@ -120,13 +125,15 @@ export function refreshSurvivalLock(){
       el.title = 'Survival unlocks once you have beaten the campaign with both heroes'; }
   }
 }
-// SANDBOX is LOCKED until the campaign has been cleared with either hero (game/sandbox.js)
+// SANDBOX is LOCKED until Act I of the campaign has been cleared with either hero, then offers the story so far, and
+// everything once the campaign is beaten (game/sandbox-unlocks.js)
 export function refreshSandboxLock(){
   const el = document.getElementById('mode-sandbox'); if (!el) return;
-  const un = sandboxUnlocked(), md = el.querySelector('.md');
+  const un = sandboxUnlocked(), full = un && sandboxFull(), md = el.querySelector('.md');
   el.classList.toggle('locked', !un);
-  if (md) md.innerHTML = un ? 'Any foe, any power' : svgIcon('lock', 'lk') + 'Beat the campaign';
-  el.title = un ? '' : 'The sandbox unlocks once you have beaten the campaign with either hero';
+  if (md) md.innerHTML = full ? 'Any foe, any power' : un ? 'The story so far · ' + sandboxProgress().n + '/' + sandboxProgress().of : svgIcon('lock', 'lk') + 'Clear Act I';
+  el.title = full ? '' : un ? 'The foes, powers and forms you have met in the campaign. Beat it to open everything'
+                            : 'The sandbox unlocks once you have cleared Act I of the campaign with either hero';
 }
 export function setModeSel(m){
   if ((m === 'endless' && !survivalUnlocked()) || (m === 'sandbox' && !sandboxUnlocked())){   // can't pick a locked mode
@@ -145,13 +152,15 @@ document.getElementById('mode-endless').addEventListener('click', (e) => { e.sto
 document.getElementById('mode-training').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setModeSel('training'); });
 document.getElementById('mode-sandbox').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setModeSel('sandbox'); });
 // MISSIONS: one card per story mission (data/missions.js) under the mode row; pick one, then BEGIN (or double-click it)
-const placeOf = (m) => m.level.name.replace(/^MISSION\s*—\s*/, '');
+const placeOf = (m) => m.level.name.replace(/^(MISSION|TRIAL)\s*—\s*/, '');
 document.getElementById('msnlist').innerHTML = Object.values(MISSIONS).map(m =>
   `<div class="msn brk" id="msn-${m.id}" data-mission="${m.id}">
-    <span class="mt">${m.title}${m.squad ? '<span class="msn-tag">SQUAD</span>' : ''}<span class="won"></span></span><span class="mw">${placeOf(m)}</span>
+    <span class="mt"><span class="mtn">${missionTitle(m.id)}</span>${m.squad ? '<span class="msn-tag">SQUAD</span>' : ''}${m.trial ? '<span class="msn-tag">TRIAL</span>' : ''}<span class="won"></span></span><span class="mw">${placeOf(m)}</span>
   </div>`).join('');
+// a campaign trial joins the list once either hero has reached it in the campaign (won it there)
+const trialSeen = (id) => !MISSIONS[id].trial || missionDone(id, 'jedi') || missionDone(id, 'mando');
 export function setMission(id){
-  if (!MISSIONS[id]) id = Object.keys(MISSIONS)[0];
+  if (!MISSIONS[id] || !trialSeen(id)) id = Object.keys(MISSIONS)[0];
   G.missionId = id; try { localStorage.setItem('sw_mission', id); } catch(e){}
   for (const el of document.querySelectorAll('#msnlist .msn')) el.classList.toggle('sel', el.dataset.mission === id);
   refreshMissionMark();
@@ -176,7 +185,10 @@ function refreshMissionMark(){
   const mark = (id) => { const j = missionDone(id, 'jedi'), m = missionDone(id, 'mando');
     return (j || m) ? 'Jedi ' + (j ? '<span class="ok">✓</span>' : '–') + ' Mando ' + (m ? '<span class="ok">✓</span>' : '–') : ''; };
   for (const id in MISSIONS){
-    const w = document.querySelector('#msn-' + id + ' .won'); if (!w) continue;
+    const card = document.getElementById('msn-' + id); if (!card) continue;
+    card.style.display = trialSeen(id) ? '' : 'none';
+    card.querySelector('.mtn').textContent = missionTitle(id);   // a trial is named for the hero picked
+    const w = card.querySelector('.won');
     w.textContent = (missionDone(id, 'jedi') ? 'J✓' : '') + (missionDone(id, 'mando') ? ' M✓' : '');
   }
   const m = MISSIONS[G.missionId], info = document.getElementById('msninfo');
@@ -213,7 +225,7 @@ document.getElementById('cutaimctl').addEventListener('click', (e) => { e.stopPr
 export function setSaberGrip(grip){
   G.saberGrip = grip === 'reverse' ? 'reverse' : 'regular';
   try { localStorage.setItem('sw_sabergrip', G.saberGrip); } catch(e){}
-  applySaberGrip(player, G.saberGrip, G.mode !== 'play');
+  applySaberGrip(player, heldGrip(), G.mode !== 'play');
   const gv = document.getElementById('gripval'); if (gv) gv.textContent = G.saberGrip.toUpperCase();
 }
 setSaberGrip(localStorage.getItem('sw_sabergrip') || 'regular');
@@ -235,6 +247,25 @@ function setAdsSens(v){
   const sl = document.getElementById('adssl'); if (sl && +sl.value !== G.adsSens) sl.value = G.adsSens;
 }
 { let v; try { v = parseFloat(localStorage.getItem('sw_adssens')); } catch(e){} setAdsSens(v); }
+// CONTROLLER — right-stick look speed and up/down invert (engine/gamepad.js)
+function setPadSens(v){
+  G.padSens = Math.max(0.4, Math.min(2.2, isNaN(v) ? 1 : v));
+  try { localStorage.setItem('sw_padsens', G.padSens); } catch(e){}
+  const sv = document.getElementById('padval'); if (sv) sv.textContent = G.padSens.toFixed(2) + '×';
+  const sl = document.getElementById('padsl'); if (sl && +sl.value !== G.padSens) sl.value = G.padSens;
+}
+{ let v; try { v = parseFloat(localStorage.getItem('sw_padsens')); } catch(e){} setPadSens(v); }
+function setPadInvert(on){
+  G.padInvert = on;
+  try { localStorage.setItem('sw_padinv', on ? '1' : '0'); } catch(e){}
+  const sv = document.getElementById('padinvval'); if (sv) sv.textContent = on ? 'ON' : 'OFF';
+}
+{ let v; try { v = localStorage.getItem('sw_padinv'); } catch(e){} setPadInvert(v === '1'); }
+document.getElementById('padinvctl').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setPadInvert(!G.padInvert); });
+{ const sl = document.getElementById('padsl');
+  sl.addEventListener('pointerdown', (e) => e.stopPropagation());
+  sl.addEventListener('click', (e) => e.stopPropagation());
+  sl.addEventListener('input', (e) => setPadSens(parseFloat(e.target.value))); }
 // SCREEN SHAKE — scales every camera shake, roll and hit kick (0 turns them off)
 function setShakeScale(v){
   G.shakeScale = Math.max(0, Math.min(1.5, isNaN(v) ? 1 : v));
@@ -303,14 +334,15 @@ document.addEventListener('pointerdown', audioInit);   // first gesture anywhere
 const howto = document.getElementById('howto');
 function setHowTo(open){
   howto.classList.toggle('open', open);
-  if (open) renderControls(G.hero);
+  if (open){ setControlsDevice(pad.active || pad.connected ? 'pad' : 'kb'); renderControls(G.hero); }
 }
 document.getElementById('ctltoggle').addEventListener('click', (e) => { e.stopPropagation(); setHowTo(true); });
 document.getElementById('howtoclose').addEventListener('click', (e) => { e.stopPropagation(); setHowTo(false); });
 howto.addEventListener('click', (e) => {
   e.stopPropagation();   // reading the help must never launch or resume the game
-  const tab = e.target.closest('[data-h]');
+  const tab = e.target.closest('[data-h]'), dev = e.target.closest('[data-dev]');
   if (tab) renderControls(tab.dataset.h);
+  else if (dev){ setControlsDevice(dev.dataset.dev); renderControls(document.querySelector('#howtohero .on').dataset.h); }
   else if (e.target.id === 'howtomore') toggleControlsDetail(document.querySelector('#howtohero .on').dataset.h);
   else if (e.target === howto) setHowTo(false);   // click the backdrop to close
 });
@@ -369,6 +401,7 @@ export function launchCoopRun(){
 // take the pointer lock and start (or resume) play; where the lock never works, play unlocked
 function launch(){
   audioInit();
+  if (pad.active){ shared.lockFallback = true; beginPlay(); return; }   // a pad press can't take the pointer lock: play unlocked (engine/gamepad.js)
   requestLock();
   enterFullscreenIfWanted();   // after the lock request: entering fullscreen uses up the click's user gesture
   setTimeout(() => {
@@ -442,7 +475,8 @@ function restartRun(){
   G.skillSelect = false; G.sbMenu = false;
   G.mode = 'play'; G.slowmo = 1; G.paused = false;
   document.body.classList.remove('in-menu'); setHowTo(false); setSettings(false);
-  if (G.endless) startEndless(); else if (G.training) startTutorial(); else if (G.mission) startMission(G.missionId); else if (G.sandbox) startSandbox(); else startLevel(0);   // a survival run restarts as survival, not the campaign
+  closeCard(true);
+  if (G.chapter >= 0) startCampaign(); else if (G.endless) startEndless(); else if (G.training) startTutorial(); else if (G.mission) startMission(G.missionId); else if (G.sandbox) startSandbox(); else startCampaign();   // a survival run restarts as survival, not the campaign
   if (!shared.lockFallback) requestLock();
 }
 document.getElementById('restartBtn').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); restartRun(); });
@@ -451,6 +485,7 @@ document.getElementById('restartBtn').addEventListener('click', (e) => { e.stopP
 export function goHome(){
   overlay.classList.remove('confirming');
   closeSandboxPanel(false);
+  closeCard(true);
   document.getElementById('skilltree').style.display = 'none';
   G.skillSelect = false; G.sbMenu = false;
   if (G.stats){ G.stats._ended = false; G.stats.summary = null; }

@@ -4,8 +4,10 @@
 import { G, player } from '../state.js';
 import { LEVELS } from '../data/levels.js';
 import { MISSIONS } from '../data/missions.js';
-import { startLevel } from './flow.js';
 import { switchStance } from '../player/jedi/stance.js';
+import { resumeChapter, chapterLabel } from './campaign.js';
+import { chapterOrder, forHero, CHAPTER_OF_LEVEL } from '../data/campaign.js';
+import { DEFAULT_LOADOUT, cleanLoadout, migrateForm } from '../data/forms.js';
 
 /* PROGRESS lives in localStorage keys spread across the game (campaign/mission/training wins, bests, the customizer's
    look, the sandbox's picks). A slot copies those keys, so loading one puts every mode's locks and ticks back exactly.
@@ -23,12 +25,12 @@ function progressKeys(){
 }
 const clone = (v) => v == null ? v : JSON.parse(JSON.stringify(v));
 
-/* THE CAMPAIGN RUN — the build carried from level to level. A loaded run restarts the saved level from its checkpoint
-   (the same way a retry after a death does), with every upgrade, boon and unlock it had. */
-export function inCampaignRun(){ return G.mode === 'play' && !G.endless && !G.training && !G.mission && !G.sandbox; }
+/* THE CAMPAIGN RUN — the build carried from chapter to chapter. A loaded run restarts the saved chapter from its
+   checkpoint (the same way a retry after a death does), with every upgrade, boon and unlock it had. */
+export function inCampaignRun(){ return G.mode === 'play' && (G.chapter >= 0 || (!G.endless && !G.training && !G.mission && !G.sandbox)); }
 function snapshotRun(){
   return {
-    idx: G.levelIdx, checkpoint: clone(G.checkpoint), stance: G.stance, weapon: player.weapon,
+    idx: G.levelIdx, chapter: G.chapter, actTwo: G.actTwo, checkpoint: clone(G.checkpoint), stance: G.stance, loadout: [...G.loadout], weapon: player.weapon,
     unlocked: clone(G.unlocked), stanceUnlocked: clone(G.stanceUnlocked), mandoChoiceShown: G.mandoChoiceShown,
     xp: G.xp, xpEarned: G.xpEarned, skillPoints: G.skillPoints, skillSpent: G.skillSpent,
     powerLv: clone(G.powerLv), mastery: clone(G.mastery), seenTypes: clone(G.seenTypes),
@@ -36,13 +38,14 @@ function snapshotRun(){
     stats: G.stats ? { ...clone({ ...G.stats, summary: null }), elapsed: G.gt - (G.stats.startGt || 0) } : null,
   };
 }
-// put a saved build back (called right before startLevel(run.idx, { retry: true, resume: true }); the saber form goes
+// put a saved build back (called right before its chapter starts again, game/campaign.js resumeChapter; the saber form goes
 // back after it, with switchStance)
 export function restoreRun(run){
   G.levelIdx = run.idx; G.checkpoint = clone(run.checkpoint) || { idx: run.idx, waveTotal: -1, boss: false };
   G.waveTotal = G.checkpoint.waveTotal;
   player.weapon = run.weapon || 'single';
-  G.unlocked = clone(run.unlocked) || {}; G.stanceUnlocked = clone(run.stanceUnlocked) || {}; G.mandoChoiceShown = !!run.mandoChoiceShown;
+  G.unlocked = clone(run.unlocked) || {}; G.stanceUnlocked = migrateUnlocked(run.stanceUnlocked);
+  G.loadout = cleanLoadout(run.loadout || DEFAULT_LOADOUT); G.mandoChoiceShown = !!run.mandoChoiceShown;
   G.xp = run.xp || 0; G.xpEarned = run.xpEarned || 0; G.skillPoints = run.skillPoints || 0; G.skillSpent = run.skillSpent || 0;
   G.powerLv = clone(run.powerLv) || {}; G.mastery = clone(run.mastery) || {}; G.seenTypes = clone(run.seenTypes) || {};
   G.boonOffer = null; G.boonPicked = false;
@@ -53,14 +56,26 @@ export function restoreRun(run){
   if (run.stats){ const { elapsed, ...st } = run.stats; G.stats = { ...st, startGt: G.gt - (elapsed || 0), summary: null }; }
 }
 
+// earned forms, keyed by form id (saves from before the forms had ids keyed them fast / strong)
+function migrateUnlocked(su){
+  const out = {};
+  for (const k in su || {}) if (su[k]) out[migrateForm(k)] = true;
+  return out;
+}
+
 // a loaded save's run waits on the menu (G.resumeRun) until BEGIN picks it up, as long as the same hero is picked
 export const canResume = () => !!(G.resumeRun && G.resumeRun.hero === G.hero);
-export const resumeLabel = () => 'LEVEL ' + (G.resumeRun.idx + 1) + ' · ' + placeOf(LEVELS[G.resumeRun.idx]);
+export const resumeLabel = () => savedChapter(G.resumeRun, G.hero);
 export function resumeRun(){
   const run = G.resumeRun; G.resumeRun = null;
   restoreRun(run);
-  startLevel(run.idx, { retry: true, resume: true });
-  switchStance(run.stance || 'medium', true);
+  resumeChapter(run);   // (a save from before the chapters picks up on the chapter that opens its level)
+  switchStance(migrateForm(run.stance) || 'niman', true);
+}
+// 'CHAPTER 3 · THE LAST EVACUATION' for a saved run, without starting it
+function savedChapter(run, hero){
+  const pos = run.chapter != null && run.chapter >= 0 ? run.chapter : CHAPTER_OF_LEVEL[run.idx] || 0, c = chapterOrder(run.actTwo)[pos];
+  return c ? 'CHAPTER ' + (pos + 1) + ' · ' + forHero(c.title, hero) : 'LEVEL ' + (run.idx + 1) + ' · ' + placeOf(LEVELS[run.idx]);
 }
 
 /* ---------- slots ---------- */
@@ -91,9 +106,9 @@ export function clearProgress(){
 const placeOf = (L) => (L && L.name.split('—').map(t => t.trim())[1]) || '';
 // where the player is right now, in a few words for the slot card
 function whereNow(){
-  if (inCampaignRun()) return 'CAMPAIGN · LEVEL ' + (G.levelIdx + 1) + ' · ' + placeOf(LEVELS[G.levelIdx]);
-  if (G.mode === 'menu' && canResume()) return 'CAMPAIGN · LEVEL ' + (G.resumeRun.idx + 1) + ' · ' + placeOf(LEVELS[G.resumeRun.idx]);
-  if (G.mode === 'play' && G.mission) return 'MISSION · ' + ((MISSIONS[G.missionId] || {}).title || '');
+  if (inCampaignRun()) return 'CAMPAIGN · ' + (G.chapter >= 0 ? chapterLabel() : 'LEVEL ' + (G.levelIdx + 1) + ' · ' + placeOf(LEVELS[G.levelIdx]));
+  if (G.mode === 'menu' && canResume()) return 'CAMPAIGN · ' + savedChapter(G.resumeRun, G.resumeRun.hero);
+  if (G.mode === 'play' && G.mission) return 'MISSION · ' + forHero((MISSIONS[G.missionId] || {}).title || '', G.hero);
   if (G.mode === 'play' && G.endless) return 'SURVIVAL';
   if (G.mode === 'play' && G.training) return 'TRAINING';
   if (G.mode === 'play' && G.sandbox) return 'SANDBOX';

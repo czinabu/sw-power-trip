@@ -107,13 +107,13 @@ export const TRAINING = {
       spawn: CIRCLE.map(at => ({ type: 'grunt', at, dummy: true })) },
 
     { sec: 'THE FORMS', say: 'Ataru is the form of the acrobat: light, wide cuts, and your feet never stop. When many come at once, this is the form.',
-      keys: '1 · LMB', do: 'In Ataru, cut down the crowd of 4', ev: 'kill', stance: 'fast', need: 4, grant: 'forms', respawn: true,
+      keys: '1 · LMB', do: 'In Ataru, cut down the crowd of 4', ev: 'kill', stance: 'ataru', need: 4, grant: 'forms', respawn: true,
       spawn: CROWD.map(at => ({ type: 'grunt', at, dummy: true })) },
     { say: 'Niman is balance: the widest moment to parry, and every parry gives back Force. Against a single blade, it serves you best.',
-      keys: '2 · TAP RMB', do: 'In Niman, parry 2 strikes', ev: 'parry', stance: 'medium', need: 2,
+      keys: '2 · TAP RMB', do: 'In Niman, parry 2 strikes', ev: 'parry', stance: 'niman', need: 2,
       spawn: [{ type: 'grunt', at: [0, -4], sparring: true }] },
     { say: 'Djem So meets force with greater force: slow, heavy blows that break armor and knock the biggest foes flat.',
-      keys: '3 · LMB', do: 'In Djem So, bring down the armored brute', ev: 'kill', of: 'brute', stance: 'strong', need: 1, respawn: true,
+      keys: '3 · LMB', do: 'In Djem So, bring down the armored brute', ev: 'kill', of: 'brute', stance: 'djemso', need: 1, respawn: true,
       spawn: [{ type: 'brute', at: [0, -4], dummy: true }] },
 
     { sec: 'THE DUEL', say: 'A Magnaguard blocks one side at a time. The pale arc shows which. Kick through its guard, or cut where the arc is not.',
@@ -209,8 +209,8 @@ export const TRAINING_DONE = {
 export const DRILLS = {
   jedi: {
     pull:    { say: 'What you push away, you may also draw near. Hold it, and you hold them.', key: 'C', use: ['cd', 'pull'] },
-    fast:    { say: 'Ataru, the form of the acrobat. Strike from everywhere at once.', key: '1', use: ['stance', 'fast'] },
-    strong:  { say: 'Djem So. Meet force with greater force.', key: '3', use: ['stance', 'strong'] },
+    ataru:   { say: 'Ataru, the form of the acrobat. Strike from everywhere at once.', key: '1', use: ['stance', 'ataru'] },
+    djemso:  { say: 'Djem So. Meet force with greater force.', key: '3', use: ['stance', 'djemso'] },
     fj1:     { say: 'The Force carries you higher now.', key: 'HOLD SPACE' },
     fj2:     { say: 'Higher still. Trust it.', key: 'HOLD SPACE' },
     barrier: { say: 'Wrap yourself in the Force, and let the fire break on it.', key: 'V', use: ['cd', 'barrier'] },

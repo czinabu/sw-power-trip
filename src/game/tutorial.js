@@ -80,7 +80,7 @@ function beginStep(i){
   clearSpawned(); clearBeacons();
   if (s.sec) showBanner(s.sec, '', 2.2, { kicker: 'TRAINING' });
   if (s.grant === 'forms'){
-    G.stanceUnlocked = { ...(G.stanceUnlocked || {}), fast: true, strong: true };
+    G.stanceUnlocked = { ...(G.stanceUnlocked || {}), ataru: true, djemso: true };
     setStanceHud();
   }
   if (s.grant === 'jet1' && !(player.up.jetTier >= 1)){ player.up.jetTier = 1; applyJetTier(); player.jet = player.jetMax; }
@@ -245,7 +245,7 @@ const D = { run: null, owned: null, queue: [], cur: null };
 function ownedNow(){
   const o = new Set(Object.keys(G.unlocked || {}).filter(k => G.unlocked[k]));
   const su = G.stanceUnlocked || {};
-  if (su.fast) o.add('fast'); if (su.strong) o.add('strong');
+  if (su.ataru) o.add('ataru'); if (su.djemso) o.add('djemso');
   const up = player.up || {};
   if (G.hero === 'mando'){ if (up.jetTier >= 1) o.add('jet1'); if (up.jetTier >= 2) o.add('jet2'); if (up.darksaber) o.add('darksaber'); }
   else { if (up.fjTier >= 1) o.add('fj1'); if (up.fjTier >= 2) o.add('fj2'); }

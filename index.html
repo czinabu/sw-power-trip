@@ -54,9 +54,10 @@
     <div id="stancebox">
       <div id="stancesyn"></div>
       <div id="stances">
-        <div class="stance" id="st-fast" style="--c:#35c8ff"><span class="num">1</span><span class="snm">ATARU</span><span class="sty">FAST</span></div>
-        <div class="stance" id="st-medium" style="--c:#3aff8c"><span class="num">2</span><span class="snm">NIMAN</span><span class="sty">BALANCED</span></div>
-        <div class="stance" id="st-strong" style="--c:#b24bff"><span class="num">3</span><span class="snm">DJEM SO</span><span class="sty">STRONG</span></div>
+        <!-- the three loadout slots: filled from G.loadout by setStanceHud (player/jedi/stance.js) -->
+        <div class="stance" id="st-0" style="--c:#35c8ff"><span class="num">1</span><span class="snm">ATARU</span><span class="sty">FAST</span></div>
+        <div class="stance" id="st-1" style="--c:#3aff8c"><span class="num">2</span><span class="snm">NIMAN</span><span class="sty">BALANCED</span></div>
+        <div class="stance" id="st-2" style="--c:#b24bff"><span class="num">3</span><span class="snm">DJEM SO</span><span class="sty">STRONG</span></div>
       </div>
     </div>
     <div id="ab-blaster" class="m-ab weaponbox">
@@ -225,11 +226,11 @@
         <div class="btn" id="homeNo">KEEP PLAYING</div>
       </div>
     </div>
-    <div class="ov-foot"><kbd>Tab</kbd> pause · <kbd>Enter</kbd> resume · <kbd>M</kbd> music · <kbd>P</kbd> graphics</div>
+    <div class="ov-foot"><span class="kbonly"><kbd>Tab</kbd> pause · <kbd>Enter</kbd> resume · <kbd>M</kbd> music · <kbd>P</kbd> graphics</span><span class="padonly"><kbd class="pg" data-b="A"></kbd> select · <kbd class="pg" data-b="B"></kbd> back · <kbd class="pg" data-b="MENU"></kbd> pause / resume</span></div>
   </div>
   <div id="howto">
     <div class="howto-panel">
-      <div class="howto-head"><div class="howto-title">HOW TO PLAY</div><div class="howto-hero" id="howtohero"></div><div class="howto-x" id="howtoclose">✕</div></div>
+      <div class="howto-head"><div class="howto-title">HOW TO PLAY</div><div class="howto-hero" id="howtohero"></div><div class="howto-hero" id="howtodev"></div><div class="howto-x" id="howtoclose">✕</div></div>
       <div class="howto-more" id="howtomore"></div>
       <div class="ctl" id="ctl"></div>
     </div>
@@ -255,6 +256,8 @@
           <div class="setpill" id="cutaimctl" title="MOUSE: flick the mouse the way you want the blade to travel just before you cut. KEYS: the movement keys pick the cut">CUT AIM<span class="setval" id="cutaimval">KEYS</span></div>
           <div class="setpill" id="swingctl" title="Mirror which way your directional saber cuts sweep">SWING<span class="setval" id="swingval">NORMAL</span></div>
           <div class="setpill" id="gripctl" title="Hold the lightsaber in a regular or reverse grip">GRIP<span class="setval" id="gripval">REGULAR</span><span class="gfxhint">G</span></div>
+          <label class="setpill" title="Controller: how fast the right stick turns the view">STICK SENS<input type="range" id="padsl" min="0.4" max="2.2" step="0.05" value="1"><span class="setval" id="padval">1.0×</span></label>
+          <div class="setpill" id="padinvctl" title="Controller: push the right stick up to look down">INVERT Y<span class="setval" id="padinvval">OFF</span></div>
         </div>
       </div>
     </div>
@@ -296,6 +299,7 @@
 <div id="boonstrip"></div>
 <div id="threats"><div id="dmgind"><i></i></div></div>
 <div id="hitmark"><i></i><i></i><i></i><i></i></div>
+<div id="chapcard"></div>   <!-- the campaign's chapter card (game/campaign.js) -->
 <div id="skilltree">
   <div class="st-scroll">
     <header class="st-head">
@@ -334,6 +338,7 @@
 <div id="sandbox">
   <div class="sb-panel">
     <div class="howto-head"><div class="howto-title">SANDBOX</div><div class="rm-sub">Call in foes, pick your powers · <kbd>B</kbd> to close</div><div class="howto-x" id="sbclose">✕</div></div>
+    <div class="sb-story" id="sbstory"></div>
     <div class="sb-cols">
       <section class="sb-col">
         <div class="sec-label">ARENA <span class="sb-hint">The battle maps are big open fields</span></div>
@@ -357,6 +362,8 @@
         </div>
       </section>
       <section class="sb-col">
+        <div class="sec-label" id="sbformslbl">FORMS <span class="sb-hint">Click a slot to change its form · <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> in the fight</span></div>
+        <div class="sb-grid kit" id="sbforms"></div>
         <div class="sec-label">POWERS <span class="sb-hint">Powers on the same key are a pair: one at a time</span></div>
         <div class="sb-grid kit" id="sbkit"></div>
         <div class="sb-row">

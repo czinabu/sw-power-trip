@@ -1,7 +1,8 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
-// Lightsaber stance switching and the stance HUD.
+// Lightsaber stance switching, the three-slot form loadout, and the stance HUD.
 
-import { STANCES, STANCE_ORDER, stanceUnlocked } from '../../data/stances.js';
+import { STANCES, stanceUnlocked } from '../../data/stances.js';
+import { FORMS, LOADOUT_SLOTS, cleanLoadout, otherVariant } from '../../data/forms.js';
 import { sfx } from '../../audio/sfx.js';
 import { V3 } from '../../utils.js';
 import { burst } from '../../fx/particles.js';
@@ -9,22 +10,69 @@ import { floater } from '../../fx/floaters.js';
 import { G, player } from '../../state.js';
 import { reigniteBlade } from '../../fx/trail.js';
 import { startSwitch } from '../anim/saber.js';
-import { playerPos, stance, bladeColor } from '../helpers.js';
+import { playerPos, stance, bladeColor, heldGrip } from '../helpers.js';
+import { applySaberGrip } from '../model/weapons.js';
 
-/* ---------- stance switching: 1/2/3 or mouse wheel ---------- */
+const hex = (c) => '#' + ('000000' + c.toString(16)).slice(-6);
+
+/* ---------- the HUD: one chip per loadout slot ---------- */
 let _synT = 0;
 export function setStanceHud(){
   const st = stance();
-  for (const id of STANCE_ORDER){
-    const chip = document.getElementById('st-' + id);
-    chip.classList.toggle('active', id === G.stance);
-    chip.classList.toggle('locked', !stanceUnlocked(id));   // dim the forms you haven't earned yet
+  for (let i = 0; i < LOADOUT_SLOTS; i++){
+    const chip = document.getElementById('st-' + i);
+    if (!chip) continue;
+    const id = G.loadout[i], f = id && FORMS[id];
+    chip.classList.toggle('empty', !f);
+    chip.querySelector('.snm').textContent = f ? f.name : '—';
+    chip.querySelector('.sty').textContent = f ? f.tag : 'EMPTY';
+    if (f) chip.style.setProperty('--c', hex(STANCES[id].blade));
+    chip.classList.toggle('active', !!f && id === G.stance);
+    chip.classList.toggle('locked', !!f && !stanceUnlocked(id));   // dim the forms you haven't earned yet
   }
   // the form's strengths read for a few seconds after a change, then fade so they don't crowd the action
   const syn = document.getElementById('stancesyn');
   syn.textContent = st.syn; syn.classList.add('show');
   clearTimeout(_synT); _synT = setTimeout(() => syn.classList.remove('show'), 4000);
 }
+
+/* ---------- the loadout: which forms sit on 1 / 2 / 3 ---------- */
+// set the slots (cleaned: ready forms only, none twice). If the form in hand left the loadout, take the first
+// earned form still in it.
+export function setLoadout(list){
+  G.loadout = cleanLoadout(list);
+  if (G.hero !== 'mando' && !G.loadout.includes(G.stance)){
+    const next = G.loadout.find(id => id && stanceUnlocked(id));
+    if (next) switchStance(next, true);
+  }
+  setStanceHud();
+}
+// keys 1 / 2 / 3: the form in that slot (an empty slot does nothing)
+export function switchSlot(i){ const id = G.loadout[i]; if (id) switchStance(id); }
+// the mouse wheel: the next earned form along the slots, wrapping round
+export function cycleSlot(dir){
+  const at = G.loadout.indexOf(G.stance);
+  for (let n = 1; n <= LOADOUT_SLOTS; n++){
+    const id = G.loadout[(at + dir * n + LOADOUT_SLOTS * 2) % LOADOUT_SLOTS];
+    if (id && stanceUnlocked(id)){ switchStance(id); return; }
+  }
+}
+
+/* ---------- G: the other variant of the form in hand ---------- */
+// Djem So ⇄ Shien share Form V's slot: G swaps the one in hand for the other (if it's known) in place. Returns false
+// when there's nothing to swap to, so G falls back to the grip preference.
+export function swapVariant(){
+  if (G.hero === 'mando') return false;
+  const other = otherVariant(G.stance, stanceUnlocked);
+  if (!other) return false;
+  const next = G.loadout.slice(); next[next.indexOf(G.stance)] = other;
+  G.loadout = cleanLoadout(next);
+  G.stanceCd = 0; switchStance(other);
+  return true;
+}
+
+/* ---------- stance switching ---------- */
+const IGNITE = { shiicho: 380, makashi: 820, soresu: 600, ataru: 740, niman: 540, djemso: 320, shien: 440 };   // the re-ignite's pitch
 export function switchStance(id, silent){
   if (!STANCES[id] || (G.stanceCd > 0 && !silent) || G.stance === id) return;
   if (!silent && !stanceUnlocked(id)){ floater(playerPos(), 'FORM LOCKED', '#ff9a66'); sfx(120, 0.1, 'square', 0.05, 70); return; }
@@ -34,13 +82,14 @@ export function switchStance(id, silent){
   // blade re-tunes to the form
   player.blade.glow.material.color.setHex(bladeColor(st));
   player.blade.light.color.setHex(bladeColor(st));
+  applySaberGrip(player, heldGrip(), !!silent);   // Shien turns the hilt over into its reverse grip, and back out of it
   if (!silent){ reigniteBlade(); startSwitch(); }   // snap-hiss: the blade re-ignites in the new form's colour and turns into its guard
   setStanceHud();
   if (!silent){
     const pp = playerPos();
     burst(V3(pp.x, 1.6, pp.z), st.blade, 10, 4, 3);
-    floater(pp, st.name, '#' + ('000000' + st.blade.toString(16)).slice(-6));
-    sfx(id === 'fast' ? 740 : id === 'medium' ? 540 : 320, 0.22, 'sine', 0.1, id === 'strong' ? 160 : 1480);
+    floater(pp, st.name, hex(st.blade));
+    sfx(IGNITE[id] || 540, 0.22, 'sine', 0.1, id === 'djemso' || id === 'shiicho' ? 160 : 1480);
     sfx(90, 0.18, 'sawtooth', 0.06, 60);   // saber re-ignite growl
   }
 }

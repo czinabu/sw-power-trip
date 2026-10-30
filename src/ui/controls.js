@@ -31,8 +31,8 @@ const CONTROLS = {
       ['W + AIR + LMB', 'Aerial cut', 'Leaping forward: a short lunge and a cut at the foe ahead · costs Force, 3s cooldown · a standing jump just swings', 1],
       ['LMB', 'Saber lock', 'Blades bound: mash to drive through · E kicks out · F shoves', 1],
       ['T / MMB', 'Lock on', 'Keeps one foe framed; press again to release', 1],
-      ['1 / 2 / 3', 'Saber form', 'Or the mouse wheel'],
-      ['G', 'Switch grip', 'Regular or reverse; swings hit the same either way', 1],
+      ['1 / 2 / 3', 'Saber form', 'The three forms in your loadout, or the mouse wheel'],
+      ['G', 'Switch grip', 'Regular or reverse; swings hit the same either way · in Djem So or Shien (Form V) it swaps to the other one if you know it · Shien always holds a reverse grip', 1],
       ['4', 'Holster saber', 'Fight with the Force alone, both hands free: LMB throws palm strikes (every third is a burst), RMB wards, Force powers hit 20% harder and Force refills faster · 4 again draws', 1],
       ['H', 'Squad order', 'With a squad: hold the spot under the crosshair, H again to bring them back on you · stand by a downed squadmate to get them up · while you have one standing, a killing blow downs you instead and they come to get you up', 1],
       ['RMB + SPACE', 'Evasive leap', 'Jump while blocking to vault clear · in a fight it spends a dash charge and is only safe at its start', 1],
@@ -92,7 +92,9 @@ const TIPS = {
     '<b>Force</b> (bottom-left bar) powers your abilities and refills over time.',
     '<b>Focus</b> builds with clean hits and parries and boosts your damage. Taking a hit breaks it.',
     '<b>Forms:</b> Ataru for crowds, Niman for all-round play, Djem So for brutes and bosses.',
-    'A swing turns blaster bolts back down the line they came from: Djem So sends them home to the shooter, Ataru sprays them. A timed parry (tap RMB) always sends a bolt straight back.',
+    '<b>Sandbox forms:</b> Shii-Cho sweeps crowds and its finisher disarms blaster troopers; Makashi beats other blades but bolts cost it; Soresu holds its guard and sends bolts home. Pick yours in the sandbox panel (B).',
+    'A swing turns blaster bolts back down the line they came from: Shien sends them home to the shooter harder, Ataru sprays them. A timed parry (tap RMB) always sends a bolt straight back.',
+    '<b>Djem So</b> answers a blow taken on the held guard with a <b>Fluid Riposte</b>; <b>Ataru</b> cuts harder in the air, and a cut out of a Force dash is the <b>Hawk-Bat Swoop</b>. In Djem So, G swaps to Shien once you know it.',
     'Any swing can be cancelled into a block, a Force power or a dash.',
     'Getting hit knocks your swing loose. Cut into a foe\'s strike mid-swing and the blades clash: nobody is hurt and you both reel. Bosses clash too.',
     '<b>Duellists</b> (Magnaguards, Sith acolytes) hold a guard: the pale arc beside them shows the line it covers (left, right, high, or low across the knees). They read your cut as you wind up and swing their weapon onto its line to meet it. A cut that meets a guard that holds stops dead on the blade and bounces back. Cut in past the edge of the arc (aim the angle with a flick, high or low too), kick to break it, and don\'t throw the same angle twice: they read it.',
@@ -112,15 +114,33 @@ const TIPS = {
 };
 
 import { TELLS, tellCss } from '../fx/tells.js';
+import { PAD_BINDS, PAD_GLYPHS, PAD_MENU } from '../data/gamepad.js';
+import { pad } from '../engine/gamepad.js';
 
-let showAll = false;
+let showAll = false, device = 'kb';
 export function toggleControlsDetail(hero){ showAll = !showAll; renderControls(hero); }
+export function setControlsDevice(d){ device = d; }
+
+/* the controller layout, straight from the binds (data/gamepad.js), so it can't drift from what the pad does */
+const PAD_ORDER = ['RT', 'LT', 'A', 'B', 'X', 'Y', 'RB', 'LB', 'L3', 'R3', 'LEFT', 'UP', 'RIGHT', 'DOWN', 'VIEW'];
+function padGroups(hero){
+  const B = PAD_BINDS[hero] || PAD_BINDS.jedi, gl = PAD_GLYPHS[pad.family];
+  const row = (name, b) => [gl[name], b.label, b.note];
+  return [
+    { title: 'STICKS', rows: [[gl.LS, 'Move', 'Steers any way, at the stick\'s angle'], [gl.RS, hero === 'mando' ? 'Aim' : 'Look',
+      'Speed: Settings · STICK SENS' + (hero === 'jedi' ? ' · with CUT AIM: MOUSE, a flick just before RT aims the cut' : '')],
+      [gl.MENU, 'Pause']] },
+    { title: 'BUTTONS', rows: PAD_ORDER.filter(n => B.base[n]).map(n => row(n, B.base[n])) },
+    { title: hero === 'mando' ? 'HOLD LB: GADGETS' : 'HOLD LB: POWERS', rows: PAD_ORDER.filter(n => B.lb[n]).map(n => [gl.LB + ' + ' + gl[n], B.lb[n].label, B.lb[n].note]) },
+    { title: 'MENUS', rows: PAD_MENU.map(([k, a, n]) => [k.split(' / ').map(x => gl[x] || x).join(' / '), a, n]) },
+  ];
+}
 function keycaps(keys){
   return keys.split(' ').map(k => (k === '/' || k === '+') ? '<span>' + k + '</span>' : '<kbd>' + k + '</kbd>').join('');
 }
 export function renderControls(hero){
   const el = document.getElementById('ctl'); if (!el) return;
-  const groups = CONTROLS[hero] || CONTROLS.jedi;
+  const groups = device === 'pad' ? padGroups(hero) : CONTROLS[hero] || CONTROLS.jedi;
   let html = '';
   for (const g of groups){
     html += '<div class="cg"><h4>' + g.title + '</h4>';
@@ -133,11 +153,15 @@ export function renderControls(hero){
     '<li><i style="background:' + tellCss(k) + '"></i><b>' + TELLS[k].name + '</b><span>' + TELLS[k].note + '</span></li>').join('') + '</ul></div>';
   el.innerHTML = html;
   el.classList.toggle('all', showAll);
+  el.classList.toggle('padview', device === 'pad');
   const more = document.getElementById('howtomore');
-  if (more) more.textContent = showAll ? 'SHOW LESS' : 'SHOW ALL MOVES';
+  if (more){ more.textContent = showAll ? 'SHOW LESS' : 'SHOW ALL MOVES'; more.style.display = device === 'pad' ? 'none' : ''; }   // the pad page shows everything
   const tabs = document.getElementById('howtohero');
   if (tabs){
     tabs.innerHTML = '<span data-h="jedi" class="' + (hero === 'jedi' ? 'on' : '') + '">JEDI</span>' +
                      '<span data-h="mando" class="' + (hero === 'mando' ? 'on' : '') + '">MANDALORIAN</span>';
+    const devs = document.getElementById('howtodev');
+    if (devs) devs.innerHTML = '<span data-dev="kb" class="' + (device === 'kb' ? 'on' : '') + '">KEYBOARD</span>' +
+                               '<span data-dev="pad" class="' + (device === 'pad' ? 'on' : '') + '">CONTROLLER</span>';
   }
 }

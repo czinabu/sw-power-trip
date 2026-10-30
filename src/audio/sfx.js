@@ -100,14 +100,18 @@ function boom(pos, size){
   duck(0.4 * Math.min(1, size), 0.18);
 }
 
+// each lightsaber form's swing voice: quick and light, even, or heavy
+const SWING_VOICE = { shiicho: 'strong', makashi: 'fast', soresu: 'medium', ataru: 'fast', niman: 'medium', djemso: 'strong', shien: 'strong' };
+
 const pw01 = v => clamp(v ?? 1, 0.4, 1.8);
 
 /* ---------- the sound bank ---------- */
 export const S = {
   // ── lightsaber ──
-  // kind: 'fast' | 'medium' | 'strong' | 'dark'
+  // kind: 'fast' | 'medium' | 'strong' | 'dark', or a lightsaber form id (voiced by its weight: SWING_VOICE)
   swing: (kind) => {
     if (tooSoon('swing', 0.05)) return;
+    kind = SWING_VOICE[kind] || kind;
     if (kind === 'fast') swing(1.15, 0.85);
     else if (kind === 'strong') swing(0.82, 1.35);
     else if (kind === 'dark') swing(0.68, 1.2, true);

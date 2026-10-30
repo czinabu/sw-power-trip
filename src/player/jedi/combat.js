@@ -3,7 +3,7 @@
 
 import { CFG } from '../../data/config.js';
 import { stamDelay } from '../stamina.js';
-import { SWING_PATTERNS, backLineMul } from '../../data/stances.js';
+import { SWING_PATTERNS, backLineMul, swordMul } from '../../data/stances.js';
 import { SWING_SPINS, DEFLECT_SPINS } from '../../data/poses.js';
 import { sfx, S } from '../../audio/sfx.js';
 import { V3, rand, clamp, TMP } from '../../utils.js';
@@ -88,21 +88,27 @@ export function tryAttack(flow = false){
   const backStrike = dirKey === 'back' && !ripNow;
   // the riposte is spent on THIS cut (it lands on whatever the blade meets first; see applySwingDamage)
   const cancelRip = ripNow && !!player.cancelRiposte;
-  if (ripNow){ player.riposteT = 0; player.cancelRiposte = false; player.ripLine = null; }
+  const fluid = ripNow && !!player.fluidRip;   // Djem So's Fluid Riposte (off a block): lands 1.5×, not a parry's 2×
+  if (ripNow){ player.riposteT = 0; player.cancelRiposte = false; player.ripLine = null; player.fluidRip = false; }
   // FLOW (data/stances.js CUT_ANGLE.flow): an angle cut that starts where the last one finished flows straight on, quicker
   const FL = CUT_ANGLE.flow, last = player.lastCut, ang = !ripNow && pat.ang != null ? pat.ang : null;
   const flowCut = ang != null && !!last && G.gt - last.at < FL.gap && Math.abs((((ang - last.ang - 180) % 360) + 540) % 360 - 180) < FL.within;
   player.lastCut = ang != null ? { ang, at: G.gt } : null;
   const cutDur = flowCut ? dur * FL.speed : dur;
   player.atkT = cutDur;
-  player.swing = { t: 0, applied: false, step, dur: cutDur, flowCut, pat, dir: dirKey, h: cut.h, flick: !!cut.flick, back: backStrike, riposte: ripNow, ripLine: !!ripPat, cancelRip, flow, mom };
+  player.swing = { t: 0, applied: false, step, dur: cutDur, flowCut, pat, dir: dirKey, h: cut.h, flick: !!cut.flick, back: backStrike, riposte: ripNow, ripLine: !!ripPat, cancelRip, fluid, flow, mom };
   player.deflectAnim = null;   // a cut takes the blade over from any catch in progress
   const spin = pickSpin(st.form, step, cut.flick ? 'neutral' : dirKey, {   // (an aimed flick cut stays square: no strafe spin)
     ripNow, backStrike, mom, flow, st });
   if (spin){
     player.stam -= spin.stam * st.stamina; player._spinT = G.gt; player.swing.spin = spin; player.swing.dur *= spin.dur; player.atkT = player.swing.dur; }
   // cinematic lunge toward nearest target in view — STRONG's finisher lunges harder; a RIPOSTE drives in hardest
-  const lunge = ripNow ? 2.0 : ((step === 2 && st.finisherLunge) ? st.finisherLunge : st.lunge) * (pat.lunge || 1);
+  let lunge = ripNow ? 2.0 : ((step === 2 && st.finisherLunge) ? st.finisherLunge : st.lunge) * (pat.lunge || 1);
+  // HAWK-BAT SWOOP (Ataru): a cut out of a Force dash springs off the ground and drives in twice as far
+  if (mom === 'swoop'){
+    lunge *= 2; player.vy = Math.max(player.vy, 4.5); player.grounded = false;
+    floater(playerPos(), 'HAWK-BAT SWOOP', '#7fe0ff');
+  }
   const tgt = backStrike ? nearestEnemyInCone(CFG.player.comboRange, -0.35, true)
                          : nearestEnemyInCone(st.reach?.range ?? CFG.player.comboRange, 0.6);
   if (tgt && !backStrike){
@@ -216,7 +222,7 @@ export function applySwingDamage(step, only){
   const rallied = riposte && only && only.some(o => o.exch && o.rallyT > G.gt);
   if (riposte){   // parry reward: the answer lands twice as hard (more with Riposte Master)
     const cancelRip = !!sw0.cancelRip;   // parried straight out of a swing-cancel → a CRUSHING answer
-    dmg *= 2 * (player.up.riposte || 1) * (cancelRip ? 1.6 : 1);
+    dmg *= 2 * (player.up.riposte || 1) * (cancelRip ? 1.6 : 1) * (sw0.fluid ? 0.75 : 1);
     knock *= cancelRip ? 1.8 : 1;
   }
   if (riposte && !sw0.ripFx && !rallied){
@@ -237,6 +243,7 @@ export function applySwingDamage(step, only){
   // MOMENTUM — a cut out of a vault, climb, slide, wall-run or landing roll lands harder (data/movement.js MOVE.flow)
   const mom = sw0 && sw0.mom;
   if (mom){ dmg *= MOVE.flow.strikeDmg; knock *= MOVE.flow.strikeKnock; }
+  if (st.airCutDmg && !player.grounded) dmg *= st.airCutDmg;   // ATARU: a cut struck off the ground lands harder
   // FAST cleaves wide through crowds; STRONG is a narrow, focused blow. FAST's finisher fans ~10% wider still.
   const radius = (finisher ? CFG.player.hitRadius + 1 : CFG.player.hitRadius) * (st.radiusMult || 1)
                  * (finisher && st.finisherArc ? st.finisherArc : 1);
@@ -274,17 +281,21 @@ export function applySwingDamage(step, only){
       if (!riposte && !back){
         const pre = sw0 && sw0.duel && sw0.duel.get(e);
         const at = pre === undefined && only && only.length ? contactPoint(e) : undefined;
-        const dres = pre !== undefined ? pre : duelDefend(e, line, finisher ? 'finisher' : 'cut', G.stance === 'strong' || isDark, at);
+        const dres = pre !== undefined ? pre : duelDefend(e, line, finisher ? 'finisher' : 'cut', G.stance === 'djemso' || isDark, at);
         if (dres === 'block' || dres === 'dodge'){ turned++; if (dres === 'block' && !blocker){ blocker = e; blockAt = at; } return false; }
       }
-      damageEnemy(e, dmg * (e.t.heavy ? st.heavyDmg : 1) * backLineMul(st, e), f.clone(), knock, finisher, false, sw0 && sw0.hitAt && sw0.hitAt.get(e));   // (where the blade met it: bladehit.js)
+      damageEnemy(e, dmg * (e.t.heavy ? st.heavyDmg : 1) * backLineMul(st, e) * swordMul(st, e), f.clone(), knock, finisher, false, sw0 && sw0.hitAt && sw0.hitAt.get(e));   // (where the blade met it: bladehit.js)
       foesHit++;
       // the blade leaves its mark: a burnt cut where it crossed, and a killing blow may take the sword arm (enemies/scars.js)
-      scarBody(e.group, f, sw0 && sw0.dir, finisher || G.stance === 'strong' || isDark, sw0 && sw0.hitAt && sw0.hitAt.get(e));
-      if (e.dead) severArm(e, f, finisher ? 0.6 : G.stance === 'strong' || isDark ? 0.4 : 0.25);
+      scarBody(e.group, f, sw0 && sw0.dir, finisher || G.stance === 'djemso' || isDark, sw0 && sw0.hitAt && sw0.hitAt.get(e));
+      if (e.dead) severArm(e, f, finisher ? 0.6 : G.stance === 'djemso' || isDark ? 0.4 : 0.25);
       if (!riposte && !e.dead) interruptEnemy(e, f, finisher || st.form === 'djemso' || isDark);   // striking first beats a wind-up
       if (mom === 'slide' && !riposte && !e.dead) staggerEnemy(e, f.x, f.z);   // a SLIDE CUT sweeps the legs out
       if (riposte && !e.dead) staggerEnemy(e, f.x, f.z);   // a RIPOSTE floors what it answers — a true counter, wide open after
+      // DISARMING SLASH (Shii-Cho) — the finisher knocks a blaster trooper's gun out of its hands for a while (enemies/ai.js)
+      if (finisher && st.disarm && e.t.ranged && !e.dead && !e.converted && !(e.disarmUntil > G.gt)){
+        e.disarmUntil = G.gt + st.disarm; floater(e.group.position, 'DISARMED', '#9cc4ff');
+      }
       // BESKAR EDGE — a heavy darksaber hit can DISARM/stagger a staff-wielding duelist
       if (isDark && (finisher || e.t.staff) && e.t.staff && !e.dead && Math.random() < (finisher ? 0.5 : 0.18)){
         staggerEnemy(e, f.x, f.z); floater(e.group.position, 'DISARMED', '#c9a6ff');
@@ -316,14 +327,14 @@ export function applySwingDamage(step, only){
     if (riposte) player.force = clamp(player.force + 10 + (player.up.parryForce || 0), 0, CFG.player.maxForce);   // a landed counter feeds the Force
     if (isDark && !finisher) beskarClang();   // every darksaber strike rings on beskar
     // STRONG stance & DARKSABER & finishers land with real weight — a brief hitstop + heavy thud (general feedback)
-    const heavy = G.stance === 'strong' || isDark || finisher;
+    const heavy = G.stance === 'djemso' || isDark || finisher;
     if (heavy){
-      G.hitstop = Math.max(G.hitstop, (G.stance === 'strong' || isDark ? 0.06 : 0.04) + (finisher ? 0.03 : 0));
+      G.hitstop = Math.max(G.hitstop, (G.stance === 'djemso' || isDark ? 0.06 : 0.04) + (finisher ? 0.03 : 0));
       if (!riposte) S.heavy();
     }
     // the STRONG finisher is a BONE-CRUNCHING blow — a long hitstop freeze, a big camera quake, a brief
     // slow-mo beat, a fat arc flash AND a violent eruption of sparks/debris so the weight really lands
-    if (G.stance === 'strong' && finisher && !(sw0 && sw0.heavyFx)){
+    if (G.stance === 'djemso' && finisher && !(sw0 && sw0.heavyFx)){
       if (sw0) sw0.heavyFx = true;
       G.hitstop = Math.max(G.hitstop, 0.22);
       G.shake = Math.max(G.shake, 1.7);

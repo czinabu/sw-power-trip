@@ -53,7 +53,7 @@ function dirOf(ang){
 }
 // the form's string: the next angle in it, picked up where it left off unless you stopped cutting a while
 function stringAngle(advance){
-  const S = CUT_ANGLE.strings[G.hero === 'mando' ? 'strong' : G.stance] || CUT_ANGLE.strings.medium;
+  const S = CUT_ANGLE.strings[G.hero === 'mando' ? 'djemso' : G.stance] || CUT_ANGLE.strings.niman;
   const st = player.cutStr || (player.cutStr = { i: 0, at: -9 });
   if (G.gt - st.at > CUT_ANGLE.reset) st.i = 0;
   const ang = S[st.i % S.length];
@@ -78,7 +78,7 @@ export function pickCut(step, advance = true){
   else {
     dir = 'neutral';
     if (step === 2) id = 'forward';
-    else ang = stringAngle(advance);
+    else { const sa = stringAngle(advance); if (sa === 'thrust') id = 'thrust'; else ang = sa; }
   }
   if (id) return { pat: SWING_PATTERNS[id], dir, h };
   return { pat: anglePattern(mirror(ang), h), dir, h };

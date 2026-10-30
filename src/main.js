@@ -64,6 +64,7 @@ import './world/arenas/foundry.js';
 import './world/arenas/plains.js';
 import { queueSpawn, startLevel, checkUnlocks, startWave, updateFlow } from './game/flow.js';
 import { startTutorial, updateTutorial, skipStep, trainingProgress } from './game/tutorial.js';
+import { startCampaign, startChapter, nextChapter, chapters } from './game/campaign.js';
 import { startMission, updateMission, skipObjective, missionState } from './game/mission.js';
 import { startSandbox, updateSandbox, sandboxSpawn, sandboxClear, setSandboxKit, sandboxKitAll } from './game/sandbox.js';
 import {
@@ -87,6 +88,7 @@ import { showcaseActive, renderShowcase, leaveShowcase } from './ui/showcase.js'
 import './ui/customizer.js';
 import './data/difficulty.js';
 import './engine/input.js';
+import './engine/gamepad.js';
 import { updateCamera } from './engine/camera.js';
 import { SEE } from './world/ink.js';
 import { NAV, buildNav, updateNav, navSteer, navDist } from './enemies/nav.js';
@@ -193,3 +195,9 @@ import { ENDLESS_ARENAS } from './game/survival.js';
 import { BATTLE_MAPS } from './data/battlemaps.js';
 import { setSandboxMap } from './game/sandbox.js';
 Object.assign(window.GAME, { arena: arenaInfo, ENDLESS_ARENAS, BATTLE_MAPS, setSandboxMap, gfx: { renderer, composer, scene } });
+Object.assign(window.GAME, { startCampaign, startChapter, nextChapter, chapters });   // the campaign's chapters (game/campaign.js), for tests
+
+/* the form loadout (data/forms.js): the seven forms and what sits on 1 / 2 / 3 */
+import { FORMS } from './data/forms.js';
+import { setLoadout } from './player/jedi/stance.js';
+Object.assign(window.GAME, { FORMS, setLoadout });

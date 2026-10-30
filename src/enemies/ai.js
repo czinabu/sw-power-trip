@@ -8,7 +8,7 @@ import { V3, rand, clamp, TMP, dampToward } from '../utils.js';
 import { burst } from '../fx/particles.js';
 import { G, enemies, solids } from '../state.js';
 import { MELEE_WINDUP_GAP } from '../data/mando.js';
-import { playerPos } from '../player/helpers.js';
+import { playerPos, stance } from '../player/helpers.js';
 import { bomberExplode, updateAimLine, warbringerSlam, breakJetpack } from './specials.js';
 import { damageEnemy, hostileTargetFor, easeWeaponHome, telegraphWindup, staggerEnemy } from './damage.js';
 import { fireBolt } from './bolts.js';
@@ -306,6 +306,8 @@ export function updateEnemies(dt){
           else if (!t.ranged && !e.converted && wallBetween(g.position.x, g.position.z, tgtPos)){ /* go around */ }
           // the hero is DOWN (game/revive.js): a blade doesn't finish them, it circles and waits; the squad is coming
           else if (!t.ranged && !e.converted && !onAlly && hero.down){ /* hold */ }
+          // DISARMED (Shii-Cho's Disarming Slash, player/jedi/combat.js): its blaster is on the ground for a few seconds
+          else if (t.ranged && !e.converted && e.disarmUntil > G.gt){ /* empty-handed — keeps its distance */ }
           // RANGED SLOTS: only a few troopers aim at once, so a firing line staggers its shots
           else if (t.ranged && !e.converted && !onAlly && !rangedSlotFree(t, hero)){ /* hold — sidestep and wait */ }
           // the Warbringer out of breath can't swing: it stands blowing until it has recovered (duel.js)
@@ -452,6 +454,13 @@ export function updateEnemies(dt){
                 break;
               } else if (res === 'blocked'){
                 blockedOnBlade(e);   // its weapon rebounds off your guard (player/jedi/clash.js)
+                // SORESU wears the attacker out: a duellist loses breath on every blocked blow, a plain trooper reels
+                // after a few (STANCES.soresu blockTire)
+                const tire = G.hero !== 'mando' ? stance().blockTire : 0;
+                if (tire){
+                  if (e.breath != null) drainBreath(e, tire);
+                  else if ((e.tireN = (e.tireN || 0) + 1) >= 3){ e.tireN = 0; staggerEnemy(e, -tx, -tz); }
+                }
               } else if (res === 'hit'){
                 burst(V3(hp.x, 1.5, hp.z), 0xff5533, 6, 5, 3);
               }
