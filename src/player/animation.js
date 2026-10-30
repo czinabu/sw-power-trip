@@ -14,7 +14,7 @@ import { stance, maxStam } from './helpers.js';
 import { tryAttack, applySwingDamage, FLOW } from './jedi/combat.js';
 import { mandoAimPoint, mandoWeapon, mandoShielding } from './mando/weapons.js';
 import { DARK_DUR } from './mando/darksaber.js';
-import { FORM_OF, FOOTWORK } from '../data/poses.js';
+import { FORM_OF, FOOTWORK, SWING_STYLE } from '../data/poses.js';
 import { pistolPose, riflePose, rifleLowered, restGun } from './anim/guns.js';
 import { MIRROR } from './model/rig.js';
 import { solveArm } from './anim/ik.js';
@@ -67,7 +67,7 @@ function handGrip(){
   const thrown = player.castT > 0 ? (pulling ? 0.2 + 0.5 * (1 - clamp(player.castT / (player.castMax || 1), 0, 1)) : 0) : null;
   const power = player.palmT > 0 ? 0 : player.judgeT > 0 ? 0.55 : thrown;
   const free = power ?? (player.blockHeld ? 0.08 : 0.25);
-  return { L: bare ? free : power ?? 0.45 + 0.55 * saberPose.two, R: bare ? free : 1 };
+  return { L: bare ? free : power ?? (0.45 + 0.55 * saberPose.two) * (1 - 0.8 * saberPose.palm), R: bare ? free : 1 };
 }
 
 // Body facing, plus the whole-body moves: slam dive, flips/twirls, and the Jedi's lean into velocity.
@@ -216,8 +216,11 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
   const along = hSpeed > 1e-3 ? Math.abs((tvx*Math.sin(player.faceYaw) + tvz*Math.cos(player.faceYaw)) / hSpeed) : 1;   // running, not strafing
   player._mcAlong = along;
   const calm = player._mcCalm = player.walking ? GAIT.walkSway : 1;   // walk mode keeps the hips level
-  R.hips.position.x = dr(R.hips.position.x, B ? B.sway * bw * calm : 0, 20);
-  R.hips.position.z = dr(R.hips.position.z, B ? B.surge * bw : 0, 20);
+  // a cut moves the weight (set by the swing last frame): back onto the rear foot in the wind-up, through onto the front
+  // one in the strike, the feet staying planted while the hips travel over them
+  const SH = player._swingHip;
+  R.hips.position.x = dr(R.hips.position.x, (B ? B.sway * bw * calm : 0) + (SH ? SH.x : 0), 20);
+  R.hips.position.z = dr(R.hips.position.z, (B ? B.surge * bw : 0) + (SH ? SH.z : 0), 20);
   R.hips.rotation.x = dr(R.hips.rotation.x, (B ? B.pitch * bw : 0) + player._landPitch, 20);
   R.hips.rotation.z = dr(R.hips.rotation.z, B ? -B.roll * bw * calm : 0, 20);
   if (GS.body) R.hips.rotation.y = dr(R.hips.rotation.y, B ? B.yaw * bw * along : 0, 20);   // (else anim/agility.js turns the Jedi's)
@@ -390,6 +393,10 @@ function animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait){
     R.torso.rotation.y = dr(R.torso.rotation.y, MC ? MC.chest * 0.22 * (turn || 1) : 0, MC ? 30 : 12);
     vis.rotation.x = dr(vis.rotation.x, saberPose.lean, 14);
     player._swingDrop = cue.drop * cue.env + sw.body.drop * inB;
+    // WEIGHT — the hips shift toward the chamber side and back as the blade loads, then across and forward through the
+    // strike, and settle as it recovers (data/poses.js SWING_STYLE.weight); a hop or a flip carries its own body
+    const wt = (SWING_STYLE[form] || SWING_STYLE.niman).weight || 0, shift = (cue.drive || 0) - (cue.coil || 0);
+    player._swingHip = player.grounded && !player.flip && !cue.hop ? { x: shift * (cue.side || 1) * wt * 0.6, z: shift * wt } : null;
     // CONTACT — the cut lands on what the blade actually sweeps through this frame (jedi/bladehit.js), during the
     // stroke itself (not the chamber or the follow-through); the strike point still runs the swing's one-off effects
     if (held){
@@ -415,7 +422,7 @@ function animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait){
     }
     return;
   }
-  player._swingDrop = 0;
+  player._swingDrop = 0; player._swingHip = null;
   if (player.mendT > 0){
     // FORCE MEND channel — both hands drawn in over the heart, gathering the Force inward (a clear wind-up)
     releaseSaberPose(R, dt);

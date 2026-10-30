@@ -3,7 +3,7 @@
 // Poses come from data/poses.js as hand positions + blade directions in chest space; this solves them onto the rig.
 
 import * as THREE from 'three';
-import { SABER_GUARDS, SABER_SWINGS, SWING_STYLE, SABER_DEFLECTS } from '../../data/poses.js';
+import { SABER_GUARDS, SABER_SWINGS, SWING_STYLE, SWING_OFF, SABER_DEFLECTS } from '../../data/poses.js';
 import { AIR_GUARDS } from '../../data/agility.js';
 import { CUT_ANGLE } from '../../data/stances.js';
 import { solveArm, aimHeld, pointInChest, wristInChest, axisInChest, slerpDir, arcLerp } from './ik.js';
@@ -60,8 +60,20 @@ const WRAP_BLADE = { regular: new THREE.Vector3(0, 0.78, -0.62).normalize(), rev
 
 const TWIRL_AXIS = new THREE.Vector3(0.25, 0, 1).normalize();   // a wheel in front of the chest, just canted
 const easeOut = t => 1 - (1 - t) * (1 - t);
-const easeIn = t => t * t * t;   // a cut accelerates into contact
 const COIL_HOLD = 0.22;   // the share of the stroke's time the blade hangs at the top of the chamber before it goes
+/* A CUT IS ONE MOTION, not a bat swung at a ball (data/poses.js SWING_STYLE: load, accel, lag, recover):
+   the wind-up eases into a chamber loaded a little deeper than its key, so the hang at the top is a slow settle, never a
+   dead stop. The stroke accelerates into contact and CARRIES THROUGH: the follow-through leaves the strike at the speed
+   the blade arrived with and bleeds it off over the rest of the arc, instead of slamming to a halt on contact. The wrist
+   leads: the hilt starts the stroke with the tip trailing, the tip whips past at contact and leads out into the
+   follow-through. The recovery flows back toward the guard and hands over at the speed the guard picks it up at. */
+const TIP = 0.9;   // where along the blade the eye follows (the tip's travel sets the stroke's speed)
+const _ta = new THREE.Vector3(), _tb = new THREE.Vector3();
+const tipGap = (a, b) => _ta.copy(a.hand).addScaledVector(a.blade, TIP).distanceTo(_tb.copy(b.hand).addScaledVector(b.blade, TIP));
+const powIn = (x, e) => Math.pow(x, e), powOut = (x, e) => 1 - Math.pow(1 - x, e);
+// a Hermite ease from rest that leaves at slope m1 (≤ 3 keeps it from overshooting)
+const settle = (x, m1) => x * x * (3 - 2 * x) + (x * x * x - x * x) * m1;
+const GUARD_RATE = 9;   // guardPose's own blend rate, which the recovery hands over to
 
 /* live, smoothed pose state (chest space) */
 export const saberPose = {
@@ -69,6 +81,7 @@ export const saberPose = {
   hand: new THREE.Vector3(), blade: new THREE.Vector3(0, 1, 0), pole: new THREE.Vector3(0.55, -0.8, -0.25),
   off: new THREE.Vector3().copy(OFF_REST), offPole: new THREE.Vector3().copy(OFF_POLE), two: 0,
   twist: 0, lean: 0,
+  palm: 0,   // how open the free hand is held (1: the flat Force palm of Niman's reaching guard), for the fingers
 };
 
 /* the held weapon: { node, axis } — axis is the blade direction in the node's own frame (flips with the grip) */
@@ -110,6 +123,7 @@ export function guardPose(dt, R, held, grip, form, blocking, sway, over = null, 
     _p.copy(off.hand); if (sway.off){ _p.z += sway.off; _p.y += Math.abs(sway.off) * 0.3; }
     saberPose.off.lerp(_p, Math.min(1, dt * 8 * rate)); saberPose.offPole.lerp(off.pole, k).normalize();
   }
+  saberPose.palm += ((g.palm && off === g.off ? g.palm : 0) - saberPose.palm) * Math.min(1, dt * 8);
   saberPose.twist += ((g.twist || 0) - saberPose.twist) * Math.min(1, dt * 9 * rate);
   saberPose.lean += ((g.lean || 0) - saberPose.lean) * Math.min(1, dt * 10 * rate);
   return { torso: g.torso || 0 };
@@ -180,25 +194,53 @@ export function swingPose(R, held, grip, form, sw){
     // that runs straight down the middle has none of its own and turns toward the weapon side.
     const dx = scaled[2].hand.x - scaled[0].hand.x;
     sw.anim.side = Math.abs(dx) > 0.15 ? Math.sign(dx) : 1;
+    // the LOADED chamber: the hang at the top keeps drawing back a touch past the key (a riposte is already moving)
+    const A0 = sw.anim, [C0, S0, F0] = scaled, ld = sw.riposte ? 0 : (style.load ?? 0.08);
+    A0.hold = sw.riposte ? 0 : COIL_HOLD * (A0.ts - A0.tc);
+    A0.wind = A0.tc + A0.hold;
+    A0.load = { hand: arcLerp(S0.hand, C0.hand, 1 + ld, PIVOT, new THREE.Vector3()), blade: slerpDir(S0.blade, C0.blade, 1 + ld, new THREE.Vector3()), twist: C0.twist };
+    // CARRY THROUGH: the strike accelerates as x^a and the follow-through decelerates as 1-(1-y)^b, with a and b picked
+    // so the tip leaves contact at the speed it arrived (a long arc after contact = a long, controlled glide out)
+    const tin = Math.max(0.02, A0.ts - A0.wind), tout = Math.max(0.02, A0.tf - A0.ts);
+    const l1 = Math.max(0.05, tipGap(A0.load, S0)), l2 = Math.max(0.05, tipGap(S0, F0));
+    let a = style.accel || 2.4, b = a * l1 * tout / (l2 * tin);
+    if (b > 7 || b < 1.6){ b = THREE.MathUtils.clamp(b, 1.6, 7); a = THREE.MathUtils.clamp(b * l2 * tin / (l1 * tout), 1.3, 4); }
+    A0.a = a; A0.b = b;
+    // the recovery's hand-over speed: it reaches `recover` of the way to the guard and leaves at the guard blend's pace
+    const R0 = style.recover ?? 0.55, trec = (1 - A0.tf) * (sw.dur || 0.4);
+    A0.rec = R0; A0.recM = Math.min(3, GUARD_RATE * (1 - R0) * trec / R0);
+    A0.start.off = saberPose.off.clone();
   }
-  const A = sw.anim, [C, S, F] = A.keys;
+  const A = sw.anim, [C, S, F] = A.keys, L = A.load;
   const k = Math.min(1, sw.t / sw.dur);
-  // COIL — the blade settles into the chamber and HANGS there for a beat before it snaps through (a riposte, already
-  // moving, doesn't pause); the stroke then accelerates hard into the strike key
-  const hold = sw.riposte ? 0 : COIL_HOLD * (A.ts - A.tc);
-  let a, b, t, ta, tb;
-  if (k < A.tc){ a = A.start; b = C; t = easeOut(k / A.tc); ta = A.start.twist; tb = C.twist; }
-  else if (k < A.ts){ a = C; b = S; t = easeIn(Math.max(0, k - A.tc - hold) / (A.ts - A.tc - hold)); ta = C.twist; tb = S.twist; }
-  else if (k < A.tf){ a = S; b = F; t = easeOut((k - A.ts) / (A.tf - A.ts)); ta = S.twist; tb = F.twist; }
-  else { a = F; b = A.rest; t = 0.3 * easeOut((k - A.tf) / (1 - A.tf)); ta = tb = F.twist; }
+  const lag = style.lag || 0;
+  // t: the hand's progress through this leg of the cut; tb: the blade's (the wrist leading, the tip trailing then whipping past)
+  let a, b, t, tb, ta, tw, ph;
+  if (k < A.wind){
+    // WIND-UP — eases into the loaded chamber; the hilt draws first and the tip follows it round
+    ph = 0; a = A.start; b = L; const x = k / A.wind;
+    t = powOut(x, 3); tb = powOut(x, 3 / (1 + lag)); ta = A.start.twist; tw = C.twist;
+  } else if (k < A.ts){
+    // STROKE — accelerating into contact, the tip trailing the hilt until it whips through
+    ph = 1; a = L; b = S; const x = (k - A.wind) / (A.ts - A.wind);
+    t = powIn(x, A.a); tb = powIn(x, A.a * (1 + lag)); ta = C.twist; tw = S.twist;
+  } else if (k < A.tf){
+    // FOLLOW-THROUGH — carried on at the contact speed, the tip leading out, then bled off over the arc
+    ph = 2; a = S; b = F; const x = (k - A.ts) / (A.tf - A.ts);
+    t = powOut(x, A.b); tb = powOut(x, A.b * (1 + lag)); ta = S.twist; tw = F.twist;
+  } else {
+    // RECOVERY — the blade flows back toward the guard and is still travelling as the guard takes it over
+    ph = 3; a = F; b = A.rest; const x = (k - A.tf) / (1 - A.tf);
+    t = A.rec * settle(x, A.recM); tb = t; ta = F.twist; tw = (A.rest.twist || 0) / (style.twist || 1);
+  }
   arcLerp(a.hand, b.hand, t, PIVOT, saberPose.hand);
-  if (k < A.tc && A.wrap){
+  if (ph === 0 && A.wrap){
     // wind-up wrap: lift the hand past the head and roll the blade up and back through the middle of it
     const wb = WRAP_BLADE[grip] || WRAP_BLADE.regular;
     saberPose.hand.addScaledVector(WRAP_LIFT, Math.sin(Math.PI * t));
-    if (t < 0.5) slerpDir(a.blade, wb, t * 2, saberPose.blade);
-    else slerpDir(wb, b.blade, t * 2 - 1, saberPose.blade);
-  } else slerpDir(a.blade, b.blade, t, saberPose.blade);
+    if (tb < 0.5) slerpDir(a.blade, wb, tb * 2, saberPose.blade);
+    else slerpDir(wb, b.blade, tb * 2 - 1, saberPose.blade);
+  } else slerpDir(a.blade, b.blade, tb, saberPose.blade);
   // a heavy blade drags PAST the follow-through, then gets hauled back (overshoot), with a wobble
   if (style.overshoot && k > A.ts){
     const o = Math.sin(Math.min(1, (k - A.ts) / (1 - A.ts)) * Math.PI) * style.overshoot;
@@ -217,22 +259,31 @@ export function swingPose(R, held, grip, form, sw){
     saberPose.blade.applyAxisAngle(TWIRL_AXIS, -Math.PI * 2 * sp.twirl * A.side * (p - Math.sin(Math.PI * 2 * p) / (Math.PI * 2))).normalize();
   }
   saberPose.pole.set(0.55, -0.8, -0.25).normalize();
-  saberPose.twist = (ta + (tb - ta) * t) * style.twist;
+  saberPose.twist = (ta + (tw - ta) * t) * style.twist;
   saberPose.two = style.two ? 1 : 0;
   saberPose.lean = (style.drop || 0) * Math.sin(Math.PI * k) * 1.6;
-  // the free hand: Niman flings an open palm out against the cut, Ataru throws it out for balance
+  // the free hand works against the blade (data/poses.js SWING_OFF): a forehand reaches it out at the foe on the wind-up
+  // and draws it back to the hip as the blade comes through (the counter-pull that turns the body), a backhand tucks it in
+  // and flings it out the other way; it opens for balance on the follow-through and returns to the guard's place
   if (!style.two){
-    const env = Math.sin(Math.PI * Math.min(1, k * 1.2));
-    _t.set(-0.4 - 0.12 * style.offFlare * env, -0.05 + 0.18 * style.offFlare * env, 0.16 + 0.2 * style.offFlare * env);
-    saberPose.off.lerp(_t, 0.35);
+    const O = SWING_OFF[A.side > 0 ? 'back' : 'fore'], fl = style.offFlare;
+    const guardOff = (A.rest.off && A.rest.off.hand) || OFF_REST;
+    const key = i => _p.copy(guardOff).lerp(O[i], fl);
+    if (ph === 0){ _t.copy(A.start.off).lerp(key(0), t); }
+    else if (ph === 1){ _t.copy(key(0)); _t.lerp(key(1), t); }
+    else if (ph === 2){ _t.copy(key(1)); _t.lerp(key(2), t); }
+    else { _t.copy(key(2)); _t.lerp(guardOff, t / A.rec); }
+    saberPose.off.copy(_t);
     saberPose.offPole.copy(OFF_POLE);
-  }
+    // the reaching hand is open; it closes as it pulls back through the strike
+    saberPose.palm = A.side > 0 ? 0 : ph === 0 ? Math.max(saberPose.palm, t) : ph === 1 ? 1 - t : 0;
+  } else saberPose.palm = 0;
   // progress through the actual cut (chamber → follow), for spins
   const cut = THREE.MathUtils.clamp((k - A.tc) / (A.tf - A.tc), 0, 1);
   // the body's beats for animation.js: coil (loaded back into the chamber) and drive (the weight thrown through the
   // strike, peaking as the blade reaches the strike key, then carried out by the follow-through)
-  const coil = k < A.tc ? easeOut(k / A.tc) : k < A.tc + hold ? 1 : k < A.ts ? 1 - (k - A.tc - hold) / (A.ts - A.tc - hold) : 0;
-  const drive = k < A.tc + hold ? 0 : k < A.ts ? easeIn((k - A.tc - hold) / (A.ts - A.tc - hold)) : k < A.tf ? 1 - 0.6 * easeOut((k - A.ts) / (A.tf - A.ts)) : 0.4 * (1 - easeOut((k - A.tf) / (1 - A.tf)));
+  const coil = ph === 0 ? t : ph === 1 ? 1 - t : 0;
+  const drive = ph === 0 ? 0 : ph === 1 ? t : ph === 2 ? 1 - 0.6 * t : 0.4 * (1 - easeOut((k - A.tf) / (1 - A.tf)));
   return { k, env: Math.sin(Math.PI * k), cut, spin: A.spin, hop: A.hop, drop: (style.drop || 0) + (A.fin ? 0 : sw.pat.drop || 0), fin: A.fin, strike: k > A.tc && k < A.tf, coil, drive, side: A.side };
 }
 

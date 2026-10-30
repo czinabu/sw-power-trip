@@ -23,7 +23,7 @@ The game's three switchable stances, and how they move now:
 | Key | Stance | Gameplay role (unchanged) | How it moves |
 |---|---|---|---|
 | 1 | **IV · Ataru** | fast, crowd-clearing, mobile | Qui-Gon's coiled two-handed ready, a one-handed high cover, short whippy cuts with a little hop, and a leaping spin cut as the finisher. |
-| 2 | **VI · Niman** | balanced, Force synergy | One-handed saber with the off hand open to push; the free palm flares out against each cut; a clean spinning finisher. |
+| 2 | **VI · Niman** | balanced, Force synergy | Side-on, the off arm reaching long at the foe with the palm open and the saber raised high over the weapon shoulder, blade laid forward over the head: the Force leads and the blade waits on it. The free hand reaches on the wind-up and pulls back as the blade comes through; a clean spinning finisher. |
 | 3 | **V · Djem So** | power vs brutes and bosses | Anakin's two-handed high guard, Vader's level wall block, big two-handed cuts that sink the hips, an overhead hammer finisher, and the riposte as the "block, then strike back". |
 
 The stance ids in code stay `fast` / `medium` / `strong` (saves and unlocks key off them); each carries `form` in
@@ -46,6 +46,16 @@ The grip is a player preference (`GRIP` in the menu settings, saved like the oth
   from the next chamber, the wind-up wraps over the top (hand past the head, blade rolled up and back; laid along the
   forearm in reverse grip) instead of dragging back across the front. A linked cut eases out of the last one's body
   turn, hop and hip drop, and the follow-through settles a little toward the guard rather than freezing.
+- **Graceful, not a bat** (`swingPose` in `src/player/anim/saber.js`, tuned by `load`, `accel`, `lag`, `recover` and
+  `weight` in `SWING_STYLE`): a cut is one motion. The wind-up eases into a chamber loaded a little past its key, so the
+  hang at the top is a slow settle rather than a dead stop. The stroke accelerates into contact and *carries through*: the
+  follow-through leaves contact at the tip's arrival speed and bleeds it off over the rest of the arc, instead of
+  stopping on impact. The wrist leads: the tip trails the hilt into the stroke, whips past at contact and leads out of it
+  (Ataru whippy, Djem So and the darksaber stiff-wristed). The recovery flows back toward the guard and hands over at the
+  guard's own pace. The hips shift onto the back foot in the wind-up and through onto the front one in the strike, feet
+  planted. One-handed forms work the free hand against the blade (`SWING_OFF`): a forehand reaches it out at the foe and
+  pulls it back to the hip as the blade comes through; a backhand tucks it in and flings it out the other way. Hit timing,
+  durations and damage are untouched.
 - **Deflects:** catching a bolt (block or parry) moves the blade to one of the catches in `SABER_DEFLECTS`
   (`src/data/poses.js`): high, mid or low, on the weapon side or across the body, two or three per zone and per grip.
   The side comes from where the bolt arrives; bolts down the middle alternate forehand and cross-body, and the height
