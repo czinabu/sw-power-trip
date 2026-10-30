@@ -14,6 +14,7 @@ import { startLevel, checkUnlocks, chapterRewards, releaseUnlockBanners } from '
 import { startMission } from './mission.js';
 import { openSkillTree } from '../ui/store-ui.js';
 import { showBanner } from '../ui/banners.js';
+import { recordChapters } from './sandbox-unlocks.js';
 
 const ROMAN = ['I', 'II', 'III'];
 export const chapters = () => chapterOrder(G.actTwo);
@@ -38,6 +39,7 @@ export function startChapter(pos, opts = {}){
   const c = chapterAt(pos);
   if (!c) return;
   G.chapter = pos;
+  if (!opts.guest) recordChapters(pos);   // the sandbox follows the story (a co-op guest's is followChapter's)
   const title = chapterTitle(c), name = 'CHAPTER ' + (pos + 1) + ' — ' + title, sub = 'ACT ' + ROMAN[c.act] + ' · ' + c.world;
   if (opts.retry && G.checkpoint && G.checkpoint.ch === pos) G.waveTotal = G.checkpoint.waveTotal;
   if (c.kind === 'waves'){
@@ -70,6 +72,7 @@ export function joinCampaign(pos, actTwo, wave, waveTotal){
 // co-op guest: the host moved on to another chapter
 export function followChapter(pos, actTwo){
   G.actTwo = actTwo || null;
+  recordChapters(pos, true);   // the chapter played alongside the host
   startChapter(pos, { guest: true });
   showBanner('', 'THE HOST MOVES ON', 1.6);
 }
@@ -86,7 +89,7 @@ function chapterCleared(){
 export function nextChapter(){
   const pos = G.chapter + 1;
   if (!chapterAt(pos)) return;
-  if (pos === ACT_TWO_AT && !G.actTwo) return void showPick(pos);
+  if (pos === ACT_TWO_AT && !G.actTwo) return void showPick(pos, recordChapters(pos));
   startChapter(pos);
 }
 
@@ -138,11 +141,13 @@ export function showCard(pos){
     '<div class="cc-hint">Enter or click to begin</div></div>', () => { closeCard(); S.reward(1); });
   MUSIC.unlockSting();
 }
-function showPick(pos){
+// sandboxOpened: clearing Act I just opened the sandbox, so the card says so
+function showPick(pos, sandboxOpened){
   const c = chapterAt(pos);
   openCard('<div class="cc-inner hero-' + G.hero + '">' +
     '<div class="cc-act">ACT ' + ROMAN[c.act] + '</div><h1 class="cc-title">' + esc(forHero(ACTS[c.act].title, G.hero)) + '</h1>' +
     voice([forHero(ACTS[c.act].open, G.hero), 'Which first is yours to choose.']) +
+    (sandboxOpened ? '<div class="cc-unlock">★ SANDBOX UNLOCKED · try the foes and powers you have met so far, from the main menu</div>' : '') +
     '<div class="cc-pick">' + Object.keys(ACT_TWO).map(k => '<div class="cc-opt brk" data-go="' + k + '"><b>' + ACT_TWO[k].label + '</b><span>' + esc(forHero(ACT_TWO[k].line, G.hero)) + '</span></div>').join('') + '</div>' +
     '</div>', (k) => { if (!ACT_TWO[k]) return; G.actTwo = k; S.reward(1); startChapter(pos); });
   MUSIC.unlockSting();

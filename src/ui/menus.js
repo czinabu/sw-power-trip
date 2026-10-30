@@ -14,6 +14,7 @@ import { startEndless } from '../game/survival.js';
 import { startTutorial, skipStep, setTrainingExit, trainingDone } from '../game/tutorial.js';
 import { startMission, startCoopMission, retryMission, missionDone, missionTitle } from '../game/mission.js';
 import { startSandbox, sandboxUnlocked } from '../game/sandbox.js';
+import { sandboxFull, sandboxProgress } from '../game/sandbox-unlocks.js';
 import { closeSandboxPanel } from './sandbox-ui.js';
 import { MISSIONS } from '../data/missions.js';
 import { closeProgress } from './store-ui.js';
@@ -54,7 +55,7 @@ export function setOverlayState(state){
     go.textContent = 'CONTINUE CAMPAIGN'; sub.textContent = resumeLabel();
   } else if (state === 'menu'){
     go.textContent = G.modeSel === 'endless' ? 'BEGIN SURVIVAL' : G.modeSel === 'training' ? 'BEGIN TRAINING' : G.modeSel === 'mission' ? 'BEGIN MISSION' : G.modeSel === 'sandbox' ? 'ENTER THE SANDBOX' : 'BEGIN CAMPAIGN';
-    sub.textContent = G.modeSel === 'endless' ? 'HOW LONG CAN YOU HOLD?' : G.modeSel === 'training' ? 'LEARN THE MOVES' : G.modeSel === 'mission' ? missionTitle(G.missionId) : G.modeSel === 'sandbox' ? 'ANY FOE, ANY POWER' : 'CHOOSE YOUR LEGEND';
+    sub.textContent = G.modeSel === 'endless' ? 'HOW LONG CAN YOU HOLD?' : G.modeSel === 'training' ? 'LEARN THE MOVES' : G.modeSel === 'mission' ? missionTitle(G.missionId) : G.modeSel === 'sandbox' ? (sandboxFull() ? 'ANY FOE, ANY POWER' : 'THE STORY SO FAR') : 'CHOOSE YOUR LEGEND';
   } else if (state === 'pause'){
     go.textContent = 'RESUME'; sub.textContent = 'PAUSED';
     const where = G.chapter >= 0 ? 'CAMPAIGN · ' + chapterLabel() : G.training ? 'TRAINING' : G.sandbox ? 'SANDBOX' : G.mission ? missionTitle(G.missionId) : G.endless ? 'SURVIVAL' : 'CAMPAIGN';
@@ -124,13 +125,15 @@ export function refreshSurvivalLock(){
       el.title = 'Survival unlocks once you have beaten the campaign with both heroes'; }
   }
 }
-// SANDBOX is LOCKED until the campaign has been cleared with either hero (game/sandbox.js)
+// SANDBOX is LOCKED until Act I of the campaign has been cleared with either hero, then offers the story so far, and
+// everything once the campaign is beaten (game/sandbox-unlocks.js)
 export function refreshSandboxLock(){
   const el = document.getElementById('mode-sandbox'); if (!el) return;
-  const un = sandboxUnlocked(), md = el.querySelector('.md');
+  const un = sandboxUnlocked(), full = un && sandboxFull(), md = el.querySelector('.md');
   el.classList.toggle('locked', !un);
-  if (md) md.innerHTML = un ? 'Any foe, any power' : svgIcon('lock', 'lk') + 'Beat the campaign';
-  el.title = un ? '' : 'The sandbox unlocks once you have beaten the campaign with either hero';
+  if (md) md.innerHTML = full ? 'Any foe, any power' : un ? 'The story so far · ' + sandboxProgress().n + '/' + sandboxProgress().of : svgIcon('lock', 'lk') + 'Clear Act I';
+  el.title = full ? '' : un ? 'The foes, powers and forms you have met in the campaign. Beat it to open everything'
+                            : 'The sandbox unlocks once you have cleared Act I of the campaign with either hero';
 }
 export function setModeSel(m){
   if ((m === 'endless' && !survivalUnlocked()) || (m === 'sandbox' && !sandboxUnlocked())){   // can't pick a locked mode
