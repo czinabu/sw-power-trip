@@ -131,7 +131,8 @@ Missions are data (`data/missions.js`: hold, sabotage, capture, escort, pursuit 
 | Space | Jump / Hold for Force Leap |
 | Shift | Dash-flip (any direction; also the landing roll) |
 | Q | Sprint / walk toggle |
-| Left Alt (sprinting) | Force slide |
+| Left Alt (hold) | Strafe: keep facing the crosshair while moving |
+| Z (sprinting) | Force slide |
 | 1/2/3 | Switch stance |
 | F | Force Push |
 | C | Force Pull |
