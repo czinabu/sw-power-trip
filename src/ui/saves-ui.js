@@ -96,11 +96,11 @@ panel.addEventListener('click', (e) => {
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && panel.classList.contains('open')) closeSaves(); });
 
 document.getElementById('saveBtn').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); openSaves('save'); });
-document.getElementById('loadBtn').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); openSaves('load'); });
+for (const id of ['loadBtn', 'campLoadBtn']) document.getElementById(id).addEventListener('click', (e) => { e.stopPropagation(); audioInit(); openSaves('load'); });
 
 // NEW GAME — a clean start: wins, unlocks, bests and training ticks reset (the look and the save slots stay), then the
 // campaign begins as it does for a first-time player (offering the training grounds first)
-document.getElementById('newBtn').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); overlay.classList.add('newconfirming'); });
+for (const id of ['newBtn', 'campNewBtn']) document.getElementById(id).addEventListener('click', (e) => { e.stopPropagation(); audioInit(); overlay.classList.add('newconfirming'); });
 document.getElementById('newNo').addEventListener('click', (e) => { e.stopPropagation(); overlay.classList.remove('newconfirming'); });
 document.getElementById('newYes').addEventListener('click', (e) => {
   e.stopPropagation();

@@ -6,6 +6,8 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'Home screen refresh', status: 'done',
+    items: ['Campaign tile shows the 13-chapter story and your saved place, like ACT II · CH 6', 'CO-OP is a mode tile; New Game and Load Game sit under Campaign, with Continue as the main button', 'Missions and Training blurbs say what they now are'] },
   { title: 'Controller support', status: 'done',
     items: ['Play with a gamepad: both heroes, every power, strafe and slide, in every mode, co-op included', 'Menus, pause and the upgrade screen by pad', 'Stick sensitivity and invert Y in Settings; a CONTROLLER page in How to Play', 'PlayStation pads show their own button shapes'] },
   { title: 'Combat and movement', status: 'done',

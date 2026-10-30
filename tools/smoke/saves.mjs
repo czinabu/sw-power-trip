@@ -47,7 +47,7 @@ await page.click('#homeBtn'); await page.click('#homeYes');
 
 // NEW GAME wipes progress but keeps the slot
 await page.evaluate(() => localStorage.setItem('sw_camp_jedi', '1'));
-await page.click('#newBtn'); await shot('04-new-confirm');
+await page.click('#campNewBtn'); await shot('04-new-confirm');
 await page.click('#newYes');
 await page.click('#trainNo');   // a fresh start offers the training grounds first, as on a first run
 await playing();
@@ -74,7 +74,7 @@ await playing();
 await pause(); await page.click('#saveBtn'); await page.click('[data-act="save"][data-i="1"]');
 await page.click('#savesclose'); await page.click('#homeBtn'); await page.click('#homeYes');
 await page.click('#hero-mando'); await page.click('#mode-campaign');
-await page.click('#loadBtn'); await page.click('[data-act="load"][data-i="1"]');
+await page.click('#campLoadBtn'); await page.click('[data-act="load"][data-i="1"]');
 check(await page.evaluate(() => GAME.G.modeSel === 'mission' && GAME.G.missionId === 'pursuit' && GAME.G.hero === 'jedi' && document.getElementById('goText').textContent === 'BEGIN MISSION'), 'mission save loads onto that mission');
 await page.click('#goText');
 if (await page.isVisible('#forms [data-go]')) await page.click('#forms [data-go]', { timeout: 2000 }).catch(() => {});   // the Jedi's forms page before the fight: FIGHT
