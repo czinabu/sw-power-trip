@@ -82,7 +82,10 @@ export const WORLD_DIRECTIONS = {
       outer: 0xb08a5e,
       pal: { stone: 0xb89a70, stoneD: 0x8e7250, trim: 0xd8b46a, banner: 0xa8402a, brazier: 0xffa040, inlay: 0xc08a3a },
       backdrop: [
-        { kind: 'ramparts', r: 1.6, segments: 26, h: 3.6, color: 0xae8c64, color2: 0x987a56, roof: 0x7a4e32, gaps: [-2.4] },
+        // the holy city closes in round the courtyard: sandstone blocks four to six storeys high, domes and towers on top
+        { kind: 'district', h: [12, 24], w: [7, 13], color: 0xb08a5e, color2: 0x9c7a52, trim: 0x8a6a46, roof: 0xa8784a, domes: 0.3, spires: 0.12, setback: 0.3, gap: 9 },
+        // NiJedha's great wall, out past the district
+        { kind: 'ramparts', r: 2.3, segments: 30, h: 9, color: 0xae8c64, color2: 0x987a56, roof: 0x7a4e32, gaps: [-2.4] },
         { kind: 'statue', az: -2.4, r: 2.1, scale: 1.3, color: 0xa88a66, color2: 0x8e7052, dark: 0x4a3828, metal: 0x7a7266 },
         // the holy city itself, packed between the walls and the mesas (towers stretch out to 2-5 half-widths)
         { kind: 'towers', count: 34, r: [1.75, 2.6], h: [10, 22], color: 0xa8865e, color2: 0x96764f, skip: [[-2.4, 0.35], [-1.8, 0.2]] },
@@ -93,6 +96,9 @@ export const WORLD_DIRECTIONS = {
       ],
       hazards: { vent: 0x5a4430, ventIdle: 0x2a1e12, barrel: 0xa33820 },
       ambient: { kind: 'dust', color: 0xffe2b0, count: 130, size: 0.3 },
+      // the occupation: TIE patrols over the holy city, the partisans hitting the garrison street by street (Rogue One)
+      warfront: { flyers: [{ kind: 'tie', count: 2, wing: 2, alt: [35, 70], speed: [70, 100], every: [5, 10], fire: 0x5aff6a }],
+        blasts: 0.45, tracers: { rate: 0.8, colors: [0xff3a2a, 0xff7a3a] }, columns: 3, smoke: 0x4a4038 },
       beats: { fog: 0xc0784a, fill: 1.06, tint: 0xff9a68 },
     },
     foundry: {   // MUSTAFAR — the forgeworks on the lava flats
@@ -107,6 +113,8 @@ export const WORLD_DIRECTIONS = {
       backdrop: [
         { kind: 'volcano', az: 2.4, r: 2.6, scale: 0.75, size: 3000,   // a real Mustafar peak: kilometres across, kilometres off
         color: 0x2a1a18, lava: 0xff6a1a },
+        // the forgeworks' plant halls and smelter towers wall in the floor, lava light in their vents
+        { kind: 'district', h: [14, 30], w: [8, 15], color: 0x2e3238, color2: 0x3c424b, trim: 0x6b4a32, setback: 0.4, slits: 0xff7a1e, gap: 10, alleys: 0.2 },
         { kind: 'spires', count: 14, r: [1.6, 2.4], h: [10, 24], color: 0x241816, color2: 0x30201c, glow: 0xff5a14, skip: [[2.4, 0.4]] },
         { kind: 'stacks', count: 4, r: [1.6, 1.8], h: [18, 26], color: 0x2e2a2c, band: 0xd9a43a, glow: 0xff8a2a, smoke: 0x5a4440, skip: [[2.4, 0.5]] },
         { kind: 'lavaflows', count: 7, lava: 0xff6a1a, crust: 0x1a0c08, w: 1.4, reach: 3.0 },
@@ -114,6 +122,9 @@ export const WORLD_DIRECTIONS = {
       // vents are lava geysers here: dark crust → amber warning → a molten burst
       hazards: { vent: 0x2e2626, ventIdle: 0x2a0e06, ventActive: 0xff8a2a, barrel: 0x8a3020 },
       ambient: { kind: 'embers', color: 0xff7733, count: 220 },
+      // the mining works: shuttles ferrying ore, TIE escorts, the odd eruption out on the flats; no one fights here
+      warfront: { flyers: [{ kind: 'dropship', count: 2, alt: [45, 90], speed: [25, 40], every: [6, 14] }, { kind: 'tie', count: 1, wing: 2, alt: [50, 90], speed: [70, 100], every: [10, 18] }],
+        blasts: 0.2, blastSize: 1.6, flash: 0xff5a1a, columns: 5, smoke: 0x2a2220 },
       beats: { fog: 0x7a2210, fill: 1.12, tint: 0xff6a40 },
     },
     plains: {   // EXEGOL — the Sith wastes under a lightning storm
@@ -128,12 +139,18 @@ export const WORLD_DIRECTIONS = {
       backdrop: [
         { kind: 'pyramid', az: -Math.PI/2, r: 2.2, scale: 1.0, size: 1500,   // the Sith Citadel: a mountain of a building
         color: 0x1a1620, color2: 0x241e2a, glow: 0xb050ff },
+        // Sith monoliths stand round the duelling ground, violet light in their slits
+        { kind: 'district', h: [18, 36], w: [5, 10], d: [5, 9], color: 0x1a1620, color2: 0x241e2a, roof: 0x2c2634, spires: 0.35, slits: 0x9a3bff, streets: 16, alleys: 0.35, gap: 12 },
         { kind: 'spires', count: 14, r: [1.5, 2.3], h: [14, 34], color: 0x221e2a, color2: 0x2c2634, skip: [[-Math.PI/2, 0.45]] },
         { kind: 'cliffs', count: 12, r: [1.8, 2.5], h: [10, 18], w: 0.35, color: 0x24202c, color2: 0x1c1822, skip: [[-Math.PI/2, 0.5]] },
       ],
       // vents are Sith vents: violet when they fire
       hazards: { vent: 0x2a2632, ventIdle: 0x140c22, ventActive: 0xb070ff, barrel: 0x8a2a30 },
       ambient: { kind: 'ash', color: 0xa8a4c0, count: 200, size: 0.24, opacity: 0.55 },
+      // the last battle: Resistance X-wings diving through the Sith fleet's TIEs (red X-wing bolts, green TIE fire), the ground forces below
+      warfront: { flyers: [{ kind: 'tie', count: 2, wing: 3, alt: [40, 110], speed: [80, 120], every: [3, 7], color2: 0x4a1218, fire: 0x5aff6a },
+        { kind: 'xwing', count: 2, wing: 2, alt: [40, 110], speed: [80, 120], every: [3, 7], fire: 0xff3a2a }],
+        blasts: 0.55, flash: 0xffa0ff, tracers: { rate: 1, colors: [0xff3a2a, 0x5aff6a] }, columns: 2, smoke: 0x1e1a24 },
       storm: { every: [3, 7], fill: 1.3, sky: 1.1, ramp: 2 },
       beats: { fog: 0x3c1426, fill: 1.08, tint: 0xff4060 },
     },
@@ -220,6 +237,8 @@ export const TRAINING_WORLDS = {
       { kind: 'crystals', count: 7, r: [1.15, 1.3], h: [3, 6], color: 0x8ad8ff, glow: 0x3aa8ff, skip: [[-1.6, 0.5]] },
     ],
     ambient: { kind: 'dust', color: 0xfff0d8, count: 110, size: 0.26 },
+    // peacetime above the clouds: only a cruiser passing high over the temple now and then
+    warfront: { flyers: [{ kind: 'dropship', count: 1, alt: [110, 160], speed: [30, 45], every: [18, 30], color: 0xd8d4cc, color2: 0xa83a2a }] },
     beats: { fog: 0xc8b0b0, fill: 1.0, tint: 0xffe0c0 },
     sound: 'temple',
   },
@@ -287,6 +306,9 @@ export const MISSION_WORLDS = {
       { kind: 'destroyer', az: -1.2, r: 2.3, y: 26, scale: 1.0, color: 0x8a8c96, color2: 0x767884, glow: 0x9ad8ff },
     ],
     ambient: { kind: 'dust', color: 0xffe0c8, count: 110, size: 0.26 },
+    // the Empire has found the refuge: TIEs strafing the valley, landers coming down, the defenders firing back
+    warfront: { flyers: [{ kind: 'tie', count: 3, wing: 2, alt: [30, 70], speed: [70, 100], every: [4, 8], fire: 0x5aff6a }, { kind: 'dropship', count: 1, alt: [45, 70], speed: [22, 32], every: [8, 14] }],
+      blasts: 0.65, tracers: { rate: 1, colors: [0xff3a2a, 0xff7a3a] }, columns: 3, smoke: 0x3a3234 },
     beats: { fog: 0xc08870, fill: 1.05, tint: 0xffc8a0 },
     sound: 'temple',
   },
@@ -303,9 +325,14 @@ export const MISSION_WORLDS = {
            crate: 0x8a7458, cloth: [0xb8402a, 0x2a6a8a, 0xd8a03a, 0x5a7a3a], lamp: 0xffc070, glass: 0x2a4a6a },
     backdrop: [
       // the Empire's ship hangs over the docks at the end of the run: the place the quarry is running for
+      // the town runs on past the route: more sandstone blocks, domes and towers
+      { kind: 'district', h: [10, 22], w: [7, 12], color: 0xc8a67c, color2: 0xa8845c, trim: 0x8a6440, roof: 0x7a5236, domes: 0.25, spires: 0.1, setback: 0.3, gap: 6, streets: 0 },
       { kind: 'destroyer', az: Math.PI/2, r: 5.2, y: 34, scale: 1.1, color: 0x8a8c96, color2: 0x767884, glow: 0x9ad8ff },
     ],
     ambient: { kind: 'dust', color: 0xffe2b0, count: 420, size: 0.3 },
+    // a working port under occupation: freighters lifting off, a TIE pair on patrol, trouble in a few streets
+    warfront: { flyers: [{ kind: 'freighter', count: 2, alt: [40, 120], speed: [30, 55], every: [8, 16] }, { kind: 'tie', count: 1, wing: 2, alt: [40, 80], speed: [70, 100], every: [8, 14] }],
+      blasts: 0.15, tracers: { rate: 0.4, colors: [0xff3a2a, 0xff7a3a] }, columns: 2, smoke: 0x4a4038 },
     beats: { fog: 0xd08a5a, fill: 1.06, tint: 0xffa070 },
     sound: 'temple',
   },
@@ -333,6 +360,10 @@ export const BATTLE_WORLDS = {
       { kind: 'destroyer', az: -1.3, r: 2.0, y: 46, scale: 1.3, color: 0x8a8c96, color2: 0x767884, glow: 0x9ad8ff },
     ],
     ambient: { kind: 'dust', color: 0xfff0c8, count: 160, size: 0.28 },
+    // the liberation of Lothal: X-wings and TIEs dogfighting over the grass, the ground war along both flanks
+    warfront: { flyers: [{ kind: 'tie', count: 2, wing: 2, alt: [40, 120], speed: [80, 120], every: [3, 7], fire: 0x5aff6a }, { kind: 'xwing', count: 2, wing: 2, alt: [40, 120], speed: [80, 120], every: [3, 7], fire: 0xff3a2a },
+      { kind: 'dropship', count: 1, alt: [50, 80], speed: [22, 32], every: [10, 18] }],
+      blasts: 0.7, tracers: { rate: 1.2, colors: [0xff3a2a, 0xff7a3a] }, columns: 4, smoke: 0x4a4436 },
     beats: { fog: 0xd0b088, fill: 1.06, tint: 0xffd0a0 },
     hazards: { barrel: 0xa33820 },
     sound: 'temple',
@@ -355,6 +386,9 @@ export const BATTLE_WORLDS = {
       { kind: 'walker', az: -2.3, r: 1.8, scale: 1.4, color: 0x7a8494, color2: 0x5e6878, glow: 0xff5a3a, stand: true },
     ],
     ambient: { kind: 'snow', color: 0xf4f8ff, count: 420, size: 0.24, opacity: 0.8 },
+    // the Battle of Hoth: AT-ATs marching on the shield generator from the south, snowspeeders circling their legs
+    warfront: { walkers: 2, walkerAz: -Math.PI/2, speedersPer: 2, walker: { color: 0x7a8494, color2: 0x5e6878 },
+      blasts: 0.6, tracers: { rate: 1.2, colors: [0xff3a2a, 0xff7a3a] }, columns: 3, smoke: 0x3a3e46, wind: [5, 0] },
     beats: { fog: 0x8a90a4, fill: 1.04, tint: 0xd8e0ff },
     hazards: { barrel: 0xa33820 },
     sound: 'plains',
@@ -378,6 +412,9 @@ export const BATTLE_WORLDS = {
       { kind: 'dunes', count: 18, r: [1.05, 1.35], h: 5, color: 0xa4865c },
     ],
     ambient: { kind: 'dust', color: 0xffe8c0, count: 200, size: 0.3 },
+    // after the war: scavengers picking over the wrecks, a freighter lifting off, the odd salvage fight in the dunes
+    warfront: { flyers: [{ kind: 'freighter', count: 1, alt: [40, 110], speed: [30, 55], every: [12, 22] }],
+      blasts: 0.12, tracers: { rate: 0.3, colors: [0xff3a2a, 0xff7a3a] }, columns: 2, smoke: 0x3a3430 },
     beats: { fog: 0xd8a878, fill: 1.05, tint: 0xffc890 },
     hazards: { barrel: 0xa33820, vent: 0x3a3a3c, ventIdle: 0x1a3a4a, ventActive: 0x6ad8ff },
     sound: 'temple',

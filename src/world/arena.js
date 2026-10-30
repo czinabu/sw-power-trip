@@ -30,6 +30,7 @@ import { buildNav } from '../enemies/nav.js';
 import { clearScorch } from '../fx/scorch.js';
 import { clearSevered } from '../enemies/scars.js';
 import { buildAir, clearAir } from './air.js';
+import { buildWarfront, clearWarfront } from './warfront.js';
 
 /* ============================================================
    ARENA
@@ -46,6 +47,7 @@ export function buildArena(L){
   clearScorch();   // last arena's burn marks
   clearSevered();  // and any severed arms still lying about
   clearAir();
+  clearWarfront();
   scene.remove(shared.arenaGroup);
   disposeArena(shared.arenaGroup);
   shared.arenaGroup = new THREE.Group();
@@ -272,4 +274,5 @@ function buildWorld(L, T){
     outer.geometry = new THREE.RingGeometry(W*0.5, far, 64, 1);
     outer.material = farHaze(outer.material);
   }
+  buildWarfront(T, L);   // the war beyond the walls (world/warfront.js)
 }
