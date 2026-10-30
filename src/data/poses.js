@@ -34,10 +34,13 @@ export const SABER_GUARDS = {
       block: { hand: [0.18, 0.55, 0.3], blade: [-0.92, 0.28, 0.25], twist: -0.12, lean: 0.02, pole: [0.8, -0.2, -0.4],
                off: { hand: [-0.52, -0.05, 0.12], pole: [-0.3, -0.9, -0.3] } },
     },
-    // FORM VI NIMAN — the Clone Wars Jedi: saber angled forward in one hand, the other open and ready to push
+    // FORM VI NIMAN — the Force leads and the blade waits on it: turned side-on, the off arm reaches out long at the foe
+    // with the palm open, and the saber is raised high over the weapon shoulder, elbow up, the blade laid forward over
+    // the head and the Force hand at the foe, ready to come down past it. Saber and Force in one shape: the whole form.
     niman: {
-      ready: { hand: [0.24, -0.16, 0.3], blade: [-0.22, 0.72, 0.66], twist: 0.05, pole: POLE,
-               off: { hand: [-0.2, 0.0, 0.36], pole: OFF_POLE } },
+      ready: { hand: [0.34, 0.56, -0.1], blade: [-0.24, 0.2, 0.95], twist: -0.32, torso: -0.12, pole: [0.85, 0.2, -0.5], palm: 1,
+               off: { hand: [-0.16, 0.12, 0.58], pole: [-0.5, -0.85, 0.15] },
+               offMove: { hand: [-0.3, -0.1, 0.34], pole: OFF_POLE } },   // walking, the reaching hand drops to a loose carry
       // blade upright before the face, the off palm braced behind it — a Force-backed wall
       block: { hand: [0.1, 0.02, 0.42], blade: [-0.12, 1, 0.12], twist: 0, lean: 0.06, pole: POLE,
                off: { hand: [-0.12, 0.14, 0.38], pole: OFF_POLE } },
@@ -245,19 +248,41 @@ export const SABER_SWINGS = {
    spinHop  — vertical hop on every cut (Ataru's bounce)    drop — knee drop into the strike (power)
    offFlare — the free hand flings out against the cut (Niman's Force hand)   overshoot — the blade pulls past the
               follow-through and has to be hauled back (the darksaber fighting an unsure wielder)
-   finisher — the 3rd-hit move: { pattern, spin (turns), hop } */
+   finisher — the 3rd-hit move: { pattern, spin (turns), hop }
+   HOW THE CUT FLOWS (anim/saber.js swingPose; none of it moves the hit timing):
+   load     — how much further than the chamber key the wind-up keeps drawing while it hangs (a slow settle, not a stop)
+   accel    — how hard the stroke accelerates into contact (the follow-through is matched to it, so the blade carries on)
+   lag      — the wrist: the tip trails the hilt into the stroke and whips past it at contact (0 = the blade locked to
+              the arm, a bat; higher = a whippier, more fencer's cut)
+   recover  — how far back toward the guard the blade flows before the swing hands over to it
+   weight   — how far the hips shift onto the back foot in the wind-up and through onto the front one in the strike (m)
+   offFlare — how far the free hand works against the blade (SWING_OFF) */
 export const SWING_STYLE = {
-  ataru:     { tc: 0.16, ts: 0.4, tf: 0.7, reach: 0.95, two: false, spinHop: 0.16, drop: 0.0, offFlare: 0.6, overshoot: 0,
-               twist: 1.25, finisher: { pattern: 'right', spin: 1, hop: 0.75 } },
+  ataru:     { tc: 0.16, ts: 0.4, tf: 0.7, reach: 0.95, two: false, spinHop: 0.16, drop: 0.0, offFlare: 0.75, overshoot: 0,
+               twist: 1.25, finisher: { pattern: 'right', spin: 1, hop: 0.75 },
+               load: 0.06, accel: 2.2, lag: 0.55, recover: 0.6, weight: 0.05 },   // whippy wrist cuts that spring back to the guard
     // Ataru's finisher is a leaping spin cut (Force-boosted, tucked)
   niman:     { tc: 0.24, ts: 0.4, tf: 0.72, reach: 1.0, two: false, spinHop: 0, drop: 0.04, offFlare: 1.0, overshoot: 0,
-               twist: 1.0, finisher: { pattern: 'right', spin: 1, hop: 0 } },
+               twist: 1.0, finisher: { pattern: 'right', spin: 1, hop: 0 },
+               load: 0.08, accel: 2.4, lag: 0.4, recover: 0.55, weight: 0.06 },   // measured: a full draw, a clean stroke, a long even follow-through
     // Niman finishes with a clean spinning cut
   djemso:    { tc: 0.3, ts: 0.42, tf: 0.74, reach: 1.15, two: true, spinHop: 0, drop: 0.14, offFlare: 0, overshoot: 0,
-               twist: 0.85, finisher: { pattern: 'forward', spin: 0, hop: 0.12 } },
+               twist: 0.85, finisher: { pattern: 'forward', spin: 0, hop: 0.12 },
+               load: 0.12, accel: 2.8, lag: 0.15, recover: 0.45, weight: 0.09 },   // a deep load, the arms and hips driving a stiff wrist
     // Djem So finishes with a rising-then-crushing two-handed overhead
   darksaber: { tc: 0.34, ts: 0.46, tf: 0.72, reach: 1.2, two: true, spinHop: 0, drop: 0.16, offFlare: 0, overshoot: 0.35,
-               twist: 0.8, finisher: { pattern: 'forward', spin: 0, hop: 0.1 } },
+               twist: 0.8, finisher: { pattern: 'forward', spin: 0, hop: 0.1 },
+               load: 0.1, accel: 2.6, lag: 0.08, recover: 0.4, weight: 0.08 },
+};
+
+/* ---------------- the FREE HAND through a one-handed cut ----------------
+   [wind-up, strike, follow-through] targets for the off hand (chest space), blended from the guard's own off-hand place
+   by the form's offFlare. A FOREHAND (the blade travelling across the body toward the off side) reaches the off hand out
+   at the foe on the wind-up, then pulls it back to the hip as the blade comes through: the counter-pull that turns the
+   shoulders into the cut. A BACKHAND tucks it in to the chest and flings it out the other way as the blade goes out. */
+export const SWING_OFF = {
+  fore: [[-0.16, 0.08, 0.56], [-0.34, -0.26, -0.04], [-0.44, -0.12, -0.1]],
+  back: [[-0.12, -0.12, 0.26], [-0.52, 0.02, 0.14], [-0.5, 0.1, 0.22]],
 };
 
 /* ---------------- SWING SPINS: pirouettes and blade twirls worked into the cuts ----------------
