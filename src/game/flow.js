@@ -26,7 +26,7 @@ import { buildArena } from '../world/arena.js';
 import { spawnChampion, startEndlessWave, endlessWaveCleared } from './survival.js';
 import { applyJetTier, payWaveClear } from './progression.js';
 import { MANDO_AUTO, JEDI_AUTO } from '../data/store.js';
-import { DEFAULT_LOADOUT, RUN_LOADOUT } from '../data/forms.js';
+import { DEFAULT_LOADOUT, RUN_LOADOUT, STARTING_FORMS } from '../data/forms.js';
 import { queueMeditation, formsTaught, autoLoadout, tickMeditation, clearMeditation } from './meditation.js';
 import { chapterOrder } from '../data/campaign.js';
 import { openSkillTree } from '../ui/store-ui.js';
@@ -142,7 +142,7 @@ export function startLevel(idx, opts){
   player.mendT = 0;
   player.cancelDR = 0; player.swingLock = 0; player.dashCharges = null; player.dashRecharge = 0; player.cancelRiposte = false;
   player.cds.mend = 0;
-  if (fresh) switchStance('niman', true);   // a fresh legend starts balanced
+  if (fresh) switchStance(G.training || G.mission || G.sandbox ? 'niman' : STARTING_FORMS[0], true);   // a run starts on Form I; the training grounds teach from Niman
   setStanceHud();
   G.yaw = Math.PI;  // face arena center
   player.faceYaw = Math.PI;
@@ -155,7 +155,7 @@ export function startLevel(idx, opts){
     //  Jedi: Saber + Block + Push + Dash (Pull auto-unlocks after wave 2).  Mando: Single blaster + weak jetpack +
     //  Brace (RMB) + Rocket (Dual auto-unlocks after wave 1, Flame after wave 2).
     G.unlocked = G.hero === 'jedi' ? { push: true, dash: true } : { rocket: true };
-    G.stanceUnlocked = {};   // NIMAN and SHII-CHO are known from the start; the rest is learned (data/forms.js FORM_PATH)
+    G.stanceUnlocked = G.training ? { niman: true } : {};   // SHII-CHO is known from the start; the rest is learned (data/forms.js FORM_PATH). The training grounds teach from Niman
     G.formFork = null; clearMeditation();   // the run's Form VII choice; nothing left waiting from the last run
     // a run (campaign or survival) starts on the forms the hero knows and grows; the training grounds and the missions
     // keep the old three (a mission then slots what its kit teaches)
@@ -242,7 +242,13 @@ export function checkUnlocks(bannerDelay){
     setStanceHud();
   }
   // a mission's forms come with its kit, already in hand: slot the best of them (no meditation, no fanfare)
-  if (G.hero !== 'mando' && G.mission && G.chapter < 0) setLoadout(autoLoadout());
+  if (G.hero !== 'mando' && G.mission && G.chapter < 0){
+    if (G.missionForms){   // chosen before the fight (ui/forms-ui.js): the mission hands them over
+      G.stanceUnlocked = G.stanceUnlocked || {};
+      for (const id of G.missionForms) if (id) G.stanceUnlocked[id] = true;
+      setLoadout(G.missionForms);
+    } else setLoadout(autoLoadout());
+  }
   if (G.training || (G.mission && G.chapter < 0) || G.sandbox) return;   // the training grounds teach the starting kit, a mission and the sandbox hand out their kit up front: no fanfare
   if (G.cardUp){ heldUnlocks.push(...announce); return; }   // a chapter card is up: they wait for it to close (releaseUnlockBanners)
   announceUnlocks(announce, bannerDelay);

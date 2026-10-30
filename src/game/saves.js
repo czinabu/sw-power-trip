@@ -46,6 +46,7 @@ export function restoreRun(run){
   G.waveTotal = G.checkpoint.waveTotal;
   player.weapon = run.weapon || 'single';
   G.unlocked = clone(run.unlocked) || {}; G.stanceUnlocked = migrateUnlocked(run.stanceUnlocked);
+  if ((run.loadout || []).includes('niman') || run.stance === 'niman') G.stanceUnlocked.niman = true;   // a run saved when every hero started on Niman keeps it
   G.loadout = cleanLoadout(run.loadout || DEFAULT_LOADOUT); G.mandoChoiceShown = !!run.mandoChoiceShown;
   G.formFork = run.formFork || null; clearMeditation();   // (forms the saved chapter has passed are taught again as it starts)
   G.xp = run.xp || 0; G.xpEarned = run.xpEarned || 0; G.skillPoints = run.skillPoints || 0; G.skillSpent = run.skillSpent || 0;
@@ -72,7 +73,7 @@ export function resumeRun(){
   const run = G.resumeRun; G.resumeRun = null;
   restoreRun(run);
   resumeChapter(run);   // (a save from before the chapters picks up on the chapter that opens its level)
-  switchStance(migrateForm(run.stance) || 'niman', true);
+  switchStance(migrateForm(run.stance) || 'shiicho', true);
 }
 // 'CHAPTER 3 · THE LAST EVACUATION' for a saved run, without starting it
 function savedChapter(run, hero){

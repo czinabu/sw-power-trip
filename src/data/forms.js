@@ -30,24 +30,30 @@ export const FORMS = {
 
 /* THE LOADOUT — three slots on 1 / 2 / 3 (and the wheel). A slot holds a form id or null (an empty slot is skipped).
    DEFAULT_LOADOUT is the training grounds' and the missions' fallback; a campaign or survival run starts on RUN_LOADOUT,
-   with the forms every Knight already knows, and grows as the run teaches more (game/meditation.js). */
+   with Form I alone, and grows as the run teaches more (game/meditation.js). */
 export const LOADOUT_SLOTS = 3;
 export const DEFAULT_LOADOUT = ['ataru', 'niman', 'djemso'];
-export const STARTING_FORMS = ['niman', 'shiicho'];   // the hero's own form, and Form I, which every Jedi learns first
-export const RUN_LOADOUT = ['niman', 'shiicho', null];
+export const STARTING_FORMS = ['shiicho'];   // Form I, which every Jedi learns first
+export const RUN_LOADOUT = ['shiicho', null, null];
 
 /* THE PATH — where a run learns each form (the auto-unlocks in data/store.js are built from this).
    chapter  the campaign chapter whose clear teaches it (data/campaign.js): the trials are the masters who teach
    level / wave   the same point for a run that plays the levels straight through (no chapters)
    stage    survival and the missions: the run's depth (waveTotal)
+   The forms come in the tiers the Order teaches them in (lineage above is how they were made, not how they are taught):
+     FOUNDATION   Shii-Cho, from the start: every youngling begins there
+     CORE         Soresu and Ataru, the styles a Padawan grows into: the Wall and the Acrobat
+     INTERMEDIATE Djem So and Shien (the Knight), Makashi (Jakku), Niman, which blends them all (Mustafar)
+     PEAK         Form VII, never taught early: after the chase, and only one of its two roads
    Form V's two variants come together from the Knight (G swaps them). Form VII is a fork: the run offers both and the
    hero keeps one. */
 export const FORM_PATH = [
-  { form: 'makashi', chapter: 'archive',       level: 0, wave: 4, stage: 2 },   // the archive's duelling holocrons
   { form: 'soresu',  chapter: 'trial-first',   level: 1, wave: 0, stage: 3 },   // the Wall
   { form: 'ataru',   chapter: 'trial-acrobat', level: 1, wave: 1, stage: 5 },   // the Acrobat
   { form: 'djemso',  chapter: 'trial-knight',  level: 1, wave: 2, stage: 6 },   // the Knight: Form V…
   { form: 'shien',   chapter: 'trial-knight',  level: 1, wave: 2, stage: 6 },   // …both its variants
+  { form: 'makashi', chapter: 'jakku',         level: 1, wave: 2, stage: 7 },   // a duellist's holocron in the salvage
+  { form: 'niman',   chapter: 'mustafar',      level: 1, wave: 3, stage: 8 },   // Form VI: the five forms brought together
   { form: 'juyo',    chapter: 'chase',         level: 2, wave: 0, stage: 9 },   // Form VII, offered after the chase
   { form: 'vaapad',  chapter: 'chase',         level: 2, wave: 0, stage: 9 },
 ];
@@ -77,4 +83,46 @@ export const formGrip = (id, pref) => (FORMS[id] && FORMS[id].grip) || (pref ===
 export const otherVariant = (id, known) => {
   const v = FORMS[id] && !FORMS[id].fork && FORMS[id].variant;
   return v ? Object.keys(FORMS).find(o => o !== id && FORMS[o].variant === v && FORMS[o].ready && known(o)) || null : null;
+};
+
+/* THE FORMS CODEX — what each form is, in the lore and in the fight: the Forms page (ui/forms-ui.js) shows a form
+   once the hero has learned it. `who` names a famous user, `best` the fights it is made for. Keep the numbers here in
+   step with data/stances.js. */
+export const FORM_CODEX = {
+  shiicho: { who: 'Kit Fisto', lore: 'The first form every initiate learns: wide, simple sweeps made to hold off many foes at once.',
+    best: 'Crowds of troopers',
+    pros: ['Wide sweeps that catch several foes', 'The Sarlacc Sweep finisher hits all round you', 'The finisher knocks the blaster out of a trooper\'s hands'],
+    cons: ['Duellists read its broad cuts and turn 25% more of them', 'Deflected bolts go back loosely'] },
+  makashi: { who: 'Count Dooku', lore: 'The duellist\'s form: one hand, side-on, precise and economical, made to beat another blade.',
+    best: 'Duellists, acolytes and anything with a blade',
+    pros: ['+40% damage against blade users', 'Reads feints: duellists feint and hold strikes half as often', 'Hard to guard-break'],
+    cons: ['A narrow arc that crowds slip past', 'Weak against blasters: deflects fly wild and cost 50% more stamina'] },
+  soresu: { who: 'Obi-Wan Kenobi', lore: 'The wall: tight, economical blocks that send blaster fire home and outlast the attacker.',
+    best: 'Heavy blaster fire and long fights',
+    pros: ['A held guard sends bolts back home', 'The cheapest guard, and no damage gets through a block', 'Every blow it blocks tires the attacker', 'The widest parry window'],
+    cons: ['The lowest damage of any form', 'Slower on its feet'] },
+  ataru: { who: 'Yoda, Qui-Gon Jinn', lore: 'The acrobat\'s form: leaps, flips and speed, the whole body behind every strike.',
+    best: 'Officers, snipers, grenadiers and jet troopers',
+    pros: ['+60% damage against the back line', 'Cuts in the air land 35% harder', 'Dash into a cut for the Hawk-Bat Swoop', 'Keeps moving while it swings, and casts Force powers fast'],
+    cons: ['Weak against armour', 'Deflected bolts spray'] },
+  djemso: { who: 'Anakin Skywalker', lore: 'Form V, the strong form: power blows that answer every attack with a harder one.',
+    best: 'Brutes, armour and bosses',
+    pros: ['Breaks guards fast and shreds armour', 'Take a blow on the guard, then strike back with a Fluid Riposte', 'The finisher floors anything it hits', 'Force powers hit 35% bigger'],
+    cons: ['Slow, stamina-hungry swings', 'Force powers cost 30% more', 'A narrow arc that crowds punish'] },
+  shien: { who: 'Ahsoka Tano', lore: 'Form V\'s other road: a reverse grip built to send blaster fire straight back at the shooter.',
+    best: 'Blaster troopers and turrets',
+    pros: ['Every deflect flies home and hits 50% harder', 'Strong cuts with a wider arc than Djem So'],
+    cons: ['Less raw power against armour than Djem So', 'Only one Form V fits in a loadout (G swaps them)'] },
+  niman: { who: 'Jedi diplomats, the Jedi of Geonosis', lore: 'Form VI, the balanced form: a little of every other form, with saber and Force as one.',
+    best: 'Anything: the all-rounder',
+    pros: ['Swings and Force powers cost less', 'A power cast mid-string keeps the string going', 'Defence powers come back twice as fast', 'Clean parries give Force back', 'The only form that can switch to a reverse grip (G)'],
+    cons: ['Master of none: no standout edge against any foe'] },
+  juyo: { who: 'Darth Vader', lore: 'Form VII, the ferocious form: bursts of savage cuts driven by the Force and by fury.',
+    best: 'Taking a fight to its end, fast',
+    pros: ['Every hit builds fury, up to +45% damage', 'Fast, savage strings'],
+    cons: ['Every swing burns Force as well as stamina', 'Blows land 25% harder on you', 'Choosing it closes Vaapad for the run'] },
+  vaapad: { who: 'Mace Windu', lore: 'Form VII as Mace Windu made it: the attacker\'s own fury, turned back on them.',
+    best: 'Duellists and heavy hitters who come to you',
+    pros: ['Blocks and parries build fury, up to +40% damage', 'A parry finds the Shatterpoint: your next cut on that foe lands double and floors it'],
+    cons: ['Blows land 10% harder on you', 'Weak when nobody attacks you', 'Choosing it closes Juyo for the run'] },
 };

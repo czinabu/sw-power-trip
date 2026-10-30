@@ -71,6 +71,7 @@ for (const [hero, mode, mission] of [['jedi', 'campaign'], ['mando', 'campaign']
       const tap = async sel => { if (await page.isVisible(sel)) await page.click(sel, { timeout: 1500 }).catch(() => {}); };
       await tap('#goText');
       await tap('#trainNo');   // first run asks about training: go straight to the campaign
+      await tap('#forms [data-go]');   // the Jedi's forms page before the fight (ui/forms-ui.js): FIGHT
       started = await page.waitForFunction(() => GAME.G.mode === 'play' && !GAME.G.paused, null, { timeout: 3000 }).then(() => true, () => false);
     }
     if (!started){

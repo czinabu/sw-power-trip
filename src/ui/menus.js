@@ -30,6 +30,7 @@ import { playerPos, heldGrip } from '../player/helpers.js';
 import { canResume, resumeRun, resumeLabel } from '../game/saves.js';
 import { startCampaign, joinCampaign, closeCard, chapterLabel } from '../game/campaign.js';
 import { pad } from '../engine/gamepad.js';
+import { openPrefight } from './forms-ui.js';
 
 /* ============================================================
    INPUT
@@ -50,6 +51,7 @@ export function setOverlayState(state){
   document.getElementById('restartBtn').style.display = state === 'menu' ? 'none' : 'inline-flex';
   document.getElementById('restartBtn').textContent = G.training ? '↻ RESTART TRAINING' : G.mission && G.chapter < 0 ? '↻ RESTART MISSION' : '↻ RESTART RUN';
   document.getElementById('skipBtn').style.display = state === 'pause' && G.training ? 'inline-flex' : 'none';
+  document.getElementById('formsBtn').style.display = G.hero === 'mando' ? 'none' : '';   // the Jedi's forms page (ui/forms-ui.js)
   const go = document.getElementById('goText'), sub = document.getElementById('ovsub');
   if (state === 'menu' && G.modeSel === 'campaign' && canResume()){   // a loaded save picks the campaign up where it was
     go.textContent = 'CONTINUE CAMPAIGN'; sub.textContent = resumeLabel();
@@ -168,7 +170,7 @@ export function setMission(id){
 }
 for (const b of document.querySelectorAll('#msnlist [data-mission]')){
   b.addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setMission(b.dataset.mission); });
-  b.addEventListener('dblclick', (e) => { e.stopPropagation(); setMission(b.dataset.mission); launch(); });
+  b.addEventListener('dblclick', (e) => { e.stopPropagation(); setMission(b.dataset.mission); launchFromMenu(); });
 }
 { let id; try { id = localStorage.getItem('sw_mission'); } catch(e){} setMission(id || G.missionId); }
 refreshSurvivalLock(); refreshSandboxLock();
@@ -388,13 +390,18 @@ export function beginFromMenu(){
     overlay.classList.add('asktrain');
     return;
   }
-  launch();
+  launchFromMenu();
 }
-document.getElementById('trainYes').addEventListener('click', (e) => { e.stopPropagation(); overlay.classList.remove('asktrain'); setModeSel('training'); launch(); });
-document.getElementById('trainNo').addEventListener('click', (e) => { e.stopPropagation(); overlay.classList.remove('asktrain'); launch(); });
+// a Jedi sees the forms page first (ui/forms-ui.js): what each form does, and the three to carry; its FIGHT launches
+function launchFromMenu(){
+  if (G.hero !== 'mando' && !G.coopJoin) openPrefight(launch);
+  else launch();
+}
+document.getElementById('trainYes').addEventListener('click', (e) => { e.stopPropagation(); overlay.classList.remove('asktrain'); setModeSel('training'); launchFromMenu(); });
+document.getElementById('trainNo').addEventListener('click', (e) => { e.stopPropagation(); overlay.classList.remove('asktrain'); launchFromMenu(); });
 // co-op guest: start a run that follows the host's (net/foes.js): Survival (startEndless sees G.coopJoin) or the campaign's level
 export function launchCoopRun(){
-  G.coopJoin = true; G.modeSel = coopRun.k === 'm' ? 'mission' : coopRun.k === 'c' ? 'campaign' : 'endless';
+  G.coopJoin = true; G.missionForms = null; G.modeSel = coopRun.k === 'm' ? 'mission' : coopRun.k === 'c' ? 'campaign' : 'endless';
   if (coopRun.k === 'm') G.missionId = coopRun.mid;
   setOverlayState('menu');
   launch();
@@ -434,7 +441,7 @@ document.addEventListener('pointerlockerror', () => {
 // Chrome / Edge, see fullscreen.js) a quick Esc pauses and resumes too, so closing the pause screen with Esc no longer
 // drops you out of fullscreen. Runs in the capture phase so it sees the screen before Esc closes a panel on top of it.
 const panelOpen = () => howto.classList.contains('open') || settings.classList.contains('open') || document.getElementById('saves').classList.contains('open') || overlay.classList.contains('newconfirming') ||
-  document.getElementById('roadmap').classList.contains('open') || document.getElementById('coop').classList.contains('open') || overlay.classList.contains('confirming') || overlay.classList.contains('asktrain');
+  document.getElementById('roadmap').classList.contains('open') || document.getElementById('forms').classList.contains('open') || document.getElementById('coop').classList.contains('open') || overlay.classList.contains('confirming') || overlay.classList.contains('asktrain');
 window.addEventListener('keydown', (e) => {
   if (e.repeat || (e.key !== 'Escape' && e.key !== 'Enter' && e.key !== 'Tab')) return;
   const tab = e.key === 'Tab', esc = e.key === 'Escape' || tab;   // Tab pauses exactly as a quick Esc does

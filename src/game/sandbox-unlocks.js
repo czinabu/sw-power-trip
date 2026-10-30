@@ -13,7 +13,7 @@ import { LEVELS } from '../data/levels.js';
 import { MISSIONS } from '../data/missions.js';
 import { ENEMY_TYPES } from '../data/enemies.js';
 import { BATTLE_MAPS } from '../data/battlemaps.js';
-import { FORMS } from '../data/forms.js';
+import { FORMS, STARTING_FORMS } from '../data/forms.js';
 import { JEDI_AUTO, MANDO_AUTO, JEDI_STORE, MANDO_STORE } from '../data/store.js';
 import { STORE_TIER_STAGE } from './progression.js';
 
@@ -120,12 +120,12 @@ export function kitOffered(r){
   return reached(r.from || r.id);
 }
 
-// FORMS: the Jedi's starting form is always there; a form the campaign hands out (an auto-unlock under the form's id)
+// FORMS: the Jedi's starting form (Shii-Cho) is always there; a form the campaign hands out (an auto-unlock under the form's id)
 // is there once the story reaches it; a ready form the campaign doesn't hand out yet stays open, so it can be tried
 // until it has its place in the story
 export function formOffered(id){
   if (!FORMS[id] || !FORMS[id].ready) return false;
-  if (S().full || id === 'niman') return true;
+  if (S().full || STARTING_FORMS.includes(id)) return true;
   const u = JEDI_AUTO.find(a => a.key === id);
   return !u || S().autoReached(u);
 }

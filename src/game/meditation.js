@@ -10,7 +10,7 @@ import { G, shared } from '../state.js';
 import { renderer } from '../engine/renderer.js';
 import { audioInit, S } from '../audio/sfx.js';
 import { MUSIC } from '../audio/music.js';
-import { FORMS, LOADOUT_SLOTS, cleanLoadout, forkClosed } from '../data/forms.js';
+import { FORMS, LOADOUT_SLOTS, STARTING_FORMS, cleanLoadout, forkClosed } from '../data/forms.js';
 import { STANCES, stanceUnlocked } from '../data/stances.js';
 import { setLoadout, setStanceHud } from '../player/jedi/stance.js';
 
@@ -24,11 +24,8 @@ export const meditationUp = () => el.classList.contains('open');
 
 // the forms the hero knows, in lore order
 const known = () => Object.keys(FORMS).filter(id => FORMS[id].ready && stanceUnlocked(id) && !forkClosed(id, G.formFork));
-// a lone mission: Niman and the two most advanced forms its kit teaches
-export function autoLoadout(){
-  const k = known().filter(id => id !== 'niman').reverse();
-  return cleanLoadout(['niman', ...k]);
-}
+// a lone mission: the three most advanced forms its kit teaches
+export const autoLoadout = () => cleanLoadout(known().reverse());
 
 export function queueMeditation(ids){
   if (!formsTaught()) return;
@@ -76,7 +73,11 @@ function renderFork(ids){
 /* ---------- the loadout ---------- */
 function renderSlots(learned = learnedNow){
   learnedNow = learned;
-  if (!draft){ draft = G.loadout.slice(); slot = Math.max(0, draft.indexOf(null)); }
+  if (!draft){
+    draft = G.loadout.slice();
+    for (const id of learned) if (draft.includes(null) && !draft.includes(id)) draft = cleanLoadout(draft.map((d, i) => i === draft.indexOf(null) ? id : d));   // a new form takes an empty slot to start with
+    slot = Math.max(0, draft.indexOf(null));
+  }
   const k = known();
   const head = learned.length
     ? '<div class="cc-act">FORM LEARNED</div><h1 class="cc-title">' + learned.map(id => esc(FORMS[id].name)).join(' · ') + '</h1>' +
@@ -94,17 +95,17 @@ function renderSlots(learned = learnedNow){
     '<div class="cc-btns"><div class="btn primary go" data-go="1">RISE</div></div>' +
     '<div class="cc-hint">Pick a slot, then a form for it · Enter to rise</div></div>';
 }
-// put a form in the selected slot (it leaves any slot it was in, and Form V / VII keep to one variant)
+// put a form in the selected slot (one already slotted swaps places with it, and Form V / VII keep to one variant)
 function pick(id){
   const at = draft.indexOf(id);
-  if (at >= 0) draft[at] = null;
+  if (at >= 0) draft[at] = draft[slot];   // a form already slotted swaps places with what was there
   draft[slot] = id;
   draft = cleanLoadout(draft.map((d, i) => i === slot ? d : (d && FORMS[d].variant && FORMS[d].variant === FORMS[id].variant && d !== id ? null : d)));
   slot = draft.indexOf(null) >= 0 ? draft.indexOf(null) : (slot + 1) % LOADOUT_SLOTS;
   renderSlots();
 }
 function rise(){
-  if (!draft.some(Boolean)) draft[0] = 'niman';
+  if (!draft.some(Boolean)) draft[0] = STARTING_FORMS[0];
   setLoadout(draft); draft = null; phase = null; learnedNow = [];
   setStanceHud();
   close();

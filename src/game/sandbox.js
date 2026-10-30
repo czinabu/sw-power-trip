@@ -22,7 +22,7 @@ import { BATTLE_MAPS } from '../data/battlemaps.js';
 import { buildArena } from '../world/arena.js';
 import { clearGrenades } from '../enemies/grenades.js';
 import { regroupSquad } from '../allies/squad.js';
-import { FORMS, LOADOUT_SLOTS, DEFAULT_LOADOUT, migrateForm, cleanLoadout } from '../data/forms.js';
+import { FORMS, LOADOUT_SLOTS, DEFAULT_LOADOUT, STARTING_FORMS, migrateForm, cleanLoadout } from '../data/forms.js';
 import { setLoadout } from '../player/jedi/stance.js';
 import { refreshSandboxScope, foeOffered, mapOffered, kitOffered, formOffered } from './sandbox-unlocks.js';
 export { sandboxUnlocked } from './sandbox-unlocks.js';
@@ -52,7 +52,7 @@ function savedForms(){
   let list = DEFAULT_LOADOUT;
   try { const v = JSON.parse(localStorage.getItem('sw_sandbox_forms')); if (Array.isArray(v)) list = v; } catch(e){}
   list = cleanLoadout(list).map(id => id && formOffered(id) ? id : null);
-  if (!list.some(Boolean)) list[0] = 'niman';   // the starting form, always open
+  if (!list.some(Boolean)) list[0] = STARTING_FORMS[0];   // the starting form, always open
   return list;
 }
 function applyForms(list){

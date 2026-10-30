@@ -84,6 +84,7 @@ import './ui/threats.js';
 import { updateHud } from './ui/hud.js';
 import { setOverlayState } from './ui/menus.js';
 import './ui/roadmap.js';   // the ROADMAP panel (its button on the main menu)
+import './ui/forms-ui.js';   // the FORMS page: before the fight (BEGIN) and on the pause screen
 import { showcaseActive, renderShowcase, leaveShowcase } from './ui/showcase.js';
 import './ui/customizer.js';
 import './data/difficulty.js';

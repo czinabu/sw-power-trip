@@ -94,7 +94,7 @@ const TIPS = {
     '<b>Stamina</b> is the violet gauge beside your crosshair. Swings and blocks spend it; run dry and your guard breaks.',
     '<b>Force</b> (bottom-left bar) powers your abilities and refills over time.',
     '<b>Focus</b> builds with clean hits and parries and boosts your damage. Taking a hit breaks it.',
-    '<b>Forms:</b> a campaign run starts on Niman and Shii-Cho and learns the other forms as the story goes. Each time you learn one you meditate and choose the three you carry on 1 / 2 / 3; that is the only time they change, so pick for the fights ahead.',
+    '<b>Forms:</b> a campaign run starts on Shii-Cho and learns the other forms as the Order teaches them: Soresu and Ataru first, then Djem So, Shien, Makashi and Niman, and Form VII last. Each time you learn one you meditate and choose the three you carry on 1 / 2 / 3; that is the only time they change, so pick for the fights ahead.',
     '<b>Sandbox forms:</b> Shii-Cho sweeps crowds and its finisher disarms blaster troopers; Makashi beats other blades but bolts cost it; Soresu holds its guard and sends bolts home. Pick yours in the sandbox panel (B).',
     'A swing turns blaster bolts back down the line they came from: Shien sends them home to the shooter harder, Ataru sprays them. A timed parry (tap RMB) always sends a bolt straight back.',
     '<b>Djem So</b> answers a blow taken on the held guard with a <b>Fluid Riposte</b>; <b>Ataru</b> cuts harder in the air, and a cut out of a Force dash is the <b>Hawk-Bat Swoop</b>. In Djem So, G swaps to Shien once you know it.',

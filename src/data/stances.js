@@ -225,7 +225,7 @@ export const CUT_ANGLE = {
   foot: { side: 0.28, over: 0.15, rise: -0.12 },
 };
 
-/* Progression is data-driven: the hero knows Niman and Shii-Cho from the start (data/forms.js STARTING_FORMS) and learns
+/* Progression is data-driven: the hero knows Shii-Cho from the start (data/forms.js STARTING_FORMS) and learns
    the rest along FORM_PATH (data/forms.js, granted through JEDI_AUTO in data/store.js). Which forms sit on 1 / 2 / 3 is the
    loadout (data/forms.js). */
 export function stanceUnlocked(id){ return STARTING_FORMS.includes(id) || !!(G.stanceUnlocked && G.stanceUnlocked[id]); }
