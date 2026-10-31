@@ -65,7 +65,7 @@ export function storyBeat(beat, info = {}){
   const c = chapterAt(G.chapter);
   if (!c) return;
   info = { ...info, chapter: c.id, pos: G.chapter, hero: G.hero };
-  if (!G.coopGuest) comms(linesFor(c, beat, info), { now: CUT_IN.has(beat) });
+  if (!G.coopGuest && !info.quiet) comms(linesFor(c, beat, info), { now: CUT_IN.has(beat) });
   for (const fn of listeners[beat] || []) fn(info);
 }
 // a chapter's lines for a beat: `lines.wave` is one entry per wave of the chapter, the rest one entry per beat
