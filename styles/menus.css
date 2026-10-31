@@ -78,6 +78,7 @@
 .msn:hover{opacity:1;border-color:var(--edge-mid)}
 .msn.sel{opacity:1;border-color:rgba(255,210,74,.7);background:linear-gradient(90deg,rgba(54,42,10,.8),rgba(24,20,8,.7))}
 .msn .mt{display:flex;align-items:center;gap:8px;font:700 15px/1.1 var(--font-ui);letter-spacing:1.5px;color:var(--ink)}
+.msn.locked{opacity:.5}
 .msn .mw{display:block;font:600 11px/1.2 var(--font-ui);letter-spacing:1.5px;color:var(--accent);margin-top:3px}
 .msn .won{margin-left:auto;font:600 11px/1 var(--font-ui);letter-spacing:1px;color:var(--xp)}
 /* the picked mission, spelled out under the list (so the cards themselves stay two short lines) */
