@@ -15,7 +15,7 @@ import { cdMul } from '../../data/stances.js';
 import { forcePower, fwd, playerPos, stance, maxHp } from '../helpers.js';
 import { inReach, distToBody, chestPos } from '../../enemies/bodyshape.js';
 import { heroAim, aimFrom, inAim, bossInAim, columnInAim, alongAim } from '../aim.js';
-import { groundAt } from '../../world/collision.js';
+import { groundAt, solidAt } from '../../world/collision.js';
 import { ensureJudgeLines } from './judgement-fx.js';
 import { damageEnemy, flinchEnemy } from '../../enemies/damage.js';
 import { damageBoss, bossStun, bossStagger } from '../../boss/boss.js';
@@ -262,8 +262,10 @@ export function updateSaberThrow(dt){
     sp.mesh.position.addScaledVector(sp.dir, A.speed * dt);
     sp.traveled += A.speed * dt;
     // it turns back at the end of its reach, or where it meets the floor or a prop (thrown down at the deck, it skips back)
-    const mp = sp.mesh.position, floor = groundAt(mp.x, mp.z, Infinity);
+    // (only what's under the blade counts as floor: under an overhead girder the old test lifted it to the ceiling)
+    const mp = sp.mesh.position, floor = groundAt(mp.x, mp.z, mp.y + 0.5);
     if (mp.y < floor + 0.3){ mp.y = floor + 0.3; sp.returning = true; sp.hitSet.clear(); }
+    else if (solidAt(mp.x, mp.y, mp.z)){ sp.returning = true; sp.hitSet.clear(); }   // flew into a pillar or a crate
     if (sp.traveled >= A.range){ sp.returning = true; sp.hitSet.clear(); }
   } else {
     TMP.set(pp.x, pp.y + 1.5, pp.z).sub(sp.mesh.position);
