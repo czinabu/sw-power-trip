@@ -708,6 +708,14 @@ export function updateEnemies(dt){
         e.hpBarFill.material.color.setHex(frac > 0.5 ? 0xff3b3b : frac > 0.22 ? 0xff8a2a : 0xffd24a);
       }
     }
+    // a flung or floored body can't pass through a pillar or crate: it is pushed out and rebounds off the face
+    if ((e.state === 'ragdoll' || e.state === 'knockdown') && !e.t.fly){
+      const bx = g.position.x, bz = g.position.z, by = g.position.y;
+      collideSolids(g.position, 0.5 * (e.t.scale || 1), false);
+      g.position.y = by;
+      const mx = g.position.x - bx, mz = g.position.z - bz;
+      if (mx || mz){ const m = Math.hypot(mx, mz), nx = mx / m, nz = mz / m, vn = e.vel.x * nx + e.vel.z * nz; if (vn < 0){ e.vel.x -= nx * vn * 1.4; e.vel.z -= nz * vn * 1.4; } }
+    }
     clampToArena(g.position, (e.state === 'ragdoll' || e.state === 'knockdown') ? e.vel : null, e);
     // SAFETY — a LIVING foe must never be stuck under the floor or pitched into a broken (side/upside-down) angle.
     if (!e.dead){

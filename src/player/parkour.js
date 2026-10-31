@@ -299,6 +299,7 @@ export function updateWallRun(dt, pp){
     const n = wallBeside(pp, 1.5);
     // the face must stay the same one: rounding a corner or the wall ending drops you off
     if (player.grounded || !keys['w'] || !n || n.x * wr.nx + n.z * wr.nz < 0.9 || wr.t > MOVE.wallRunTime || player.mantle || player.slamming){
+      if (!player.grounded && !player.mantle && !player.slamming){ player.vel.x += wr.nx * MOVE.wallRunPeel; player.vel.z += wr.nz * MOVE.wallRunPeel; }   // peel off the face, carrying the run's speed
       player.wallRun = null;
       return;
     }
@@ -330,6 +331,17 @@ export function updateWallRun(dt, pp){
 /* LANDING — a hard touchdown buckles the knees for a beat (slow, no jump or dash) unless a roll was called for
    just before it. Returns true if it rolled. Called by locomotion on the frame the Jedi lands. */
 export function landingImpact(impact){
+  if (isGunner() && !player.slamming && !player.jetActive){
+    // GUNNERS shed speed on a drop and stumble on a very hard one (no roll window; the Mando's jet landings are exempt)
+    const L = MOVE.gunnerLand;
+    if (impact >= L.shedFrom){ player.moveVel.multiplyScalar(L.shed); player.vel.multiplyScalar(L.shed); }
+    if (impact >= L.staggerFrom){
+      const s = clamp((impact - L.staggerFrom) / L.staggerSpan, 0, 1);
+      player.landStagT = L.staggerMin + (L.staggerMax - L.staggerMin) * s; player.landStagAt = G.gt;
+      player.landDip = Math.max(player.landDip || 0, 0.2 + s * 0.25);
+    }
+    return false;
+  }
   if (isGunner() || player.slamming || player.airCut) return false;   // (the aerial cut lands in its own follow-through)
   if (impact < MOVE.staggerImpact) return false;
   if (G.gt - (player.rollReqT ?? -9) < MOVE.rollWindow){ landingRoll(); return true; }
