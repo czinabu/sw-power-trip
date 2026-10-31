@@ -6,6 +6,12 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'Squad command wheel', status: 'done',
+    items: ['Tap H (VIEW on a pad) for the smart order: aim at a trooper and the squad attacks it, at open ground and they move there, tap again to call them back on you',
+            'Hold H for the command wheel, with the world slowed: on me, hold here, move there, attack target, take cover, grenade, spread out / stack up, and get them up',
+            'While the wheel is open, 1-4 (the D-pad) orders one squadmate instead of the whole squad; the squad panel shows each one\'s order and the grenade cooldown',
+            'Take cover finds a wall between them and the fight (they take half damage, fire a little slower); attack target can chip at a duellist, but bosses stay yours',
+            'Every mode with a squad: strike missions, survival reinforcements and the sandbox. In co-op the guest now sees the host\'s squad and can order it too (on me brings them to the guest), and a squadmate runs to whichever hero is down'] },
   { title: 'Dark robes you can read', status: 'done',
     items: ['Black and near-black outfits (umbra robes, dark hair and skin) no longer render as a flat shadow, especially standing in shade: a soft neutral fill and rim in the arena keep folds and edges visible, while the menu stand keeps them true black',
             'Applies to every hero model in every mode: story, training, survival, sandbox, missions and co-op'] },

@@ -139,5 +139,7 @@ export function partnerAim(out = new THREE.Vector3()){
   const y = Math.max(-1, Math.min(1, want.ap)), h = Math.sqrt(1 - y * y);
   return out.set(Math.sin(want.yaw) * h, y, Math.cos(want.yaw) * h);
 }
+// for the squad (allies/squad.js via net/squad.js): where the partner stands and faces, and whether they're down, or null
+export const partnerSpot = () => mate.here ? { pos: puppet.group.position, yaw: want.yaw, down: mate.down } : null;
 export function dropPartner(){ puppet.group.visible = false; playing = false; mate.here = false; if (tag) tag.style.display = 'none'; }
 on('status', (n) => { if (n.status !== 'connected'){ dropPartner(); removePlayer(mate); } });

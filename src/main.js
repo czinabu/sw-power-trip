@@ -106,6 +106,7 @@ import { updateComms, clearComms, commsBusy, storyBeat } from './game/story.js';
 import './ui/coop-ui.js';
 import { updateFoes, updatePuppets, coopLive } from './net/foes.js';
 import './net/foefire.js';
+import { updateSquadNet } from './net/squad.js';
 import { hooks as coopHooks, coopRun } from './net/run.js';
 import './ui/saves-ui.js';   // NEW GAME / SAVE GAME / LOAD GAME and the save-slot panel
 
@@ -163,6 +164,7 @@ function tick(){
   updateComms(G.paused || G.skillSelect || G.cutscene ? 0 : rawDt);   // the voice in your ear during a campaign chapter (game/story.js)
   updateTutorial(G.paused || G.skillSelect || G.cutscene ? 0 : dt);   // the training lessons, and the unlock drills in a real run
   updateFoes();
+  updateSquadNet();   // online co-op: the host's squad, sent to the guest and commanded from both screens (net/squad.js)
   updateCoop(rawDt);     // online co-op: send my pose, pose the partner's hero (net/partner.js)
   updateTrail(dt);
   updateJudgeFX();
