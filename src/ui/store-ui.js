@@ -6,7 +6,7 @@ import { sfx, S } from '../audio/sfx.js';
 import { V3 } from '../utils.js';
 import { burst } from '../fx/particles.js';
 import { floater } from '../fx/floaters.js';
-import { shared, G, player } from '../state.js';
+import { shared, G, player, isGunner } from '../state.js';
 import { playerPos } from '../player/helpers.js';
 import { syncMandoChips, syncJediChips, chapterClosed } from '../game/flow.js';
 import {
@@ -37,7 +37,7 @@ function rollFreeCards(){
   // Vampiric Blade sits eligible but simply never gets rolled, then buy the always-visible store item with no idea
   // the tradeoff card ever existed. PIN it into the offer instead of leaving it to chance, every wave it's eligible,
   // until the player resolves the choice (buying either one makes the loser ineligible and it drops out normally).
-  const sustainId = G.hero === 'mando' ? 'creed' : 'vamp';
+  const sustainId = isGunner() ? 'creed' : 'vamp';
   const sustainIdx = pool.findIndex(s => s.id === sustainId);
   if (sustainIdx >= 0){ pick.push(pool[sustainIdx]); pool.splice(sustainIdx, 1); }
   // NEWEST TIER GUARANTEED — one card always comes from the highest tier you've opened, so a fresh KNIGHT or
@@ -62,7 +62,7 @@ export function openSkillTree(){
   // the story hands over the single powers its chapter brings (a fork pair stays a free pick on the page)
   grantedNow = grantStoryPowers();
   for (const n of grantedNow) storeAbilityCard(n);
-  if (grantedNow.length){ if (G.hero === 'mando') syncMandoChips(); else syncJediChips(); }
+  if (grantedNow.length){ if (isGunner()) syncMandoChips(); else syncJediChips(); }
   rollFreeCards();
   if (!somethingToTake()){
     if (grantedNow.length) upToast('NEW POWER', grantedNow.map(n => n.nm).join(' · '), 'mast');
@@ -109,7 +109,7 @@ export function renderProgress(){
   const tree = document.getElementById('skilltree');
   const xp = G.xp || 0, sp = G.skillPoints || 0;
   // ---- header: where you are + what you have to spend ----
-  const mando = G.hero === 'mando';
+  const mando = isGunner();
   if (G.endless){
     document.getElementById('stkicker').textContent = 'SURVIVAL';
     tree.querySelector('h1').textContent = 'WAVE ' + Math.max(1, G.endlessWave || 0) + ' SURVIVED';
@@ -247,7 +247,7 @@ function buyStore(n){
   G.xp -= cost;
   n.buy();
   storeAbilityCard(n);
-  if (G.hero === 'mando') syncMandoChips(); else syncJediChips();
+  if (isGunner()) syncMandoChips(); else syncJediChips();
   document.getElementById('xpval').textContent = G.xp;
   floater(playerPos(), n.nm + '!', n.final ? '#ff9a6a' : '#7fe0a8');
   burst(playerPos().clone().setY(1.6), n.final ? 0xff7a4a : 0x7fe0a8, 14, 6, 5);

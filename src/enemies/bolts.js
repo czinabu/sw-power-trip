@@ -9,7 +9,7 @@ import { scene } from '../engine/renderer.js';
 import { sfx, S } from '../audio/sfx.js';
 import { V3, clamp, TMP } from '../utils.js';
 import { floater, screenFlash } from '../fx/floaters.js';
-import { shared, G, enemies, bolts, solids, player } from '../state.js';
+import { shared, G, enemies, bolts, solids, player, isGunner } from '../state.js';
 import { SQUAD } from '../data/allies.js';
 import { HEADSHOT_MULT } from '../data/mando.js';
 import { fwd, playerPos, stance } from '../player/helpers.js';
@@ -136,7 +136,7 @@ export function updateBolts(dt){
       // MID-AIR in a fight the guard can't hold a bolt (Ataru keeps its timed parry): player/mobility.js
       const airOk = airParryOk();
       // SORESU's held guard sends bolts home too, over a wider front, walking or standing (STANCES.soresu guardDeflect)
-      const gd = G.hero !== 'mando' ? stance().guardDeflect : 0;
+      const gd = !isGunner() ? stance().guardDeflect : 0;
       const guardSend = !!gd && near && player.blockHeld && !airGuardLost() && player.stam > 0
         && TMP.subVectors(b.mesh.position, pp).setY(0).lengthSq() > 0.001 && TMP.normalize().dot(fwd()) > -gd;
       const deflecting = near && ((facing && (player.atkT > 0 || player.parryT > 0) && airOk) || guardSend);
@@ -146,7 +146,7 @@ export function updateBolts(dt){
       const shielding = near && facing && mandoShielding() && player.stam > 0;   // dropped while the blaster fires
       // bolt-ABSORB (no reflect) is the other defensive guard — Jedi (any stance) or the Mando DARKSABER. DUAL/DISRUPTOR
       // bracing is offensive-only and lets bolts straight through.
-      const blocking = near && facing && player.blockHeld && !airGuardLost() && player.stam > 0 && (G.hero !== 'mando' || player.weapon === 'darksaber');
+      const blocking = near && facing && player.blockHeld && !airGuardLost() && player.stam > 0 && (!isGunner() || player.weapon === 'darksaber');
       // a certain catch is about to land: let the blade start its flourish early (jedi/combat.js anticipateDeflect)
       if (!b.anticip && near && facing && d > 2.6 && d < 2.6 + b.speed * 0.14){ b.anticip = true; anticipateDeflect(b.mesh.position, (d - 2.5) / b.speed); }
       if (d < abil('barrier').radius && near && player.barrierT > 0){

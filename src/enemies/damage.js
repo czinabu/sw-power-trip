@@ -5,7 +5,7 @@ import { S } from '../audio/sfx.js';
 import { V3, rand, clamp, TMP, dampToward } from '../utils.js';
 import { burst } from '../fx/particles.js';
 import { floater } from '../fx/floaters.js';
-import { shared, G, enemies, player } from '../state.js';
+import { shared, G, enemies, player, isGunner } from '../state.js';
 import { fwd, playerPos, stance, maxHp } from '../player/helpers.js';
 import { volatileBlast } from './elites.js';
 import { bomberExplode, flyerBlowUp } from './specials.js';
@@ -62,7 +62,7 @@ export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick, opts){
     const dpx = playerPos().x - e.group.position.x, dpz = playerPos().z - e.group.position.z;
     const dl = Math.hypot(dpx, dpz) || 1;
     if ((efx*dpx + efz*dpz)/dl > 0.3){   // attacker is in the shield's frontal arc
-      const guardBreak = !!isFinisher || (G.hero !== 'mando' && G.stance === 'djemso') || !!(player.swing && player.swing.riposte);
+      const guardBreak = !!isFinisher || (!isGunner() && G.stance === 'djemso') || !!(player.swing && player.swing.riposte);
       e.shieldHp -= dmg * (guardBreak ? 2.4 : 1.0);
       const sp = V3(e.group.position.x + efx*0.55, 1.45, e.group.position.z + efz*0.55);
       spawnHitSpark(sp, e.t.eye, 0.8); S.shieldHit(sp);
@@ -90,7 +90,7 @@ export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick, opts){
   e.flash = Math.max(e.flash, tick ? 0.06 : 0.16);
   const p = e.group.position;
   const cp = opts && opts.at ? opts.at.clone() : V3(p.x, p.y + 1.45, p.z);   // where the blade met it (bladehit.js), else the torso
-  const col = (G.hero === 'mando') ? 0xffb84a : stance().blade;
+  const col = (isGunner()) ? 0xffb84a : stance().blade;
   const power = clamp(dmg / 38, 0.45, 1.7);
   const meaty = !!knockDir && !tick;                         // saber/blaster/rocket land with weight; DoT ticks stay light
   if (tick){

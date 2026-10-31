@@ -8,7 +8,7 @@
 import { MUSIC } from './music.js';
 import { AE, initEngine, play, tooSoon, duck, setBusVol } from './engine.js';
 import { clamp, rand } from '../utils.js';
-import { shared, G, player } from '../state.js';
+import { shared, G, player, isGunner } from '../state.js';
 
 /* ---------- start-up + volume ---------- */
 
@@ -100,7 +100,7 @@ function saberBurn(pos, pw){
 
 /* blade on blade / blade on beskar: inharmonic FM ring (that's what makes metal), a hard crack, a fizzing crackle */
 function clash(pos, big, form){
-  form = form || (G.hero !== 'mando' ? G.stance : null);   // (no form named: the hero's own blade)
+  form = form || (!isGunner() ? G.stance : null);   // (no form named: the hero's own blade)
   const k = big ? 1.4 : 1, v = FORM_SOUND[form] || FORM_SOUND.niman, r = v.ring, dm = v.damp;
   T({ pos, type: 'sine', f: 1250 * r, fm: { r: 1.414, i: 4, i2: 0.1 }, g: 0.09 * k, d: 0.3 * k * dm, verb: 0.25, pri: 2 });
   T({ pos, type: 'sine', f: 2620 * r, fm: { r: 2.76, i: 2, i2: 0.05 }, g: 0.045 * k, d: 0.22 * k * dm, verb: 0.2 });
@@ -180,7 +180,7 @@ export const S = {
   // a connect voiced by what landed it: a saber burns, a Mando bolt pops, a fist / kick / spear thumps
   impact: (pos, power) => {
     if (player.atkT > 0 || player.darkT > 0 || shared.saberProj) S.saberHit(pos, power);
-    else if (G.hero === 'mando' && !(player.meleeT > 0)) S.blastHit(pos, power);
+    else if (isGunner() && !(player.meleeT > 0)) S.blastHit(pos, power);
     else S.punch(pos, power);
   },
   hit: (pos) => S.impact(pos, 0.8),

@@ -5,7 +5,7 @@ import { CFG } from '../data/config.js';
 import { sfx, S } from '../audio/sfx.js';
 import { V3, rand, clamp, TMP } from '../utils.js';
 import { burst } from '../fx/particles.js';
-import { G, keys, player } from '../state.js';
+import { G, keys, player, isGunner } from '../state.js';
 import { MANDO, JEDI_FORCE, JUMP_HOLD_THRESH, forceJumpPow } from '../data/mando.js';
 import { stance, maxHp } from './helpers.js';
 import { focusMoveMul } from './jedi/focus.js';
@@ -32,7 +32,7 @@ export function updateMovement(dt, pp, st, f, r){
                    * (player.surgeT > G.gt ? player.surgeMul : 1)                      // CHASE SURGE — parkour on a story pursuit
                    * (player.boon && player.boon.adrenal && player.hp < maxHp()*0.35 ? 1.18 : 1)    // ADRENALINE boon — desperate burst
                    * focusMoveMul()                                                      // FORCE FOCUS — lighter on the feet in flow
-                   * (player.atkT > 0 && G.hero !== 'mando' ? swingMoveMul() : 1)       // a swing plants the feet: spacing is yours to manage (Djem So walks its cuts in)
+                   * (player.atkT > 0 && !isGunner() ? swingMoveMul() : 1)       // a swing plants the feet: spacing is yours to manage (Djem So walks its cuts in)
                    * (player.landStagT > 0 ? MOVE.staggerMove : 1)                      // HARD LANDING — the knees are still buckled
                    * (player.flinchT > 0 ? CFG.player.flinch.move : 1)                  // HIT REACTION — reeling from a blow
                    * (player.saberLock ? 0 : 1)                                          // SABER LOCK — feet planted in the bind
@@ -48,13 +48,13 @@ export function updateMovement(dt, pp, st, f, r){
   // faster and heavier to steer, and it never costs stamina, fight or no fight. In WALK the
   // Jedi paces, a brisk purposeful walk, fight or no fight: the Vader walk, cutting down whatever comes into reach.
   const wasSprinting = player.sprinting;
-  player.sprinting = G.hero !== 'mando' && !!player.sprintOn && !!keys['w'] && (player.grounded || wasSprinting)
+  player.sprinting = !isGunner() && !!player.sprintOn && !!keys['w'] && (player.grounded || wasSprinting)
                      && !keys['alt'] && !player.blockHeld && player.atkT <= 0 && !(player.flinchT > 0)
                      && !(player.landStagT > 0) && !(player.slideT > 0) && !player.mantle && !player.hang;
-  player.walking = G.hero !== 'mando' && !player.sprintOn && player.grounded;
+  player.walking = !isGunner() && !player.sprintOn && player.grounded;
   // PIVOT — reversing hard at speed plants the feet: you brake to a stop before the new direction takes
   if (player.pivotT > 0) player.pivotT -= dt;
-  else if (G.hero !== 'mando' && player.grounded && moving && !(player.slideT > 0)){
+  else if (!isGunner() && player.grounded && moving && !(player.slideT > 0)){
     const sp = Math.hypot(player.moveVel.x, player.moveVel.z);
     if (sp > MOVE.pivotMinSpeed){
       const wl = Math.hypot(want.x, want.z), cosA = (want.x * player.moveVel.x + want.z * player.moveVel.z) / (wl * sp);
@@ -62,7 +62,7 @@ export function updateMovement(dt, pp, st, f, r){
     }
   }
   if (player.slideT > 0) player.slideT -= dt;
-  const mandoAir = G.hero === 'mando' && !player.grounded;
+  const mandoAir = isGunner() && !player.grounded;
   if (mandoAir){
     // MOMENTUM FLIGHT — WASD ADDS horizontal thrust; release and the speed CARRIES (low drag). Pressing against the
     // momentum counter-thrusts, so he turns on a dime. A soft cap keeps top speed sane; HOVERING (RMB) is a firing
@@ -87,7 +87,7 @@ export function updateMovement(dt, pp, st, f, r){
     // SLIDE — the skid carries the run's speed and bleeds it off. The Jedi's doesn't steer; the Mando's bends a little
     // toward the keys (data/mobility.js MANDO_MOBILITY.slide)
     const SL = MANDO_MOBILITY.slide;
-    if (G.hero === 'mando' && moving){
+    if (isGunner() && moving){
       const sp = Math.hypot(player.moveVel.x, player.moveVel.z);
       if (sp > 0.5){
         const cur = Math.atan2(player.moveVel.x, player.moveVel.z), tgt = Math.atan2(want.x, want.z);
@@ -98,11 +98,11 @@ export function updateMovement(dt, pp, st, f, r){
         }
       }
     }
-    player.moveVel.multiplyScalar(Math.max(0, 1 - dt * (G.hero === 'mando' ? SL.drag : MOVE.forceSlideDrag)));
+    player.moveVel.multiplyScalar(Math.max(0, 1 - dt * (isGunner() ? SL.drag : MOVE.forceSlideDrag)));
     pp.addScaledVector(player.moveVel, dt);
     // dust thrown up off the floor by the hip and the lead heel, thinning as the skid slows
     const ssp = Math.hypot(player.moveVel.x, player.moveVel.z);
-    if (Math.random() < dt * ssp * 2.2) burst(V3(pp.x + rand(-0.25, 0.25), 0.08, pp.z + rand(-0.25, 0.25)), G.hero === 'mando' ? 0x9a9288 : 0xa89a86, 1, 1.6, 0.5, 0.7);
+    if (Math.random() < dt * ssp * 2.2) burst(V3(pp.x + rand(-0.25, 0.25), 0.08, pp.z + rand(-0.25, 0.25)), isGunner() ? 0x9a9288 : 0xa89a86, 1, 1.6, 0.5, 0.7);
     updateForceSlide(pp);
   } else {
     // GROUND (or Jedi): steer toward the input direction at the stance's acceleration. Speed BUILDS, and planting to
@@ -117,7 +117,7 @@ export function updateMovement(dt, pp, st, f, r){
       const dl = TMP.length();
       const against = !moving || want.dot(player.moveVel) < 0 || player.pivotT > 0;
       // RUN mode (Jedi, on the ground): a very short wind-up and wind-down, full speed in a fraction of a second
-      const run = G.hero !== 'mando' && player.sprintOn && !airborne;
+      const run = !isGunner() && player.sprintOn && !airborne;
       let accel = run ? (against ? MOVE.runBrake : MOVE.runAccel) * (st.accel || 1)
                       : (against ? MOVE.brake : MOVE.accel) * (st.accel || 1) * (player.sprinting && !against ? MOVE.sprintAccel : 1);
       if (airborne) accel = MOVE.accel * (st.accel || 1) * (player.gliding ? 0.5 : MOVE.airControl) * airControlMul();   // a leap in a fight steers less
@@ -137,11 +137,11 @@ export function updateMovement(dt, pp, st, f, r){
     pp.x += tr.x * df; pp.z += tr.z * df;
     player._rootVX = tr.x * df / Math.max(dt, 1e-4); player._rootVZ = tr.z * df / Math.max(dt, 1e-4);
   } else player._rootVX = player._rootVZ = 0;
-  const skid = player.flip && player.flip.kind === 'dive' && player.flip.landT && G.hero === 'mando';
+  const skid = player.flip && player.flip.kind === 'dive' && player.flip.landT && isGunner();
   // a ROLL / DIVE is a burst that eases out (fast off the mark, planted by the end), not a flat glide
   const rolling = player.dodgeKind === 'roll' && G.gt - (player.rollAt ?? -9) < MOBILITY.roll.time;
-  const diving = G.hero === 'mando' && player.dodgeKind === 'dive' && player.flip && player.flip.kind === 'dive' && !player.flip.landT;
-  const velDrag = skid ? MANDO_MOBILITY.dive.skidDrag : rolling ? MOBILITY.roll.drag : diving ? MANDO_MOBILITY.dive.airDrag : (player.flip || player.dashT > 0) ? 2.6 : (!player.grounded && G.hero !== 'mando') ? 1.2 : 9;   // airborne impulses (wall kicks, leaps) carry
+  const diving = isGunner() && player.dodgeKind === 'dive' && player.flip && player.flip.kind === 'dive' && !player.flip.landT;
+  const velDrag = skid ? MANDO_MOBILITY.dive.skidDrag : rolling ? MOBILITY.roll.drag : diving ? MANDO_MOBILITY.dive.airDrag : (player.flip || player.dashT > 0) ? 2.6 : (!player.grounded && !isGunner()) ? 1.2 : 9;   // airborne impulses (wall kicks, leaps) carry
   player.vel.multiplyScalar(Math.max(0, 1 - dt*velDrag));
   if (player.kickT > 0) player.kickT -= dt;   // JEDI front-kick recovery (hero-agnostic so it always winds down)
   return moving;
@@ -195,7 +195,7 @@ export function updateGravityAndLanding(dt, pp){
   updateWallRun(dt, pp);
   // gravity / landing — gentled while the Jedi is gliding (graceful arc), fully cancelled during the Mando hover.
   // A plain Jedi jump falls HARDER than it rose (no hang at the apex) and a wall-run barely loses height.
-  const jediFall = G.hero !== 'mando' && !player.gliding && player.vy < 0;
+  const jediFall = !isGunner() && !player.gliding && player.vy < 0;
   const gMul = player.hovering || (player.airCut && player.airCut.phase !== 'fall') ? 0 :   // (the aerial cut flies its own line: jedi/aerial.js)
                player.wallRun ? MOVE.wallRunGravity : player.gliding ? JEDI_FORCE.riseGravity : jediFall ? MOVE.fallGravity : 1;
   player.vy -= CFG.player.gravity * gMul * dt;
@@ -219,7 +219,7 @@ export function updateGravityAndLanding(dt, pp){
       stompImpact();
       player.moveVel.set(0, 0, 0);
     } else if (player.slamming){
-      (G.hero === 'mando' ? mandoSlamImpact : slamImpact)();
+      (isGunner() ? mandoSlamImpact : slamImpact)();
       player.slamming = false;
       player.vis.rotation.set(0, 0, 0); player.vis.position.y = 0;   // land CLEAN & square — clear any leftover dive tuck
       player.moveVel.set(0, 0, 0);                                    // kill horizontal drift so the pound lands under you
@@ -230,11 +230,11 @@ export function updateGravityAndLanding(dt, pp){
       const dustAmt = clamp((impact - 5) / 18, 0, 1);
       const lp = pp.clone().setY(support + 0.15);
       burst(lp, 0xb9c2cc, Math.round(4 + dustAmt*16), 4 + dustAmt*8, 2, 0.85);
-      if (G.hero === 'mando') burst(lp, 0x9ad8ff, Math.round(2 + dustAmt*5), 3 + dustAmt*4, -2, 0.7);   // jetpack exhaust wash
+      if (isGunner()) burst(lp, 0x9ad8ff, Math.round(2 + dustAmt*5), 3 + dustAmt*4, -2, 0.7);   // jetpack exhaust wash
       S.land(dustAmt);   // a low thud, deeper the harder you land
       if (impact > 13){
         const hard = clamp((impact - 13) / 16, 0, 1);
-        spawnGroundShock(lp, G.hero === 'mando' ? 0x9ad8ff : 0xbfe8ff, 2.6 + hard*4, 0.34, 0.45 + hard*0.4);
+        spawnGroundShock(lp, isGunner() ? 0x9ad8ff : 0xbfe8ff, 2.6 + hard*4, 0.34, 0.45 + hard*0.4);
         G.shake = Math.max(G.shake, 0.25 + hard*0.45);
         player.landDip = 0.16 + hard*0.34;        // the view drops on the impact, then recovers
         S.heavy();                                 // an extra crunch on a heavy drop

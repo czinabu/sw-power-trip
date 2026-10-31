@@ -10,7 +10,7 @@ import { furyMul } from './fury.js';
 import { sfx, S } from '../../audio/sfx.js';
 import { V3, clamp, TMP } from '../../utils.js';
 import { burst } from '../../fx/particles.js';
-import { shared, G, enemies, keys, player } from '../../state.js';
+import { shared, G, enemies, keys, player, isGunner } from '../../state.js';
 import { fwd, playerPos, stance } from '../helpers.js';
 import { damageEnemy, flinchEnemy } from '../../enemies/damage.js';
 import { damageBoss } from '../../boss/boss.js';
@@ -58,7 +58,7 @@ function pickTarget(pp){
    a plain swing. One per airtime: a second press in the same jump is an ordinary air swing. */
 export function airCut(){
   if (player.airCut) return true;
-  if (G.mode !== 'play' || G.hero === 'mando' || player.holstered || player.grounded || player.airCutUsed) return false;
+  if (G.mode !== 'play' || isGunner() || player.holstered || player.grounded || player.airCutUsed) return false;
   if (player.slamming || player.mantle || player.hang || player.saberLock || shared.saberProj || player.flinchT > 0
       || player.judgeT > 0 || player.mendT > 0 || player.blockHeld) return false;
   const pp = playerPos();

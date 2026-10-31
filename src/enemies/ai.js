@@ -6,7 +6,7 @@ import { camera } from '../engine/renderer.js';
 import { sfx, S } from '../audio/sfx.js';
 import { V3, rand, clamp, TMP, dampToward } from '../utils.js';
 import { burst } from '../fx/particles.js';
-import { G, enemies, solids } from '../state.js';
+import { G, enemies, solids, isGunner } from '../state.js';
 import { MELEE_WINDUP_GAP } from '../data/mando.js';
 import { playerPos, stance } from '../player/helpers.js';
 import { bomberExplode, updateAimLine, warbringerSlam, breakJetpack } from './specials.js';
@@ -459,7 +459,7 @@ export function updateEnemies(dt){
                 // the Warbringer's posture takes the parry; a full bar breaks it open (duel.js), otherwise it reels as any brute does
                 // a duellist may keep the EXCHANGE going: it recovers to meet your riposte instead of reeling (duel.js)
                 // VAAPAD finds the SHATTERPOINT: the next cut on this foe lands double (player/jedi/combat.js)
-                if (G.hero !== 'mando' && stance().shatter){ e.shatterUntil = G.gt + 4; burst(V3(g.position.x, 1.6, g.position.z), 0xd08bff, 10, 3, 2); }
+                if (!isGunner() && stance().shatter){ e.shatterUntil = G.gt + 4; burst(V3(g.position.x, 1.6, g.position.z), 0xd08bff, 10, 3, 2); }
                 if (rallyOnParry(e)) break;
                 if (!(e.dp && e.dp.brace && addPosture(e, DUEL.posture.parry, -tx, -tz))) staggerEnemy(e, -tx, -tz);
                 drainBreath(e, DUEL.breath.parried);
@@ -468,7 +468,7 @@ export function updateEnemies(dt){
                 blockedOnBlade(e);   // its weapon rebounds off your guard (player/jedi/clash.js)
                 // SORESU wears the attacker out: a duellist loses breath on every blocked blow, a plain trooper reels
                 // after a few (STANCES.soresu blockTire)
-                const tire = G.hero !== 'mando' ? stance().blockTire : 0;
+                const tire = !isGunner() ? stance().blockTire : 0;
                 if (tire){
                   if (e.breath != null) drainBreath(e, tire);
                   else if ((e.tireN = (e.tireN || 0) + 1) >= 3){ e.tireN = 0; staggerEnemy(e, -tx, -tz); }

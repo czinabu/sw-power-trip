@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { CFG } from '../data/config.js';
 import { LEVELS } from '../data/levels.js';
 import { clamp } from '../utils.js';
-import { shared, G, enemies, player } from '../state.js';
+import { shared, G, enemies, player, isGunner, isTrooper } from '../state.js';
 import { MANDO, MANDO_WEAPONS, weaponUnlocked } from '../data/mando.js';
 import { abil } from '../data/mastery.js';
 import { maxHp, maxStam } from '../player/helpers.js';
@@ -93,7 +93,7 @@ function cdSlot(id, key, cost){
 // MANDO weapon slots: 1 blaster · 2 dual · 3 the signature weapon (Disruptor or Darksaber, whichever you took) · 4 holstered
 function renderWeaponSlots(){
   const sig = player.up.darksaber ? 'darksaber' : 'disruptor';
-  const slots = [['1','single'],['2','dual'],['3',sig],['4','fists']];
+  const slots = isTrooper() ? [['1','rifle'],['2','pistols']] : [['1','single'],['2','dual'],['3',sig],['4','fists']];   // (the trooper: DC-15 and twin DC-17s)
   let key = player.weapon;
   for (const [, w] of slots) key += weaponUnlocked(w) ? '1' : '0';
   const wrap = $('wslots'); if (wrap._k === key + sig) return;
@@ -115,13 +115,13 @@ export function updateHud(){
   renderThreats();     // directional damage arc + off-screen danger markers
   // HIT MARKER — pop an X at the crosshair when a shot lands (white hit · gold headshot · red kill)
   { const hm = document.getElementById('hitmark'), t = player.hitMarkT || 0;
-    if (G.hero === 'mando' && t > 0){
+    if (isGunner() && t > 0){
       hm.style.opacity = Math.min(1, t * 1.5);
       hm.style.color = player.hitMarkKind === 'kill' ? '#ff4a4a' : player.hitMarkKind === 'head' ? '#ffd24a' : '#ffffff';
       hm.style.transform = 'translate(-50%,-50%) scale(' + (1 + t*0.4 + (player.hitMarkKind === 'kill' ? 0.25 : 0)).toFixed(2) + ')';
     } else hm.style.opacity = '0'; }
   // FORCE FOCUS meter — Jedi only (hidden for the Mando by CSS)
-  if (G.hero !== 'mando'){
+  if (!isGunner()){
     const fcw = $('fcwrap'), t = focusTier();
     $('fcbar').style.width = (player.focus || 0) + '%';
     setText($('fclabel'), t > 0 ? ('FOCUS · ' + FOCUS.names[t]) : 'FOCUS');
@@ -143,7 +143,7 @@ export function updateHud(){
   //  JEDI: violet SABER STAMINA.  MANDO: energy/HEAT (blasters, blue) or stamina (DARKSABER, violet). The Mando
   //  version tracks the free-aim reticle drift; the Jedi crosshair is fixed-centre, so its gauge stays put.
   { const em = document.getElementById('energymeter'), ef = document.getElementById('energyfill');
-    const showE = G.mode === 'play' && (G.hero === 'jedi' || G.hero === 'mando');
+    const showE = G.mode === 'play' && (G.hero === 'jedi' || isGunner());
     em.style.display = showE ? 'block' : 'none';
     if (showE){
       const saber = G.hero === 'jedi' || mandoWeapon().melee;   // saber forms → stamina gauge; blasters → heat gauge
@@ -156,7 +156,7 @@ export function updateHud(){
         em.classList.remove('saberbar');
         em.classList.toggle('over', player.overheat);
       }
-      em.style.transform = (G.hero === 'mando') ? 'translate(' + player.aimOff.x.toFixed(1) + 'px,' + player.aimOff.y.toFixed(1) + 'px)' : 'none';
+      em.style.transform = (isGunner()) ? 'translate(' + player.aimOff.x.toFixed(1) + 'px,' + player.aimOff.y.toFixed(1) + 'px)' : 'none';
     } }
   // bottom XP meter — fills toward the next skill point in the story (game/upgrades.js), else the next affordable ability
   { const goal = nextStoreGoal(), xm = document.getElementById('xpmeter');
@@ -194,7 +194,7 @@ export function updateHud(){
       '<span class="wi-h' + (o.warn ? ' warn' : '') + '">' + o.status + '</span>' +
       (o.frac != null ? '<span class="wi-bar"><i style="width:' + (clamp(o.frac, 0, 1) * 100).toFixed(1) + '%"></i></span>' : ''));
   } else if (G.sandbox){
-    const room = ((shared.arenaLevel && shared.arenaLevel.name.split('—')[1]) || (G.hero === 'mando' ? 'THE THRONE ROOM' : 'THE TRAINING ROOM')).trim();   // the room, or the battle map picked
+    const room = ((shared.arenaLevel && shared.arenaLevel.name.split('—')[1]) || (isGunner() ? 'THE THRONE ROOM' : 'THE TRAINING ROOM')).trim();   // the room, or the battle map picked
     setHtml($('waveinfo'), '<span class="wi-l">SANDBOX · ' + room + '</span><span class="wi-w">PRESS B FOR FOES &amp; POWERS</span>' + hostiles +
       (G.sandboxGod ? '<span class="wi-h">GOD MODE</span>' : ''));
   } else if (G.endless){
@@ -213,7 +213,7 @@ export function updateHud(){
   renderWaypoint(G.mode === 'play' && !G.sandbox && !G.training && !!G.mission);
   renderChecklist(G.mode === 'play' && !G.sandbox ? (G.training ? trainingChecklist() : G.mission ? missionChecklist() : null) : null);
   // CUT HEIGHT (player/jedi/cutaim.js): three ticks beside the crosshair, the lit one is where your next cut goes
-  { const ch = $('cuth'), on = G.mode === 'play' && (G.hero === 'mando' ? player.weapon === 'darksaber' : !player.holstered);
+  { const ch = $('cuth'), on = G.mode === 'play' && (isGunner() ? player.weapon === 'darksaber' : !player.holstered);
     if (ch){ ch.style.display = on ? '' : 'none'; if (on) ch.dataset.h = cutHeight(); }
     // and the dial: the angle the next cut comes from (hidden for a keyed cut: the thrust, the back strike)
     const cd = $('cutdial');
@@ -222,14 +222,14 @@ export function updateHud(){
       cd.style.display = ang != null ? '' : 'none';
       if (ang != null){ cd.firstChild.style.transform = 'rotate(' + (90 - ang).toFixed(0) + 'deg)'; cd.classList.toggle('live', !!nx.flick); }
     } }
-  if (G.hero !== 'mando'){   // holstered (4): LMB is a Force strike and RMB a ward instead of saber and block
+  if (!isGunner()){   // holstered (4): LMB is a Force strike and RMB a ward instead of saber and block
     setText($('ab-atk').querySelector('.an'), player.holstered ? 'FORCE STRIKE' : 'SABER');
     setText($('ab-block').querySelector('.an'), player.holstered ? 'WARD' : 'BLOCK');
     // the centre dot turns gold over a foe: that's who a power aimed now would reach, in the air or on the ground (player/aim.js)
     const xh = $('xh');
     if (xh){ const on = G.mode === 'play' && !player.lockTarget && (crosshairPoint(0, 0), !!lastAim.target); xh.classList.toggle('on', on); }
   }
-  if (G.hero === 'mando'){
+  if (isGunner()){
     // weapon + ammo readout
     const W = mandoWeapon();
     renderWeaponSlots();

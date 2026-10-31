@@ -8,7 +8,7 @@ import { audioInit, sfx } from '../audio/sfx.js';
 import { MUSIC } from '../audio/music.js';
 import { V3, clamp } from '../utils.js';
 import { floater } from '../fx/floaters.js';
-import { shared, G, keys, player } from '../state.js';
+import { shared, G, keys, player, isGunner, isTrooper } from '../state.js';
 import { MANDO_WEAPON_ORDER, weaponUnlocked } from '../data/mando.js';
 import { fwd, rightV, playerPos, stance } from '../player/helpers.js';
 import { switchSlot, cycleSlot, swapVariant } from '../player/jedi/stance.js';
@@ -42,13 +42,14 @@ import { strikePress, strikeRelease, holsteredKick } from '../player/jedi/palm.j
 import { wheelKeyDown, wheelKeyUp, wheelLook, wheelPickMate, wheelCancel, wheelOpen } from '../allies/wheel.js';
 import { pingHere } from '../net/ping.js';
 import { noteFlick } from '../player/jedi/cutaim.js';
+import { trooperMouseDown, trooperKey, trooperCycle } from '../player/trooper/kit.js';
 
 const inputActive = () => !G.cutscene && !G.cardUp && (document.pointerLockElement === renderer.domElement || (shared.lockFallback && G.mode === 'play'));   // (a cutscene takes no fight input)
 document.addEventListener('mousemove', (e) => {
   if (!inputActive()) return;
   if (wheelLook(e.movementX, e.movementY)) return;   // the squad's command wheel is up: the mouse points at an order (allies/wheel.js)
   // scoped in (the disruptor's 30° zoom) the look slows to the SCOPE SENS setting, or the reticle flies off the target
-  const sens = G.mouseSens * (G.hero === 'mando' && player.zoom ? G.adsSens : 1);
+  const sens = G.mouseSens * (isGunner() && player.zoom ? G.adsSens : 1);
   G.yaw -= e.movementX * 0.0023 * sens;
   // allow looking well UP (was capped at -0.15, so you couldn't aim high on the ground) as well as down
   G.pitch = clamp(G.pitch + e.movementY * 0.0021 * sens, -0.62, 1.2);
@@ -60,7 +61,8 @@ document.addEventListener('mousedown', (e) => {
   if (wheelOpen()){ if (e.button === 2) wheelCancel(); else if (e.button === 0) wheelKeyUp(); return; }   // the command wheel: click gives the order, right click puts it away
   if (player.saberLock){ if (e.button === 0) lockPress(); return; }   // blades bound: LMB drives (enemies/duel.js)
   if (e.button === 2 && (player.judgeT > 0 || player.flaming || player.mendT > 0)) return;   // mid-channel (lightning / flame / mend): no bracing
-  if (G.hero === 'mando'){
+  if (isTrooper()){ trooperMouseDown(e.button); return; }   // the clone trooper: rifle bursts and aim, or one pistol per button (player/trooper/kit.js)
+  if (isGunner()){
     if (e.button === 0){
       // LMB while guarding with the Darksaber hurls it; the grappling line reels it back (player/mando/darksaber.js)
       if (player.weapon === 'darksaber' && player.blockHeld){ darksaberThrow(); return; }
@@ -135,7 +137,8 @@ document.addEventListener('mouseup', (e) => {
 document.addEventListener('wheel', (e) => {
   if (!inputActive()) return;
   e.preventDefault();
-  if (G.hero === 'mando'){   // cycle to the next UNLOCKED loadout
+  if (isTrooper()){ trooperCycle(e.deltaY > 0 ? 1 : -1); return; }
+  if (isGunner()){   // cycle to the next UNLOCKED loadout
     const dir = e.deltaY > 0 ? 1 : -1; let i = MANDO_WEAPON_ORDER.indexOf(player.weapon);
     for (let n = 0; n < MANDO_WEAPON_ORDER.length; n++){
       i = (i + dir + MANDO_WEAPON_ORDER.length) % MANDO_WEAPON_ORDER.length;
@@ -164,7 +167,8 @@ document.addEventListener('keydown', (e) => {
   if (k === '4' && !e.repeat) toggleHolster();   // HOLSTER: the Jedi fights with the Force alone, the Mando with fists and gadgets (player/holster.js)
   if (k === 'n' && !e.repeat) pingHere();   // PING: mark the spot or foe under the crosshair for the other players (net/ping.js)
   if (k === 'h' && !e.repeat) wheelKeyDown();   // SQUAD ORDERS: tap for the smart order, hold for the command wheel (allies/wheel.js)
-  if (G.hero === 'mando'){
+  if (isTrooper()) trooperKey(k, e.repeat);   // the clone trooper's keys (player/trooper/kit.js)
+  else if (isGunner()){
     if (k === 'shift' && !e.repeat) mandoShift();        // combat roll / rocket boost / air dodge (mando/mobility.js); held in the air it boosts
     if (G.mode === 'play'){
       if (k === 'f') mandoFlame();
@@ -201,7 +205,7 @@ document.addEventListener('keydown', (e) => {
     if (k === 'r' && G.mode === 'play'){ if (G.unlocked.judge) forceJudgement(); else if (G.unlocked.repulse) forceRepulse(); }   // ULT: JUDGEMENT or REPULSE ('R' still restarts when dead/victory below)
     if (k === 'g' && !e.repeat && G.mode === 'play'){   // GRIP — in a Form V slot G swaps Djem So ⇄ Shien (the reverse-grip variant); in Niman it flips
       // between a regular and a reverse (Starkiller-style) grip; every other form holds its own forward grip (data/forms.js)
-      const own = G.hero !== 'mando' && FORMS[G.stance] && FORMS[G.stance].grip;
+      const own = !isGunner() && FORMS[G.stance] && FORMS[G.stance].grip;
       if (swapVariant()){ /* swapped: the new form brings its own grip and guard */ }
       else if (own){ showBanner('', FORMS[G.stance].name + ' HOLDS A ' + (own === 'reverse' ? 'REVERSE' : 'FORWARD') + ' GRIP', 1.0); sfx(200, 0.06, 'triangle', 0.03, 160); }
       else {
@@ -225,7 +229,7 @@ document.addEventListener('keydown', (e) => {
     try { const p = renderer.domElement.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch(e){}
   }
 });
-document.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; if (e.key.toLowerCase() === 'h') wheelKeyUp(); if (e.key.toLowerCase() === 'c' && G.hero !== 'mando') pullRelease(); if (e.key === 'Alt') e.preventDefault(); });
+document.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; if (e.key.toLowerCase() === 'h') wheelKeyUp(); if (e.key.toLowerCase() === 'c' && !isGunner()) pullRelease(); if (e.key === 'Alt') e.preventDefault(); });
 // A held key whose keyup never arrives (ALT-TAB, ALT+click, a browser menu, focus lost) would stay down forever: strafe stuck
 // on, and no sprint or slide. Losing focus releases everything; any key event that says ALT is up releases ALT.
 window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; });

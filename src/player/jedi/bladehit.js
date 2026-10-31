@@ -2,7 +2,7 @@
 // Blade contact: a cut lands on what the blade actually sweeps through, frame by frame, not on a radius around the hero.
 
 import * as THREE from 'three';
-import { shared, G, enemies, barrels, player } from '../../state.js';
+import { shared, G, enemies, barrels, player, isGunner } from '../../state.js';
 import { stance } from '../helpers.js';
 import { pointHit, partsOf } from '../../enemies/bodyshape.js';
 import { meetBlades } from './clash.js';
@@ -16,7 +16,7 @@ const P = new THREE.Vector3(), B = new THREE.Vector3(), T = new THREE.Vector3(),
 
 // the live blade, base → tip, in world space (the same line the swing trail draws). false when no blade is in hand.
 export function bladeSegment(outB, outT){
-  const dark = G.hero === 'mando';
+  const dark = isGunner();
   const node = dark ? (player.darksaberMesh && player.darksaberMesh.visible ? player.darksaberMesh : null)
                     : (player.saberBladeRoot || player.saberHand);
   if (!node) return false;

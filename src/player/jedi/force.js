@@ -9,7 +9,7 @@ import { sfx, S } from '../../audio/sfx.js';
 import { V3, clamp, rand, TMP } from '../../utils.js';
 import { burst } from '../../fx/particles.js';
 import { floater, screenFlash } from '../../fx/floaters.js';
-import { shared, G, enemies, bolts, barrels, vfx, player } from '../../state.js';
+import { shared, G, enemies, bolts, barrels, vfx, player, isGunner } from '../../state.js';
 import { flashLight } from '../../fx/lights.js';
 import { cdMul } from '../../data/stances.js';
 import { forcePower, fwd, playerPos, stance, maxHp } from '../helpers.js';
@@ -230,7 +230,7 @@ export function stowHandSaber(away){
   h.scale.setScalar(away ? 1e-4 : 1);
   if (!B) return;
   if (away){ if (B.light.intensity > 0) _handLight = B.light.intensity; B.light.intensity = 0; }
-  else if (_handLight && !(player.holstered && G.hero !== 'mando')){ B.light.intensity = _handLight; }
+  else if (_handLight && !(player.holstered && !isGunner())){ B.light.intensity = _handLight; }
 }
 export function saberThrow(){
   const A = abil('throw');

@@ -1,4 +1,6 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
+import { heroKey } from '../state.js';
+import { mergeTrooperStory } from './campaign-trooper.js';
 // THE CAMPAIGN, as data: three acts of chapters, played in order (game/campaign.js runs them). Edit the words freely.
 //
 // A chapter is one of
@@ -17,7 +19,7 @@
 // of the chapter; the rest are story beats: duel (a mission's duel foe steps in) · escape (it breaks off) · boss · clear.
 // A line is a string (the voice: VOICE) or { who, say } for anyone else; `rival: true` marks the enemy talking.
 
-export const VOICE = { jedi: 'THE BATTLEMASTER', mando: 'THE ARMORER' };
+export const VOICE = { jedi: 'THE BATTLEMASTER', mando: 'THE ARMORER', trooper: 'THE CAPTAIN' };
 
 export const ACTS = [
   { title: { jedi: 'THE FALL OF JEDHA', mando: 'THE BROKEN COVERT' },
@@ -161,6 +163,9 @@ export const EPILOGUE = {
                    'You did not choose this clan. You kept it anyway. This is the Way.'] },
 };
 
+// the clone trooper's own words (testing, a first draft) laid over the chapters above: data/campaign-trooper.js
+mergeTrooperStory(ACTS, ACT_TWO, CHAPTERS, EPILOGUE);
+
 // the order a run plays them in: Act II's pairs follow the player's pick (default Lothal first, before the pick is made)
 export function chapterOrder(first){
   const lothal = CHAPTERS.filter(c => c.pair === 'lothal'), hoth = CHAPTERS.filter(c => c.pair === 'hoth');
@@ -172,4 +177,5 @@ export function chapterOrder(first){
 export const ACT_TWO_AT = CHAPTERS.findIndex(c => c.pair);
 // a save from before the chapters (data/levels.js index) picks up on the chapter that opens that level
 export const CHAPTER_OF_LEVEL = [0, CHAPTERS.findIndex(c => c.id === 'mustafar'), CHAPTERS.findIndex(c => c.id === 'exegol')];
-export const forHero = (v, hero) => v && typeof v === 'object' && !Array.isArray(v) ? v[hero] : v;
+// (a hero with no entry of its own yet, the trooper in testing, falls back to the Mando's words: state.js heroKey)
+export const forHero = (v, hero) => v && typeof v === 'object' && !Array.isArray(v) ? heroKey(v, hero) : v;

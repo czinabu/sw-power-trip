@@ -6,7 +6,7 @@
 
 import * as THREE from 'three';
 import { scene } from '../engine/renderer.js';
-import { G, player, shared, enemies } from '../state.js';
+import { G, player, shared, enemies, isGunner } from '../state.js';
 import { crosshairPoint, lastAim } from '../player/aim.js';
 import { playerPos } from '../player/helpers.js';
 import { worldKey } from '../player/players.js';
@@ -47,7 +47,7 @@ function place(slot, x, y, z, foeId){
 export function pingHere(){
   if (G.mode !== 'play' || G.paused || G.gt - lastAt < PING.gap) return;
   lastAt = G.gt;
-  const p = crosshairPoint(G.hero === 'mando' ? player.aimOff.x : 0, G.hero === 'mando' ? player.aimOff.y : 0);
+  const p = crosshairPoint(isGunner() ? player.aimOff.x : 0, isGunner() ? player.aimOff.y : 0);
   const t = lastAim.target, id = t ? (t === shared.boss ? 'B' : t.nid ?? null) : null;
   const at = t && t.group ? t.group.position : p;
   place(net.slot || 0, at.x, at.y, at.z, id);

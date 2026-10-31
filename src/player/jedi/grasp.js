@@ -10,7 +10,7 @@ import { CFG } from '../../data/config.js';
 import { S } from '../../audio/sfx.js';
 import { V3, clamp, TMP } from '../../utils.js';
 import { floater } from '../../fx/floaters.js';
-import { shared, G, enemies, player } from '../../state.js';
+import { shared, G, enemies, player, isGunner } from '../../state.js';
 import { forcePower, fwd, playerPos, stance } from '../helpers.js';
 import { heroAim, inAim, bossInAim } from '../aim.js';
 import { damageEnemy, staggerEnemy } from '../../enemies/damage.js';
@@ -139,7 +139,7 @@ function lockOn(targets){
 export function updateGrasp(dt){
   const c = player.graspCharge;
   if (c && !c.locked){
-    if (G.mode !== 'play' || G.hero === 'mando'){ player.graspCharge = null; }
+    if (G.mode !== 'play' || isGunner()){ player.graspCharge = null; }
     else {
       c.t += dt;
       const g = A(), tgts = graspTargets();

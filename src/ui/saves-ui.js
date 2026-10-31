@@ -27,7 +27,7 @@ function render(){
     const d = readSlot(i);
     if (i === AUTO && !d) continue;
     if (i === AUTO && mode === 'save') continue;   // the autosave is written by the game, not by hand
-    const title = (i === AUTO ? 'AUTOSAVE · ' : '') + (d ? (d.hero === 'mando' ? 'MANDALORIAN' : 'JEDI') + ' · ' + esc(d.where || 'MAIN MENU') : 'EMPTY SLOT');
+    const title = (i === AUTO ? 'AUTOSAVE · ' : '') + (d ? (d.hero === 'trooper' ? 'ARC TROOPER' : d.hero === 'mando' ? 'MANDALORIAN' : 'JEDI') + ' · ' + esc(d.where || 'MAIN MENU') : 'EMPTY SLOT');
     const desc = d ? esc(slotSummary(d)) + ' · ' + when(d.at) : mode === 'save' ? 'Save here' : 'Nothing saved yet';
     let btn = '';
     if (mode === 'save'){
@@ -70,7 +70,7 @@ function load(i){
   closeSaves();
   if (G.mode !== 'menu') goHome();
   loadSlotProgress(d);
-  setHero(d.hero === 'mando' ? 'mando' : 'jedi');
+  setHero(d.hero === 'mando' || d.hero === 'trooper' ? d.hero : 'jedi');   // (a trooper save without ?trooper loads as the Mando: player/hero.js)
   if (d.diff) setDiff(d.diff);
   if (d.missionId) setMission(d.missionId);
   G.resumeRun = d.run ? { ...d.run, hero: G.hero } : null;

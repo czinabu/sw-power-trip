@@ -9,6 +9,8 @@ import { makeStyle } from './styles.js';
 import { resolveLook } from './appearance.js';
 import { JEDI_PARTS } from './jedi.js';
 import { MANDO_PARTS } from './mando.js';
+import { TROOPER_PARTS } from './trooper.js';
+import { TROOPER_TEST } from '../../state.js';
 import { chainGeo, chainWeights, rounded } from './skin.js';
 import { makeCloth } from './cloth.js';
 import { KEEL } from './shapes.js';
@@ -23,6 +25,10 @@ export function buildHeroModel(target, lookIn = {}){
   const jedi = dress(R, S, look.jedi, JEDI_PARTS, target);
   const mando = dress(R, S, look.mando, MANDO_PARTS, target);
   for (const p of mando.parts) p.visible = false;
+  // the clone trooper (testing only: built when the page has ?trooper, or a look asks for it) has its own palette, so
+  // it gets its own style: its suit and cloth never take the Mando's colours
+  const trooper = (TROOPER_TEST || lookIn.withTrooper) ? dress(R, makeStyle(look.style, look.trooper.palette), look.trooper, TROOPER_PARTS, target) : { parts: [] };
+  for (const p of trooper.parts) p.visible = false;
   mountLoadout(R, S, target);
 
   target.vis = R.vis;
@@ -31,6 +37,7 @@ export function buildHeroModel(target, lookIn = {}){
     skirt: R.skirt, flaps: R.flaps, legL: R.legL, legR: R.legR, armL: R.armL, armR: R.armR, sockets: R.sockets,
   };
   target.mandoParts = mando.parts;
+  target.trooperParts = trooper.parts;
   target.headBare = jedi.parts;   // setHero() shows these for the Jedi and hides them for the Mando
   target.look = look;
   R.vis.scale.set(1.18 * MIRROR, 1.18, 1.18);   // mirrored so the weapon hand (armR) is his RIGHT hand

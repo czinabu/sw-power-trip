@@ -38,6 +38,14 @@ export const SQUAD = {
       { name: 'BRUN',  role: 'heavy', model: 'mandalorian', color: 0x8c8f94, eye: 0xffa040, cloth: 0x3a2a4a, scale: 1.06 },
       { name: 'ARLA',  role: 'rifle', model: 'mandalorian', color: 0x4e6e5a, eye: 0xffa040, cloth: 0x6a5a2a },
     ],
+    // the clone trooper's own fire team (testing): the same brothers who fight beside the Jedi, in the legion's blue,
+    // now the trooper's band of deserters
+    trooper: [
+      { name: 'SGT. VANT', role: 'rifle', model: 'clone', color: 0xe4e7ea, eye: 0x5ab8ff, cloth: 0x2f7fd6 },
+      { name: 'BRISK',   role: 'rifle', model: 'clone', color: 0xe4e7ea, eye: 0x5ab8ff, cloth: 0x2f7fd6 },
+      { name: 'HAMMER', role: 'heavy', model: 'clone', color: 0xe4e7ea, eye: 0x5ab8ff, cloth: 0x2f7fd6, scale: 1.06 },
+      { name: 'TALLY',   role: 'rifle', model: 'clone', color: 0xe4e7ea, eye: 0x5ab8ff, cloth: 0x2f7fd6 },
+    ],
   },
   dmg: { padawan: 1.25, knight: 1, master: 0.8 },   // squad bolt damage by difficulty
   takeDmg: 0.8,              // how hard foes hit a squadmate, against how they hit you

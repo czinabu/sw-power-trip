@@ -8,7 +8,7 @@ import { sfx, S } from '../audio/sfx.js';
 import { V3, rand, clamp, TMP } from '../utils.js';
 import { burst } from '../fx/particles.js';
 import { floater, screenFlash } from '../fx/floaters.js';
-import { shared, G, enemies, player } from '../state.js';
+import { shared, G, enemies, player, isGunner } from '../state.js';
 import { MANDO } from '../data/mando.js';
 import { fwd, playerPos, stance, maxHp } from './helpers.js';
 import { flinchEnemy, staggerEnemy } from '../enemies/damage.js';
@@ -42,11 +42,11 @@ export function perfectDodge(fromPos){
   const P = CFG.player.perfectDodge;
   if (G.mode !== 'play' || !fromPos) return false;
   // the same timed window as a parry (opens at the press, same form/skill/difficulty bonuses): a blow that lands in it is perfect
-  const win = CFG.player.parryWindow + P.bonus + (G.hero !== 'mando' ? (stance().parryBonus || 0) + (player.up.parry || 0) : 0) + diffWindow();
+  const win = CFG.player.parryWindow + P.bonus + (!isGunner() ? (stance().parryBonus || 0) + (player.up.parry || 0) : 0) + diffWindow();
   if (G.gt - (player.dashStartT ?? -9) > win || G.gt - (player.lastPerfectT ?? -9) < P.cd) return false;
   player.lastPerfectT = G.gt;
   G.slowmo = Math.min(G.slowmo, P.slowmo); G.slowmoT = Math.max(G.slowmoT, P.slowT);
-  if (G.hero === 'mando'){
+  if (isGunner()){
     player.jet = Math.min(player.jetMax, player.jet + MANDO.boostDash.fuel * P.refund);
     if (player.dodgeKind === 'airdodge') player.jetCharges = Math.min(MANDO_MOBILITY.airDodge.charges, (player.jetCharges ?? 0) + 1);   // the charge back
     player.cds.roll = 0; player.cds.airDodge = 0;
@@ -130,7 +130,7 @@ export function bladeClash(fromPos, foe, at){
   else cancelSwing();
   player.vel.addScaledVector(dir, -C.push * (boss ? 1.4 : 1) / formWeight());   // a heavy form gives less ground
   jarStamina(C.stam);
-  const heavy = !!foe && ((G.hero !== 'mando' && G.stance === 'djemso') || G.hero === 'mando');
+  const heavy = !!foe && ((!isGunner() && G.stance === 'djemso') || isGunner());
   if (heavy) staggerEnemy(foe, dir.x, dir.z, 'CLASH!');
   else {
     if (foe){ flinchEnemy(foe, dir, C.knock * 0.12); knockWeapon(foe, 0.7); }
@@ -157,9 +157,9 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
   const open = player.gbT > 0;   // guard just broken: no soak, catch, block or parry until it passes
   // an empty guard (dry, or already shattered by running dry) meets a heavy melee blow from the front
   let broke = false;
-  const heavyMelee = !!(melee && fromPos && !silent && !chip && !pierce && !open && raw >= CFG.player.flinch.heavyDmg * (G.hero !== 'mando' && stance().breakRes || 1));   // (Makashi stands its ground)
+  const heavyMelee = !!(melee && fromPos && !silent && !chip && !pierce && !open && raw >= CFG.player.flinch.heavyDmg * (!isGunner() && stance().breakRes || 1));   // (Makashi stands its ground)
   // a cut in flight meets a melee strike from in front: CLASH (before any guard, since a swing can't be guarding)
-  if (melee && fromPos && !silent && !(opts && opts.noClash) && player.swing && !player.swing.recoil && player.atkT > 0 && (G.hero !== 'mando' || player.weapon === 'darksaber')){
+  if (melee && fromPos && !silent && !(opts && opts.noClash) && player.swing && !player.swing.recoil && player.atkT > 0 && (!isGunner() || player.weapon === 'darksaber')){
     const k = player.swing.t / player.swing.dur, C = CFG.player.clash;
     TMP.subVectors(fromPos, playerPos()); TMP.y = 0;
     if (k >= C.from && k <= C.to && TMP.lengthSq() > 0.001 && TMP.normalize().dot(fwd()) > 0.2 && bladeClash(fromPos)) return 'clashed';
@@ -174,11 +174,11 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
   // aggressive gunslinger stance with NO damage reduction. The DARKSABER skips this and uses the full lightsaber
   // block/parry path below instead (it guards & parries just like the Jedi medium stance).
   // MANDO — the VAMBRACE CATCH: a blow that lands just after E is turned on the beskar, and the attacker reels
-  if (G.hero === 'mando' && melee && fromPos && !silent && !open && player.catchT > 0){
+  if (isGunner() && melee && fromPos && !silent && !open && player.catchT > 0){
     TMP.subVectors(fromPos, playerPos()); TMP.y = 0;
     if (TMP.lengthSq() < 0.001 || TMP.normalize().dot(fwd()) > -0.2){ mandoCatch(fromPos); return 'parried'; }
   }
-  if (G.hero === 'mando' && player.weapon !== 'darksaber'){
+  if (isGunner() && player.weapon !== 'darksaber'){
     if (!silent && !pierce && !open && mandoShielding() && fromPos){
       TMP.subVectors(fromPos, playerPos()); TMP.y = 0;
       if (TMP.lengthSq() < 0.001 || TMP.normalize().dot(fwd()) > -0.25){
@@ -254,12 +254,12 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
         noteDefense('blocks', fromPos, opts);
         // a block is not a parry: some of a melee blow still gets through the guard
         // DJEM SO — FLUID RIPOSTE: a blow taken square on the held guard readies a counter (a lighter one than a parry's)
-        if (melee && G.hero !== 'mando' && stance().blockRiposte && !(player.riposteT > 0)){
+        if (melee && !isGunner() && stance().blockRiposte && !(player.riposteT > 0)){
           player.riposteT = riposteWindow(CFG.player.riposteTime * 0.7); player.fluidRip = true;
           player.ripLine = (opts && opts.line) || null;
           floater(pp, 'FLUID RIPOSTE', '#c9a0ff');
         }
-        const chipMul = G.hero !== 'mando' ? stance().chipMul ?? 1 : 1;   // (Soresu's guard lets nothing through)
+        const chipMul = !isGunner() ? stance().chipMul ?? 1 : 1;   // (Soresu's guard lets nothing through)
         if (melee && CFG.player.blockChip > 0 && chipMul > 0) hurtPlayer(dmg * CFG.player.blockChip * chipMul, null, true, false, true);
         addFury(stance().furyBlock);
         return 'blocked';
@@ -278,8 +278,8 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
   if (open && !silent && !chip){ player.gbT = 0; }   // the next hit lands in full: the window closes on it
   dmg *= (1 - (player.up.dr || 0));   // UNSTOPPABLE damage reduction
   if (player.boon && player.boon.adrenal && player.hp < maxHp()*0.35) dmg *= 0.75;   // ADRENALINE boon — tougher when cornered
-  if (player.atkT > 0 && G.hero !== 'mando' && stance().atkDR) dmg *= (1 - stance().atkDR);   // DJEM SO: armored commitment mid-swing
-  if (G.hero !== 'mando' && stance().dmgTaken) dmg *= stance().dmgTaken;   // FORM VII gives its defence away for its fury
+  if (player.atkT > 0 && !isGunner() && stance().atkDR) dmg *= (1 - stance().atkDR);   // DJEM SO: armored commitment mid-swing
+  if (!isGunner() && stance().dmgTaken) dmg *= stance().dmgTaken;   // FORM VII gives its defence away for its fury
   if (player.cancelDR > 0) dmg *= 0.55;   // DJEM SO heavy cancel — soaks the blow during its committed recovery
   if (player.barrierT > 0){            // FORCE BARRIER soaks most of what gets through
     dmg *= (1 - abil('barrier').dr);
@@ -292,13 +292,13 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
   noteDamage(dmg, fromPos, opts, chip, silent);
   G.waveDmg = (G.waveDmg || 0) + dmg; if (!chip) G.waveHits = (G.waveHits || 0) + 1;   // a blocked blow's chip doesn't spoil a flawless wave
   player.lastHurt = G.gt;
-  if (G.hero !== 'mando' && !chip) player.focus = (player.focus || 0) * FOCUS.hitLoss;   // FORCE FOCUS — a clean trade is broken when you're hit (not by block chip)
+  if (!isGunner() && !chip) player.focus = (player.focus || 0) * FOCUS.hitLoss;   // FORCE FOCUS — a clean trade is broken when you're hit (not by block chip)
   if (fromPos){ player.hitFrom = V3(fromPos.x, 1.4, fromPos.z); player.dmgIndT = 1.0; }   // THREAT — point the damage arc at the source
   // HIT REACTION — a blow that lands knocks the swing loose and slows your feet for a beat. A short immunity after
   // each flinch stops a pack from stun-locking you, and Djem So's armored commitment shrugs off light hits mid-swing.
   if (!silent && !chip && fromPos){
     const F = CFG.player.flinch, heavyHit = raw >= F.heavyDmg;
-    const armored = player.atkT > 0 && G.hero !== 'mando' && stance().atkDR && !heavyHit;
+    const armored = player.atkT > 0 && !isGunner() && stance().atkDR && !heavyHit;
     if (!broke && !armored && G.gt - (player.flinchAt ?? -9) > F.immune){
       player.flinchT = player.flinchMax = melee ? (heavyHit ? F.heavy : F.light) : F.ranged;
       player.flinchAt = G.gt;
@@ -352,7 +352,7 @@ export function killHero(){
   G.mode = 'dead';
   G.slowmo = 0.2;
   endRun(false);
-  showBanner(G.hero === 'mando' ? 'THE HUNT IS OVER' : 'THE FORCE FALLS SILENT', '', 999);
+  showBanner(isGunner() ? 'THE HUNT IS OVER' : 'THE FORCE FALLS SILENT', '', 999);
   setTimeout(()=>{
     if (G.mode !== 'dead') return;
     document.exitPointerLock();

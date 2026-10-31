@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { CFG } from '../../data/config.js';
 import { scene, camera, compileLive } from '../../engine/renderer.js';
 import { rand } from '../../utils.js';
-import { G, player } from '../../state.js';
+import { G, player, isGunner } from '../../state.js';
 import { inkSprite } from '../../fx/ink.js';
 
 /* ---------- Force Judgement lightning visuals (pooled ribbons) ----------
@@ -80,7 +80,7 @@ export function updateJudgeFX(){
   for (let i = 0; i < judgeLines.length; i++){
     const ln = judgeLines[i];
     // saber holstered: both palms throw it (line pairs share a target, left then right); otherwise the off-hand alone
-    const two = player.holstered && G.hero !== 'mando', right = two && (i & 1) === 1;
+    const two = player.holstered && !isGunner(), right = two && (i & 1) === 1;
     const tgt = active ? player.judgeTargets[two ? i >> 1 : i] : null;
     if (!tgt || (!two && i >= judgeLines.length / 2)){ ln.visible = false; continue; }
     ln.visible = true;

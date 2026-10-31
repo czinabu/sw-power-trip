@@ -57,14 +57,18 @@ export const TRAINING_LEVELS = {
           arena: 48, floor: 0x9a948a, fog: 0xc4b8c0, sky: 0x35609e, layout: 'hall', waves: [], hazards: {} },
   mando: { name: 'TRAINING — THE ARMORER\'S FORGE', sub: 'The covert hides its forge from the stars.',
            arena: 48, floor: 0x55504c, fog: 0x3a2420, sky: 0x060814, layout: 'forge', waves: [], hazards: {} },
+  // the clone trooper (testing): the band's hidden range, laid out on the forge's yard until it has a place of its own
+  trooper: { name: 'TRAINING — THE HIDDEN RANGE', sub: 'Deserters keep their edge where no one is looking.',
+           arena: 48, floor: 0x4c5056, fog: 0x1c2a36, sky: 0x060a14, layout: 'forge', waves: [], hazards: {} },
 };
 
-export const TEACHER = { jedi: 'THE BATTLEMASTER', mando: 'THE ARMORER' };
-export const BEACON = { jedi: 0x5ad2ff, mando: 0xffa040 };
+export const TEACHER = { jedi: 'THE BATTLEMASTER', mando: 'THE ARMORER', trooper: 'THE CAPTAIN' };
+export const BEACON = { jedi: 0x5ad2ff, mando: 0xffa040, trooper: 0x4aa8ff };
 // the board's group names: the basics, then what the story opens
 export const LESSON_GROUPS = {
   jedi:  { basics: 'THE BASICS', more: 'THE FORMS AND POWERS', sealed: 'A FORM NOT YET LEARNED', sealedPower: 'A POWER NOT YET EARNED' },
   mando: { basics: 'THE BASICS', more: 'THE ARSENAL', sealed: 'GEAR NOT YET FORGED', sealedPower: 'GEAR NOT YET FORGED' },
+  trooper: { basics: 'THE BASICS', more: 'THE DRILLS', sealed: 'NOT YET ISSUED', sealedPower: 'NOT YET ISSUED' },
 };
 
 const CIRCLE = [[-2.2, -2.5], [0, -3.2], [2.2, -2.5]];   // three spots across the duelling circle, facing the player
@@ -423,6 +427,55 @@ export const LESSONS = {
           keys: 'Z', do: 'Fire the jetpack missile at the targets', use: ['cd', 'missile'], need: 1, respawn: true, spawn: dummies([[-2, -10], [2, -10], [0, -11]]) },
       ] },
   ],
+  // the clone ARC trooper (testing): the basics on the forge yard's layout (world/arenas/forge.js), taught by the Captain
+  trooper: [
+    { id: 'yard', group: 'basics', name: 'ON YOUR FEET', sub: 'Move, vault, roll, strafe and slide',
+      done: 'Good. You still move like an ARC. Now show me you still shoot like one.',
+      steps: [
+        { sec: 'ON YOUR FEET', say: 'On your feet, trooper. No jetpacks in this outfit. To the marker.',
+          keys: 'W A S D · MOUSE', do: 'Walk to the marker', reach: [0, 3.6] },
+        { say: 'Cover is for hiding behind, until it is in your way. Then go over it.',
+          keys: 'W · SPACE', do: 'Run right up to a crate on the west lane and press SPACE at its edge', ev: 'vault', need: 1, mark: [-11, 8] },
+        { say: 'When they shoot, be somewhere else.',
+          keys: 'SHIFT', do: 'Combat roll (SHIFT)', ev: 'dash', need: 2 },
+        { say: 'Keep your muzzle on the target and your feet moving.',
+          keys: 'HOLD ALT + A / D / S', do: 'Strafe: hold ALT and sidestep or backpedal while you keep facing the crosshair', poll: 'strafe', need: 1.5 },
+        { say: 'Low bar on the north lane. Slide it.',
+          keys: 'W · C', do: 'Run at the bar and slide under it', ev: 'slide', need: 1, mark: [-7, 11] },
+      ] },
+    { id: 'rifle', group: 'basics', name: 'THE DC-15', sub: 'Bursts, aim, headshots and the active vent',
+      done: 'Bursts, aim, and the vent on the beat. That is how we stayed alive.',
+      steps: [
+        { sec: 'THE DC-15', say: 'Three bolts a trigger pull. Put them on the head.',
+          keys: 'LMB', do: 'Land 3 headshots on the targets', ev: 'headshot', need: 3, respawn: true, mark: [0, -6],
+          spawn: dummies([[-4, -14], [0, -15], [4, -14]]) },
+        { say: 'Bring it up to your eye when it counts. The cone closes and the reticle settles.',
+          keys: 'HOLD RMB · LMB', do: 'Aim in and drop a target', ev: 'kill', need: 1, respawn: true, spawn: dummies([[0, -15]]) },
+        { say: 'Run it hot. When it locks, wait for the beat and hit R: do it right and the coils clear at once.',
+          keys: 'LMB · R', do: 'Overheat the rifle, then vent it with R (on the beat clears it at once)', ev: 'vent', need: 1 },
+      ] },
+    { id: 'pistols', group: 'basics', name: 'TWIN DC-17s', sub: 'A pistol in each hand, a gun on each button',
+      done: 'Two guns, two targets. Rex would be proud.',
+      steps: [
+        { sec: 'TWIN DC-17s', say: 'Sidearms. Left button, right pistol. Right button, left pistol. Work them both.',
+          keys: '2 · LMB · RMB', do: 'Switch to the twin DC-17s and drop 3 targets', ev: 'kill', need: 3, respawn: true,
+          spawn: dummies([[-5, -10], [5, -10], [0, -12]]) },
+        { say: 'They fire out of a roll. Never stop shooting.',
+          keys: 'SHIFT · LMB', do: 'Roll, firing as you come up', ev: 'dash', need: 1 },
+      ] },
+    { id: 'close', group: 'basics', name: 'GRENADES AND THE STOCK', sub: 'Frag out, and the rifle bash',
+      done: 'That is the basics. The rest you learn with the squad.',
+      steps: [
+        { sec: 'FRAG OUT', say: 'Frag on the cluster. Aim low to drop it close, high to throw it long.',
+          keys: 'G', do: 'Throw a frag grenade into the group', ev: 'grenade', need: 1,
+          spawn: dummies([[-1, -11], [1, -11], [0, -12.5]]) },
+        { say: 'Too close to shoot? Hit them with the stock.',
+          keys: 'E', do: 'Bash the target with the rifle', ev: 'kick', need: 2, respawn: true, spawn: dummies([[0, -4]], { sparring: true }) },
+        { say: 'Now all of it, on a live target.',
+          keys: 'LMB · G · E', do: 'Take down the trooper', ev: 'kill', of: 'blaster', need: 1,
+          spawn: [{ type: 'blaster', at: [9, 6], rooted: true }] },
+      ] },
+  ],
 };
 
 /* UNLOCK DRILLS — in a real run, a newly earned ability gets one line and a moment to try it (game/tutorial.js).
@@ -456,4 +509,5 @@ export const DRILLS = {
     darksaber:  { say: 'The Darksaber. It is not the blade that is strong, but the one who wields it. Throw it, and your line will bring it home.', key: '3 · RMB + LMB', use: ['weapon', 'darksaber'] },
     disruptor:  { say: 'The disruptor. One shot, nothing left.', key: '3', use: ['weapon', 'disruptor'] },
   },
+  trooper: {},   // (testing: the trooper earns nothing in a run yet)
 };

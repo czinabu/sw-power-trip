@@ -7,7 +7,7 @@
 // while it is up, the same way those do.
 
 import { autosave } from './autosave.js';
-import { G, shared } from '../state.js';
+import { G, shared, isGunner } from '../state.js';
 import { renderer } from '../engine/renderer.js';
 import { audioInit, S } from '../audio/sfx.js';
 import { MUSIC } from '../audio/music.js';
@@ -25,7 +25,7 @@ let trainHook = () => {};
 export function setTrainHook(fn){ trainHook = fn; }   // ui/menus.js: leave the run for the training lesson on a form
 
 // a run that stops to meditate: the campaign and survival (not the training grounds, a lone mission or the sandbox)
-export const formsTaught = () => G.hero !== 'mando' && !G.training && !G.sandbox && !(G.mission && G.chapter < 0);
+export const formsTaught = () => !isGunner() && !G.training && !G.sandbox && !(G.mission && G.chapter < 0);
 export const meditationUp = () => el.classList.contains('open');
 
 // the forms the hero knows, in lore order

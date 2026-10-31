@@ -14,7 +14,7 @@ import { sfx, S } from '../audio/sfx.js';
 import { V3, rand, TMP, clamp } from '../utils.js';
 import { burst } from '../fx/particles.js';
 import { floater } from '../fx/floaters.js';
-import { shared, G, enemies, bolts, rings, player } from '../state.js';
+import { shared, G, enemies, bolts, rings, player, isGunner } from '../state.js';
 import { fwd, playerPos } from '../player/helpers.js';
 import { SCALE, heroScale } from '../data/coop.js';
 import { heroesHere } from '../player/players.js';
@@ -40,7 +40,7 @@ import { queueHit, hooks } from '../net/run.js';
    ============================================================ */
 export function spawnBoss(){
   const half = shared.arenaHalfZ || LEVELS[G.levelIdx].arena/2;   // (the arena built: a chapter can stage a level on its own map)
-  const mando = G.hero === 'mando';
+  const mando = isGunner();
   const kind = mando ? 'mando' : 'sith';
   const hp = Math.round((mando ? BOSS_MANDO.hp : BOSS_CFG.hp) * diffHpMul() * heroScale(SCALE.bossHp, heroesHere()));   // DIFFICULTY scales the boss too
   const g = buildBoss(kind);

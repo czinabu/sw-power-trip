@@ -2,6 +2,7 @@
 // Mandalorian kit tuning (MANDO, MANDO_WEAPONS) plus Jedi Force-jump tuning.
 
 import { G, player } from '../state.js';
+import { TROOPER_WEAPONS } from './trooper.js';
 
 /* ---------- MANDALORIAN loadout ---------- */
 export const HEADSHOT_MULT = 2.4;   // a blaster bolt to the head zone hits this much harder
@@ -74,6 +75,7 @@ export const MANDO_WEAPONS = {
                stabTime: 0.34, stabHit: 0.3, stabCd: 0.38, stabQueue: 0.14, stabLunge: 9 },
   darksaber: { name: 'DARKSABER', fire: 'saber', melee: true },                              // LMB slash; unlocked at the wave-5 fork
   fists:     { name: 'HOLSTERED', fire: 'fists', melee: true },                              // 4: weapon holstered, LMB throws the close-quarters string (not in the wheel)
+  ...TROOPER_WEAPONS,                                                                       // the clone trooper's DC-15 and twin DC-17s (data/trooper.js)
 };
 export const MANDO_WEAPON_ORDER = ['single', 'dual', 'disruptor', 'darksaber'];
 // JEDI aerial Force-control — only kicks in when you HOLD space (a tap is just a normal jump). The TAKEOFF
@@ -91,4 +93,5 @@ export function forceJumpPow(){   // scales with the auto-leveled Force-jump tie
            holdCost: [9, 7.5, 6][t]    || 9,       // slow drain/sec while still rising
            glideCost:[4, 3.5, 3][t]    || 4 };     // even slower drain/sec while gliding down
 }
-export function weaponUnlocked(name){ return name === 'disruptor' ? !!G.unlocked.disruptor : name === 'darksaber' ? !!player.up.darksaber : name === 'dual' ? !!G.unlocked.dual : true; }
+export function weaponUnlocked(name){ const tw = !!TROOPER_WEAPONS[name]; if (tw || G.hero === 'trooper') return tw && G.hero === 'trooper';   // each gunner holds only its own guns
+  return name === 'disruptor' ? !!G.unlocked.disruptor : name === 'darksaber' ? !!player.up.darksaber : name === 'dual' ? !!G.unlocked.dual : true; }

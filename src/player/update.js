@@ -9,7 +9,7 @@ import { sfx } from '../audio/sfx.js';
 import { V3, rand, clamp } from '../utils.js';
 import { burst } from '../fx/particles.js';
 import { floater, screenFlash } from '../fx/floaters.js';
-import { shared, G, player } from '../state.js';
+import { shared, G, player, isGunner, isMando } from '../state.js';
 import { fwd, rightV, playerPos, stance, maxHp, maxStam } from './helpers.js';
 import { focusRegenMul, updateFocus } from './jedi/focus.js';
 import { barrierShove, mendComplete, updateJudgement, updateJumpAttack } from './jedi/force.js';
@@ -27,6 +27,7 @@ import { updateDashCharges } from './mobility.js';
 import { updateJetCharges } from './mando/mobility.js';
 import { updateForceStrike } from './jedi/palm.js';
 import { noteStamina } from '../game/readout.js';
+import { updateTrooperKit } from './trooper/kit.js';
 
 // Per-frame player update. Each step below runs in this exact order every frame; the order matters
 // (e.g. movement feeds the jetpack, both feed gravity/landing, and the pose reads the landed state).
@@ -37,10 +38,10 @@ export function updatePlayer(dt){
   updateLockOn(dt);   // a soft lock steers the view before anything reads fwd()
   const f = fwd(), r = rightV();
   const moving = updateMovement(dt, pp, st, f, r);
-  if (G.hero === 'mando'){
+  if (isGunner()){
     updateMandoCombat(dt, f, r);
-    updateMandoFlight(dt, pp, f, r);
-    updateJetSlam(dt);    // the jetpack slam's wind-up and plunge (mando/gadgets.js)
+    if (isMando()){ updateMandoFlight(dt, pp, f, r); updateJetSlam(dt); }
+    else updateTrooperKit(dt);   // the trooper's frag charges and bash cooldown   // (the trooper fights on foot: no jetpack)    // the jetpack slam's wind-up and plunge (mando/gadgets.js)
   } else updateForceStrike(dt);   // the holstered Force strike string (jedi/palm.js)
   updateForceJump(dt, pp, f, r);
   updateGravityAndLanding(dt, pp);
@@ -95,7 +96,7 @@ function updatePlayerMeters(dt, pp, st){
     if (player.mendT <= 0) mendComplete();
   }
   updateJudgement(dt);
-  if (G.hero !== 'mando'){ updateJumpAttack(dt); updateAirCut(dt); updateGrasp(dt); }   // the jump attack's wind-up, the aerial cut, the Force grasp
+  if (!isGunner()){ updateJumpAttack(dt); updateAirCut(dt); updateGrasp(dt); }   // the jump attack's wind-up, the aerial cut, the Force grasp
   if (player.momentumT > 0){ player.momentumT -= dt; if (player.momentumT <= 0) player.momentumStacks = 0; }   // MOMENTUM boon decay
   updateFocus(dt);   // FORCE FOCUS meter (decay/ebb/tier-ups)
   if (player.dmgIndT > 0) player.dmgIndT -= dt * 1.6;   // THREAT — fade the directional damage arc
@@ -124,7 +125,7 @@ function updatePlayerMeters(dt, pp, st){
   // danger vignette + rising heartbeat as the bar runs low (Jedi stamina only — Mando uses this bar for JET FUEL)
   const sv = document.getElementById('stamvig');
   const smbar = document.getElementById('smbar');
-  if (G.hero === 'mando'){ sv.style.opacity = '0'; }
+  if (isGunner()){ sv.style.opacity = '0'; }
   else if (stamFrac < 0.32 || player.exhausted){
     const base = player.exhausted ? 0.9 : (0.32 - stamFrac) / 0.32;
     sv.style.opacity = (base * (0.6 + 0.4 * Math.sin(G.gt * 11))).toFixed(2);

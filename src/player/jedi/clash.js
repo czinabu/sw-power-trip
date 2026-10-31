@@ -6,7 +6,7 @@ import { CFG } from '../../data/config.js';
 import { DUEL } from '../../data/duel.js';
 import { sfx } from '../../audio/sfx.js';
 import { clashSparks } from '../../fx/ink.js';
-import { shared, G, enemies, player } from '../../state.js';
+import { shared, G, enemies, player, isGunner } from '../../state.js';
 import { playerPos, stance } from '../helpers.js';
 import { cutLine, duelDefend, isGuarding } from '../../enemies/duel.js';
 import { bladeClash, jarStamina } from '../damage.js';
@@ -141,7 +141,7 @@ export function meetBlades(sw, pts){
       if (bladeClash(g, e, cp)) return true;
       continue;
     }
-    const isDark = G.hero === 'mando' && player.weapon === 'darksaber';
+    const isDark = isGunner() && player.weapon === 'darksaber';
     const res = duelDefend(e, cutLine(sw), sw.step === 2 ? 'finisher' : 'cut', G.stance === 'djemso' || isDark, cp);
     (sw.duel || (sw.duel = new Map())).set(e, res);
     if (res === 'block'){ bounceOff(e, cp); return true; }

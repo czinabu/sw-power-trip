@@ -5,7 +5,7 @@ import { CFG } from '../data/config.js';
 import { sfx, S } from '../audio/sfx.js';
 import { V3, clamp } from '../utils.js';
 import { burst } from '../fx/particles.js';
-import { shared, G, solids, keys, player } from '../state.js';
+import { shared, G, solids, keys, player, isGunner } from '../state.js';
 import { DJUMP_FORCE, WALLKICK_FORCE } from '../data/mando.js';
 import { fwd, rightV, playerPos, stance } from './helpers.js';
 import { cancelSwing } from './jedi/combat.js';
@@ -67,7 +67,7 @@ export function forceDash(){
   player.cds.dash = MOBILITY.dash.gap;
   player.dashT = A.time; player.dashStartT = G.gt;   // PERFECT DODGE reads the dash's start (player/damage.js)
   player.dodgeKind = 'dash'; player.dashSpent = fight;   // a perfect dodge gives a spent charge back
-  if (G.hero !== 'mando' && stance().swoop) player.momentum = { kind: 'swoop', until: G.gt + A.time + 0.5 };   // ATARU: cut out of it for the Hawk-Bat Swoop (jedi/combat.js)
+  if (!isGunner() && stance().swoop) player.momentum = { kind: 'swoop', until: G.gt + A.time + 0.5 };   // ATARU: cut out of it for the Hawk-Bat Swoop (jedi/combat.js)
   tutEvent('dash');
   const dir = V3(0,0,0);
   if (keys['w']) dir.add(fwd());
@@ -96,7 +96,7 @@ export function doJump(){
                  && G.gt - (player.lastJumpT ?? -9) > MOVE.coyote;
   const onGround = player.grounded || coyote;
   if (onGround && !player.blockHeld && tryVault(playerPos())) return;   // running at low cover: up and over it
-  if (G.hero === 'mando'){
+  if (isGunner()){
     // a ground hop to kick off the ground; sustained flight is HOLD SPACE (jetpack in updatePlayer)
     if (onGround){
       // out of a slide: a long, low hop that keeps the slide's speed (data/mobility.js MANDO_MOBILITY.slide.hop)

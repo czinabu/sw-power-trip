@@ -1,7 +1,7 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
 // MUSIC: the adaptive synthesized score.
 
-import { shared, G, enemies } from '../state.js';
+import { shared, G, enemies, isGunner } from '../state.js';
 import { AE } from './engine.js';
 
 /* ---------- procedural MUSIC engine ----------
@@ -337,7 +337,7 @@ export const MUSIC = (function(){
   // palette, section, tempo and hero only ever change on a downbeat
   function barTop(){
     if (want !== palName){ palName = want; pal = PALETTES[want] || PALETTES.menu; step = 0; }
-    const hk = G.hero === 'mando' ? 'mando' : 'jedi';
+    const hk = isGunner() ? 'mando' : 'jedi';
     if (hk !== heroKey){ heroKey = hk; if (section === 'hero') step = 0; }   // a new hero picked: their theme from the top
     const C = liveCue(), b = shared.boss;
     const lift = palName === 'menu' || (C ? C.lift != null && drive.urgency >= C.lift

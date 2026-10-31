@@ -10,7 +10,7 @@ import { floater } from '../fx/floaters.js';
 import { V3 } from '../utils.js';
 import { burst } from '../fx/particles.js';
 import { S } from '../audio/sfx.js';
-import { shared, G, keys, enemies, player } from '../state.js';
+import { shared, G, keys, enemies, player, isGunner } from '../state.js';
 import { fwd, rightV, playerPos, stance } from './helpers.js';
 import { cancelSwing } from './jedi/combat.js';
 import { flipStyle, launchFlip, formNow } from './anim/agility.js';
@@ -31,7 +31,7 @@ export function inCombat(){
   _c = false;
   if (shared.boss && shared.boss.hp > 0) return (_c = true);
   if (G.gt - (player.lastHurt ?? -9) < C.linger || G.gt - (player.lastStrikeT ?? -9) < C.linger) return (_c = true);
-  const range = G.hero === 'mando' ? MANDO_MOBILITY.combat.range : C.range;
+  const range = isGunner() ? MANDO_MOBILITY.combat.range : C.range;
   const pp = playerPos(), r2 = range * range;
   for (const e of enemies){
     if (e.dead || e.converted || e.state === 'spawn') continue;
@@ -41,13 +41,13 @@ export function inCombat(){
   return _c;
 }
 // airborne in a fight: the moment the mid-air rules (data/mobility.js MOBILITY.air) apply
-export const airborneInCombat = () => G.hero !== 'mando' && !player.grounded && !player.wallRun && !player.hang && !player.mantle && inCombat();
+export const airborneInCombat = () => !isGunner() && !player.grounded && !player.wallRun && !player.hang && !player.mantle && inCombat();
 
 /* DASH CHARGES — the most you hold, and a tick that refills them one at a time (faster out of a fight). A form
    switch that lowers the cap keeps what you had up to the new cap. */
 export const maxCharges = () => formMob().charges ?? MOBILITY.dash.charges;
 export function updateDashCharges(dt){
-  if (G.hero === 'mando') return;
+  if (isGunner()) return;
   const max = maxCharges();
   if (player.dashCharges == null) player.dashCharges = max;
   if (player.dashCharges > max) player.dashCharges = max;
@@ -103,7 +103,7 @@ export function groundRoll(){
   player.rollT = R.time; player.rollAt = G.gt;
   player.cds.roll = R.time + R.cd * (F.cd || 1);
   player.swingLock = Math.max(player.swingLock || 0, R.time * 0.6 + R.swingLock);
-  if (G.hero !== 'mando' && stance().swoop) player.momentum = { kind: 'swoop', until: G.gt + R.time + 0.5 };   // ATARU: SHIFT in a fight rolls, and a cut out of the roll is the Hawk-Bat Swoop too (jedi/combat.js)
+  if (!isGunner() && stance().swoop) player.momentum = { kind: 'swoop', until: G.gt + R.time + 0.5 };   // ATARU: SHIFT in a fight rolls, and a cut out of the roll is the Hawk-Bat Swoop too (jedi/combat.js)
   tutEvent('dash');   // the dodge lessons count a roll as a dash
   launchFlip({ ...flipStyle('roll', dd), t: 0, dur: R.time, side: side ? (drr >= 0 ? 1 : -1) : 1 }, dd);
   burst(playerPos().clone().setY(0.25), 0xb9c2cc, 6, 3, 1.5, 0.8);

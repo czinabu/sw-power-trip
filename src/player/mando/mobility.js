@@ -5,7 +5,7 @@
 import { MANDO_MOBILITY as MM, MOBILITY } from '../../data/mobility.js';
 import { V3 } from '../../utils.js';
 import { sfx, S } from '../../audio/sfx.js';
-import { G, keys, player } from '../../state.js';
+import { G, keys, player, isGunner, isMando } from '../../state.js';
 import { fwd, rightV, playerPos } from '../helpers.js';
 import { sparks, puff } from '../../fx/ink.js';
 import { burst } from '../../fx/particles.js';
@@ -47,7 +47,7 @@ export function mandoShift(){
 function jetDive(fl){
   const J = MM.dive.jet;
   player.shiftGround = false;
-  if (fl.jet || player.jet < J.fuel || player.darkT > 0) return false;
+  if (!isMando() || fl.jet || player.jet < J.fuel || player.darkT > 0) return false;
   fl.jet = true;
   player.jet -= J.fuel;
   const dir = V3(fl.dx, 0, fl.dz);
@@ -94,7 +94,7 @@ export function mandoDive(){
 
 /* JET CHARGES — the air dodge spends one; they refill one at a time, faster out of a fight. */
 export function updateJetCharges(dt){
-  if (G.hero !== 'mando') return;
+  if (!isMando()) return;
   const A = MM.airDodge;
   if (player.jetCharges == null || player.jetCharges > A.charges) player.jetCharges = A.charges;
   if (player.jetCharges >= A.charges){ player.jetRecharge = 0; return; }

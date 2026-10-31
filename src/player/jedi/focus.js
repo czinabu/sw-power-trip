@@ -5,7 +5,7 @@ import { sfx } from '../../audio/sfx.js';
 import { V3, clamp } from '../../utils.js';
 import { burst } from '../../fx/particles.js';
 import { floater, screenFlash } from '../../fx/floaters.js';
-import { G, player } from '../../state.js';
+import { G, player, isGunner } from '../../state.js';
 import { playerPos } from '../helpers.js';
 
 /* ============================================================
@@ -24,14 +24,14 @@ export const FOCUS = {
   names: ['', 'FOCUSED', 'ATTUNED', 'UNLEASHED'],
 };
 export function focusTier(){ const f = player.focus || 0; return f >= FOCUS.thresh[2] ? 3 : f >= FOCUS.thresh[1] ? 2 : f >= FOCUS.thresh[0] ? 1 : 0; }
-export function focusDmgMul(){ return G.hero === 'mando' ? 1 : FOCUS.dmg[focusTier()]; }
-export function freeRiposte(){ return G.hero !== 'mando' && focusTier() >= 3; }
+export function focusDmgMul(){ return isGunner() ? 1 : FOCUS.dmg[focusTier()]; }
+export function freeRiposte(){ return !isGunner() && focusTier() >= 3; }
 export function riposteWindow(base){ return freeRiposte() ? base + FOCUS.ripBonus : base; }
-export function focusRegenMul(){ return G.hero === 'mando' ? 1 : FOCUS.regen[focusTier()]; }
-export function focusMoveMul(){ return G.hero === 'mando' ? 1 : FOCUS.move[focusTier()]; }
-export function addFocus(n){ if (G.hero === 'mando' || G.mode !== 'play') return; player.focus = clamp((player.focus || 0) + n, 0, 100); player.focusHitT = 0; }
+export function focusRegenMul(){ return isGunner() ? 1 : FOCUS.regen[focusTier()]; }
+export function focusMoveMul(){ return isGunner() ? 1 : FOCUS.move[focusTier()]; }
+export function addFocus(n){ if (isGunner() || G.mode !== 'play') return; player.focus = clamp((player.focus || 0) + n, 0, 100); player.focusHitT = 0; }
 export function updateFocus(dt){
-  if (G.hero === 'mando') return;
+  if (isGunner()) return;
   player.focusHitT = (player.focusHitT || 0) + dt;
   const t = focusTier();
   const drain = t >= 3 ? FOCUS.ebb : (player.focusHitT > 1.6 ? FOCUS.decay : 0);   // top tier ebbs; else decays out of combat

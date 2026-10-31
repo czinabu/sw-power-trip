@@ -89,6 +89,27 @@ const CONTROLS = {
       ['Z', 'Jetpack missile', 'The final upgrade'],
     ]},
   ],
+  // the clone ARC trooper (testing only: player/trooper/kit.js)
+  trooper: [
+    { title: 'MOVE', rows: [
+      ['W A S D', 'Move'],
+      ['MOUSE', 'Aim'],
+      ['SPACE', 'Jump', 'Run and jump at low cover to vault it; jump at a ledge to climb · no jetpack: the trooper fights on foot'],
+      ['SHIFT', 'Combat roll', 'A dive any way you press, invulnerable through the throw, and the gun stays on target'],
+      ['C', 'Slide', 'Feet first out of a run, firing as you go'],
+      ['HOLD ALT', 'Strafe', 'Stay square to the crosshair while you move'],
+    ]},
+    { title: 'FIGHT', rows: [
+      ['LMB', 'Fire', 'DC-15: a three-bolt burst · twin DC-17s: the right-hand pistol · headshots hit far harder'],
+      ['HOLD RMB', 'Aim / left pistol', 'DC-15: up to the eye, a tight cone and a steady reticle · twin DC-17s: RMB fires the left-hand pistol, so each button is one gun'],
+      ['R', 'Vent', 'Overheated: press R in the beat (a moment after the overheat) for a perfect vent that clears the gun at once · too early or late and it jams · not overheated: a plain vent'],
+      ['1 / 2', 'Switch gun', 'DC-15 rifle or the twin DC-17s · or the mouse wheel'],
+      ['G', 'Frag grenade', 'Thrown onto the crosshair · two charges that refill one at a time'],
+      ['E', 'Rifle bash', 'A shove with the stock: staggers whoever is right in front and cracks a duellist\'s guard'],
+      ['H', 'Squad orders', 'TAP: on a trooper, the squad attacks it · on open ground, they move there · tap again to bring them back on you · HOLD: the command wheel (the world slows)'],
+      ['N', 'Ping', 'Co-op: marks the spot or the foe under your crosshair for the other players'],
+    ]},
+  ],
 };
 const TIPS = {
   jedi: [
@@ -118,6 +139,11 @@ const TIPS = {
     'Hold RMB with the single blaster to raise a shield that deflects bolts. Firing drops it; it comes back half a second after you stop. Press E behind it to cut with the vibroblade and bash with the shield, which keeps it up but spends stamina.',
     '<b>Sith acolytes</b> bat blaster fire back. Close in: punch through their guard, charge them with W + E, catch their cuts with E and finish them with a takedown.',
     'Your gadgets <b>master themselves</b> as you use them, and the story hands you new gear. Every 500 <b>XP</b> earns a <b>skill point</b>: spend them on weapon upgrades when a chapter ends.',
+  ],  trooper: [
+    '<b>The ARC trooper is in testing.</b> Its own abilities, story and customizer are still to come.',
+    '<b>Pause</b> with TAB (or ESC); TAB or ENTER resumes.',
+    '<b>Heat</b> is the gauge beside your reticle. Overheat, and R pressed in the beat clears it at once.',
+    'Your squad of clones holds ground while you lead: tap <b>H</b> on a foe to focus it, hold H for every order.',
   ],
 };
 
@@ -125,6 +151,7 @@ import { TELLS, tellCss } from '../fx/tells.js';
 import { formOffered, refreshSandboxScope } from '../game/sandbox-unlocks.js';
 import { PAD_BINDS, PAD_GLYPHS, PAD_MENU } from '../data/gamepad.js';
 import { pad } from '../engine/gamepad.js';
+import { TROOPER_TEST } from '../state.js';
 
 let showAll = false, device = 'kb';
 export function toggleControlsDetail(hero){ showAll = !showAll; renderControls(hero); }
@@ -133,7 +160,7 @@ export function setControlsDevice(d){ device = d; }
 /* the controller layout, straight from the binds (data/gamepad.js), so it can't drift from what the pad does */
 const PAD_ORDER = ['RT', 'LT', 'A', 'B', 'X', 'Y', 'RB', 'LB', 'L3', 'R3', 'LEFT', 'UP', 'RIGHT', 'DOWN', 'VIEW'];
 function padGroups(hero){
-  const B = PAD_BINDS[hero] || PAD_BINDS.jedi, gl = PAD_GLYPHS[pad.family];
+  const B = PAD_BINDS[hero] || (hero === 'trooper' ? PAD_BINDS.mando : PAD_BINDS.jedi), gl = PAD_GLYPHS[pad.family];
   const row = (name, b) => [gl[name], b.label, b.note];
   return [
     { title: 'STICKS', rows: [[gl.LS, 'Move', 'Steers any way, at the stick\'s angle'], [gl.RS, hero === 'mando' ? 'Aim' : 'Look',
@@ -154,7 +181,7 @@ export function renderControls(hero){
   // a tip's `forms`: all of them)
   refreshSandboxScope();
   const knows = (ids, any) => !ids || (any ? ids.some(formOffered) : ids.every(formOffered));
-  const tips = TIPS[hero].filter(t => typeof t === 'string' || knows(t.forms)).map(t => typeof t === 'string' ? t : t.t);
+  const tips = (TIPS[hero] || TIPS.jedi).filter(t => typeof t === 'string' || knows(t.forms)).map(t => typeof t === 'string' ? t : t.t);
   let html = '';
   for (const g of groups){
     html += '<div class="cg"><h4>' + g.title + '</h4>';
@@ -173,7 +200,8 @@ export function renderControls(hero){
   const tabs = document.getElementById('howtohero');
   if (tabs){
     tabs.innerHTML = '<span data-h="jedi" class="' + (hero === 'jedi' ? 'on' : '') + '">JEDI</span>' +
-                     '<span data-h="mando" class="' + (hero === 'mando' ? 'on' : '') + '">MANDALORIAN</span>';
+                     '<span data-h="mando" class="' + (hero === 'mando' ? 'on' : '') + '">MANDALORIAN</span>' +
+                     (TROOPER_TEST ? '<span data-h="trooper" class="' + (hero === 'trooper' ? 'on' : '') + '">ARC TROOPER</span>' : '');   // (testing only)
     const devs = document.getElementById('howtodev');
     if (devs) devs.innerHTML = '<span data-dev="kb" class="' + (device === 'kb' ? 'on' : '') + '">KEYBOARD</span>' +
                                '<span data-dev="pad" class="' + (device === 'pad' ? 'on' : '') + '">CONTROLLER</span>';

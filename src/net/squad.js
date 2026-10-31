@@ -5,7 +5,7 @@
 // pointed where the guest pointed. ON ME from the guest has the squad form up on the guest. A squadmate runs to whichever
 // hero is down, and the guest calling in reinforcements calls them in on the host.
 
-import { G, shared, bolts } from '../state.js';
+import { G, shared, bolts, isGunner, isMando } from '../state.js';
 import { V3 } from '../utils.js';
 import { fireBolt } from '../enemies/bolts.js';
 import { throwGrenade, grenades } from '../enemies/grenades.js';
@@ -25,7 +25,7 @@ let sentAt = 0, hostSent = false, heardAt = 0;
 squadLink.partner = (slot) => (asHost() ? partnerSpot(slot) : null);
 squadLink.shot = (m, d, speed) => {
   if (!asHost()) return;
-  send({ t: 'sqb', p: [r2(m.x), r2(m.y), r2(m.z)], d: [r2(d.x), r2(d.y), r2(d.z)], s: speed, c: G.hero === 'mando' ? 0xffa040 : 0x4aa8ff });
+  send({ t: 'sqb', p: [r2(m.x), r2(m.y), r2(m.z)], d: [r2(d.x), r2(d.y), r2(d.z)], s: speed, c: isMando() ? 0xffa040 : 0x4aa8ff });
 };
 squadLink.lob = (from, at) => {
   if (!asHost()) return;

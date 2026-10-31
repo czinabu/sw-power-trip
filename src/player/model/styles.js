@@ -37,6 +37,10 @@ export const MATERIALS = {
   visor:   { c: 0x07090c, r: 0.15, m: 0.8, e: 0x0c2630, ei: 0.6 },
   cloth:   { c: 0x7b6b52, r: 0.96, side: THREE.DoubleSide },
   strap:   { c: 0x3a2e22, r: 0.8 },
+  // Clone trooper (its own style: model/trooper.js)
+  plate:   { c: 0xe8e8e3, r: 0.42, m: 0.12 },
+  grey:    { c: 0x26282c, r: 0.6,  m: 0.2 },
+  mark:    { c: 0x2f7fd6, r: 0.5,  m: 0.1 },
   // weapons
   gunDark: { c: 0x16191e, r: 0.4, m: 0.6 },
   gunMetal:{ c: 0x8a929c, r: 0.3, m: 0.85 },

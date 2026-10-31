@@ -4,7 +4,7 @@
 import { CFG } from '../data/config.js';
 import { wrapAngle, V3 } from '../utils.js';
 import { sfx } from '../audio/sfx.js';
-import { shared, G, enemies, player } from '../state.js';
+import { shared, G, enemies, player, isGunner } from '../state.js';
 import { camera } from '../engine/renderer.js';
 import { playerPos, fwd } from './helpers.js';
 
@@ -30,7 +30,7 @@ function pickTarget(exclude){
 }
 
 export function toggleLock(){
-  if (G.hero === 'mando' || G.mode !== 'play') return;
+  if (isGunner() || G.mode !== 'play') return;
   if (player.lockTarget){ player.lockTarget = null; sfx(420, 0.05, 'triangle', 0.03, 300); return; }
   player.lockTarget = pickTarget(null);
   if (player.lockTarget) sfx(760, 0.06, 'triangle', 0.035, 1100);
@@ -50,7 +50,7 @@ function marker(){
 export function updateLockOn(dt){
   const L = CFG.player.lockOn;
   let t = player.lockTarget;
-  if (t && (G.hero === 'mando' || G.mode !== 'play')) t = player.lockTarget = null;
+  if (t && (isGunner() || G.mode !== 'play')) t = player.lockTarget = null;
   if (t){
     const pp = playerPos();
     // the foe fell or ran out of reach: hand the lock to the next foe in view, or let it go

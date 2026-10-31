@@ -9,7 +9,7 @@ import { S } from '../audio/sfx.js';
 import { V3, clamp } from '../utils.js';
 import { burst } from '../fx/particles.js';
 import { floater } from '../fx/floaters.js';
-import { shared, G, solids, keys, player, enemies } from '../state.js';
+import { shared, G, solids, keys, player, enemies, isGunner } from '../state.js';
 import { staggerEnemy } from '../enemies/damage.js';
 import { fwd, rightV, playerPos } from './helpers.js';
 import { launchFlip } from './anim/agility.js';
@@ -64,7 +64,7 @@ export function flowLink(kind){
   player.flowN = G.gt - (player.flowT ?? -99) < F.window && player.flowKind !== kind ? (player.flowN || 0) + 1 : 1;
   player.flowT = G.gt; player.flowKind = kind;
   const pay = F.refund * (player.flowN > 1 ? F.chainMul : 1);
-  if (G.hero === 'mando') player.jet = Math.min(player.jetMax, player.jet + pay * F.fuelMul);
+  if (isGunner()) player.jet = Math.min(player.jetMax, player.jet + pay * F.fuelMul);
   else player.force = Math.min(CFG.player.maxForce, player.force + pay);
   if (player.flowN > 1) floater(playerPos(), 'FLOW ×' + player.flowN, '#9fe0c8');
   // on a chase (a story pursuit), each move also SURGES the run: faster for a moment, more when it chains
@@ -95,7 +95,7 @@ export function startMantle(pp, ledge, vault){
                     keep: vault ? Math.max(hs, MOVE.vaultSpeed) : 0, vault };
   player.vel.set(0, 0, 0); player.moveVel.set(0, 0, 0); player.vy = 0;
   player.wallRun = null; player.gliding = false;
-  if (G.hero !== 'mando'){
+  if (!isGunner()){
     // the body folds over the lip: pitched forward, knees tucked under, blade hugged in
     player.flip = vault ? { t: 0, dur, pitch: 0.5, roll: 0, legs: 'pike', arms: 'tuck', side: 1, ease: 'twirl' }
                         : { t: 0, dur, pitch: 0.55, legs: 'tuck', arms: 'tuck', side: 1, ease: 'twirl' };
@@ -136,13 +136,13 @@ export function updateMantle(dt, pp){
    hop or a fall, never under thrust. */
 export function tryAutoMantle(pp){
   if (player.grounded || player.mantle || player.slamming || !keys['w'] || G.mode !== 'play') return false;
-  if (G.hero === 'mando' && (player.jetActive || player.hovering || player.boosting)) return false;
+  if (isGunner() && (player.jetActive || player.hovering || player.boosting)) return false;
   if (player.vy > 7) return false;   // still rocketing up off a jump: let the arc carry you first
   if (G.gt < (player.hangCdT ?? -9)) return false;   // just let go of a ledge: don't snatch it straight back
   const ledge = findLedge(pp, moveDir(), STEP_UP, MOVE.reach);
   if (!ledge) return false;
   // a high lip (the Jedi): catch it and HANG; anything lower is pulled straight up onto
-  if (G.hero !== 'mando' && ledge.top - pp.y > MOVE.hangFrom) startHang(ledge);
+  if (!isGunner() && ledge.top - pp.y > MOVE.hangFrom) startHang(ledge);
   else startMantle(pp, ledge, false);
   return true;
 }
@@ -203,7 +203,7 @@ export function updateHang(dt, pp){
    run, braced too, carries far, steers a little, keeps his aim dead steady, and a jump out of it is a long hop. */
 export function trySlide(){
   if (!player.grounded || player.slideT > 0 || player.mantle || player.hang || G.mode !== 'play') return;
-  const jedi = G.hero !== 'mando', SL = MANDO_MOBILITY.slide;
+  const jedi = !isGunner(), SL = MANDO_MOBILITY.slide;
   if (!jedi && (player.dashT > 0 || player.meleeT > 0 || player.stabT > 0 || player.cds.slide > 0)) return;
   const hs = Math.hypot(player.moveVel.x, player.moveVel.z);
   if (hs < (jedi ? MOVE.slideMinSpeed : SL.minSpeed)) return;
@@ -292,7 +292,7 @@ export function wallBeside(pp, range){
 /* WALL-RUN (Jedi) — jump alongside a wall at speed with W held and the feet catch it: a short run along the face
    that barely loses height. SPACE kicks off it (movement.js), letting go of W or running out of time drops you. */
 export function updateWallRun(dt, pp){
-  if (G.hero === 'mando') return;
+  if (isGunner()) return;
   const wr = player.wallRun;
   if (wr){
     wr.t += dt;
@@ -330,7 +330,7 @@ export function updateWallRun(dt, pp){
 /* LANDING — a hard touchdown buckles the knees for a beat (slow, no jump or dash) unless a roll was called for
    just before it. Returns true if it rolled. Called by locomotion on the frame the Jedi lands. */
 export function landingImpact(impact){
-  if (G.hero === 'mando' || player.slamming || player.airCut) return false;   // (the aerial cut lands in its own follow-through)
+  if (isGunner() || player.slamming || player.airCut) return false;   // (the aerial cut lands in its own follow-through)
   if (impact < MOVE.staggerImpact) return false;
   if (G.gt - (player.rollReqT ?? -9) < MOVE.rollWindow){ landingRoll(); return true; }
   const s = clamp((impact - MOVE.staggerImpact) / MOVE.staggerSpan, 0, 1);
@@ -343,7 +343,7 @@ export function landingImpact(impact){
 
 /* The dash key (SHIFT) in the air near the ground (or during the first instant of a stagger) asks for a roll instead of a dash. */
 export function requestRoll(pp){
-  if (G.hero === 'mando') return false;
+  if (isGunner()) return false;
   if (player.landStagT > 0 && G.gt - (player.landStagAt ?? -9) < MOVE.rollWindow * 0.6){ landingRoll(); return true; }
   if (player.grounded || player.mantle) return false;
   const h = pp.y - (player.groundY || 0);

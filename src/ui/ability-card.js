@@ -4,7 +4,7 @@
 // of it (a chapter card, a cutscene, the upgrade screen, a meditation, the pause menu), freezes the fight while it is up the
 // way those do, and closes on CONTINUE, Enter or Space.
 
-import { G, shared } from '../state.js';
+import { G, shared, isGunner } from '../state.js';
 import { renderer } from '../engine/renderer.js';
 import { audioInit, S } from '../audio/sfx.js';
 import { MUSIC } from '../audio/music.js';
@@ -27,7 +27,7 @@ export function clearAbilityCards(){ pending.length = 0; if (abilityCardUp()) cl
 
 function open(u){
   const C = ABILITY_CARDS[u.key], name = u.name || C.name, hud = u.hud != null ? u.hud : C.hud;
-  el.innerHTML = '<div class="ac-inner hero-' + (G.hero === 'mando' ? 'mando' : 'jedi') + '">' +
+  el.innerHTML = '<div class="ac-inner hero-' + (isGunner() ? 'mando' : 'jedi') + '">' +
     '<div class="ac-clip"><img src="' + C.clip + '" alt=""></div>' +
     '<div class="ac-body"><div class="cc-act">ABILITY UNLOCKED</div><h2 class="ac-title">' + esc(name) + '</h2>' +
     (hud ? '<div class="ac-key">' + esc(hud) + '</div>' : '') +

@@ -5,7 +5,7 @@ import { S } from '../audio/sfx.js';
 import { V3, clamp } from '../utils.js';
 import { burst } from '../fx/particles.js';
 import { floater } from '../fx/floaters.js';
-import { G, player } from '../state.js';
+import { G, player, isGunner } from '../state.js';
 import { playerPos, maxHp } from '../player/helpers.js';
 import { TIER_REQ, TIER_NAME, SKILLS, TIER_NAME_MANDO, MANDO_SKILLS, TIER_CHAPTER } from '../data/skills.js';
 import { MANDO_STORE, JEDI_STORE } from '../data/store.js';
@@ -16,8 +16,8 @@ import { endWave } from './readout.js';
 import { xpPointCheck } from './upgrades.js';
 import { chapterClosed } from './flow.js';
 
-export function skillSet(){ return G.hero === 'mando' ? MANDO_SKILLS : SKILLS; }
-export function tierName(t){ return (G.hero === 'mando' ? TIER_NAME_MANDO : TIER_NAME)[t]; }
+export function skillSet(){ return isGunner() ? MANDO_SKILLS : SKILLS; }
+export function tierName(t){ return (isGunner() ? TIER_NAME_MANDO : TIER_NAME)[t]; }
 export function skillRank(id){ return (player.skills && player.skills[id]) || 0; }
 function skillReq(s){ return s.req != null ? s.req : TIER_REQ[s.tier]; }
 function tierUnlocked(tier){ return G.skillSpent >= TIER_REQ[tier]; }
@@ -78,7 +78,7 @@ export function applyCellTier(){
 
 // helper: does a fork sibling already own the slot? (buying one weapon locks the other)
 function forkTaken(node, set){ return !!node.fork && set.some(n => n !== node && n.fork === node.fork && n.owned()); }
-export function storeSet(){ return G.hero === 'mando' ? MANDO_STORE : JEDI_STORE; }
+export function storeSet(){ return isGunner() ? MANDO_STORE : JEDI_STORE; }
 // the story campaign opens a node at its `chapter`'s close (data/store.js); everywhere else at its own `stage`
 // (cumulative waves) if set, else by its tier's stage, so each fork lands at a precise wave.
 export function storeStageOpen(n){

@@ -3,7 +3,7 @@
 
 import { CFG } from './config.js';
 import { MANDO } from './mando.js';
-import { G } from '../state.js';
+import { G, isGunner } from '../state.js';
 
 /* ============================================================
    POWER MASTERY — every ability you own can be mastered twice, by USING it in a fight (game/upgrades.js trainAbility).
@@ -69,7 +69,7 @@ export const MASTERY_MANDO = [
             { ds:'−35% cooldown · −20% Force cost', mul:{ cd:0.65, cost:0.8 } } ] },
 ];
 const BY_ID = Object.fromEntries([...MASTERY_JEDI, ...MASTERY_MANDO].map(m => [m.id, m]));
-export function masterySet(){ return G.hero === 'mando' ? MASTERY_MANDO : MASTERY_JEDI; }
+export function masterySet(){ return isGunner() ? MASTERY_MANDO : MASTERY_JEDI; }
 export function masteryRank(id){ return (G.mastery && G.mastery[id]) || 0; }
 
 // the ability's tuning with its mastery ranks applied. Built fresh on each call (a small copy), so live edits to
@@ -85,4 +85,4 @@ export function abil(id){
   return v;
 }
 // the heal fraction mendComplete() restores — Force Mend for the Jedi, Bacta Stim for the Mando
-export function healFrac(){ return abil(G.hero === 'mando' ? 'bacta' : 'mend').heal; }
+export function healFrac(){ return abil(isGunner() ? 'bacta' : 'mend').heal; }

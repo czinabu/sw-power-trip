@@ -14,7 +14,7 @@ import { sfx, S } from '../audio/sfx.js';
 import { V3, rand, clamp, dampAngle } from '../utils.js';
 import { burst } from '../fx/particles.js';
 import { floater } from '../fx/floaters.js';
-import { shared, G, enemies, bolts, player } from '../state.js';
+import { shared, G, enemies, bolts, player, isGunner, isMando, heroKey, isTrooper } from '../state.js';
 import { playerPos } from '../player/helpers.js';
 import { SCALE } from '../data/coop.js';
 import { heroesHere } from '../player/players.js';
@@ -27,6 +27,7 @@ import { segBlockedBySolids, clampToArena, collideSolids, findClearSpawn } from 
 import { navSteer, navClearance } from '../enemies/nav.js';
 import { diffDmgMul } from '../data/difficulty.js';
 import { SQUAD, FODDER, REVIVE, COMMAND, ORDERS } from '../data/allies.js';
+import { TROOPER } from '../data/trooper.js';
 const ORDERS_BY_ID = Object.fromEntries(ORDERS.map(o => [o.id, o]));
 import { throwGrenade } from '../enemies/grenades.js';
 import { crosshairPoint, lastAim } from '../player/aim.js';
@@ -63,7 +64,7 @@ export const squadIn = (x, z, r) => allies.filter(a => standing(a) && Math.hypot
 export function addSquadmate(at){
   if (allies.length >= SQUAD.max) return null;
   if (guest()){ squadLink.add(); return null; }   // co-op guest: the host's browser runs the squad
-  const roster = SQUAD.roster[G.hero] || SQUAD.roster.jedi;
+  const roster = heroKey(SQUAD.roster) || SQUAD.roster.jedi;
   const def = roster.find(d => !allies.some(a => a.def === d)) || roster[allies.length % roster.length];
   const role = SQUAD.roles[def.role];
   const t = { model: def.model, color: def.color, eye: def.eye, cloth: def.cloth, scale: def.scale || 1, ranged: true };
@@ -86,6 +87,11 @@ export function addSquadmate(at){
 export function spawnSquad(n, at){
   for (let i = 0; i < n; i++) addSquadmate(at && { x: at[0] + (i % 2 ? 1.6 : -1.6) * (1 + (i >> 1)), z: at[1] - 1.2 * (i >> 1) });
   SQ.fYaw = G.yaw;
+}
+// the ARC trooper never fights alone: top its squad up to TROOPER.squadMin in every mode but the training grounds
+export function trooperSquad(){
+  if (!isTrooper() || G.training || G.coopGuest) return;
+  if (allies.length < TROOPER.squadMin) spawnSquad(TROOPER.squadMin - allies.length);
 }
 // put the squad back around the hero (a new arena built in place, a jump ahead): clear spots just behind
 export function regroupSquad(){
@@ -141,7 +147,7 @@ function groundAim(){
 }
 // the foe under the crosshair, or the one nearest where it meets the ground (a few metres' grace)
 function aimedFoe(){
-  crosshairPoint(G.hero === 'mando' ? player.aimOff.x : 0, G.hero === 'mando' ? player.aimOff.y : 0);
+  crosshairPoint(isGunner() ? player.aimOff.x : 0, isGunner() ? player.aimOff.y : 0);
   if (lastAim.target) return lastAim.target;
   const p = groundAim();
   let best = null, bd = 4.5;
@@ -152,7 +158,7 @@ function aimedFoe(){
   }
   return best;
 }
-const say = (a, jedi, mando) => { if (a) floater(V3(a.group.position.x, 2.6, a.group.position.z), G.hero === 'mando' ? mando : jedi, '#bfe8ff'); };
+const say = (a, jedi, mando) => { if (a) floater(V3(a.group.position.x, 2.6, a.group.position.z), isMando() ? mando : jedi, '#bfe8ff'); };   // (the trooper's clones talk like the Jedi's)
 const who = (i) => i == null ? allies : allies[i] ? [allies[i]] : [];
 const lead = (list) => list.find(standing) || null;
 const LABEL = { follow: 'ON ME', hold: 'HOLD', move: 'MOVING', cover: 'COVER', revive: 'REVIVING', attack: 'ATTACK' };
@@ -212,7 +218,7 @@ const ORDER_FN = {
   },
   move(list, l, tag){
     const at = C ? V3(C.at[0], 0, C.at[1]) : groundAim();
-    const o = { kind: 'move', at, n: list.length, beacon: makeBeacon(at.x, at.z, 0, MISSION_COLOR[G.hero], list.length > 1 ? 1.4 : 0.8) };
+    const o = { kind: 'move', at, n: list.length, beacon: makeBeacon(at.x, at.z, 0, heroKey(MISSION_COLOR), list.length > 1 ? 1.4 : 0.8) };
     SQ.moves.add(o);
     list.forEach((a, i) => { a.ord = o; a.prevOrd = null; a.moveI = i; });
     banner(tag + ' · MOVE THERE'); say(l, 'COPY THAT, MOVING!', 'MOVING.');
@@ -426,7 +432,7 @@ function shoot(a, e){
   fireBolt(muzzle, dir, a.role.boltSpeed, a.role.dmg * (SQUAD.dmg[diffKey()] || 1) * (isFodder(e) ? 1 : COMMAND.markEliteDmg), true, true, a);
   bolts[bolts.length - 1].ally = a;
   bolts[bolts.length - 1].mark = isFodder(e) ? null : e;   // an elite only takes the bolts meant for it (enemies/bolts.js)
-  bolts[bolts.length - 1].mesh.material.color.setHex(G.hero === 'mando' ? 0xffa040 : 0x4aa8ff);
+  bolts[bolts.length - 1].mesh.material.color.setHex(isMando() ? 0xffa040 : 0x4aa8ff);
   burst(muzzle, a.t.eye, 2, 3, 1, 0.5);
   S.enemyShot(muzzle, false);
   if (squadLink.shot) squadLink.shot(muzzle, dir, a.role.boltSpeed);   // co-op: the guest sees it fly
@@ -515,7 +521,7 @@ export function updateSquad(dt){
   // the hero picked a fight that's theirs: the squad says so, once in a while
   if (G.squadFocus && !G.squadFocus.dead && !isFodder(G.squadFocus) && G.gt - G.squadFocusT < 0.2 && G.gt - SQ.saidYours > 25){
     const lead = allies.find(standing);
-    if (lead){ SQ.saidYours = G.gt; floater(V3(lead.group.position.x, 2.6, lead.group.position.z), G.hero === 'mando' ? 'THAT ONE IS YOURS.' : "THAT ONE'S YOURS, GENERAL!", '#bfe8ff'); }
+    if (lead){ SQ.saidYours = G.gt; floater(V3(lead.group.position.x, 2.6, lead.group.position.z), isMando() ? 'THAT ONE IS YOURS.' : isTrooper() ? "THAT ONE'S YOURS, SIR!" : "THAT ONE'S YOURS, GENERAL!", '#bfe8ff'); }
   }
   for (const o of SQ.moves) pulseMarker(o.beacon, dt, G.gt);
   updateMarkTag(dt);
@@ -655,11 +661,11 @@ function updateAlly(a, dt, medic, pp){
 const r2 = (n) => Math.round(n * 100) / 100;
 export function squadSnap(nidOf){
   const mk = allies.map(a => standing(a) && markLive(a)).find(Boolean);
-  return { h: G.hero === 'mando' ? 'mando' : 'jedi', f: SQ.formation, g: Math.round(grenadeLeft() * 10) / 10, mk: mk ? nidOf(mk) : null,
+  return { h: G.hero, f: SQ.formation, g: Math.round(grenadeLeft() * 10) / 10, mk: mk ? nidOf(mk) : null,
     b: [...SQ.moves].map(o => [r2(o.at.x), r2(o.at.z), o.n]),
     l: allies.map(a => {
       const g = a.group;
-      return [SQUAD.roster[G.hero === 'mando' ? 'mando' : 'jedi'].indexOf(a.def), r2(g.position.x), r2(g.position.y), r2(g.position.z), r2(g.rotation.y),
+      return [heroKey(SQUAD.roster).indexOf(a.def), r2(g.position.x), r2(g.position.y), r2(g.position.z), r2(g.rotation.y),
         r2(standing(a) ? a.hp / a.maxHp : a.body ? Math.min(1, a.body.prog / a.body.need) : 0), orderCode(a), a.ord.partner ? 1 : 0,
         a.target ? nidOf(a.target) : null, a.kick ? 1 : 0];
     }) };
@@ -691,7 +697,7 @@ export function syncNetSquad(m, foeOf){
     const nb = netBeacons[i];
     if (nb && nb.x === p[0] && nb.z === p[1]) return;
     if (nb) removeMarker(nb.mk);
-    netBeacons[i] = { x: p[0], z: p[1], mk: makeBeacon(p[0], p[1], 0, MISSION_COLOR[G.hero], p[2] > 1 ? 1.4 : 0.8) };
+    netBeacons[i] = { x: p[0], z: p[1], mk: makeBeacon(p[0], p[1], 0, heroKey(MISSION_COLOR), p[2] > 1 ? 1.4 : 0.8) };
   });
 }
 function addSquadmateNet(def, r){
