@@ -8,10 +8,11 @@ export const MOVE = {
   // ground: speed builds instead of snapping to the top; planting to turn or stop brakes harder than you accelerate
   accel: 22,            // m/s² toward the input direction (was CFG.player.accel 34, near-instant)
   brake: 46,            // m/s² when stopping or reversing against your momentum
+  gunnerAccel: 70, gunnerBrake: 95,   // GUNNERS (Mando, trooper), on the ground: a quick wind-up and a firm plant, so aiming feet answer the stick (was the floaty 22/46)
   swingMove: 0.55,      // footwork while a saber swing is in flight (Ataru's moveAtk multiplies on top)
   cutTravel: [0.08, 0.5],   // span of a grounded cut (0–1) its forward drive is laid over; the strike lands at ~0.37
   // air: a jump keeps its takeoff momentum; WASD only nudges it
-  airControl: 0.22,     // fraction of ground accel available while airborne (not gliding)
+  airControl: 0.4,     // fraction of ground accel available while airborne (not gliding)
   fallGravity: 1.6,     // gravity multiplier once falling — a sharper arc, no hang at the top
   maxFall: 30,          // terminal fall speed
   coyote: 0.1,          // seconds after running off a ledge that a jump still counts as a ground jump
@@ -30,10 +31,11 @@ export const MOVE = {
   mantleTime: 0.34,     // seconds for a full-reach pull-up; low ledges scale down from here
   vaultTime: 0.24,
   // wall-run: airborne, running along a wall with W held
-  wallRunTime: 0.75,    // longest run before you drop off
+  wallRunTime: 1.0,    // longest run before you drop off
   wallRunMinSpeed: 5,   // horizontal speed needed to start one
   wallRunGravity: 0.22, // gravity multiplier while running the wall
   wallRunLift: 3.2,     // a small upward kick as the feet catch the wall
+  wallRunPeel: 2.5,     // coming off the wall (time out, W released) the body is eased this fast away from it, so the run ends in a natural peel instead of grinding along the face
   wallRunSpeed: 9.5,    // speed carried along the wall
   // ledge hang (Jedi): a lip caught high (more than `hangFrom` above the feet) is hung from instead of vaulted
   hangFrom: 1.6,        // lower ledges are pulled straight up onto
@@ -66,6 +68,10 @@ export const MOVE = {
   combatTurnRate: 16,   // rad/s squared up in combat
   pivotAngle: 2.1,      // reversing input by more than this (rad) at speed plants the feet and pivots
   pivotTime: 0.16, pivotMinSpeed: 5,
+  // GUNNER LANDINGS (Mando, trooper): a drop sheds speed; a very hard one costs a short stumble (jet-assisted landings are exempt)
+  gunnerLand: { shedFrom: 16, shed: 0.65, staggerFrom: 26, staggerMin: 0.1, staggerMax: 0.28, staggerSpan: 10 },
+  // PROPS: a barrel is shoved by a body moving through it, slides, and rebounds off solids
+  prop: { shoveSpeed: 3, shove: 0.9, drag: 2.6, radius: 0.55, bounce: 0.45, reach: 1.15, maxSpeed: 14 },
 };
 
 /* GAIT: how the feet carry the body (player/anim/gait.js). The legs are solved to planted foot targets, so a foot on
