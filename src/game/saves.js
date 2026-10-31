@@ -39,6 +39,8 @@ function snapshotRun(){
     stats: G.stats ? { ...clone({ ...G.stats, summary: null }), elapsed: G.gt - (G.stats.startGt || 0) } : null,
   };
 }
+// the run as it stands, shaped like a loaded save's (G.resumeRun): the menu's CONTINUE CAMPAIGN picks it up
+export const captureRun = () => ({ ...snapshotRun(), hero: G.hero });
 // put a saved build back (called right before its chapter starts again, game/campaign.js resumeChapter; the saber form goes
 // back after it, with switchStance)
 export function restoreRun(run){

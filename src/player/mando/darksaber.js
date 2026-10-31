@@ -5,7 +5,6 @@ import * as THREE from 'three';
 import { scene } from '../../engine/renderer.js';
 import { sfx, S } from '../../audio/sfx.js';
 import { V3, TMP } from '../../utils.js';
-import { burst } from '../../fx/particles.js';
 import { floater, screenFlash } from '../../fx/floaters.js';
 import { shared, G, enemies, bolts, player } from '../../state.js';
 import { collideSolids, groundAt } from '../../world/collision.js';
@@ -15,7 +14,7 @@ import { inReach, distToBody } from '../../enemies/bodyshape.js';
 import { damageEnemy, flinchEnemy } from '../../enemies/damage.js';
 import { damageBoss, bossStagger } from '../../boss/boss.js';
 import { spawnHitSpark } from '../../fx/vfx.js';
-import { clashFlash } from '../../fx/ink.js';
+import { clashFlash, sparks } from '../../fx/ink.js';
 import { aCost, mandoAimPoint } from './weapons.js';
 import { scarBody, severLimbs } from '../../enemies/scars.js';
 
@@ -53,9 +52,9 @@ export function updateDark(dt){
   if (!player.darkApplied && player.darkT < DARK_DUR*0.55){
     player.darkApplied = true;
     const cpt = V3(pp.x + f.x*1.7, 1.5, pp.z + f.z*1.7);
-    burst(cpt, 0xb98cff, 18, 11, 5, 1.1); burst(cpt, 0xffffff, 8, 13, 4);
+    sparks(cpt, 0xc9a6ff, 6, 9, { dir: f, cone: 0.7, life: 0.2, size: 0.38 });
     spawnHitSpark(cpt, 0xc9a6ff, 1.5);
-    screenFlash('radial-gradient(ellipse at center, rgba(150,90,255,.3), transparent 60%)', 0.5, 0.25);
+    screenFlash('radial-gradient(ellipse at center, rgba(150,90,255,.14), transparent 45%)', 0.35, 0.2);
     G.shake = Math.max(G.shake, 0.55); G.hitstop = Math.max(G.hitstop, 0.07);
     const cosLim = Math.cos(A.arc);
     for (const e of enemies){

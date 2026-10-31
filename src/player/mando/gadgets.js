@@ -14,7 +14,7 @@ import { flashLight } from '../../fx/lights.js';
 import { fwd, rightV, playerPos, maxHp } from '../helpers.js';
 import { damageEnemy, flinchEnemy, staggerEnemy } from '../../enemies/damage.js';
 import { damageBoss, bossStagger } from '../../boss/boss.js';
-import { spawnHitSpark, spawnGroundShock } from '../../fx/vfx.js';
+import { spawnGroundShock } from '../../fx/vfx.js';
 import { collideSolids } from '../../world/collision.js';
 import { explosion, inkSprite, sparks, puff, motes, muzzleFlash, screenAngle, dustRing } from '../../fx/ink.js';
 import { mandoAimPoint, mandoAimRay, aCost } from './weapons.js';
@@ -22,6 +22,7 @@ import { abil } from '../../data/mastery.js';
 import { sweepHit, distToBody, chestPos } from '../../enemies/bodyshape.js';
 import { tutEvent } from '../../game/tutor-bus.js';
 import { trainAbility } from '../../game/upgrades.js';
+import { gauntletPoint, palmPoints } from '../../fx/palms.js';
 
 // BACTA STIM (G) — the Mando's mirror of Force Mend: a quick injector channel that restores the same big chunk of
 // vitality (reuses the mendT channel + mendComplete). Steep Force + long cooldown; locked against HUNTER'S CREED.
@@ -43,7 +44,7 @@ export function mandoRocket(){
   player.force -= aCost(A.cost); player.cds.rocket = A.cd; player.aiming = 0.6; trainAbility('rocket');
   const pp = playerPos();
   const f = fwd();
-  const origin = V3(pp.x + f.x*0.6, pp.y + 1.4, pp.z + f.z*0.6);
+  const origin = gauntletPoint();   // the wrist rocket leaves the launcher on his left vambrace (fx/palms.js)
   const aim = mandoAimPoint();   // fly the rocket toward the crosshair (with the same slight magnetism)
   const dir = V3(aim.x - origin.x, aim.y - origin.y, aim.z - origin.z).normalize();
   const m = new THREE.Mesh(new THREE.CapsuleGeometry(0.08, 0.26, 4, 6),
@@ -53,8 +54,8 @@ export function mandoRocket(){
   rockets.push({ mesh: m, dir: dir.clone(), speed: A.speed, life: 3 });
   if (hooks.pbolt) hooks.pbolt({ mesh: m, dir, speed: A.speed }, 0xff8a2a, 2.4);   // co-op: the partner sees it fly
   // launch FEEL: muzzle smoke + flash, a back-kick of recoil, a screen punch
-  muzzleFlash(origin, dir, 0xffb04a, 1.1);
-  for (let n = 0; n < 3; n++) puff(origin.clone().addScaledVector(dir, 0.5 + n*0.35), 0x8a8580, 0.45, 0.35, V3(rand(-1,1), rand(0.5,1.5), rand(-1,1)), { delay: n*0.03, op: 0.8 });
+  muzzleFlash(origin, dir, 0xffb04a, 0.7);
+  for (let n = 0; n < 3; n++) puff(origin.clone().addScaledVector(dir, 0.2 + n*0.3), 0x8a8580, 0.3 + n*0.08, 0.35, V3(rand(-1,1), rand(0.5,1.5), rand(-1,1)), { delay: n*0.03, op: 0.8 });
   player.vel.addScaledVector(f, -3.5);   // the launch shoves you back a touch
   player.recoil = 0.3;
   G.shake = Math.max(G.shake, 0.3);
@@ -143,13 +144,16 @@ export function whistlingBirds(){
   const foes = enemies.filter(e => !e.dead && !e.converted && e.state !== 'spawn')
     .sort((a, b) => a.group.position.distanceTo(pp) - b.group.position.distanceTo(pp)).slice(0, A.count);
   if (shared.boss && shared.boss.hp > 0 && foes.length < A.count) foes.push(shared.boss);
+  // the swarm leaves the launcher on his left vambrace (fx/palms.js) in a fan, then each bird finds its mark
+  const gp = gauntletPoint();
   for (let i = 0; i < A.count; i++){
     const m = new THREE.Mesh(new THREE.SphereGeometry(0.08, 6, 5), new THREE.MeshBasicMaterial({ color: 0xbfe8ff }));
-    m.position.set(pp.x + rand(-0.3,0.3), 1.6 + rand(0,0.4), pp.z + rand(-0.3,0.3));
+    m.position.set(gp.x + rand(-0.05,0.05), gp.y + rand(0,0.05), gp.z + rand(-0.05,0.05));
     scene.add(m);
     const a = Math.random()*Math.PI*2;
     birds.push({ mesh: m, vel: V3(Math.cos(a)*7, rand(7,11), Math.sin(a)*7), life: 2.6, armed: 0.28, tgt: foes.length ? foes[i % foes.length] : null });
   }
+  inkSprite({ pos: gp, shape: 'star', points: 6, sharp: 0.2, color: 0xbfe8ff, size: [0.15, 0.5], life: 0.1, steps: 2, coreW: 0.45 });
   S.zap(); sfx(2200, 0.18, 'sine', 0.05, 1400); sfx(1700, 0.22, 'sine', 0.04, 900);
   floater(pp, 'WHISTLING BIRDS', '#bfe8ff');
 }
@@ -183,7 +187,7 @@ export function updateBirds(dt){
     if (!hit && shared.boss && shared.boss.hp > 0 && bd.mesh.position.distanceTo(shared.boss.group.position.clone().setY(bd.mesh.position.y)) < 1.7){ hit = true; victim = shared.boss; }
     if (hit){
       const A = abil('birds'), p = bd.mesh.position.clone();
-      explosion(p, abil('birds').radius * 0.55, false); spawnHitSpark(p, 0xdff1ff, 0.8);
+      explosion(p, abil('birds').radius * 0.45, false);
       sfx(rand(1600,2200), 0.06, 'sine', 0.04, 700); S.boom(p, 0.25);
       const bdmg = A.dmg * player.up.dmg * (player.up.rocketDmg || 1);
       for (const e of enemies){ if (e.dead || e.converted || e.state === 'spawn') continue; const d = distToBody(e, p); if (d < A.radius){ const kd = TMP.subVectors(e.group.position, p).setY(0).normalize().clone(); damageEnemy(e, bdmg, kd, A.knock); flinchEnemy(e, kd, 0.3); } }
@@ -214,7 +218,7 @@ export function thermalDetonator(){
   if (!G.unlocked.deto || player.cds.deto > 0 || player.force < aCost(A.cost)) return;
   player.force -= aCost(A.cost); player.cds.deto = A.cd; player.aiming = 0.6; trainAbility('deto');
   const pp = playerPos();
-  const from = V3(pp.x, pp.y + 1.5, pp.z), to = detoTarget(A, from);
+  const from = palmPoints(['L'])[0], to = detoTarget(A, from);   // lobbed out of his left hand
   // lobbed to land on it: a short flight up close, a longer arc far out (all inside the fuse)
   const dx = to.x - from.x, dz = to.z - from.z, dist = Math.hypot(dx, dz);
   const T = A.flight[0] + (A.flight[1] - A.flight[0]) * clamp((dist - A.minRange) / (A.range - A.minRange), 0, 1);
