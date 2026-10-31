@@ -317,7 +317,7 @@ function pickDeflect(grip, d){
 /* MEET THE BLADE — fit a catch to where the foe's blade really is (d.contact, a world point from jedi/clash.js
    parryContact). The picked cover keeps its character (which side, what angle) but the hand is moved, within the arm's
    reach, and the blade turned just enough that the saber's length passes through the contact point. */
-const ARM_SLACK = 0.04, BLADE_NEAR = 0.3, BLADE_FAR = 1.05;
+const ARM_SLACK = 0.04, BLADE_NEAR = 0.3, BLADE_FAR = 1.35;
 const _e = new THREE.Euler(), _q = new THREE.Quaternion(), _cc = new THREE.Vector3(), _m = new THREE.Vector3(), _d = new THREE.Vector3();
 function fitContact(R, P, world){
   // the contact in chest space AS THE CATCH WILL HAVE THE CHEST: the cover turns the chest by its twist, so undo that
