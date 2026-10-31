@@ -9,6 +9,7 @@ import * as THREE from 'three';
 import { loft, limb, plate, block, chamfer, ngon, KEEL, SHIELD, HEAD } from './shapes.js';
 import { hand } from './jedi.js';
 import { seg, rounded } from './skin.js';
+import { DIM } from './rig.js';
 
 const SOFT = rounded(chamfer(0.42)), SOFT_HEAD = rounded(HEAD);
 const mirror = pts => pts.map(([x, y]) => [-x, y]).reverse();
@@ -50,14 +51,14 @@ export const TROOPER_PARTS = {
 function legs(R, k, arc){
   for (const L of [R.legL, R.legR]){
     k.skin('suit', [
-      ...seg(0.45, [[-0.06,0.18,0.18],[0.2,0.17,0.17],[0.75,0.13,0.14],[1,0.11,0.12]]),
-      ...seg(0.41, [[0.1,0.14,0.15],[0.45,0.135,0.145],[0.8,0.115,0.125],[1,0.115,0.125]], 0.45),
-    ], { bones: [L.hip, L.knee], at: [0.45] });
+      ...seg(DIM.thigh, [[-0.06,0.18,0.18],[0.2,0.17,0.17],[0.75,0.13,0.14],[1,0.11,0.12]]),
+      ...seg(DIM.shin, [[0.1,0.14,0.15],[0.45,0.135,0.145],[0.8,0.115,0.125],[1,0.115,0.125]], DIM.thigh),
+    ], { bones: [L.hip, L.knee], at: [DIM.thigh] });
     // the thigh: a wrapped plate, front and outside, with a legion stripe across it
-    k.add(limb(0.34, [[0,0.17,0.16,0.01],[0.5,0.165,0.155,0.012],[1,0.135,0.13,0.01]], KEEL), 'plate', L.hip, [0, -0.06, 0.005]);
-    k.add(block(0.15, 0.035, 0.012, 0.2), 'mark', L.hip, [0.01 * L.side, -0.3, 0.095], [-0.05, 0, 0], { outline: false });
+    k.add(limb(DIM.thigh - 0.11, [[0,0.17,0.16,0.01],[0.5,0.165,0.155,0.012],[1,0.135,0.13,0.01]], KEEL), 'plate', L.hip, [0, -0.06, 0.005]);
+    k.add(block(0.15, 0.035, 0.012, 0.2), 'mark', L.hip, [0.01 * L.side, -DIM.thigh * 0.67, 0.095], [-0.05, 0, 0], { outline: false });
     k.add(plate([[-0.06,0.05],[0.06,0.05],[0.07,-0.03],[0,-0.08],[-0.07,-0.03]], 0.035, 0.012), 'mark', L.knee, [0, 0.0, 0.075]);   // knee cop
-    k.add(limb(0.33, [[0,0.13,0.12,0.02],[0.3,0.15,0.135,0.02],[1,0.12,0.105,0.02]], KEEL), 'plate', L.knee, [0, -0.07, 0]);
+    k.add(limb(DIM.shin - 0.08, [[0,0.13,0.12,0.02],[0.3,0.15,0.135,0.02],[1,0.12,0.105,0.02]], KEEL), 'plate', L.knee, [0, -0.07, 0]);
     if (arc) k.add(block(0.03, 0.16, 0.012, 0.2), 'mark', L.knee, [0, -0.18, 0.075], [0, 0, 0], { outline: false });
     // the boot: white, a rounded toe
     k.add(plate([[-0.075,0.04],[-0.09,-0.075],[0.15,-0.085],[0.2,-0.05],[0.12,0.0],[0.03,0.04]], 0.12, 0.016), 'plate', L.ank, [0, 0, 0], [0, -Math.PI/2, 0]);
@@ -66,9 +67,9 @@ function legs(R, k, arc){
 
 function torso(R, k, arc){
   k.skin('suit', [
-    { t:-0.12, w:0.3, d:0.2 }, { t:0, w:0.34, d:0.22 }, { t:0.16, w:0.31, d:0.2 }, { t:0.36, w:0.29, d:0.19 },
-    ...seg(1, [[0,0.33,0.22],[0.14,0.46,0.27],[0.27,0.52,0.26],[0.35,0.36,0.2],[0.4,0.2,0.15]], 0.46),
-  ], { bones: [R.hips, R.torso, R.chest], at: [0.16, 0.46], blend: 0.07, profile: SHIELD, dir: 1 });
+    { t:-0.12, w:0.3, d:0.2 }, { t:0, w:0.34, d:0.22 }, { t:DIM.torsoY, w:0.31, d:0.2 }, { t:DIM.torsoY + DIM.chestY - 0.1, w:0.29, d:0.19 },
+    ...seg(1, [[0,0.33,0.22],[0.14,0.45,0.265],[0.27,0.505,0.255],[0.35,0.36,0.2],[0.4,0.2,0.15]], DIM.torsoY + DIM.chestY),
+  ], { bones: [R.hips, R.torso, R.chest], at: [DIM.torsoY, DIM.torsoY + DIM.chestY], blend: 0.07, profile: SHIELD, dir: 1 });
   // codpiece and the white utility belt with its boxes
   k.add(plate([[-0.08,0.02],[0.08,0.02],[0.05,-0.12],[-0.05,-0.12]], 0.04, 0.012), 'plate', R.hips, [0, -0.04, 0.12], [-0.12, 0, 0]);
   k.add(loft([{ y:0.0, w:0.4, d:0.27 }, { y:0.075, w:0.39, d:0.265 }], SHIELD), 'plate', R.torso, [0, -0.02, 0]);
@@ -80,18 +81,21 @@ function torso(R, k, arc){
   k.add(ab, 'plate', R.torso, [0, 0.235, 0.112], [0.06, 0, 0], { scale: [1.06, 1, 1] });
   k.add(ab, 'plate', R.torso, [0, 0.31, 0.114], [0.08, 0, 0], { scale: [1.12, 1, 1] });
   // the chest plate: two pec plates and the collar; the back plate
-  const pec = [[0.0,0.0],[0.17,0.02],[0.2,0.14],[0.155,0.2],[0.02,0.18]];
-  k.add(plate(pec, 0.045, 0.014), 'plate', R.chest, [0.01, 0.1, 0.125], [-0.06, 0.2, 0]);
-  k.add(plate(mirror(pec), 0.045, 0.014), 'plate', R.chest, [-0.01, 0.1, 0.125], [-0.06, -0.2, 0]);
+  const pec = [[0.0,-0.02],[0.19,0.0],[0.235,0.15],[0.2,0.25],[0.0,0.24]];
+  k.add(plate(pec, 0.05, 0.016), 'plate', R.chest, [0.005, 0.06, 0.128], [-0.06, 0.2, 0]);
+  k.add(plate(mirror(pec), 0.05, 0.016), 'plate', R.chest, [-0.005, 0.06, 0.128], [-0.06, -0.2, 0]);
+  // the sternum ridge and the upper ab plate that joins the chest to the abdomen
+  k.add(plate([[-0.14,0.0],[0.14,0.0],[0.12,0.07],[-0.12,0.07]], 0.035, 0.01), 'plate', R.chest, [0, -0.02, 0.118], [0.05, 0, 0]);
   k.add(loft([{ y:0.33, w:0.25, d:0.21 }, { y:0.45, w:0.17, d:0.16 }], SOFT), 'suit', R.chest);
   k.add(plate([[-0.18,0],[0.18,0],[0.16,0.27],[-0.16,0.27]], 0.04, 0.012), 'plate', R.chest, [0, 0.04, -0.125]);
   k.add(block(0.2, 0.12, 0.08, 0.3), 'plate', R.chest, [0, 0.22, -0.16]);   // the back pack
   if (arc){
     // the ARC's black collar plate across the top of the chest and shoulders, with two ammo pouches hanging off it
-    k.add(loft([{ y:0.22, w:0.5, d:0.3 }, { y:0.3, w:0.54, d:0.31 }, { y:0.36, w:0.42, d:0.26 }, { y:0.4, w:0.24, d:0.18 }], SHIELD), 'grey', R.chest);
-    for (const bx of [-0.05, 0.05]){
-      k.add(block(0.07, 0.15, 0.04, 0.25), 'grey', R.chest, [bx, 0.2, 0.165], [-0.08, 0, 0]);
-      k.add(block(0.012, 0.012, 0.01, 0.2), 'plate', R.chest, [bx, 0.26, 0.19], [0, 0, 0], { outline: false });
+    k.add(loft([{ y:0.29, w:0.44, d:0.29 }, { y:0.34, w:0.46, d:0.29 }, { y:0.39, w:0.36, d:0.25 }, { y:0.43, w:0.22, d:0.18 }], SHIELD), 'grey', R.chest);
+    // the two ammo pouches hanging off it, on the chest plate's upper edge, each with a white snap
+    for (const bx of [-0.06, 0.06]){
+      k.add(block(0.075, 0.1, 0.045, 0.3), 'grey', R.chest, [bx, 0.27, 0.172], [-0.12, 0, 0]);
+      k.add(block(0.016, 0.016, 0.01, 0.2), 'plate', R.chest, [bx, 0.3, 0.198], [-0.12, 0, 0], { outline: false });
     }
   }
 }
@@ -107,7 +111,14 @@ function arms(R, k, kind){
     k.add(limb(0.2, [[0,0.13,0.125],[1,0.115,0.11]], KEEL), 'plate', A.sh, [0, -0.08, 0]);
     // pauldrons: the ARC's big one in the legion colour on the left shoulder (the right keeps a plain white cap), or
     // a captain's smaller one, or a plain Phase II cap on each
-    if (kind === 'arc' && s < 0) k.add(loft([{ y:-0.13, w:0.3, d:0.28 }, { y:0.0, w:0.3, d:0.28 }, { y:0.08, w:0.25, d:0.24 }, { y:0.12, w:0.15, d:0.18 }], SOFT), 'mark', A.sh, [0.06*s, 0.04, 0], [0, 0, -0.38*s]);
+    if (kind === 'arc' && s < 0){
+      // the ARC pauldron: a curved shell capping the shoulder and flaring out over the upper arm, in two layers
+      const P = k.group(A.sh, [0.04*s, 0.03, 0], [0, 0, -0.34*s]);
+      P.scale.setScalar(0.78);
+      k.add(loft([{ y:-0.2, w:0.27, d:0.3, x:0.035*s }, { y:-0.04, w:0.29, d:0.3, x:0.02*s }, { y:0.08, w:0.24, d:0.26 }, { y:0.15, w:0.14, d:0.17 }, { y:0.175, w:0.04, d:0.06 }], SOFT), 'mark', P);
+      k.add(loft([{ y:-0.24, w:0.25, d:0.29, x:0.045*s }, { y:-0.17, w:0.27, d:0.3, x:0.04*s }], SOFT), 'mark', P);   // the lower lame
+      k.add(loft([{ y:-0.18, w:0.275, d:0.305, x:0.036*s }, { y:-0.165, w:0.275, d:0.305, x:0.036*s }], SOFT), 'grey', P, [0, 0, 0], [0, 0, 0], { outline: false });   // the dark seam between them
+    }
     else if (kind === 'captain' && s < 0) k.add(loft([{ y:-0.1, w:0.28, d:0.26 }, { y:0.03, w:0.27, d:0.25 }, { y:0.1, w:0.16, d:0.18 }], SOFT), 'mark', A.sh, [0.05*s, 0.045, 0], [0, 0, -0.42*s]);
     else k.add(loft([{ y:-0.05, w:0.2, d:0.19 }, { y:0.03, w:0.19, d:0.18 }, { y:0.07, w:0.12, d:0.14 }], SOFT), 'plate', A.sh, [0.02*s, 0.03, 0], [0, 0, -0.3*s]);
     // forearm bracer with a legion band; the ARC's is grey
@@ -171,12 +182,17 @@ function helmet(R, k, { crest, rangefinder, brow }){
 /* the kama: a long, open-fronted panel down the front-outside of each thigh to the shin, trimmed in the legion colour
    along its inner edge and riding that leg so it swings with the stride, and a wide panel behind */
 function kama(R, k){
+  // the kama hangs from the belt round the hips and behind, open at the front: a panel on each hip that rides that
+  // leg (so it swings with the stride), trimmed in the legion colour down its front edge and along the hem, and a
+  // wide panel behind
   for (const L of [R.legL, R.legR]){
     const s = L.side;
-    const g = k.group(L.hip, [0.09*s, 0.08, 0.06], [0, s*0.55, 0.06*s]);
-    k.add(plate([[-0.1,0],[0.1,0],[0.12,-0.78],[-0.09,-0.78]], 0.012, 0.003), 'cloth', g, [0, 0, 0]);
-    k.add(plate([[-0.012,0],[0.012,0],[0.012,-0.78],[-0.012,-0.78]], 0.014, 0.002), 'mark', g, [-0.1*s, 0, 0.003], [0, 0, 0], { outline: false });
+    const g = k.group(L.hip, [0.085*s, 0.09, -0.02], [0, s*1.3, 0.06*s]);
+    k.add(plate([[-0.1,0],[0.1,0],[0.115,-0.76],[-0.115,-0.76]], 0.012, 0.003), 'cloth', g);
+    k.add(plate([[-0.012,0],[0.012,0],[0.012,-0.76],[-0.012,-0.76]], 0.014, 0.002), 'mark', g, [0.1*s, 0, 0.003], [0, 0, 0], { outline: false });
+    k.add(plate([[-0.115,0.018],[0.115,0.018],[0.115,0],[-0.115,0]], 0.014, 0.002), 'mark', g, [0, -0.76, 0.003], [0, 0, 0], { outline: false });
   }
-  const back = k.group(R.hips, [0, 0.02, -0.15], [0.1, 0, 0]);
-  k.add(plate([[-0.2,0],[0.2,0],[0.22,-0.78],[-0.22,-0.78]], 0.012, 0.003), 'cloth', back, [0, 0, 0]);
+  const back = k.group(R.hips, [0, 0.03, -0.14], [0.12, 0, 0]);
+  k.add(plate([[-0.19,0],[0.19,0],[0.22,-0.8],[-0.22,-0.8]], 0.012, 0.003), 'cloth', back);
+  k.add(plate([[-0.22,0.018],[0.22,0.018],[0.22,0],[-0.22,0]], 0.014, 0.002), 'mark', back, [0, -0.8, -0.003], [0, 0, 0], { outline: false });
 }
