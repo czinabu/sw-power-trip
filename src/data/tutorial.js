@@ -88,7 +88,7 @@ export const LESSONS = {
         { say: 'Run with your whole body.',
           keys: 'W', do: 'Sprint: hold W to run forward (you run by default; Q switches to a walk and back, so tap it again if you are walking)', poll: 'sprint', need: 1.5 },
         { say: 'Now drop low and let the Force carry you, far past where your legs would. The dash is for dodging; the slide is for distance, and it bowls over whoever stands in the way.',
-          keys: 'W · Z', do: 'Force-slide: press Z during a sprint (you must be running: tap Q if you are walking)', ev: 'slide', need: 2 },
+          keys: 'W · Z', do: 'Force-slide: press Z during a sprint (running, not strafing: let go of ALT, and tap Q if you are walking)', ev: 'slide', need: 2 },
         { say: 'Reach for the Force as you leave the ground, and it will hold you.',
           keys: 'HOLD SPACE', do: 'Force-leap and glide', poll: 'glide', need: 1.2 },
       ] },
