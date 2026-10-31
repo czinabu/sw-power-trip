@@ -136,18 +136,23 @@
 .st-sec{width:min(1180px,100%);flex:none}
 .st-sec.empty{display:none}
 .st-sec .cardrow{grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
-/* mastery: what your powers have learned from use — read-only rows, nothing to buy */
-.mastlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px 16px;text-align:left}
-.mrow2{display:grid;grid-template-columns:28px 1fr auto;align-items:center;column-gap:10px;row-gap:4px;padding:8px 10px;border-radius:var(--r-chip);border:1px solid var(--edge);background:rgba(8,20,38,.4)}
-.mrow2 .mi{grid-row:span 2;color:var(--ink-soft);display:flex;justify-content:center}
-.mrow2 .mi svg{width:22px;height:22px}
-.mrow2 b{font:700 14px/1.1 var(--font-display);letter-spacing:1.6px;color:var(--ink)}
-.mrow2 .rk{font:700 12px/1 var(--font-ui);letter-spacing:1px;color:var(--gold)}
-.mrow2 .mbar{grid-column:2 / span 2;height:5px;border-radius:3px;background:rgba(120,170,220,.15);overflow:hidden}
-.mrow2 .mbar i{display:block;height:100%;background:linear-gradient(90deg,#3a9fe0,#8fe0ff)}
-.mrow2 .mnext{grid-column:2 / span 2;font-size:12.5px;color:var(--ink-dim)}
-.mrow2.max{border-color:rgba(255,210,90,.4)} .mrow2.max .mbar i{background:var(--gold)}
+/* mastery: what your powers have learned from use — a slim read-only strip (what the next rank does is on hover) */
+#mastsec{padding:10px 16px}
+#mastsec .storehdr{margin-bottom:8px}
+.mastlist{display:flex;flex-wrap:wrap;gap:6px 8px;text-align:left}
+.mchip{display:grid;grid-template-columns:18px auto auto;align-items:center;column-gap:7px;row-gap:3px;padding:5px 10px 6px;border-radius:var(--r-chip);border:1px solid var(--edge);background:rgba(8,20,38,.4);cursor:default}
+.mchip .mi{display:flex;color:var(--ink-soft)} .mchip .mi svg{width:16px;height:16px}
+.mchip b{font:700 12px/1 var(--font-display);letter-spacing:1.4px;color:var(--ink)}
+.mchip .rk{font:700 11px/1 var(--font-ui);color:var(--gold)}
+.mchip .mbar{grid-column:2 / span 2;height:3px;border-radius:2px;background:rgba(120,170,220,.15);overflow:hidden;min-width:90px}
+.mchip .mbar i{display:block;height:100%;background:linear-gradient(90deg,#3a9fe0,#8fe0ff)}
+.mchip.max{border-color:rgba(255,210,90,.4)} .mchip.max .mbar i{background:var(--gold)}
+/* a power the chapter just handed over */
+#skilltree .card.got{cursor:default;border-color:rgba(127,224,168,.5)}
+#skilltree .card.got .c-tag{color:#7fe0a8;border-color:rgba(127,224,168,.5)}
+#skilltree .card.got .c-cost{color:#7fe0a8;border-color:rgba(127,224,168,.35);background:rgba(10,40,24,.4)}
+#skilltree .sub .newform{color:var(--gold);font-weight:700;text-shadow:0 0 10px var(--gold-glow)}
 @media (max-width:760px){
-  .st-sec .cardrow,.mastlist{grid-template-columns:1fr}
+  .st-sec .cardrow{grid-template-columns:1fr}
   .forkgroup{grid-column:auto}
 }

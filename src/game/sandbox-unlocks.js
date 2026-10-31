@@ -97,11 +97,11 @@ export function refreshSandboxScope(){
       depth += 1;
     }
   }
-  const autoReached = (u) => u.chapter && G.hero !== 'mando' ? done.has(u.chapter)   // a form: the chapter that teaches it (data/forms.js FORM_PATH)
+  const autoReached = (u) => u.chapter ? done.has(u.chapter)   // a form or a power: the chapter that hands it out (data/forms.js FORM_PATH, data/store.js)
     : u.level != null && G.hero !== 'mando'
     ? reachedWaves.some(([lv, w]) => lv > u.level || (lv === u.level && w >= u.wave))   // the campaign gates the Jedi's by level and wave (game/flow.js)
     : depth >= (u.stage || 0);
-  const storeReached = (n) => depth >= (n.stage != null ? n.stage : (STORE_TIER_STAGE[n.tier] || 0));
+  const storeReached = (n) => n.chapter ? done.has(n.chapter) : depth >= (n.stage != null ? n.stage : (STORE_TIER_STAGE[n.tier] || 0));
   scope = { full, foes, maps, autoReached, storeReached };
   return scope;
 }

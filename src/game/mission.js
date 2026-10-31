@@ -37,6 +37,7 @@ import { overlay, setOverlayState } from '../ui/menus.js';
 import { showPanel, hidePanel, makeBeacon, makeConsole, setMarkerColor, pulseMarker, removeMarker,
          heroIn, nearHero, hostilesIn, hostilesAlive, setObjectiveHud, objectiveHud, mmss } from './objectives.js';
 import { MISSIONS, MISSION_VOICE, MISSION_COLOR } from '../data/missions.js';
+import { ALLY_COLOR, addFriendRing, updateFriendRing, makeFriendTag } from '../fx/friend.js';
 import { spawnSquad, squadIn, squadStanding } from '../allies/squad.js';
 import { collideSolids } from '../world/collision.js';
 import { players, targetable } from '../player/players.js';
@@ -327,7 +328,8 @@ const KINDS = {
           sfx(180 + Math.random() * 80, 0.05, 'square', 0.02, 120);
         }
       } else v.hp = Math.min(v.maxHp, v.hp + (o.regen || 0) * dt);
-      v.tag.material.color.setHex(pinned ? RED : MISSION_COLOR[G.hero]);
+      v.tag.material.color.setHex(pinned ? RED : ALLY_COLOR);
+      updateFriendRing(v.g, !!pinned);
       const walking = !pinned && s.near && s.d < s.P.len;
       walkVip(s, walking ? dt : 0, walking ? o.speed : 0, dt);
       pulseMarker(s.dest, dt, G.gt);
@@ -764,9 +766,7 @@ function leadHero(P){
 }
 function buildVip(d){
   const g = buildEnemyMesh({ model: d.model, color: d.color, eye: d.eye, cloth: d.cloth, scale: d.scale || 1 });
-  const tag = new THREE.Mesh(new THREE.OctahedronGeometry(0.16, 0),
-    new THREE.MeshBasicMaterial({ color: MISSION_COLOR[G.hero], toneMapped: false, depthTest: false, transparent: true }));
-  tag.renderOrder = 998;
+  const tag = makeFriendTag(1.2); addFriendRing(g);
   scene.add(g, tag); M.props.push(g, tag);
   return M.vip = { g, tag, def: d, hp: d.hp, maxHp: d.hp };
 }
@@ -859,7 +859,9 @@ function completeObjective(){
 function missionComplete(){
   const def = M.def;
   try { localStorage.setItem('sw_mission_' + def.id + '_' + G.hero, '1'); } catch(e){}
-  showPanel(MISSION_VOICE[G.hero], def.done[G.hero], '', M.chapter ? 'Chapter complete' : 'Mission complete', { drill: true, done: true });
+  // a campaign chapter's card carries the chapter's clear lines (what the mission taught, who joins), not a second voice line on the comms strip
+  const clearLines = M.chapter && M.chapter.clear;
+  showPanel(MISSION_VOICE[G.hero], clearLines && clearLines.length ? clearLines.join(' ') : def.done[G.hero], '', M.chapter ? 'Chapter complete' : 'Mission complete', { drill: true, done: true });
   if (!M.guest && hooks.missionDone) hooks.missionDone();   // co-op: the guest's mission ends with it
   if (M.chapter){   // a campaign chapter: no victory screen, the run carries on into the next chapter (game/campaign.js)
     M.panelT = 6; M.o = null;

@@ -56,6 +56,7 @@ document.addEventListener('mousedown', (e) => {
   if (!inputActive()) return;
   if (player.downed) return;   // down: nothing to fight with until you're back up (game/revive.js)
   if (player.saberLock){ if (e.button === 0) lockPress(); return; }   // blades bound: LMB drives (enemies/duel.js)
+  if (e.button === 2 && (player.judgeT > 0 || player.flaming || player.mendT > 0)) return;   // mid-channel (lightning / flame / mend): no bracing
   if (G.hero === 'mando'){
     if (e.button === 0){
       // LMB while guarding with the Darksaber hurls it; the grappling line reels it back (player/mando/darksaber.js)

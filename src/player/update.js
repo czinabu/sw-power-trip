@@ -103,6 +103,9 @@ function updatePlayerMeters(dt, pp, st){
   if (player.hitMarkT > 0){ player.hitMarkT -= dt * 4.5; if (player.hitMarkT <= 0) player._hmRank = 0; }   // HIT MARKER fade
   if (player.dryT > 0) player.dryT -= dt;   // overheat dry-fire click throttle
 
+  // a channelled power (Force lightning, flamethrower, Force mend / stim) owns both hands: no bracing while it runs
+  if (player.blockHeld && (player.judgeT > 0 || player.flaming || player.mendT > 0)){ player.blockHeld = false; player.parryT = 0; }
+
   // --- LOW STAMINA = DANGER. Run the bar dry and your guard SHATTERS: it drops, you can't
   //     block or parry, and you must recover before defending again. ---
   const stamFrac = player.stam / maxStam();
