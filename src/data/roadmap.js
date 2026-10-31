@@ -6,6 +6,9 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'Darksaber finisher: no shockwave', status: 'done',
+    items: ['The Darksaber\'s third combo swing no longer sends out a ground shockwave ring (it did not fit the lore): it is a plain heavy overhead blow that hits only what the blade reaches, with a little more knockback and hitstop so the finisher still lands with weight',
+            'Same in every mode: story, training, survival, sandbox, missions and co-op'] },
   { title: 'Shots land on the crosshair', status: 'done',
     items: ['Aiming at open air (a far wall, the sky) used to converge the shot only 40 metres out, so every bolt crossed the reticle and flew on past it, off to the right; the shot now aims at the arena wall it will really hit, or far out, so it lands on the crosshair',
             'Blaster, dual, disruptor (rings too, scoped as well), rockets and missiles share that aim, as do the squad\'s orders',
