@@ -429,6 +429,58 @@ export const MISSION_WORLDS = {
     beats: { fog: 0x232a40, fill: 1.08, tint: 0x8fa0e0 },
     sound: 'plains',
   },
+  // ---- the Mandalorian's own story (data/campaign-mando.js) ----
+  outpost: {   // Salt Hollow on Orvane: a whitewashed salt town on a blinding flat at noon, red mesas on the horizon
+    sky: { top: 0x3a6aa8, horizon: 0xe8e2d4, below: 0xd8d0c0, bands: 7, stars: 0,
+      sun: { el: 0.62, color: 0xfff4dc, halo: 0xfff0c8, size: 20 },
+      clouds: { color: 0xf8f4ea, under: 0xc8c0b0, count: 6, lo: 0.6, hi: 0.9 },
+      ridges: [{ color: 0xb87a5a, h: 0.06, rough: 0.05, seed: 13 }, { color: 0xc8a088, h: 0.035, rough: 0.04, seed: 4 }] },
+    fog: 0xe0d8c8, fogStart: 0.95, fogEnd: 3.6,
+    // high sun on a white crust: keep the floor a value under the whitewash so the troopers' armour still reads
+    light: { sun: 0xfff2dc, sunI: 1.7, dir: [-14, 46, 12], hemiSky: 0xc8daf4, hemiGround: 0x8a7e6c, fill: 0.78, rim: 0xffe0b8, rimI: 0.4 },
+    floor: { kind: 'sand', base: 0xbcb2a0, seed: 31 },
+    outer: 0xc4baa8,
+    pal: { adobe: 0xd8ccb6, adobeD: 0xb2a48a, trim: 0x7a5a3c, metal: 0x7a828a, rust: 0x8a5a3a, hull: 0x8c8e88, hullD: 0x4a4e52,
+           stripe: 0xd9a43a, crate: 0x8a7458, glass: 0x2a3a4a, lamp: 0xffc070, engine: 0x7ad0ff,
+           cloth: [0xb8402a, 0x2a6a8a, 0xd8a03a, 0x5a7a3a] },
+    backdrop: [
+      { kind: 'mesas', count: 9, r: [2.0, 2.8], h: [12, 26], w: [16, 30], color: 0xb87a5a, color2: 0xa06848 },
+      { kind: 'district', h: [3, 6], w: [5, 9], color: 0xd8ccb6, color2: 0xb2a48a, trim: 0x7a5a3c, roof: 0xb2a48a, domes: 0.5, spires: 0.05, setback: 0.4, gap: 7 },
+    ],
+    ambient: { kind: 'dust', color: 0xfff8ec, count: 160, size: 0.24 },
+    // the Magistrate's ambush: his dropships over the rooftops, a little trouble in the side streets
+    warfront: { flyers: [{ kind: 'dropship', count: 1, alt: [35, 60], speed: [20, 30], every: [9, 15] }, { kind: 'freighter', count: 1, alt: [60, 120], speed: [30, 50], every: [12, 20] }],
+      blasts: 0.2, tracers: { rate: 0.4, colors: [0xff3a2a, 0xff7a3a] }, columns: 1, smoke: 0x5a5048 },
+    beats: { fog: 0xe8c8a0, fill: 1.05, tint: 0xffd8a8 },
+    hazards: { barrel: 0xa33820 },
+    sound: 'temple',
+  },
+  covert: {   // the clan's covert on Orvane: a red canyon at dusk, the dwellings burning, the hangar lit at the canyon's head
+    sky: { top: 0x1a1830, horizon: 0xd8603a, below: 0x5a2c22, bands: 7, stars: 24,
+      sun: { el: 0.05, color: 0xff9a5a, halo: 0xff6a3a, size: 30 },
+      clouds: { color: 0x5a3a3a, under: 0x2a1a1c, count: 16, lo: 0.35, hi: 0.9 },
+      ridges: [{ color: 0x4a2218, h: 0.26, rough: 0.12, spiky: 0.4, seed: 17 }, { color: 0x3a1a14, h: 0.16, rough: 0.1, spiky: 0.3, seed: 6 }] },
+    fog: 0x6a3428, fogStart: 0.7, fogEnd: 2.8,
+    // dusk and fire: a low orange key, a cool sky rim so the armour separates from the red rock
+    light: { sun: 0xffb080, sunI: 1.75, dir: [-26, 22, -30], hemiSky: 0x9a8ab8, hemiGround: 0x3a2018, fill: 0.86, rim: 0x8ea4e8, rimI: 0.55 },
+    floor: { kind: 'sand', base: 0x86644e, seed: 27 },
+    outer: 0x6a3a2a,
+    pal: { rock: 0x7a3e2a, rockD: 0x52281c, clay: 0x9a6a4e, clayD: 0x6e4836, char: 0x3a2a24, beskar: 0xa8b0b8, metal: 0x5a6068, metalD: 0x30343a,
+           imperial: 0x3a3e46, stripe: 0xd9a43a, crate: 0x6a5a48, glass: 0x1a2430, lamp: 0xffa860, fire: 0xff7a2a, ember: 0xffc060,
+           molten: 0xff7a1e, engine: 0x7ad0ff, hull: 0x6e7a70 },
+    backdrop: [
+      { kind: 'cliffs', count: 22, r: [1.3, 1.9], h: [22, 40], w: 0.3, color: 0x5a2a1e, color2: 0x4a2218 },
+      { kind: 'mesas', count: 5, r: [2.2, 2.8], h: [18, 30], w: [18, 30], color: 0x6a3222, color2: 0x582a1c },
+    ],
+    ambient: { kind: 'embers', color: 0xff8a3a, count: 200 },
+    mist: { color: 0x7a4a3a, count: 30, size: 10, opacity: 0.14 },
+    // the raid: dropships over the rim, smoke columns from the burning dwellings
+    warfront: { flyers: [{ kind: 'dropship', count: 2, alt: [40, 70], speed: [20, 32], every: [7, 12] }, { kind: 'tie', count: 1, wing: 2, alt: [45, 80], speed: [70, 100], every: [7, 12], fire: 0x5aff6a }],
+      blasts: 0.45, tracers: { rate: 0.7, colors: [0xff3a2a, 0xff7a3a] }, columns: 4, smoke: 0x2e2422 },
+    beats: { fog: 0x8a3a24, fill: 1.08, tint: 0xff9a60 },
+    hazards: { barrel: 0xa33820 },
+    sound: 'foundry',
+  },
 };
 
 /* BATTLE MAPS — the large open fields for big squad battles (data/battlemaps.js) keep one look whatever WORLD is picked.

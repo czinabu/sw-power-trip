@@ -235,5 +235,6 @@ Object.assign(window.GAME, { buildArena, findClearSpawn, mapLevels: () => ({
   hall: TRAINING_LEVELS.jedi, forge: TRAINING_LEVELS.mando, dojo: SANDBOX_LEVELS.jedi, throne: SANDBOX_LEVELS.mando,
   refuge: MISSIONS.refuge.level, pursuit: MISSIONS.pursuit.level, prison: byLayout('prison'),
   hangar: byLayout('hangar'), approach: MISSIONS['strike-exegol'].level,
+  outpost: { ...LEVELS[0], layout: 'outpost', arena: 60 }, covert: MISSIONS.covert.level,   // (the Mando's story: data/campaign-mando.js)
   grassland: BATTLE_MAPS.grassland.level, icefront: BATTLE_MAPS.icefront.level, graveyard: BATTLE_MAPS.graveyard.level,
 }) });

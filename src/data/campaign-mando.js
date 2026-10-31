@@ -25,6 +25,8 @@
 // The Jedi's story and the trooper's keep the chapters' own words and maps (and the trooper's file).
 
 export const MANDO_VOICE = 'THE ARMORER';
+// the cast who talk over comms or off screen: a cutscene line of theirs doesn't move the hero's mouth (game/cutscene.js)
+export const MANDO_CAST = new Set(['ROOK', 'OSSIK VANE', 'VX-7', 'THE IRON MAGISTRATE', 'KAEL VARR', 'SKYE', 'BRAKKA']);
 const A = MANDO_VOICE, ROOK = 'ROOK', OSSIK = 'OSSIK VANE', VX = 'VX-7', MAG = 'THE IRON MAGISTRATE';
 const VX7 = { foe: 'duelist', name: 'VX-7', tint: 0x4a5a6a, scale: 1.12 };
 
@@ -163,7 +165,8 @@ export const MANDO_CHAPTERS = {
     brief: ['Ossik says the Magistrate\'s routes are written in the nav cores of Jakku\'s old wrecks. Ossik has lied before.',
             'Pull the cores anyway. If he is telling the truth, they lead to the forge.'],
     lines: {
-      clear: ['The cores give up the route: Mustafar, a forge on the lava flats. Brakka was right.', 'And Ossik told the truth. For once.'],
+      duel: ['The salvage master wants the cores back, and that Jedi from the wrecks is on its other flank.', 'Work with it. Just this once.'],
+      clear: ['The Jedi nods once and is gone into the dunes. The cores give up the route: Mustafar, a forge on the lava flats. Brakka was right.', 'And Ossik told the truth. For once.'],
     } },
   mustafar: {
     title: 'THE BESKAR FORGE',
