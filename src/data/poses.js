@@ -71,11 +71,13 @@ export const SABER_GUARDS = {
                 off: { hand: [-0.2, -0.02, -0.27], pole: [-1, 0, -0.1] } },
     },
     // FORM III SORESU — Obi-Wan's signature guard: a wide, low stance turned fully side-on, the chest open to the side and
-    // the head turned back to the foe (gaze). The saber fist sits above and just behind the crown, the elbow bent and
-    // flared out to the weapon side, the blade laid over the top of the head and on at the foe, tip a touch up; the off
-    // arm reaches out long toward them, palm forward and fingers open. Both hands sit inside arm's reach (bent elbows).
+    // the head turned back to the foe (gaze). The saber fist sits high above the brow on the weapon side, the elbow bent
+    // and flared out, the blade carried forward across the front of the head and on at the foe, tip a touch up. The fist
+    // stays in front of the head (z) so the blade never passes through it: about 20 cm clear of the face, hair, topknot
+    // or hood in every look. The off arm reaches out long toward them, palm forward and fingers open. Both hands sit
+    // inside arm's reach (bent elbows).
     soresu: {
-      ready: { hand: [0.24, 0.74, -0.2], blade: [-0.84, 0.2, 0.5], twist: 0.85, torso: 0.3, lean: 0.0, pole: [1, -0.05, 0.2], palm: 1, gaze: 0.7,
+      ready: { hand: [0.26, 0.74, 0.17], blade: [-0.85, 0.15, 0.5], twist: 0.85, torso: 0.3, lean: 0.0, pole: [1, 0, -0.1], palm: 1, gaze: 0.7,
                off: { hand: [-0.83, 0.35, 0.25], pole: [-0.7, -0.7, 0] },
                offMove: { hand: [-0.3, -0.1, 0.34], pole: OFF_POLE } },   // walking, the reaching hand drops to a loose carry
       // blade upright before the face, the off palm braced behind it — a Force-backed wall
