@@ -54,6 +54,9 @@
 //               (group, at spots) holds you off; it runs on once they're down (or bolts if you get ahead of it) · clash: { dmg, time, every } catch it on
 //               open ground and it turns to fight until you've taken dmg (a fraction of its hp) off it or `time` runs
 //               out, then breaks away; again no sooner than `every` seconds. The wounds carry into the quarry duel.
+//               The leg starts as soon as you reach the quarry; standing in its way on its line catches it from a few
+//               metres further off (and sooner after the last clash); running far out ahead of it (30 m, out of sight)
+//               loses it like falling behind; and it only finishes a leg once you can see it or are close.
 // Text a kind shows can be renamed per objective: sabotage `consoleName` ('UPLINK'), `doneLine` / `doneSub` (the
 // banner when it's done; hold and capture take them too).
 // On the big battle maps an objective after the first can have `start`: [x, z, yaw], where a retry of it begins.
