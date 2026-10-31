@@ -64,7 +64,7 @@ export const SABER_GUARDS = {
       // FIGHTING (offFight: a foe near, or a blow given or taken a moment ago): the off arm drops out low to the side,
       // a little bent, for balance. Walking out of a fight keeps the hand on the back.
       ready: { hand: [0.78, 0.0, 0.19], blade: [0.8, -0.5, 0.3], twist: 0.04, torso: 0.0, lean: 0.0, pole: [0.2, -1, 0.3],
-               off: { hand: [-0.2, -0.02, -0.27], pole: [-1, 0, -0.1] },
+               off: { hand: [-0.2, -0.02, -0.27], pole: [-1, 0, -0.1], sway: 0.12 },   // (a hand on the back doesn't swing with a walk)
                offFight: { hand: [-0.66, -0.08, 0.04], pole: [-0.2, -1, -0.3] } },
       // BLOCK 1: the blade held level across the belly, tip toward the off side; the off hand on the back, elbow flared
       block: { hand: [0.32, -0.12, 0.3], blade: [-0.95, 0.05, 0.25], twist: 0.04, lean: 0.02, pole: [0.8, -0.7, -0.2],

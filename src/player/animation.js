@@ -459,7 +459,12 @@ function animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait){
   } else if (G.hero !== 'mando' && player.judgeT > 0 && !player.blockHeld){
     // left palm forward, lightning pouring from the fingers; the saber drops to a low trailing guard. Holstered, both
     // hands pour it out together, arms thrust forward and the fingers hooked (the Emperor's way)
-    releaseSaberPose(R, dt);
+    // with the saber out it stays in the hand, carried in the form's own run guard (Makashi: close and upright)
+    const carry = !player.holstered && held;
+    if (carry){
+      guardPose(dt, R, held, grip, form, false, { y: 0, z: 0, off: 0, moving: false, fight: false }, airGuard(grip, form, 'run'));
+      applySaberPose(R, held, false, dt);
+    } else releaseSaberPose(R, dt);
     const ap = aimLift();   // the palm follows the crosshair up or down (player/aim.js)
     R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -1.5 - ap, 12);
     R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, 0.15, 12);
@@ -471,7 +476,7 @@ function animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait){
       R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, -0.15, 12);
       R.armR.el.rotation.x = dr(R.armR.el.rotation.x, -0.25, 12);
       R.torso.position.z = dr(R.torso.position.z, 0.1, 10);
-    } else {
+    } else if (!carry){
       R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -0.2, 10);
       R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, 0.4, 10);
     }
