@@ -43,6 +43,16 @@ export const MATERIALS = {
   hilt:    { c: 0x9aa4b0, r: 0.3, m: 0.85 },
 };
 
+/* near-black albedo (umbra robes, dark skin and hair) multiplies every light down to a flat silhouette: floor the
+   lightness so the cel bands and folds still read. Metals keep their own values (visor is meant to be black). */
+const MIN_LIGHTNESS = 0.09;
+function liftDark(hex){
+  const c = new THREE.Color(hex), hsl = {};
+  c.getHSL(hsl);
+  if (hsl.l >= MIN_LIGHTNESS) return hex;
+  return c.setHSL(hsl.h, hsl.s, MIN_LIGHTNESS).getHex();
+}
+
 let _env = null;
 function envMap(){
   if (_env) return _env;
@@ -103,6 +113,9 @@ function inkSurface(m, metal, rough){
           surf += uSky * smoothstep(0.45, 0.55, rim) * uMetal * 0.45;
         } else {
           surf += uSky * rim * (1.0 - uRough) * 0.35 * diffuseColor.rgb;   // leather catches a little; wool almost none
+          // dark cloth: an albedo-independent sky fill plus a cool rim so black robes keep their folds and edges
+          float dark = 1.0 - smoothstep(0.01, 0.07, dot(diffuseColor.rgb, vec3(0.333)));
+          surf += uSky * (0.03 + 0.3 * rim) * dark;
         }
         outgoingLight += surf;
         #include <opaque_fragment>`);
@@ -121,6 +134,7 @@ export function makeStyle(name = 'ink', colors = {}){
     if (mats.has(id)) return mats.get(id);
     const d = { ...MATERIALS[key], ...(colors[key] != null ? { c: colors[key] } : {}), ...over };
     if (d.shade) d.c = new THREE.Color(d.c).multiplyScalar(d.shade).getHex();
+    d.c = liftDark(d.c);
     let m;
     if (cfg.toon){
       // cel bands flatten metal; lift metals a touch so beskar still reads bright against the suit

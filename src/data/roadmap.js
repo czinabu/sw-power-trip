@@ -6,6 +6,9 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'Dark robes you can read', status: 'done',
+    items: ['Black and near-black outfits (umbra robes, dark hair and skin) no longer render as a flat shadow, especially standing in shade: a lightness floor, a soft sky fill and a cool rim keep folds and edges visible',
+            'Applies to every hero model in every mode: story, training, survival, sandbox, missions and co-op'] },
   { title: 'Kicks stagger, not launch', status: 'done',
     items: ['The Jedi\'s front kick (E) no longer sends foes flying: they take a short step back and reel in a stagger, brutes included, with a short stagger window to follow up',
             'Same in every mode: story, missions, training, survival, sandbox and co-op (a guest\'s kick staggers the host\'s foe too)'] },
