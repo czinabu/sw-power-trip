@@ -26,7 +26,7 @@ export function setHero(hero){
   if (xh) xh.style.display = gunner ? 'none' : '';
   if (rt) rt.style.display = gunner ? 'block' : 'none';
   renderControls(hero);   // the CONTROLS panel follows the picked hero
-  const fpl = document.getElementById('fplabel'); if (fpl) fpl.textContent = trooper ? 'COMMAND' : mando ? 'GADGET POWER' : 'FORCE';
+  const fpl = document.getElementById('fplabel'); if (fpl) fpl.textContent = trooper ? 'FIELD ENERGY' : mando ? 'GADGET POWER' : 'FORCE';
   document.getElementById('hero-jedi').classList.toggle('sel', !gunner);
   document.getElementById('hero-mando').classList.toggle('sel', mando);
   const ht = document.getElementById('hero-trooper'); if (ht) ht.classList.toggle('sel', trooper);

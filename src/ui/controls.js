@@ -114,7 +114,8 @@ const CONTROLS = {
       ['Z', 'Artillery barrage', 'The Commander: shells walk down round the crosshair', 1],
       ['3', 'AT launcher', 'The Commando: a heavy rocket off the rifle', 1],
       ['X', 'Gunship strafing run', 'A gunship lays a line of blasts from you toward the crosshair', 1],
-      ['H', 'Squad orders', 'TAP: on a trooper, the squad attacks it · on open ground, they move there · tap again to bring them back on you · HOLD: the command wheel (the world slows)'],
+      ['H', 'Squad orders', 'TAP: on a trooper, the squad attacks it · on open ground, they move there · tap again to bring them back on you · HOLD: the command wheel (the world slows) · ATTACK, GRENADE and SUPPRESS cost COMMAND POINTS, earned by your kills and the squad\'s · SUPPRESS pins the foes round the crosshair: they crawl and slow their shots'],
+      ['T', 'Battlefield call', 'For COMMAND POINTS · a squadmate down: REINFORCE gets everyone up now · otherwise a SUPPLY DROP lands beside you: grenades, coolant and a patch-up', 1],
       ['N', 'Ping', 'Co-op: marks the spot or the foe under your crosshair for the other players'],
     ]},
   ],
@@ -154,6 +155,7 @@ const TIPS = {
     '<b>Pause</b> with TAB (or ESC); TAB or ENTER resumes.',
     '<b>Heat</b> is the gauge beside your reticle. Overheat, and R pressed in the beat clears it at once.',
     'Your squad of clones holds ground while you lead: tap <b>H</b> on a foe to focus it, hold H for every order.',
+    '<b>Command points</b> (the gold bar over your squad) come from kills. Spend them on the orders that matter and on <b>T</b>: reinforcements or a supply drop.',
   ],
 };
 

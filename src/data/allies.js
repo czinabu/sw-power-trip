@@ -81,6 +81,10 @@ export const ORDERS = [
   { id: 'cover',     name: 'TAKE COVER',     note: 'Behind the nearest wall: hit less, fire slower', icon: '▙' },
   { id: 'hold',      name: 'HOLD HERE',      note: 'Stop where they stand',                       icon: '■' },
 ];
+// the ARC trooper's wheel (testing): SUPPRESS takes SPREAD / STACK's place (the trooper's squad stays spread)
+export const SUPPRESS_ORDER = { id: 'suppress', name: 'SUPPRESS', note: 'Pin the foes round the crosshair: they slow and hold their fire', icon: '≋' };
+export const TROOPER_ORDERS = ORDERS.map(o => o.id === 'formation' ? SUPPRESS_ORDER : o);
+export const ordersFor = (trooper) => trooper ? TROOPER_ORDERS : ORDERS;
 export const COMMAND = {
   tapTime: 0.22,             // H held longer than this (real seconds) opens the wheel
   slowmo: 0.3,               // the world's speed while the wheel is open (your own; a co-op partner plays on)
