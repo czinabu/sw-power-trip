@@ -287,9 +287,12 @@ export const AIR_GUARDS = {
       plunge: { hand: [0.06, -0.06, 0.4], blade: [0.02, -0.92, 0.38], two: true, twist: -0.05, pole: [0.6, -0.4, -0.6] },
       run:    { hand: [0.3, -0.3, -0.04], blade: [0.2, -0.58, -0.79], twist: -0.08, off: { hand: [-0.28, -0.12, 0.22], pole: OFF } },
     },
-    // Makashi runs in its fighting stance: the saber arm straight out to the side and down, the free hand out low to the other side
+    // Makashi runs like Dooku crossing a courtyard: upright, the saber carried light and close in one hand before the
+    // chest, blade angled up and forward like a fencer's point, the free hand clasped at the small of the back and
+    // held still (sway 0.12) while the legs do the running
     makashi: {
-      run:    { hand: [0.78, 0.0, 0.19], blade: [0.8, -0.5, 0.3], twist: 0.04, pole: [0.2, -1, 0.3], off: { hand: [-0.66, -0.08, 0.04], pole: [-0.2, -1, -0.3] } },
+      run:    { hand: [0.3, -0.08, 0.3], blade: [0.12, 0.7, 0.7], twist: 0.16, torso: 0.0, pole: [0.5, -0.85, -0.15],
+                off: { hand: [-0.2, -0.02, -0.27], pole: [-1, 0, -0.1], sway: 0.12 } },
     },
     niman: {
       hang:   { hand: [0.16, 0.78, 0.3], blade: [0.35, 0.25, -0.9], twist: 0, off: { hand: [-0.18, 0.78, 0.3], pole: [-0.6, -0.3, -0.5] } },   // hands up on the ledge lip

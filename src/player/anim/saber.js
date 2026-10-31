@@ -16,7 +16,7 @@ const Y = new THREE.Vector3(0, 1, 0);
 const _t = new THREE.Vector3(), _p = new THREE.Vector3(), _ax = new THREE.Vector3(), _grip = new THREE.Vector3();
 
 // cache the data as vectors once
-const vecOff = o => o && { hand: V(o.hand), pole: V(o.pole || [-0.55, -0.8, -0.25]).normalize() };
+const vecOff = o => o && { hand: V(o.hand), pole: V(o.pole || [-0.55, -0.8, -0.25]).normalize(), sway: o.sway ?? 1 };   // sway: how much of the stride a free hand picks up (0 = held still, tucked)
 const vecPose = p => p && ({ ...p, hand: V(p.hand), blade: V(p.blade).normalize(), pole: V(p.pole || [0.55, -0.8, -0.25]).normalize(),
   off: vecOff(p.off), offMove: vecOff(p.offMove), offFight: vecOff(p.offFight) });
 const GUARDS = {}, SWINGS = {};
@@ -132,7 +132,7 @@ export function guardPose(dt, R, held, grip, form, blocking, sway, over = null, 
   // a guard can rest its free hand while idle and bring it up as soon as the hero moves (offMove) or a fight is on (offFight)
   const off = (sway.fight && g.offFight) || (sway.moving && g.offMove) || g.off;
   if (off){
-    _p.copy(off.hand); if (sway.off){ _p.z += sway.off; _p.y += Math.abs(sway.off) * 0.3; }
+    _p.copy(off.hand); if (sway.off){ const so = sway.off * off.sway; _p.z += so; _p.y += Math.abs(so) * 0.3; }
     saberPose.off.lerp(_p, Math.min(1, dt * 8 * rate)); saberPose.offPole.lerp(off.pole, k).normalize();
   }
   saberPose.palm += ((g.palm && off === g.off ? g.palm : 0) - saberPose.palm) * Math.min(1, dt * 8);
