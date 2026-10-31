@@ -133,12 +133,13 @@ export const SABER_GUARDS = {
       block: { hand: [0.16, 0.5, 0.36], blade: [-0.55, -0.75, 0.25], twist: -0.1, pole: [0.9, -0.1, -0.3],
                off: { hand: [-0.4, -0.1, 0.25], pole: OFF_POLE } },
     },
-    // Starkiller's guard: the saber fist low by the weapon hip, the blade laid back along the forearm and rising behind
-    // the body over the off shoulder, the free hand held out from the side, open; on Djem So's wide, rooted feet
-    // (FOOTWORK_GRIP)
+    // Starkiller's guard (The Force Unleashed): crouched wide and low on Djem So's feet (FOOTWORK_GRIP), the off side
+    // leading; the saber arm held down and out at the weapon side, the blade raked back from the pinky side and a little
+    // up, clear of the body so it reads from the front; the free hand thrust out ahead, fingers open, the Force ready.
+    // (The old guard laid the blade behind the back, hidden from the front.)
     niman: {
-      ready: { hand: [0.32, -0.18, 0.14], blade: [-0.76, 0.46, -0.45], twist: 0.08, torso: 0.04, lean: 0.06, pole: [0.6, -0.5, -0.6],
-               off: { hand: [-0.52, -0.26, 0.14], pole: [-0.6, -0.75, -0.25] } },
+      ready: { hand: [0.42, -0.12, 0.22], blade: [0.35, 0.25, -0.9], twist: -0.15, torso: -0.04, lean: 0.1, pole: [0.7, -0.5, -0.5], palm: 1,
+               off: { hand: [-0.3, 0.12, 0.5], pole: [-0.5, -0.85, 0.15] } },
       // forearm raised across the centre line, blade hanging straight down to cover the body
       block: { hand: [0.06, 0.2, 0.42], blade: [0.25, -0.96, 0.12], twist: 0, lean: 0.05, pole: [0.9, -0.2, -0.3],
                off: { hand: [-0.16, 0.0, 0.38], pole: OFF_POLE } },
