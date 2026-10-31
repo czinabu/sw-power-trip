@@ -69,22 +69,46 @@
 #setup.camp #campsaves{display:flex}
 #campsaves .btn{flex:1 1 0;white-space:nowrap;padding:8px 6px;font-size:12px;letter-spacing:1.5px;background:rgba(8,18,33,.45)}
 #modeselect .modeopt:not(.major) .mt{font-size:15px}
-/* the mission list: shown under the modes only while MISSIONS is picked */
-#missionpick{display:none;margin-top:12px}
-#setup.missions #missionpick{display:block}
-#msnlist{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.msn{--bc:var(--gold);padding:8px 11px;border:1px solid var(--edge);border-radius:var(--r);background:rgba(8,18,33,.7);cursor:pointer;
-  pointer-events:auto;text-align:left;opacity:.72;transition:opacity .15s,border-color .15s,background .15s}
+/* ---------- THE MISSIONS PAGE: swaps in for the menu column while MISSIONS is open (ui/missions-ui.js) ---------- */
+#missionpage{display:none;width:100%;margin-top:22px;flex-direction:column;gap:12px;cursor:default;animation:rise .25s var(--ease)}
+#overlay.st-menu.mpage #missionpage{display:flex}
+#overlay.st-menu.mpage #setup,#overlay.st-menu.mpage .ov-foot,#overlay.st-menu.mpage #trainconfirm,
+#overlay.st-menu.mpage .ov-actions .btn:not(.go){display:none}
+#overlay.st-menu.mpage .ov-actions{margin-top:14px}
+.mp-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.mp-head .mp-back{padding:8px 14px;font-size:13px;letter-spacing:2px;background:rgba(8,18,33,.7)}
+.mp-head .cz-tabs{margin-left:auto}
+.mp-head .cz-tabs span{padding:7px 12px;font-size:13px}
+/* the shelves scroll inside the page, so BEGIN and the picked mission's details stay in view */
+#mplist{display:flex;flex-direction:column;gap:14px;max-height:max(230px,calc(100vh - 470px));overflow-y:auto;pointer-events:auto;
+  padding-right:4px;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--edge-mid) transparent}
+.mp-story{display:flex;flex-direction:column;gap:10px}
+.mp-acth{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;font:700 12px/1.2 var(--font-ui);letter-spacing:2.5px;color:var(--ink-soft)}
+.mp-acth .mp-n{color:var(--ink-dim);letter-spacing:1.5px}
+.mp-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.msn{--bc:var(--gold);position:relative;padding:8px 11px 9px;border:1px solid var(--edge);border-radius:var(--r);background:rgba(8,18,33,.7);cursor:pointer;
+  pointer-events:auto;text-align:left;opacity:.78;transition:opacity .15s,border-color .15s,background .15s;scroll-margin:70px 0}
 .msn:hover{opacity:1;border-color:var(--edge-mid)}
 .msn.sel{opacity:1;border-color:rgba(255,210,74,.7);background:linear-gradient(90deg,rgba(54,42,10,.8),rgba(24,20,8,.7))}
 .msn .mt{display:flex;align-items:center;gap:8px;font:700 15px/1.1 var(--font-ui);letter-spacing:1.5px;color:var(--ink)}
 .msn.locked{opacity:.5}
-.msn .mw{display:block;font:600 11px/1.2 var(--font-ui);letter-spacing:1.5px;color:var(--accent);margin-top:3px}
-.msn .won{margin-left:auto;font:600 11px/1 var(--font-ui);letter-spacing:1px;color:var(--xp)}
-/* the picked mission, spelled out under the list (so the cards themselves stay two short lines) */
-#msninfo{margin-top:8px;font:500 13px/1.35 var(--font-body);color:var(--ink-soft)}
-#msninfo .ok{color:var(--xp)}
+.msn .mw{display:block;font:600 11px/1.2 var(--font-ui);letter-spacing:1.5px;color:var(--accent);margin-top:3px;padding-right:44px}
+.msn .won{margin-left:auto;font:700 14px/1 var(--font-ui);color:var(--xp)}
+.msn .mthreat{position:absolute;right:10px;bottom:10px}
+.mthreat{display:inline-flex;gap:2px;vertical-align:middle}
+.mthreat i{width:5px;height:5px;border-radius:1px;background:rgba(255,255,255,.14)}
+.mthreat i.on{background:var(--danger-soft,#ff7a6a)}
+/* the picked mission, spelled out under the shelves */
+#mpinfo{padding:11px 14px;border:1px solid var(--edge);border-radius:var(--r);background:rgba(8,18,33,.78);cursor:default}
+#mpinfo .mpi-t{display:flex;align-items:center;gap:8px;font:700 19px/1.1 var(--font-ui);letter-spacing:2px;color:var(--ink)}
+#mpinfo .mpi-w{font:600 11px/1.3 var(--font-ui);letter-spacing:1.5px;color:var(--accent);margin-top:4px}
+#mpinfo .mpi-b{font:500 13.5px/1.4 var(--font-body);color:var(--ink-soft);margin-top:6px}
+#mpinfo .mpi-meta{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;margin-top:8px;font:600 11px/1.2 var(--font-ui);letter-spacing:1.5px;color:var(--ink-dim)}
+#mpinfo .mpi-meta .mthreat{margin-left:4px}
+#mpinfo .mpi-won{margin-left:auto;font:500 12.5px/1 var(--font-body);letter-spacing:.3px;color:var(--ink-soft)}
+#mpinfo .ok{color:var(--xp)} #mpinfo .no{color:var(--ink-dim)}
 .msn-tag{font:700 9px/1 var(--font-ui);letter-spacing:1.5px;color:var(--ink-dim);border:1px solid var(--edge-mid);border-radius:4px;padding:2px 4px}
+.modeopt .md .ok{color:var(--xp)}
 .modeopt{--bc:var(--gold);flex:1;padding:10px 12px;border:1px solid var(--edge);border-radius:var(--r);background:rgba(8,18,33,.7);cursor:pointer;
   pointer-events:auto;text-align:left;opacity:.7;transition:opacity .15s,border-color .15s,background .15s}
 .modeopt:hover{opacity:1;border-color:var(--edge-mid)}
@@ -391,7 +415,7 @@ body.fovpreview #fovpill{background:rgba(1,4,10,.82)}
 #overlay.st-pause #homeconfirm{align-items:flex-start;margin-top:26px}
 #overlay.st-pause .ov-foot{text-align:left;margin-top:22px;font-size:12px}
 #overlay.st-pause .ov-inner,#overlay.st-pause .ov-actions .btn{animation:rise .3s var(--ease) both}
-@media (max-width:520px){#overlay.st-pause .ov-actions{grid-template-columns:1fr} #msnlist{grid-template-columns:1fr}}
+@media (max-width:520px){#overlay.st-pause .ov-actions{grid-template-columns:1fr} #overlay.st-menu .mp-grid{grid-template-columns:1fr} .mp-head .cz-tabs{margin-left:0}}
 
 /* ---------- SAVE / LOAD: same panel as CONTROLS, one row per slot (ui/saves-ui.js) ---------- */
 #saves{position:fixed;inset:0;z-index:25;display:none;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;

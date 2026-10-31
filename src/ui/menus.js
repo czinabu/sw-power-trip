@@ -1,5 +1,5 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
-// Main menu: hero, mode (and mission) and difficulty pickers, pause, restart, return to menu and fullscreen.
+// Main menu: hero, mode and difficulty pickers (the mission list has its own page: ui/missions-ui.js), pause, restart, return to menu and fullscreen.
 
 import { renderer } from '../engine/renderer.js';
 import { cycleQuality } from '../engine/quality.js';
@@ -13,11 +13,12 @@ import { coopRun } from '../net/run.js';
 import { startEndless } from '../game/survival.js';
 import { startTutorial, retryTutorial, skipStep, setTrainingExit, trainingDone, openLessonBoard, trainOnForm } from '../game/tutorial.js';
 import { setTrainHook } from '../game/meditation.js';
-import { startMission, startCoopMission, retryMission, missionDone, missionTitle } from '../game/mission.js';
+import { startMission, startCoopMission, retryMission, missionTitle } from '../game/mission.js';
 import { startSandbox, sandboxUnlocked } from '../game/sandbox.js';
-import { sandboxFull, sandboxProgress, missionUnlocked, missionChapterNo } from '../game/sandbox-unlocks.js';
+import { sandboxFull, sandboxProgress } from '../game/sandbox-unlocks.js';
 import { closeSandboxPanel } from './sandbox-ui.js';
-import { MISSIONS } from '../data/missions.js';
+import { missionOpen, setMission, refreshMissionMark, refreshTile, openMissionPage, closeMissionPage } from './missions-ui.js';
+export { setMission };   // (ui/saves-ui.js picks a loaded save's mission through the menu)
 import { closeProgress } from './store-ui.js';
 import { DIFFS } from '../data/difficulty.js';
 import { renderControls, toggleControlsDetail, setControlsDevice } from './controls.js';
@@ -42,6 +43,7 @@ export const overlay = document.getElementById('overlay');
 /* OVERLAY STATE — one screen, four faces: 'menu' (first run), 'pause', 'dead', 'victory'. Each sets the headline,
    the primary button's label and which blocks show (hero/mode setup only where picking makes sense). */
 let _ovState = 'menu';
+export const isMenuState = () => _ovState === 'menu';
 export function setOverlayState(state){
   _ovState = state;
   overlay.classList.remove('st-menu', 'st-pause', 'st-dead', 'st-victory', 'confirming', 'newconfirming');
@@ -76,7 +78,7 @@ export function setOverlayState(state){
 }
 
 /* FIT THE MENU — the title screen's column always fits the window without scrolling: when the window is too short for
-   it (a laptop screen, the mission list open, the customizer's rows), the whole column is scaled down to fit. Other
+   it (a laptop screen, the Missions page, the customizer's rows), the whole column is scaled down to fit. Other
    screens scroll as before. */
 let _fitQueued = false;
 function queueFit(){ if (!_fitQueued){ _fitQueued = true; requestAnimationFrame(fitMenu); } }
@@ -154,36 +156,16 @@ export function setModeSel(m){
   G.modeSel = m;
   for (const k of ['campaign', 'mission', 'endless', 'training', 'sandbox']) document.getElementById('mode-' + k).classList.toggle('sel', m === k);
   document.getElementById('setup').classList.toggle('camp', m === 'campaign');
-  document.getElementById('setup').classList.toggle('missions', m === 'mission');   // the mission list opens under the modes
+  refreshTile();
   if (_ovState === 'menu') setOverlayState('menu');   // headline + button follow the mode
 }
 document.getElementById('mode-campaign').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setModeSel('campaign'); });
-document.getElementById('mode-mission').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setModeSel('mission'); });
+document.getElementById('mode-mission').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setModeSel('mission'); openMissionPage(); });   // its own page: ui/missions-ui.js
 document.getElementById('mode-endless').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setModeSel('endless'); });
 document.getElementById('mode-training').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setModeSel('training'); });
 document.getElementById('mode-sandbox').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setModeSel('sandbox'); });
 // CO-OP is a tile but not a mode: it opens the room panel (ui/coop-ui.js)
-// MISSIONS: one card per story mission (data/missions.js) under the mode row; pick one, then BEGIN (or double-click it)
-const placeOf = (m) => m.level.name.replace(/^(MISSION|TRIAL)\s*—\s*/, '');
-document.getElementById('msnlist').innerHTML = Object.values(MISSIONS).filter(m => !m.campaignOnly).map(m =>   // (a campaign-only copy stays off the list)
-  `<div class="msn brk" id="msn-${m.id}" data-mission="${m.id}">
-    <span class="mt"><span class="mtn">${missionTitle(m.id)}</span>${m.squad ? '<span class="msn-tag">SQUAD</span>' : ''}${m.trial ? '<span class="msn-tag">TRIAL</span>' : ''}<span class="won"></span></span><span class="mw">${placeOf(m)}</span>
-  </div>`).join('');
-// a campaign trial joins the list once either hero has reached it in the campaign (won it there)
-const trialSeen = (id) => !MISSIONS[id].trial || missionDone(id, 'jedi') || missionDone(id, 'mando');
-// a mission stays locked and unspoiled until the campaign has cleared it (game/sandbox-unlocks.js)
-const missionOpen = (id) => trialSeen(id) && missionUnlocked(id);
-export function setMission(id){
-  if (!MISSIONS[id] || !trialSeen(id)) id = Object.keys(MISSIONS)[0];
-  G.missionId = id; try { localStorage.setItem('sw_mission', id); } catch(e){}
-  for (const el of document.querySelectorAll('#msnlist .msn')) el.classList.toggle('sel', el.dataset.mission === id);
-  refreshMissionMark();
-  if (_ovState === 'menu') setOverlayState('menu');   // the headline names the mission
-}
-for (const b of document.querySelectorAll('#msnlist [data-mission]')){
-  b.addEventListener('click', (e) => { e.stopPropagation(); audioInit(); setMission(b.dataset.mission); });
-  b.addEventListener('dblclick', (e) => { e.stopPropagation(); setMission(b.dataset.mission); launchFromMenu(); });
-}
+// MISSIONS: the mode tile opens the Missions page (ui/missions-ui.js); the picked mission is remembered
 { let id; try { id = localStorage.getItem('sw_mission'); } catch(e){} setMission(id || G.missionId); }
 refreshSurvivalLock(); refreshSandboxLock(); refreshCampaignMark();
 // CAMPAIGN shows how far this hero's saved run is, else the shape of the story
@@ -201,25 +183,6 @@ function refreshTrainingMark(){
                           : 'Learn the controls and powers';
 }
 refreshTrainingMark();
-// STORY MISSIONS mark which heroes have won them: a tick on the card for each, and the picked one's line under the list
-function refreshMissionMark(){
-  const mark = (id) => { const j = missionDone(id, 'jedi'), m = missionDone(id, 'mando');
-    return (j || m) ? 'Jedi ' + (j ? '<span class="ok">✓</span>' : '–') + ' Mando ' + (m ? '<span class="ok">✓</span>' : '–') : ''; };
-  for (const id in MISSIONS){
-    const card = document.getElementById('msn-' + id); if (!card) continue;
-    card.style.display = trialSeen(id) ? '' : 'none';
-    const open = missionOpen(id), ch = missionChapterNo(id);
-    card.classList.toggle('locked', !open);
-    card.querySelector('.mtn').textContent = open ? missionTitle(id) : '???';   // a trial is named for the hero picked
-    card.querySelector('.mw').textContent = open ? placeOf(MISSIONS[id]) : (ch ? 'COMPLETE ' + ch + ' TO UNLOCK' : 'LOCKED');
-    for (const t of card.querySelectorAll('.msn-tag')) t.style.display = open ? '' : 'none';
-    const w = card.querySelector('.won');
-    w.textContent = open ? (missionDone(id, 'jedi') ? 'J✓' : '') + (missionDone(id, 'mando') ? ' M✓' : '') : '🔒';
-  }
-  const m = MISSIONS[G.missionId], info = document.getElementById('msninfo');
-  if (m && info && !missionOpen(m.id)){ const ch = missionChapterNo(m.id); info.textContent = 'Locked. Clear ' + (ch ? ch.toLowerCase().replace(/^c/, 'C') : 'its chapter') + ' in the campaign to unlock this mission.'; }
-  else if (m && info) info.innerHTML = m.blurb.charAt(0).toUpperCase() + m.blurb.slice(1) + '.' + (mark(m.id) ? ' &nbsp;' + mark(m.id) : '');
-}
 // FIRST CAMPAIGN — once, a hero who hasn't trained (or beaten the campaign) is offered the training grounds first
 function shouldOfferTraining(){
   if (_ovState !== 'menu' || G.modeSel !== 'campaign' || trainingDone(G.hero) || canResume()) return false;
@@ -479,7 +442,7 @@ document.addEventListener('pointerlockerror', () => {
 // PAUSE KEYS — Tab pauses and resumes in every browser (Esc exits fullscreen where it isn't locked). Enter resumes from the pause screen in every browser. Where Esc is locked to the game (fullscreen in
 // Chrome / Edge, see fullscreen.js) a quick Esc pauses and resumes too, so closing the pause screen with Esc no longer
 // drops you out of fullscreen. Runs in the capture phase so it sees the screen before Esc closes a panel on top of it.
-const panelOpen = () => howto.classList.contains('open') || settings.classList.contains('open') || document.getElementById('saves').classList.contains('open') || overlay.classList.contains('newconfirming') ||
+export const panelOpen = () => howto.classList.contains('open') || settings.classList.contains('open') || document.getElementById('saves').classList.contains('open') || overlay.classList.contains('newconfirming') ||
   document.getElementById('roadmap').classList.contains('open') || document.getElementById('forms').classList.contains('open') || document.getElementById('coop').classList.contains('open') || overlay.classList.contains('confirming') || overlay.classList.contains('asktrain');
 window.addEventListener('keydown', (e) => {
   if (e.repeat || (e.key !== 'Escape' && e.key !== 'Enter' && e.key !== 'Tab')) return;
@@ -540,6 +503,7 @@ setTrainHook((formId) => {
 // by accident); from the fallen/victory screens the run is already over, so it goes straight there.
 export function goHome(){
   overlay.classList.remove('confirming');
+  closeMissionPage();   // MAIN MENU is the menu itself, not the Missions page a mission was started from
   closeSandboxPanel(false);
   closeCard(true);
   document.getElementById('skilltree').style.display = 'none';

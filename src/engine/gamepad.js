@@ -292,7 +292,7 @@ function menu(btn, down, lx, ly, ry, dt){
     if (focus){ if (focus.tagName === 'INPUT') focus.focus(); else focus.click(); }
   }
   if (down(1)){   // B — back: close what's on top, or resume from the pause screen
-    if (panelUp()){ sendKey('escape', true); sendKey('escape', false); }
+    if (panelUp() || (ovUp() && /\bst-menu\b/.test(overlay.className) && /\bmpage\b/.test(overlay.className))){ sendKey('escape', true); sendKey('escape', false); }   // (the Missions page: back to the menu, ui/missions-ui.js)
     else if (ovUp() && overlay.classList.contains('st-pause')){ sendKey('tab', true); sendKey('tab', false); }
   }
   if (down(9)){   // MENU — resume from pause; anywhere else on the overlay, the main button

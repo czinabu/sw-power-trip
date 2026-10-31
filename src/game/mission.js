@@ -101,7 +101,7 @@ export function startMission(id = 'refuge', fromObjective = 0, guest = false, op
 }
 export function startCoopMission(id){ startMission(id, 0, true); }
 export function retryMission(){ startMission(M.def ? M.def.id : (G.missionId || 'refuge'), M.def ? M.i : 0, false, { chapter: M.chapter, retry: true }); }
-export function missionTitle(id, hero = G.hero){ const t = (MISSIONS[id] || MISSIONS.refuge).title; return typeof t === 'object' ? t[hero] : t; }
+export function missionTitle(id, hero = G.hero){ const t = (MISSIONS[id] || MISSIONS.refuge).title; return typeof t === 'object' ? heroKey(t, hero) : t; }   // (a hero with no title of its own takes heroKey's fallback)
 function clearMission(){
   for (const m of M.markers) removeMarker(m);
   M.markers = [];
