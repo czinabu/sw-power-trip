@@ -131,7 +131,7 @@ const LEGS = {
   hurdle: [-1.45, 1.35, 0.5, 0.95, 0.04],
   reach:  [-0.42, 0.5, -0.12, 0.28, 0.08],
   kneel:  [-1.25, 1.45, 0.25, 2.25, 0.18],   // the R (back) knee goes down: a superhero landing
-  kneeslide: [-0.95, 2.15, -0.3, 0.04, 0.3],   // a sprint slide: the right leg straight out along the ground, the left knee out and its shin folded under the lead leg, a baseball slide
+  kneeslide: [-0.8, 2.1, -0.15, 0.04, 0.25],   // a sprint slide: the right leg straight out along the ground, the left knee out and its shin folded under the lead leg, a baseball slide
 };
 function poseLegs(R, dr, shape, w, rate){
   const [lh, lk, rh, rk, sp] = shape;
@@ -154,6 +154,10 @@ function slideLegs(R, dr, p, w, shape = LEGS.kneeslide){
   player._ankPose = [0.9 * fold, -0.7 * lead];
 }
 const smoothK = k => k * k * (3 - 2 * k);
+/* Lying back along the skid, the torso turns about its own long axis so the chest faces the side the slide goes by:
+   the lead foot points the way he is going, the shoulders square sideways, as sliding into base. */
+export const SLIDE_TWIST = 1.15;
+function slideTwist(dr, R, hold, twist){ R.torso.rotation.y = dr(R.torso.rotation.y, twist * hold, 18); }
 
 /* ---------------- the wall-run ---------------- */
 const WALL_STRIDE = 12.5;   // rad/s the legs cycle at: about three foot-plants over the longest run
@@ -276,6 +280,7 @@ export function jediAgilityPost(dt, dr, vis, R, ctx){
   }
   // the slide's and the wall-run's ankles (the ankles' own pass runs before this, and would point the toes)
   if (player._ankPose){ R.legL.ank.rotation.x = dr(R.legL.ank.rotation.x, player._ankPose[0], 18); R.legR.ank.rotation.x = dr(R.legR.ank.rotation.x, player._ankPose[1], 18); player._ankPose = null; }
+  if (player.flip && player.flip.legs === 'kneeslide') slideTwist(dr, R, player.flip.hold || 0, SLIDE_TWIST);
   // saber holstered: no guard to carry the arms, so the slide and the wall-run pose them directly
   if (player.holstered) bareArms(dr, R);
   // after a slam: the knee goes down and the blade (or palm) stays planted, then he rises out of it
@@ -339,7 +344,7 @@ const smooth = k => { k = clamp(k, 0, 1); return k * k * (3 - 2 * k); };
 const DIVE_LEGS = [0.12, 0.28, 0.06, 0.45, 0.14];     // laid out behind in the throw, knees soft
 const DIVE_LEGS_BACK = [-0.55, 0.85, -0.3, 0.55, 0.16];   // on his back: knees up, boots toward the target
 const GETUP_LEGS = [-1.2, 1.9, 0.15, 1.5, 0.18];      // one knee planted, pushing up
-const BASE_LEGS = [-0.95, 2.1, -0.3, 0.04, 0.3];      // the right leg out, the left folded under (the body leans back on top)
+const BASE_LEGS = [-0.8, 2.1, -0.15, 0.04, 0.25];      // the right leg out, the left folded under (the body leans back on top)
 function mandoBody(dt, dr, vis, R, fl){
   fl.t += dt;
   const p = clamp(fl.t / fl.dur, 0, 1);
@@ -377,7 +382,8 @@ function mandoBody(dt, dr, vis, R, fl){
     if (sp > 1) fl.face = Math.atan2(player.moveVel.x, player.moveVel.z);   // the skid steers: keep facing it
     const hold = smooth(p / 0.2) * (1 - smooth((p - 0.66) / 0.34));
     pitch = -S.lean * hold;
-    bank = -S.roll * hold;   // onto the left hip, the free side, the way a runner slides into base
+    bank = -S.roll * hold;   // a touch onto the left hip
+    fl.hold = hold;          // (the torso turns sideways to the skid: slideTwist)
     low = hold; drop = COM - S.hips;
     slideLegs(R, dr, p, hold, BASE_LEGS);
   }
@@ -395,7 +401,7 @@ function mandoBody(dt, dr, vis, R, fl){
    into a three-point landing. Arms stay with the weapon code. */
 export function mandoAgilityPost(dt, dr, vis, R, f, r){
   const M = MANDO_AGILITY;
-  if (player.flip && !player.slamming) mandoBody(dt, dr, vis, R, player.flip);
+  if (player.flip && !player.slamming){ mandoBody(dt, dr, vis, R, player.flip); if (player.flip && player.flip.kind === 'slide') slideTwist(dr, R, player.flip.hold || 0, MANDO_MOBILITY.slide.twist); }
   if (player._ankPose){ R.legL.ank.rotation.x = dr(R.legL.ank.rotation.x, player._ankPose[0], 18); R.legR.ank.rotation.x = dr(R.legR.ank.rotation.x, player._ankPose[1], 18); player._ankPose = null; }
   if (player.slamming) poseLegs(R, dr, LEGS.tuck, player.slamWind > 0 ? 1 : 0.35, player.slamWind > 0 ? 12 : 18);   // knees up in the wind-up, braced near-straight for the impact
   slamLanding(dt, dr, R, M.slam.kneel, 0);
