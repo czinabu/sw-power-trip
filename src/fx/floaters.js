@@ -3,6 +3,7 @@
 
 import { camera } from '../engine/renderer.js';
 import { rand, TMP } from '../utils.js';
+import { G } from '../state.js';
 
 /* ---------- floating damage text ---------- */
 // Damage numbers come from a fixed POOL of recycled divs (built once, lazily) rather
@@ -54,7 +55,8 @@ export function screenFlash(bg, peak, dur){
   while (_flashLog.length && now - _flashLog[0] > 1000) _flashLog.shift();
   if (_flashLog.length >= 3) peak *= 0.35;
   _flashLog.push(now);
-  peak = Math.min(peak, 0.9) * (REDUCED ? 0.5 : 1);
+  peak = Math.min(peak * G.flashScale, 0.9) * (REDUCED ? 0.5 : 1);   // × the FLASHES setting
+  if (peak <= 0.01) return;
   _flashEl = _flashEl || document.getElementById('flash');
   _flashEl.style.transition = 'none';
   _flashEl.style.background = bg;

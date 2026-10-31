@@ -301,6 +301,18 @@ function setShakeScale(v){
   const sl = document.getElementById('shakesl'); if (sl && +sl.value !== G.shakeScale) sl.value = G.shakeScale;
 }
 { let v; try { v = parseFloat(localStorage.getItem('sw_shake')); } catch(e){} setShakeScale(isNaN(v) ? 1 : v); }
+// SCREEN FLASHES — scales every full-screen flash (fx/floaters.js screenFlash); 0 turns them off
+function setFlashScale(v){
+  G.flashScale = Math.max(0, Math.min(1.5, isNaN(v) ? 1 : v));
+  try { localStorage.setItem('sw_flash', G.flashScale); } catch(e){}
+  const sv = document.getElementById('flashval'); if (sv) sv.textContent = G.flashScale ? Math.round(G.flashScale * 100) + '%' : 'OFF';
+  const sl = document.getElementById('flashsl'); if (sl && +sl.value !== G.flashScale) sl.value = G.flashScale;
+}
+{ let v; try { v = parseFloat(localStorage.getItem('sw_flash')); } catch(e){} setFlashScale(isNaN(v) ? 1 : v); }
+{ const sl = document.getElementById('flashsl');
+  sl.addEventListener('pointerdown', (e) => e.stopPropagation());
+  sl.addEventListener('click', (e) => e.stopPropagation());
+  sl.addEventListener('input', (e) => setFlashScale(parseFloat(e.target.value))); }
 // FIELD OF VIEW — the resting vertical FOV the camera eases toward (dash kicks and disruptor zoom still ride on top)
 function setFov(v){
   G.fov = Math.round(Math.max(50, Math.min(90, isNaN(v) ? CFG.camera.fov : v)));
