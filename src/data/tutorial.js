@@ -31,7 +31,7 @@
 //   air    only counts off the ground · grip: only while the saber is held in this grip ('reverse')
 //   uniq   count each different value of this event field once (cutHit 'dir': three different cuts)
 //   use    a power used, counted each time it starts: ['cd', key] its cooldown starts · ['flag', f] player[f] turns on
-//   poll   a held state to time instead, in seconds: glide sprint boost single holstered drawn · stance (G.stance is
+//   poll   a held state to time instead, in seconds: glide sprint strafe boost single holstered drawn · stance (G.stance is
 //          `stance`) · grip (the saber held in `grip`) · or 'refuel' (burn the jetpack below a quarter, then land and
 //          let it fill)
 //   reach  [x, z, top?]: get there, standing on a surface that high if given (a beacon marks it) · mark: [x, z, y?] a
@@ -92,6 +92,8 @@ export const LESSONS = {
           keys: 'W · Z', do: 'Force-slide: press Z during a sprint (not while strafing with ALT or walking)', ev: 'slide', need: 2 },
         { say: 'Reach for the Force as you leave the ground, and it will hold you.',
           keys: 'HOLD SPACE', do: 'Force-leap and glide', poll: 'glide', need: 1.2 },
+        { say: 'In a fight, never turn your back. Keep your eyes on the foe and let your feet circle.',
+          keys: 'HOLD ALT + A / D / S', do: 'Strafe: hold ALT and sidestep or backpedal while you keep facing the crosshair (LB on a controller)', poll: 'strafe', need: 1.5 },
       ] },
     { id: 'lanes', group: 'basics', name: 'THE LANES', sub: 'Vault, climb, roll, run the wall, then the gauntlet', loadout: BASE, holstered: true,
       done: 'You flow over the ground like water. Now, the blade.',
@@ -285,6 +287,8 @@ export const LESSONS = {
           keys: 'W · SPACE', do: 'Run right up to a crate on the west lane and press SPACE at its edge', ev: 'vault', need: 1, mark: [-11, 8] },
         { say: 'Do not stand where the shot is going.',
           keys: 'SHIFT', do: 'Dive on the ground (SHIFT again mid-dive lights the jetpack)', ev: 'dash', need: 2 },
+        { say: 'Never turn your back on a target. Hold your aim and circle it: your feet move, your barrel does not.',
+          keys: 'HOLD ALT + A / D / S', do: 'Strafe: hold ALT and sidestep or backpedal while you keep facing the crosshair (LB on a controller)', poll: 'strafe', need: 1.5 },
         { say: 'Drop and slide when the gap is low. The bar on the north lane: under it.',
           keys: 'W · C', do: 'Run at the bar and slide under it', ev: 'slide', need: 1, mark: [-7, 11] },
       ] },
