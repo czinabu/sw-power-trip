@@ -11,6 +11,7 @@ import { ENEMY_TYPES } from '../data/enemies.js';
 import { NET } from '../data/coop.js';
 import { V3, clamp } from '../utils.js';
 import { buildEnemyMesh } from '../enemies/mesh.js';
+import { foeType } from '../enemies/look.js';
 import { dressElite } from '../enemies/elites.js';
 import { damageEnemy } from '../enemies/damage.js';
 import { removeEnemy } from '../enemies/cleanup.js';
@@ -124,7 +125,7 @@ function makePuppet(rec){
   const [nid, type, , , , , , , sc, hp, maxHp, state, flags, elite] = rec;
   const t = ENEMY_TYPES[type];
   if (!t) return null;
-  const g = buildEnemyMesh(t, { seed: typeof nid === 'number' ? nid : undefined });   // the host's marking and face (enemies/spawn.js)
+  const g = buildEnemyMesh(foeType(type), { seed: typeof nid === 'number' ? nid : undefined });   // the host's marking and face (enemies/spawn.js)
   g.scale.setScalar(sc);
   if (elite) dressElite(g, elite);
   if (rec[20] && STANCES[rec[20]] && g.userData.bladeGlow) g.userData.bladeGlow.material.color.setHex(STANCES[rec[20]].blade);   // a form master's blade

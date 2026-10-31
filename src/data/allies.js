@@ -79,6 +79,13 @@ export const SQUAD = {
 /* ORDERS — tap H for the smart order (on a trooper: attack it · on open ground: move there · away from you: on me);
    hold H for the command wheel (allies/wheel.js): the world slows, point at an order and let go. While the wheel is open,
    1-4 (the D-pad on a pad) picks one squadmate instead of the whole squad. `at` is the wheel's clock position. */
+// THE TURNED COMPANY: the clones who took the order, in the ARC trooper's prologue (data/missions.js order66 `foeLook`,
+// enemies/look.js). The same armour as the squad, in the Marshal's ochre, their visors lit red. Only ranged types wear it
+// (every clone carries a rifle); the numbers stay each type's own.
+const TURNED_CLONE = { model: 'clone', color: 0xdcdcd6, eye: 0xff3a2a, cloth: 0xb08a2a };
+export const TURNED = { blaster: TURNED_CLONE, grenadier: TURNED_CLONE, sniper: TURNED_CLONE,
+                        officer: { ...TURNED_CLONE, cloth: 0x8a5a1a } };
+
 export const ORDERS = [
   { id: 'follow',    name: 'ON ME',          note: 'Form up on you',                              icon: '◎' },
   { id: 'move',      name: 'MOVE THERE',     note: 'Go to the crosshair and hold it',             icon: '➤' },

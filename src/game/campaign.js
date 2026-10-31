@@ -10,7 +10,7 @@ import { renderer } from '../engine/renderer.js';
 import { audioInit, S } from '../audio/sfx.js';
 import { MUSIC } from '../audio/music.js';
 import { LEVELS } from '../data/levels.js';
-import { ACT_TWO, ACT_TWO_AT, CHAPTER_OF_LEVEL, chapterOrder, forHero, storyVoice, actTitle, actOpen, actTwoLine, epilogueText, storyHero } from '../data/campaign.js';
+import { ACT_TWO, actTwoAt, CHAPTER_OF_LEVEL, chapterOrder, chapterNo, forHero, storyVoice, actTitle, actOpen, actTwoLine, epilogueText, storyHero } from '../data/campaign.js';
 import { startLevel, checkUnlocks, chapterRewards, releaseUnlockBanners } from './flow.js';
 import { startMission } from './mission.js';
 import { openSkillTree } from '../ui/store-ui.js';
@@ -30,14 +30,15 @@ export const chapterTitle = (c) => forHero(c.title, G.hero);
 // 'CHAPTER 3 · THE LAST EVACUATION', for the pause screen, the save slots and the menu's CONTINUE line
 export function chapterLabel(pos = G.chapter){
   const c = chapterAt(pos);
-  return c ? 'CHAPTER ' + (pos + 1) + ' · ' + chapterTitle(c) : '';
+  return c ? chapterNo(pos) + ' · ' + chapterTitle(c) : '';
 }
 
 /* ---------- starting and moving through the run ---------- */
 // BEGIN CAMPAIGN: a fresh build on chapter 1
 export function startCampaign(){
-  G.actTwo = null; G.storyHero = null;   // (the story is this hero's own: data/campaign.js storyHero)
+  G.actTwo = null; G.storyHero = null;   // (the story is this hero's own: data/campaign.js storyHero; the ARC trooper's opens on its prologue)
   resetStory();   // (and nothing in it has been chosen yet: game/choices.js)
+  G.levelIdx = 0; G.waveTotal = -1;   // (as a fresh build starts: a prologue's checkpoint is taken before its build resets)
   startChapter(0, { fresh: true });
 }
 // opts: fresh (a brand-new run: reset the build) · retry (after a death, or a loaded save: back to the chapter's
@@ -47,13 +48,13 @@ export function startChapter(pos, opts = {}){
   if (!c) return;
   G.chapter = pos; G.chapterClosed = null;   // (set again when it closes: game/flow.js chapterClosed)
   if (!opts.guest) recordChapters(pos);   // the sandbox follows the story (a co-op guest's is followChapter's)
-  const title = chapterTitle(c), name = 'CHAPTER ' + (pos + 1) + ' — ' + title, sub = 'ACT ' + ROMAN[c.act] + ' · ' + c.world;
+  const title = chapterTitle(c), no = chapterNo(pos), name = no + ' — ' + title, sub = 'ACT ' + ROMAN[c.act] + ' · ' + c.world;
   if (opts.retry && G.checkpoint && G.checkpoint.ch === pos) G.waveTotal = G.checkpoint.waveTotal;
   if (c.kind === 'waves'){
     startLevel(c.level, { level: { ...LEVELS[c.level], ...c.arena, name, sub }, waves: c.waves, resume: !opts.fresh, retry: opts.retry, chapter: true });
   } else {
     if (!opts.retry){ G.checkpoint = { idx: G.levelIdx, ch: pos, waveTotal: G.waveTotal, boss: false }; autosave('chapter'); }
-    startMission(c.mission, 0, !!opts.guest, { retry: !!opts.retry, chapter: { name, sub, arena: c.arena, kicker: 'CHAPTER ' + (pos + 1) + ' · ' + title, clear: (c.lines && forHero(c.lines.clear, G.hero)) || null, done: chapterCleared } });
+    startMission(c.mission, 0, !!opts.guest, { retry: !!opts.retry, chapter: { name, sub, arena: c.arena, fresh: !!opts.fresh, kicker: no + ' · ' + title, clear: (c.lines && forHero(c.lines.clear, G.hero)) || null, done: chapterCleared } });
   }
   if (opts.guest){ G.coopGuest = true; G.coopWasGuest = true; G.coopJoin = false; shared.levelPhase = G.mission ? 'mission' : 'between'; shared.phaseT = 0; }
   if (!opts.retry || opts.card) showCard(pos);
@@ -71,7 +72,7 @@ export function resumeChapter(run){
 // co-op: a guest joins the host's campaign on its chapter, with the kit that far into a run earns
 export function joinCampaign(pos, actTwo, wave, waveTotal){
   startLevel(0);   // a full fresh setup (kit, build, stats)
-  G.waveTotal = waveTotal; G.actTwo = actTwo || null;
+  G.waveTotal = waveTotal; G.actTwo = actTwo || null;   // (the host's run: its order of chapters; G.storyHero is set with it, net/foes.js)
   startChapter(pos, { guest: true });
   if (!G.mission) G.wave = wave;
   checkUnlocks();
@@ -88,7 +89,7 @@ export function followChapter(pos, actTwo){
 // wind, the upgrade screen, then the next chapter. A co-op guest waits for the host to move the run on.
 function chapterCleared(){
   const c = chapterAt(G.chapter);
-  G.waveTotal += c?.steps || 1;   // a mission counts as a step deeper into the run (foes, store tiers and the Mando's gear follow it); `steps` when it stands for a level's waves
+  G.waveTotal += c?.steps ?? 1;   // a mission counts as a step deeper into the run (foes, store tiers and the Mando's gear follow it); `steps` when it stands for a level's waves
   // a mission standing in for a level's waves (Mustafar): the run is as far into that level as its waves would have taken it
   if (c && c.level != null && c.waves){ G.levelIdx = c.level; G.wave = c.waves[1]; checkUnlocks(1600); }
   G.chapterClosed = G.chapter;   // its closing page offers the powers it hands out (game/flow.js chapterClosed)
@@ -105,7 +106,7 @@ export function nextChapter(){
   // a story's choice that follows the chapter just cleared comes first (game/choices.js); the host makes it in co-op
   const done = chapterAt(G.chapter), choice = !G.coopGuest && done && choiceAfter(done.story, done.id);
   if (choice) return void showChoice(choice, nextChapter);
-  if (pos === ACT_TWO_AT && !G.actTwo) return void showPick(pos, recordChapters(pos));
+  if (pos === actTwoAt() && !G.actTwo) return void showPick(pos, recordChapters(pos));
   startChapter(pos);
 }
 
@@ -137,12 +138,12 @@ const esc = (t) => String(t).replace(/[&<>]/g, (ch) => ({ '&': '&amp;', '<': '&l
 // the act's chapters: ticked, the one you're on, and what's ahead
 function roster(act, pos){
   return '<ol class="cc-roster">' + chapters().map((c, i) => c.act !== act ? '' :
-    '<li class="' + (i < pos ? 'done' : i === pos ? 'now' : '') + '"><span class="n">' + (i + 1) + '</span>' + esc(chapterTitle(c)) +
-    (c.trial ? '<span class="tag">TRIAL</span>' : '') + '<span class="w">' + esc(c.world) + '</span></li>').join('') + '</ol>';
+    '<li class="' + (i < pos ? 'done' : i === pos ? 'now' : '') + '"><span class="n">' + (c.prologue ? '·' : chapterNo(i).replace('CHAPTER ', '')) + '</span>' + esc(chapterTitle(c)) +
+    (c.trial ? '<span class="tag">TRIAL</span>' : c.prologue ? '<span class="tag">PROLOGUE</span>' : '') + '<span class="w">' + esc(c.world) + '</span></li>').join('') + '</ol>';
 }
 function head(c, pos){
   return '<div class="cc-act">ACT ' + ROMAN[c.act] + ' · ' + esc(actTitle(c.act)) + '</div>' +
-    '<div class="cc-num">CHAPTER ' + (pos + 1) + (c.trial ? ' · TRIAL' : '') + '</div>' +
+    '<div class="cc-num">' + chapterNo(pos) + (c.trial ? ' · TRIAL' : '') + '</div>' +
     '<h1 class="cc-title">' + esc(chapterTitle(c)) + '</h1><div class="cc-world">' + esc(c.world) + '</div>';
 }
 function voice(lines, who){
@@ -156,13 +157,13 @@ function talk(t){
 }
 export function showCard(pos){
   const c = chapterAt(pos), list = chapters();
-  const opensAct = pos === 0 || list[pos - 1].act !== c.act;
-  const lines = [...(opensAct && pos !== ACT_TWO_AT ? [actOpen(c.act)] : []), ...forHero(c.brief, G.hero)];   // (Act II's opening line was on its pick)
+  const opensAct = !c.prologue && (pos === 0 || list[pos - 1].act !== c.act || list[pos - 1].prologue);   // (a prologue is before the act: its opening line waits for chapter 1)
+  const lines = [...(opensAct && pos !== actTwoAt() ? [actOpen(c.act)] : []), ...forHero(c.brief, G.hero)];   // (Act II's opening line was on its pick)
   openCard('<div class="cc-inner hero-' + G.hero + '">' + head(c, pos) + talk(c.talk) + voice(lines) + roster(c.act, pos) +
     '<div class="cc-btns"><div class="btn primary go" data-go="1">' + (G.coopGuest ? 'READY' : 'BEGIN') + '</div></div>' +
     '<div class="cc-hint">Enter or click to begin</div></div>', () => {
       closeCard(); S.reward(1);
-      playOpening(c.id, { k: 'CHAPTER ' + (pos + 1) + ' · ACT ' + ROMAN[c.act], h: chapterTitle(c), p: c.world }, c.opening);   // the chapter's opening scene (game/cutscene.js)
+      playOpening(c.id, { k: c.prologue ? 'PROLOGUE' : chapterNo(pos) + ' · ACT ' + ROMAN[c.act], h: chapterTitle(c), p: c.world }, c.opening);   // the chapter's opening scene (game/cutscene.js)
       storyBeat('chapter');
     });
   resetScenes();   // a new visit to the chapter: its scenes play again
@@ -214,7 +215,7 @@ export function campaignWon(then){
 }
 function showEpilogue(then){
   openCard('<div class="cc-inner hero-' + G.hero + '">' +
-    '<div class="cc-act">EPILOGUE</div><div class="cc-num">' + chapters().length + ' CHAPTERS · ' + (G.actTwo === 'hoth' ? 'HOTH' : 'LOTHAL') + ' FIRST' +
+    '<div class="cc-act">EPILOGUE</div><div class="cc-num">' + chapters().filter(c => !c.prologue).length + ' CHAPTERS · ' + (G.actTwo === 'hoth' ? 'HOTH' : 'LOTHAL') + ' FIRST' +
     (choicesRecap() ? ' · ' + esc(choicesRecap()) : '') + '</div>' +
     '<h1 class="cc-title">' + esc(epilogueText('title')) + '</h1><div class="cc-world">' + esc(epilogueText('world')) + '</div>' +
     voice(epilogueText('lines')) +

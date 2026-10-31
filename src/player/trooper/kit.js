@@ -4,7 +4,7 @@
 // are gunners; the tuning is data/trooper.js.
 
 import { G, shared, enemies, player } from '../../state.js';
-import { TROOPER, TROOPER_WEAPON_ORDER } from '../../data/trooper.js';
+import { TROOPER, TROOPER_WEAPON_ORDER, RIFLE_MODS, RIFLE_MOD_ORDER } from '../../data/trooper.js';
 import { MANDO_WEAPONS } from '../../data/mando.js';
 import { V3, clamp, TMP } from '../../utils.js';
 import { sfx, S } from '../../audio/sfx.js';
@@ -28,10 +28,11 @@ import { battlefieldCall, updateCalls, resetCalls } from '../../allies/calls.js'
 import { resetCommand } from './command.js';
 
 /* ---------- INPUT (engine/input.js hands the trooper's presses here) ---------- */
-// LMB: the rifle's burst, or the next pistol. RMB: aim (the steady stance): a tighter cone, a steadier reticle.
+// LMB: the rifle's burst (or its module: held for the auto barrel), or the next pistol. RMB: aim (the steady stance): a
+// tighter cone, a steadier reticle; with the marksman scope fitted it raises the scope.
 export function trooperMouseDown(button){
-  if (button === 0){ player.trigHeld = true; fireTrigger(); }
-  if (button === 2 && !(player.gbT > 0)) player.blockHeld = true;
+  if (button === 0){ player.trigHeld = true; if (mandoWeapon().fire === 'auto') player.firing = true; fireTrigger(); }
+  if (button === 2 && !(player.gbT > 0)){ player.blockHeld = true; if (mandoWeapon().scope) player.zoom = true; }
 }
 export function trooperKey(k, repeat){
   if (k === 'shift' && !repeat) trooperRoll();
@@ -40,7 +41,7 @@ export function trooperKey(k, repeat){
   if (k === 'g' && !repeat) fragGrenade();
   if (k === 'e' && !repeat) rifleBash();
   if (k === 'r' && !repeat) startReload();   // overheated: the active vent (mando/weapons.js activeVent)
-  if (k === '1') switchWeapon('rifle');
+  if (k === '1' && !repeat){ if (player.weapon === 'rifle') swapModule(); else switchWeapon('rifle'); }   // 1 again: the rifle's next module
   if (k === '2') switchWeapon('pistols');
   if (k === '3' && G.unlocked.launcher) switchWeapon('launcher');
   if (k === 't' && !repeat) battlefieldCall();   // BATTLEFIELD CALLS: reinforce or a supply drop, for COMMAND POINTS (allies/calls.js)
@@ -51,6 +52,26 @@ export function trooperCycle(dir){
   const order = TROOPER_WEAPON_ORDER.filter(w => w !== 'launcher' || G.unlocked.launcher);
   const i = order.indexOf(player.weapon), n = order.length;
   switchWeapon(order[((i < 0 ? 0 : i) + dir + n) % n]);
+}
+
+/* ---------- THE MODULAR DC-15 (1 again, the rifle in hand) — the next module the run has handed over ---------- */
+export const rifleMods = () => RIFLE_MOD_ORDER.filter(k => !RIFLE_MODS[k].unlock || G.unlocked[RIFLE_MODS[k].unlock]);
+export function swapModule(){
+  const list = rifleMods();
+  if (list.length < 2){
+    if (G.gt - (player.lastWinded || -9) > 0.5){ player.lastWinded = G.gt; floater(playerPos(), 'NO MODULES YET', '#9fb8d0'); }
+    return;
+  }
+  const i = list.indexOf(player.rifleMod || 'burst'), next = list[(i + 1) % list.length];
+  player.rifleMod = next;
+  const W = mandoWeapon();
+  player.burstLeft = 0; player.burstQ = false; player.spin = 0;
+  player.fireCd = Math.max(player.fireCd, 0.3);   // the module clicks home
+  player.firing = player.trigHeld && W.fire === 'auto';
+  player.zoom = player.blockHeld && !!W.scope;
+  floater(playerPos(), RIFLE_MODS[next].label, '#bfe8ff');
+  sfx(620, 0.05, 'square', 0.05, 380); sfx(260, 0.07, 'triangle', 0.05, 140);
+  tutEvent('module');
 }
 
 /* ---------- COMBAT ROLL (SHIFT) — the Mando's combat dive, on the ground only: no pack to light ---------- */
@@ -77,7 +98,7 @@ export function updateTrooperKit(dt){
   updateCalls(dt);
 }
 export const fragMax = () => TROOPER.frag.charges + (player.up.fragExtra || 0);   // FRAG POUCH (data/trooper-progression.js) adds one
-export function resetTrooperKit(){ player.fragCharges = fragMax(); player.fragT = 0; player.bashCd = 0; resetTrooperPowers(); resetCalls(); resetCommand(); }
+export function resetTrooperKit(){ if (!rifleMods().includes(player.rifleMod)) player.rifleMod = 'burst'; player.fragCharges = fragMax(); player.fragT = 0; player.bashCd = 0; resetTrooperPowers(); resetCalls(); resetCommand(); }
 function fragTarget(F, from){
   const aim = mandoAimPoint(), ray = mandoAimRay();
   const o = ray.origin, d = ray.direction;

@@ -9,8 +9,9 @@
 // company turned on them; that General is the Knight now holding Hoth's trenches. The voice is THE CAPTAIN, the old
 // clone captain who keeps the band together. The rival is THE MARSHAL, a commander from the trooper's own batch who
 // kept his chip and leads the Empire's purge troopers. He calls the trooper brother, and means it.
-// (Planned and not built yet: a prologue mission on the night of the order, and the trooper's own chapters in place of
-// the three trials: THE KILL HOUSE, BROTHERS IN ARMS and THE GENERAL. Until then the trooper plays the trials as they are.)
+// The run opens on THE NIGHT OF THE ORDER, a prologue only the trooper plays (data/missions.js order66, on its own
+// jungle map). (Planned and not built yet: the trooper's own chapters in place of the three trials: THE KILL HOUSE,
+// BROTHERS IN ARMS and THE GENERAL. Until then the trooper plays the trials as they are.)
 
 export const TROOPER_VOICE = 'THE CAPTAIN';
 
@@ -30,6 +31,17 @@ export const TROOPER_ACT_TWO = {
 
 // per chapter id: title (only where it differs), brief (the chapter card), and lines (the comms during the chapter)
 export const TROOPER_CHAPTERS = {
+  // ---------------- PROLOGUE ----------------
+  order: {
+    brief: ['Eight years ago. A jungle firebase on the edge of the war, and a General we would have followed anywhere.',
+            'At midnight the order came, and the company turned its rifles on the General. Vant, Brisk and you did not.'],
+    lines: {
+      duel: [{ who: 'THE MARSHAL', rival: true, say: 'You heard the order, brother. Same as I did. Step aside.' }],
+      escape: ['Let him go. Get the General aboard.'],
+      clear: ['The ship lifts over the canopy with the General and the three of you aboard.',
+              'Eight years of hiding start tonight. So does the band.'],
+    } },
+
   // ---------------- ACT I: THE ORDER ----------------
   siege: {
     brief: ['The Empire has found Jedha, and the temple that hid us. The Jedi are holding the steps.',

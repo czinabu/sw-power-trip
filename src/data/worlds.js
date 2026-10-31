@@ -321,6 +321,31 @@ export const MISSION_WORLDS = {
     beats: { fog: 0xc08870, fill: 1.05, tint: 0xffc8a0 },
     sound: 'temple',
   },
+  jungle: {   // the jungle firebase on the night of the order (the ARC trooper's prologue): moonlight through the canopy, fireflies
+    sky: { top: 0x070c18, horizon: 0x1f3a3a, below: 0x0e1a14, bands: 6, stars: 90,
+      sun: { el: 0.45, color: 0xdfe8ff, size: 14, kind: 'moon' },
+      clouds: { color: 0x2a3a48, under: 0x101820, count: 10, lo: 0.4, hi: 0.85 },
+      ridges: [{ color: 0x0c1a12, h: 0.2, rough: 0.2, spiky: 0.9, seed: 11 }, { color: 0x10241a, h: 0.12, rough: 0.14, spiky: 0.6, seed: 3 }] },
+    fog: 0x18302a, fogStart: 0.55, fogEnd: 2.2,
+    // night, but the troopers must still read: a cool moon key, a teal rim, and a fill that keeps the floor off black
+    light: { sun: 0xa8c4ff, sunI: 1.3, dir: [-20, 40, 18], hemiSky: 0x6a8aa8, hemiGround: 0x1e2a1c, fill: 0.8, rim: 0x7ad8c0, rimI: 0.55 },
+    floor: { kind: 'grass', base: 0x34442a, seed: 41 },
+    outer: 0x22301e,
+    pal: { bark: 0x4a3a2c, barkD: 0x30261c, leaf: 0x1e4a2a, leafD: 0x163a20, stone: 0x5a6a5a, stoneD: 0x3e4a3e, moss: 0x3a6a32,
+           metal: 0x5a6252, metalD: 0x3a4036, bag: 0x6a6448, crate: 0x5a5038, lamp: 0xffc070, fungus: 0x5affd0, red: 0xff3a2a, stripe: 0xb08a2a },
+    backdrop: [
+      { kind: 'cliffs', count: 22, r: [1.4, 2.0], h: [20, 34], w: 0.3, color: 0x10221a, color2: 0x0c1a14 },
+      { kind: 'spires', count: 26, r: [1.2, 1.8], h: [22, 40], w: [1.5, 3], color: 0x1a2a1c, color2: 0x142218 },   // the jungle's giants, as silhouettes
+    ],
+    ambient: { kind: 'dust', color: 0xc8ff7a, count: 140, size: 0.2, opacity: 0.7 },   // fireflies
+    mist: { color: 0x5a8a7a, count: 40, size: 10, opacity: 0.14 },
+    // the company's gunships hunting over the canopy, blue bolts in the trees
+    warfront: { flyers: [{ kind: 'dropship', count: 2, alt: [30, 55], speed: [20, 30], every: [7, 12] }],
+      blasts: 0.35, tracers: { rate: 0.7, colors: [0x3a8aff, 0x6ab0ff] }, columns: 2, smoke: 0x1a2420 },
+    beats: { fog: 0x24403a, fill: 1.05, tint: 0xa0e0d0 },
+    hazards: { barrel: 0x6a5a2a },
+    sound: 'plains',
+  },
   pursuit: {   // the spaceport at Khel Dar: a sandstone port town in the late-afternoon sun, a Star Destroyer over the docks
     sky: { top: 0x3a5c92, horizon: 0xf0b070, below: 0xb08a62, bands: 7, stars: 0,
       sun: { el: 0.16, color: 0xffe0a0, halo: 0xffb070, size: 22 },
