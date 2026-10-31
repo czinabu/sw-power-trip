@@ -23,6 +23,7 @@ import { updateDark } from './darksaber.js';
 import { spawnHitSpark } from '../../fx/vfx.js';
 import { muzzleFlash, inkSprite, sparks, puff, screenAngle } from '../../fx/ink.js';
 import { tutEvent } from '../../game/tutor-bus.js';
+import { gauntletPoint } from '../../fx/palms.js';
 import { momentumShot } from '../parkour.js';
 import { mandoMelee } from './melee.js';
 import { syncHolster } from '../holster.js';
@@ -98,6 +99,8 @@ function muzzleOrigin(side){
 }
 export function spawnBlasterBolt(origin, dir, dmg, color, scale, W, opts){
   W = W || {}; opts = opts || {};
+  // the bolt leaves the barrel of the gun that fired it, still flying at the point the shot was aimed through
+  if (opts.to){ const mz = gunMuzzle(origin); if (mz.distanceToSquared(origin) > 1e-4){ origin = mz.clone(); dir = V3(opts.to.x - origin.x, opts.to.y - origin.y, opts.to.z - origin.z).normalize(); } }
   const spr = opts.spread != null ? opts.spread : (W.hipSpread != null ? W.hipSpread : MANDO.spread);
   dir = dir.clone();
   dir.x += rand(-1,1)*spr; dir.y += rand(-1,1)*spr*0.6; dir.z += rand(-1,1)*spr; dir.normalize();
@@ -111,7 +114,7 @@ export function spawnBlasterBolt(origin, dir, dmg, color, scale, W, opts){
   if (G.stats) G.stats.shotsFired++;
   // muzzle flash fires every shot, drawn at the barrel of whichever gun is nearest the bolt's origin — pooled Ink
   // sprites, no per-shot PointLight (a light here would churn the light count; big blasts use flashLight()).
-  muzzleFlash(gunMuzzle(origin), dir, color, 0.7 + scale * 0.35);
+  muzzleFlash(gunMuzzle(origin), dir, color, 0.55 + scale * 0.25);
 }
 // the world-space barrel tip of the visible gun closest to `near` (falls back to `near` itself)
 const MUZZLES = [['pistols', 'R', [0, 0.115, 0.38]], ['pistols', 'L', [0, 0.115, 0.38]], ['rifleMesh', null, [0, 0.11, 0.96]]];
@@ -201,7 +204,7 @@ function fireBlaster(W){
   const foMin = steadyAim ? Math.min(1, (W.foMin || 1) + 0.25) : W.foMin;   // bracing stretches effective range
   const baseSpread = steadyAim ? W.braceSpread : W.hipSpread;
   const spread = baseSpread + (steadyAim ? inacc * 0.003 : inacc * 0.028);   // boosting blooms the cone hard
-  const opts = { spread, foMin };
+  const opts = { spread, foMin, to: aim };
   const col = steadyAim ? 0xffd24a : 0xffb84a;   // braced bolts glint hotter
   if (W.dual && player.backRun){
     // running away: one hand fires back over his shoulder (he faces the camera, so his gun hand is on screen-left;
@@ -228,7 +231,7 @@ function fireRifle(W){
   player.aiming = 0.8;
   const aim = mandoAimPoint();
   const o = muzzleOrigin(0.06);
-  spawnBlasterBolt(o, V3(aim.x-o.x, aim.y-o.y, aim.z-o.z).normalize(), W.dmg * player.up.dmg, 0x7fe0ff, 2.0, W);
+  spawnBlasterBolt(o, V3(aim.x-o.x, aim.y-o.y, aim.z-o.z).normalize(), W.dmg * player.up.dmg, 0x7fe0ff, 2.0, W, { to: aim });
   disruptorWake(gunMuzzle(o).clone(), V3(aim.x-o.x, aim.y-o.y, aim.z-o.z).normalize());
   player.recoil = 0.5; player.recoilKick = 0.5;
   G.shake = Math.max(G.shake, 0.4); G.hitstop = Math.max(G.hitstop, 0.05);
@@ -313,18 +316,20 @@ export function updateFlame(dt){
   // down onto the troops below you from the air
   const aim = aimFrom(V3(pp.x, pp.y + 1.4, pp.z)), f = aim.dir;
   const fy = pp.y + 1.4;
-  fl.position.set(pp.x + f.x*2.2, fy + f.y*2.2, pp.z + f.z*2.2);
-  // a roaring stream of fire fanning from the wrist: toon flame puffs that leave the nozzle white-hot and cool in hard
-  // steps (yellow, orange, ember) into ink-rimmed smoke as they reach the end of the stream. Emitted by time, not frame.
+  // the nozzle: the vambrace on his left forearm (fx/palms.js), so the stream leaves the gauntlet, not the chest
+  const nz = gauntletPoint().addScaledVector(f, 0.12);
+  fl.position.set(nz.x + f.x*1.6, nz.y + f.y*1.6, nz.z + f.z*1.6);
+  // a roaring stream of fire fanning from the wrist: toon flame puffs that leave the nozzle white-hot and small and swell
+  // as they cool in hard steps (yellow, orange, ember) into ink-rimmed smoke at the end of the stream. Emitted by time.
   player.flameEmit = (player.flameEmit || 0) + dt * 64;
   for (; player.flameEmit >= 1; player.flameEmit--){
     const spread = rand(-A.angle, A.angle) * 0.8;
     const dx = f.x*Math.cos(spread) - f.z*Math.sin(spread), dz = f.x*Math.sin(spread) + f.z*Math.cos(spread);
     const spd = range * rand(2.2, 2.9), life = rand(0.32, 0.44);
-    puff(V3(pp.x + f.x*0.9, fy + f.y*0.9 + rand(-0.1,0.15), pp.z + f.z*0.9), FLAME[0][1], rand(0.9, 1.3) + range*0.12, life,
-         V3(dx*spd, f.y*spd + rand(0.6,2.2), dz*spd), { ramp: FLAME, drag: 2.2, grav: -3, grow0: 0.25, shade: 0.3, inkW: 0.12 });
+    puff(V3(nz.x, nz.y + rand(-0.05, 0.05), nz.z), FLAME[0][1], rand(0.9, 1.3) + range*0.12, life,
+         V3(dx*spd, f.y*spd + rand(0.6,2.2), dz*spd), { ramp: FLAME, drag: 2.2, grav: -3, grow0: 0.08, shade: 0.3, inkW: 0.12 });
   }
-  if (Math.random() < 0.5) sparks(V3(pp.x + f.x*1.2, fy + f.y*1.2, pp.z + f.z*1.2), 0xffd06a, 1, range * 2.2, { dir: f, cone: A.angle, life: 0.3, grav: -2, size: 0.4 });
+  if (Math.random() < 0.5) sparks(nz, 0xffd06a, 1, range * 2.2, { dir: f, cone: A.angle, life: 0.3, grav: -2, size: 0.4 });
   // the roar is a continuous loop driven by player.flaming (audio/director.js)
   G.shake = Math.max(G.shake, 0.06);   // a steady rumble, no jitter
   // light tick damage + a steady gentle push (NO per-hit hitstop/sfx — that was the "spazz")

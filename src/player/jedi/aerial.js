@@ -124,8 +124,8 @@ function strike(pp, tgt){
     const tp = tgt.group.position, ip = V3(tp.x - dir.x * 0.3, Math.max(pp.y, tp.y) + 1.2, tp.z - dir.z * 0.3);
     G.hitstop = Math.max(G.hitstop, 0.07); G.shake = Math.max(G.shake, 0.5);
     spawnHitSpark(ip, 0xffffff, 1.5);
-    sparks(ip, st.blade, 12, 13, { dir, cone: 0.6, life: 0.3 });
-    inkSprite({ pos: ip, shape: 'star', points: 6, sharp: 0.15, color: st.blade, size: [1.0, 2.6], life: 0.14, steps: 2, coreW: 0.4 });
+    sparks(ip, st.blade, 5, 9, { dir, cone: 0.6, life: 0.2, size: 0.38 });
+    inkSprite({ pos: ip, shape: 'star', points: 6, sharp: 0.15, color: st.blade, size: [0.3, 0.8], life: 0.1, steps: 2, coreW: 0.4 });
     S.heavy(ip);
     addFocus(FOCUS.gainFin);
   }

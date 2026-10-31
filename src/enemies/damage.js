@@ -104,8 +104,8 @@ export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick, opts){
       // a spray of sparks off the hit + a bright impact flash & ring — every connect reads as a real hit
       const kd = knockDir.clone().setY(0).normalize();
       if (e.hp > 0) hitReact(e, kd, 0.18 + power * 0.22, opts && opts.fold, opts);   // the body rocks with the blow
-      sparks(cp, 0xffffff, Math.round(3 + power*3), 9 + power*5, { dir: kd, cone: 0.8, life: 0.24 });
-      sparks(V3(cp.x + kd.x*0.4, cp.y, cp.z + kd.z*0.4), col, Math.round(3 + power*3), 7 + power*5, { dir: kd, cone: 1, life: 0.3 });
+      sparks(cp, 0xffffff, Math.round(2 + power*1.5), 7 + power*3, { dir: kd, cone: 0.8, life: 0.18, size: 0.36 });
+      sparks(cp, col, Math.round(2 + power*1.5), 6 + power*3, { dir: kd, cone: 1, life: 0.2, size: 0.36 });
       spawnHitSpark(cp, col, power);
       if (e.hp > 0 && !byAlly){
         G.hitstop = Math.max(G.hitstop, 0.02 + power*0.028);   // a micro-freeze on impact — the core of "punch"

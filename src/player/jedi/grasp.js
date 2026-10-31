@@ -16,6 +16,7 @@ import { heroAim, inAim, bossInAim } from '../aim.js';
 import { damageEnemy, staggerEnemy } from '../../enemies/damage.js';
 import { bossStagger } from '../../boss/boss.js';
 import { sparks, motes } from '../../fx/ink.js';
+import { palmPoints, castHands } from '../../fx/palms.js';
 import { castGesture, forcePull } from './force.js';
 import { tryAttack } from './combat.js';
 import { forceStrike } from './palm.js';
@@ -167,6 +168,16 @@ export function updateGrasp(dt){
   player.force -= g.drain * (1 + g.multiCost * (gr.bodies.length - 1)) * (player.up.abilityCostMul || 1) * dt;
   if (player.force <= 0 || gr.t > g.maxT){ player.force = Math.max(0, player.force); graspDrop(); return; }
   player.castT = Math.max(player.castT, 0.2); player.castMax = 0.5; player.castKind = 'pull';
+  // the hold runs out of the reaching palm (either palm, holstered): a thin stream of Force drawn to each body
+  if ((gr.fxT = (gr.fxT || 0) - dt) <= 0){
+    gr.fxT = 0.05;
+    const hands = palmPoints(castHands());
+    for (const b of gr.bodies){
+      const h = hands[(Math.random() * hands.length) | 0], ep = b.e.group.position;
+      const to = V3(ep.x - h.x, ep.y + 1.2 - h.y, ep.z - h.z), d = to.length();
+      if (d > 0.3) sparks(h, stance().blade, 1, d / 0.22, { dir: to.divideScalar(d), cone: 0.04, life: 0.22, grav: 0, stretch: 4, size: 0.3 });
+    }
+  }
   const pp = playerPos(), f = fwd(), rx = -f.z, rz = f.x;
   // ease the spring in over the first moment of the hold, so the rise into the hand is smooth rather than a yank
   const ease = clamp(0.35 + gr.t * 4, 0, 1);

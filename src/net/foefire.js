@@ -30,6 +30,8 @@ import { players } from '../player/players.js';
 import { tellFx } from '../fx/tells.js';
 import { burst } from '../fx/particles.js';
 import { spawnGroundShock } from '../fx/vfx.js';
+import { castHands } from '../fx/palms.js';
+import { partnerPower } from './partner-fx.js';
 import { S } from '../audio/sfx.js';
 import { net, on, send, connected } from './session.js';
 import { hooks } from './run.js';
@@ -150,16 +152,15 @@ on('pb', (m) => {
   b.ghost = true; b.mesh.material.color.setHex(m.c); b.mesh.scale.set(m.k, m.k * 1.3, m.k);
 });
 
-/* ---------------- the partner's one-shot Force powers: a ring where they stand ---------------- */
+/* ---------------- the partner's one-shot Force powers: out of their palms, or a ring where they stand ---------------- */
 hooks.power = (k, color, r) => {
   if (!asHost() && !asGuest()) return;
   const p = playerPos();
-  send({ t: 'pw', k, c: color, r: r2(r), x: r2(p.x), z: r2(p.z) });
+  send({ t: 'pw', k, c: color, r: r2(r), x: r2(p.x), z: r2(p.z), h: castHands().length });
 };
 on('pw', (m) => {
   if (!asHost() && !asGuest()) return;
-  spawnGroundShock(V3(m.x, 0.1, m.z), m.c, m.r, 0.45, 0.7);
-  burst(V3(m.x, 1.0, m.z), m.c, 10, 8, 4);
+  partnerPower(m.k, m.c, m.r, m.h || 1, m.x, m.z);
 });
 
 /* ---------------- shared XP: a kill pays both heroes ---------------- */
