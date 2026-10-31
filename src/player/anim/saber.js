@@ -18,9 +18,9 @@ const _t = new THREE.Vector3(), _p = new THREE.Vector3(), _ax = new THREE.Vector
 // cache the data as vectors once
 const vecOff = o => o && { hand: V(o.hand), pole: V(o.pole || [-0.55, -0.8, -0.25]).normalize() };
 const vecPose = p => p && ({ ...p, hand: V(p.hand), blade: V(p.blade).normalize(), pole: V(p.pole || [0.55, -0.8, -0.25]).normalize(),
-  off: vecOff(p.off), offAlt: vecOff(p.offAlt), offMove: vecOff(p.offMove) });
+  off: vecOff(p.off), offMove: vecOff(p.offMove), offFight: vecOff(p.offFight) });
 const GUARDS = {}, SWINGS = {};
-for (const g in SABER_GUARDS){ GUARDS[g] = {}; for (const f in SABER_GUARDS[g]) GUARDS[g][f] = { ready: vecPose(SABER_GUARDS[g][f].ready), block: vecPose(SABER_GUARDS[g][f].block) }; }
+for (const g in SABER_GUARDS){ GUARDS[g] = {}; for (const f in SABER_GUARDS[g]) GUARDS[g][f] = { ready: vecPose(SABER_GUARDS[g][f].ready), block: vecPose(SABER_GUARDS[g][f].block), block2: vecPose(SABER_GUARDS[g][f].block2) }; }
 const AIR = {};
 for (const g in AIR_GUARDS){ AIR[g] = {}; for (const f in AIR_GUARDS[g]){ AIR[g][f] = {}; for (const k in AIR_GUARDS[g][f]) AIR[g][f][k] = vecPose(AIR_GUARDS[g][f][k]); } }
 /* an agility guard (data/agility.js AIR_GUARDS) for this grip and form, or null to keep the form's ready guard. A form
@@ -115,7 +115,9 @@ function seed(R, held){
 export function guardPose(dt, R, held, grip, form, blocking, sway, over = null, rate = 1){
   if (!saberPose.live) seed(R, held);
   const G0 = (GUARDS[grip] && (GUARDS[grip][form] || GUARDS[grip].niman)) || GUARDS.regular.niman;
-  const g = (!blocking && over) || (blocking ? G0.block : G0.ready);
+  if (blocking && !wasBlocking && G0.block2) blockAlt = !blockAlt;
+  wasBlocking = blocking;
+  const g = (!blocking && over) || (blocking ? (blockAlt && G0.block2) || G0.block : G0.ready);
   switchT = Math.max(0, switchT - dt);
   const k = Math.min(1, dt * (blocking ? 18 : switchT > 0 ? SWITCH_RATE : 9) * rate);
   _t.copy(g.hand); _t.y += sway.y; _t.z += sway.z;
@@ -126,13 +128,13 @@ export function guardPose(dt, R, held, grip, form, blocking, sway, over = null, 
   slerpDir(saberPose.blade, out ? _ax.copy(g.blade).addScaledVector(OUTX, SWITCH_OUT * out).normalize() : g.blade, k, saberPose.blade);
   saberPose.pole.lerp(g.pole, k).normalize();
   saberPose.two += ((g.two ? 1 : 0) - saberPose.two) * Math.min(1, dt * 14);
-  // a guard can rest its free hand while idle and bring it up as soon as the hero moves (offMove)
-  const off = (sway.moving && g.offMove) || freeOff(g);
+  // a guard can rest its free hand while idle and bring it up as soon as the hero moves (offMove) or a fight is on (offFight)
+  const off = (sway.fight && g.offFight) || (sway.moving && g.offMove) || g.off;
   if (off){
     _p.copy(off.hand); if (sway.off){ _p.z += sway.off; _p.y += Math.abs(sway.off) * 0.3; }
     saberPose.off.lerp(_p, Math.min(1, dt * 8 * rate)); saberPose.offPole.lerp(off.pole, k).normalize();
   }
-  saberPose.palm += ((g.palm && off === freeOff(g) && off === g.off ? g.palm : 0) - saberPose.palm) * Math.min(1, dt * 8);
+  saberPose.palm += ((g.palm && off === g.off ? g.palm : 0) - saberPose.palm) * Math.min(1, dt * 8);
   saberPose.twist += ((g.twist || 0) - saberPose.twist) * Math.min(1, dt * 9 * rate);
   saberPose.lean += ((g.lean || 0) - saberPose.lean) * Math.min(1, dt * 10 * rate);
   return { torso: g.torso || 0 };
@@ -144,9 +146,8 @@ const SWITCH_TIME = 0.22, SWITCH_RATE = 24;   // seconds the fast blend lasts; i
 const GRIP_TURN = Math.PI / 0.16;   // rad/s the hilt turns over in the fingers on a grip change (half a turn in 0.16 s)
 const SWITCH_OUT = 1.1, OUTX = new THREE.Vector3(1, 0, 0);   // how far out to the weapon side the blade swings mid-switch
 let switchT = 0;
-/* a guard with an offAlt (Makashi) alternates its free hand between off and offAlt: every cut flips it */
-let altOff = false;
-const freeOff = g => (altOff && g.offAlt) || g.off;
+// a form with a second block (block2, Makashi) alternates between the two each time the guard goes up
+let blockAlt = true, wasBlocking = false;
 export function startSwitch(){ switchT = SWITCH_TIME; }
 
 /* KEEP CLEAR — the blade never passes through the hero. The body is an upright elliptic column in chest space (a
@@ -201,7 +202,6 @@ export function swingPose(R, held, grip, form, sw){
     sw.anim.wrap = !sw.flowCut && st0.x * c0.x < 0 && Math.abs(st0.x - c0.x) > 0.3;
     // the follow-through settles a little toward the form's guard instead of freezing (the recovery)
     const G0 = (GUARDS[grip] && (GUARDS[grip][form] || GUARDS[grip].niman)) || GUARDS.regular.niman;
-    if (G0.ready.offAlt) altOff = !altOff;   // Makashi: the free hand alternates out / behind the back with every cut
     sw.anim.rest = G0.ready;
     // which way across the body the cut travels (chest +x is the weapon side): spins and twirls turn into it. A cut
     // that runs straight down the middle has none of its own and turns toward the weapon side.
@@ -280,7 +280,7 @@ export function swingPose(R, held, grip, form, sw){
   // and flings it out the other way; it opens for balance on the follow-through and returns to the guard's place
   if (!style.two){
     const O = style.offKeys ? (style.offV || (style.offV = style.offKeys.map(V))) : OFF_KEYS[A.side > 0 ? 'back' : 'fore'], fl = style.offFlare;
-    const guardOff = (freeOff(A.rest) && freeOff(A.rest).hand) || OFF_REST;
+    const rOff = A.rest.offFight || A.rest.off, guardOff = (rOff && rOff.hand) || OFF_REST;
     const key = i => _p.copy(guardOff).lerp(O[i], fl);
     if (ph === 0){ _t.copy(A.start.off).lerp(key(0), t); }
     else if (ph === 1){ _t.copy(key(0)); _t.lerp(key(1), t); }

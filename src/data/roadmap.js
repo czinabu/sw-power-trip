@@ -7,8 +7,9 @@
 
 export const ROADMAP = [
   { title: 'Makashi: Dooku\'s fencing poise', status: 'done',
-    items: ['Form II Makashi\'s free hand now alternates with every cut between open and swept out behind (the film Dooku) and clasped at the small of the back (the Clone Wars Dooku)',
-            'Walking and blocking keep the hand behind the back; a cut brings it out of the back and sweeps it behind for balance, so the stance reads as a duellist\'s',
+    items: ['Idle: Form II Makashi stands square to the foe with the saber arm held straight out to the side and angled down, the blade carrying the line, and the off hand set on the small of the back with its elbow flared out',
+            'Fighting (a foe close, or a blow given or taken a moment ago): the off arm drops out low to the side for balance; cuts and the run keep it there',
+            'Two blocks alternate each time the guard goes up: the blade level across the belly, or laid diagonally across the head, the off hand on the back for both',
             'Same in every mode: story, training, survival, sandbox, missions, the stance unlock screen and co-op'] },
   { title: 'Steadier frames in big fights', status: 'done',
     items: ['Enemy pathfinding only maps the ground as far as the foes actually are, instead of the whole arena several times a second: up close in a duel it costs a sliver of what it did',
