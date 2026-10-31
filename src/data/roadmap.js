@@ -6,6 +6,10 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'Sealed guard arcs', status: 'done',
+    items: ['A duellist\'s glowing guard crescent is now a wall: any cut that arrives inside it is always turned, with the usual BLOCKED spark and clash sound',
+            'Attack from the open side (read the crescent, step round, or aim your cut A / D / W past its edge) or break the guard with a kick, a parry or a saber lock',
+            'A winded or recovering duellist has no arc and can be hit from anywhere. Same in every mode, co-op included'] },
   { title: 'Fury and Control bars', status: 'done',
     items: ['Juyo and Vaapad now show their fury on the HUD: a red FURY bar for Juyo, a violet CONTROL bar for Vaapad, above Focus at the bottom left, only while that form is active',
             'The bar fills as fury builds (Juyo: cuts that land · Vaapad: blocks and parries), pulses and reads FULL at max, when fury is giving its full bonus damage',
