@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { renderer, scene, camera, hemi, sun } from '../engine/renderer.js';
 import { V3, rand } from '../utils.js';
-import { shared, barrels, vents, pillars, solids, hazardZones } from '../state.js';
+import { shared, player, barrels, vents, pillars, solids, hazardZones } from '../state.js';
 import { spawnVent, spawnBarrel, setHazardStyle } from './hazards.js';
 import { makeFloorTex, makeSkyTex } from './textures.js';
 import { buildAmbient } from '../fx/ambient.js';
@@ -212,6 +212,7 @@ export function buildArena(L){
   buildNav();   // the enemy pathing grid follows the new layout (enemies/nav.js)
   // INK: cel-shade every static prop and merge them into a handful of draw calls (glows and hazards stay live)
   if (T) shared.arenaBake = bakeArena(shared.arenaGroup, T.ink ?? 0.045);
+  player.grime = 0;   // a fresh field: the soot of the last fight comes off the hero (player/model/wear.js)
   for (const f of arenaBuilt) f();
 }
 

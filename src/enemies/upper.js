@@ -9,13 +9,35 @@
 //   · WIND-UP — a melee foe draws its weapon shoulder back as it coils and whips it through on the strike
 //   · CAPE — a cape (enemies/mesh.js cape) streams back off the shoulders as the unit runs, swings out on a turn or a
 //     sidestep and settles in folds when it stops, each band lagging the one above it
+//   · STANCE — each type stands its own way (STANCE below): a brute's slow heavy breath and weight shift, a droid's
+//     twitchy servo glances and no breath at all, an officer's raised chin, a scout's hunch, a purge trooper's prowl
+//   · FACE — a unit with a face (enemies/detail.js) blinks, and works its jaw when it talks (an officer's order, a
+//     line in a cutscene: userData.talk) or grimaces when it's hit; slack-jawed and half-lidded when it falls
+//   · GEAR — the pouches, holster and canteen on the belt (detail.js belt) bounce with each footfall and lag a turn
 // mode 'off' (dead, floored, held in the Force) eases it all back to the rest pose; 'hold' freezes it (stasis).
 // It also tells the unit's armour wear (kit.js wearArmor) where the feet are, so the grime starts at the boots.
 
 import { clamp } from '../utils.js';
+import { LID_OPEN } from './detail.js';
+import { solveHolds } from './holds.js';
 
 const ease = (cur, want, dt, rate) => cur + (want - cur) * (1 - Math.exp(-rate * dt));
 const wrap = a => Math.atan2(Math.sin(a), Math.cos(a));
+
+/* how each type carries itself at rest. br/ba: breath rate and depth · sw/sa: a slow weight shift side to side (chest
+   roll) · cp/hp: the chest's and head's resting pitch (+ forward/down, − chin up) · gl: seconds between idle glances
+   [min, max] · gr: how fast a glance turns the head (a droid's snaps) · tilt: how far a glance cocks the head */
+const STANCE = {
+  default:  { br: 1.7, ba: 0.018, sw: 0.5, sa: 0.012, cp: 0, hp: 0, gl: [1.5, 4], gr: 12, tilt: 0 },
+  heavy:    { br: 1.3, ba: 0.03, sw: 0.35, sa: 0.035, cp: 0.05, hp: 0.04, gl: [2.5, 5], gr: 7, tilt: 0 },
+  b1:       { br: 0, ba: 0, sw: 0, sa: 0, cp: 0.06, hp: -0.05, gl: [0.5, 1.4], gr: 40, tilt: 0.3 },
+  magna:    { br: 0, ba: 0, sw: 0.25, sa: 0.01, cp: -0.03, hp: 0, gl: [2, 3.5], gr: 30, tilt: 0.12 },
+  officer:  { br: 1.4, ba: 0.014, sw: 0.3, sa: 0.008, cp: -0.05, hp: -0.1, gl: [2.5, 5], gr: 8, tilt: 0 },
+  scout:    { br: 2.0, ba: 0.016, sw: 0.4, sa: 0.01, cp: 0.12, hp: -0.08, gl: [1, 2.5], gr: 16, tilt: 0 },
+  purge:    { br: 1.9, ba: 0.02, sw: 0.6, sa: 0.02, cp: 0.08, hp: 0.06, gl: [1.2, 3], gr: 14, tilt: 0.05 },
+  lancer:   { br: 1.9, ba: 0.02, sw: 0.6, sa: 0.02, cp: 0.08, hp: 0.06, gl: [1.2, 3], gr: 14, tilt: 0.05 },
+  acolyte:  { br: 1.5, ba: 0.016, sw: 0.4, sa: 0.015, cp: 0.04, hp: 0.08, gl: [2, 4], gr: 9, tilt: 0 },
+};
 
 export function updateUpper(o, g, dt, aim, mode = 'on'){
   const u = g.userData, W = u.bodyMat && u.bodyMat.userData.wear;
@@ -25,6 +47,7 @@ export function updateUpper(o, g, dt, aim, mode = 'on'){
   const U = o.upper || (o.upper = { yaw: 0, pitch: 0, hy: 0, hp: 0, twist: 0, kick: 0, fl: 0, fr: 0,
                                     t: Math.random() * 10, look: 0, lookT: 0, hx0: hd ? hd.rotation.x : 0 });
   U.t += dt;
+  const ST = STANCE[u.model] || STANCE.default;
   let yaw = 0, pitch = 0, hy = 0, hp = 0, twist = 0;
   if (mode !== 'off'){
     if (aim){
@@ -36,8 +59,11 @@ export function updateUpper(o, g, dt, aim, mode = 'on'){
       pitch = clamp(-el * 0.5, -0.3, 0.3); hp = clamp(-el * 0.5, -0.4, 0.4);
       U.lookT = 0;
     } else {
-      // idle: now and then a glance to one side, held a moment
-      if ((U.lookT -= dt) <= 0){ U.look = Math.random() < 0.4 ? 0 : (Math.random() - 0.5) * 1.1; U.lookT = 1.5 + Math.random() * 2.5; }
+      // idle: now and then a glance to one side, held a moment (a droid snaps its head and cocks it)
+      if ((U.lookT -= dt) <= 0){
+        U.look = Math.random() < 0.4 ? 0 : (Math.random() - 0.5) * 1.1; U.lookT = ST.gl[0] + Math.random() * (ST.gl[1] - ST.gl[0]);
+        U.tilt = ST.tilt ? (Math.random() - 0.5) * 2 * ST.tilt : 0;
+      }
       hy = U.look;
     }
     // the melee wind-up: the weapon shoulder (+x) draws back with the coil, then whips through the strike
@@ -48,7 +74,8 @@ export function updateUpper(o, g, dt, aim, mode = 'on'){
   }
   const r = mode === 'off' ? 6 : 9;
   U.yaw = ease(U.yaw, yaw, dt, r); U.pitch = ease(U.pitch, pitch, dt, r);
-  U.hy = ease(U.hy, hy, dt, r + 3); U.hp = ease(U.hp, hp, dt, r + 3);
+  U.hy = ease(U.hy, hy, dt, aim ? r + 3 : ST.gr); U.hp = ease(U.hp, hp, dt, r + 3);
+  U.ht = ease(U.ht || 0, mode === 'off' || aim ? 0 : U.tilt || 0, dt, ST.gr);
   U.twist = ease(U.twist, twist, dt, o.state === 'strike' ? 30 : 12);
   // recoil: a shot snaps the shoulders back, settling over a fifth of a second
   if (o.kick){ U.kick = Math.max(U.kick, o.kick); o.kick = 0; }
@@ -64,12 +91,19 @@ export function updateUpper(o, g, dt, aim, mode = 'on'){
   if (o.headSnap > 0){ U.snap = Math.max(U.snap || 0, o.headSnap); U.snapSide = o.headSide || 0; o.headSnap = 0; }
   U.snap = Math.max(0, (U.snap || 0) - dt * 3.5);
   const snap = mode === 'off' ? 0 : U.snap * U.snap;
-  const heavy = o.t && o.t.heavy, breath = mode === 'off' ? 0 : Math.sin(U.t * (heavy ? 2.2 : 1.7)) * 0.018;
+  const on = mode === 'off' ? 0 : 1, breath = on * Math.sin(U.t * ST.br) * ST.ba;
+  // the stance: its resting carriage, eased in (so a fall or a stasis lets go of it smoothly) and a slow weight shift
+  U.st = ease(U.st ?? 0, on, dt, 3);
+  const shift = Math.sin(U.t * ST.sw) * ST.sa * U.st, talk = on * talking(U, u, o, dt);
   const kick = U.kick * U.kick;
-  ch.rotation.set(U.pitch + breath - kick * 0.16 + U.fl * 0.3, U.yaw + U.twist, -U.fr * 0.25);
-  if (hd) hd.rotation.set(U.hx0 + U.hp - breath * 0.6 + kick * 0.05 + U.fl * 0.2 - snap * 0.55, U.hy - U.twist * 0.6 - snap * (U.snapSide || 0) * 0.4, -U.fr * 0.15 + snap * (U.snapSide || 0) * 0.35);
+  ch.rotation.set(U.pitch + breath - kick * 0.16 + U.fl * 0.3 + ST.cp * U.st, U.yaw + U.twist, -U.fr * 0.25 + shift);
+  if (hd) hd.rotation.set(U.hx0 + U.hp - breath * 0.6 + kick * 0.05 + U.fl * 0.2 - snap * 0.55 + ST.hp * U.st + talk * Math.sin(U.t * 7.3) * 0.04,
+    U.hy - U.twist * 0.6 - snap * (U.snapSide || 0) * 0.4, -U.fr * 0.15 + snap * (U.snapSide || 0) * 0.35 + U.ht - shift * 0.6);
+  if (u.lids || u.jaw) faceLife(U, o, u, dt, mode, talk);
+  if (u.gearL || u.gearR || u.gearB) gearSwing(U, o, g, u, dt, mode);
   if (u.cape0) capeSwing(U, g, u, dt, mode);
   if (u.offArm || u.offArmR) armsSwing(U, o, g, u, dt, mode, breath);
+  if (u.holds && mode !== 'off') solveHolds(u);   // hands that stay on a staff or a pike haft as it moves (enemies/holds.js)
   // FALLING (dead, floored): the chest curls and the head lolls with the body's tip, so a fall isn't a rigid plank
   if (mode === 'off'){
     const f = fallOf(g);
@@ -135,4 +169,57 @@ function capeSwing(U, g, u, dt, mode){
     b.rotation.x = C.rest[i] + C.a[i];
     b.rotation.z = C.z[i];
   }
+}
+
+/* TALKING: an officer barking an order (its 'order' state), or any unit given a line (userData.talk, set by a
+   cutscene while its line is up). Returns 0..1, eased, for the jaw and a nod of the head */
+function talking(U, u, o, dt){
+  const want = u.talk || o.state === 'order' ? 1 : 0;
+  U.tk = ease(U.tk || 0, want, dt, 8);
+  return U.tk;
+}
+
+/* the FACE (enemies/detail.js face): lids that blink every few seconds (now and then twice), a jaw that works through
+   syllables while it talks, gapes for a moment when it's hit and hangs slack when it falls */
+function faceLife(U, o, u, dt, mode, talk){
+  const F = U.face || (U.face = { t: 1 + Math.random() * 3, k: 0, twice: false, jaw: 0, syl: 0, sylT: 0 });
+  F.t -= dt;
+  if (F.t <= 0 && mode !== 'off'){ F.k = 0.13; F.t = F.twice ? 0.2 : 2 + Math.random() * 3.5; F.twice = !F.twice && Math.random() < 0.2; }
+  F.k = Math.max(0, F.k - dt);
+  const hurt = o.flinch > 0 ? clamp(o.flinch / 0.15, 0, 1) : 0;
+  const shut = mode === 'off' ? 0.55 : Math.max(F.k > 0 ? Math.sin(F.k / 0.13 * Math.PI) : 0, hurt * 0.8);
+  if (u.lids) u.lids.scale.y = LID_OPEN + (1 - LID_OPEN) * shut;
+  if (!u.jaw) return;
+  // syllables: a new mouth shape every ~0.1 s while talking, never the same twice
+  if ((F.sylT -= dt) <= 0){ F.syl = talk > 0.1 ? 0.25 + Math.random() * 0.75 : 0; F.sylT = 0.07 + Math.random() * 0.08; }
+  const want = mode === 'off' ? 0.3 : Math.max(talk * F.syl * 0.32, hurt * 0.38);
+  F.jaw = ease(F.jaw, want, dt, 22);
+  u.jaw.rotation.x = F.jaw;
+}
+
+/* the belt's GEAR (enemies/detail.js belt): each piece is a damped pendulum hanging from the belt. Every footfall
+   kicks it (twice per stride), the body's acceleration swings it the other way and a turn throws it out, so it
+   bounces and lags instead of riding the hips rigidly. Felled, it hangs toward the floor as the body tips */
+function gearSwing(U, o, g, u, dt, mode){
+  const P = U.gear || (U.gear = { a: [0, 0, 0], va: [0, 0, 0], z: [0, 0, 0], vz: [0, 0, 0], ry: g.rotation.y, ph: 0 });
+  const L = o.legs, s = g.scale.x || 1, h = Math.min(dt, 1 / 30);
+  const y = g.rotation.y, turn = wrap(y - P.ry) / dt; P.ry = y;
+  let fwd = 0, side = 0, af = 0, as = 0, bounce = 0;
+  if (L){
+    fwd = (L.vx * Math.sin(y) + L.vz * Math.cos(y)) / s; side = (L.vx * Math.cos(y) - L.vz * Math.sin(y)) / s;
+    af = (L.ax * Math.sin(y) + L.az * Math.cos(y)) / s; as = (L.ax * Math.cos(y) - L.az * Math.sin(y)) / s;
+    const sp = Math.hypot(fwd, side);
+    bounce = Math.min(1, sp / 6) * Math.sin(L.cyc * Math.PI * 4);   // two footfalls a stride
+  }
+  const f = mode === 'off' ? fallOf(g) : 0;
+  [u.gearL, u.gearR, u.gearB].forEach((b, i) => {
+    if (!b) return;
+    const k = 70 + i * 10, c = 2 * Math.sqrt(k) * 0.35;   // springy: it swings past and back once or twice
+    const wantA = clamp(-af * 0.02 + fwd * 0.02, -0.6, 0.6) + bounce * 0.14 - f * Math.sign(g.rotation.x || 1) * 0.9;
+    const wantZ = clamp(as * 0.02 - side * 0.015 + turn * 0.05, -0.5, 0.5) + (i === 1 ? -1 : 1) * Math.abs(bounce) * 0.05;
+    P.va[i] += (k * (wantA - P.a[i]) - c * P.va[i]) * h; P.a[i] += P.va[i] * h;
+    P.vz[i] += (k * (wantZ - P.z[i]) - c * P.vz[i]) * h; P.z[i] += P.vz[i] * h;
+    b.rotation.x = clamp(P.a[i], -0.9, 1.0) * (i === 2 ? -1 : 1);   // the canteen hangs behind: it swings the other way
+    b.rotation.z = clamp(P.z[i], -0.6, 0.6);
+  });
 }

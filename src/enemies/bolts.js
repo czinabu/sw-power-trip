@@ -15,6 +15,7 @@ import { SQUAD } from '../data/allies.js';
 import { HEADSHOT_MULT } from '../data/mando.js';
 import { fwd, playerPos, stance } from '../player/helpers.js';
 import { damageEnemy, flinchEnemy, nearestEnemyInCone } from './damage.js';
+import { markHit } from './marks.js';
 import { damageBoss } from '../boss/boss.js';
 import { FOCUS, addFocus } from '../player/jedi/focus.js';
 import { spawnHitSpark, spawnParryFlash } from '../fx/vfx.js';
@@ -241,6 +242,7 @@ export function updateBolts(dt){
         if (b.ally){
           // a squadmate's bolt: plain damage, a small rock, nothing for the hero's streak or Focus (enemies/damage.js)
           damageEnemy(e, b.dmg, b.dir, 3, false, false, { ally: true, pin: !!(b.ally && b.ally.def && b.ally.def.pins) }); kill = true;   // (pin: the ARC trooper's heavy)
+          markHit(e.group, b.mesh.position, b.dir, 'scorch');   // the bolt leaves its scorch (enemies/scars.js)
           if (b.src && b.src.group && !e.dead){ e.avenge = b.src; e.avengeT = G.gt + SQUAD.avengeFor; e.allyCheck = 0; }   // the trooper it hit may turn on whoever shot it (allies/squad.js foeAllyTarget)
           boltImpact(b.mesh.position, b.mesh.material.color.getHex(), b.dir);
         } else if (!deflectPlayerBolt(e, b)){   // a saber duellist bats it straight back at you (duel.js)
@@ -255,6 +257,7 @@ export function updateBolts(dt){
             sfx(1900, 0.08, 'square', 0.05, 420); S.blastHit(b.mesh.position, 1.4); G.hitstop = Math.max(G.hitstop, 0.04); G.shake = Math.max(G.shake, 0.18);
           }
           damageEnemy(e, dmg, b.dir, 6); flinchEnemy(e, b.dir, b.flinch || 0.4); kill = true;   // bolts make foes recoil (a heavy gun's, or a ricochet, harder)
+          markHit(e.group, b.mesh.position, b.dir, 'scorch', { heavy: dmg >= 30 });   // a scorch where it struck; a helmet cracks (enemies/scars.js)
           if (!isHead) boltImpact(b.mesh.position, b.mesh.material.color.getHex(), b.dir);
           if (b.playerShot){ if (G.stats) G.stats.shotsHit++; hitMarker(e.dead ? 'kill' : (isHead ? 'head' : 'hit')); }
         }
@@ -264,6 +267,7 @@ export function updateBolts(dt){
         const isHead = b.mesh.position.y >= bp.y + 2.4;
         if (isHead){ dmg *= 1.8; floater(V3(bp.x, 3.0, bp.z), 'HEADSHOT', '#ffd24a'); sfx(1900,0.08,'square',0.06,420); }
         damageBoss(dmg); kill = true;
+        markHit(shared.boss.group, b.mesh.position, b.dir, 'scorch');
         boltImpact(b.mesh.position, b.mesh.material.color.getHex(), b.dir);
         if (b.playerShot){ if (G.stats) G.stats.shotsHit++; hitMarker(shared.boss.hp <= 0 ? 'kill' : (isHead ? 'head' : 'hit')); }
       }

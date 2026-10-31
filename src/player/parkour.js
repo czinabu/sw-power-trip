@@ -142,12 +142,12 @@ export function tryAutoMantle(pp){
   const ledge = findLedge(pp, moveDir(), STEP_UP, MOVE.reach);
   if (!ledge) return false;
   // a high lip (the Jedi): catch it and HANG; anything lower is pulled straight up onto
-  if (!isGunner() && ledge.top - pp.y > MOVE.hangFrom) startHang(ledge);
+  if (ledge.top - pp.y > MOVE.hangFrom) startHang(ledge);
   else startMantle(pp, ledge, false);
   return true;
 }
 
-/* LEDGE HANG (Jedi) — hands on the lip, feet against the face. A/D shimmy along it, W (held) or SPACE pulls up,
+/* LEDGE HANG (every hero) — hands on the lip, feet against the face. A/D shimmy along it, W (held) or SPACE pulls up,
    S lets go. The hang owns the body until one of those. */
 function startHang(ledge){
   player.hang = { c: ledge.c, nx: ledge.nx, nz: ledge.nz, held: 0 };
@@ -289,16 +289,18 @@ export function wallBeside(pp, range){
   return null;
 }
 
-/* WALL-RUN (Jedi) — jump alongside a wall at speed with W held and the feet catch it: a short run along the face
+/* WALL-RUN (every hero; the Mando only off a plain hop or fall, never under thrust) — jump alongside a wall at speed with W held and the feet catch it: a short run along the face
    that barely loses height. SPACE kicks off it (movement.js), letting go of W or running out of time drops you. */
 export function updateWallRun(dt, pp){
-  if (isGunner()) return;
+  const gunner = isGunner(), jets = gunner && (player.jetActive || player.hovering || player.boosting);   // the Mando's jets own the air: no wall-run under thrust
+  if (jets && !player.wallRun) return;
   const wr = player.wallRun;
   if (wr){
     wr.t += dt;
     const n = wallBeside(pp, 1.5);
     // the face must stay the same one: rounding a corner or the wall ending drops you off
-    if (player.grounded || !keys['w'] || !n || n.x * wr.nx + n.z * wr.nz < 0.9 || wr.t > MOVE.wallRunTime || player.mantle || player.slamming){
+    if (player.grounded || !keys['w'] || !n || n.x * wr.nx + n.z * wr.nz < 0.9 || wr.t > MOVE.wallRunTime || player.mantle || player.slamming || jets){
+      if (!player.grounded && !player.mantle && !player.slamming){ player.vel.x += wr.nx * MOVE.wallRunPeel; player.vel.z += wr.nz * MOVE.wallRunPeel; }   // peel off the face, carrying the run's speed
       player.wallRun = null;
       return;
     }
@@ -330,6 +332,17 @@ export function updateWallRun(dt, pp){
 /* LANDING — a hard touchdown buckles the knees for a beat (slow, no jump or dash) unless a roll was called for
    just before it. Returns true if it rolled. Called by locomotion on the frame the Jedi lands. */
 export function landingImpact(impact){
+  if (isGunner() && !player.slamming && !player.jetActive){
+    // GUNNERS shed speed on a drop and stumble on a very hard one (no roll window; the Mando's jet landings are exempt)
+    const L = MOVE.gunnerLand;
+    if (impact >= L.shedFrom){ player.moveVel.multiplyScalar(L.shed); player.vel.multiplyScalar(L.shed); }
+    if (impact >= L.staggerFrom){
+      const s = clamp((impact - L.staggerFrom) / L.staggerSpan, 0, 1);
+      player.landStagT = L.staggerMin + (L.staggerMax - L.staggerMin) * s; player.landStagAt = G.gt;
+      player.landDip = Math.max(player.landDip || 0, 0.2 + s * 0.25);
+    }
+    return false;
+  }
   if (isGunner() || player.slamming || player.airCut) return false;   // (the aerial cut lands in its own follow-through)
   if (impact < MOVE.staggerImpact) return false;
   if (G.gt - (player.rollReqT ?? -9) < MOVE.rollWindow){ landingRoll(); return true; }

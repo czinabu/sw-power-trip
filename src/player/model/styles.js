@@ -87,11 +87,54 @@ const SKY = { value: hemi.color }, GROUND = { value: hemi.groundColor };
    light-then-dark edge that lifts it off a dark arena or a busy backdrop. One knob for the whole cast (heroes,
    squadmates, enemies, bosses all draw through this surface). */
 export const inkRim = { value: 0.34 };
-function inkSurface(m, metal, rough, rimK = 1){
+/* SURFACE DETAIL (a procedural normal map: the models have no UVs, so the bumps come from noise on the part's own
+   rest-pose position and tilt the shading normal the way a bump map would). Plates get a faint hammered, pressed
+   texture, cloth a woven grain with long vertical folds, leather a fine pebble. It only bends the light, so the cel
+   bands break up a little along the surface instead of sliding across it like plastic; silhouettes don't change. */
+export const DETAIL_KIND = { hard: 1, cloth: 2, grain: 3 };
+const HARD = new Set(['beskar','beskar2','accent','trim','plate','grey','mark','armor','armor2','shield','metal','gun','gunDark','gunMetal','hilt']);
+const CLOTH = new Set(['robe','tunic','tabard','cloth','suit']);
+const GRAIN = new Set(['leather','strap','boot']);
+export function detailKind(key){
+  const k = String(key).replace(/^npc:/, '');
+  return HARD.has(k) ? 1 : CLOTH.has(k) ? 2 : GRAIN.has(k) ? 3 : 0;
+}
+export const surfaceDetail = { value: 1 };   // one knob for the whole cast (0 = smooth plastic, as before)
+const DETAIL_GLSL = `
+  float dHash(vec3 p){ return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
+  float dNoise(vec3 p){
+    vec3 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
+    return mix(mix(mix(dHash(i), dHash(i + vec3(1,0,0)), f.x), mix(dHash(i + vec3(0,1,0)), dHash(i + vec3(1,1,0)), f.x), f.y),
+               mix(mix(dHash(i + vec3(0,0,1)), dHash(i + vec3(1,0,1)), f.x), mix(dHash(i + vec3(0,1,1)), dHash(i + vec3(1,1,1)), f.x), f.y), f.z);
+  }`;
+const DETAIL_FRAG = `
+  #if DETAIL_KIND > 0
+  {
+    vec3 q = vDetP;
+    #if DETAIL_KIND == 1
+      float h = (dNoise(q * 16.0) * 0.65 + dNoise(q * 42.0) * 0.35) * 0.004;   // hammered, pressed plate
+    #elif DETAIL_KIND == 2
+      float h = (dNoise(vec3(q.x * 9.0, q.y * 2.6, q.z * 9.0)) * 0.6 * 0.012                             // long folds
+               + dNoise(vec3(q.x * 60.0, q.y * 160.0, q.z * 60.0)) * 0.0012);                          // the weave
+    #else
+      float h = dNoise(q * 80.0) * 0.0011;                                                                // pebbled leather
+    #endif
+    h *= uDetail;
+    vec3 sx = dFdx(-vViewPosition), sy = dFdy(-vViewPosition);
+    vec3 r1 = cross(sy, normal), r2 = cross(normal, sx);
+    float det = dot(sx, r1) * faceDirection;
+    vec3 grad = sign(det) * (dFdx(h) * r1 + dFdy(h) * r2);
+    normal = normalize(abs(det) * normal - grad);
+  }
+  #endif`;
+function inkSurface(m, metal, rough, rimK = 1, kind = 0){
   m.onBeforeCompile = sh => {
-    Object.assign(sh.uniforms, { uSky: SKY, uGround: GROUND, uMetal: { value: metal }, uRough: { value: rough }, uFill: darkFill, uRim: inkRim, uRimK: { value: rimK } });
-    sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', '#include <common>\nuniform vec3 uSky, uGround;\nuniform float uMetal, uRough, uFill, uRim, uRimK;')
+    Object.assign(sh.uniforms, { uSky: SKY, uGround: GROUND, uMetal: { value: metal }, uRough: { value: rough }, uFill: darkFill, uRim: inkRim, uRimK: { value: rimK }, uDetail: surfaceDetail });
+    sh.vertexShader = 'varying vec3 vDetP;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n  vDetP = position;');
+    // (in the source, not m.defines: a unit's own armour material is a clone(), and clone() drops defines)
+    sh.fragmentShader = `#define DETAIL_KIND ${kind}\n` + sh.fragmentShader
+      .replace('#include <common>', '#include <common>\nuniform vec3 uSky, uGround;\nuniform float uMetal, uRough, uFill, uRim, uRimK, uDetail;\nvarying vec3 vDetP;' + DETAIL_GLSL)
+      .replace('#include <normal_fragment_maps>', '#include <normal_fragment_maps>' + DETAIL_FRAG)
       .replace('#include <opaque_fragment>', `
         vec3 vv = normalize(vViewPosition);   // towards the camera
         vec3 nn = normalize(normal);
@@ -137,7 +180,7 @@ function inkSurface(m, metal, rough, rimK = 1){
         }
         #include <opaque_fragment>`);
   };
-  m.customProgramCacheKey = () => 'ink-surface-' + (metal > 0 ? 'm' : 'c');
+  m.customProgramCacheKey = () => 'ink-surface-' + (metal > 0 ? 'm' : 'c') + kind;
   return m;
 }
 
@@ -156,7 +199,7 @@ export function makeStyle(name = 'ink', colors = {}){
       // cel bands flatten metal; lift metals a touch so beskar still reads bright against the suit
       const c = new THREE.Color(d.c);
       if (d.m) c.offsetHSL(0, -0.05, 0.08);
-      m = inkSurface(new THREE.MeshToonMaterial({ color: c, gradientMap: toonRamp() }), Math.min(1, Math.max(0, ((d.m || 0) - 0.2) / 0.7)), d.r ?? 0.8, d.noRim ? 0 : 1);
+      m = inkSurface(new THREE.MeshToonMaterial({ color: c, gradientMap: toonRamp() }), Math.min(1, Math.max(0, ((d.m || 0) - 0.2) / 0.7)), d.r ?? 0.8, d.noRim ? 0 : 1, detailKind(key));
     } else {
       m = new THREE.MeshStandardMaterial({
         color: d.c, roughness: d.r ?? 0.8, metalness: (d.m || 0) * (cfg.env ? 1 : 0.75), flatShading: cfg.flat,

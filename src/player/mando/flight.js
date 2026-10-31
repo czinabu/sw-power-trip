@@ -14,7 +14,7 @@ import { thrust, jetIgnite } from '../../fx/ink.js';
 export function updateMandoFlight(dt, pp, f, r){
   // JETPACK — its OWN limited fuel (player.jet). Drains fast in the air, recovers on the ground.
   const fuelMul = player.up.fuelEff || 1;
-  const holdJet = !!keys[' '] && player.jet > 0 && G.mode === 'play' && player.darkT <= 0;
+  const holdJet = !!keys[' '] && !player.hang && player.jet > 0 && G.mode === 'play' && player.darkT <= 0;
   const wasJet = player.jetActive;
   player.jetActive = holdJet && (!player.grounded || player.vy > -0.2);
   // HOVER engages while airborne and holding RMB (brace OR disruptor scope), not thrusting, with fuel left —

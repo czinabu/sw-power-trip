@@ -85,7 +85,7 @@ export const AGILITY = {
       back: { pitch: -0.18, drop: 0.18, legs: 'slide', arms: null },
     },
     jump:   { tuck: 0.5, arms: null },
-    double: { somer: -1, lift: 0.25, legs: 'tuck', arms: 'tuck' },                     // a tight back tuck
+    double: { somer: 1, lift: 0.25, legs: 'tuck', arms: 'tuck' },                      // a tight front tuck (the leap faces its travel)
     evade: {
       back: { somer: -1, lift: 0.3, legs: 'tuck', arms: 'tuck' },
       fwd:  { somer: 1, lift: 0.25, legs: 'tuck', arms: 'tuck' },

@@ -10,6 +10,7 @@
 import * as THREE from 'three';
 import { camera, scene } from '../engine/renderer.js';
 import { G, shared, player, isGunner } from '../state.js';
+import { VOICE } from '../data/campaign.js';
 import { playerPos, stance, fwd, rightV } from '../player/helpers.js';
 import { animatePlayer } from '../player/animation.js';
 import { cameraClearance, sightClear, updatePropFade } from '../world/camblock.js';
@@ -94,6 +95,8 @@ function updateActor(a, dt){
   updateUpper(a, g, dt, pp);
 }
 function dropActors(){
+  player.talking = false;
+  for (const a of C.actors) if (a.g) a.g.userData.talk = false;
   for (const a of C.actors) if (a.own) scene.remove(a.g);
   C.actors = [];
 }
@@ -213,6 +216,10 @@ function showShot(){
   if (s.line !== C.shown){ setLine(s.line || null); C.shown = s.line; }
   if (s.title) setTitle(s.title); else if (C.i > 0 && C.shots[C.i - 1].title) setTitle(null);
   if (s.walk){ const a = C.actors[0]; if (a && a.own) walkTo(a, s.walk[0], s.walk[1], s.walk[2]); }
+  // the speaker works its jaw (or nods under its helmet) while its line is up (enemies/upper.js talking)
+  C.actors.forEach((a, i) => { if (a.g) a.g.userData.talk = !!(s.line && s.on === 'actor' && i === 0); });
+  // the hero speaks a line of its own (not the voice in its ear): the Jedi's jaw works (player/model/life.js express)
+  player.talking = !!(s.line && s.on === 'hero' && s.line[0] && !Object.values(VOICE).includes(s.line[0]));
   pickSide(s);
 }
 

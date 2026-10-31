@@ -3,6 +3,7 @@
 
 import { camera } from '../engine/renderer.js';
 import { rand, TMP } from '../utils.js';
+import { G } from '../state.js';
 
 /* ---------- floating damage text ---------- */
 // Damage numbers come from a fixed POOL of recycled divs (built once, lazily) rather
@@ -44,7 +45,18 @@ export function floater(worldPos, text, color){
 
 /* ---------- full-screen clash flash (parries, ripostes, big beats) ---------- */
 let _flashEl = null;
+/* Flash safety: full-screen flashes are the one effect that can wear on a player in a long fight, so they are limited
+   centrally (every caller goes through here). More than three in a second are dimmed to a faint tint, a player who has
+   asked their system for reduced motion gets them at half strength, and none ever peaks above 0.9. */
+const _flashLog = [];
+const REDUCED = (() => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch(e){ return false; } })();
 export function screenFlash(bg, peak, dur){
+  const now = performance.now();
+  while (_flashLog.length && now - _flashLog[0] > 1000) _flashLog.shift();
+  if (_flashLog.length >= 3) peak *= 0.35;
+  _flashLog.push(now);
+  peak = Math.min(peak * G.flashScale, 0.9) * (REDUCED ? 0.5 : 1);   // × the FLASHES setting
+  if (peak <= 0.01) return;
   _flashEl = _flashEl || document.getElementById('flash');
   _flashEl.style.transition = 'none';
   _flashEl.style.background = bg;

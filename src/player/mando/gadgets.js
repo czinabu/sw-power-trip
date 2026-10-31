@@ -13,6 +13,7 @@ import { MANDO } from '../../data/mando.js';
 import { flashLight } from '../../fx/lights.js';
 import { fwd, rightV, playerPos, maxHp } from '../helpers.js';
 import { damageEnemy, flinchEnemy, staggerEnemy } from '../../enemies/damage.js';
+import { blastMarks } from '../../enemies/scars.js';
 import { damageBoss, bossStagger } from '../../boss/boss.js';
 import { spawnGroundShock } from '../../fx/vfx.js';
 import { collideSolids } from '../../world/collision.js';
@@ -69,6 +70,7 @@ function rocketExplode(pos, big, at){
   S.boom(pos, big ? 1.8 : 1.1);
   G.shake = Math.max(G.shake, big ? 1.7 : 1.0); G.hitstop = Math.max(G.hitstop, big ? 0.1 : 0.05);
   explosion(pos, radius, big);
+  blastMarks(pos, radius);   // scorched plates, some torn off (enemies/scars.js)
   if (big) spawnGroundShock(pos.clone().setY(0.1), 0xff7a3a, radius + 9, 0.8, 0.3);
   burst(pos, 0x5a5a5a, 8*scale, 8, 9, 1.2);   // tumbling debris chunks
   flashLight(0xffa040, big ? 18 : 10, radius*2.8, pos, 0.34);
@@ -200,6 +202,7 @@ export function updateBirds(dt){
     if (hit){
       const A = abil('birds'), p = bd.mesh.position.clone();
       explosion(p, abil('birds').radius * 0.45, false);
+      blastMarks(p, abil('birds').radius * 0.45);   // scorched plates, some torn off (enemies/scars.js)
       sfx(rand(1600,2200), 0.06, 'sine', 0.04, 700); S.boom(p, 0.25);
       const bdmg = A.dmg * player.up.dmg * (player.up.rocketDmg || 1);
       for (const e of enemies){ if (e.dead || e.converted || e.state === 'spawn') continue; const d = distToBody(e, p); if (d < A.radius){ const kd = TMP.subVectors(e.group.position, p).setY(0).normalize().clone(); damageEnemy(e, bdmg, kd, A.knock); flinchEnemy(e, kd, 0.3); } }
@@ -266,6 +269,7 @@ export function updateDetos(dt){
       const A = abil('deto'), p = g.mesh.position.clone();
       S.boom(p, 1.3); G.shake = Math.max(G.shake, 0.9); G.hitstop = Math.max(G.hitstop, 0.05);
       explosion(p, A.radius, false);
+      blastMarks(p, A.radius);   // scorched plates, some torn off (enemies/scars.js)
       burst(p, 0x6a6a6a, 8, 8, 8, 1.1);
       flashLight(0xffa040, 9, A.radius*2.6, p, 0.3);
       const ddmg = A.dmg * player.up.dmg * (player.up.rocketDmg || 1);

@@ -124,7 +124,7 @@ function makePuppet(rec){
   const [nid, type, , , , , , , sc, hp, maxHp, state, flags, elite] = rec;
   const t = ENEMY_TYPES[type];
   if (!t) return null;
-  const g = buildEnemyMesh(t);
+  const g = buildEnemyMesh(t, { seed: typeof nid === 'number' ? nid : undefined });   // the host's marking and face (enemies/spawn.js)
   g.scale.setScalar(sc);
   if (elite) dressElite(g, elite);
   if (rec[20] && STANCES[rec[20]] && g.userData.bladeGlow) g.userData.bladeGlow.material.color.setHex(STANCES[rec[20]].blade);   // a form master's blade

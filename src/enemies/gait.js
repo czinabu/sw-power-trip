@@ -16,6 +16,7 @@ import { groundAt, STEP_UP } from '../world/collision.js';
 import { LEG, mocapStride, mocapFoot, mocapBody } from '../player/anim/mocap.js';
 import { LEG_E } from './mesh.js';
 import { fallOf } from './upper.js';
+import { footDust } from '../fx/footdust.js';
 
 const THIGH = LEG_E.hipY - LEG_E.kneeY, SHIN = LEG_E.kneeY - LEG_E.ankY, LEG_L = THIGH + SHIN;   // model units
 const HERO_SCALE = 1.18, LEG_M = LEG * HERO_SCALE;   // the hero's leg in metres (the clips are sized to it)
@@ -113,6 +114,7 @@ export function updateLegs(o, g, dt, mode = 'ground'){
         if (!L.locks[i]){
           L.locks[i] = P.clone(); L.locks[i].y = floorAt(P.x, P.z, i);
           if (T && T.step && speed > 1.5) T.step(o, L.locks[i], speed);   // a heavy footfall
+          footDust(L.locks[i], speed, (T && T.step ? 1.5 : 0.7) * ls);   // a puff of the floor's dust (fx/footdust.js)
         }
         else floorAt(L.locks[i].x, L.locks[i].z, i);
         want[i] = L.locks[i].clone(); want[i].y += lift;
