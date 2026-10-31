@@ -227,10 +227,10 @@ export function boltImpact(pos, color, dir){
 
 /* BLOCK / PARRY — the clash: a big eight-point star, a white flash disc, a ring and a hard spray of sparks */
 export function clashFlash(pos, color, big = true){
-  inkSprite({ pos, shape: 'disc', color: 0xffffff, size: [0.8, 1.6], life: 0.08, steps: 2, coreW: 0.75, inkW: 0.1 });
-  inkSprite({ pos, shape: 'star', points: 8, sharp: 0.14, color, size: [1.4, big ? 3.2 : 2.2], life: 0.24, fadeAt: 0.3, steps: 3, coreW: 0.34, spin: 2 });
-  inkSprite({ pos, shape: 'ring', inner: 0.8, color, core: color, coreHot: 1.2, size: [0.6, big ? 5.4 : 3.6], life: 0.3, ease: 3, inkW: 0.22, coreW: 0.2 });
-  sparks(pos, color, big ? 12 : 7, 13, { life: 0.32, size: 0.55 });
+  inkSprite({ pos, shape: 'disc', color: 0xffffff, size: [0.4, 0.8], life: 0.06, steps: 2, coreW: 0.75, inkW: 0.1 });
+  inkSprite({ pos, shape: 'star', points: 8, sharp: 0.14, color, size: [0.7, big ? 1.5 : 1.0], life: 0.15, fadeAt: 0.3, steps: 3, coreW: 0.34, spin: 2 });
+  inkSprite({ pos, shape: 'ring', inner: 0.8, color, core: color, coreHot: 1.2, size: [0.3, big ? 2.4 : 1.6], life: 0.2, ease: 3, inkW: 0.22, coreW: 0.2, op: 0.8 });
+  sparks(pos, color, big ? 6 : 4, 9, { life: 0.2, size: 0.4 });
 }
 
 /* GROUND SHOCK — a flat ink ring racing outward along the floor */

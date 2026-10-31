@@ -26,7 +26,7 @@ import { diffDmgMul, diffWindow } from '../data/difficulty.js';
 import { masteryXp } from '../game/progression.js';
 import { DUEL } from '../data/duel.js';
 import { startLock, lockKindAt } from '../enemies/duel.js';
-import { contactPoint, recoilSwing, knockWeapon, formWeight, theirSparks } from './jedi/clash.js';
+import { contactPoint, parryContact, recoilSwing, knockWeapon, formWeight, theirSparks } from './jedi/clash.js';
 import { mandoCatch } from './mando/melee.js';
 import { tutEvent } from '../game/tutor-bus.js';
 import { mandoShielding } from './mando/weapons.js';
@@ -135,7 +135,7 @@ export function bladeClash(fromPos, foe, at){
     floater(playerPos(), 'CLASH', '#ffe9b0');
   }
   clashFlash(cp, stance().blade, true);
-  sparks(cp, 0xffe9b0, 14, 12, { life: 0.3 });
+  sparks(cp, 0xffe9b0, 8, 10, { life: 0.22 });
   theirSparks(foe, cp);
   G.hitstop = Math.max(G.hitstop, 0.08); G.shake = Math.max(G.shake, boss ? 0.6 : 0.45);
   S.clash(cp, true);
@@ -210,24 +210,24 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
   else if (!silent && !open && !(opts && opts.blast) && ((player.blockHeld && !airGuardLost()) || (player.parryT > 0 && airParryOk())) && fromPos){
     TMP.subVectors(fromPos, playerPos()); TMP.y = 0;
     const guard = player.blockHeld && !airGuardLost();
+    const contact = opts && opts.by ? parryContact(opts.by) : null;   // where the foe's blade really is: our blade goes to meet it there
     if (TMP.lengthSq() > 0.001 && TMP.normalize().dot(fwd()) > 0.1){
       const pp = playerPos();
-      if (player.parryT > 0 || (guard && player.stam > 0)) deflectAnim(V3(fromPos.x, pp.y + 1.4, fromPos.z), opts && opts.line);   // (a duellist's strike: caught on its line)
+      if (player.parryT > 0 || (guard && player.stam > 0)) deflectAnim(contact || V3(fromPos.x, pp.y + 1.4, fromPos.z), opts && opts.line, contact);   // (a duellist's strike: caught on its line)
       if (player.parryT > 0){
         player.parryT = 0;   // a parry consumes the window
         player.riposteT = riposteWindow(CFG.player.riposteTime); player.fluidRip = false;
         player.cancelRiposte = (G.gt - (player.cancelT || -9)) < 0.45;   // parried straight out of a swing-cancel → a stronger answer
         player.ripLine = (opts && opts.line) || null;   // a duellist's strike: the riposte cuts back on the line it left open (jedi/guardline.js)
         player.force = clamp(player.force + 12 + player.up.parryForce + (stance().parryRefund || 0), 0, CFG.player.maxForce);   // skillful defense feeds the Force (NIMAN refunds extra)
-        G.hitstop = Math.max(G.hitstop, 0.24);
-        G.shake = Math.max(G.shake, 1.0);
-        G.slowmo = Math.min(G.slowmo, 0.18); G.slowmoT = Math.max(G.slowmoT, 0.36);   // a dramatic beat of clarity on a perfect parry
-        const fp = V3(pp.x + fwd().x, 1.6, pp.z + fwd().z);
-        burst(fp, 0xffe9a8, 38, 13, 7); burst(fp, 0xffffff, 22, 16, 5);
-        for (let n = 0; n < 10; n++) burst(V3(fp.x+rand(-0.4,0.4), fp.y+rand(-0.3,0.4), fp.z+rand(-0.4,0.4)), 0xffd24a, 1, 11, 4, 0.9);
+        G.hitstop = Math.max(G.hitstop, 0.1);
+        G.shake = Math.max(G.shake, 0.35);
+        G.slowmo = Math.min(G.slowmo, 0.5); G.slowmoT = Math.max(G.slowmoT, 0.14);   // a brief beat of clarity on a perfect parry
+        const fp = contact || V3(pp.x + fwd().x, 1.6, pp.z + fwd().z);   // the clash is where the blades meet
+        burst(fp, 0xffe9a8, 12, 9, 5); burst(fp, 0xffffff, 6, 11, 4);
         spawnParryFlash(fp, 0xffd24a);
-        spawnHitSpark(fp, 0xffffff, 2.2);
-        screenFlash('radial-gradient(ellipse at center, rgba(255,240,180,.7), rgba(255,200,80,.18) 50%, transparent 72%)', 1.0, 0.45);
+        spawnHitSpark(fp, 0xffffff, 1.0);
+        screenFlash('radial-gradient(ellipse at center, rgba(255,240,180,.22), transparent 60%)', 0.5, 0.2);
         floater(pp, (player.cancelRiposte ? 'PARRY! ⟲ CRUSHING RIPOSTE' : 'PARRY! ⟲ RIPOSTE READY'), '#ffe27a');
         S.parry(fp);   // a bright ringing clash
         if (G.stats) G.stats.parries++;

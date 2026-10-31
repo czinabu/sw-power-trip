@@ -160,11 +160,10 @@ export function updateBolts(dt){
         b.mesh.material.color.setHex(stance().blade);
         if (parried){
           player.force = clamp(player.force + 8 + player.up.parryForce + (stance().parryRefund || 0), 0, CFG.player.maxForce);
-          G.hitstop = Math.max(G.hitstop, 0.1);
-          G.shake = Math.max(G.shake, 0.4);
-          G.slowmo = Math.min(G.slowmo, 0.4); G.slowmoT = Math.max(G.slowmoT, 0.12);
+          G.hitstop = Math.max(G.hitstop, 0.05);
+          G.shake = Math.max(G.shake, 0.15);
           spawnParryFlash(V3(b.mesh.position.x, b.mesh.position.y, b.mesh.position.z), 0xffd24a);
-          screenFlash('radial-gradient(ellipse at center, rgba(255,230,150,.4), transparent 65%)', 0.7, 0.28);
+          screenFlash('radial-gradient(ellipse at center, rgba(255,230,150,.2), transparent 60%)', 0.4, 0.16);
           S.parry(b.mesh.position); floater(pp, 'PARRY!', '#ffe27a'); if (G.stats) G.stats.parries++; noteDefense('parries', null, { src: b.src }); masteryXp('boltParry');
         } else { clashFlash(b.mesh.position.clone(), stance().blade, false); S.deflect(b.mesh.position); floater(pp, 'DEFLECT', '#7fd4ff'); if (G.stats) G.stats.deflects++; noteDefense('deflects', null, { src: b.src }); }
         tutEvent('deflect');

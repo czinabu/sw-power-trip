@@ -412,16 +412,17 @@ export function forceKick(){
 
 /* DEFLECT ANIMATION — start a blade catch toward something arriving at `from` (a bolt, or a blocked blow). The
    catch itself (which cover, which side) is picked in anim/saber.js. A swing already in flight keeps the blade. */
-export function deflectAnim(from, line){
+export function deflectAnim(from, line, contact){
   if (G.hero === 'mando' || player.atkT > 0 || !from) return;
   const cur = player.deflectAnim;
   if (cur && cur.spin && cur.t < cur.dur) return;   // a spin already sweeping the blade round covers the next bolt too
   // a duellist's blow on the line the guard was already waiting on (jedi/guardline.js): that catch flicks it away
-  if (cur && cur.hold && line && cur.line === line && cur.pose){ cur.hold = false; cur.dur = 0.3; cur.t = 0.09; return; }
+  if (cur && cur.hold && line && cur.line === line && cur.pose){ cur.hold = false; cur.dur = 0.3; cur.t = contact ? 0 : 0.09; if (contact){ cur.contact = contact.clone(); cur.refit = true; } return; }
   player.deflectAnim = catchState(from);
+  if (contact) player.deflectAnim.contact = contact.clone();   // world point where the foe's blade is: the saber is fitted to it (anim/saber.js)
   const c = line && lineCatch(line);   // a duellist's strike is caught where its line comes in, not just toward its body
   if (c){ player.deflectAnim.side = c.side; player.deflectAnim.h = c.h; }
-  deflectSpin(player.deflectAnim);
+  if (!contact) deflectSpin(player.deflectAnim);   // (a twirl would wheel the blade off the one it is meeting)
 }
 const catchState = (from) => {
   const pp = playerPos(), fy = player.faceYaw;
