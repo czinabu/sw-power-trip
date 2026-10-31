@@ -12,7 +12,7 @@ import path from 'path';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const url = pathToFileURL(path.join(root, 'dist/index.html')).href + '?peerhost=127.0.0.1&peerport=9020';
 const server = PeerServer({ port: 9020, host: '127.0.0.1', path: '/' });
-const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--autoplay-policy=no-user-gesture-required'] });
+const browser = await chromium.launch({ executablePath: process.env.CHROMIUM || undefined, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--autoplay-policy=no-user-gesture-required'] });
 const errors = [];
 const poll = { timeout: 30000, polling: 250 };   // on a timer: only one of the two pages is in the foreground
 
@@ -41,6 +41,7 @@ try {
   await Promise.all([connected(host), connected(guest)]);
   await host.click('#coopclose');
   // the host starts Survival
+  await host.evaluate(() => localStorage.setItem('sw_mission_pursuit_jedi', '1'));   // missions stay locked until the campaign clears them
   await host.click('#hero-jedi'); await host.click('#mode-mission'); await host.click('#msn-pursuit');
   for (let i = 0; i < 5 && !(await host.evaluate(() => GAME.G.mode === 'play')); i++){
     if (await host.isVisible('#goText')) await host.click('#goText', { timeout: 2000 }).catch(() => {});
