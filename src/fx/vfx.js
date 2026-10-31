@@ -53,7 +53,7 @@ export function spawnHitSpark(pos, color, power){
 // a bright clash burst at chest height — perfect-parry flash
 export function spawnParryFlash(pos, color){
   clashFlash(V3(pos.x, pos.y, pos.z), color, true);
-  flashLight(color, 7, 8, V3(pos.x, pos.y, pos.z), 0.28);
+  flashLight(color, 3, 5, V3(pos.x, pos.y, pos.z), 0.14);
 }
 // a flat expanding ring on the ground — slam shockwave
 export function spawnGroundShock(pos, color, maxR, dur, op){

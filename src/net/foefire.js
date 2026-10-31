@@ -51,7 +51,7 @@ hooks.hurt = (e, dmg, pos, kind, unblockable, dx, dz) => {
 on('hurt', (m) => {
   if (!asGuest()) return;
   const src = puppetOf(m.n);
-  const opts = m.u ? { unblockable: true, src } : { src };
+  const opts = m.u ? { unblockable: true, src, by: src } : { src, by: src };
   const res = m.k === 'zap' ? hurtPlayer(m.d, null, false, false, false, opts) : hurtPlayer(m.d, V3(m.x, m.y, m.z), false, true, false, opts);
   if (res === 'hit' && m.k === 'lunge'){ player.vel.x += m.dx * 9; player.vel.z += m.dz * 9; }
   send({ t: 'hres', n: m.n, r: res, k: m.k });

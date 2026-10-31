@@ -302,7 +302,7 @@ export function updateBoss(dt){
         if (remote){ if (dist < BOSS_CFG.combo.range && hooks.hurt) hooks.hurt(shared.boss, BOSS_CFG.combo.dmg, g.position, 'bossmelee', false); }   // their browser parries or takes it (net/foefire.js)
         else if (dist < BOSS_CFG.combo.range && player.dashT > 0) perfectDodge(g.position);   // dashed through it on the beat
         else if (dist < BOSS_CFG.combo.range && player.dashT <= 0){
-          const res = hurtPlayer(BOSS_CFG.combo.dmg, g.position, false, true);   // melee — high ground denies it
+          const res = hurtPlayer(BOSS_CFG.combo.dmg, g.position, false, true, false, { by: shared.boss });   // melee — high ground denies it
           if (res === 'clashed' && shared.boss.swingsLeft > 1){
             // your cut met his: the blades ring apart and he's thrown back a step, but the chain presses on
             // (no posture break: that's still the parry's reward). A clash on the last blow just ends the chain.

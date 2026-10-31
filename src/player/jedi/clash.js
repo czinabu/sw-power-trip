@@ -78,6 +78,39 @@ export function contactPoint(e){
   return new THREE.Vector3(g.x + dx / dl * 0.7, g.y + 1.5, g.z + dz / dl * 0.7);
 }
 
+/* WHERE A PARRY MEETS — the point on the foe's real blade a guard would catch it at: the part of the blade nearest the
+   spot in front of your chest where a guard waits, kept within an arm's reach so the saber can get there. Null when the
+   foe carries no blade we can find (the catch then falls back to the old height/side pick). */
+const GUARD_SPOT = new THREE.Vector3();
+export function parryContact(e){
+  if (!(e === shared.boss ? bossBlade(FB, FT) : foeBlade(e, FB, FT))) return null;
+  const pp = playerPos(), f = new THREE.Vector3(Math.sin(G.yaw), 0, Math.cos(G.yaw));
+  GUARD_SPOT.set(pp.x + f.x * 0.7, pp.y + 1.4, pp.z + f.z * 0.7);
+  const out = new THREE.Vector3();
+  nearOnSeg(GUARD_SPOT, FB, FT, out);
+  const chest = Q.set(pp.x, pp.y + 1.4, pp.z), reach = 1.05;
+  N.subVectors(out, chest);
+  if (N.lengthSq() > reach * reach) out.copy(chest).addScaledVector(N.normalize(), reach);
+  return out;
+}
+
+/* SEAT THE FOE'S BLADE — the clash registers a little before the steel touches (DUEL.clash.reach), so a foe's weapon that
+   catches your cut is turned about its shoulder until the point of it that met yours lies ON yours: the blades visibly
+   cross. `from` is the contact on the foe's blade, `to` the point on yours. */
+const _sp = new THREE.Vector3(), _sr = new THREE.Vector3(), _st = new THREE.Vector3(), _sq = new THREE.Quaternion(), _pq = new THREE.Quaternion();
+function seatFoeBlade(e, from, to){
+  const node = e.group.userData.weaponArm;   // (a staff turns about its middle, so it keeps where it is)
+  if (!node || from.distanceToSquared(to) < 0.0009) return;
+  node.updateWorldMatrix(true, false);
+  node.getWorldPosition(_sp);
+  _sr.subVectors(from, _sp); _st.subVectors(to, _sp);
+  if (_sr.lengthSq() < 1e-4 || _st.lengthSq() < 1e-4) return;
+  _sq.setFromUnitVectors(_sr.normalize(), _st.normalize());
+  node.parent.getWorldQuaternion(_pq);
+  node.quaternion.premultiply(_sq.premultiply(_pq.clone().invert()).multiply(_pq));
+  node.updateWorldMatrix(true, false);
+}
+
 /* READY BLADES — called by sweepBlade with this frame's swept blade samples (flat x,y,z), before any body is struck.
    A foe holding a guard, or one mid-strike, has its weapon where your cut is going: if the blade passes within
    DUEL.clash.reach of it, the blades meet. A guard that holds (duelDefend's usual roll, so blocks are no more common
@@ -101,7 +134,8 @@ export function meetBlades(sw, pts){
     }
     if (hit < 0) continue;
     (sw.met || (sw.met = new Set())).add(e);
-    const cp = N.clone();
+    const cp = Q.clone();   // (Q: the point on your blade that met theirs)
+    seatFoeBlade(e, N, cp);
     if (striking){
       e.struck = true;   // its blow is spent on your blade
       if (bladeClash(g, e, cp)) return true;
