@@ -11,6 +11,7 @@ import { overlay, survivalUnlocked, refreshSurvivalLock, setOverlayState } from 
 import { closeReadout } from './readout.js';
 import { readoutSummaryHtml } from '../ui/readout-ui.js';
 import { campaignWon } from './campaign.js';
+import { isArcadeId } from '../data/arcade.js';
 
 /* ---------- END-OF-RUN SUMMARY + SCORE ---------- */
 export function endRun(won){
@@ -25,7 +26,7 @@ export function endRun(won){
     st.kills * 12 + waves * (endless ? 200 : 120) + st.bestStreak * 20 + (st.parries + st.deflects) * 15 +
     (st.bossKilled ? 1500 : 0) + (acc > 0 ? acc * 400 : 0) - st.dmgTaken * 0.35));
   const mission = !!G.mission && G.chapter < 0;   // (a campaign chapter that is a mission still counts as the campaign)
-  const key = endless ? 'sw_best_endless' : mission ? 'sw_best_mission' : 'sw_best_score';   // survival and missions keep their OWN bests
+  const key = endless ? 'sw_best_endless' : mission ? (isArcadeId(G.missionId) ? 'sw_best_arcade' : 'sw_best_mission') : 'sw_best_score';   // survival, missions and the arcade keep their OWN bests
   let best = 0; try { best = parseInt(localStorage.getItem(key) || '0', 10) || 0; } catch(e){}
   const newBest = score > best;
   if (newBest){ try { localStorage.setItem(key, String(score)); } catch(e){} best = score; }

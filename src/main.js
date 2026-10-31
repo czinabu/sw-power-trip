@@ -240,3 +240,5 @@ Object.assign(window.GAME, { buildArena, findClearSpawn, mapLevels: () => ({
   hangar: byLayout('hangar'), approach: MISSIONS['strike-exegol'].level,
   grassland: BATTLE_MAPS.grassland.level, icefront: BATTLE_MAPS.icefront.level, graveyard: BATTLE_MAPS.graveyard.level,
 }) });
+import { arcadeContract, arcadeBoard, missionById } from './data/arcade.js';
+Object.assign(window.GAME, { arcade: { arcadeContract, arcadeBoard, missionById } });   // the arcade's dealt contracts (data/arcade.js), for tests

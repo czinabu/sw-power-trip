@@ -41,7 +41,7 @@ codeIn.addEventListener('input', () => { codeIn.value = cleanCode(codeIn.value);
 codeIn.addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Enter') join(codeIn.value); });
 codeIn.addEventListener('click', (e) => e.stopPropagation());
 
-const runName = () => coopRun.k === 'm' ? 'the mission ' + missionTitle(coopRun.mid) : coopRun.k === 'c' ? (coopRun.ch >= 0 ? 'chapter ' + (coopRun.ch + 1) : 'level ' + (coopRun.lv + 1)) + ' of the campaign' : 'a Survival run';
+const runName = () => coopRun.k === 'm' ? (coopRun.mid.startsWith('arcade:') ? 'the arcade mission ' : 'the mission ') + missionTitle(coopRun.mid) : coopRun.k === 'c' ? (coopRun.ch >= 0 ? 'chapter ' + (coopRun.ch + 1) : 'level ' + (coopRun.lv + 1)) + ' of the campaign' : 'a Survival run';
 const waveText = () => coopRun.k === 'm' || coopRun.mid ? '' : ', wave ' + (coopRun.k === 'c' ? coopRun.w - (coopRun.wf || 0) + 1 : coopRun.w);
 // who is in the room: everyone's picked name (or PLAYER n) in their seat colour
 function renderRoster(){

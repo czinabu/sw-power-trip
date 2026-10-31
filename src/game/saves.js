@@ -3,7 +3,7 @@
 
 import { G, player } from '../state.js';
 import { LEVELS } from '../data/levels.js';
-import { MISSIONS } from '../data/missions.js';
+import { missionById, isArcadeId } from '../data/arcade.js';
 import { switchStance } from '../player/jedi/stance.js';
 import { resumeChapter, chapterLabel } from './campaign.js';
 import { chapterOrder, chapterNo, forHero, CHAPTER_OF_LEVEL } from '../data/campaign.js';
@@ -17,7 +17,7 @@ import { MANDO_WEAPONS, RUN_KIT, cleanKit } from '../data/mando.js';
 export const SLOTS = 3;
 export const AUTO = 'auto';   // the autosave's own slot (game/autosave.js): shown beside the three, loadable but never saved to by hand
 const slotKey = (i) => 'sw_save_' + i;
-const PROGRESS = /^sw_(camp_|trained_|lesson_|best_|sandbox_|mission_.+_(jedi|mando)$)|^sw_(asktrain|look)$/;
+const PROGRESS = /^sw_(camp_|trained_|lesson_|best_|sandbox_|arcade_won_|mission_.+_(jedi|mando)$)|^sw_(asktrain|look)$/;
 // what NEW GAME clears: everything above but the hero's look and the sandbox's map/kit picks
 const FRESH_KEEP = /^sw_(look|sandbox_)/;
 
@@ -136,7 +136,7 @@ const placeOf = (L) => (L && L.name.split('—').map(t => t.trim())[1]) || '';
 function whereNow(){
   if (inCampaignRun()) return 'CAMPAIGN · ' + (G.chapter >= 0 ? chapterLabel() : 'LEVEL ' + (G.levelIdx + 1) + ' · ' + placeOf(LEVELS[G.levelIdx]));
   if (G.mode === 'menu' && canResume()) return 'CAMPAIGN · ' + savedChapter(G.resumeRun, G.resumeRun.hero);
-  if (G.mode === 'play' && G.mission) return 'MISSION · ' + forHero((MISSIONS[G.missionId] || {}).title || '', G.hero);
+  if (G.mode === 'play' && G.mission) return (isArcadeId(G.missionId) ? 'ARCADE · ' : 'MISSION · ') + forHero((missionById(G.missionId) || {}).title || '', G.hero);
   if (G.mode === 'play' && G.endless) return 'SURVIVAL';
   if (G.mode === 'play' && G.training) return 'TRAINING';
   if (G.mode === 'play' && G.sandbox) return 'SANDBOX';
