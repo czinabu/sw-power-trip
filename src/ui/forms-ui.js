@@ -19,7 +19,7 @@ const hex = (c) => '#' + ('000000' + c.toString(16)).slice(-6);
 const ORDER = Object.keys(FORMS).filter(id => FORMS[id].ready);
 
 const LOCK = '<svg class="fm-lock-ic" viewBox="0 0 16 16" width="14" height="14" role="img" aria-label="Locked: unlocks with your next form"><title>Unlocks with your next form</title><rect x="3" y="7" width="10" height="7" rx="1.5" fill="currentColor"/><path d="M5.2 7V5a2.8 2.8 0 0 1 5.6 0v2" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>';
-// the lore behind a small "i" (hover, focus or click), like the notes on How to Play
+// the lore behind a small "i" (hover, focus or click), like the notes on Controls
 const loreInfo = (C) => (C.lore || C.who) ? '<span class="fm-i" tabindex="0" role="button" aria-label="Lore">i</span><div class="fm-lorepop">' + esc(C.lore || '') + (C.who ? ' <i>' + esc(C.who) + '</i>' : '') + '</div>' : '';
 // locked forms: Form V and VII have two variants each, so a chip reads V-a / V-b without naming either
 const lockedNo = (id) => { const same = ORDER.filter(x => FORMS[x].no === FORMS[id].no); return FORMS[id].no + (same.length > 1 ? '-' + 'ab'[same.indexOf(id)] : ''); };

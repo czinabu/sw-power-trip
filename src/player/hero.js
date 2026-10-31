@@ -19,7 +19,7 @@ export function setHero(hero){
   const xh = document.getElementById('xh'), rt = document.getElementById('reticle');
   if (xh) xh.style.display = mando ? 'none' : '';
   if (rt) rt.style.display = mando ? 'block' : 'none';
-  renderControls(hero);   // the HOW TO PLAY panel follows the picked hero
+  renderControls(hero);   // the CONTROLS panel follows the picked hero
   const fpl = document.getElementById('fplabel'); if (fpl) fpl.textContent = mando ? 'GADGET POWER' : 'FORCE';
   document.getElementById('hero-jedi').classList.toggle('sel', !mando);
   document.getElementById('hero-mando').classList.toggle('sel', mando);

@@ -300,7 +300,7 @@ function menu(btn, down, lx, ly, ry, dt){
     else if (G.cardUp){ const go = document.querySelector('#chapcard.open .go'); if (go) go.click(); }   // the chapter card's BEGIN (game/campaign.js)
     else if (G.skillSelect) document.getElementById('continueBtn').click();
   }
-  // RIGHT STICK — scroll a long panel (How to Play, the roadmap, the upgrade screen)
+  // RIGHT STICK — scroll a long panel (Controls, the roadmap, the upgrade screen)
   if (Math.abs(ry) > 0.25){
     let n = focus || document.elementFromPoint(innerWidth / 2, innerHeight / 2);
     while (n && n !== document.body && !(n.scrollHeight > n.clientHeight + 4 && /auto|scroll/.test(getComputedStyle(n).overflowY))) n = n.parentElement;
