@@ -6,6 +6,8 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'Lesson board keeps your cursor', status: 'done',
+    items: ['Opening the training lesson board now frees the mouse and holds the camera still behind it, in solo and co-op, and hands both back when you pick a lesson'] },
   { title: 'Ataru training lesson fixed', status: 'done',
     items: ['A cut struck mid-leap now reaches foes standing on the ground at your feet, so "land 3 cuts off the ground" can be done on the drill dummies',
             'The Hawk-Bat Swoop now fires from the roll too: in a fight SHIFT rolls instead of dashing, so SHIFT then LMB never swooped near the drill targets',
