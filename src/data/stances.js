@@ -19,10 +19,10 @@ import { STARTING_FORMS } from './forms.js';
    SWING PACE: every form swings a step slower than it first did (Ataru at Niman's old pace, Niman at Djem So's, Djem So
    slower again: a committed, crossguard-style power stroke), with damage per cut raised by the same ratio so damage per
    second is where it was.
-   BALANCE (damage a second = dmg × speed, before each form's own edge): Djem So ~1.4 and ~3.4 on armour · Juyo ~1.4,
-   ~2.0 at full fury, at 8 stamina and 5 Force a swing · Makashi ~1.2, ~1.75 on blades · Shien, Vaapad ~1.15 · Ataru ~1.1,
-   ~1.75 on the back line · Niman ~1.0, the cheapest powers · Shii-Cho ~0.95 with the widest arc · Soresu ~0.7, the
-   best guard. Keep a form's edge where its role is; tools/form-balance.mjs prints the table. */
+   BALANCE (damage a second = dmg × speed, before each form's own edge): Djem So ~1.4 and ~2.75 on armour and the boss ·
+   Juyo ~1.4, ~1.85 at full fury, at 8 stamina and 5 Force a swing · Makashi ~1.2, ~1.75 on blades · Shien, Vaapad ~1.15 ·
+   Ataru ~1.1, ~1.75 on the back line · Niman ~1.0, the cheapest powers · Shii-Cho ~0.95 with the widest arc · Soresu
+   ~0.75, the best guard. How far a cut throws a foe is capped for every form (data/config.js saberShove). Keep a form's edge where its role is; tools/form-balance.mjs prints the table. */
 export const STANCES = {
   /* FORM I SHII-CHO — the first form every initiate learns (Kit Fisto, Luke at Jabba's barge). Wide, simple sweeps built
      for many foes at once; the string ends in the SARLACC SWEEP (a full turn: everything round you), and that finisher
@@ -51,7 +51,7 @@ export const STANCES = {
   /* FORM III SORESU — the wall (Obi-Wan): tight, economical blocks that send blaster fire home and wear an attacker out.
      It wins by outlasting; it has the least offence of any form. */
   soresu:  { name: 'SORESU — DEFENCE', form: 'soresu', formNo: 'III', blade: 0xcfe2ff,
-            dmg: 1.05, heavyDmg: 0.9, speed: 0.66, knock: 0.6, stamina: 7, lunge: 0.9, move: 0.92, accel: 0.95, twist: 0.5, bladeLen: 1.0,
+            dmg: 1.15, heavyDmg: 0.9, speed: 0.66, knock: 0.6, stamina: 7, lunge: 0.9, move: 0.92, accel: 0.95, twist: 0.5, bladeLen: 1.0,
             radiusMult: 0.95, parryBonus: 0.14, comboGap: 1.0, fovKick: -1, postureMul: 0.9,
             blockStamMul: 0.4,    // ROLE: the cheapest guard in the game…
             chipMul: 0,           // …that lets no chip through a block…
@@ -91,12 +91,12 @@ export const STANCES = {
             // carries the blade through. High dmg, shreds armor, weak Force synergy (forceRegen < 1, no powerDmg).
             // clearly the SLOWEST swing (well under medium's 1.0) — heavy, deliberate, weighty — but the big LUNGE
             // and high damage make each committed stroke land hard, so it reads as power, not sluggishness.
-            dmg: 2.93, heavyDmg: 2.4, speed: 0.48, knock: 2.2, stamina: 18, lunge: 1.4, move: 0.85, accel: 0.6, twist: 1.0, bladeLen: 1.14,
+            dmg: 2.93, heavyDmg: 1.95, speed: 0.48, knock: 1.6, stamina: 18, lunge: 1.4, move: 0.85, accel: 0.6, twist: 1.0, bladeLen: 1.14,
             radiusMult: 0.8, postureMul: 1.5, forceRegen: 0.7, comboGap: 0.7, fovKick: -4,
             atkDR: 0.15,          // PASSIVE: armored commitment — soak 15% damage WHILE mid-swing
             finisherLunge: 1.6,   // the 3rd hit lunges harder, carrying the heavy blade through
             finisherRecover: 0.12,   // COST of the ×1.5 guard break: the finisher hangs ~0.12s longer before you can act again
-            finisherKnock: true,  // the finisher ALWAYS floors what it hits (brutes included)
+            finisherKnock: true,  // the finisher ALWAYS floors what it hits (brutes included), a short shove away (config saberShove)
             blockRiposte: 1,      // FLUID RIPOSTE: a melee blow taken on the held guard readies a counter (player/damage.js)
             deflectScatter: 0.06, // Djem So answers blades; sending bolts home is its sister variant Shien's craft (rad)
             powerScale: 1.35, powerCostMul: 1.3,   // SYNERGY: Force powers hit with BRUTE scale (+35% radius/knock) but cost +30% Force
@@ -113,18 +113,18 @@ export const STANCES = {
             gait: { amp: 1.1, lift: 0.9, bob: 0.6, lean: 1.0 },   // MOVEMENT: low and prowling, weight forward
             syn: 'BLASTERS · every deflect goes home and hits +50% · reverse grip · strong cuts · G: Djem So' },
   /* FORM VII JUYO — the most ferocious form (Mace Windu's root, Vader's rage): bursts of savage, unpredictable cuts
-     driven by the Force itself. Each swing burns Force as well as breath, every cut that lands feeds FURY (up to +45%
+     driven by the Force itself. Each swing burns Force as well as breath, every cut that lands feeds FURY (up to +35%
      damage), and it gives its defence away for it. Juyo and Vaapad fork: learning one closes the other for the run. */
   juyo:   { name: 'JUYO — FURY', form: 'juyo', formNo: 'VII', blade: 0xff3a3a,
             dmg: 1.75, heavyDmg: 1.35, speed: 0.78, knock: 1.1, stamina: 8, lunge: 1.4, move: 1.08, accel: 1.2, twist: 0.9, bladeLen: 1.0,
             radiusMult: 1.1, postureMul: 1.3, comboGap: 1.2, fovKick: 4, parryBonus: -0.03, forceRegen: 1.1,
             forceSwing: 5,        // ROLE: each swing burns this much Force on top of its stamina (no Force: double the stamina)
             furyHit: 0.12,        // every cut that lands feeds fury (player/jedi/fury.js)…
-            furyDmg: 1.45,        // …up to +45% saber damage at full
+            furyDmg: 1.35,        // …up to +35% saber damage at full
             dmgTaken: 1.25,       // LORE: it opens the user up: blows land 25% harder
             deflectScatter: 0.12,
             gait: { amp: 1.15, lift: 1.15, bob: 0.6, lean: 1.3 },   // MOVEMENT: driving forward, never still
-            syn: 'FURY · Force-fuelled swings · hits build fury (+45% dmg) · fast, savage strings · TAKES +25% damage' },
+            syn: 'FURY · Force-fuelled swings · hits build fury (+35% dmg) · fast, savage strings · TAKES +25% damage' },
   /* FORM VII VAAPAD — Mace Windu's own Form VII: Juyo's ferocity let in and turned outward. It feeds on the opponent's
      aggression: every blow turned on its guard builds fury, a parry finds the attacker's SHATTERPOINT (the next cut on
      that foe lands double and floors it). Juyo and Vaapad fork. */

@@ -204,6 +204,9 @@ export function cancelSwing(){
    through this frame, and only those are struck. An empty list is the swing's once-per-cut pass at the strike point
    (the arc flash) with nothing hit. With no list at all (no blade in hand) it falls back to
    striking everything in the swing's arc and radius. */
+// a blade's blow: where it met the foe (bladehit.js), and the cap on how far it throws it (data/config.js saberShove)
+export const bladeOpts = (at) => Object.assign({ shove: CFG.player.saberShove.max }, at);
+const FINISHER_FLOOR = 27;   // over the 26 a blow needs to floor a brute (enemies/damage.js)
 export function applySwingDamage(step, only){
   const st = stance();
   const sw0 = player.swing;
@@ -212,6 +215,7 @@ export function applySwingDamage(step, only){
   let dmg = CFG.player.comboDamage[step] * st.dmg * player.up.dmg * focusDmgMul() * furyMul();   // FORCE FOCUS ramps saber damage; Form VII's FURY too
   const finisher = step === 2;
   let knock = (finisher ? 15 : 6) * st.knock * player.up.knock;
+  if (finisher && st.finisherKnock) knock = Math.max(knock, FINISHER_FLOOR);   // DJEM SO: the finisher floors what it hits, a brute too (a short shove: config saberShove)
   // a ringing BESKAR CLANG on every heavy darksaber blow (the finisher, or any hit while a foe is in range)
   const beskarClang = () => S.clash(V3(playerPos().x + fwd().x*1.4, 1.4, playerPos().z + fwd().z*1.4), false);
   // DARKSABER — MAUL-STYLE OVERHEAD: the 3rd combo hit is a big downward smash (extra knockback + a quake)
@@ -294,7 +298,7 @@ export function applySwingDamage(step, only){
       // VAAPAD — SHATTERPOINT: the foe whose attack you parried takes the next cut ×2, and it floors it
       const shat = !!(st.shatter && e.shatterUntil > G.gt);
       if (shat){ e.shatterUntil = 0; floater(e.group.position, 'SHATTERPOINT', '#d08bff'); G.hitstop = Math.max(G.hitstop, 0.1); tutEvent('shatter'); }
-      damageEnemy(e, dmg * (e.t.heavy ? st.heavyDmg : 1) * backLineMul(st, e) * swordMul(st, e) * (shat ? st.shatter : 1), f.clone(), knock, finisher, false, sw0 && sw0.hitAt && sw0.hitAt.get(e));   // (where the blade met it: bladehit.js)
+      damageEnemy(e, dmg * (e.t.heavy ? st.heavyDmg : 1) * backLineMul(st, e) * swordMul(st, e) * (shat ? st.shatter : 1), f.clone(), knock, finisher, false, bladeOpts(sw0 && sw0.hitAt && sw0.hitAt.get(e)));   // (where the blade met it: bladehit.js; the shove's cap)
       foesHit++;
       addFury(st.furyHit);   // JUYO (and a little VAAPAD): every cut that lands feeds the fury
       if (shat && !e.dead) staggerEnemy(e, f.x, f.z);

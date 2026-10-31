@@ -81,11 +81,11 @@ function hostTick(){
 // the guest's blows, applied here exactly as if this browser's hero had struck them
 on('hits', (m) => {
   if (net.role !== 'host') return;
-  for (const [id, dmg, kx, kz, kpow, fin, tick] of m.h || []){
+  for (const [id, dmg, kx, kz, kpow, fin, tick, shove] of m.h || []){
     if (id === 'B'){ if (shared.boss && !shared.boss.net) damageBoss(dmg, !!tick); continue; }   // the boss
     const e = enemies.find(o => o.nid === id);
     if (!e || e.dead) continue;
-    damageEnemy(e, dmg, kx || kz ? V3(kx, 0, kz) : null, kpow, !!fin, !!tick);
+    damageEnemy(e, dmg, kx || kz ? V3(kx, 0, kz) : null, kpow, !!fin, !!tick, shove ? { shove } : undefined);
   }
 });
 
