@@ -30,7 +30,7 @@ export const MANDO = {
   // Q — wrist rocket: a PRECISE stagger. Knocks down the foe it hits and anyone right beside it, minimal damage. It used
   // to be a 6.6m, 60-knock blast every 2.4s from wave 1 (area denial on demand, and the same job as the detonator); the
   // wide blast now belongs to the THERMAL DETONATOR, and mastery grows the rocket back toward it late in the run.
-  rocket: { cost: 34, cd: 4.0, speed: 34, dmg: 6, radius: 3.2, knock: 38 },
+  rocket: { cost: 34, cd: 4.0, speed: 34, dmg: 6, radius: 3.2, knock: 24 },
   // late/heavy ordnance is TAXING — long cooldowns + steep Force so the big blasts are a deliberate beat, not spam
   jetMissile: { cost: 74, cd: 14.0, speed: 30, dmg: 180, radius: 11, knock: 28 },  // Z — Boba-Fett back launcher: HUGE blast
   dark: { cost: 36, cd: 0.6, dmg: 78, range: 5.6, arc: 1.4, knock: 20 },      // DARKSABER weapon — LMB slash
@@ -43,7 +43,7 @@ export const MANDO = {
   // X (air) — jetpack slam (jet fuel). A beat of wind-up (the pack fires up, he rises a little with the fist cocked),
   // then the jets flip and drive him down; the landing is a superhero three-point with the fist in the deck. The
   // farther he falls the harder it lands (up to boost× damage/radius from fallFull m), and foes inside core are stunned.
-  slam:  { cost: 34, dmg: 46, radius: 9, knock: 24, diveVel: 44, wind: 0.3, rise: 5, core: 3.5, stun: 1.4,
+  slam:  { cost: 34, dmg: 46, radius: 9, knock: 14, diveVel: 44, wind: 0.3, rise: 5, core: 3.5, stun: 1.4,
            fallFull: 12, boost: 1.35 },                     // X (air) — jetpack slam (jet fuel)
   // (the E melee kit — string, catch, charge, dive kick, takedown — is tuned in data/duel.js MANDO_MELEE)
   // BACTA STIM (G) — the Mando's self-heal: jam a bacta injector into the gauntlet line. Mirrors the Jedi's Force

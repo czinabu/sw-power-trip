@@ -326,11 +326,11 @@ export function forcePull(){
     const ep = e.group.position;
     sparks(V3(ep.x, ep.y + 1.5, ep.z), stance().blade, 4, d * 2.4, { dir: TMP.clone().negate(), cone: 0.15, life: 0.3, grav: 0, stretch: 4 });   // yanked: streaks toward you
     if (e.t.heavy){
-      e.group.position.addScaledVector(TMP, -2.5);   // brutes only stumble closer
+      e.group.position.addScaledVector(TMP, -2.5 * A.pwr);   // brutes only stumble closer
       e.state = 'recover'; e.st = 0.5;
     } else {
       e.state = 'knockdown'; e.st = 0.7;
-      e.vel.copy(TMP.multiplyScalar(-clamp(d*1.9, 9, 26)));
+      e.vel.copy(TMP.multiplyScalar(-clamp(d*1.9, 9, 26) * A.pwr));
       e.vel.y = 4.5;
       e.flash = 0.1;
     }
