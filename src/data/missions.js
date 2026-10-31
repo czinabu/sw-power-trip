@@ -54,6 +54,9 @@
 //               (group, at spots) holds you off; it runs on once they're down (or bolts if you get ahead of it) · clash: { dmg, time, every } catch it on
 //               open ground and it turns to fight until you've taken dmg (a fraction of its hp) off it or `time` runs
 //               out, then breaks away; again no sooner than `every` seconds. The wounds carry into the quarry duel.
+//               The leg starts as soon as you reach the quarry; standing in its way on its line catches it from a few
+//               metres further off (and sooner after the last clash); running far out ahead of it (30 m, out of sight)
+//               loses it like falling behind; and it only finishes a leg once you can see it or are close.
 // Text a kind shows can be renamed per objective: sabotage `consoleName` ('UPLINK'), `doneLine` / `doneSub` (the
 // banner when it's done; hold and capture take them too).
 // On the big battle maps an objective after the first can have `start`: [x, z, yaw], where a retry of it begins.
@@ -67,7 +70,7 @@ import { PURSUIT_SPOTS } from '../world/arenas/pursuit.js';
 import { BATTLE_MAPS, GRASSLAND_SPOTS, ICEFRONT_SPOTS, GRAVEYARD_SPOTS } from './battlemaps.js';
 import { LEVELS } from './levels.js';
 
-export const MISSION_VOICE = { jedi: 'THE BATTLEMASTER', mando: 'THE ARMORER', trooper: 'THE CAPTAIN' };
+export const MISSION_VOICE = { jedi: 'MASTER VAEL', mando: 'THE ARMORER', trooper: 'THE CAPTAIN' };
 export const MISSION_COLOR = { jedi: 0x5ad2ff, mando: 0xffa040, trooper: 0x4aa8ff };
 
 export const MISSIONS = {
@@ -85,12 +88,12 @@ export const MISSIONS = {
         say: { jedi: 'The younglings are boarding. Nothing reaches that ramp until the transport is sealed.',
                mando: 'The foundlings are boarding. Hold the ramp until the transport lifts. This is the Way.' },
         task: { jedi: 'Guard the ramp while the younglings board', mando: 'Guard the ramp while the foundlings board' },
-        at: [0, 9], r: 6, time: 75, awayRate: 0.5,
+        at: [0, 9], r: 6, time: 60, awayRate: 0.5,
         evacuees: { count: 16, spacing: 1.2, speed: 2.2, name: { jedi: 'YOUNGLINGS', mando: 'FOUNDLINGS' },
                     path: [...REFUGE_SPOTS.path, ...REFUGE_SPOTS.ramp] },
         pulses: [ { grunt: 2, blaster: 1 }, { grunt: 2, officer: 1 }, { grunt: 2, blaster: 1, grenadier: 1 },
-                  { grunt: 2, lancer: 1 }, { grunt: 2, blaster: 1, officer: 1 }, { grunt: 1, duelist: 1, blaster: 1 } ],
-        every: [9, 14], cap: 7, from: [-Math.PI + 0.35, -0.35], aggro: 8 },
+                  { grunt: 2, lancer: 1 }, { grunt: 1, duelist: 1, blaster: 1 } ],
+        every: [9, 13], cap: 6, from: [-Math.PI + 0.35, -0.35], aggro: 8 },
 
       { kind: 'sabotage', title: 'SLICE THE UPLINKS',
         say: { jedi: 'They are calling down a bombardment on the refuge. Silence their uplinks before it falls.',
@@ -106,11 +109,12 @@ export const MISSIONS = {
         say: { jedi: 'The Inquisitor has come for you, not the refuge. Read the blade, not the mask.',
                mando: 'A hunter of Jedi. It turns a blaster bolt with ease. Close the distance and break it.' },
         task: { jedi: 'Win the duel', mando: 'Win the duel' },
-        foe: 'acolyte', name: 'THE INQUISITOR', hp: 5, dmg: 1.25, scale: 1.18, tint: 0xa01a22, at: [0, -6],
-        duel: { block: 0.78, posture: 170, feint: 0.35, chain: 2, counter: 0.6 },
-        rage: 0.5, rageDuel: { feint: 0.5, delay: 0.4, chain: 3, thrust: 0.25 },
+        // the first story duel, so a step gentler than the act III blades (the Long Chase's rematch is the hard one)
+        foe: 'acolyte', name: 'THE INQUISITOR', hp: 4, dmg: 1.1, scale: 1.18, tint: 0xa01a22, at: [0, -6],
+        duel: { block: 0.72, posture: 160, feint: 0.3, chain: 2, counter: 0.5 },
+        rage: 0.55, rageDuel: { feint: 0.45, delay: 0.45, chain: 3, thrust: 0.2 },
         // it breaks off at this much health instead of falling: the Long Chase is where you finish it
-        escape: 0.22, escapeLine: { jedi: 'It is wounded, and it saw which way the transports went.', mando: 'Wounded, and gone. It saw which way the transports went.' } },
+        escape: 0.3, escapeLine: { jedi: 'It is wounded, and it saw which way the transports went.', mando: 'Wounded, and gone. It saw which way the transports went.' } },
     ],
     done: { jedi: 'The younglings are safe and the refuge still stands. But the Inquisitor lives, and it will be back.',
             mando: 'The foundlings are safe. The hunter got away. We will see it again.' },
@@ -126,7 +130,7 @@ export const MISSIONS = {
     level: { ...BATTLE_MAPS.grassland.level, name: 'MISSION — THE BATTLE OF THE GRASS SEA',
              sub: 'The Empire holds the grass before its outpost. Break its line and take the gate.' },
     start: GRASSLAND_SPOTS.allyStart,   // the landing field in the north, looking south across the grass
-    kit: 4,
+    kit: 8,
     grant: { jedi: ['throw', 'slam'], mando: ['grapple', 'birds'] },
     squad: 4, battle: true,
     objectives: [
@@ -154,11 +158,12 @@ export const MISSIONS = {
         say: { jedi: 'Their commander takes the field himself. Your men will keep his troops off you. He is yours.',
                mando: 'Their commander wants you himself. The clan will keep his troops busy. Take him.' },
         task: { jedi: 'Win the duel while the squad holds', mando: 'Win the duel while the clan holds' },
-        foe: 'acolyte', name: 'THE WARDEN', hp: 4.5, dmg: 1.2, scale: 1.2, tint: 0x8a2a1a, at: [0, -28],   // the open grass before the gate
-        duel: { block: 0.75, posture: 165, feint: 0.35, chain: 2, counter: 0.55 },
-        rage: 0.5, rageDuel: { feint: 0.5, delay: 0.4, chain: 3, thrust: 0.25 },
+        // the last duel before the throne in the campaign (SPEARHEAD on Exegol), so one of the toughest
+        foe: 'acolyte', name: 'THE WARDEN', hp: 5, dmg: 1.25, scale: 1.2, tint: 0x8a2a1a, at: [0, -28],   // the open grass before the gate
+        duel: { block: 0.78, posture: 170, feint: 0.4, chain: 2, counter: 0.6 },
+        rage: 0.5, rageDuel: { feint: 0.5, delay: 0.35, chain: 3, thrust: 0.3 },
         trickle: { every: 12, cap: 4, group: { grunt: 2, blaster: 1 } }, from: [-Math.PI + 0.35, -0.35],
-        hero: { mando: { foe: 'duelist', name: 'THE IRON WARDEN', tint: 0x4a4a52, hp: 5,
+        hero: { mando: { foe: 'duelist', name: 'THE IRON WARDEN', tint: 0x4a4a52, hp: 6,
                          duel: { block: 0.7, posture: 155, feint: 0.3, chain: 2, counter: 0.5 } } } },
     ],
     done: { jedi: 'The line is broken and the Grass Sea is ours. Your men fought well, General. So did you.',
@@ -173,7 +178,7 @@ export const MISSIONS = {
              arena: 56, arenaZ: 320, floor: 0xb49470, fog: 0xd8a878, sky: 0x3a5c92, layout: 'pursuit', waves: [], hazards: {} },
     start: PURSUIT_SPOTS.start,   // the south end of the town, the quarry already running up the market street
     route: PURSUIT_SPOTS.legs,     // the quarry's line through the town, one polyline per pursuit leg
-    kit: 4,
+    kit: 8,
     grant: { jedi: ['throw', 'slam'], mando: ['grapple', 'birds'] },
     // who you are chasing (built from an enemy type, like the refuge's duel)
     quarry: { jedi: { foe: 'acolyte', name: 'THE SEVENTH BLADE', kicker: 'INQUISITOR', tint: 0xa01a22, scale: 1.15 },
@@ -186,7 +191,7 @@ export const MISSIONS = {
         task: { jedi: 'Keep the Inquisitor in sight', mando: 'Keep the bounty in sight' },
         sight: 42, lost: 6, shove: 3.0,
         pace: [[-6, 11.5], [6, 10.2], [14, 9.0], [24, 8.2], [36, 7.4]],
-        clash: { dmg: 0.12, time: 12, every: 9 },
+        clash: { dmg: 0.12, time: 9, every: 16 },
         shortcuts: PURSUIT_SPOTS.shortcuts[0],
         standoff: [ { at: [0, -100], spots: [[-10, -104], [10, -104], [-9, -96], [9, -96]], group: { grunt: 2, lancer: 1, blaster: 1 } },
                     { at: [6, 6], spots: [[-6, 0], [14, 14], [-10, 14], [2, 22]], group: { grunt: 2, officer: 1, blaster: 1 } } ] },
@@ -198,7 +203,7 @@ export const MISSIONS = {
         task: { jedi: 'Keep the Inquisitor in sight', mando: 'Keep the bounty in sight' },
         sight: 42, lost: 6, shove: 3.0,
         pace: [[-6, 11.5], [6, 10.4], [14, 9.2], [24, 8.4], [36, 7.6]],
-        clash: { dmg: 0.12, time: 12, every: 9 },
+        clash: { dmg: 0.12, time: 9, every: 16 },
         shortcuts: PURSUIT_SPOTS.shortcuts[1],
         standoff: [ { at: [4, 83], spots: [[-8, 92], [0, 92], [8, 75], [-2, 75]], group: { grunt: 2, lancer: 1, grenadier: 1, blaster: 1 } } ] },
 
@@ -206,10 +211,12 @@ export const MISSIONS = {
         say: { jedi: 'Its ship is clamped down. Nowhere left to run. Read the blade, not the mask.',
                mando: 'Docking clamps are locked. It has to come through you. Watch the staff, and break its guard.' },
         task: { jedi: 'Win the duel', mando: 'Win the duel' },
-        hp: 4.5, dmg: 1.2,
-        duel: { block: 0.75, posture: 160, feint: 0.4, chain: 2, counter: 0.55 },
-        rage: 0.5, rageDuel: { feint: 0.5, delay: 0.4, chain: 3, thrust: 0.25 },
-        hero: { mando: { hp: 5, duel: { block: 0.7, posture: 150, feint: 0.3, chain: 2, counter: 0.5 } } } },
+        // the act III rematch: tougher than the refuge's, but every clash on the run carries into it (and it can't
+        // come in with less than 60% of this, game/mission.js)
+        hp: 5.5, dmg: 1.3,
+        duel: { block: 0.78, posture: 170, feint: 0.45, chain: 3, counter: 0.6 },
+        rage: 0.5, rageDuel: { feint: 0.55, delay: 0.35, chain: 3, thrust: 0.3 },
+        hero: { mando: { hp: 6.5, duel: { block: 0.72, posture: 160, feint: 0.35, chain: 2, counter: 0.55 } } } },
     ],
     done: { jedi: 'The coordinates die with it. The younglings stay hidden. Well run, and well fought.',
             mando: 'The trail is wiped and the bounty is claimed. The foundlings stay hidden. This is the Way.' },
@@ -235,7 +242,7 @@ export const MISSIONS = {
         say: { jedi: 'Here they come, General. Hold the forward trench. The troopers are the squad\'s; the shields and the brutes are yours.',
                mando: 'They\'re coming over the snow. Hold the forward trench. Your clan takes the troopers; you take the heavies.' },
         task: { jedi: 'Hold the forward trench (H puts the squad on it)', mando: 'Hold the forward trench (H puts the clan on it)' },
-        at: [0, 14], r: 7, time: 55, awayRate: 0.3, squadRate: 0.6, holding: 'TRENCH HELD',
+        at: [0, 14], r: 7, time: 45, awayRate: 0.3, squadRate: 0.6, holding: 'TRENCH HELD',
         overrun: 'CLEAR THE TRENCH', unguarded: 'TRENCH UNGUARDED', doneLine: 'THE FIRST WAVE BREAKS', doneSub: 'But the walker is still firing.',
         pulses: [ { grunt: 3, blaster: 2 }, { grunt: 2, blaster: 1, phalanx: 1 }, { grunt: 2, blaster: 2, grenadier: 1 },
                   { grunt: 3, officer: 1, sniper: 1 }, { grunt: 2, blaster: 1, brute: 1 }, { grunt: 2, blaster: 2, flyer: 1 } ],
@@ -255,11 +262,11 @@ export const MISSIONS = {
         say: { jedi: 'The transports are launching. Fall back to the rear trench and hold it until the last one clears the shield.',
                mando: 'The ships are lifting. Back to the rear trench. Nothing reaches the hangar till they\'re gone.' },
         task: { jedi: 'Hold the rear trench until the transports are away', mando: 'Hold the rear trench until the ships are away' },
-        at: [0, 36], r: 7, time: 50, awayRate: 0.25, squadRate: 0.6, holding: 'TRANSPORTS LAUNCHING',
+        at: [0, 36], r: 7, time: 45, awayRate: 0.25, squadRate: 0.6, holding: 'TRANSPORTS LAUNCHING',
         overrun: 'CLEAR THE TRENCH', unguarded: 'TRENCH UNGUARDED', doneLine: 'THE LAST TRANSPORT IS AWAY', doneSub: 'Something big is coming through the snow.',
         pulses: [ { grunt: 3, blaster: 2, flyer: 1 }, { grunt: 2, lancer: 1, blaster: 1 }, { grunt: 2, blaster: 2, officer: 1 },
                   { grunt: 2, bomber: 2 }, { grunt: 2, blaster: 1, phalanx: 1, grenadier: 1 }, { grunt: 3, blaster: 1, sniper: 1 } ],
-        every: [7, 10], cap: 11, from: [-Math.PI + 0.4, -0.4], aggro: 9 },
+        every: [7, 10], cap: 10, from: [-Math.PI + 0.4, -0.4], aggro: 9 },
 
       { kind: 'duel', title: 'STOP THE AVALANCHE', start: [0, 34, Math.PI],
         say: { jedi: 'Their siege trooper walks through blaster fire like snow. Your men will hold off the rest. Don\'t trade blows with it: read the swing, then punish it.',
@@ -282,26 +289,26 @@ export const MISSIONS = {
              sub: { jedi: 'The cores in these wrecks remember where his ships have been.',
                     mando: 'The cores in these wrecks remember where the beskar went. The Empire wants them first.' } },
     start: GRAVEYARD_SPOTS.allyStart,
-    kit: 4,
+    kit: 6,
     grant: { jedi: ['throw', 'slam'], mando: ['grapple', 'birds'] },
     objectives: [
       { kind: 'sabotage', title: 'SALVAGE THE CORES', consoleName: 'CORE', doneLine: 'EVERY CORE RECOVERED', doneSub: 'They know you have them.',
         say: { jedi: 'Four wrecks still hold their navigation cores, and they remember where Vexis\'s ships go. Pull each one before the salvage crews burn them. Mind the snipers on the hulls.',
                mando: 'Four cores, four wrecks, and every one remembers where the Magistrate\'s beskar goes. Pull them before his crews do. Snipers on the high plates: take the high ground or stay low.' },
         task: { jedi: 'Stand at each wreck to pull its core', mando: 'Stand at each wreck to pull its core' },
-        consoles: [ { at: GRAVEYARD_SPOTS.points.engine, guards: { grunt: 2, blaster: 1, sniper: 1 } },
+        consoles: [ { at: GRAVEYARD_SPOTS.points.engine, guards: { grunt: 2, blaster: 2 } },   // (the first core: no sniper yet)
                     { at: [42, 20], guards: { grunt: 2, lancer: 1, blaster: 1 } },
                     { at: [-10, -31], guards: { grunt: 1, grenadier: 1, blaster: 1, officer: 1 },
                       found: { jedi: ['THE CAPTAIN\'S HOLOCRON', 'The Republic cruiser kept more than its route.'], mando: null } },
                     { at: [26, -54], guards: { phalanx: 1, grunt: 2, sniper: 1 } } ],
-        time: 4.5, r: 2.4, hitLoss: 1.2,
-        trickle: { every: 15, cap: 6, group: { grunt: 1, blaster: 1, flyer: 1 } } },
+        time: 4, r: 2.4, hitLoss: 0.6,
+        trickle: { every: 18, cap: 5, group: { grunt: 1, blaster: 1, flyer: 1 } } },
 
       { kind: 'hold', title: 'HOLD THE FREIGHTER', start: [4, 50, Math.PI],
         say: { jedi: 'The freighter needs a minute to warm its engines. Hold the camp. They will send everything they have left.',
                mando: 'Engines need a minute. Hold the camp till they\'re hot. Everything they\'ve got is coming.' },
         task: { jedi: 'Hold the camp while the freighter warms up', mando: 'Hold the camp while the freighter warms up' },
-        at: [4, 46], r: 7, time: 55, awayRate: 0.4, holding: 'ENGINES WARMING',
+        at: [4, 46], r: 7, time: 45, awayRate: 0.4, holding: 'ENGINES WARMING',
         overrun: 'CLEAR THE CAMP', unguarded: 'CAMP UNGUARDED', doneLine: 'ENGINES HOT', doneSub: 'One more shadow in the wrecks.',
         pulses: [ { grunt: 2, blaster: 2 }, { grunt: 2, bomber: 1, blaster: 1 }, { grunt: 2, officer: 1, sniper: 1 },
                   { grunt: 2, lancer: 1, flyer: 1 }, { grunt: 2, blaster: 1, grenadier: 1 }, { grunt: 1, duelist: 1, blaster: 2 } ],
@@ -369,12 +376,13 @@ export const MISSIONS = {
                   { grunt: 2, flyer: 1, blaster: 1 }, { grunt: 2, phalanx: 1, sniper: 1 } ],
         every: [8, 12], cap: 9, from: [-Math.PI + 0.3, -0.3], aggro: 8 },
 
-      { kind: 'duel', title: 'DEFEAT THE SHIELD CAPTAIN', start: [8, 50, Math.PI],
-        say: { jedi: 'The outpost\'s captain has come to take the codes back. It fights behind a riot shield. Go around it, or break it with the Force.',
-               mando: 'The captain wants its codes back. Riot shield, stun baton. Blasters won\'t get through the front. Get behind it, or blow it off its feet.' },
+      { kind: 'duel', title: 'DEFEAT THE OUTRIDER', start: [8, 50, Math.PI],
+        say: { jedi: 'The outpost sent its outrider after the codes. It closes fast with that lance and lunges from range. Sidestep the charge, then make it pay.',
+               mando: 'Their outrider\'s on us. Lance, and a lunge that covers ground. Don\'t stand in its line. Make it miss, then hit it.' },
         task: { jedi: 'Win the duel while the squad holds', mando: 'Win the duel while the clan holds' },
-        foe: 'phalanx', name: 'THE SHIELD CAPTAIN', hp: 4, dmg: 1.2, scale: 1.22, tint: 0x5a6472, at: [6, 36],
-        duel: { posture: 130, feint: 0.3, chain: 2, counter: 0.45 },
+        enter: { jedi: 'Something comes over the sandbags at a run, lance first.', mando: 'Something comes over the sandbags at a run, lance first.' },
+        foe: 'lancer', name: 'THE OUTRIDER', hp: 4.5, dmg: 1.15, scale: 1.15, tint: 0x6a7a3a, at: [6, 36],
+        duel: { feint: 0.35, chain: 2, counter: 0.45 },
         rage: 0.5, rageDuel: { feint: 0.45, delay: 0.4, chain: 3 },
         trickle: { every: 14, cap: 3, group: { grunt: 2 } }, from: [-Math.PI + 0.4, -0.4] },
     ],
@@ -451,7 +459,7 @@ export const MISSIONS = {
     level: { ...LEVELS[1], name: 'MISSION — THE MUSTAFAR FORGE', sub: { jedi: 'His war machines are forged here. Break the forge.', mando: 'Our beskar, melted down for his machines. Tear it down.' },
              waves: [], hazards: {} },
     start: [0, 17, Math.PI],   // the north lane, looking down the forge floor at the smelter
-    kit: 6,
+    kit: 7,
     grant: { jedi: ['throw', 'slam'], mando: ['grapple', 'birds'] },
     objectives: [
       { kind: 'sabotage', title: 'CHARGE THE FORGE', consoleName: 'CHARGE', doneLine: 'CHARGES SET', doneSub: 'Now get clear of it.',

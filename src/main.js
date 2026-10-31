@@ -66,7 +66,7 @@ import './world/arenas/foundry.js';
 import './world/arenas/plains.js';
 import { queueSpawn, startLevel, checkUnlocks, startWave, updateFlow } from './game/flow.js';
 import { startTutorial, updateTutorial, skipStep, trainingProgress, lessonList, openLessonBoard } from './game/tutorial.js';
-import { startCampaign, startChapter, nextChapter, chapters } from './game/campaign.js';
+import { startCampaign, campaignWon, startChapter, nextChapter, chapters } from './game/campaign.js';
 import { startMission, updateMission, skipObjective, missionState } from './game/mission.js';
 import { startSandbox, updateSandbox, sandboxSpawn, sandboxClear, setSandboxKit, sandboxKitAll } from './game/sandbox.js';
 import {
@@ -211,7 +211,7 @@ import { ENDLESS_ARENAS } from './game/survival.js';
 import { BATTLE_MAPS } from './data/battlemaps.js';
 import { setSandboxMap } from './game/sandbox.js';
 Object.assign(window.GAME, { pingHere, pingInfo, coopDrop, coopNet, arena: arenaInfo, ENDLESS_ARENAS, BATTLE_MAPS, setSandboxMap, gfx: { renderer, composer, scene } });
-Object.assign(window.GAME, { startCampaign, startChapter, nextChapter, chapters });
+Object.assign(window.GAME, { startCampaign, startChapter, nextChapter, chapters, campaignWon });
 import { BS as battleSim, placeAt as battlePlace, enterSetup as battleEnter, startBattle, replayBattle, saveSetup as battleSave, loadSetup as battleLoad, clearSetup as battleClear } from './game/battlesim.js';
 import { openBattleSetup } from './ui/battlesim-ui.js';
 Object.assign(window.GAME, { battle: { BS: battleSim, open: openBattleSetup, enter: battleEnter, place: battlePlace, start: startBattle, replay: replayBattle, save: battleSave, load: battleLoad, clear: battleClear } });   // the sandbox's battle simulator (game/battlesim.js), for tests

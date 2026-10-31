@@ -9,7 +9,8 @@
    'base' is the plain layout; 'lb' is what a face button / bumper / D-pad does while LB is held (LB itself is the
    strafe hold, so the layer and the strafe go together). Anything not in 'lb' falls through to 'base'.
    SLOTS: D-pad left / up / right are the three loadout slots (keys 1 / 2 / 3: the Jedi's forms, the Mando's weapons).
-   A form loadout or a fourth slot only has to change the key here. */
+   A form loadout or a fourth slot only has to change the key here.
+   The ARC trooper plays on the Mandalorian's binds (engine/gamepad.js picks by isGunner); its keys land on its own kit. */
 
 // standard mapping (https://w3c.github.io/gamepad/#remapping) button index → name
 export const PAD_BUTTONS = ['A', 'B', 'X', 'Y', 'LB', 'RB', 'LT', 'RT', 'VIEW', 'MENU', 'L3', 'R3', 'UP', 'DOWN', 'LEFT', 'RIGHT'];
@@ -80,6 +81,7 @@ export const PAD_BINDS = {
       X:  { key: 'x', label: 'Grapple / Jetpack Slam', note: 'Whichever you earned' },
       RB: { key: 'z', label: 'Jetpack missile' },
       DOWN: { key: 'g', label: 'Bacta stim' },
+      R3: { key: 't', label: 'Battlefield call', note: 'The ARC trooper (the Mandalorian has nothing on T)' },
       UP: { key: 'n', label: 'Ping', note: 'Marks the spot or foe under the crosshair for your co-op partners' },
       VIEW: { key: 'h', label: 'Squad orders' },
     },

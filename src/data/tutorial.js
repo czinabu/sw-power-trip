@@ -62,7 +62,7 @@ export const TRAINING_LEVELS = {
            arena: 48, floor: 0x4c5056, fog: 0x1c2a36, sky: 0x060a14, layout: 'forge', waves: [], hazards: {} },
 };
 
-export const TEACHER = { jedi: 'THE BATTLEMASTER', mando: 'THE ARMORER', trooper: 'THE CAPTAIN' };
+export const TEACHER = { jedi: 'MASTER VAEL', mando: 'THE ARMORER', trooper: 'THE CAPTAIN' };
 export const BEACON = { jedi: 0x5ad2ff, mando: 0xffa040, trooper: 0x4aa8ff };
 // the board's group names: the basics, then what the story opens
 export const LESSON_GROUPS = {

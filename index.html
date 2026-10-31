@@ -191,7 +191,7 @@
           <div class="sec-label">MODE</div>
           <div id="modeselect">
             <div class="modeopt brk major sel" id="mode-campaign"><span class="mt">CAMPAIGN</span><span class="md">13 chapters, three acts</span></div>
-            <div class="modeopt brk major" id="mode-mission"><span class="mt">MISSIONS</span><span class="md">Replay any story mission</span></div>
+            <div class="modeopt brk major" id="mode-mission"><span class="mt">MISSIONS ›</span><span class="md">Replay any story mission</span></div>
             <div class="modeopt brk" id="mode-endless"><span class="mt">SURVIVAL</span><span class="md">Endless waves, one high score</span></div>
             <div class="modeopt brk" id="mode-training"><span class="mt">TRAINING</span><span class="md">Learn the controls and powers</span></div>
             <div class="modeopt brk" id="mode-sandbox"><span class="mt">SANDBOX</span><span class="md">Any foe, any power</span></div>
@@ -201,11 +201,6 @@
             <div class="btn" id="campNewBtn">NEW GAME</div>
             <div class="btn" id="campSaveBtn">SAVE GAME</div>
             <div class="btn" id="campLoadBtn">LOAD GAME</div>
-          </div>
-          <div id="missionpick">
-            <div class="sec-label">MISSION</div>
-            <div id="msnlist"></div>
-            <div id="msninfo"></div>
           </div>
         </div>
         <div class="setup-col">
@@ -217,6 +212,15 @@
           </div>
         </div>
       </div>
+    </section>
+    <!-- the Missions page: swaps in for the menu column when MISSIONS is picked (ui/missions-ui.js) -->
+    <section id="missionpage">
+      <div class="mp-head">
+        <div class="btn mp-back" id="mpBack">‹ BACK</div>
+        <div class="cz-tabs" id="mpheroes"><span data-h="jedi">JEDI</span><span data-h="mando">MANDALORIAN</span><span data-h="trooper">ARC TROOPER</span></div>
+      </div>
+      <div id="mplist"></div>
+      <div id="mpinfo"></div>
     </section>
     <section id="customizer">
       <div class="cz-tabs" id="czhero"><span data-h="jedi">JEDI</span><span data-h="mando">MANDALORIAN</span></div>

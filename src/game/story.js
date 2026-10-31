@@ -6,8 +6,8 @@
 // the chapter) · 'boss' · 'clear' · 'inquisitor' (the refuge duel's foe steps in) · 'escape' (it breaks off) · 'epilogue'.
 // storyBeat plays the chapter's lines for the beat (data/campaign.js `lines`), then tells whoever listens (onStory).
 
-import { G, heroKey } from '../state.js';
-import { VOICE, forHero } from '../data/campaign.js';
+import { G } from '../state.js';
+import { storyVoice, forHero } from '../data/campaign.js';
 import { hooks } from '../net/run.js';
 import { chapterAt } from './campaign.js';
 
@@ -17,7 +17,7 @@ const queue = [];
 let cur = null, left = 0;
 
 // a line is a string (the hero's voice: the Battlemaster, the Armorer) or { who, say } (anyone else)
-const speaker = (l) => typeof l === 'string' ? heroKey(VOICE) : l.who;
+const speaker = (l) => typeof l === 'string' ? storyVoice(undefined, G.chapter >= 0 ? chapterAt(G.chapter) : null) : l.who;   // (the story's voice: data/campaign.js)
 const words = (l) => typeof l === 'string' ? l : l.say;
 const holdFor = (text) => 2.4 + text.length * 0.05;
 
