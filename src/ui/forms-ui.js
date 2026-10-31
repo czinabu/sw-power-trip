@@ -14,6 +14,7 @@ import { formOffered, refreshSandboxScope } from '../game/sandbox-unlocks.js';
 import { canResume } from '../game/saves.js';
 import { trainingLoadout } from '../game/tutorial.js';
 import { audioInit } from '../audio/sfx.js';
+import { openArmoryCodex } from './armory-ui.js';
 
 const panel = document.getElementById('forms');
 const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -182,4 +183,4 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape'){ close(); }
   else if (e.key === 'Enter' && ctx && ctx.prefight){ e.preventDefault(); e.stopPropagation(); fight(); }
 }, true);
-document.getElementById('formsBtn').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); openCodex(); });
+document.getElementById('formsBtn').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); if (G.hero === 'mando') openArmoryCodex(); else openCodex(); });

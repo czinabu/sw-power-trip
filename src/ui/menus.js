@@ -5,7 +5,7 @@ import { renderer } from '../engine/renderer.js';
 import { cycleQuality } from '../engine/quality.js';
 import { audioInit, setMasterVol, setMusicVol, setSfxVol, S } from '../audio/sfx.js';
 import { AE } from '../audio/engine.js';
-import { shared, G, player, isGunner, TROOPER_TEST } from '../state.js';
+import { shared, G, player, isGunner, isTrooper, TROOPER_TEST } from '../state.js';
 import { applySaberGrip } from '../player/model/weapons.js';
 import { setHero } from '../player/hero.js';
 import { startLevel, retryLevel, retryIsBoss, startCoopCampaign } from '../game/flow.js';
@@ -32,6 +32,7 @@ import { canResume, resumeRun, resumeLabel, resumeProgress, captureRun } from '.
 import { startCampaign, joinCampaign, closeCard, chapterLabel } from '../game/campaign.js';
 import { pad } from '../engine/gamepad.js';
 import { openPrefight } from './forms-ui.js';
+import { openArmoryPrefight } from './armory-ui.js';
 
 /* ============================================================
    INPUT
@@ -53,7 +54,8 @@ export function setOverlayState(state){
   document.getElementById('restartBtn').textContent = G.training ? '↻ RESTART TRAINING' : G.mission && G.chapter < 0 ? '↻ RESTART MISSION' : '↻ RESTART RUN';
   document.getElementById('skipBtn').style.display = state === 'pause' && G.training ? 'inline-flex' : 'none';
   document.getElementById('lessonsBtn').style.display = state === 'pause' && G.training ? 'inline-flex' : 'none';
-  document.getElementById('formsBtn').style.display = isGunner() ? 'none' : '';   // the Jedi's forms page (ui/forms-ui.js)
+  document.getElementById('formsBtn').style.display = isTrooper() ? 'none' : '';   // (the trooper has neither yet)
+  document.getElementById('formsBtn').textContent = G.hero === 'mando' ? 'ARMORY' : 'LIGHTSABER FORMS';   // the Jedi's forms page (ui/forms-ui.js), the Mando's guns (ui/armory-ui.js)
   const go = document.getElementById('goText'), sub = document.getElementById('ovsub');
   if (state === 'menu' && G.modeSel === 'campaign' && canResume()){   // a loaded save picks the campaign up where it was
     go.textContent = 'CONTINUE CAMPAIGN'; sub.textContent = resumeLabel();
@@ -415,16 +417,18 @@ export function beginFromMenu(){
   launchFromMenu();
 }
 // a Jedi starting a mode from the title screen sees the forms page first (ui/forms-ui.js): what each form does, and the
-// three to carry; its FIGHT launches. RESUME, a retry and PLAY AGAIN go straight back in
+// three to carry; its FIGHT launches. A Mando starting a mission sees the armory: the sidearm and primary to carry
+// (ui/armory-ui.js). RESUME, a retry and PLAY AGAIN go straight back in
 function launchFromMenu(){
   if (G.mode === 'menu' && !isGunner() && !G.coopJoin) openPrefight(launch);
-  else launch();
+  else if (G.mode === 'menu' && G.hero === 'mando' && G.modeSel === 'mission' && !G.coopJoin) openArmoryPrefight(launch);
+  else { if (G.mode === 'menu') G.missionKit = null; launch(); }
 }
 document.getElementById('trainYes').addEventListener('click', (e) => { e.stopPropagation(); overlay.classList.remove('asktrain'); setModeSel('training'); launchFromMenu(); });
 document.getElementById('trainNo').addEventListener('click', (e) => { e.stopPropagation(); overlay.classList.remove('asktrain'); launchFromMenu(); });
 // co-op guest: start a run that follows the host's (net/foes.js): Survival (startEndless sees G.coopJoin) or the campaign's level
 export function launchCoopRun(){
-  G.coopJoin = true; G.missionForms = null; G.modeSel = coopRun.k === 'm' ? 'mission' : coopRun.k === 'c' ? 'campaign' : 'endless';
+  G.coopJoin = true; G.missionForms = null; G.missionKit = null; G.modeSel = coopRun.k === 'm' ? 'mission' : coopRun.k === 'c' ? 'campaign' : 'endless';
   if (coopRun.k === 'm') G.missionId = coopRun.mid;
   setOverlayState('menu');
   launch();

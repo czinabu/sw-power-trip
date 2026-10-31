@@ -13,6 +13,8 @@ import { CFG } from '../data/config.js';
 import { floater } from '../fx/floaters.js';
 import { setStanceHud, setLoadout, switchStance } from '../player/jedi/stance.js';
 import { switchWeapon } from '../player/mando/weapons.js';
+import { setKit } from './armory.js';
+import { kitOf } from '../data/mando.js';
 import { toggleHolster } from '../player/holster.js';
 import { spawnEnemy } from '../enemies/spawn.js';
 import { removeEnemy } from '../enemies/cleanup.js';
@@ -74,9 +76,13 @@ export function trainingLoadout(){ const k = storyForms().filter(id => id !== 's
 // the kit the training starts every lesson on: the starting kit, plus what the story hands out on its own along the way
 function baseKit(){
   if (T.hero === 'mando'){
-    G.unlocked = { rocket: true, dual: storyReached('dual'), flame: storyReached('flame') };
+    G.unlocked = { rocket: true, dual: storyReached('dual'), carbine: storyReached('carbine'), repeater: storyReached('repeater'), flame: storyReached('flame') };
     player.up.darksaber = false;
+    setKit({ sidearm: 'single', primary: storyReached('carbine') ? 'carbine' : null });   // the pistol, and the first primary once the story has handed it out
     if (player.weapon !== 'single' && player.weapon !== 'fists') switchWeapon('single');
+  } else if (T.hero === 'trooper'){   // the trooper's kit is whole from the start: its two guns, frags and the bash
+    G.unlocked = {}; player.up.darksaber = false;
+    if (player.weapon !== 'rifle' && player.weapon !== 'pistols') switchWeapon('rifle');
   } else {
     G.unlocked = { push: true, dash: true, pull: storyReached('pull') };
     G.stanceUnlocked = Object.fromEntries(storyForms().map(id => [id, true]));
@@ -183,6 +189,10 @@ function beginStep(i){
   }
   if (s.grant === 'jet1' && !(player.up.jetTier >= 1)){ player.up.jetTier = 1; applyJetTier(); player.jet = player.jetMax; }
   if (s.grant === 'dual') G.unlocked = { ...(G.unlocked || {}), dual: true };
+  if (s.kit && T.hero === 'mando'){   // the guns the step is about go on 1 / 2 (data/mando.js), handed over for it
+    for (const slot in s.kit) if (s.kit[slot]) G.unlocked = { ...(G.unlocked || {}), [s.kit[slot]]: true };
+    setKit({ ...kitOf(), ...s.kit });
+  }
   // a fresh start for the trial: full health, Force and fuel
   if (s.heal){ player.hp = maxHp(); player.force = CFG.player.maxForce; player.stam = maxStam(); if (isGunner()) player.jet = player.jetMax; }
   if (s.use){ for (const k in player.cds) if (s.use[0] === 'cd' && k === s.use[1]) player.cds[k] = 0; T.was = used(s.use); }
@@ -275,7 +285,7 @@ function finishLesson(skipped){
     if (!T.on || T.lesson !== L) return;
     clearBeacons();
     showPanel(heroKey(TEACHER, T.hero), L.done || '', '', 'Lesson complete', { done: true, step: L.name });
-    showBanner('LESSON COMPLETE', L.name, 2.6, { kicker: T.hero === 'mando' ? 'THE ARMORER\'S FORGE' : 'THE TRAINING HALL' });
+    showBanner('LESSON COMPLETE', L.name, 2.6, { kicker: T.hero === 'mando' ? 'THE ARMORER\'S FORGE' : T.hero === 'trooper' ? 'THE HIDDEN RANGE' : 'THE TRAINING HALL' });
     MUSIC.clearSting();
   }, 900);
 }
@@ -385,7 +395,9 @@ function openBoard(){
   };
   const basics = list.filter(x => x.L.group === 'basics'), more = list.filter(x => x.L.group !== 'basics');
   const nb = basics.filter(x => x.done).length;
-  const line = nb < basics.length
+  const line = T.hero === 'trooper'   // (the trooper's lessons, in the Captain's words)
+    ? (nb < basics.length ? 'Basics first, trooper. Same as Kamino.' : 'Run it again until you stop thinking about it.')
+    : nb < basics.length
     ? (T.hero === 'mando' ? 'The basics first, foundling. Then the forge has more for you.' : 'The basics first, my young Padawan. Every form begins with them.')
     : more.some(x => x.open && !x.done)
       ? (T.hero === 'mando' ? 'The forge has made you something new. Learn it here before you take it into a fight.' : 'You have learned something new out there. Come, practise it here, where the cost of a mistake is small.')

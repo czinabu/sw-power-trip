@@ -54,30 +54,109 @@ export const MANDO = {
   // making the 200-XP purchase (now 150, see MANDO_STORE) feel pointless next to Hunter's Creed's free per-kill trickle.
   bacta: { cost: 42, cd: 10.0, channel: 0.5 },
 };
-// LOADOUTS — switch with 1/2/3/4 or wheel. fire: 'semi'(1/click) · 'auto'(hold) · 'rifle'(disruptor) · 'saber'(melee)
-// ENERGY model (Battlefront-2 style): no ammo/reload. Each shot adds HEAT; cap it and you OVERHEAT and
-// must wait for a full vent. `heat` = per-shot, `cool`/`overCool` = recovery per second (normal / while overheated).
+// THE GUNS. fire: 'semi'(1/click) · 'auto'(hold) · 'burst'(a click fires `burst` bolts `burstGap` s apart) · 'rifle'(disruptor) · 'saber'(melee)
+// ENERGY model (Battlefront-2 style): no ammo. Each shot adds HEAT; cap it and you OVERHEAT and must wait for a full
+// vent. `heat` = per-shot, `cool`/`overCool` = recovery per second (normal / while overheated). `vent` = how long the
+// manual vent (R) locks the trigger: a pistol dumps its heat in a flick, the repeater's coolant takes a real beat.
 // hipSpread/braceSpread = bolt cone (rad) hipfire vs while BRACING (hold RMB) · braceDmg = damage ×while braced.
 // foStart/foEnd = distance where damage starts/finishes falling off · foMin = min damage mult (bracing also lifts this).
+// kick = recoil per shot (the hand and the reticle jump) · climb = how far each shot walks the reticle up (px) ·
+// flinch = how hard a bolt rocks the foe it hits · size = the bolt's thickness · col = its colour.
+// `slot`: the LOADOUT slot the gun goes in (KIT_SLOTS below) — a SIDEARM on 1, a PRIMARY on 2. `twoHand` guns are
+// shouldered (one long-gun model at a time: player/model/weapons.js); only the disruptor has a `scope` on RMB.
 // BRACING is the core skill: it tightens the cone hard, boosts damage, and stretches your effective range.
-// Single: precise, long reach, HARSH hipfire falloff → big reward for bracing. Dual: wild spray, very harsh falloff
-// → bracing turns it into usable DPS. Disruptor: pinpoint either way (minimal change).
 export const MANDO_WEAPONS = {
-  single:    { name: 'BLASTER',   fire: 'semi', fireCd: 0.15, dmg: 32, dual: false, heat: 0.115, cool: 0.6, overCool: 0.46,
-               hipSpread: 0.008, braceSpread: 0.002, braceDmg: 1.08, foStart: 18, foEnd: 44, foMin: 0.5 },   // bolts track the reticle; the SWAY is the difficulty
-  dual:      { name: 'DUAL',      fire: 'auto', fireCd: 0.11, dmg: 13, dual: true,  heat: 0.066, cool: 0.66, overCool: 0.5,
-               hipSpread: 0.02, braceSpread: 0.006, braceDmg: 1.12, foStart: 8, foEnd: 24, foMin: 0.35 },    // a touch looser, but still honest to the reticle
-  disruptor: { name: 'DISRUPTOR', fire: 'rifle', fireCd: 0.7, dmg: 150, dual: false, heat: 0.42, cool: 0.5, overCool: 0.4,
-               hipSpread: 0, braceSpread: 0, braceDmg: 1, foStart: 999, foEnd: 999, foMin: 1,
-               twoHand: true, stabDmg: 38, stabRange: 5.2, stabStun: 2.0,   // pinpoint sniper; else a fast electric spear
+  single:    { name: 'BLASTER PISTOL', short: 'PISTOL', slot: 'sidearm', fire: 'semi', fireCd: 0.15, dmg: 32, dual: false, heat: 0.115, cool: 0.6, overCool: 0.46,
+               hipSpread: 0.008, braceSpread: 0.002, braceDmg: 1.08, foStart: 18, foEnd: 44, foMin: 0.5, kick: 0.3, vent: 0.45 },   // bolts track the reticle; the SWAY is the difficulty
+  dual:      { name: 'DUAL BLASTERS', short: 'DUAL', slot: 'sidearm', fire: 'auto', fireCd: 0.11, dmg: 13, dual: true,  heat: 0.066, cool: 0.66, overCool: 0.5,
+               hipSpread: 0.02, braceSpread: 0.006, braceDmg: 1.12, foStart: 8, foEnd: 24, foMin: 0.35, kick: 0.18, vent: 0.6 },    // a touch looser, but still honest to the reticle
+  // PULSE CARBINE — the mid-range primary: three-round bursts that walk up the target (pull the reticle back down
+  // between bursts), accurate even from the hip, shorter falloff than the pistol, no shield behind it
+  carbine:   { name: 'PULSE CARBINE', short: 'CARBINE', slot: 'primary', fire: 'burst', burst: 3, burstGap: 0.068, fireCd: 0.36, dmg: 21, heat: 0.046, cool: 0.72, overCool: 0.55,
+               hipSpread: 0.011, braceSpread: 0.003, braceDmg: 1.1, foStart: 22, foEnd: 52, foMin: 0.55, kick: 0.17, climb: 3.2, flinch: 0.5,
+               size: 1.25, col: 0x8fe8ff, twoHand: true, vent: 0.55 },
+  // HEAVY REPEATER — the crowd shredder: it SPINS UP while the trigger is held (spin.from → spin.to seconds between
+  // shots over spin.up s; it winds back down over spin.down once you let go), heavy recoil and a wide cone, every bolt
+  // rocks the foe, he walks slower while it fires (slow), and it cooks fast: an overheat or a vent costs a long beat
+  repeater:  { name: 'HEAVY REPEATER', short: 'REPEATER', slot: 'primary', fire: 'auto', fireCd: 0.055, dmg: 15, heat: 0.021, cool: 0.4, overCool: 0.26,
+               hipSpread: 0.03, braceSpread: 0.011, braceDmg: 1.06, foStart: 14, foEnd: 36, foMin: 0.45, kick: 0.24, climb: 0.9, flinch: 0.25,
+               size: 1.7, col: 0xff8a4a, twoHand: true, spin: { from: 0.22, to: 0.055, up: 1.1, down: 1.4 }, slow: 0.55, vent: 1.1 },
+  disruptor: { name: 'DISRUPTOR', short: 'DISRUPTOR', fire: 'rifle', fireCd: 0.7, dmg: 150, dual: false, heat: 0.42, cool: 0.5, overCool: 0.4,
+               hipSpread: 0, braceSpread: 0, braceDmg: 1, foStart: 999, foEnd: 999, foMin: 1, vent: 0.7,
+               twoHand: true, scope: true, stabDmg: 38, stabRange: 5.2, stabStun: 2.0,   // pinpoint sniper; else a fast electric spear
                // the stab: the whole move (s), the share of it where the prongs land (chamber → drive), the gap to the next
                // jab (a click inside the last stretch queues it), and the lunge
                stabTime: 0.34, stabHit: 0.3, stabCd: 0.38, stabQueue: 0.14, stabLunge: 9 },
-  darksaber: { name: 'DARKSABER', fire: 'saber', melee: true },                              // LMB slash; unlocked at the wave-5 fork
-  fists:     { name: 'HOLSTERED', fire: 'fists', melee: true },                              // 4: weapon holstered, LMB throws the close-quarters string (not in the wheel)
+  darksaber: { name: 'DARKSABER', short: 'DARKSABER', fire: 'saber', melee: true },                              // LMB slash; unlocked at the wave-5 fork
+  fists:     { name: 'HOLSTERED', short: 'HOLSTER', fire: 'fists', melee: true },                              // 4: weapon holstered, LMB throws the close-quarters string (not in the wheel)
   ...TROOPER_WEAPONS,                                                                       // the clone trooper's DC-15 and twin DC-17s (data/trooper.js)
 };
-export const MANDO_WEAPON_ORDER = ['single', 'dual', 'disruptor', 'darksaber'];
+
+/* THE LOADOUT (the Mando's answer to the Jedi's three forms) — two slots: a SIDEARM on 1 and a PRIMARY on 2. Key 3
+   stays the signature weapon (the Disruptor or the Darksaber, the store's fork) and 4 holsters. Each slot holds one gun
+   of its kind or null; the guns not carried stay in the ARMORY (ui/armory-ui.js). A campaign or survival run starts on
+   RUN_KIT and grows as the run is handed guns (ARMORY_PATH): a gun for an empty slot goes straight in, one for a full
+   slot opens the armory to choose which to carry. The training grounds' lessons set their own; a mission or the
+   sandbox starts on what was picked before the fight (else DEFAULT_KIT, from what the story has opened). */
+export const KIT_SLOTS = ['sidearm', 'primary'];
+export const KIT_LABEL = { sidearm: 'SIDEARM', primary: 'PRIMARY' };
+export const RUN_KIT = { sidearm: 'single', primary: null };
+export const DEFAULT_KIT = { sidearm: 'single', primary: 'carbine' };
+// where a run is handed each gun (the auto-unlocks in data/store.js are built from this): `chapter` for the campaign,
+// `stage` (waveTotal) for survival and the missions. The blaster pistol is in the starting kit.
+export const ARMORY_PATH = [
+  { weapon: 'carbine',  chapter: 'siege',        stage: 1 },   // the first primary: taken off the siege's dead
+  { weapon: 'dual',     chapter: 'archive',      stage: 2 },   // a second pistol: now the sidearm is a choice
+  { weapon: 'repeater', chapter: 'trial-knight', stage: 5 },   // the heavy gun, the bounty for the champion's trial
+];
+// THE ARMORY CODEX — what each gun is for, shown on the armory page (ui/armory-ui.js). Keep in step with MANDO_WEAPONS.
+export const ARMORY_CODEX = {
+  single:   { tag: 'PRECISION', best: 'Single targets, headshots, and holding a line', lore: 'A Mandalorian\'s first gun: a heavy blaster pistol on the same arm as the gauntlet\'s shield.',
+              pros: ['Pinpoint, with the longest reach of the blasters', 'The gauntlet shield: hold RMB to send frontal fire back', 'Headshots hit 2.4×'],
+              cons: ['One bolt at a time', 'Firing drops the shield for half a second'] },
+  dual:     { tag: 'CLOSE WORK', best: 'Rushing troopers and anything within ten metres', lore: 'Two pistols, one in each hand. Fire poured out up close, and nothing behind it.',
+              pros: ['Hold the trigger: they pour fire', 'The fastest kill up close', 'Bracing (RMB) tightens them into real damage'],
+              cons: ['Harsh falloff past ten metres', 'No shield: bracing is offence only'] },
+  carbine:  { tag: 'MID RANGE', best: 'Troopers at mid range, officers, jet troopers', lore: 'A shouldered pulse carbine. Three bolts a pull, steady from the hip.',
+              pros: ['Three-round bursts, accurate even moving', 'Long reach before damage drops off', 'A quick vent'],
+              cons: ['Each burst climbs: pull it back on target', 'No shield behind it'] },
+  repeater: { tag: 'SUPPRESSION', best: 'Crowds, brutes and shields', lore: 'A heavy repeating blaster off a dead gunner\'s emplacement. It has to wind up, and then it does not stop.',
+              pros: ['Spins up to the highest fire rate of any gun', 'Every bolt rocks the foe it hits', 'Holds a crowd back on its own'],
+              cons: ['Slow to wind up, wide cone, heavy recoil', 'You walk slower while it fires', 'Cooks fast, and an overheat or a vent costs a long beat'] },
+};
+const _gunOwned = { single: () => true, dual: () => !!G.unlocked.dual, carbine: () => !!G.unlocked.carbine, repeater: () => !!G.unlocked.repeater,
+  disruptor: () => !!G.unlocked.disruptor, darksaber: () => !!player.up.darksaber, fists: () => true };
+// the hero has this gun at all (in the armory or in hand)
+export function weaponOwned(name){ const f = _gunOwned[name]; return !!(f && f()); }
+// a loadout as stored or handed in → { sidearm, primary }, each a gun of that slot the hero owns, or null. The
+// sidearm never stays empty: the blaster pistol is always there.
+export function cleanKit(kit, owned = weaponOwned){
+  const out = {};
+  for (const s of KIT_SLOTS){
+    const id = kit && kit[s];
+    out[s] = id && MANDO_WEAPONS[id] && MANDO_WEAPONS[id].slot === s && owned(id) ? id : null;
+  }
+  if (!out.sidearm) out.sidearm = 'single';
+  return out;
+}
+export const kitOf = () => G.mandoKit || RUN_KIT;
+// the best kit for what the hero owns: the pistol (its shield) and the newest primary
+export function bestKit(owned = weaponOwned){
+  const prim = ARMORY_PATH.map(p => p.weapon).filter(w => MANDO_WEAPONS[w].slot === 'primary' && owned(w)).pop() || null;
+  return cleanKit({ sidearm: 'single', primary: prim }, owned);
+}
+// the weapon on each number key: 1 sidearm · 2 primary · 3 signature (Disruptor or Darksaber, whichever was taken)
+export const signatureWeapon = () => player.up.darksaber ? 'darksaber' : 'disruptor';
+export function keyWeapon(k){ const kit = kitOf(); return k === '1' ? kit.sidearm : k === '2' ? kit.primary : k === '3' ? signatureWeapon() : null; }
+// the wheel's order: what's carried
+export function carriedOrder(){ const kit = kitOf(); return [kit.sidearm, kit.primary, signatureWeapon()].filter(w => w && weaponUnlocked(w)); }
+// BESKAR PARRY — TAP RMB as a bolt arrives: the vambrace comes up and the bolt RICOCHETS straight back at whoever
+// fired it, harder and faster than it came (any gun but the Darksaber, which parries like a lightsaber; works in the
+// air too — it's armour, not footwork). window: how long a press stays live (s; difficulty adds its window) · lock: a
+// press that catches nothing can't be pressed again for this long, so mashing RMB doesn't work · dmg: the ricochet's
+// damage, × the bolt's (at least min) · speed: × the bolt's speed · vent: share of the gun's heat it bleeds off ·
+// stam: stamina handed back · pose: how long the vambrace stays up after a catch (the left arm's block pose)
+export const BESKAR_PARRY = { window: 0.2, lock: 0.4, dmg: 2.4, min: 34, speed: 1.6, vent: 0.35, stam: 10, pose: 0.22 };
 // JEDI aerial Force-control — only kicks in when you HOLD space (a tap is just a normal jump). The TAKEOFF
 // costs the bulk of the Force up front, then a slow drain while held; it arcs to an apex under gentled gravity
 // then a graceful (not floaty) glide-down. Power LEVELS UP automatically (player.up.fjTier), like the jetpack.
@@ -93,5 +172,12 @@ export function forceJumpPow(){   // scales with the auto-leveled Force-jump tie
            holdCost: [9, 7.5, 6][t]    || 9,       // slow drain/sec while still rising
            glideCost:[4, 3.5, 3][t]    || 4 };     // even slower drain/sec while gliding down
 }
-export function weaponUnlocked(name){ const tw = !!TROOPER_WEAPONS[name]; if (tw || G.hero === 'trooper') return tw && G.hero === 'trooper';   // each gunner holds only its own guns
-  return name === 'disruptor' ? !!G.unlocked.disruptor : name === 'darksaber' ? !!player.up.darksaber : name === 'dual' ? !!G.unlocked.dual : true; }
+// the hero can draw this gun right now: owned, and (for a sidearm or primary) carried in the loadout. Each gunner holds
+// only its own guns: the trooper's are its two, always drawn (data/trooper.js)
+export function weaponUnlocked(name){
+  const tw = !!TROOPER_WEAPONS[name];
+  if (tw || G.hero === 'trooper') return tw && G.hero === 'trooper';
+  if (!weaponOwned(name)) return false;
+  const W = MANDO_WEAPONS[name];
+  return !W || !W.slot || kitOf()[W.slot] === name;
+}

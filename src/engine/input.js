@@ -9,7 +9,7 @@ import { MUSIC } from '../audio/music.js';
 import { V3, clamp } from '../utils.js';
 import { floater } from '../fx/floaters.js';
 import { shared, G, keys, player, isGunner, isTrooper } from '../state.js';
-import { MANDO_WEAPON_ORDER, weaponUnlocked } from '../data/mando.js';
+import { keyWeapon, carriedOrder } from '../data/mando.js';
 import { fwd, rightV, playerPos, stance } from '../player/helpers.js';
 import { switchSlot, cycleSlot, swapVariant } from '../player/jedi/stance.js';
 import { FORMS } from '../data/forms.js';
@@ -29,7 +29,7 @@ import { mandoShift } from '../player/mando/mobility.js';
 import { darksaberThrow } from '../player/mando/darksaber.js';
 import { mandoMelee } from '../player/mando/melee.js';
 import { lockPress, lockKick, lockPush } from '../enemies/duel.js';
-import { mandoWeapon, switchWeapon, startReload, fireTrigger, mandoFlame } from '../player/mando/weapons.js';
+import { mandoWeapon, switchWeapon, startReload, fireTrigger, mandoFlame, beskarPress } from '../player/mando/weapons.js';
 import { startLevel, retryLevel } from '../game/flow.js';
 import { startMission, retryMission } from '../game/mission.js';
 import { showBanner } from '../ui/banners.js';
@@ -72,7 +72,8 @@ document.addEventListener('mousedown', (e) => {
       else fireTrigger();                            // single (semi) & disruptor (bolt-action): one shot per click
     }
     if (e.button === 2){
-      if (mandoWeapon().twoHand) player.zoom = true;  // disruptor: raise the scope (only then is it a rifle)
+      beskarPress();   // a fresh press opens the BESKAR PARRY window (any gun but the Darksaber: mando/weapons.js)
+      if (mandoWeapon().scope) player.zoom = true;  // disruptor: raise the scope (only then is it a rifle)
       else if (player.weapon === 'darksaber'){
         if (player.gbT > 0) return;   // guard broken: nothing guards for a beat
         if (shared.darkProj) return;   // the blade is out on the line: nothing in hand to guard with
@@ -139,11 +140,8 @@ document.addEventListener('wheel', (e) => {
   e.preventDefault();
   if (isTrooper()){ trooperCycle(e.deltaY > 0 ? 1 : -1); return; }
   if (isGunner()){   // cycle to the next UNLOCKED loadout
-    const dir = e.deltaY > 0 ? 1 : -1; let i = MANDO_WEAPON_ORDER.indexOf(player.weapon);
-    for (let n = 0; n < MANDO_WEAPON_ORDER.length; n++){
-      i = (i + dir + MANDO_WEAPON_ORDER.length) % MANDO_WEAPON_ORDER.length;
-      if (weaponUnlocked(MANDO_WEAPON_ORDER[i])){ switchWeapon(MANDO_WEAPON_ORDER[i]); break; }
-    }
+    const dir = e.deltaY > 0 ? 1 : -1, order = carriedOrder();   // the guns carried: sidearm, primary, signature
+    if (order.length){ const i = order.indexOf(player.weapon); switchWeapon(order[((i < 0 ? (dir > 0 ? -1 : 0) : i) + dir + order.length) % order.length]); }
     return;
   }
   cycleSlot(e.deltaY > 0 ? 1 : -1);   // the next earned form along the loadout
@@ -181,10 +179,13 @@ document.addEventListener('keydown', (e) => {
       if (k === 'e' && !e.repeat) mandoMelee();   // close quarters: string, catch, charge, dive kick, takedown (melee.js)
       if (k === 'g' && !e.repeat) bactaStim();        // bacta stim self-heal (store unlock) — G sits right beside F, in reach of WASD
       if (k === 'r' && !e.repeat) startReload();
-      if (k === '1') switchWeapon('single');   // (from holstered, 1 / 2 / 3 draw that weapon)
-      if (k === '2') switchWeapon('dual');
-      // 3 = the SIGNATURE WEAPON — Disruptor OR Darksaber (mutually exclusive; you own exactly one after the wave-8 fork)
-      if (k === '3') switchWeapon(player.up.darksaber ? 'darksaber' : 'disruptor');
+      // 1 = the SIDEARM, 2 = the PRIMARY (the loadout: data/mando.js), 3 = the SIGNATURE WEAPON — Disruptor OR Darksaber
+      // (you own exactly one after the wave-8 fork). From holstered, each draws that weapon.
+      if (k === '1' || k === '2' || k === '3'){
+        const w = keyWeapon(k);
+        if (w) switchWeapon(w);
+        else if (!e.repeat){ floater(playerPos(), 'NO ' + (k === '2' ? 'PRIMARY' : 'WEAPON'), '#ff9a66'); sfx(120, 0.1, 'square', 0.05, 70); }
+      }
     }
   } else {
     // SHIFT dashes any way you're pressing (or rolls out of a hard landing). Sprinting has its own key: Q toggles it

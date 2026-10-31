@@ -264,8 +264,8 @@ export function updateCamera(dt){
   camera.rotateZ(clamp(-strafe * rollGain, -rollMax, rollMax) + shakeRoll);
   // FOV kick on dashes and at speed; disruptor ZOOM (ADS) pulls the view in tight for precision
   // blasters get a SLIGHT aim zoom only while BRACING (hold RMB) for precision — single pulls in more than dual
-  const blasterAim = (isGunner() && !player.zoom && player.blockHeld && (player.weapon === 'single' || player.weapon === 'dual' || player.weapon === 'rifle'))
-                     ? (player.weapon === 'dual' ? 9 : 14) : 0;   // (the trooper's DC-15 aims in like the single blaster)    // bracing zooms in — the payoff for steadying (the lens is close already)
+  const BRACE_ZOOM = { single: 14, dual: 9, carbine: 12, repeater: 7, rifle: 12 };   // (the carbine shoulders in nearly as tight as the pistol; the repeater is a hip gun; the trooper's DC-15 like the carbine)
+  const blasterAim = (isGunner() && !player.zoom && player.blockHeld) ? (BRACE_ZOOM[player.weapon] || 0) : 0;    // bracing zooms in — the payoff for steadying (the lens is close already)
   // IMPACT PUNCH — heavy hitstop snaps the view in a touch (instantly, the sim is frozen) and slow-mo holds it there,
   // so the big moments feel close; it releases once the beat is over
   if (G.mode === 'play' && !player.zoom && (G.hitstop > 0.04 || G.slowmo < 0.9)) fovPunch = C.impactFov;

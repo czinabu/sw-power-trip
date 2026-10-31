@@ -6,19 +6,19 @@
 /* WEAPONS — the same fields as data/mando.js MANDO_WEAPONS (heat, cool, spreads, falloff), plus:
      fire 'burst'  the DC-15 rifle: one click fires `burst` bolts `burstGap` apart. RMB aims (the steady stance)
      fire 'twin'   the twin DC-17s: LMB fires the right pistol, RMB the left, each on its own cooldown, one heat bar
-     color         the bolt colour (clone blue, where the Mando's run orange) */
+     col           the bolt colour (clone blue, where the Mando's run orange) */
 export const TROOPER_WEAPONS = {
-  rifle:   { name: 'DC-15 RIFLE', fire: 'burst', burst: 3, burstGap: 0.075, fireCd: 0.36, dmg: 15, dual: false, color: 0x4aa8ff,
+  rifle:   { name: 'DC-15 RIFLE', short: 'DC-15', fire: 'burst', burst: 3, burstGap: 0.075, fireCd: 0.36, dmg: 15, dual: false, col: 0x4aa8ff,
              heat: 0.075, cool: 0.62, overCool: 0.45, hipSpread: 0.012, braceSpread: 0.003, braceDmg: 1.1, foStart: 20, foEnd: 46, foMin: 0.55,
-             trooper: true },
-  pistols: { name: 'TWIN DC-17s', fire: 'twin', fireCd: 0.2, dmg: 21, dual: true, color: 0x6ab8ff,
+             twoHand: true, vent: 0.5, trooper: true },
+  pistols: { name: 'TWIN DC-17s', short: 'DC-17s', fire: 'twin', fireCd: 0.2, dmg: 21, dual: true, col: 0x6ab8ff,
              heat: 0.085, cool: 0.7, overCool: 0.52, hipSpread: 0.014, braceSpread: 0.014, braceDmg: 1, foStart: 10, foEnd: 26, foMin: 0.4,
-             trooper: true },
+             vent: 0.5, trooper: true },
 };
 export const TROOPER_WEAPON_ORDER = ['rifle', 'pistols'];
-// the trooper's guns borrow the Mando's held-weapon models and poses for now: the rifle is held like the disruptor,
-// the pistols like the dual blasters (player/animation.js, holster.js, model/weapons.js)
-export const GUN_LOOK = { rifle: 'disruptor', pistols: 'dual' };
+// the trooper's guns borrow the Mando's held-weapon models and poses for now: the rifle is the carbine's model on the
+// long-gun mount, the pistols the dual blasters (player/animation.js, holster.js, model/weapons.js)
+export const GUN_LOOK = { rifle: 'carbine', pistols: 'dual' };
 export const gunLook = (w) => GUN_LOOK[w] || w;
 
 export const TROOPER = {

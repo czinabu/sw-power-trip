@@ -19,7 +19,7 @@ import { mandoAimPoint, mandoWeapon, mandoShielding } from './mando/weapons.js';
 import { DARK_DUR } from './mando/darksaber.js';
 import { FORM_OF, FOOTWORK, FOOTWORK_GRIP, SWING_STYLE } from '../data/poses.js';
 import { pistolPose, riflePose, rifleLowered, restGun } from './anim/guns.js';
-import { MIRROR } from './model/rig.js';
+import { MIRROR, DIM } from './model/rig.js';
 import { solveArm } from './anim/ik.js';
 import { saberPose, guardPose, swingPose, deflectPose, applySaberPose, releaseSaberPose, airGuard } from './anim/saber.js';
 import { advanceGait, gaitLegs, gaitHipOffset, releaseGait } from './anim/gait.js';
@@ -64,7 +64,7 @@ export function animatePlayer(dt, pp, st, f, r, moving){
 function handGrip(){
   if (isGunner()){
     const w = gunLook(player.weapon);   // (the trooper's guns are held like the Mando's: data/trooper.js)
-    return { R: 1, L: w === 'dual' || w === 'fists' ? 1 : w === 'disruptor' ? 0.8 : 0.45 };
+    return { R: 1, L: w === 'dual' || w === 'fists' ? 1 : MANDO_WEAPONS[w] && MANDO_WEAPONS[w].twoHand ? 0.8 : 0.45 };
   }
   const bare = player.holstered, pulling = player.castKind === 'pull';
   const thrown = player.castT > 0 ? (pulling ? 0.2 + 0.5 * (1 - clamp(player.castT / (player.castMax || 1), 0, 1)) : 0) : null;
@@ -159,7 +159,7 @@ function poseBody(dt, dr, vis, planted, POSE, moving){
 function mandoBackRun(){
   if (!isGunner() || !player.grounded || player.flip || player.slamming) return false;
   if (player.blockHeld || player.zoom || player.atkT > 0 || player.dashT > 0 || player.stabT > 0 || player.meleeT > 0 || player.darkT > 0 || player.flaming) return false;
-  if (gunLook(player.weapon) === 'disruptor' && player.aiming > 0) return false;   // a shouldered rifle can't point back over the shoulder: he squares up to fire it
+  if (MANDO_WEAPONS[player.weapon] && MANDO_WEAPONS[player.weapon].twoHand && player.aiming > 0) return false;   // a shouldered rifle can't point back over the shoulder: he squares up to fire it
   const vx = player.moveVel.x, vz = player.moveVel.z, sp = Math.hypot(vx, vz);
   if (sp < 1) return false;
   const along = (vx * Math.sin(G.yaw) + vz * Math.cos(G.yaw)) / sp;   // +1 toward the reticle, -1 straight away
@@ -216,7 +216,7 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
   // hips: crouch lowers the center of gravity per stance; on the move they sit lower and dip at each footfall
   // (set before the legs, which are solved down from here)
   player._crouch = dr(player._crouch || 0, planted ? POSE.crouch : 0, 8);
-  R.hips.position.y = 1.04 + player._crouch - (player._swingDrop || 0) - land*0.2 - (player._agiDrop || 0)
+  R.hips.position.y = DIM.hipY + player._crouch - (player._swingDrop || 0) - land*0.2 - (player._agiDrop || 0)
                       + (player.grounded && !player.flip ? gaitHipOffset(GS, gait) : 0.05);
   // a foot standing lower than the body (off a step, one foot down from a crate) needs the hips to come down to it
   const fd = player.grounded && !player.flip && player._footDrop ? Math.min(0, player._footDrop[0], player._footDrop[1]) : 0;
@@ -342,7 +342,7 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
   R.skirt.scale.z = dr(R.skirt.scale.z, skirtW, 7);
   // breathing — z-lunge and torso twist relax here; the swing block overrides them when active
   // idle breathing + a stride-synced run bob (two dips per stride at the footfalls) — STRONG stomps heaviest, FAST springs lightest
-  R.torso.position.y = 0.16 + Math.sin(G.gt * 1.7) * 0.012 - Math.abs(Math.sin(ph)) * 0.05 * inten * (gait.bob || 0.35);
+  R.torso.position.y = DIM.torsoY + Math.sin(G.gt * 1.7) * 0.012 - Math.abs(Math.sin(ph)) * 0.05 * inten * (gait.bob || 0.35);
   R.torso.position.z = dr(R.torso.position.z, 0, 11);
   R.torso.rotation.y = dr(R.torso.rotation.y, 0, 11);
   // the master's gaze tracks the camera even when the body doesn't
@@ -682,7 +682,7 @@ function animateForceCast(dt, dr, R){
 function animateMandoPose(dt, dr, vis, R, pp, f, r){
   // --- MANDO pose: hold the weapon out toward the reticle; weapon-specific poses ---
   player.recoil = Math.max(0, (player.recoil || 0) - dt*1.2);
-  const w = gunLook(player.weapon), twoH = (w === 'disruptor');   // (the trooper's DC-15 is shouldered like the disruptor)
+  const w = gunLook(player.weapon), twoH = !!(MANDO_WEAPONS[w] && MANDO_WEAPONS[w].twoHand);   // the long guns: disruptor, carbine, repeater (and the trooper's DC-15, held like the carbine)
   // RE-CENTER the body twist when idle. The swing block owns vis.rotation.y while atkT>0; the Jedi auto-recenters
   // each frame but the Mando didn't, so a CANCELED darksaber swing (RMB-guard / dash / push out of a stroke) left
   // the body twisted off-axis. Damp it back to square whenever we're not mid-swing / slam / flip.
@@ -730,8 +730,8 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
                  : k < pk ? -0.3 + 1.3 * (1 - (1 - (k - c) / (pk - c)) ** 3)
                  : k < 0.65 ? 1 : 1 - smooth01((k - 0.65) / 0.35);
     riflePose(dt, R, player, mandoAimPoint(), thrust);
-  } else if (twoH && !player.zoom && player.aiming <= 0){
-    // DISRUPTOR REST — carried low across the body; the barrel only swings OUT when you aim (RMB) or attack
+  } else if (twoH && !player.zoom && player.aiming <= 0 && !player.blockHeld){
+    // LONG-GUN REST — carried low across the body; the barrel only swings OUT when you aim (RMB) or attack
     rifleLowered();
     R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -0.42, 12);
     R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, 0.06, 12);
@@ -772,7 +772,7 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
     if (w !== 'darksaber' && player.darkT <= 0) R.chest.rotation.y = dr(R.chest.rotation.y, 0, 10);
   }
   // DISRUPTOR barrel: aimed by riflePose while shouldered; otherwise lies back along the forearm at rest
-  if (player.rifleMesh && w !== 'fists' && !(gunsIK && twoH && (player.zoom || player.aiming > 0))){
+  if (player.rifleMesh && w !== 'fists' && !(gunsIK && twoH && (player.zoom || player.aiming > 0 || player.blockHeld))){
     const out = player.zoom || player.aiming > 0 || player.stabT > 0;
     player.rifleMesh.rotation.x = dr(player.rifleMesh.rotation.x, out ? 1.15 : -0.35, 9);
     player.rifleMesh.rotation.y = dr(player.rifleMesh.rotation.y, 0, 9);
@@ -1011,6 +1011,17 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
       R.torso.rotation.x = dr(R.torso.rotation.x, ld * 0.1, 24);
       vis.position.y = dr(vis.position.y, -0.05 * ld, 26);   // the knees give into the punch
     }
+  }
+  // === BESKAR PARRY — the left forearm snaps up across the body, the vambrace square to the incoming fire, for the
+  // parry's window and a beat after a catch (mando/weapons.js beskarPress / beskarCatch). Laid over whatever the arm
+  // was doing: the off hand lets go of a long gun's foregrip or swings the second pistol up with it.
+  if (player.beskarPose > 0 && w !== 'darksaber' && !player.slamming){
+    const rt = 46;
+    R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -1.6, rt);
+    R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, 0.5, rt);
+    R.armL.sh.rotation.z = dr(R.armL.sh.rotation.z, 0.1, rt);
+    R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -1.85, rt);
+    R.armL.wr.quaternion.slerp(_IDQ, Math.min(1, dt * rt));
   }
   // === SINGLE-BLASTER GAUNTLET SHIELD — projected energy disc on the left forearm. Driven here (not in the
   // grounded branch) so it holds whether you're standing OR flying. Flares on a catch; warns amber when stamina

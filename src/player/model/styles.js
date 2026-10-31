@@ -121,9 +121,20 @@ function inkSurface(m, metal, rough, rimK = 1){
           float upw = clamp(inverseTransformDirection(nn, viewMatrix).y, 0.0, 1.0);
           float band = smoothstep(0.42, 0.52, rim);   // stepped, like the cel bands: an edge, not a glow
           vec3 rimC = mix(uSky, vec3(1.0), 0.45) * (0.45 + 0.55 * upw);
-          surf += rimC * band * uRim * uRimK * (1.0 - 0.6 * uMetal);
+          vec3 rimAdd = rimC * band * uRim * uRimK * (1.0 - 0.6 * uMetal);
+          /* an edge, never a glow: pale cloth and skin already sit near the bloom threshold, so the rim only gets
+             the headroom left under it (a light tunic keeps its edge light but never blooms like a saber) */
+          float room = clamp((0.55 - dot(outgoingLight + surf, vec3(0.2126, 0.7152, 0.0722))) / max(dot(rimAdd, vec3(0.2126, 0.7152, 0.0722)), 1e-3), 0.0, 1.0);
+          surf += rimAdd * room;
         }
         outgoingLight += surf;
+        if (uMetal <= 0.0){
+          /* cloth, skin and leather never bloom: a saber's point light close to pale cloth, or a sunlit white tunic, can
+             push the lit surface past the bloom threshold and the whole sleeve flares like a blade. Soft-cap the
+             luminance just under it; only blades, bolts and FX (unlit, emissive) glow */
+          float ol = dot(outgoingLight, vec3(0.2126, 0.7152, 0.0722));   // the bloom's own luminance weights (green counts most)
+          if (ol > 0.6) outgoingLight *= (0.6 + 0.12 * (1.0 - exp(-(ol - 0.6) / 0.12))) / ol;
+        }
         #include <opaque_fragment>`);
   };
   m.customProgramCacheKey = () => 'ink-surface-' + (metal > 0 ? 'm' : 'c');

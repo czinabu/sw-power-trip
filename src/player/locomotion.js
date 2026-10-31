@@ -32,6 +32,7 @@ export function updateMovement(dt, pp, st, f, r){
                    * (player.surgeT > G.gt ? player.surgeMul : 1)                      // CHASE SURGE — parkour on a story pursuit
                    * (player.boon && player.boon.adrenal && player.hp < maxHp()*0.35 ? 1.18 : 1)    // ADRENALINE boon — desperate burst
                    * focusMoveMul()                                                      // FORCE FOCUS — lighter on the feet in flow
+                   * (player.gunSlow || 1)                                               // the HEAVY REPEATER weighs him down while it fires (mando/weapons.js)
                    * (player.atkT > 0 && !isGunner() ? swingMoveMul() : 1)       // a swing plants the feet: spacing is yours to manage (Djem So walks its cuts in)
                    * (player.landStagT > 0 ? MOVE.staggerMove : 1)                      // HARD LANDING — the knees are still buckled
                    * (player.flinchT > 0 ? CFG.player.flinch.move : 1)                  // HIT REACTION — reeling from a blow
