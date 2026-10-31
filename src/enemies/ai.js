@@ -445,7 +445,7 @@ export function updateEnemies(dt){
               // a THRUST drives through a held guard: parry it or get out of the way
               const line = e.dp && e.plan ? e.plan.side : null;   // a duellist's strike comes in on a line: your guard meets it there (player/jedi/guardline.js)
               const rip = e.riposteNext && e.dp && e.dp.riposte || 1; e.riposteNext = false;   // a Djem So master's answer to a block (data/duel.js FORM_DUEL)
-              const res = hurtPlayer(t.dmg * enemyDmgScale() * (thrust ? DUEL.thrustDmg : 1) * rip, g.position, false, true, false, unblockable || line ? { unblockable, line } : null);   // melee — blocked by high ground
+              const res = hurtPlayer(t.dmg * enemyDmgScale() * (thrust ? DUEL.thrustDmg : 1) * rip, g.position, false, true, false, { unblockable, line, by: e });   // melee — blocked by high ground
               if (res === 'parried'){
                 // perfectly parried — the weapon is knocked wide and the foe STUMBLES, wide open
                 // the Warbringer's posture takes the parry; a full bar breaks it open (duel.js), otherwise it reels as any brute does

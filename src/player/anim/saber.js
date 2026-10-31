@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { SABER_GUARDS, SABER_SWINGS, SWING_STYLE, SWING_OFF, SABER_DEFLECTS } from '../../data/poses.js';
 import { AIR_GUARDS } from '../../data/agility.js';
 import { CUT_ANGLE } from '../../data/stances.js';
+import { DIM } from '../model/rig.js';
 import { solveArm, aimHeld, pointInChest, wristInChest, axisInChest, slerpDir, arcLerp } from './ik.js';
 
 const V = (a) => new THREE.Vector3(a[0], a[1], a[2]);
@@ -313,6 +314,38 @@ function pickDeflect(grip, d){
   _pick.last[key] = i;
   return list[i];
 }
+/* MEET THE BLADE — fit a catch to where the foe's blade really is (d.contact, a world point from jedi/clash.js
+   parryContact). The picked cover keeps its character (which side, what angle) but the hand is moved, within the arm's
+   reach, and the blade turned just enough that the saber's length passes through the contact point. */
+const ARM_SLACK = 0.04, BLADE_NEAR = 0.3, BLADE_FAR = 1.05;
+const _e = new THREE.Euler(), _q = new THREE.Quaternion(), _cc = new THREE.Vector3(), _m = new THREE.Vector3(), _d = new THREE.Vector3();
+function fitContact(R, P, world){
+  // the contact in chest space AS THE CATCH WILL HAVE THE CHEST: the cover turns the chest by its twist, so undo that
+  // turn rather than reading the chest where it happens to stand this frame
+  const ch = R.chest;
+  ch.parent.updateWorldMatrix(true, false);
+  _e.copy(ch.rotation); _e.y = P.twist;
+  const C = ch.parent.worldToLocal(_cc.copy(world)).sub(ch.position).applyQuaternion(_q.setFromEuler(_e).invert());
+  const hand = P.hand, blade = P.blade;
+  // slide the hand so the cover's own blade line crosses the contact at a point along the blade
+  const s = THREE.MathUtils.clamp(_m.subVectors(C, hand).dot(blade), BLADE_NEAR, BLADE_FAR);
+  hand.add(_m.copy(C).addScaledVector(blade, -s).sub(hand));
+  // …but only as far as the arm goes
+  const sh = R.armR.sh.position, reach = DIM.upper + DIM.fore - ARM_SLACK;
+  _d.subVectors(hand, sh);
+  if (_d.length() > reach) hand.copy(sh).addScaledVector(_d.normalize(), reach);
+  // what the arm couldn't cover, the wrist makes up: turn the blade toward the contact
+  const to = _d.subVectors(C, hand), dist = to.length();
+  if (dist > 0.05){
+    to.divideScalar(dist);
+    const miss = _m.copy(C).addScaledVector(blade, -Math.min(Math.max(dist, BLADE_NEAR), BLADE_FAR)).sub(hand).length();
+    if (miss > 0.02) blade.copy(to);
+  }
+  P.flick.multiplyScalar(0.3);   // the flick is for sending a bolt away: against a blade the saber stays on it
+  P.flickHand.copy(hand).add(P.flick);
+  P.flickBlade.copy(blade).addScaledVector(P.flick, 2.4).normalize();
+}
+
 export function deflectPose(dt, R, held, grip, form, d){
   if (!saberPose.live) seed(R, held);
   const G0 = (GUARDS[grip] && (GUARDS[grip][form] || GUARDS[grip].niman)) || GUARDS.regular.niman;
@@ -327,7 +360,13 @@ export function deflectPose(dt, R, held, grip, form, d){
       // the flick carries the hand on and turns the tip further the same way, sending the bolt back out
       flickHand: hand.clone().add(p.flick), flickBlade: blade.clone().addScaledVector(p.flick, 2.4).normalize(),
       from: { hand: saberPose.hand.clone(), blade: saberPose.blade.clone(), twist: saberPose.twist },
+      flick: p.flick.clone(),
     };
+    if (d.contact) fitContact(R, d.pose, d.contact);
+  } else if (d.refit){   // a held guard on a duellist's line turned into the real catch: re-aim the held cover at the blade
+    d.refit = false;
+    d.pose.from.hand.copy(saberPose.hand); d.pose.from.blade.copy(saberPose.blade); d.pose.from.twist = saberPose.twist;
+    if (d.contact) fitContact(R, d.pose, d.contact);
   }
   // an anticipated twirl (jedi/combat.js anticipateDeflect) leads the catch by d.lead seconds: until the bolt lands the
   // blade stays on its guard and wheels toward the bottom; the catch itself runs from the landing on

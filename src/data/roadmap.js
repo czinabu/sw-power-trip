@@ -6,6 +6,11 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'Blades that really meet', status: 'done',
+    items: ['A parry or block now carries your saber to the exact spot on the foe\'s blade, whichever side or height it comes in on',
+            'When a foe guards your cut, its weapon is turned onto your blade, so the two visibly cross where the sparks fly',
+            'Parry and deflect flashes, sparks, screen flash, shake and slow-mo are smaller and shorter',
+            'Every mode: duels, missions, bosses, survival, sandbox and co-op'] },
   { title: 'Training rebuilt', status: 'done',
     items: ['Training is short lessons picked from a lesson board between them: the basics first, in Shii-Cho alone',
             'Every form the story teaches opens its own lesson: Soresu, Ataru, Djem So and Shien, Makashi, Niman, Form VII',
@@ -172,6 +177,8 @@ export const ROADMAP = [
             'E mid-string spins a kick round the ring, in the air stomps down · every blow landed feeds the Force back',
             'Push or Pull straight after a blow flows out of it: a cheap Palm Push, or a Pull that drags them onto the next strike',
             'Every mode, co-op included: the partner sees the strikes and the glowing hands'] },
+  { title: 'Duellists with your moves', status: 'next',
+    items: ['Foes get more of the saber moves you have, so duels feel less scripted'] },
   { title: 'Balance, round two', status: 'next',
     items: ['Survival scaling and mission pulses, from real playtest notes'] },
   { title: 'Co-op, fully', status: 'later',
