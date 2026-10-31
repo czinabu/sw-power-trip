@@ -1,7 +1,7 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
 import { G, heroKey } from '../state.js';
 import { mergeTrooperStory } from './campaign-trooper.js';
-import { MANDO_VOICE, MANDO_ACTS, MANDO_ACT_TWO, MANDO_CHAPTERS, MANDO_EPILOGUE } from './campaign-mando.js';
+import { MANDO_VOICE, MANDO_ACTS, MANDO_ACT_TWO, MANDO_ACT_TWO_LABEL, MANDO_CHAPTERS, MANDO_EPILOGUE } from './campaign-mando.js';
 import { JEDI_VOICE, JEDI_ACTS, JEDI_ACT_TWO, JEDI_CHAPTERS, JEDI_ENDINGS } from './campaign-jedi.js';
 import { storyWords, answer } from '../game/choices.js';
 // THE CAMPAIGN, as data: three acts of chapters, played in order (game/campaign.js runs them). Edit the words freely.
@@ -213,7 +213,7 @@ export function chapterNo(pos, list = chapterOrder()){
 // The Jedi's epilogue is one of four, by what became of Ilsa and of Vexis (data/campaign-jedi.js JEDI_ENDINGS).
 export const jediEnding = () => (answer('ilsa') || 'spared') + '-' + (answer('vexis') || 'ended');
 const OWN_WORDS = {
-  mando: { voice: MANDO_VOICE, acts: MANDO_ACTS, actTwo: MANDO_ACT_TWO, epilogue: () => MANDO_EPILOGUE },
+  mando: { voice: MANDO_VOICE, acts: MANDO_ACTS, actTwo: MANDO_ACT_TWO, actTwoLabel: MANDO_ACT_TWO_LABEL, epilogue: () => MANDO_EPILOGUE },
   jedi:  { voice: JEDI_VOICE, acts: JEDI_ACTS, actTwo: JEDI_ACT_TWO, actTwoLabel: { lothal: 'THE PENS FIRST' }, epilogue: () => JEDI_ENDINGS[jediEnding()] },
 };
 const own = (story) => OWN_WORDS[story];
@@ -221,9 +221,9 @@ const own = (story) => OWN_WORDS[story];
 export const storyVoice = (story = storyHero(), c = null) => (c && c.voice) || (own(story) ? own(story).voice : heroKey(VOICE));
 export const actTitle = (i, story = storyHero()) => own(story) ? storyWords(own(story).acts[i].title) : forHero(ACTS[i].title, G.hero);
 export const actOpen = (i, story = storyHero()) => own(story) ? storyWords(own(story).acts[i].open) : forHero(ACTS[i].open, G.hero);
+export const actTwoLabel = (k, story = storyHero()) => (own(story) && own(story).actTwoLabel && own(story).actTwoLabel[k]) || ACT_TWO[k].label;
 export const actTwoLine = (k, story = storyHero()) => own(story) ? own(story).actTwo[k] : forHero(ACT_TWO[k].line, G.hero);
 // the pick's button: a story can rename a pair whose first world it moved (the Jedi's pens are on Tessaril, not Lothal)
-export const actTwoLabel = (k, story = storyHero()) => (own(story) && own(story).actTwoLabel && own(story).actTwoLabel[k]) || ACT_TWO[k].label;
 export const epilogueText = (key, story = storyHero()) => own(story) ? storyWords(own(story).epilogue()[key]) : forHero(EPILOGUE[key], G.hero);
 // where the pick is made: the first chapter of Act II, in this story's order (a story's own prologue comes before it)
 export const actTwoAt = (story = storyHero()) => chapterOrder(null, story).findIndex(c => c.pair);

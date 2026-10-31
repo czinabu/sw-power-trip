@@ -30,6 +30,9 @@ import { buildArchiveArena } from './arenas/archive.js';
 import { buildOutpostArena } from './arenas/outpost.js';
 import { buildCovertArena } from './arenas/covert.js';
 import { buildPensArena } from './arenas/pens.js';
+import { buildBargeArena } from './arenas/barge.js';
+import { buildHoldfastArena } from './arenas/holdfast.js';
+import { buildCitadelArena } from './arenas/citadel.js';
 import { buildPrisonArena } from './arenas/prison.js';
 import { buildHangarArena } from './arenas/hangar.js';
 import { buildSithArena } from './arenas/sith.js';
@@ -136,6 +139,11 @@ export function buildArena(L){
   else if (L.layout === 'archive'){ buildArchiveArena(LP); }
   else if (L.layout === 'outpost'){ buildOutpostArena(LP); }   // the Mando's story: Salt Hollow on Orvane
   else if (L.layout === 'covert'){ buildCovertArena(LP); }     // the Mando's story: the clan's covert
+  else if (L.layout === 'barge'){ buildBargeArena(LP); }       // the Mando's story: the Magistrate's prison barge
+  else if (L.layout === 'holdfast'){ buildHoldfastArena(LP); } // the Mando's story: the old holdfast on Thane
+  else if (L.layout === 'citadel'){ buildCitadelArena(LP); }   // the Mando's story: the Iron Citadel on Duren
+  else if (L.layout === 'meltworks'){ buildFoundryArena(LP); } // the Mando's story: the foundry's plan, in Caldus's ice
+  else if (L.layout === 'ironroad'){ buildGrasslandArena(LP); } // the Mando's story: the Grass Sea's plan, on Duren's iron plain
   else if (L.layout === 'prison'){ buildPrisonArena(LP); }
   else if (L.layout === 'pens'){ buildPensArena(LP); }
   else if (L.layout === 'hangar'){ buildHangarArena(LP); }

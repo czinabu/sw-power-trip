@@ -70,6 +70,8 @@
 import { REFUGE_SPOTS } from '../world/arenas/refuge.js';
 import { PURSUIT_SPOTS } from '../world/arenas/pursuit.js';
 import { COVERT_SPOTS } from '../world/arenas/covert.js';
+import { BARGE_SPOTS } from '../world/arenas/barge.js';
+import { HOLDFAST_SPOTS } from '../world/arenas/holdfast.js';
 import { BATTLE_MAPS, GRASSLAND_SPOTS, ICEFRONT_SPOTS, GRAVEYARD_SPOTS } from './battlemaps.js';
 import { LEVELS } from './levels.js';
 import { JUNGLE_SPOTS } from '../world/arenas/jungle.js';
@@ -267,6 +269,94 @@ export const MISSIONS = {
     ],
     done: { jedi: 'The children are aboard and the academy is burning. But Vael has gone quiet.',
             mando: 'The kids are out. The academy burns.' },
+  },
+
+  // THE MANDALORIAN'S STORY, ACT II: Skye's prison barge on the storm sea of Vell (world/arenas/barge.js)
+  gallows: {
+    id: 'gallows',
+    title: 'THE GALLOWS',
+    heroes: ['mando'],
+    blurb: 'open the cells, get the prisoners aboard, put down the warden',
+    level: { name: 'MISSION — THE GALLOWS', sub: 'The Magistrate\'s prison barge, riding out a storm. Skye is in one of its cells.',
+             arena: 60, floor: 0x4a545e, fog: 0x22303c, sky: 0x060a10, layout: 'barge', waves: [], hazards: {} },
+    start: [0, 10, Math.PI],   // in front of the impounded gunship, looking down the deck at the warden's tower
+    kit: 4,
+    grant: { jedi: ['throw', 'slam'], mando: ['grapple', 'birds'] },
+    objectives: [
+      { kind: 'sabotage', title: 'OPEN THE CELLS', consoleName: 'CELL LOCK', doneLine: 'THE CELLS ARE OPEN', doneSub: 'Get them to the ship.',
+        say: { jedi: 'Three locks hold every cell on this barge: one on each block, one under the warden\'s tower. Slice them.',
+               mando: 'Three locks. One on each cell block, one under the warden\'s tower. Open them all and Skye walks.' },
+        task: { jedi: 'Stand at each lock to slice it', mando: 'Stand at each lock to slice it' },
+        consoles: [ { at: BARGE_SPOTS.locks[0], guards: { grunt: 2, blaster: 1 } },
+                    { at: BARGE_SPOTS.locks[1], guards: { grunt: 2, lancer: 1 } },
+                    { at: BARGE_SPOTS.locks[2], guards: { grunt: 1, blaster: 1, officer: 1, grenadier: 1 } } ],
+        time: 4, r: 2.2, hitLoss: 1.2,
+        trickle: { every: 15, cap: 5, group: { grunt: 2, blaster: 1 } } },
+
+      { kind: 'hold', title: 'GET THEM ABOARD', start: [0, 8, Math.PI],
+        say: { jedi: 'The prisoners are coming out of Block A. Hold the ramp until every one of them is on that ship.',
+               mando: 'Skye has the gunship warming up. The prisoners are coming out of Block A. Hold the ramp till they\'re all aboard.' },
+        task: { jedi: 'Guard the ramp while the prisoners board', mando: 'Guard the ramp while the prisoners board' },
+        at: BARGE_SPOTS.hold, r: 6, time: 66, awayRate: 0.5,
+        evacuees: { kind: 'prisoner', count: 8, spacing: 1.5, speed: 2.4, name: { jedi: 'PRISONERS', mando: 'PRISONERS' },
+                    path: [...BARGE_SPOTS.path, ...BARGE_SPOTS.ramp] },
+        pulses: [ { grunt: 2, blaster: 1 }, { grunt: 2, officer: 1 }, { grunt: 2, blaster: 1, grenadier: 1 },
+                  { grunt: 2, lancer: 1 }, { grunt: 2, blaster: 1, sniper: 1 }, { grunt: 2, brute: 1 } ],
+        every: [9, 13], cap: 7, from: [-Math.PI + 0.35, -0.35], aggro: 8 },
+
+      { kind: 'duel', title: 'DEFEAT THE WARDEN', start: [0, 8, Math.PI],
+        say: { jedi: 'The warden comes down from its tower with a shock maul. Let it swing. Then punish it.',
+               mando: 'The warden. Big, slow, and it hits like a cargo lift. Make it miss, then hit it.' },
+        task: { jedi: 'Win the duel', mando: 'Win the duel' },
+        foe: 'brute', name: 'THE WARDEN', kicker: 'THE GALLOWS', hp: 3.2, dmg: 1.15, scale: 1.3, tint: 0x5a6a7a, at: [0, -8],
+        rage: 0.45, trickle: { every: 15, cap: 3, group: { grunt: 2 } }, from: [-Math.PI + 0.4, -0.4] },
+    ],
+    done: { jedi: 'The cells are empty and the warden is down.',
+            mando: 'The cells are empty, the warden is down, and Skye is flying again.' },
+  },
+
+  // THE MANDALORIAN'S STORY, ACT II: Brakka's last stand at the old holdfast on Thane (world/arenas/holdfast.js)
+  holdfast: {
+    id: 'holdfast',
+    title: 'THE HOLDFAST',
+    heroes: ['mando'],
+    blurb: 'hold the gate, light the signal cairns, face the houndmaster',
+    level: { name: 'MISSION — THE OLD HOLDFAST', sub: 'Brakka is holding a ruined fort in the forest, and the Magistrate\'s hunters have found it.',
+             arena: 60, floor: 0x5a7040, fog: 0xa8b49a, sky: 0x5a86b0, layout: 'holdfast', waves: [], hazards: {} },
+    start: [0, 2, Math.PI],   // in the courtyard, looking out through the gate at the hunters' camp
+    kit: 5,
+    grant: { jedi: ['throw', 'slam'], mando: ['grapple', 'birds'] },
+    objectives: [
+      { kind: 'hold', title: 'HOLD THE GATE', music: 'battle',
+        say: { jedi: 'The hunters are coming up the lane to the gate. Brakka has the wall. The gate is yours.',
+               mando: 'Hunters up the lane. Brakka has the wall, you have the gate. Nothing gets into that courtyard.' },
+        task: { jedi: 'Hold the gate', mando: 'Hold the gate' },
+        at: HOLDFAST_SPOTS.hold, r: 6, time: 60, awayRate: 0.4, overrun: 'RETAKE THE GATE', unguarded: 'GATE UNGUARDED',
+        doneLine: 'THE GATE HOLDS', doneSub: 'Now call the ship.',
+        pulses: [ { grunt: 3, blaster: 1 }, { grunt: 2, lancer: 1 }, { grunt: 2, blaster: 1, officer: 1 },
+                  { grunt: 2, sniper: 1, blaster: 1 }, { grunt: 2, brute: 1 }, { grunt: 2, lancer: 1, grenadier: 1 } ],
+        every: [8, 12], cap: 8, from: [-Math.PI + 0.45, -0.45], aggro: 8 },
+
+      { kind: 'capture', title: 'LIGHT THE CAIRNS', start: [0, -6, Math.PI],
+        say: { jedi: 'Two signal cairns stand out in the clearing. Take them and light them, and the ship can find you.',
+               mando: 'The old signal cairns. Take both and light them, and the Cinderwake can find us through the trees.' },
+        task: { jedi: 'Take and light both cairns', mando: 'Take and light both cairns' },
+        r: 3.6, time: 7, postName: 'CAIRN', doneLine: 'THE CAIRNS ARE LIT', aggro: 8,
+        posts: [ { at: HOLDFAST_SPOTS.cairns[0], guards: { grunt: 2, blaster: 1, lancer: 1 } },
+                 { at: HOLDFAST_SPOTS.cairns[1], guards: { grunt: 2, blaster: 1, officer: 1 } } ],
+        trickle: { every: 13, cap: 7, group: { grunt: 2, blaster: 1 } }, from: [-Math.PI + 0.35, -0.35] },
+
+      { kind: 'duel', title: 'DEFEAT THE HOUNDMASTER', start: [0, -6, Math.PI],
+        say: { jedi: 'The hunters\' master comes out of the trees. It tracks by scent and strikes from the side. Turn with it.',
+               mando: 'The Houndmaster. It runs the Magistrate\'s trackers. It\'s fast and it flanks. Keep it in front of you.' },
+        task: { jedi: 'Win the duel', mando: 'Win the duel' },
+        foe: 'lancer', name: 'THE HOUNDMASTER', kicker: 'THE MAGISTRATE\'S HUNTER', hp: 4, dmg: 1.15, scale: 1.12, tint: 0x6a5a3a, at: [0, -16],
+        duel: { feint: 0.4, chain: 3, counter: 0.45 },
+        rage: 0.5, rageDuel: { chain: 4, delay: 0.3 },
+        trickle: { every: 15, cap: 3, group: { grunt: 2 } }, from: [-Math.PI + 0.4, -0.4] },
+    ],
+    done: { jedi: 'The hunters are broken and the holdfast stands.',
+            mando: 'The hunters are broken. The holdfast stands, and so does Brakka.' },
   },
 
   // A STRIKE TEAM mission: `squad` squadmates form up beside the hero (allies/squad.js, data/allies.js), and `battle`
@@ -885,4 +975,32 @@ export const MISSIONS = {
     ],
     done: { jedi: 'The road is open and the gate is ours. Vexis is waiting inside.',
             mando: 'The gate is down. The Magistrate is inside. This is the Way.' } };
+}
+
+// THE MANDALORIAN'S STORY, re-staged on its own worlds (data/campaign-mando.js): the forge's plan and fight cut into the
+// ice of Caldus (the meltworks), and the spearhead's on the iron plain before the Magistrate's citadel on Duren.
+// Campaign only: the Missions list keeps the originals.
+{
+  const F = MISSIONS.forge, sayF = (i, mando) => ({ ...F.objectives[i], say: { ...F.objectives[i].say, mando } });
+  MISSIONS.meltworks = { ...F, id: 'meltworks', title: 'THE MELTWORKS', campaignOnly: true,
+    level: { ...F.level, layout: 'meltworks', name: 'MISSION — THE MELTWORKS ON CALDUS',
+             sub: 'The covert\'s beskar, poured into moulds cut for children. Tear it down.' },
+    objectives: [
+      sayF(0, 'Three feeds into the meltworks. Charge every one. Keep off the channels when they glow.'),
+      { ...sayF(1, 'Charges are lit. Hold the lane till they go. Nobody gets near them.'), doneSub: 'Every mould on Caldus is slag.' },
+      sayF(2, 'The forgemaster. It melted our beskar with its own hands. Don\'t trade blows. Make it miss, then hit it.'),
+    ],
+    done: { ...F.done, mando: 'The meltworks are slag, and Rook was never here.' } };
+
+  const S = MISSIONS['strike-exegol'];
+  MISSIONS['iron-road'] = { ...S, id: 'iron-road', title: 'THE IRON ROAD', campaignOnly: true,
+    level: { ...S.level, layout: 'ironroad', name: 'MISSION — THE IRON ROAD',
+             sub: 'His last army holds the road to the Iron Citadel. Break its line and take the gate.' },
+    objectives: [
+      { ...S.objectives[0], say: { ...S.objectives[0].say, mando: 'The whole clan rides with you, and Ossik is flying the dropship. Take their posts one by one. They\'ll handle the troopers. The blades are yours.' } },
+      { ...S.objectives[1], say: { ...S.objectives[1].say, mando: 'The citadel\'s gate is ours if we can keep it. Hold it till Ossik brings the dropship round. Put your clan on it (H) when you have to go hunting.' },
+        doneLine: 'THE DROPSHIP IS HERE', doneSub: 'The gate is ours. Its warden is coming out.' },
+      { ...S.objectives[2], say: { ...S.objectives[2].say, mando: 'The Iron Warden wants you himself. The clan will keep his troops busy. The Magistrate is behind him, and so is Rook.' } },
+    ],
+    done: { ...S.done, mando: 'The gate is down. The Magistrate is inside, and so is Rook. This is the Way.' } };
 }

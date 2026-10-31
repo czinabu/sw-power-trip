@@ -40,12 +40,17 @@ import { CHAPTERS } from '../src/data/campaign.js';
 import { MANDO_CHAPTERS } from '../src/data/campaign-mando.js';
 import { buildOutpostArena } from '../src/world/arenas/outpost.js';
 import { buildCovertArena } from '../src/world/arenas/covert.js';
+import { buildBargeArena } from '../src/world/arenas/barge.js';
+import { buildHoldfastArena } from '../src/world/arenas/holdfast.js';
+import { buildCitadelArena } from '../src/world/arenas/citadel.js';
 
 const BUILDERS = { temple: buildTempleArena, foundry: buildFoundryArena, plains: buildPlainsArena, hall: buildHallArena,
   forge: buildForgeArena, refuge: buildRefugeArena, pursuit: buildPursuitArena, dojo: buildDojoArena, throne: buildThroneArena,
   grassland: buildGrasslandArena, icefront: buildIcefrontArena, graveyard: buildGraveyardArena,
   approach: buildGrasslandArena, archive: buildArchiveArena, prison: buildPrisonArena, hangar: buildHangarArena, sith: buildSithArena,
-  jungle: buildJungleArena, outpost: buildOutpostArena, covert: buildCovertArena };
+  jungle: buildJungleArena, outpost: buildOutpostArena, covert: buildCovertArena,
+  barge: buildBargeArena, holdfast: buildHoldfastArena, citadel: buildCitadelArena,
+  meltworks: buildFoundryArena, ironroad: buildGrasslandArena };
 
 const STEP = 0.4;          // sample spacing
 const SINK = 0.45;         // a visible top this far over the collision top is a miss (thin caps and trims sit under it)
