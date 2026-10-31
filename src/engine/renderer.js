@@ -167,7 +167,10 @@ setGrade();
 /* the menu stand draws its own little stage through this same composer: no AO (it would sample the game scene) and
    no arena grade */
 let _standAO = false, _standShafts = false;
+/* 1 in the arena, 0 on the menu stand (which is already lit bright, so black robes should stay black there) */
+export const darkFill = { value: 1 };
 export function standPost(on){
+  darkFill.value = on ? 0 : 1;
   if (on){ _standAO = aoPass.enabled; _standShafts = shaftPass.enabled; aoPass.enabled = shaftPass.enabled = false; gradePass.uniforms.amount.value = 0; }
   else { aoPass.enabled = _standAO; shaftPass.enabled = _standShafts; gradePass.uniforms.amount.value = 1; }
 }
