@@ -41,7 +41,7 @@ export function startCampaign(){
 export function startChapter(pos, opts = {}){
   const c = chapterAt(pos);
   if (!c) return;
-  G.chapter = pos;
+  G.chapter = pos; G.chapterClosed = null;   // (set again when it closes: game/flow.js chapterClosed)
   if (!opts.guest) recordChapters(pos);   // the sandbox follows the story (a co-op guest's is followChapter's)
   const title = chapterTitle(c), name = 'CHAPTER ' + (pos + 1) + ' — ' + title, sub = 'ACT ' + ROMAN[c.act] + ' · ' + c.world;
   if (opts.retry && G.checkpoint && G.checkpoint.ch === pos) G.waveTotal = G.checkpoint.waveTotal;
@@ -49,7 +49,7 @@ export function startChapter(pos, opts = {}){
     startLevel(c.level, { level: { ...LEVELS[c.level], ...c.arena, name, sub }, waves: c.waves, resume: !opts.fresh, retry: opts.retry, chapter: true });
   } else {
     if (!opts.retry) G.checkpoint = { idx: G.levelIdx, ch: pos, waveTotal: G.waveTotal, boss: false };
-    startMission(c.mission, 0, !!opts.guest, { retry: !!opts.retry, chapter: { name, sub, arena: c.arena, kicker: 'CHAPTER ' + (pos + 1) + ' · ' + title, done: chapterCleared } });
+    startMission(c.mission, 0, !!opts.guest, { retry: !!opts.retry, chapter: { name, sub, arena: c.arena, kicker: 'CHAPTER ' + (pos + 1) + ' · ' + title, clear: (c.lines && forHero(c.lines.clear, G.hero)) || null, done: chapterCleared } });
   }
   if (opts.guest){ G.coopGuest = true; G.coopWasGuest = true; G.coopJoin = false; shared.levelPhase = G.mission ? 'mission' : 'between'; shared.phaseT = 0; }
   if (!opts.retry || opts.card) showCard(pos);
@@ -87,9 +87,10 @@ function chapterCleared(){
   G.waveTotal += c?.steps || 1;   // a mission counts as a step deeper into the run (foes, store tiers and the Mando's gear follow it); `steps` when it stands for a level's waves
   // a mission standing in for a level's waves (Mustafar): the run is as far into that level as its waves would have taken it
   if (c && c.level != null && c.waves){ G.levelIdx = c.level; G.wave = c.waves[1]; checkUnlocks(1600); }
+  G.chapterClosed = G.chapter;   // its closing page offers the powers it hands out (game/flow.js chapterClosed)
   chapterRewards();
   earnWavePoint();   // a mission chapter's skill point (game/upgrades.js), spent on the page that opens next
-  storyBeat('clear');
+  storyBeat('clear', { quiet: !!G.mission });   // a mission's clear lines are already on its Chapter complete card (game/mission.js)
   if (G.coopGuest){ openSkillTree(); return; }
   shared.levelPhase = 'chapterdone'; shared.phaseT = 2.6;   // the voice's last word, then the upgrade screen and the road on (game/flow.js)
 }

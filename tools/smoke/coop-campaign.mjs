@@ -66,10 +66,10 @@ try {
   await host.waitForFunction(() => GAME.enemies.length >= 3, null, poll);
   await guest.waitForFunction(() => GAME.enemies.filter(e => e.net).length >= 3, null, poll);
   if (await guest.evaluate(() => GAME.enemies.some(e => !e.net))) throw new Error('the guest is running foes of its own');
-  // the host's wave clears mid-chapter: the guest earns its own skill point (a note in the corner, no upgrade screen)
-  const w0 = await host.evaluate(() => GAME.G.wave), sp0 = await guest.evaluate(() => GAME.G.skillPoints || 0);
+  // the host's wave clears mid-chapter: the guest gets its own clear bonus (XP toward its next skill point), no upgrade screen
+  const w0 = await host.evaluate(() => GAME.G.wave), xp0 = await guest.evaluate(() => GAME.G.xpEarned || 0);
   await host.evaluate(() => { for (const e of GAME.enemies) GAME.damageEnemy(e, 99999, null, 0, false, false); GAME.G.spawnQueue.length = 0; });
-  await guest.waitForFunction((p) => (GAME.G.skillPoints || 0) > p, sp0, poll);
+  await guest.waitForFunction((x) => (GAME.G.xpEarned || 0) > x, xp0, poll);
   await host.waitForFunction((w) => GAME.G.wave === w + 1, w0, poll);
   if (await guest.evaluate(() => GAME.G.skillSelect)) throw new Error('the guest\'s upgrade screen opened mid-chapter');
   // the host moves on to a mission chapter: the guest follows it there, shown the host's objectives

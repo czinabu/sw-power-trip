@@ -7,20 +7,23 @@ import { burst } from '../fx/particles.js';
 import { floater } from '../fx/floaters.js';
 import { G, player } from '../state.js';
 import { playerPos, maxHp } from '../player/helpers.js';
-import { TIER_REQ, TIER_NAME, SKILLS, TIER_NAME_MANDO, MANDO_SKILLS } from '../data/skills.js';
+import { TIER_REQ, TIER_NAME, SKILLS, TIER_NAME_MANDO, MANDO_SKILLS, TIER_CHAPTER } from '../data/skills.js';
 import { MANDO_STORE, JEDI_STORE } from '../data/store.js';
 import { renderProgress } from '../ui/store-ui.js';
 import { MASTERY_XP } from '../data/difficulty.js';
 import { MANDO } from '../data/mando.js';
 import { endWave } from './readout.js';
-import { noteFeat } from './upgrades.js';
+import { xpPointCheck } from './upgrades.js';
+import { chapterClosed } from './flow.js';
 
 export function skillSet(){ return G.hero === 'mando' ? MANDO_SKILLS : SKILLS; }
 export function tierName(t){ return (G.hero === 'mando' ? TIER_NAME_MANDO : TIER_NAME)[t]; }
 export function skillRank(id){ return (player.skills && player.skills[id]) || 0; }
 function skillReq(s){ return s.req != null ? s.req : TIER_REQ[s.tier]; }
 function tierUnlocked(tier){ return G.skillSpent >= TIER_REQ[tier]; }
-export function skillEligible(s){ return G.skillSpent >= skillReq(s) && skillRank(s.id) < s.max && (!s.avail || s.avail()); }
+// the campaign also holds a tier back until its chapter has closed (data/skills.js TIER_CHAPTER)
+export function tierStoryOpen(tier){ return G.chapter < 0 || !TIER_CHAPTER[tier] || chapterClosed(TIER_CHAPTER[tier]); }
+export function skillEligible(s){ return G.skillSpent >= skillReq(s) && tierStoryOpen(s.tier) && skillRank(s.id) < s.max && (!s.avail || s.avail()); }
 
 /* ============================================================
    XP & PROGRESSION STORE — earn XP in combat, spend it between waves
@@ -32,13 +35,13 @@ export function gainXp(n){
   G.xp = (G.xp || 0) + n;
   G.xpEarned = (G.xpEarned || 0) + n;
   const el = document.getElementById('xpval'); if (el) el.textContent = G.xp;
+  xpPointCheck();   // the story turns XP into skill points (game/upgrades.js)
 }
 // kill-streak XP multiplier — 1× cold, ramping to 3× on a hot streak (rewards aggressive play)
 export function killBonus(){ return 1 + clamp((G.streak || 0) * 0.12, 0, 2); }
 // MASTERY XP — a parry, perfect dodge, clash, catch or riposte pays a small bounty on the spot (×1–3 on a streak)
 export function masteryXp(kind){
   if (G.training || !MASTERY_XP[kind]) return;
-  noteFeat(kind);   // ...and adds up toward a bonus skill point (game/upgrades.js)
   gainXp(MASTERY_XP[kind] * killBonus());
 }
 // WAVE CLEAR — the wave's XP, plus a bonus share of it when the wave was fought cleanly (no hit taken, or little)
@@ -76,8 +79,21 @@ export function applyCellTier(){
 // helper: does a fork sibling already own the slot? (buying one weapon locks the other)
 function forkTaken(node, set){ return !!node.fork && set.some(n => n !== node && n.fork === node.fork && n.owned()); }
 export function storeSet(){ return G.hero === 'mando' ? MANDO_STORE : JEDI_STORE; }
-// a node opens at its own `stage` (cumulative waves) if set, else by its tier's stage. lets each fork land at a precise wave.
-function storeStageOpen(n){ const s = (n.stage != null) ? n.stage : (STORE_TIER_STAGE[n.tier] || 0); return (G.waveTotal || 0) >= s; }
+// the story campaign opens a node at its `chapter`'s close (data/store.js); everywhere else at its own `stage`
+// (cumulative waves) if set, else by its tier's stage, so each fork lands at a precise wave.
+export function storeStageOpen(n){
+  if (n.chapter && G.chapter >= 0) return chapterClosed(n.chapter);
+  const s = (n.stage != null) ? n.stage : (STORE_TIER_STAGE[n.tier] || 0); return (G.waveTotal || 0) >= s;
+}
+// what a node costs: nothing in the story, where the chapters hand the powers out (data/store.js); XP in survival
+export function storeCost(n){ return n.chapter && G.chapter >= 0 ? 0 : n.cost; }
+// the story's chapter close: hand over the single powers it brings (a fork stays a pick on the page). Returns them.
+export function grantStoryPowers(){
+  if (!(G.chapter >= 0)) return [];
+  const got = [];
+  for (const n of storeSet()) if (!n.fork && !n.pick && storeAvail(n)){ n.buy(); got.push(n); }
+  return got;
+}
 export function storeAvail(n){ return !n.owned() && storeStageOpen(n) && (!n.avail || n.avail()) && !forkTaken(n, storeSet()); }
 // is any ability still to come this run (not owned, not locked out by a fork pick)? — even if its wave hasn't arrived yet
 export function storeRemaining(){ const set = storeSet(); return set.some(n => !n.owned() && (!n.avail || n.avail()) && !forkTaken(n, set)); }
@@ -86,7 +102,7 @@ export const RANK_NUM = ['', 'I', 'II', 'III'];
 export function nextStoreGoal(){
   let best = null;
   for (const n of storeSet()){
-    if (n.cost <= 0 || !storeAvail(n)) continue;
+    if (storeCost(n) <= 0 || !storeAvail(n)) continue;
     if (!best || n.cost < best.cost) best = { nm: n.nm, cost: n.cost };
   }
   return best;

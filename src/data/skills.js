@@ -5,6 +5,7 @@ import { CFG } from './config.js';
 import { G, player } from '../state.js';
 import { maxHp } from '../player/helpers.js';
 import { MANDO_STORE, JEDI_STORE } from './store.js';
+import { storeStageOpen } from '../game/progression.js';
 
 /* ============================================================
    SKILL TREE — a tiered path. Tier I is open from the start; the powerful
@@ -14,6 +15,9 @@ import { MANDO_STORE, JEDI_STORE } from './store.js';
 // KNIGHT opens on the 4th upgrade screen (end of level 1) and MASTER on the 8th (end of level 2), so the capstones
 // arrive for the final level. Was 2 / 4, which put a capstone like BLADE STORM in hand from the 5th wave of 12.
 export const TIER_REQ = { 1: 0, 2: 3, 3: 7 };   // total skill points spent to unlock each tier
+// ...and in the story campaign, the chapter that must close first (game/flow.js chapterClosed): KNIGHT once Act I
+// is done, MASTER (the capstones) once Act II is, so no capstone lands in the middle of the story
+export const TIER_CHAPTER = { 2: 'trial-first', 3: 'mustafar' };
 export const TIER_NAME = { 1: 'PADAWAN', 2: 'KNIGHT', 3: 'MASTER' };
 export const SKILLS = [
   // ---- TIER I — PADAWAN foundations, stackable ----
@@ -37,7 +41,7 @@ export const SKILLS = [
     // `stage`) — previously this only needed 2 skill points spent (often wave 2-3, well before Mend's stage:4
     // store gate even existed), so a player could lock in the free "heal per kill" path before the paid heal
     // ability was ever a real alternative. Both are now a genuine either/or choice from the same wave onward.
-    avail:()=>!G.unlocked.mend && (G.waveTotal||0) >= JEDI_STORE.find(n=>n.id==='mend').stage,
+    avail:()=>!G.unlocked.mend && storeStageOpen(JEDI_STORE.find(n=>n.id==='mend')),
     fl:'Their fall becomes your second wind.', apply(){ player.up.lifesteal += 7; } },
   { id:'bulw',  ico:'⛨', nm:'BULWARK',       tier:2, max:2, ds:'Block costs −35% stamina · +15 max vit',
     fl:'The mountain does not tire.', apply(){ player.up.blockStam *= 0.65; player.up.hpMax += 15; player.hp = Math.min(player.hp + 15, maxHp()); } },
@@ -80,7 +84,7 @@ export const MANDO_SKILLS = [
   { id:'creed',   ico:'✸', nm:'HUNTER\'S CREED',  tier:2, max:2, ds:'Heal +8 vitality per kill · LOCKS Bacta Stim',
     // same fix as Jedi VAMPIRIC BLADE above: gated to the same wave BACTA STIM's store slot opens (its `stage`),
     // not just tier-2 skill points spent — so Creed can no longer be locked in before Bacta is even a real choice.
-    avail:()=>!G.unlocked.bacta && (G.waveTotal||0) >= MANDO_STORE.find(n=>n.id==='bacta').stage,
+    avail:()=>!G.unlocked.bacta && storeStageOpen(MANDO_STORE.find(n=>n.id==='bacta')),
     fl:'The Tribe endures because the hunter returns.', apply(){ player.up.lifesteal += 8; } },
   // ---- TIER III — MANDALORE: capstones (one rank) ----
   { id:'super',   ico:'❂', nm:'SUPERCOMMANDO',    tier:3, max:1, ds:'+35 max vitality · take 18% less damage',

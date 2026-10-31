@@ -150,6 +150,7 @@ export function updateAtmosphere(dt){
       A.bolt -= dt;
       const k = (A.bolt > 0.26 || (A.bolt < 0.16 && A.bolt > 0.08)) ? 1 : 0.15;
       fill += k * (T.storm.fill ?? 1.2);
+      if (T.storm.fogFlash && scene.fog) scene.fog.color.lerp(_d.setHex(0xaab8e0), k * T.storm.fogFlash);   // the fog lights up with the bolt
       skyK += k * (T.storm.sky ?? 0.9);
     }
   }

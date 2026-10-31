@@ -9,7 +9,7 @@ import { G, enemies } from '../state.js';
 import { buildEnemyMesh } from './mesh.js';
 import { enemyHpScale, applyElite } from './elites.js';
 import { attachHitboxDebug } from './bodyshape.js';
-import { showBanner } from '../ui/banners.js';
+import { foeTipToast } from '../game/upgrades.js';
 import { initDuel } from './duel.js';
 
 // a floating boss-style health bar for elite/mid-boss units, billboarded toward the camera each frame
@@ -41,7 +41,7 @@ function maybeTip(typeName){
   if (G.seenTypes[typeName]) return;
   G.seenTypes[typeName] = true;
   const tip = TYPE_TIPS[typeName];
-  if (tip && G.mode === 'play' && !G.training) showBanner(tip[0], tip[1], 3.0);   // in training the teacher explains it
+  if (tip && G.mode === 'play' && !G.training) foeTipToast(tip[0], tip[1]);   // in training the teacher explains it
 }
 let nextNid = 0;   // every foe's number, the same on both screens in co-op (net/foes.js)
 export function spawnEnemy(typeName, pos){

@@ -350,7 +350,7 @@ for (const [id, set] of [['mussl', setMusicVol], ['fxsl', setSfxVol]]){
   sl.addEventListener('change', () => S.uiClick());   // a blip at the new level when you let go
 }
 document.addEventListener('pointerdown', audioInit);   // first gesture anywhere lights up the audio ctx + menu score (autoplay policy)
-// HOW TO PLAY — a panel over the menu; opens on the current hero, with tabs to read the other one's controls
+// CONTROLS — a panel over the menu; opens on the current hero, with tabs to read the other one's controls
 const howto = document.getElementById('howto');
 function setHowTo(open){
   howto.classList.toggle('open', open);
