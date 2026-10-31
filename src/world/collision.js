@@ -124,6 +124,18 @@ export function groundAt(x, z, maxY){
   return g;
 }
 
+// IS A POINT INSIDE SOLID — the floor, a hill, or a pillar/crate/wall whose body spans the point's height. Unlike
+// groundAt this respects overhead slabs (a point under one is open air), so a ray can pass under a beam.
+export function solidAt(x, y, z){
+  if (y <= 0) return true;
+  for (const c of solids){
+    if (c.mound){ if (y <= moundY(c, x, z)) return true; continue; }
+    if (y > c.h || y < (c.y0 || 0)) continue;
+    if (c.box ? Math.abs(x - c.x) <= c.hx && Math.abs(z - c.z) <= c.hz : Math.hypot(x - c.x, z - c.z) <= c.r) return true;
+  }
+  return false;
+}
+
 // SPAWN CLEARANCE — the intended spawn point (0, arenaHalf*0.5) sits at a fixed radius that overlaps the random-
 // cover placement bands in every arena builder (e.g. Temple's low walls roll up to exactly arenaHalf*0.5; Foundry's
 // machine blocks and Plains' ruins both farSpot into that radius too), and none of those placement loops know to

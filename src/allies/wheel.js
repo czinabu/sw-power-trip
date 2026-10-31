@@ -85,12 +85,12 @@ function close(){
 /* ---------- THE PICTURE ---------- */
 function build(){
   el = document.createElement('div'); el.id = 'sqwheel';
-  const R = 132, n = ORDERS.length;
+  const R = 150, n = ORDERS.length;
   el.innerHTML = '<div class="sw-ring"></div>' + ORDERS.map((o, i) => {
     const a = i / n * Math.PI * 2, x = Math.sin(a) * R, y = -Math.cos(a) * R;
     return '<div class="sw-o" data-i="' + i + '" style="transform:translate(calc(-50% + ' + x.toFixed(1) + 'px), calc(-50% + ' + y.toFixed(1) + 'px))">' +
       '<b>' + o.icon + '</b><span>' + o.name + '</span><em></em></div>';
-  }).join('') + '<div class="sw-c"><div class="sw-t"></div><div class="sw-n"></div><div class="sw-who"></div></div>';
+  }).join('') + '<div class="sw-c"><div class="sw-t"></div><div class="sw-n"></div></div><div class="sw-who"></div>';
   (document.getElementById('hud') || document.body).appendChild(el);
 }
 function render(){

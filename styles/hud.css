@@ -447,9 +447,9 @@ body.mission-play #objlist{width:330px;border-color:rgba(255,210,90,.5);backgrou
 /* ---------- the squad's command wheel (allies/wheel.js): hold H ---------- */
 #sqwheel{position:fixed;left:50%;top:50%;width:0;height:0;pointer-events:none;opacity:0;transition:opacity .12s;z-index:30}
 #sqwheel.open{opacity:1}
-#sqwheel .sw-ring{position:absolute;left:-178px;top:-178px;width:356px;height:356px;border-radius:50%;
-  background:radial-gradient(circle,rgba(6,12,22,.9) 0 27%,rgba(92,198,255,.35) 27.4%,rgba(6,12,22,.55) 28% 100%);border:1px solid rgba(92,198,255,.28);box-shadow:0 0 40px rgba(0,0,0,.5)}
-#sqwheel .sw-o{position:absolute;left:0;top:0;width:96px;padding:7px 4px 6px;border-radius:10px;text-align:center;
+#sqwheel .sw-ring{position:absolute;left:-206px;top:-206px;width:412px;height:412px;border-radius:50%;
+  background:radial-gradient(circle,rgba(6,12,22,.55) 0 25%,rgba(92,198,255,.3) 25.4%,rgba(6,12,22,.3) 26% 100%);border:1px solid rgba(92,198,255,.25);box-shadow:0 0 40px rgba(0,0,0,.3)}
+#sqwheel .sw-o{position:absolute;left:0;top:0;width:100px;box-sizing:border-box;padding:7px 4px 6px;border-radius:10px;text-align:center;
   background:rgba(14,26,42,.78);border:1px solid rgba(255,255,255,.12);color:var(--ink-soft);transition:transform .08s,background .08s,border-color .08s;
   text-shadow:0 1px 4px rgba(0,0,0,.9)}
 #sqwheel .sw-o b{display:block;font:700 20px/1 var(--font-ui);color:var(--accent)}
@@ -457,11 +457,11 @@ body.mission-play #objlist{width:330px;border-color:rgba(255,210,90,.5);backgrou
 #sqwheel .sw-o em{display:block;min-height:10px;margin-top:2px;font:600 9px/1 var(--font-ui);font-style:normal;letter-spacing:1px;color:#ffc46a}
 #sqwheel .sw-o.on{background:rgba(92,198,255,.28);border-color:var(--accent);color:#fff;box-shadow:0 0 18px var(--accent-glow)}
 #sqwheel .sw-o.cool{opacity:.5}
-#sqwheel .sw-c{position:absolute;left:-84px;top:-38px;width:168px;text-align:center;text-shadow:0 1px 6px rgba(0,0,0,.95)}
-#sqwheel .sw-t{font:700 15px/1 var(--font-ui);letter-spacing:2px;color:#fff}
-#sqwheel .sw-n{margin-top:4px;font:600 10px/1.2 var(--font-ui);letter-spacing:.8px;color:var(--ink-soft);min-height:24px}
-#sqwheel .sw-who{display:flex;flex-wrap:wrap;justify-content:center;gap:3px;margin-top:4px}
-#sqwheel .sw-who span{font:700 9px/1 var(--font-ui);letter-spacing:1px;padding:3px 5px;border-radius:4px;background:rgba(255,255,255,.08);color:var(--ink-dim)}
+#sqwheel .sw-c{position:absolute;left:-76px;top:-30px;width:152px;text-align:center;text-shadow:0 1px 6px rgba(0,0,0,.95)}
+#sqwheel .sw-t{font:700 14px/1 var(--font-ui);letter-spacing:2px;color:#fff}
+#sqwheel .sw-n{margin-top:5px;font:600 11px/1.25 var(--font-ui);letter-spacing:.6px;color:var(--ink-soft);min-height:28px}
+#sqwheel .sw-who{position:absolute;left:-260px;top:-262px;width:520px;display:flex;justify-content:center;gap:6px}
+#sqwheel .sw-who span{white-space:nowrap;font:700 11px/1 var(--font-ui);letter-spacing:1px;padding:6px 9px;border-radius:6px;background:rgba(6,12,22,.7);border:1px solid rgba(255,255,255,.12);color:var(--ink-dim)}
 #sqwheel .sw-who span.on{background:var(--accent);color:#06121e}
 #sqwheel .sw-who span.down{color:#ff9a8a}
-#sqwheel .sw-who kbd{font:700 8px/1 var(--font-ui);margin-right:3px;opacity:.8}
+#sqwheel .sw-who kbd{font:700 9px/1 var(--font-ui);margin-right:3px;opacity:.8}

@@ -1,6 +1,7 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
 // Enemy HP scaling and elite traits.
 
+import { blastAllies } from '../allies/squad.js';
 import * as THREE from 'three';
 import { S } from '../audio/sfx.js';
 import { clamp } from '../utils.js';
@@ -65,5 +66,6 @@ export function volatileBlast(pos, source){
   if (shared.boss && shared.boss.hp > 0 && shared.boss.group.position.distanceTo(pos) < 5) damageBoss(30);
   if (hooks.blast) hooks.blast(pos, 4.5, 16, 'v');
   const pp = playerPos();
+  blastAllies(pos, 4.5, 16);   // the hero's squad is caught in it too
   if (pp.distanceTo(pos) < 4.5 && player.dashT <= 0) hurtPlayer(16, pos);
 }

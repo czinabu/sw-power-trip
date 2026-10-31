@@ -2,6 +2,7 @@
 // Squad tactics: the run-depth ramp, trooper feints and held swings, planned blaster fire, pincer approaches, officer
 // orders (volley, flank) and the morale break when an officer falls, and the lancer's lunge.
 
+import { sweepAllies } from '../allies/squad.js';
 import * as THREE from 'three';
 import { RAMP, TROOP_MELEE, TROOP_FIRE, PINCER, ORDERS, LUNGE } from '../data/tactics.js';
 import { scene } from '../engine/renderer.js';
@@ -238,7 +239,7 @@ export function updateLungeWind(e, dt, pp){
   paintLungeLine(e, g.position.x, g.position.z, g.rotation.y, e.lungeLen, e.lungeLocked, k);
   if (hooks.lunge) hooks.lunge(e, g.position, g.rotation.y, e.lungeLen, e.lungeLocked, k);   // co-op: the guest sees the line too
   if (e.st > 0) return;
-  e.state = 'lunge'; e.st = Math.min(0.6, e.lungeLen / LUNGE.speed); e.lungeLocked = false;
+  e.state = 'lunge'; e.lungeAllyHit = null; e.st = Math.min(0.6, e.lungeLen / LUNGE.speed); e.lungeLocked = false;
   S.whoosh(g.position, true);
 }
 // pp is the hero this lancer is after; a partner's puppet (remote) only gets the show, no blow (co-op phase 2)
@@ -250,6 +251,7 @@ export function updateLunge(e, dt, pp, remote = false){
   if (u.weaponArm) u.weaponArm.rotation.x = dampToward(u.weaponArm.rotation.x, -0.55, dt, 20);   // ...and driven out
   if (e.lungeLine) e.lungeLine.material.opacity = Math.max(0, e.lungeLine.material.opacity - dt * 3);
   if (Math.random() < 0.6) burst(V3(g.position.x, g.position.y + 1.3, g.position.z), e.t.eye, 1, 2, 1, 0.6);
+  if (!remote){ if (!e.lungeAllyHit) e.lungeAllyHit = new Set(); sweepAllies(ox, oz, g.position.x, g.position.z, LUNGE.hitR, e.t.dmg * LUNGE.dmgMul * enemyDmgScale(), e.lungeAllyHit, g.position); }   // squadmates in the path too
   // caught along the path it swept this frame?
   if (!e.lungeHit && Math.abs(pp.y - g.position.y) < 1.8){
     const sx = g.position.x - ox, sz = g.position.z - oz, sl = sx*sx + sz*sz || 1;

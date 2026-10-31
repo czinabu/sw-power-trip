@@ -6,12 +6,12 @@ import * as THREE from 'three';
 import { camera } from '../engine/renderer.js';
 import { shared, G, enemies, player } from '../state.js';
 import { sweepHit, bodyRadius, bodyHeight, chestPos } from '../enemies/bodyshape.js';
-import { groundAt } from '../world/collision.js';
+import { groundAt, solidAt } from '../world/collision.js';
 
 /* The crosshair ray, cast from the lens through the reticle (`ox`, `oy`: its pixel offset from the screen centre). It
    stops at the first thing it meets: a foe's body (its real hitbox, bodyshape.js), the boss, or the floor / a solid
    prop. Nothing at all: a point far out along it. */
-const AIM_FAR = 80, FLOOR_FAR = 60, FLOOR_STEP = 0.5;
+const AIM_OPEN = 300, AIM_FAR = 80, FLOOR_FAR = 60, FLOOR_STEP = 0.5;
 const _ray = new THREE.Raycaster(), _ndc = new THREE.Vector2(), _far = new THREE.Vector3(), _p = new THREE.Vector3();
 export const crosshairRay = () => _ray.ray;
 // what the last cast found: the foe under the crosshair (or null), and whether it stopped on the floor / a prop
@@ -45,10 +45,19 @@ export function crosshairPoint(ox = 0, oy = 0){
   let floor = false;
   for (let t = 1; t < Math.min(bestT, FLOOR_FAR); t += FLOOR_STEP){
     _p.copy(o).addScaledVector(d, t);
-    if (_p.y <= groundAt(_p.x, _p.z, Infinity)){ bestT = t; target = null; floor = true; break; }
+    if (solidAt(_p.x, _p.y, _p.z)){ bestT = t; target = null; floor = true; break; }
   }
   lastAim.target = target; lastAim.floor = floor;
-  const t = bestT < 1e8 ? bestT : 40;
+  // open air: the ray ends at the arena's wall (what the bolt will really hit), else far out along it. A short fallback
+  // made the gun's offset from the lens cross the shot over the reticle and fly on past it, off to the side.
+  if (bestT > 1e8){
+    const hx = (shared.arenaHalf || 0), hz = (shared.arenaHalfZ || 0);
+    let tw = AIM_OPEN;
+    if (hx > 0 && Math.abs(d.x) > 1e-4) tw = Math.min(tw, ((d.x > 0 ? hx : -hx) - o.x) / d.x);
+    if (hz > 0 && Math.abs(d.z) > 1e-4) tw = Math.min(tw, ((d.z > 0 ? hz : -hz) - o.z) / d.z);
+    bestT = Math.max(tw, 5);
+  }
+  const t = bestT;
   return new THREE.Vector3(o.x + d.x*t, o.y + d.y*t, o.z + d.z*t);
 }
 
