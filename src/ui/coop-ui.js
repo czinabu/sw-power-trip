@@ -2,7 +2,7 @@
 // The ONLINE CO-OP panel (main menu and pause): host a room or join one by its code, and the connection readout on the HUD.
 
 import { audioInit } from '../audio/sfx.js';
-import { net, on, host, join, leave, cleanCode } from '../net/session.js';
+import { net, on, host, join, leave, cleanCode, lastRoom } from '../net/session.js';
 import { coopRun } from '../net/run.js';
 import { onRunChange } from '../net/foes.js';
 import { launchCoopRun } from './menus.js';
@@ -47,13 +47,16 @@ function render(){
     else if (!guest) statusEl.innerHTML = '<span class="players">4 of 4 players</span>' + msg;
     else statusEl.textContent = msg;
   }
+  else if (s === 'reconnecting') statusEl.textContent = 'Connection lost. Getting back into room ' + net.code + '…';
   else if (s === 'failed') statusEl.textContent = net.error;
   else statusEl.textContent = '';
   leaveBtn.style.display = s === 'idle' ? 'none' : 'inline-flex';
   runBtn.style.display = s === 'connected' && net.role === 'guest' && coopRun.on && !G.coopGuest && G.mode === 'menu' ? 'inline-flex' : 'none';
   const live = s === 'connected';
-  pingEl.classList.toggle('on', live);
+  pingEl.classList.toggle('on', live || s === 'reconnecting');
   if (live) pingEl.textContent = 'ONLINE · ' + (net.ping ? net.ping + ' MS' : '…');
+  else if (s === 'reconnecting') pingEl.textContent = 'RECONNECTING…';
+  if ((s === 'idle' || s === 'failed') && !codeIn.value) codeIn.value = lastRoom();   // the last room joined, ready to rejoin
 }
 on('status', render);
 on('ping', render);

@@ -150,6 +150,18 @@ try {
   // a guest that falls out of the shared fight (dies and retries, restarts) is put back into it, its own foes gone
   await guest.evaluate(() => { GAME.startEndless(); });
   await guest.waitForFunction(() => GAME.G.coopGuest && GAME.enemies.length > 0 && GAME.enemies.every(e => e.net), null, poll);
+  // a ping: the host marks what's under its crosshair, and the guest sees it in the host's seat
+  await host.evaluate(() => GAME.pingHere());
+  await guest.waitForFunction(() => GAME.pingInfo().some(p => p.slot === 0), null, poll);
+  // the guest goes down: the host sees the revive ring under them and the chip saying how long they have
+  await guest.evaluate(() => { GAME.player.downed = { bleed: 9, prog: 0.4, need: 3, by: null, t: 0 }; });
+  await host.waitForFunction(() => GAME.partnerInfo().all.some(p => p.dn && p.ring && p.chip), null, poll);
+  await guest.evaluate(() => { GAME.player.downed = null; });
+  await host.waitForFunction(() => GAME.partnerInfo().all.every(p => !p.ring && !p.chip), null, poll);
+  // the guest's link drops (not a leave): it gets back into the room by itself, and back into the host's fight
+  await guest.evaluate(() => GAME.coopDrop());
+  await guest.waitForFunction(() => GAME.coopNet.status === 'reconnecting', null, poll);
+  await guest.waitForFunction(() => GAME.coopNet.status === 'connected' && GAME.G.coopGuest && GAME.enemies.some(e => e.net), null, { ...poll, timeout: 45000 });
   ok = true;
   console.log('ok   co-op run: the guest joined the host\'s Survival run, shows ' + shared.length + '+ of its foes as puppets, a blow on one reached the host, and a shot and a blow from one hurt the guest, a power, the partner shots and shared XP work');
 } catch(e){ errors.push(e.message); for (const p of browser.contexts().flatMap(c => c.pages())) errors.push(JSON.stringify(await p.evaluate(() => ({ mode: GAME.G.mode, guest: GAME.G.coopGuest, foes: GAME.enemies.map(e => [e.nid, !!e.net]), status: document.getElementById('coopstatus').textContent })).catch(x => x.message))); }

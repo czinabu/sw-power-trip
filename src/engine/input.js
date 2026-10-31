@@ -40,6 +40,7 @@ import { diffWindow } from '../data/difficulty.js';
 import { toggleHolster } from '../player/holster.js';
 import { strikePress, strikeRelease, holsteredKick } from '../player/jedi/palm.js';
 import { wheelKeyDown, wheelKeyUp, wheelLook, wheelPickMate, wheelCancel, wheelOpen } from '../allies/wheel.js';
+import { pingHere } from '../net/ping.js';
 import { noteFlick } from '../player/jedi/cutaim.js';
 
 const inputActive = () => !G.cutscene && !G.cardUp && (document.pointerLockElement === renderer.domElement || (shared.lockFallback && G.mode === 'play'));   // (a cutscene takes no fight input)
@@ -161,6 +162,7 @@ document.addEventListener('keydown', (e) => {
   if (k === 'm' && !e.repeat){ audioInit(); const on = MUSIC.toggle(); showBanner('', '♪ MUSIC ' + (on ? 'ON' : 'OFF'), 1.0); return; }   // music on/off (persists)
   if (k === ' ' && !e.repeat) doJump();
   if (k === '4' && !e.repeat) toggleHolster();   // HOLSTER: the Jedi fights with the Force alone, the Mando with fists and gadgets (player/holster.js)
+  if (k === 'n' && !e.repeat) pingHere();   // PING: mark the spot or foe under the crosshair for the other players (net/ping.js)
   if (k === 'h' && !e.repeat) wheelKeyDown();   // SQUAD ORDERS: tap for the smart order, hold for the command wheel (allies/wheel.js)
   if (G.hero === 'mando'){
     if (k === 'shift' && !e.repeat) mandoShift();        // combat roll / rocket boost / air dodge (mando/mobility.js); held in the air it boosts
