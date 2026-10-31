@@ -30,6 +30,7 @@ import { showBanner } from '../ui/banners.js';
 import { makeBeacon, removeMarker, pulseMarker } from '../game/objectives.js';
 import { goDown, getUp, downed, addHeroReviver, updateRevive, heroDownState } from '../game/revive.js';
 import { MISSION_COLOR } from '../data/missions.js';
+import { ALLY_COLOR, ALLY_DOWN, addFriendRing, updateFriendRing, makeFriendTag } from '../fx/friend.js';
 
 export const allies = [];
 // the squad's standing order: 'follow' (on me) or 'hold' (at holdAt); fYaw is the formation's facing, eased after yours
@@ -60,9 +61,8 @@ export function addSquadmate(at){
   g.position.set(s.x, 0, s.z); g.rotation.y = G.yaw;
   scene.add(g);
   // a small diamond over the head marks a friend at a glance (and turns red while it's down)
-  const tag = new THREE.Mesh(new THREE.OctahedronGeometry(0.11, 0),
-    new THREE.MeshBasicMaterial({ color: MISSION_COLOR[G.hero], toneMapped: false, depthTest: false, transparent: true }));
-  tag.renderOrder = 998; scene.add(tag);
+  const tag = makeFriendTag(1); scene.add(tag);
+  addFriendRing(g);
   const a = { def, name: def.name, role, t, group: g, tag, hp: role.hp, maxHp: role.hp, state: 'move', slot: allies.length,
               mv: { x: 0, z: 0 }, fireT: rand(0.5, 1.5), burstLeft: 0, burstT: 0, target: null, seekT: 0, hitAt: -99,
               flash: 0, body: null, stuckT: 0, sideT: 0, side: 1, lastX: s.x, lastZ: s.z };
@@ -91,7 +91,7 @@ export function dismissSquadmate(){
 function removeAlly(a){
   if (a.body){ const i = downed.indexOf(a.body); if (i >= 0) downed.splice(i, 1); if (a.body.mark) scene.remove(a.body.mark); a.body = null; }
   scene.remove(a.group, a.tag);
-  a.tag.geometry.dispose(); a.tag.material.dispose();
+  a.tag.material.dispose();
 }
 // a fresh level (startLevel in game/flow.js): nobody carries over
 export function clearSquad(){
@@ -295,7 +295,8 @@ function updateAlly(a, dt, medic, pp){
   else u.bodyMat.emissiveIntensity = 0;
   a.tag.position.set(p.x, p.y + 2.75 * a.t.scale + (standing(a) ? 0 : -1.6), p.z);
   a.tag.rotation.y += dt * 2;
-  a.tag.material.color.setHex(standing(a) ? MISSION_COLOR[G.hero] : 0xff5a4a);
+  a.tag.material.color.setHex(standing(a) ? ALLY_COLOR : ALLY_DOWN);
+  updateFriendRing(g, !standing(a));
   if (!standing(a)){
     g.rotation.x += (-1.2 - g.rotation.x) * Math.min(1, dt * 7);
     updateLegs(a, g, dt, 'off'); updateUpper(a, g, dt, null, 'off');

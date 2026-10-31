@@ -6,6 +6,8 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'Friends read at a glance', status: 'done',
+    items: ['Squadmates and escorts wear an ally-blue ring on the ground and a bigger, ink-rimmed diamond overhead, so they never blend in with white-armoured foes on snow', 'Same blue for both heroes and every mode; the marks turn red while an ally is down or an escort is under fire'] },
   { title: 'Tidier Lightsaber Forms page', status: 'done',
     items: ['Cards show just the basics: name, best against, pros and cons; the quote and history sit behind a small i', 'Forms you have not learned are small chips (Form V-a / V-b, VII-a / VII-b) instead of big blank tiles', 'An empty slot shows a lock until your next form', 'How to Play is now called Controls'] },
   { title: 'Upgrades without the menus', status: 'done',
