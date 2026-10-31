@@ -8,7 +8,7 @@
 
 import * as THREE from 'three';
 import { glow } from '../engine/renderer.js';
-import { loft, limb, plate, block, shard, chamfer, ngon, HEAD } from '../player/model/shapes.js';
+import { loft, limb, plate, block, shard, chamfer, ngon, HEAD, gripHand } from '../player/model/shapes.js';
 import { bakeDesign, instantiate } from '../enemies/kit.js';
 import { legs, hips, torso, pauldrons, sideArm, upper, cape, NECK, SOFT, SOFT_COLLAR, SOFT_LIMB, dome, cap } from '../enemies/mesh.js';
 
@@ -112,7 +112,9 @@ function weaponArm(k, L, kind){
   k.add(limb(0.5, [[-0.12,0.23,0.23],[0.1,0.22,0.22],[1,0.17,0.17]], SOFT_LIMB), 'suit', pivot, [0.02, 0.32, -0.08], [0, 0, -0.25]);
   k.add(block(0.2, 0.15, 0.21, 0.4), 'armor2', pivot, [-0.1, -0.2, -0.1]);
   const hand = k.slot('hand', pivot, [0, 0, 0], [0, 0, -0.6]);
-  k.add(loft([{ y:-0.1, w:0.16, d:0.17 }, { y:0.0, w:0.18, d:0.19 }, { y:0.1, w:0.16, d:0.17 }], SOFT_LIMB), 'suit', hand);   // the gauntlet
+  // the gauntlet: armoured fingers closed round the hilt or the haft (player/model/shapes.js gripHand), over a cuff
+  k.add(gripHand({ rx: kind === 'sith' ? 0.038 : 0.042, t: 0.024 }), 'suit', hand, [0, 0.0, 0], [0, 0, 0], { outline: false });
+  k.add(loft([{ y:-0.16, w:0.17, d:0.18 }, { y:-0.1, w:0.16, d:0.17 }], SOFT_LIMB), 'armor2', hand);
   if (kind === 'sith'){
     k.add(loft([{ y:-0.14, w:0.07, d:0.07 }, { y:0.18, w:0.075, d:0.075 }, { y:0.2, w:0.095, d:0.095 }, { y:0.23, w:0.085, d:0.085 }], ngon(8, PI/8)), 'metal', hand);
     k.add(block(0.03, 0.05, 0.03, 0.3), 'armor2', hand, [0, 0.08, 0.045], [0,0,0], { outline: false });
