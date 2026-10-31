@@ -13,7 +13,7 @@ export const DEFAULT_LOOK = {
   jedi: {
     parts: { legs: 'boots', waist: 'panels', torso: 'tunic', head: 'bald', hair: 'bald', beard: 'none', arms: 'sleeves' },
     palette: {
-      robe: 0x3b2a1e, tunic: 0x9c7d58, tabard: 0x5b4331, leather: 0x23170f,
+      robe: 0x3b2a1e, tunic: 0x9c7d58, tabard: 0x6b4f37, leather: 0x23170f,
       skin: 0x5c3826, hair: 0x140e0a, eyes: 0x2a1a10, boot: 0x1a120c, trim: 0xb08a4a,
     },
     build: { bulk: 1, shoulders: 1, head: 1 },
