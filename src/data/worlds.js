@@ -76,14 +76,16 @@ export const WORLD_DIRECTIONS = {
         sun: { el: 0.2, color: 0xffe2a8, halo: 0xe8b070, size: 18 },
         clouds: { color: 0xe8c08e, under: 0xb88a62, count: 10, lo: 0.5, hi: 0.85 },
         ridges: [{ color: 0xb88a5e, h: 0.1, rough: 0.04, seed: 3 }, { color: 0x9c7250, h: 0.06, rough: 0.06, seed: 8 }] },
-      fog: 0xc89a6a, fogStart: 0.75, fogEnd: 3.0,
-      light: { sun: 0xffdcae, sunI: 1.7, dir: [15, 34, 37], hemiSky: 0xb8c8e4, hemiGround: 0x7a5a3a, fill: 0.7, rim: 0xffc890, rimI: 0.5 },
-      floor: { kind: 'flagstone', base: 0xa48660, seed: 4 },
+      // art pass: a paler, less orange dust haze so the city steps back in layers; a cool rim against the warm key so
+      // figures lift off the sandstone; the floor a greyer stone than the walls round it
+      fog: 0xd0b08a, fogStart: 0.75, fogEnd: 3.0,
+      light: { sun: 0xffdcae, sunI: 1.7, dir: [15, 34, 37], hemiSky: 0xb8c8e4, hemiGround: 0x6a5240, fill: 0.7, rim: 0x9ab4e8, rimI: 0.5 },
+      floor: { kind: 'flagstone', base: 0x9c866a, seed: 4 },
       outer: 0xb08a5e,
       pal: { stone: 0xb89a70, stoneD: 0x8e7250, trim: 0xd8b46a, banner: 0xa8402a, brazier: 0xffa040, inlay: 0xc08a3a },
       backdrop: [
         // the holy city closes in round the courtyard: sandstone blocks four to six storeys high, domes and towers on top
-        { kind: 'district', h: [12, 24], w: [7, 13], color: 0xb08a5e, color2: 0x9c7a52, trim: 0x8a6a46, roof: 0xa8784a, domes: 0.3, spires: 0.12, setback: 0.3, gap: 9 },
+        { kind: 'district', h: [12, 24], w: [7, 13], color: 0xc29c6e, color2: 0xa8845a, trim: 0x86643f, roof: 0x9c5e3a, domes: 0.3, spires: 0.12, setback: 0.3, gap: 9 },
         // NiJedha's great wall, out past the district
         { kind: 'ramparts', r: 2.3, segments: 30, h: 9, color: 0xae8c64, color2: 0x987a56, roof: 0x7a4e32, gaps: [-2.4] },
         { kind: 'statue', az: -2.4, r: 2.1, scale: 1.3, color: 0xa88a66, color2: 0x8e7052, dark: 0x4a3828, metal: 0x7a7266 },
@@ -106,15 +108,17 @@ export const WORLD_DIRECTIONS = {
         clouds: { color: 0x4a2a24, under: 0x24120e, count: 24, lo: 0.3, hi: 0.95 },
         ridges: [{ color: 0x2a120c, h: 0.14, rough: 0.1, spiky: 0.6, seed: 5 }, { color: 0x150a08, h: 0.07, rough: 0.12, seed: 9 }] },
       fog: 0x5e2616, fogStart: 0.72, fogEnd: 2.9,
-      light: { sun: 0xffb080, sunI: 1.8, dir: [30, 40, -27], hemiSky: 0xffa070, hemiGround: 0x4a1a10, fill: 0.9, rim: 0xff6a30, rimI: 0.65 },
-      floor: { kind: 'basalt', base: 0x3c3434, glow: 0xff7a1e, seed: 9 },
+      // art pass: a cool rim from the ash sky against the lava key, so troopers and the hero cut out of the red murk;
+      // the forge metal a cooler steel than the basalt it stands on
+      light: { sun: 0xffb080, sunI: 1.8, dir: [30, 40, -27], hemiSky: 0xe8987a, hemiGround: 0x5a2416, fill: 0.92, rim: 0x7a96e0, rimI: 0.6 },
+      floor: { kind: 'basalt', base: 0x443a38, glow: 0xff7a1e, seed: 9 },
       outer: 0x1e1414,
-      pal: { metal: 0x565c66, metalD: 0x2e3238, rust: 0x6b4a32, stripe: 0xd9a43a, molten: 0xff7a1e, beacon: 0xff5040 },
+      pal: { metal: 0x606a76, metalD: 0x30363e, rust: 0x6b4a32, stripe: 0xd9a43a, molten: 0xff7a1e, beacon: 0xff5040 },
       backdrop: [
         { kind: 'volcano', az: 2.4, r: 2.6, scale: 0.75, size: 3000,   // a real Mustafar peak: kilometres across, kilometres off
         color: 0x2a1a18, lava: 0xff6a1a },
         // the forgeworks' plant halls and smelter towers wall in the floor, lava light in their vents
-        { kind: 'district', h: [14, 30], w: [8, 15], color: 0x2e3238, color2: 0x3c424b, trim: 0x6b4a32, setback: 0.4, slits: 0xff7a1e, gap: 10, alleys: 0.2 },
+        { kind: 'district', h: [14, 30], w: [8, 15], color: 0x3c424c, color2: 0x4c535e, trim: 0x7a5236, setback: 0.4, slits: 0xff7a1e, gap: 10, alleys: 0.2, recess: 0x1a0c08 },
         { kind: 'spires', count: 14, r: [1.6, 2.4], h: [10, 24], color: 0x241816, color2: 0x30201c, glow: 0xff5a14, skip: [[2.4, 0.4]] },
         { kind: 'stacks', count: 4, r: [1.6, 1.8], h: [18, 26], color: 0x2e2a2c, band: 0xd9a43a, glow: 0xff8a2a, smoke: 0x5a4440, skip: [[2.4, 0.5]] },
         { kind: 'lavaflows', count: 7, lava: 0xff6a1a, crust: 0x1a0c08, w: 1.4, reach: 3.0 },
@@ -131,11 +135,13 @@ export const WORLD_DIRECTIONS = {
       sky: { top: 0x06060c, horizon: 0x4a5266, below: 0x16141c, bands: 6, stars: 0,
         clouds: { color: 0x525a70, under: 0x20242e, count: 30, lo: 0.25, hi: 0.95 },
         ridges: [{ color: 0x14121a, h: 0.12, rough: 0.12, spiky: 1.2, seed: 21 }] },
-      fog: 0x3c485c, fogStart: 0.2, fogEnd: 1.15, haze: { len: 40, max: 0.92 },
-      light: { sun: 0xb4c4e8, sunI: 1.25, dir: [14, 50, 40], hemiSky: 0x8a9cc0, hemiGround: 0x2a2e3c, fill: 0.85, rim: 0x6a88d8, rimI: 0.6 },
-      floor: { kind: 'ash', base: 0x6a6472, seed: 13 },
+      // art pass: a darker, warmer ash floor so the white armour pops off it, and a lighter haze cap so the monoliths
+      // and the Citadel stay dark silhouettes against the storm instead of one blue-grey wash
+      fog: 0x3c485c, fogStart: 0.2, fogEnd: 1.15, haze: { len: 40, max: 0.8 },
+      light: { sun: 0xb4c4e8, sunI: 1.3, dir: [14, 50, 40], hemiSky: 0x8a9cc0, hemiGround: 0x2e2a36, fill: 0.85, rim: 0x8a9cf0, rimI: 0.7 },
+      floor: { kind: 'ash', base: 0x56505c, seed: 13 },
       outer: 0x2c2834,
-      pal: { stone: 0x6a6070, stoneD: 0x463c4c, dark: 0x1a1620, voidGlow: 0x7f8ee0, beacon: 0x7f8ee0 },
+      pal: { stone: 0x726678, stoneD: 0x463c4c, dark: 0x1a1620, voidGlow: 0x7f8ee0, beacon: 0x7f8ee0 },
       backdrop: [
         { kind: 'pyramid', az: -Math.PI/2, r: 2.2, scale: 1.0, size: 1500,   // the Sith Citadel: a mountain of a building
         color: 0x1a1620, color2: 0x241e2a, glow: 0x8a98e8 },
@@ -227,12 +233,13 @@ export const TRAINING_WORLDS = {
       clouds: { color: 0xf6dcc4, under: 0xb09098, count: 12, lo: 0.3, hi: 0.7 },
       ridges: [{ color: 0x8a8ca4, h: 0.16, rough: 0.12, spiky: 0.5, seed: 4 }, { color: 0x6c7088, h: 0.08, rough: 0.08, seed: 11 }] },
     fog: 0xc4b8c0, fogStart: 0.75, fogEnd: 3.0,
-    light: { sun: 0xffe6c4, sunI: 1.7, dir: [-20, 34, 30], hemiSky: 0xbcd0f0, hemiGround: 0x5a5660, fill: 0.78, rim: 0x9ad8ff, rimI: 0.5 },
-    floor: { kind: 'flagstone', base: 0x9a948a, seed: 6 },
+    // art pass: less fill and a darker floor than the pale terrace stone, so white troopers don't sink into it
+    light: { sun: 0xffe6c4, sunI: 1.7, dir: [-20, 34, 30], hemiSky: 0xbcd0f0, hemiGround: 0x4e4a56, fill: 0.7, rim: 0x9ad8ff, rimI: 0.5 },
+    floor: { kind: 'flagstone', base: 0x88827a, seed: 6 },
     outer: 0x8a8480,
     pal: { stone: 0xb4b0a6, stoneD: 0x88847c, trim: 0xd8c48a, kyber: 0x5ad2ff },
     backdrop: [
-      { kind: 'cliffs', count: 16, r: [1.5, 2.3], h: [10, 22], w: 0.32, color: 0x8a8ca0, color2: 0x7a7c92, skip: [[-1.6, 0.4]] },
+      { kind: 'cliffs', count: 16, r: [1.5, 2.3], h: [10, 22], w: 0.32, color: 0x7c7c92, color2: 0x686a82, skip: [[-1.6, 0.4]] },
       { kind: 'temple', az: -1.6, r: 2.3, scale: 1.2, size: 600,   // the Jedi Temple's ziggurat, its tallest spire ~800 m up
       color: 0xb0aaa4, color2: 0xc4beb6, glow: 0x9ad8ff },
       { kind: 'crystals', count: 7, r: [1.15, 1.3], h: [3, 6], color: 0x8ad8ff, glow: 0x3aa8ff, skip: [[-1.6, 0.5]] },
@@ -298,12 +305,13 @@ export const MISSION_WORLDS = {
       clouds: { color: 0xe0a890, under: 0x8a6670, count: 12, lo: 0.4, hi: 0.85 },
       ridges: [{ color: 0x5a6078, h: 0.22, rough: 0.14, spiky: 0.6, seed: 21 }, { color: 0x484c62, h: 0.12, rough: 0.1, spiky: 0.4, seed: 5 }] },
     fog: 0xa89098, fogStart: 0.75, fogEnd: 3.0,
-    light: { sun: 0xffd0a8, sunI: 1.7, dir: [-24, 30, 30], hemiSky: 0xb0bce0, hemiGround: 0x4a4440, fill: 0.8, rim: 0xffa880, rimI: 0.5 },
-    floor: { kind: 'flagstone', base: 0x8a8478, seed: 9 },
+    // art pass: darker granite peaks against the dusk sky, a cool rim, and a less washed-out valley floor
+    light: { sun: 0xffd0a8, sunI: 1.7, dir: [-24, 30, 30], hemiSky: 0xb0bce0, hemiGround: 0x423c3a, fill: 0.74, rim: 0x9aaee8, rimI: 0.5 },
+    floor: { kind: 'flagstone', base: 0x7e786c, seed: 9 },
     outer: 0x6e6862,
     pal: { stone: 0x9a968e, stoneD: 0x726e68, metal: 0x6a727e, imperial: 0x3a3e46, stripe: 0xd9a43a, crate: 0x8a7458, lamp: 0xffc070 },
     backdrop: [
-      { kind: 'cliffs', count: 20, r: [1.8, 2.5], h: [18, 36], w: 0.3, color: 0x8a8898, color2: 0x7a7a8c },
+      { kind: 'cliffs', count: 20, r: [1.8, 2.5], h: [18, 36], w: 0.3, color: 0x6c6a80, color2: 0x5a5a70 },
       { kind: 'destroyer', az: -1.2, r: 2.3, y: 26, scale: 1.0, color: 0x8a8c96, color2: 0x767884, glow: 0x9ad8ff },
     ],
     ambient: { kind: 'dust', color: 0xffe0c8, count: 110, size: 0.26 },
@@ -343,10 +351,12 @@ export const MISSION_WORLDS = {
       clouds: { color: 0x5a4640, under: 0x2e2420, count: 18, lo: 0.3, hi: 0.9 },
       ridges: [{ color: 0x9c7250, h: 0.08, rough: 0.05, seed: 3 }] },
     fog: 0x8a5a3a, fogStart: 0.8, fogEnd: 3.0,
-    light: { sun: 0xffc890, sunI: 1.7, dir: [18, 34, 30], hemiSky: 0xd0a888, hemiGround: 0x5a3a26, fill: 0.85, rim: 0xff8a40, rimI: 0.6 },
-    floor: { kind: 'flagstone', base: 0x9a7c58, seed: 23 },
+    // art pass: a cooler smoke-shadow rim against the fire light, a greyer floor than the sandstone walls, and the
+    // charred stacks a burnt umber rather than a black hole in the frame
+    light: { sun: 0xffc890, sunI: 1.7, dir: [18, 34, 30], hemiSky: 0xc0a898, hemiGround: 0x4e3628, fill: 0.82, rim: 0x8ea4dc, rimI: 0.5 },
+    floor: { kind: 'flagstone', base: 0x8e7a62, seed: 23 },
     outer: 0x7a5c40,
-    pal: { stone: 0xb89a70, stoneD: 0x8e7250, trim: 0xd8b46a, wood: 0x5a3a24, woodD: 0x3a2416, char: 0x241a14, scroll: 0xd8c8a0,
+    pal: { stone: 0xb89a70, stoneD: 0x8e7250, trim: 0xd8b46a, wood: 0x5e3c24, woodD: 0x3e2618, char: 0x3a2a20, scroll: 0xd8c8a0,
            fire: 0xff8a2a, ember: 0xffc060, holo: 0x7ad8ff, sky: 0x6a4a3a },
     backdrop: [
       { kind: 'district', h: [14, 26], w: [7, 13], color: 0xa8865e, color2: 0x8e7050, trim: 0x8a6a46, roof: 0x9a6a42, domes: 0.3, spires: 0.12, setback: 0.3, gap: 9 },
@@ -362,9 +372,9 @@ export const MISSION_WORLDS = {
   prison: {   // the prison outpost on Lothal: a grey Imperial yard under the Grass Sea's afternoon sky
     sky: { top: 0x3e6aa8, horizon: 0xf0d098, below: 0x9a9a6a, bands: 7, stars: 0,
       sun: { el: 0.24, color: 0xfff0c0, halo: 0xffd890, size: 20 },
-      clouds: { color: 0xf8e8d0, under: 0xc0a890, count: 12, lo: 0.45, hi: 0.9 },
+      clouds: { color: 0xeee0c8, under: 0xb09c88, count: 12, lo: 0.45, hi: 0.9 },
       ridges: [{ color: 0x8a9a7a, h: 0.07, rough: 0.05, seed: 6 }] },
-    fog: 0xc8c4a0, fogStart: 0.85, fogEnd: 3.2,
+    fog: 0xb8b896, fogStart: 0.85, fogEnd: 3.2,   // art pass: a less milky haze so the yard doesn't wash out
     light: { sun: 0xfff0d0, sunI: 1.7, dir: [-24, 40, 26], hemiSky: 0xbcd0f0, hemiGround: 0x4a4e52, fill: 0.85, rim: 0xffd8a0, rimI: 0.45 },
     floor: { kind: 'deck', base: 0x6a6e72, stripe: 0xd9a43a, seed: 31 },
     outer: 0x767c44,
@@ -385,8 +395,8 @@ export const MISSION_WORLDS = {
     mist: false,   // indoors
     sky: { top: 0x0e1218, horizon: 0x2a3444, below: 0x1a2028, bands: 5, stars: 0 },
     fog: 0x3a4658, fogStart: 1.3, fogEnd: 3.8, clear: 0x0e1218,
-    light: { sun: 0xe8f0ff, sunI: 1.5, dir: [-14, 40, 22], hemiSky: 0xb8cce8, hemiGround: 0x3a4250, fill: 0.95, rim: 0xffb070, rimI: 0.45 },
-    floor: { kind: 'snow', base: 0x8a98aa, seed: 37 },
+    light: { sun: 0xe8f0ff, sunI: 1.45, dir: [-14, 40, 22], hemiSky: 0xb8cce8, hemiGround: 0x343c4a, fill: 0.82, rim: 0xffb070, rimI: 0.5 },
+    floor: { kind: 'snow', base: 0x5e6c80, seed: 37 },   // art pass: packed, trodden snow, a value below the white troopers
     outer: 0x5a6474,
     pal: { ice: 0x9ab4cc, iceD: 0x6e88a4, rock: 0x4a5462, metal: 0x8a929c, metalD: 0x4a525c, stripe: 0xd06a2a, pod: 0xb0aa9a, crate: 0x6a5a48,
            lamp: 0xffc070, shield: 0x7ad8ff, outside: 0xc8d4e0, dusk: 0x5a6e8a, mark: 0xd06a2a, shed: 0xbfe8ff },
@@ -400,8 +410,8 @@ export const MISSION_WORLDS = {
     sky: { top: 0x06060c, horizon: 0x4a5266, below: 0x16141c, bands: 6, stars: 0,
       clouds: { color: 0x525a70, under: 0x20242e, count: 30, lo: 0.25, hi: 0.95 },
       ridges: [{ color: 0x14121a, h: 0.12, rough: 0.12, spiky: 1.2, seed: 21 }] },
-    fog: 0x3c485c, fogStart: 0.15, fogEnd: 0.95, haze: { len: 40, max: 0.92 },
-    light: { sun: 0xb4c4e8, sunI: 1.25, dir: [14, 50, 40], hemiSky: 0x8a9cc0, hemiGround: 0x2a2e3c, fill: 0.85, rim: 0x6a88d8, rimI: 0.6 },
+    fog: 0x3c485c, fogStart: 0.15, fogEnd: 0.95, haze: { len: 40, max: 0.8 },   // art pass: the Citadel stays a dark shape in the haze
+    light: { sun: 0xb4c4e8, sunI: 1.3, dir: [14, 50, 40], hemiSky: 0x8a9cc0, hemiGround: 0x2a2e3c, fill: 0.92, rim: 0x8a9cf0, rimI: 0.7 },
     floor: { kind: 'flagstone', base: 0x4a4452, seed: 41 },
     outer: 0x2c2834,
     pal: { stone: 0x5a5262, stoneD: 0x3a3442, dark: 0x1a1620, robe: 0x141018, metal: 0x4a4652, voidGlow: 0x7f8ee0 },
@@ -431,13 +441,13 @@ export const BATTLE_WORLDS = {
       clouds: { color: 0xf8e8d0, under: 0xc0a890, count: 14, lo: 0.45, hi: 0.9 },
       ridges: [{ color: 0x8a9a7a, h: 0.07, rough: 0.05, seed: 6 }, { color: 0x7a8a68, h: 0.04, rough: 0.06, seed: 13 }] },
     fog: 0xc8c4a0, fogStart: 0.42, fogEnd: 1.65,
-    light: { sun: 0xfff0d0, sunI: 1.75, dir: [-26, 40, 30], hemiSky: 0xbcd0f0, hemiGround: 0x5a5a3a, fill: 0.8, rim: 0xffd8a0, rimI: 0.5 },
+    light: { sun: 0xfff0d0, sunI: 1.75, dir: [-26, 40, 30], hemiSky: 0xbcd0f0, hemiGround: 0x4a4a32, fill: 0.76, rim: 0xa8c0f0, rimI: 0.45 },
     floor: { kind: 'grass', base: 0x7e8448, seed: 21 },
     outer: 0x767c44,
     pal: { stone: 0x8e8470, stoneD: 0x6a6252, bag: 0x9e9070, metal: 0x7a828e, imperial: 0x3e424a, crate: 0x7e6a50,
            stripe: 0xd9a43a, lamp: 0xffc070, scorch: 0x3a3626, blast: 0xff7a30, beacon: 0xff5040 },
     backdrop: [
-      { kind: 'spires', count: 22, r: [1.35, 2.3], h: [18, 40], w: [3, 6], color: 0x8a8070, color2: 0x7a705e },
+      { kind: 'spires', count: 22, r: [1.35, 2.3], h: [18, 40], w: [3, 6], color: 0x7c6c5a, color2: 0x6a5c4c },   // art pass: darker rock, so the spires stand off the pale sky
       { kind: 'dunes', count: 14, r: [1.08, 1.3], h: 4, color: 0x767c44 },
       { kind: 'walker', az: -1.9, r: 1.7, scale: 1.4, color: 0x8a909a, color2: 0x6a7078, glow: 0xff5a3a },
       { kind: 'destroyer', az: -1.3, r: 2.0, y: 46, scale: 1.3, color: 0x8a8c96, color2: 0x767884, glow: 0x9ad8ff },
@@ -456,15 +466,17 @@ export const BATTLE_WORLDS = {
       sun: { el: 0.18, color: 0xf0f4ff, halo: 0xc8d8f0, size: 16 },
       clouds: { color: 0xd8e0ea, under: 0x8a98aa, count: 26, lo: 0.2, hi: 0.9 },
       ridges: [{ color: 0x8a9ab0, h: 0.16, rough: 0.12, spiky: 0.5, seed: 19 }, { color: 0x6e7e96, h: 0.08, rough: 0.08, seed: 4 }] },
-    fog: 0xa4b0c0, fogStart: 0.3, fogEnd: 1.35,
-    light: { sun: 0xeef4ff, sunI: 1.6, dir: [24, 38, 34], hemiSky: 0xc0d0e8, hemiGround: 0x4a5262, fill: 0.92, rim: 0xffb080, rimI: 0.45 },
-    floor: { kind: 'snow', base: 0x8a98aa, seed: 27 },   // mid grey-blue, never white: the troopers must read against it
+    // art pass: the snowfield and haze a step darker and bluer (the white troopers were sinking into it), less flat
+    // fill so the drifts and berms show their form, a warm rim from the low sun on the fighters
+    fog: 0x909eb4, fogStart: 0.3, fogEnd: 1.35,
+    light: { sun: 0xeef4ff, sunI: 1.55, dir: [24, 38, 34], hemiSky: 0xb4c6e2, hemiGround: 0x3e4656, fill: 0.8, rim: 0xffb080, rimI: 0.5 },
+    floor: { kind: 'snow', base: 0x66768e, seed: 27 },   // mid grey-blue, never white: the troopers must read against it
     outer: 0x8494a6,
-    pal: { snow: 0x9eaabb, snowD: 0x76859a, bag: 0x8a7a5e, ice: 0x7e96b0, rock: 0x5a6474, plank: 0x6a5a48, metal: 0x8a929c, metalD: 0x4a525c, imperial: 0x3a3e46,
+    pal: { snow: 0x909eb2, snowD: 0x6a7a90, bag: 0x8a7a5e, ice: 0x7e96b0, rock: 0x5a6474, plank: 0x6a5a48, metal: 0x8a929c, metalD: 0x4a525c, imperial: 0x3a3e46,
            stripe: 0xd9a43a, lamp: 0xffc070, shield: 0x7ad8ff, scorch: 0x3a4252, blast: 0xff7a40, beacon: 0xff5040 },
     backdrop: [
-      { kind: 'cliffs', count: 20, r: [1.4, 2.2], h: [16, 32], w: 0.3, color: 0x7a8aa0, color2: 0x6a7a92, skip: [[-1.0, 0.3]] },
-      { kind: 'dunes', count: 16, r: [1.06, 1.3], h: 4, color: 0x8494a6 },
+      { kind: 'cliffs', count: 20, r: [1.4, 2.2], h: [16, 32], w: 0.3, color: 0x6a7a92, color2: 0x58687e, skip: [[-1.0, 0.3]] },
+      { kind: 'dunes', count: 16, r: [1.06, 1.3], h: 4, color: 0x7a8aa0 },
       { kind: 'walker', az: -1.0, r: 1.5, scale: 1.6, color: 0x7a8494, color2: 0x5e6878, glow: 0xff5a3a, stand: true },
       { kind: 'walker', az: -2.3, r: 1.8, scale: 1.4, color: 0x7a8494, color2: 0x5e6878, glow: 0xff5a3a, stand: true },
     ],
@@ -482,8 +494,8 @@ export const BATTLE_WORLDS = {
       clouds: { color: 0xf4e4c8, under: 0xc8a888, count: 6, lo: 0.55, hi: 0.85 },
       ridges: [{ color: 0xc09a6a, h: 0.06, rough: 0.04, seed: 9 }, { color: 0xa88458, h: 0.04, rough: 0.05, seed: 15 }] },
     fog: 0xdcc098, fogStart: 0.45, fogEnd: 1.7,
-    light: { sun: 0xfff0d0, sunI: 1.7, dir: [18, 46, 22], hemiSky: 0xc4d4f0, hemiGround: 0x7a6040, fill: 0.78, rim: 0xffc890, rimI: 0.5 },
-    floor: { kind: 'sand', base: 0xa88a60, seed: 33 },
+    light: { sun: 0xfff0d0, sunI: 1.7, dir: [18, 46, 22], hemiSky: 0xc4d4f0, hemiGround: 0x6a5238, fill: 0.74, rim: 0x9ab4e8, rimI: 0.45 },
+    floor: { kind: 'sand', base: 0xa48660, seed: 33 },
     outer: 0xa4865c,
     pal: { hull: 0x8e8e88, hullD: 0x5e5e5a, rust: 0x7a5236, sand: 0xae8e60, cloth: 0x9a6a46, imperial: 0x3a3e46, stripe: 0xd9a43a,
            dark: 0x2a2622, lamp: 0xffc070, plasma: 0x6ad8ff, beacon: 0xff5040 },
@@ -491,7 +503,7 @@ export const BATTLE_WORLDS = {
       { kind: 'wreck', az: -2.2, r: 1.75, scale: 1.2, size: 2400,   // the Inflictor: a whole Star Destroyer, half buried
          color: 0x8a8a86, color2: 0x6e6e6a },
       { kind: 'wreck', az: 0.5, r: 2.0, scale: 0.8, color: 0x8a8a86, color2: 0x6e6e6a, roll: -0.5 },
-      { kind: 'mesas', count: 10, r: [1.6, 2.3], h: [10, 22], w: [10, 20], color: 0xb08a5e, color2: 0x9a7650, skip: [[-2.2, 0.5]] },
+      { kind: 'mesas', count: 10, r: [1.6, 2.3], h: [10, 22], w: [10, 20], color: 0x9c6c4a, color2: 0x885c40, skip: [[-2.2, 0.5]] },   // art pass: red rock, not the sand's colour
       { kind: 'dunes', count: 18, r: [1.05, 1.35], h: 5, color: 0xa4865c },
     ],
     ambient: { kind: 'dust', color: 0xffe8c0, count: 200, size: 0.3 },
@@ -506,8 +518,8 @@ export const BATTLE_WORLDS = {
     sky: { top: 0x06060c, horizon: 0x4a5266, below: 0x16141c, bands: 6, stars: 0,
       clouds: { color: 0x525a70, under: 0x20242e, count: 30, lo: 0.25, hi: 0.95 },
       ridges: [{ color: 0x14121a, h: 0.1, rough: 0.12, spiky: 1.2, seed: 17 }] },
-    fog: 0x3c485c, fogStart: 0.12, fogEnd: 0.8, haze: { len: 40, max: 0.92 },
-    light: { sun: 0xb4c4e8, sunI: 1.25, dir: [14, 50, 40], hemiSky: 0x8a9cc0, hemiGround: 0x2a2e3c, fill: 0.85, rim: 0x6a88d8, rimI: 0.6 },
+    fog: 0x3c485c, fogStart: 0.12, fogEnd: 0.8, haze: { len: 40, max: 0.8 },
+    light: { sun: 0xb4c4e8, sunI: 1.3, dir: [14, 50, 40], hemiSky: 0x8a9cc0, hemiGround: 0x2e2a36, fill: 0.88, rim: 0x8a9cf0, rimI: 0.7 },
     floor: { kind: 'ash', base: 0x6a6472, seed: 29 },
     outer: 0x2c2834,
     pal: { stone: 0x5a5262, stoneD: 0x3e3846, bag: 0x6a6258, metal: 0x6a6e7a, imperial: 0x2a2630, crate: 0x5a4e46,

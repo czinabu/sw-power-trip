@@ -108,26 +108,42 @@ export const SEE = {
   amt: { value: 0.55 },     // share of a fully faded prop's pixels dropped: 0 = solid, 1 = gone
 };
 const seeCache = new Map();
-/* the see-through variant of a baked arena material (cached per source material, shared across rebuilds) */
-export function seeThrough(src){
-  if (seeCache.has(src.uuid)) return seeCache.get(src.uuid);
+/* the see-through variant of a baked arena material (cached per source material, shared across rebuilds).
+   shade: a SURFACE (not an outline hull) also takes the arena's form shading (PROP_SHADE below) */
+export function seeThrough(src, shade = false){
+  const id = src.uuid + (shade ? '|s' : '');
+  if (seeCache.has(id)) return seeCache.get(id);
   const m = src.clone();
   const prev = src.onBeforeCompile, key = src.customProgramCacheKey();
   m.onBeforeCompile = (sh, r) => {
     prev.call(src, sh, r);
     sh.uniforms.uSeeTex = SEE.tex; sh.uniforms.uSeeAmt = SEE.amt;
-    sh.vertexShader = `attribute float aProp;\nuniform sampler2D uSeeTex;\nvarying float vSee;\n` + sh.vertexShader
+    sh.vertexShader = `attribute float aProp;\nuniform sampler2D uSeeTex;\nvarying float vSee;\n${shade ? 'varying float vPropK;\nvarying float vPropY;\n' : ''}` + sh.vertexShader
       .replace('#include <project_vertex>', `#include <project_vertex>
   int sid = int(floor(aProp + 0.5));
-  vSee = sid < 0 ? 0.0 : texelFetch(uSeeTex, ivec2(sid % ${FADE_W}, sid / ${FADE_W}), 0).r;`);
-    sh.fragmentShader = 'varying float vSee;\nuniform float uSeeAmt;\n' + sh.fragmentShader
+  vSee = sid < 0 ? 0.0 : texelFetch(uSeeTex, ivec2(sid % ${FADE_W}, sid / ${FADE_W}), 0).r;${shade ? `
+  vPropK = fract(sin(float(sid) * 12.9898 + 4.1) * 43758.5453);
+  vPropY = (modelMatrix * vec4(transformed, 1.0)).y;` : ''}`);
+    sh.fragmentShader = `varying float vSee;\nuniform float uSeeAmt;\n${shade ? 'varying float vPropK;\nvarying float vPropY;\n' : ''}` + sh.fragmentShader
       .replace('void main() {', `void main() {
   if (vSee > 0.0 && vSee * uSeeAmt > fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))))) discard;`);
+    if (shade) sh.fragmentShader = sh.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>
+  diffuseColor.rgb *= (1.0 + (vPropK - 0.5) * ${PROP_SHADE.jitter.toFixed(3)})
+    * mix(${PROP_SHADE.foot.toFixed(3)}, 1.0, smoothstep(0.0, ${PROP_SHADE.footH.toFixed(2)}, vPropY))
+    * (1.0 + ${PROP_SHADE.crown.toFixed(3)} * smoothstep(${PROP_SHADE.crownY[0].toFixed(1)}, ${PROP_SHADE.crownY[1].toFixed(1)}, vPropY));`);
   };
-  m.customProgramCacheKey = () => key + '|see';
-  seeCache.set(src.uuid, m);
+  m.customProgramCacheKey = () => key + '|see' + (shade ? 's' : '');
+  seeCache.set(id, m);
   return m;
 }
+
+/* FORM SHADING for the baked arena surfaces, so a courtyard of same-coloured blocks doesn't read as one flat mass:
+   jitter  each prop's value is nudged by up to ±half this (seeded by its id: the same every run), so neighbouring
+           walls, crates and columns separate
+   foot    every prop darkens toward the ground (to this share of its colour over footH metres): it sits ON the
+           floor instead of floating, even on tiers without ambient occlusion
+   crown   tall things lighten a little toward the sky between crownY metres: skylines lift off the walls below */
+export const PROP_SHADE = { jitter: 0.16, foot: 0.68, footH: 1.6, crown: 0.1, crownY: [5, 26] };
 
 /* FAR HAZE — the backdrop stands hundreds of metres out, far past where the arena's fog goes solid. Its materials swap
    the scene fog for aerial perspective: from the fog's near distance the haze builds toward `max` over `len` metres
@@ -230,7 +246,7 @@ export function bakeArena(group, width = 0.045, far = false){
     const merged = mergeGeometries(b.geos, false);
     for (const g of b.geos) g.dispose();
     if (!merged) continue;
-    const m = new THREE.Mesh(merged, seeThrough(b.mat));
+    const m = new THREE.Mesh(merged, seeThrough(b.mat, true));
     m.castShadow = b.shadow; m.receiveShadow = true;
     m.userData.baked = true;
     group.add(m); calls++;

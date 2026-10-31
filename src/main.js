@@ -218,3 +218,19 @@ Object.assign(window.GAME, { cutscene: { playScene, playOpening, playDuelIntro, 
 import { FORMS } from './data/forms.js';
 import { setLoadout } from './player/jedi/stance.js';
 Object.assign(window.GAME, { FORMS, setLoadout });
+
+/* every map's level, for the art capture tool (tools/shots/maps.mjs): build any arena in place and frame it */
+import { buildArena } from './world/arena.js';
+import { findClearSpawn } from './world/collision.js';
+import { TRAINING_LEVELS } from './data/tutorial.js';
+import { SANDBOX_LEVELS } from './data/sandbox.js';
+import { MISSIONS } from './data/missions.js';
+const byLayout = id => Object.values(MISSIONS).find(m => m.level && m.level.layout === id).level;
+Object.assign(window.GAME, { buildArena, findClearSpawn, mapLevels: () => ({
+  temple: LEVELS[0], foundry: LEVELS[1], plains: LEVELS[2],
+  archive: { ...LEVELS[0], layout: 'archive', arena: 48 }, sith: { ...LEVELS[2], layout: 'sith', arena: 64 },
+  hall: TRAINING_LEVELS.jedi, forge: TRAINING_LEVELS.mando, dojo: SANDBOX_LEVELS.jedi, throne: SANDBOX_LEVELS.mando,
+  refuge: MISSIONS.refuge.level, pursuit: MISSIONS.pursuit.level, prison: byLayout('prison'),
+  hangar: byLayout('hangar'), approach: MISSIONS['strike-exegol'].level,
+  grassland: BATTLE_MAPS.grassland.level, icefront: BATTLE_MAPS.icefront.level, graveyard: BATTLE_MAPS.graveyard.level,
+}) });

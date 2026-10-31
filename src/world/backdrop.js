@@ -113,7 +113,7 @@ const BUILD = {
     for (const a of angles(o.count, R, o.skip)){
       const r = half * (o.r[0] + R()*(o.r[1] - o.r[0])), [x, z] = P(a, r);
       const h = o.h[0] + R()*(o.h[1] - o.h[0]), w = half * (o.w || 0.3) * (0.8 + R()*0.5);
-      keepOut([put(grp, new THREE.IcosahedronGeometry(1, 0), mat(R() < 0.5 ? o.color : o.color2 || o.color), x, h*0.35, z, R()*PI, R()*PI, R()*PI, [w, h, w*0.7])]);
+      keepOut([put(grp, crag(Math.floor(a * 1000)), mat(R() < 0.5 ? o.color : o.color2 || o.color), x, h*0.35, z, R()*PI, R()*PI, R()*PI, [w, h, w*0.7])]);
     }
   },
   /* city towers with lit windows */
@@ -324,6 +324,7 @@ const BUILD = {
         const h = rand2(R, ...(o.h || [12, 26])), col = R() < 0.5 ? o.color : (o.color2 ?? o.color);
         put(grp, new THREE.BoxGeometry(sx, h, sz), mat(col), x, h/2, z);
         put(grp, new THREE.BoxGeometry(sx + 0.6, 0.8, sz + 0.6), mat(o.trim ?? o.color2 ?? o.color), x, h + 0.4, z);   // parapet
+        if (o.detail !== false) facade(grp, o, x, z, sx, sz, h, col, -nx, -nz);
         if (o.setback && R() < o.setback){   // a narrower storey stepped back on top
           const h2 = h * rand2(R, 0.25, 0.5);
           put(grp, new THREE.BoxGeometry(sx * 0.6, h2, sz * 0.6), mat(o.color2 ?? o.color), x, h + h2/2, z);
@@ -355,6 +356,46 @@ const BUILD = {
     }
   },
 };
+
+/* a CRAG: a once-subdivided icosahedron with its corners pushed in and out, so a cliff reads as broken rock with
+   faces catching the light at many angles instead of one big faceted gem (a handful of variants, shared) */
+const cragCache = new Map();
+function crag(seed){
+  const k = ((seed % 6) + 6) % 6;
+  if (cragCache.has(k)) return cragCache.get(k);
+  const g = new THREE.IcosahedronGeometry(1, 1), p = g.attributes.position, R = rng(k * 7919 + 13);
+  const moved = new Map();
+  for (let i = 0; i < p.count; i++){
+    const id = p.getX(i).toFixed(3) + ',' + p.getY(i).toFixed(3) + ',' + p.getZ(i).toFixed(3);   // shared corners move together
+    if (!moved.has(id)) moved.set(id, 0.78 + R() * 0.4);
+    const f = moved.get(id);
+    p.setXYZ(i, p.getX(i) * f, p.getY(i) * f, p.getZ(i) * f);
+  }
+  g.computeVertexNormals();
+  cragCache.set(k, g);
+  return g;
+}
+
+/* FACADE detail on a district block, so the city reads as buildings rather than plain boxes: a darker plinth the
+   block stands on, a string course every couple of storeys, and on the face toward the arena dark door and window
+   recesses (`recess`, default a deep shade of the wall; no outline, so they stay crisp at distance). All of it bakes
+   into the backdrop's per-material meshes, and it rolls its own dice so the district's layout is unchanged. */
+const dim = (h, k) => new THREE.Color(h).multiplyScalar(k).getHex();
+function facade(grp, o, x, z, sx, sz, h, col, fx, fz){
+  const R = rng((Math.round(x * 7.3) * 73856093) ^ (Math.round(z * 5.1) * 19349663) ^ Math.round(h * 13));   // its own dice: the layout's rolls stay as they were
+  const plinth = o.plinth ?? dim(o.trim ?? col, 0.78), course = o.trim ?? o.color2 ?? col;
+  put(grp, new THREE.BoxGeometry(sx + 0.3, 2.2, sz + 0.3), mat(plinth), x, 1.1, z);
+  for (let y = 8; y < h - 3; y += 8) put(grp, new THREE.BoxGeometry(sx + 0.24, 0.45, sz + 0.24), mat(course), x, y, z);
+  const rec = mat(o.recess ?? dim(col, 0.42)), face = fz ? sx : sz, along = fz !== 0;
+  const at = (t, y, w, hh) => {
+    const m = put(grp, new THREE.BoxGeometry(along ? w : 0.3, hh, along ? 0.3 : w), rec,
+      x + (along ? t : fx * (sx/2 + 0.02)), y, z + (along ? fz * (sz/2 + 0.02) : t));
+    m.userData.noOutline = true;
+  };
+  if (R() < 0.6) at(rand2(R, -face*0.25, face*0.25), 1.9, 2.0, 3.8);   // a doorway
+  if (o.windows) return;   // lit windows already fill the face
+  for (let y = 5.5; y < h - 3; y += 4) for (let t = -face/2 + 1.8; t < face/2 - 1.2; t += 3.2) if (R() < (o.dark ?? 0.45)) at(t, y, 1.0, 1.7);
+}
 
 /* DEPTH — the backdrop used to stand in a ring just past the arena walls (1.5 to 2.7 × arenaHalf), so a "distant"
    mountain range was 50 m away and a Star Destroyer hung 50 m off: a diorama. Each kind now stretches the gap past

@@ -35,6 +35,10 @@ Survival mode rotates through the same three worlds.
   dome, the outer ground and the camera's far plane grow to clear the furthest one.
 - **Mood follows the fight.** `beats` eases fog, fill and sky tint from the first wave to the last, and the boss
   pushes it all the way. `storm` throws a lightning strike plus a double flash, more often as the waves climb.
+- **Form shading:** every baked prop darkens toward its foot, lifts a little toward the sky on tall pieces, and takes
+  a small per-prop value nudge (`PROP_SHADE` in `world/ink.js`), so a courtyard of one material still separates into
+  walls, crates and columns and everything sits on the ground even without ambient occlusion. Keep floors a value away
+  from the walls round them (Jedha's floor is a greyer stone than its sandstone city) and a value below white armour.
 - **Ink outlines:** `ink` (default 0.045) for arena props, `inkFar` (default 0.16) for the backdrop so it still
   reads at distance. Double-sided cloth (banners) is baked without an outline.
 
@@ -148,6 +152,9 @@ wider than `BIG_ARENA` (100, `world/arena.js`) counts as one, and `shared.arenaB
   same order as Exegol's (`npm run smoke:maps` prints all of it).
 
 ## Previewing
+
+`npm run build && npm run shots:maps -- shots temple,icefront` saves two gameplay-camera shots of each named map (all of
+them when the list is left out) with troopers standing in front of the hero: use it for before/after on an art change.
 
 `npm run dev`, then open the game with `?world=worlds` (default), `?world=siege` or `?world=frozen` to play any
 direction. To add a world, copy a block in `WORLD_DIRECTIONS`, change the colours and the `backdrop` list, and point
