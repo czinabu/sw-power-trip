@@ -1,6 +1,7 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
 // updateHud(): per-frame HUD refresh.
 
+import * as THREE from 'three';
 import { CFG } from '../data/config.js';
 import { LEVELS } from '../data/levels.js';
 import { clamp } from '../utils.js';
@@ -19,7 +20,9 @@ import { readoutLiveHtml } from './readout-ui.js';
 import { readoutOn } from '../game/readout.js';
 import { svgIcon, SLOT_ICON } from './icons.js';
 import { trainingProgress, trainingChecklist } from '../game/tutorial.js';
-import { missionChecklist } from '../game/mission.js';
+import { camera } from '../engine/renderer.js';
+import { playerPos } from '../player/helpers.js';
+import { missionChecklist, objectiveTarget } from '../game/mission.js';
 import { chapterLabel } from '../game/campaign.js';
 import { objectiveHud } from '../game/objectives.js';
 import { MOBILITY, MANDO_MOBILITY } from '../data/mobility.js';
@@ -39,6 +42,8 @@ const $ = (id) => document.getElementById(id);
 function renderChecklist(c){
   const el = $('objlist');
   if (!c){ el.classList.remove('on'); return; }
+  const nowKey = c.items.findIndex(i => i.now) + '/' + c.items.filter(i => i.done).length;
+  if (el._now !== nowKey){ el._now = nowKey; el.classList.remove('fresh'); void el.offsetWidth; el.classList.add('fresh'); }   // the objective changed: flash the list
   const cur = Math.max(0, c.items.findIndex(i => i.now)), n = c.items.length;
   const from = Math.max(0, Math.min(cur - 2, n - 7)), rows = c.items.slice(from, from + 7);
   el.classList.add('on');
@@ -46,6 +51,25 @@ function renderChecklist(c){
     '<div class="ol-i' + (i.done ? ' done' : i.now ? ' now' : '') + '"><b>' + (i.done ? '✓' : i.now ? '▶' : '○') + '</b><span>' + i.text + '</span></div>' +
       (i.sub && i.sub.length ? '<div class="ol-s">' + i.sub.join('<br>') + (i.frac != null ? '<span class="ol-b"><i style="width:' + (clamp(i.frac, 0, 1) * 100).toFixed(1) + '%"></i></span>' : '') + '</div>' : '')).join('') +
     (n > 7 ? '<div class="ol-n">' + c.items.filter(i => i.done).length + ' / ' + n + ' DONE</div>' : ''));
+}
+
+// WAYPOINT: a gold diamond over the live objective's spot, pinned to the screen edge when it is off-screen or behind
+const _wp = new THREE.Vector3();
+function renderWaypoint(on){
+  const el = $('waypoint'); if (!el) return;
+  const t = on ? objectiveTarget() : null, pp = t && playerPos();
+  const d = t ? Math.hypot(t.x - pp.x, t.z - pp.z) : 0;
+  if (!t || d < 7){ el.classList.remove('on'); return; }
+  _wp.set(t.x, 3.2, t.z).project(camera);
+  let x = _wp.x, y = _wp.y;
+  if (_wp.z > 1){ x = -x; y = -y; }   // behind the camera: flip so it points the way to turn
+  const off = _wp.z > 1 || Math.abs(x) > 0.92 || Math.abs(y) > 0.85;
+  if (off){ const k = Math.max(Math.abs(x) / 0.92, Math.abs(y) / 0.85) || 1; x /= k; y /= k; if (_wp.z > 1) y = Math.min(y, -0.85); }
+  el.style.left = ((x + 1) / 2 * 100).toFixed(2) + '%';
+  el.style.top = ((1 - y) / 2 * 100).toFixed(2) + '%';
+  el.classList.toggle('edge', off);
+  setText(el.querySelector('.wp-d'), Math.round(d) + ' m');
+  el.classList.add('on');
 }
 
 /* ABILITY COOLDOWNS — the slot shades over and counts down while a power recharges. The full length is learned from
@@ -147,6 +171,7 @@ export function updateHud(){
   // run progress: where you are · which wave · what's left
   const hostiles = total > 0 ? '<span class="wi-h">' + total + ' HOSTILE' + (total === 1 ? '' : 'S') + ' REMAIN</span>' : '';
   document.body.classList.toggle('training', !!G.training);
+  document.body.classList.toggle('mission-play', !!G.mission);
   document.body.classList.toggle('sandbox', !!G.sandbox);
   if (G.training){
     const tp = trainingProgress();
@@ -174,6 +199,7 @@ export function updateHud(){
       (shared.boss ? '' : hostiles));
   }
   { const ro = $('readout'), on = !!G.sandbox && G.mode === 'play' && readoutOn(); ro.style.display = on ? 'block' : 'none'; if (on) setHtml(ro, readoutLiveHtml()); }
+  renderWaypoint(G.mode === 'play' && !G.sandbox && !G.training && !!G.mission);
   renderChecklist(G.mode === 'play' && !G.sandbox ? (G.training ? trainingChecklist() : G.mission ? missionChecklist() : null) : null);
   // CUT HEIGHT (player/jedi/cutaim.js): three ticks beside the crosshair, the lit one is where your next cut goes
   { const ch = $('cuth'), on = G.mode === 'play' && (G.hero === 'mando' ? player.weapon === 'darksaber' : !player.holstered);

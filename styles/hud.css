@@ -392,3 +392,20 @@ body.cutscene #hud,body.cutscene #boonstrip,body.cutscene #threats,body.cutscene
 @keyframes csBot{from{transform:translateY(100%)}to{transform:none}}
 @keyframes csLine{from{opacity:0;transform:translate(-50%,6px)}to{opacity:1;transform:translate(-50%,0)}}
 @keyframes csRise{0%{opacity:0;transform:translateY(10px)}12%{opacity:1;transform:none}85%{opacity:1}100%{opacity:0}}
+
+/* ---------- mission objectives, made hard to miss: flash on change, bigger panel, waypoint ---------- */
+body.mission-play #objlist{width:330px;border-color:rgba(255,210,90,.5);background:rgba(4,10,22,.88)}
+#objlist .ol-h{font-size:14px}
+#objlist .ol-i{font-size:16px}
+#objlist .ol-i.now{color:#fff;font-weight:700}
+#objlist .ol-s{font-size:13.5px;color:var(--ink)}
+#objlist.fresh{animation:objflash 2.6s ease-out}
+@keyframes objflash{0%,30%{box-shadow:0 0 0 2px var(--gold),0 0 30px var(--gold-glow);transform:scale(1.06);transform-origin:top right}100%{box-shadow:0 4px 18px rgba(0,0,0,.45);transform:none}}
+#waveinfo .wi-w{font-size:23px}
+#waveinfo .wi-h{font-size:13.5px;color:var(--ink)}
+#waypoint{position:fixed;display:none;transform:translate(-50%,-50%);pointer-events:none;z-index:11;text-align:center;font:700 12px/1 var(--font-ui);letter-spacing:1.4px;color:var(--gold);text-shadow:0 1px 6px #000}
+#waypoint.on{display:block}
+#waypoint i{display:block;width:16px;height:16px;margin:0 auto 4px;background:var(--gold);transform:rotate(45deg);border:2px solid rgba(0,0,0,.6);box-shadow:0 0 14px var(--gold-glow);animation:wpbob 1.2s ease-in-out infinite}
+#waypoint.edge{opacity:.85}
+@keyframes wpbob{50%{box-shadow:0 0 24px var(--gold)}}
+@media (max-width:700px){ body.mission-play #objlist{width:230px} }
