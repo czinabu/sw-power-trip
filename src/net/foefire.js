@@ -15,7 +15,7 @@ import { throwGrenade, grenades } from '../enemies/grenades.js';
 import { staggerEnemy } from '../enemies/damage.js';
 import { endLunge, paintLungeLine } from '../enemies/tactics.js';
 import { updateAimLine } from '../enemies/specials.js';
-import { addPosture, drainBreath } from '../enemies/duel.js';
+import { addPosture, drainBreath, netGuardHit } from '../enemies/duel.js';
 import { DUEL } from '../data/duel.js';
 import { gainXp } from '../game/progression.js';
 import { hurtPlayer } from '../player/damage.js';
@@ -80,6 +80,20 @@ on('hres', (m) => {
     if (!(m.k === 'brace' && e.dp && e.dp.brace && addPosture(e, DUEL.posture.parry, ax, az))) staggerEnemy(e, ax, az);
     if (m.r === 'parried') drainBreath(e, DUEL.breath.parried);
   } else if (m.r === 'blocked' && m.k !== 'lunge') blockedOnBlade(e);
+});
+
+/* ---------------- the guest's blows on a duellist's guard ----------------
+   The guest's screen decides a cut is turned (enemies/duel.js netDefend), or a kick or shove batters the guard; the posture
+   and breath it costs go on the host's real foe, which breaks open there when the bar fills. */
+hooks.guard = (e, k, a, l) => { if (asGuest()) send({ t: 'grd', n: e.nid, k, a: r2(a), l }); };
+on('grd', (m) => {
+  if (net.role !== 'host') return;
+  const e = enemies.find(o => o.nid === m.n);
+  if (!e || e.dead) return;
+  const mate = players.find(p => !p.local);
+  let ax = e.group.position.x - (mate ? mate.pos.x : 0), az = e.group.position.z - (mate ? mate.pos.z : 0);
+  const l = Math.hypot(ax, az) || 1;
+  netGuardHit(e, m.k, +m.a || 1, m.l, ax / l, az / l);
 });
 
 /* ---------------- shots ---------------- */

@@ -97,6 +97,18 @@ try {
   // the partner's shots are drawn on the other screen
   await host.evaluate(() => GAME.spawnBlasterBolt(new GAME.camera.position.constructor(0, 1.5, 0), new GAME.camera.position.constructor(1, 0, 0), 5, 0x66ccff, 1, {}));
   await guest.waitForFunction(() => GAME.bolts.some(b => b.ghost), null, poll);
+  // a duellist's guard reaches the guest: its puppet carries the guard, and a blow the guest's screen turns on it strains the host's posture
+  const dn = await host.evaluate(() => { const p = GAME.player.group.position; GAME.spawnEnemy('duelist', new GAME.camera.position.constructor(p.x + 4, 0, p.z)); return GAME.enemies[GAME.enemies.length - 1].nid; });
+  await guest.waitForFunction((n) => { const e = GAME.enemies.find(o => o.nid === n); return e && Array.isArray(e.ng); }, dn, poll);
+  const post0 = await host.evaluate((n) => GAME.enemies.find(o => o.nid === n).posture, dn);
+  const turned = await guest.evaluate((n) => {
+    const e = GAME.enemies.find(o => o.nid === n), p = GAME.player.group.position, g = e.group;
+    e.ng[1] = 1; e.ng[6] = 0;   // guard up on its line, squared up to the guest
+    g.rotation.y = Math.atan2(p.x - g.position.x, p.z - g.position.z);
+    return GAME.duel.duelDefend(e, ['L', 'R', 'H', 'Lo'][e.ng[0]], 'punch', false);
+  }, dn);
+  if (turned !== 'block') throw new Error('the guest\'s blow on the duellist\'s guarded line was not turned: ' + turned);
+  await host.waitForFunction(([n, p0]) => { const e = GAME.enemies.find(o => o.nid === n); return !e || e.dead || e.posture > p0 || e.state === 'stagger'; }, [dn, post0], poll);
   // a kill on the host pays the guest XP too
   const xp0 = await guest.evaluate(() => GAME.G.xp || 0);
   await host.evaluate((n) => { const e = GAME.enemies.find(o => o.nid === n); if (e) GAME.damageEnemy(e, 99999, null, 0, false, false); }, t2);

@@ -6,6 +6,10 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'Co-op: duellist guards for the guest', status: 'done',
+    items: ['The joining player now sees a duellist\'s guard crescent, posture bar and breath, exactly as the host does',
+            'Their cuts and punches meet the same guard: inside the crescent they are always turned, with the BLOCKED spark and clash; off-line they are turned by the foe\'s usual odds',
+            'A turned blow, a kick, a palm strike or a slam into the guard builds posture and drains breath on the shared foe, so either hero can break it open. The Warbringer\'s bar fills from both heroes too'] },
   { title: 'Save from the main menu', status: 'done',
     items: ['SAVE GAME now sits beside NEW GAME and LOAD GAME on the main menu (it was pause-only), so you can save your progress without starting a run',
             'A save keeps every mode\'s wins, unlocks, bests and training ticks plus your look, and a campaign waiting on CONTINUE comes with it'] },
