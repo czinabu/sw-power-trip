@@ -579,10 +579,10 @@ function forceHands(dr, vis, R, planted, moving, ph, inten){
   // ready: both hands up and open before him, palms out toward the foe, a faint breath in both (no hilt to hold:
   // the hands ARE the weapon now)
   const br = Math.sin(G.gt * 1.9) * 0.03;
-  R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -1.2 + br, 10); R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, -0.62, 10);
-  R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -0.7, 10);
-  R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -1.1 - br, 10);  R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, 0.62, 10);
-  R.armR.el.rotation.x = dr(R.armR.el.rotation.x, -0.75, 10);
+  R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -0.75 + br, 10); R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, -0.95, 10);
+  R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -0.5, 10);
+  R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -0.7 - br, 10);  R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, 0.95, 10);
+  R.armR.el.rotation.x = dr(R.armR.el.rotation.x, -0.55, 10);
   R.torso.rotation.x = dr(R.torso.rotation.x, 0.08, 10);   // a slight forward hunch over the wide base
   vis.rotation.y = dr(vis.rotation.y, 0, 12);
 }
