@@ -16,7 +16,7 @@ export const FORM_OF = { shiicho: 'shiicho', makashi: 'makashi', soresu: 'soresu
    width (robe flare). Read when the hero is settled and planted. */
 export const FOOTWORK = {
   shiicho:   { crouch: -0.16, splay: 0.36, lead: 0.2,  lean: 0.08, width: 1.1 },    // square and athletic, feet under the shoulders
-  makashi:   { crouch: -0.12, splay: 0.16, lead: 0.5,  lean: 0.02, width: 0.9 },    // a fencer's line: narrow, lead foot well forward, upright
+  makashi:   { crouch: -0.1,  splay: 0.1,  lead: 0.3,  lean: 0.0,  width: 0.9 },    // a fencer's line: feet narrow and close, upright
   soresu:    { crouch: -0.2,  splay: 0.44, lead: 0.34, lean: 0.05, width: 1.25 },   // Obi-Wan's deep, wide, side-on stance
   ataru:     { crouch: -0.24, splay: 0.12, lead: 0.42, lean: 0.16, width: 0.86 },   // coiled, on the balls of the feet
   niman:     { crouch: -0.17, splay: 0.34, lead: 0.28, lean: 0.06, width: 1.15 },   // balanced and easy, ready to move or cast
@@ -51,14 +51,18 @@ export const SABER_GUARDS = {
       // a broad two-handed bar across the front, the blade near level
       block: { hand: [0.18, 0.3, 0.4], blade: [-0.92, 0.36, 0.1], two: true, twist: 0.04, lean: 0.12, pole: [0.6, -0.8, 0] },
     },
-    // FORM II MAKASHI — Dooku's guard: side-on, one hand, the arm out with the blade angled down the line at the foe,
-    // the off hand tucked away behind the back
+    // FORM II MAKASHI — Dooku's guard: upright and side-on, the saber one-handed out low and forward with the blade angled
+    // down at the foe, the feet narrow and close. The free hand ALTERNATES (offAlt, flipped by every cut): open and swept out
+    // behind (off, the stage Dooku) or clasped at the small of the back (offAlt, the Clone Wars Dooku). Walking and blocking
+    // always keep it behind the back; a cut flings it out for balance (SWING_STYLE.makashi.offKeys)
     makashi: {
-      ready: { hand: [0.2, 0.02, 0.5], blade: [-0.12, 0.2, 0.97], twist: 0.55, torso: 0.2, lean: 0.02, pole: [0.8, -0.5, -0.3],
-               off: { hand: [-0.28, -0.32, -0.24], pole: [-0.5, -0.8, -0.3] } },
+      ready: { hand: [0.3, -0.1, 0.52], blade: [-0.14, -0.42, 0.9], twist: 0.6, torso: 0.22, lean: 0.0, pole: [0.8, -0.6, -0.2], palm: 1,
+               off: { hand: [-0.52, -0.08, -0.14], pole: [-0.5, -0.85, -0.3] },
+               offAlt: { hand: [-0.1, -0.3, -0.28], pole: [-0.8, -0.35, -0.45] },
+               offMove: { hand: [-0.1, -0.3, -0.28], pole: [-0.8, -0.35, -0.45] } },
       // a small turn of the wrist: the blade stands up near the centre line and barely leaves it
       block: { hand: [0.14, 0.12, 0.46], blade: [-0.06, 0.98, 0.16], twist: 0.4, lean: 0.02, pole: [0.8, -0.4, -0.3],
-               off: { hand: [-0.28, -0.32, -0.24], pole: [-0.5, -0.8, -0.3] } },
+               off: { hand: [-0.1, -0.3, -0.28], pole: [-0.8, -0.35, -0.45] } },
     },
     // FORM III SORESU — Obi-Wan's signature guard: sunk into a deep, wide stance and turned side-on, the saber raised high
     // over and behind the head with the blade laid level and pointing on at the foe, the off arm thrown out long toward
@@ -135,11 +139,11 @@ export const SABER_GUARDS = {
                off: { hand: [-0.55, 0.15, 0.4], pole: [-0.7, -0.5, -0.3] } },
       block: { hand: [0.16, 0.26, 0.42], blade: [0.08, -1, 0.18], two: true, twist: 0, lean: 0.22, pole: [0.9, -0.1, -0.3] },
     },
-    // SHIEN: the saber fist held forward at the weapon-side ribs, the blade laid back along the forearm and raked down
-    // behind the hip, the free hand out in front, open, measuring the shooter; low and coiled
+    // SHIEN: Kylo Ren's trailing guard (the old reverse-grip Djem So stance): saber arm hanging long and low out at the
+    // weapon side, blade raked down and back, hunched forward, off hand raised out ahead, clawed
     shien: {
-      ready: { hand: [0.26, -0.04, 0.32], blade: [0.55, -0.5, -0.67], twist: 0.14, torso: 0.05, lean: 0.12, pole: [0.5, -0.6, -0.6],
-               off: { hand: [-0.3, 0.12, 0.44], pole: [-0.6, -0.6, -0.3] } },
+      ready: { hand: [0.4, -0.24, 0.12], blade: [0.62, -0.45, -0.64], twist: -0.18, lean: 0.14, pole: [0.5, -0.3, -0.8],
+               off: { hand: [-0.55, 0.15, 0.4], pole: [-0.7, -0.5, -0.3] } },
       // the forearm up across the body, blade hanging down in front: a wall the bolts glance off back down the line
       block: { hand: [0.1, 0.24, 0.42], blade: [0.3, -0.94, 0.14], twist: 0.05, lean: 0.08, pole: [0.9, -0.2, -0.3],
                off: { hand: [-0.2, 0.0, 0.36], pole: OFF_POLE } },
@@ -322,7 +326,8 @@ export const SWING_STYLE = {
                twist: 1.15, finisher: { pattern: 'right', spin: 1, hop: 0 },
                load: 0.1, accel: 2.3, lag: 0.3, recover: 0.5, weight: 0.07 },   // broad two-handed sweeps that carry round the body
     // Shii-Cho finishes with the SARLACC SWEEP: a full turn with the blade held out, through everything around you
-  makashi:   { tc: 0.18, ts: 0.39, tf: 0.62, reach: 0.8, two: false, spinHop: 0, drop: 0.02, offFlare: 0.2, overshoot: 0,
+  makashi:   { tc: 0.18, ts: 0.39, tf: 0.62, reach: 0.8, two: false, spinHop: 0, drop: 0.02, offFlare: 1, overshoot: 0,
+               offKeys: [[-0.2, -0.3, -0.3], [-0.72, 0.0, -0.46], [-0.62, 0.04, -0.4]],   // the free hand comes out of the small of the back and sweeps behind as the blade goes in
                twist: 0.7, finisher: { pattern: 'thrust', spin: 0, hop: 0 },
                load: 0.04, accel: 2.6, lag: 0.65, recover: 0.75, weight: 0.08 },   // small, exact, wrist-led cuts that snap back on the line
     // Makashi finishes with a full lunge: the thrust, all the body behind the point

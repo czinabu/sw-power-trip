@@ -2,7 +2,7 @@
 // NEW GAME / SAVE GAME / LOAD GAME: the buttons on the main menu (campaign tile) and pause screen, and the save-slot panel (game/saves.js).
 
 import { G } from '../state.js';
-import { SLOTS, readSlot, writeSlot, deleteSlot, loadSlotProgress, clearProgress, slotSummary } from '../game/saves.js';
+import { SLOTS, AUTO, readSlot, writeSlot, deleteSlot, loadSlotProgress, clearProgress, slotSummary } from '../game/saves.js';
 import { setHero } from '../player/hero.js';
 import { audioInit, S } from '../audio/sfx.js';
 import { sandboxUnlocked } from '../game/sandbox.js';
@@ -23,9 +23,11 @@ function render(){
   document.getElementById('savestitle').textContent = mode === 'save' ? 'SAVE GAME' : 'LOAD GAME';
   document.getElementById('savessub').textContent = mode === 'save' ? 'Pick a slot to save to' : 'Pick a save to load';
   let html = '';
-  for (let i = 0; i < SLOTS; i++){
+  for (const i of [AUTO, ...Array.from({ length: SLOTS }, (_, k) => k)]){
     const d = readSlot(i);
-    const title = d ? (d.hero === 'mando' ? 'MANDALORIAN' : 'JEDI') + ' · ' + esc(d.where || 'MAIN MENU') : 'EMPTY SLOT';
+    if (i === AUTO && !d) continue;
+    if (i === AUTO && mode === 'save') continue;   // the autosave is written by the game, not by hand
+    const title = (i === AUTO ? 'AUTOSAVE · ' : '') + (d ? (d.hero === 'mando' ? 'MANDALORIAN' : 'JEDI') + ' · ' + esc(d.where || 'MAIN MENU') : 'EMPTY SLOT');
     const desc = d ? esc(slotSummary(d)) + ' · ' + when(d.at) : mode === 'save' ? 'Save here' : 'Nothing saved yet';
     let btn = '';
     if (mode === 'save'){
@@ -37,7 +39,7 @@ function render(){
       btn = `<div class="btn${a ? ' warn' : ''}" data-act="load" data-i="${i}">${a ? 'LEAVE RUN & LOAD' : 'LOAD'}</div>`;
     }
     const del = d ? `<div class="sv-del${armed === 'del' + i ? ' warn' : ''}" data-act="del" data-i="${i}" title="Delete this save">${armed === 'del' + i ? 'DELETE?' : '✕'}</div>` : '';
-    html += `<div class="sv-slot${d ? '' : ' empty'}"><div class="sv-n">${i + 1}</div>
+    html += `<div class="sv-slot${d ? '' : ' empty'}"><div class="sv-n">${i === AUTO ? 'A' : i + 1}</div>
       <div class="sv-info"><div class="sv-t">${title}</div><div class="sv-d">${desc}</div></div>${btn}${del}</div>`;
   }
   html += '<p class="sv-note">' + (mode === 'save'
@@ -77,7 +79,7 @@ function load(i){
   let m = d.run ? 'campaign' : (d.modeSel || 'campaign');
   if ((m === 'endless' && !survivalUnlocked()) || (m === 'sandbox' && !sandboxUnlocked())) m = 'campaign';
   setModeSel(m);
-  if (!G.resumeRun) document.getElementById('ovsub').textContent = 'SAVE ' + (i + 1) + ' LOADED';
+  if (!G.resumeRun) document.getElementById('ovsub').textContent = (i === AUTO ? 'AUTOSAVE' : 'SAVE ' + (i + 1)) + ' LOADED';
 }
 
 panel.addEventListener('click', (e) => {
@@ -85,7 +87,7 @@ panel.addEventListener('click', (e) => {
   if (e.target === panel || e.target.id === 'savesclose') return closeSaves();
   const b = e.target.closest('[data-act]');
   if (!b){ if (armed){ armed = null; render(); } return; }
-  const i = +b.dataset.i;
+  const i = b.dataset.i === AUTO ? AUTO : +b.dataset.i;
   if (b.dataset.act === 'save') save(i);
   else if (b.dataset.act === 'load') load(i);
   else if (b.dataset.act === 'del'){
