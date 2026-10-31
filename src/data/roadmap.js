@@ -8,6 +8,8 @@
 export const ROADMAP = [
   { title: 'Ghostly Exegol', status: 'done',
     items: ['Exegol (the road to the Citadel, the Sith amphitheatre and the wastes) is now a cold blue-grey haze: nearer fog, dimmer light, less neon', 'Mist drifts along the ground, and each lightning bolt lights up the fog'] },
+  { title: 'Friends read at a glance', status: 'done',
+    items: ['Squadmates and escorts wear an ally-blue ring on the ground and a bigger, ink-rimmed diamond overhead, so they never blend in with white-armoured foes on snow', 'Same blue for both heroes and every mode; the marks turn red while an ally is down or an escort is under fire'] },
   { title: 'Tidier Lightsaber Forms page', status: 'done',
     items: ['Cards show just the basics: name, best against, pros and cons; the quote and history sit behind a small i', 'Forms you have not learned are small chips (Form V-a / V-b, VII-a / VII-b) instead of big blank tiles', 'An empty slot shows a lock until your next form', 'How to Play is now called Controls'] },
   { title: 'Upgrades without the menus', status: 'done',
@@ -24,7 +26,7 @@ export const ROADMAP = [
   { title: 'Controller support', status: 'done',
     items: ['Play with a gamepad: both heroes, every power, strafe and slide, in every mode, co-op included', 'Menus, pause and the upgrade screen by pad', 'Stick sensitivity and invert Y in Settings; a CONTROLLER page in Controls', 'PlayStation pads show their own button shapes'] },
   { title: 'Combat and movement', status: 'done',
-    items: ['Hold Left Alt to strafe (Force slide moved to Z)', 'Grounded combat: rolls and parries', 'Saber stamina tuning, free running', 'Jedi and Mando camera rigs', 'Smoother first use: saber throw, bosses, squads, arena sound, pathing, saber-throw light'] },
+    items: ['Hold Left Alt to strafe (Force slide moved to Z)', 'Grounded combat: rolls and parries', 'Saber stamina tuning, free running', 'Jedi and Mando camera rigs', 'Smoother first use: saber throw, bosses, squads, arena sound, pathing, saber-throw light, sparks and rings (no more hitch in the Stop the Avalanche duel)'] },
   { title: 'Battle maps and squads', status: 'done',
     items: ['Three large battle maps', 'Allied squads, downed allies and revive', 'SPEARHEAD on the Grass Sea of Lothal'] },
   { title: 'Missions', status: 'done',
