@@ -156,7 +156,7 @@ export function firePistols(){
 }
 // a trigger pull — dispatches by the equipped weapon's mode
 export function fireTrigger(){
-  if (G.mode !== 'play' || player.darkT > 0) return;
+  if (G.mode !== 'play' || player.darkT > 0 || player.flaming) return;   // the flamethrower is used by itself: no shooting while it burns
   const W = mandoWeapon();
   if (W.fire === 'saber'){                                              // DARKSABER — full saber combo (Jedi medium-stance rig)
     if (shared.darkProj){   // thrown: nothing to swing until the grappling line brings it home
@@ -310,6 +310,8 @@ export function updateFlame(dt){
   const fl = player.flameLight || (player.flameLight = flameLight);
   fl.intensity += ((active ? 5.5 + Math.random()*1.5 : 0) - fl.intensity) * Math.min(1, dt*14);   // faded, never toggled: a light count change recompiles every shader (the first-flame hitch)
   if (!active) return;
+  // the flame owns both hands: it cancels any shot, scope or guard already up, and those stay locked out until it ends
+  player.firing = false; player.trigHeld = false; player.zoom = false; player.blockHeld = false; player.parryT = 0; player.stabQ = false;
   player.force = Math.max(0, player.force - A.fuel * (player.up.abilityCostMul || 1) * dt);
   trainHeld('flame', dt);   // each second of fire teaches the flamethrower (game/upgrades.js)
   const pp = playerPos();
