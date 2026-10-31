@@ -169,11 +169,11 @@ function dropPuppets(){
   byNid.clear();
 }
 
-function endGuest(){
+function endGuest(dropped){
   if (!G.coopGuest) return;
   G.coopGuest = false;   // the run carries on here by itself: this browser's own waves take over
   dropPuppets(); dropBossPuppet();
-  if (G.mode === 'play'){ if (G.mission) endMission(); showBanner('', 'THE HOST LEFT THE FIGHT', 2.4); }
+  if (G.mode === 'play'){ if (G.mission) endMission(); showBanner('', dropped ? 'CONNECTION LOST · RECONNECTING…' : 'THE HOST LEFT THE FIGHT', 2.4); }
 }
 
 on('e', (m) => {
@@ -349,7 +349,9 @@ on('closed', (slot) => { if (slot < 0) picking.clear(); else picking.delete(slot
 
 on('status', (n) => {
   if (n.status === 'connected') return;
-  coopRun.on = false; picking.clear(); coopRun.guestPicking = false; coopRun.live = false; G.coopWasGuest = false; runChanged();
-  if (G.coopGuest) endGuest();
+  // reconnecting: still in the host's run as far as this browser knows, so its next snapshot puts this one back in the fight
+  const dropped = n.status === 'reconnecting';
+  coopRun.on = false; picking.clear(); coopRun.guestPicking = false; coopRun.live = false; if (!dropped) G.coopWasGuest = false; runChanged();
+  if (G.coopGuest) endGuest(dropped);
   hostSent = false;
 });

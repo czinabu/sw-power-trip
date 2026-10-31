@@ -15,7 +15,10 @@ import { lookOf, loadPicks, disposeTree } from '../player/mesh.js';
 import { playerPos } from '../player/helpers.js';
 import { heroAim } from '../player/aim.js';
 import { addPlayer, removePlayer, worldKey } from '../player/players.js';
-import { addHeroReviver, addReviverSource } from '../game/revive.js';
+import { addHeroReviver, addReviverSource, heroDownState, marker } from '../game/revive.js';
+import { showBanner } from '../ui/banners.js';
+import { makeChip, placeChip, hideChip } from '../ui/coop-marks.js';
+import { S } from '../audio/sfx.js';
 import { refill } from '../allies/squad.js';
 import { readPose, makePoseTrack, pushPose, stepPose } from './pose.js';
 import { on, send, sendEvery, connected, net } from './session.js';
@@ -95,6 +98,7 @@ on('s', (m) => {
   want.pos.set(m.x, m.y, m.z); want.yaw = m.yaw; want.ap = +m.ap || 0;
   mate.vel.set(m.vx || 0, 0, m.vz || 0);
   mate.down = !!m.down;
+  P.dn = m.dn || null;   // down and waiting to be got up: [progress %, seconds left, someone is at it]
   P.playing = !!m.play; P.world = m.w || '';
   if (m.pose) pushPose(track, puppet, m.pose, performance.now());
   P.fx.cur = m.fx || null; P.fx.curAt = performance.now();
@@ -121,6 +125,8 @@ export function updateCoop(dt){
         hero: G.hero, play: G.mode === 'play', down: !!player.downed || G.mode === 'dead', w: worldKey(),
         ap: +heroAim().dir.y.toFixed(3),   // the aim's pitch (sine, + up): where their powers point up or down (player/aim.js)
         pose: player.rig ? readPose(player) : null, fx: fxOut() };
+      const dn = heroDownState();   // down: how far along getting this hero up is, and how long they have (game/revive.js)
+      if (dn) m.dn = [Math.round(dn.prog * 100), +dn.left.toFixed(1), dn.by ? 1 : 0];
       if (sent++ % NET.picksEvery === 0) m.picks = loadPicks();
       return m;
     });
@@ -136,6 +142,7 @@ function stepPartner(P, dt){
   mate.here = show && G.mode === 'play' && P.world === worldKey();
   if (P.tag) P.tag.style.display = show ? 'block' : 'none';
   updatePartnerFx(P.fx, dt, puppet.group, show, puppet);
+  downMarks(P, show);
   if (!show) return;
   const g = puppet.group;
   g.position.x = damp(g.position.x, want.pos.x, 14, dt);
@@ -147,17 +154,49 @@ function stepPartner(P, dt){
   blink(puppet, dt);   // and they blink (model/life.js); their hands keep the grip they were built with
   // the name tag follows the head on screen
   const t = nameTag(P);
-  t.textContent = mate.down ? label(P) + ' DOWN: STAND NEXT TO THEM' : label(P);
+  if (P.chip && P.chip.style.display !== 'none'){ t.style.display = 'none'; return; }   // down: the chip says it instead
+  t.textContent = mate.down ? label(P) + ' IS OUT' : label(P);
   const v = new THREE.Vector3(g.position.x, g.position.y + 2.6, g.position.z).project(camera);
   if (v.z > 1){ t.style.display = 'none'; return; }
   t.style.left = ((v.x * 0.5 + 0.5) * innerWidth) + 'px';
   t.style.top = ((-v.y * 0.5 + 0.5) * innerHeight) + 'px';
 }
 
+/* A PARTNER DOWN — the moment they drop, a banner and a sound; while they wait to be got up, the revive ring under them
+   fills as someone gets them up, and a chip over them (pinned to the screen edge with an arrow when they're off-screen
+   or behind you) says how long they have left and how far it is to them */
+function downMarks(P, show){
+  const { mate, puppet } = P, g = puppet.group;
+  const waiting = show && mate.here && mate.down && !!P.dn;
+  if (waiting && !P.wasDown && G.mode === 'play'){
+    showBanner('', label(P) + ' IS DOWN · GET THEM UP', 2.4);
+    S.reward(0);
+  }
+  P.wasDown = waiting;
+  if (!waiting){
+    if (P.ring) P.ring.visible = false;
+    hideChip(P.chip);
+    return;
+  }
+  const [prog, left, by] = P.dn;
+  if (!P.ring) P.ring = marker(0xff5a4a);
+  P.ring.visible = true;
+  P.ring.position.set(g.position.x, Math.max(0.05, g.position.y + 0.05), g.position.z);
+  P.ring.userData.fill.scale.setScalar(Math.max(0.001, prog / 100));
+  P.ring.children[0].material.opacity = 0.55 + Math.sin(G.gt * 6) * 0.3;
+  if (!P.chip) P.chip = makeChip('down');
+  const pp = playerPos(), d = Math.hypot(g.position.x - pp.x, g.position.z - pp.z);
+  _head.set(g.position.x, g.position.y + 2.2, g.position.z);
+  placeChip(P.chip, _head, by ? label(P) + ' · GETTING UP ' + prog + '%' : label(P) + ' DOWN · ' + left.toFixed(0) + 'S', d);
+  P.chip.classList.toggle('urgent', !by && left < 5);
+}
+const _head = new THREE.Vector3();
+
 // for the co-op smoke test: is a partner on screen, posed from the network, and something enemies can go after?
 const first = () => partners.values().next().value;
 export const partnerShown = () => [...partners.values()].some(P => P.puppet.group.visible);
 const infoOf = (P) => ({ slot: P.slot, shown: P.puppet.group.visible, here: P.mate.here, posed: !!P.track.to, hero: P.hero, down: P.mate.down,
+  dn: P.dn, ring: !!(P.ring && P.ring.visible), chip: !!(P.chip && P.chip.style.display !== 'none'),
   armR: P.puppet.rig ? P.puppet.rig.armR.sh.quaternion.toArray().map(n => +n.toFixed(3)) : null,
   hunters: enemies.filter(e => !e.dead && e.hero === P.mate).length });
 export const partnerInfo = () => {
@@ -183,5 +222,5 @@ export function partnerSpot(slot){
   for (const P of partners.values()){ const s = spot(P); if (s && s.down) return s; if (s && !any) any = s; }
   return any;
 }
-export function dropPartner(P){ P.puppet.group.visible = false; P.playing = false; P.mate.here = false; if (P.tag) P.tag.style.display = 'none'; }
+export function dropPartner(P){ P.puppet.group.visible = false; P.playing = false; P.mate.here = false; P.dn = null; if (P.tag) P.tag.style.display = 'none'; downMarks(P, false); }
 on('status', (n) => { if (n.status !== 'connected'){ for (const P of partners.values()){ dropPartner(P); removePlayer(P.mate); } } });

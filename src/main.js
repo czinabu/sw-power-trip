@@ -107,6 +107,8 @@ import './ui/coop-ui.js';
 import { updateFoes, updatePuppets, coopLive } from './net/foes.js';
 import './net/foefire.js';
 import { updateSquadNet } from './net/squad.js';
+import { updatePings, pingHere, pingInfo } from './net/ping.js';
+import { dropLink as coopDrop, net as coopNet } from './net/session.js';
 import { hooks as coopHooks, coopRun } from './net/run.js';
 import './ui/saves-ui.js';   // NEW GAME / SAVE GAME / LOAD GAME and the save-slot panel
 
@@ -166,6 +168,7 @@ function tick(){
   updateFoes();
   updateSquadNet();   // online co-op: the host's squad, sent to the guest and commanded from both screens (net/squad.js)
   updateCoop(rawDt);     // online co-op: send my pose, pose the partner's hero (net/partner.js)
+  updatePings();         // pings: yours and the other players' (net/ping.js)
   updateTrail(dt);
   updateJudgeFX();
   updateAmbient(G.paused ? 0 : rawDt);
@@ -205,7 +208,7 @@ import { arenaInfo } from './world/arena.js';
 import { ENDLESS_ARENAS } from './game/survival.js';
 import { BATTLE_MAPS } from './data/battlemaps.js';
 import { setSandboxMap } from './game/sandbox.js';
-Object.assign(window.GAME, { arena: arenaInfo, ENDLESS_ARENAS, BATTLE_MAPS, setSandboxMap, gfx: { renderer, composer, scene } });
+Object.assign(window.GAME, { pingHere, pingInfo, coopDrop, coopNet, arena: arenaInfo, ENDLESS_ARENAS, BATTLE_MAPS, setSandboxMap, gfx: { renderer, composer, scene } });
 Object.assign(window.GAME, { startCampaign, startChapter, nextChapter, chapters });   // the campaign's chapters (game/campaign.js), for tests
 Object.assign(window.GAME, { clearComms, commsBusy, storyBeat });   // the story's voice lines (game/story.js), for tests
 import { playScene, playOpening, playDuelIntro, playBossIntro, skipScene, sceneOn } from './game/cutscene.js';

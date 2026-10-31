@@ -707,7 +707,7 @@ export function updateSquadHud(){
   const d = heroDownState();
   downEl.style.display = d && G.mode === 'play' ? '' : 'none';
   if (d){
-    downEl.querySelector('.dn-s').textContent = d.by ? 'GETTING YOU UP…' : (squadStanding() ? 'YOUR SQUAD IS COMING · ' : 'NO ONE IS COMING · ') + d.left.toFixed(1) + 'S';
+    downEl.querySelector('.dn-s').textContent = d.by ? 'GETTING YOU UP…' : (G.coopRevive ? 'YOUR PARTNER CAN GET YOU UP · ' : squadStanding() ? 'YOUR SQUAD IS COMING · ' : 'NO ONE IS COMING · ') + d.left.toFixed(1) + 'S';
     downEl.querySelector('i').style.width = (d.prog * 100).toFixed(1) + '%';
   }
   if (!show) return;

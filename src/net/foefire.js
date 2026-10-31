@@ -92,7 +92,7 @@ on('grd', (m) => {
   if (net.role !== 'host') return;
   const e = enemies.find(o => o.nid === m.n);
   if (!e || e.dead) return;
-  const mate = players.find(p => !p.local);
+  const mate = partnerMate(m.from);
   let ax = e.group.position.x - (mate ? mate.pos.x : 0), az = e.group.position.z - (mate ? mate.pos.z : 0);
   const l = Math.hypot(ax, az) || 1;
   netGuardHit(e, m.k, +m.a || 1, m.l, ax / l, az / l);

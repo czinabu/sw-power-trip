@@ -31,7 +31,8 @@ const reviverSources = [];
 export function addReviverSource(fn){ reviverSources.push(fn); }
 
 const ringGeo = new THREE.RingGeometry(0.95, 1.12, 40), discGeo = new THREE.CircleGeometry(0.95, 40);
-function marker(color){
+// the ring round a downed body, its disc filling as they're got up (also a co-op partner's: net/partner.js)
+export function marker(color){
   const g = new THREE.Group();
   const ring = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.85, depthWrite: false, toneMapped: false }));
   const fill = new THREE.Mesh(discGeo, new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.35, depthWrite: false, toneMapped: false }));
@@ -85,7 +86,8 @@ export function downHero(){
     onLost(){ player.downed = null; if (player.vis){ player.vis.rotation.x = 0; } killHero(); },
   });
   G.slowmo = 0.35; G.slowmoT = 0.5; G.shake = Math.max(G.shake, 0.6);
-  showBanner('YOU ARE DOWN', G.reviveLeft > 0 ? 'Hold on. Your squad is coming.' : 'Hold on. Your squad is coming. This is your last chance.', 2.2);
+  const help = G.coopRevive ? 'Hold on. Your partner can get you up.' : 'Hold on. Your squad is coming.';
+  showBanner('YOU ARE DOWN', G.reviveLeft > 0 ? help : help + ' This is your last chance.', 2.2);
 }
 // a blow on a downed hero doesn't hurt, it drains the time left
 export function hitDownedHero(){ if (player.downed) player.downed.bleed -= 1; }

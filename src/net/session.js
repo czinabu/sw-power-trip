@@ -10,9 +10,12 @@ const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';   // no 0/O/1/I: easy to 
 const CODE_LEN = 5;
 export const MAX_GUESTS = 3;
 // what the host passes on from one guest to the rest, stamped with the sender's slot: poses, their shots and powers
-const RELAY = { s: 1, hello: 1, pb: 1, pw: 1, bx: 1 };
+const RELAY = { s: 1, hello: 1, pb: 1, pw: 1, bx: 1, ping: 1 };
+// a guest whose link to the host drops tries the same room again this many times, this far apart (ms), before giving up
+const REJOIN = { tries: 5, wait: 2500 };
+const LAST = 'sw_coop_last';   // the last room joined, offered again in the co-op panel (a reload, a crash)
 
-/* the session, shared by everything that reads it: status is idle | hosting | joining | connected | failed */
+/* the session, shared by everything that reads it: status is idle | hosting | joining | connected | reconnecting | failed */
 export const net = {
   status: 'idle', role: null, code: '', error: '', ping: 0, peerPlays: false,
   slot: 0,        // this browser's seat: 0 the host, 1 to 3 the guests
@@ -76,19 +79,44 @@ export async function host(attempt = 0){
   });
 }
 
-export async function join(code){
+// retry: a guest getting back into the room it dropped out of (rejoin below), which keeps saying 'reconnecting'
+export async function join(code, retry = false){
   code = cleanCode(code);
   if (code.length !== CODE_LEN) return fail('Enter the 5-letter room code.');
+  if (!retry) tries = 0;
   leave(true);
-  net.role = 'guest'; net.code = code; net.slot = 0; setStatus('joining');
-  try { peer = await makePeer(); } catch(e){ return fail('Could not start the connection.'); }
+  net.role = 'guest'; net.code = code; net.slot = 0; setStatus(retry ? 'reconnecting' : 'joining');
+  try { localStorage.setItem(LAST, code); } catch(e){}
+  try { peer = await makePeer(); } catch(e){ return retry ? rejoin() : fail('Could not start the connection.'); }
   const mine = peer;
-  peer.on('error', (err) => { if (mine === peer) fail(err.type === 'peer-unavailable' ? 'No room with that code.' : describe(err)); });
+  peer.on('error', (err) => {
+    if (mine !== peer) return;
+    if (retry) return err.type === 'peer-unavailable' ? fail('The host left the game.') : rejoin();   // no room any more: the host is gone
+    fail(err.type === 'peer-unavailable' ? 'No room with that code.' : describe(err));
+  });
   peer.on('open', () => {
     const c = peer.connect(ID_PREFIX + code, { serialization: 'json' });
     attach(c, 0);
-    setTimeout(() => { if (net.status === 'joining' && mine === peer) fail('Timed out. Check the code, or try again.'); }, 15000);
+    setTimeout(() => {
+      if (mine !== peer) return;
+      if (net.status === 'joining') fail('Timed out. Check the code, or try again.');
+      else if (net.status === 'reconnecting') rejoin();
+    }, 15000);
   });
+}
+// for the co-op smoke test: a guest's link to the host drops as if the network went (not a leave)
+export function dropLink(){ if (net.role === 'guest' && conn) conn.close(); }
+export const lastRoom = () => { try { return localStorage.getItem(LAST) || ''; } catch(e){ return ''; } };
+
+/* REJOIN — the link to the host dropped without anyone leaving (a Wi-Fi blip, a laptop lid): try the same room again a
+   few times. The game carries on meanwhile (net/foes.js), and puts you back in the host's fight once you're through. */
+let tries = 0, rejoinTimer = 0;
+function rejoin(){
+  const code = net.code;
+  clearTimeout(rejoinTimer);
+  if (!code || ++tries > REJOIN.tries) return fail('Lost the connection to the host.');
+  setStatus('reconnecting');
+  rejoinTimer = setTimeout(() => { if (net.status === 'reconnecting' && net.code === code) join(code, true); }, REJOIN.wait);
 }
 
 function describe(err){
@@ -114,7 +142,7 @@ function attach(c, slot){
     if (!m || typeof m !== 'object') return;
     if (m.t === 'ping') return void c.send({ t: 'pong', at: m.at });
     if (m.t === 'pong'){ pings.set(slot, Math.round(performance.now() - m.at)); net.ping = Math.max(0, ...pings.values()); emit('ping', net.ping); return; }
-    if (m.t === 'welcome'){ net.slot = m.slot; emit('welcome', m.slot); return; }
+    if (m.t === 'welcome'){ net.slot = m.slot; tries = 0; emit('welcome', m.slot); return; }
     if (m.t === 'full') return void leave(false, 'That room is full (4 players).');
     if (net.role === 'host'){
       m.from = slot;   // never trust a guest to say who they are
@@ -133,7 +161,10 @@ function attach(c, slot){
       emit('closed', slot);
       if (peer) setStatus(conns.size ? 'connected' : 'hosting');
     } else if (conn === c){
-      conn = null; emit('closed', 0); leave(false, 'The host left the game.');
+      conn = null; emit('closed', 0);
+      // dropped (this player didn't leave, or leave() would have let go of it first): try the room again
+      if (peer){ try { peer.destroy(); } catch(e){} peer = null; }
+      tries = 0; rejoin();
     }
   });
   c.on('error', () => {});
@@ -159,6 +190,7 @@ export function sendEvery(ms, build){
 }
 
 export function leave(quiet, message = ''){
+  if (!quiet) clearTimeout(rejoinTimer);
   for (const t of pingTimers.values()) clearInterval(t);
   pingTimers.clear(); pings.clear(); hellos.clear();
   for (const c of conns.values()) try { c.close(); } catch(e){}
