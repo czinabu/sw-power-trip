@@ -21,6 +21,7 @@ function threatScreen(world){
   return { onScreen, behind, deg, ex: clamp(sx, m, W-m), ey: clamp(sy, m, H-m) };
 }
 const _threatMarks = [];
+const ARRIVAL_SHOW = 2.6;   // seconds a new arrival's direction stays marked
 export function renderThreats(){
   const wrap = document.getElementById('threats'), dind = document.getElementById('dmgind');
   if (G.mode !== 'play'){ wrap.style.display = 'none'; return; }
@@ -42,15 +43,25 @@ export function renderThreats(){
     if (col) threats.push({ pos: e.group.position, col });
   }
   if (shared.boss && shared.boss.hp > 0) threats.push({ pos: shared.boss.group.position, col: '#ff5a5a' });
+  // --- where a SURGE is coming in: one pale marker per direction for foes that arrived in the last few seconds
+  // off-screen (the spawn director brings each surge in from one side: world/collision.js edgeSpawn) ---
+  const t = G.gt, arrivals = [];
+  for (const e of enemies){
+    const age = t - (e.born ?? -1e9);
+    if (e.dead || e.converted || e.dummy || !(age >= 0 && age < ARRIVAL_SHOW)) continue;
+    const s = threatScreen(e.group.position);
+    if (s.onScreen || arrivals.some(a => Math.abs(((a.deg - s.deg + 540) % 360) - 180) < 28)) continue;   // one per direction
+    arrivals.push(s);
+  }
   let mi = 0;
-  for (const th of threats){
-    const s = threatScreen(th.pos);
+  for (const th of [...threats, ...arrivals.map(s => ({ s, col: '#ffe6a8', op: 0.75 }))]){
+    const s = th.s || threatScreen(th.pos);
     if (s.onScreen) continue;   // visible already — no marker needed
     let mk = _threatMarks[mi];
     if (!mk){ mk = document.createElement('div'); mk.className = 'threatmark'; mk.innerHTML = '<i></i>'; wrap.appendChild(mk); _threatMarks[mi] = mk; }
     mk.style.left = s.ex + 'px'; mk.style.top = s.ey + 'px';
     mk.style.transform = 'rotate(' + s.deg.toFixed(0) + 'deg)';
-    mk.style.color = th.col; mk.style.opacity = '0.92';
+    mk.style.color = th.col; mk.style.opacity = th.op || '0.92';
     mi++;
   }
   for (let i = mi; i < _threatMarks.length; i++) _threatMarks[i].style.opacity = '0';

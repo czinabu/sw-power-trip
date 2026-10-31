@@ -227,12 +227,12 @@ Object.assign(window.GAME, { FORMS, setLoadout });
 
 /* every map's level, for the art capture tool (tools/shots/maps.mjs): build any arena in place and frame it */
 import { buildArena } from './world/arena.js';
-import { findClearSpawn } from './world/collision.js';
+import { findClearSpawn, edgeSpawn } from './world/collision.js';
 import { TRAINING_LEVELS } from './data/tutorial.js';
 import { SANDBOX_LEVELS } from './data/sandbox.js';
 import { MISSIONS } from './data/missions.js';
 const byLayout = id => Object.values(MISSIONS).find(m => m.level && m.level.layout === id).level;
-Object.assign(window.GAME, { buildArena, findClearSpawn, mapLevels: () => ({
+Object.assign(window.GAME, { buildArena, findClearSpawn, edgeSpawn, mapLevels: () => ({
   temple: LEVELS[0], foundry: LEVELS[1], plains: LEVELS[2],
   archive: { ...LEVELS[0], layout: 'archive', arena: 48 }, sith: { ...LEVELS[2], layout: 'sith', arena: 64 },
   hall: TRAINING_LEVELS.jedi, forge: TRAINING_LEVELS.mando, dojo: SANDBOX_LEVELS.jedi, throne: SANDBOX_LEVELS.mando,
