@@ -13,6 +13,7 @@ import { scene, camera } from '../engine/renderer.js';
 import { sfx, S } from '../audio/sfx.js';
 import { V3, rand, clamp, dampAngle } from '../utils.js';
 import { burst } from '../fx/particles.js';
+import { groundRing } from '../fx/ink.js';
 import { floater } from '../fx/floaters.js';
 import { shared, G, enemies, bolts, player, isGunner, isMando, heroKey, isTrooper } from '../state.js';
 import { playerPos } from '../player/helpers.js';
@@ -26,9 +27,10 @@ import { fireBolt } from '../enemies/bolts.js';
 import { segBlockedBySolids, clampToArena, collideSolids, findClearSpawn } from '../world/collision.js';
 import { navSteer, navClearance } from '../enemies/nav.js';
 import { diffDmgMul } from '../data/difficulty.js';
-import { SQUAD, FODDER, REVIVE, COMMAND, ORDERS } from '../data/allies.js';
+import { SQUAD, FODDER, REVIVE, COMMAND, ORDERS, SUPPRESS_ORDER } from '../data/allies.js';
 import { TROOPER } from '../data/trooper.js';
-const ORDERS_BY_ID = Object.fromEntries(ORDERS.map(o => [o.id, o]));
+import { orderCost, canPay, spendCP, commandPoints } from '../player/trooper/command.js';
+const ORDERS_BY_ID = Object.fromEntries([...ORDERS, SUPPRESS_ORDER].map(o => [o.id, o]));
 import { throwGrenade } from '../enemies/grenades.js';
 import { crosshairPoint, lastAim } from '../player/aim.js';
 import { showBanner } from '../ui/banners.js';
@@ -120,7 +122,7 @@ export function clearSquad(){
   allies.length = 0;
   dropMoves(true);
   if (markTag) markTag.visible = false;
-  SQ.formation = 'wide'; SQ.grenadeAt = -99;
+  SQ.formation = 'wide'; SQ.grenadeAt = -99; G.suppress = null;
   G.reviveLeft = null;
   SQ.fighting = false; SQ.saidYours = -99;
 }
@@ -179,10 +181,15 @@ export function giveOrder(id, idx = null, from = null){
   const list = who(idx), one = idx != null, l = lead(list);
   if (!l){ banner(one ? (allies[idx] ? allies[idx].name + ' IS DOWN' : 'NO SUCH SQUADMATE') : 'YOUR SQUAD IS DOWN'); return false; }
   const tag = one ? l.name : 'SQUAD';
-  if (!from && guest()) return guestOrder(id, idx, list, l, tag);
+  // the ARC trooper pays COMMAND POINTS for the orders that matter (player/trooper/command.js; the partner's own orders
+  // were paid for on their side)
+  const cost = from ? 0 : orderCost(id), oname = (ORDERS_BY_ID[id] || {}).name;
+  if (!canPay(cost, oname)){ sfx(200, 0.06, 'triangle', 0.03, 160); return false; }
+  if (!from && guest()){ const sent = guestOrder(id, idx, list, l, tag); if (sent) spendCP(cost); return sent; }
   C = from;
   let ok = false;
   try { ok = ORDER_FN[id] ? ORDER_FN[id](list, l, tag) !== false : false; } finally { C = null; }
+  if (ok) spendCP(cost);
   if (!from){ if (ok) sfx(620, 0.06, 'triangle', 0.04, 820); else sfx(200, 0.06, 'triangle', 0.03, 160); }
   dropMoves(false);
   return ok;
@@ -266,6 +273,20 @@ const ORDER_FN = {
     }
     if (!sent){ banner('ALREADY ON IT'); return false; }
     banner(tag + ' · GET THEM UP');
+  },
+  // SUPPRESS (the ARC trooper's wheel): the squad lays fire on the foes round the crosshair; whoever its bolts hit is
+  // PINNED (enemies/damage.js, enemies/ai.js), and the first volley pins the zone at once
+  suppress(list, l, tag){
+    const S = TROOPER.command.suppress, at = C ? V3(C.at[0], 0, C.at[1]) : groundAim();
+    G.suppress = { x: at.x, z: at.z, r: S.radius, until: G.gt + S.time };
+    let n = 0;
+    for (const e of enemies){
+      if (e.dead || e.converted || !isFodder(e) || Math.hypot(e.group.position.x - at.x, e.group.position.z - at.z) > S.radius) continue;
+      e.suppT = Math.max(e.suppT || 0, G.gt + S.pin); n++;
+    }
+    list.forEach(a => { a.seekT = 0; a.fireT = Math.min(a.fireT || 0, 0.15); });
+    groundRing(V3(at.x, 0.1, at.z), 0xffd35a, S.radius, 0.6, 0.6);   // the zone, on the ground
+    banner(tag + ' · SUPPRESS' + (n ? ' · ' + n + ' PINNED' : '')); say(l, 'SUPPRESSING FIRE!', 'SUPPRESSING.');
   },
   formation(){
     SQ.formation = SQ.formation === 'wide' ? 'tight' : 'wide';
@@ -360,6 +381,13 @@ export function refill(){
   G.reviveLeft = (REVIVE.hero.revives[diffKey()] ?? 1) + SCALE.revives * (heroesHere() - 1);   // a partner in the fight earns more second chances
   for (const a of allies){ if (a.body) getUp(a.body, 'clear'); a.hp = a.maxHp; }
 }
+// the trooper's REINFORCE call (allies/calls.js): everyone down is up now, patched. Returns how many got up
+export function reinforceSquad(){
+  let n = 0;
+  for (const a of allies){ if (a.net || standing(a) || !a.body) continue; getUp(a.body, 'clear'); a.hp = Math.max(a.hp, Math.round(a.maxHp * 0.75)); n++; }
+  return n;
+}
+export const squadDown = () => allies.filter(a => !standing(a)).length;
 
 /* ============================================================
    THE FOES' SIDE — may this foe turn on a squadmate? (enemies/ai.js, every frame for each foe)
@@ -409,13 +437,15 @@ function pickTarget(a){
   if (m && Math.hypot(m.group.position.x - g.x, m.group.position.z - g.z) < a.role.range * 1.3 &&
       !segBlockedBySolids(g.x, g.z, m.group.position.x, m.group.position.z)) return m;
   const focus = G.squadFocus && G.gt - (G.squadFocusT || -99) < SQUAD.focusFor ? G.squadFocus : null;
+  const sup = G.suppress && G.suppress.until > G.gt ? G.suppress : null;   // SUPPRESS: the foes in the zone first
   let best = null, bs = 1e9;
   for (const e of enemies){
     if (e.dead || e.state === 'spawn' || !isFodder(e)) continue;
     const d = Math.hypot(e.group.position.x - g.x, e.group.position.z - g.z);
     if (d > a.role.range) continue;
     // nearest first; the trooper you're fighting, one shooting at this squadmate, or one close to you jump the queue
-    const s = d - (e === focus ? 10 : 0) - (e.allyTgt === a ? 4 : 0) - (Math.hypot(e.group.position.x - pp.x, e.group.position.z - pp.z) < 6 ? 3 : 0);
+    const s = d - (e === focus ? 10 : 0) - (e.allyTgt === a ? 4 : 0) - (Math.hypot(e.group.position.x - pp.x, e.group.position.z - pp.z) < 6 ? 3 : 0)
+      - (sup && Math.hypot(e.group.position.x - sup.x, e.group.position.z - sup.z) < sup.r ? TROOPER.command.suppress.prefer : 0);
     if (s >= bs) continue;
     if (segBlockedBySolids(g.x, g.z, e.group.position.x, e.group.position.z)) continue;
     bs = s; best = e;
@@ -647,7 +677,7 @@ function updateAlly(a, dt, medic, pp){
   g.rotation.y += clamp(dy, -9 * dt, 9 * dt);
   if (a.burstLeft > 0 && e && (a.burstT -= dt) <= 0){ a.burstLeft--; a.burstT = a.role.burstGap; shoot(a, e); }
   if ((a.fireT -= dt) <= 0 && e && Math.abs(dy) < 0.3){
-    a.fireT = rand(a.role.every[0], a.role.every[1]) * (a.inCover ? COMMAND.coverFire : 1);
+    a.fireT = rand(a.role.every[0], a.role.every[1]) * (a.inCover ? COMMAND.coverFire : 1) * (G.suppress && G.suppress.until > G.gt ? TROOPER.command.suppress.fire : 1);
     shoot(a, e);
     a.burstLeft = a.role.burst - 1; a.burstT = a.role.burstGap;
   }
@@ -764,10 +794,12 @@ export function updateSquadHud(){
   }
   if (!show) return;
   const gl = grenadeLeft();
-  const key = allies.map(a => a.name + orderLabel(a)).join() + SQ.formation + G.reviveLeft + Math.ceil(gl);
+  const cp = isTrooper() ? Math.floor(commandPoints()) : -1;
+  const key = allies.map(a => a.name + orderLabel(a)).join() + SQ.formation + G.reviveLeft + Math.ceil(gl) + cp;
   if (key !== lastKey){
     lastKey = key;
     hud.innerHTML = '<div class="sq-head"><span>SQUAD · ' + (SQ.formation === 'wide' ? 'SPREAD' : 'STACKED') + '</span><span class="sq-ord">ORDERS <kbd>H</kbd></span></div>' +
+      (cp >= 0 ? '<div class="sq-cp"><span>CP ' + cp + '</span><span class="sq-cpbar"><i style="width:' + cp + '%"></i></span><span class="sq-ord">CALL <kbd>T</kbd></span></div>' : '') +
       allies.map(a => '<div class="sq-row"><span class="sq-n">' + a.name + '</span><span class="sq-o">' + orderLabel(a) + '</span><span class="sq-bar"><i></i></span></div>').join('') +
       '<div class="sq-gr' + (gl > 0 ? '' : ' ready') + '">GRENADE ' + (gl > 0 ? Math.ceil(gl) + 'S' : 'READY') + '</div>' +
       '<div class="sq-rev">' + (G.reviveLeft > 0 ? 'THEY CAN GET YOU UP ×' + G.reviveLeft : 'NO SECOND CHANCE LEFT THIS WAVE') + '</div>';

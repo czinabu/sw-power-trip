@@ -8,6 +8,7 @@ import { V3, rand, clamp, TMP, dampToward } from '../utils.js';
 import { burst } from '../fx/particles.js';
 import { G, enemies, solids, isGunner } from '../state.js';
 import { MELEE_WINDUP_GAP } from '../data/mando.js';
+import { TROOPER } from '../data/trooper.js';
 import { playerPos, stance } from '../player/helpers.js';
 import { bomberExplode, updateAimLine, warbringerSlam, breakJetpack } from './specials.js';
 import { damageEnemy, hostileTargetFor, easeWeaponHome, telegraphWindup, staggerEnemy } from './damage.js';
@@ -282,7 +283,7 @@ export function updateEnemies(dt){
           mx = ux - uz * e.unstickSide * 1.4; mz = uz + ux * e.unstickSide * 1.4;
         }
         const ml = Math.hypot(mx, mz) || 1;
-        const esp = e.rooted ? 0 : e.spd * paceMul * (G.mut === 'berserk' ? 1.3 : 1);   // BERSERK mutator: enemies surge in faster · a ROOTED training foe holds its spot
+        const esp = e.rooted ? 0 : e.spd * paceMul * (G.mut === 'berserk' ? 1.3 : 1) * (e.suppT > G.gt ? TROOPER.command.suppress.slow : 1);   // PINNED (the ARC trooper's SUPPRESS): a crawl · BERSERK mutator: enemies surge in faster · a ROOTED training foe holds its spot
         // MOMENTUM — the hero's ground handling (data/movement.js MOVE): speed builds at `accel`, stopping or turning
         // back against the momentum brakes harder, and reversing hard at speed plants the feet for a beat (a pivot)
         const mv = e.mv || (e.mv = { x: 0, z: 0 });
@@ -322,6 +323,7 @@ export function updateEnemies(dt){
           else if (t.ranged || e.converted || onAlly || G.gt - (G.lastMeleeWindupT ?? -9) >= MELEE_WINDUP_GAP){
             // a swing coiled BEHIND the camera gets a longer tell, so off-screen hits stay fair
             e.wu = t.windup * (!t.ranged && !e.converted && !onAlly && !remote && behindCamera(g.position) ? ENGAGE.rearWindup : 1) * (e.converted || onAlly ? 1 : diffTellMul());   // DIFFICULTY: longer tells on Padawan
+            if (e.suppT > G.gt && t.ranged) e.wu *= TROOPER.command.suppress.windup;   // PINNED: it takes its time over the shot
             e.state = 'windup'; e.st = e.wu; telegraphWindup(e); e.heldTell = false;
             // a duellist picks its line, and whether this one is a feint, a held strike or the start of a string; a plain
             // trooper may hold or feint (tactics.js); a line trooper plans a double-tap or a held aim

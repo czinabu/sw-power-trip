@@ -14,7 +14,9 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const page_url = pathToFileURL(path.join(root, 'dist/index.html')).href + '?trooper';
 const GAME_SECONDS = +(process.env.SMOKE_SECONDS || 16);
 const SHOTS = !!process.env.SHOTS;
-const MOVES = ['g', 'q', 'shift', ' ', '2', 'Right', 'v', 'e', 'f', 'r', '1', 'z', 'c', 'h', '3', 'Right', 'x', 'g', '1'];   // Right = a right click (aim / the left pistol)
+const MOVES = ['g', 'q', 'shift', ' ', '2', 'Right', 'v', 'e', 'f', 'r', '1', 'z', 'c', 'h', '3', 'Right', 'x', 't', 'g', '1'];   // Right = a right click (aim / the left pistol)
+// T is the battlefield call (allies/calls.js); halfway through, the squad gets the SUPPRESS order (allies/squad.js), and a
+// run with a squad fails if it never takes (command points are kept full, as the force is)
 // every run hands the trooper all of its powers (data/trooper-progression.js) so each is cast: the campaign run takes
 // the breach charge on F, the rest the ion grenade
 const RUNS = (process.env.RUNS || 'campaign,endless,mission:strike,sandbox,training').split(',');
@@ -66,11 +68,11 @@ for (const run of RUNS){
     await page.evaluate(() => { window.__frames = 0; const f = () => { window.__frames++; requestAnimationFrame(f); }; requestAnimationFrame(f); });
     const startGt = await page.evaluate(() => GAME.G.gt);
     await page.keyboard.down('w');
-    let step = 0, everHit = false, shot = false;
+    let step = 0, everHit = false, shot = false, suppressed = false, called = false;
     for (;;){
       const s = await page.evaluate(() => {
         const { G, player, enemies } = GAME;
-        player.hp = Math.max(player.hp, 1e3); player.force = 100;
+        player.hp = Math.max(player.hp, 1e3); player.force = 100; player.cp = 100;
         const card = document.querySelector('#chapcard.open [data-go]'); if (card) card.click();
         if (G.cutscene) GAME.cutscene.skipScene();
         if (G.skillSelect){ const b = document.getElementById('continueBtn'); if (b) b.click(); }
@@ -80,10 +82,11 @@ for (const run of RUNS){
         for (const e of enemies){ if (e.dead || e.converted) continue; const d = Math.hypot(e.group.position.x - p.x, e.group.position.z - p.z); if (d < bd){ bd = d; best = e; } }
         if (best) G.yaw = Math.atan2(best.group.position.x - p.x, best.group.position.z - p.z);
         G.pitch = 0.12;
-        return { gt: G.gt, mode: G.mode, near: bd, hero: G.hero, weapon: player.weapon,
+        return { gt: G.gt, mode: G.mode, near: bd, hero: G.hero, weapon: player.weapon, sup: !!(G.suppress && G.suppress.until > G.gt), squad: GAME.squad.allies.length,
                  hit: (G.stats && G.stats.kills) > 0 || enemies.some(e => e.maxHp && e.hp < e.maxHp) };
       });
-      everHit = everHit || s.hit;
+      everHit = everHit || s.hit; suppressed = suppressed || s.sup;
+      if (!called && s.squad && s.gt - startGt > GAME_SECONDS * 0.4){ called = true; await page.evaluate(() => GAME.squad.giveOrder('suppress')); }
       if (s.hero !== 'trooper') throw new Error('the hero changed to ' + s.hero);
       if (SHOTS && !shot && s.gt - startGt > GAME_SECONDS * 0.5){ shot = true; await page.screenshot({ path: path.join(root, `trooper-${run.replace(':', '-')}.png`) }); }
       if (s.gt - startGt >= GAME_SECONDS || s.mode !== 'play' || Date.now() - t0 > 150000) break;
@@ -101,7 +104,7 @@ for (const run of RUNS){
     result = await page.evaluate(start => ({ gameSeconds: +(GAME.G.gt - start).toFixed(1), frames: window.__frames, mode: GAME.G.mode,
       enemies: GAME.enemies.length, kills: (GAME.G.stats && GAME.G.stats.kills) || 0, squad: GAME.squad.allies.length, weapon: GAME.player.weapon,
       jet: !!GAME.player.jetActive }), startGt);
-    result.everHit = everHit;
+    result.everHit = everHit; result.suppressed = suppressed;
   } catch (e){ errors.push('script: ' + e.message); }
   await page.close();
   const seen = new Map();
@@ -112,6 +115,7 @@ for (const run of RUNS){
     if (result.mode !== 'play' && result.mode !== 'victory') problems.push(`left play mode (mode: ${result.mode})`);
     if (mode !== 'training' && !result.everHit) problems.push('the trooper never hit anything');
     if (result.jet) problems.push('the trooper flew on a jetpack');
+    if (result.squad && !result.suppressed) problems.push('the SUPPRESS order never took');
   }
   console.log(`${problems.length ? 'FAIL' : 'ok  '} ${run.padEnd(16)} ${JSON.stringify(result || {})} (${((Date.now() - t0) / 1000).toFixed(0)}s)`);
   for (const p of problems) console.log('     ' + p.split('\n').slice(0, 20).join('\n     '));

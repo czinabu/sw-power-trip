@@ -24,6 +24,8 @@ import { DUEL } from '../../data/duel.js';
 import { damageBoss } from '../../boss/boss.js';
 import { tutEvent } from '../../game/tutor-bus.js';
 import { trooperPowerKey, updateTrooperPowers, resetTrooperPowers } from './abilities.js';
+import { battlefieldCall, updateCalls, resetCalls } from '../../allies/calls.js';
+import { resetCommand } from './command.js';
 
 /* ---------- INPUT (engine/input.js hands the trooper's presses here) ---------- */
 // LMB: the rifle's burst, or the right-hand pistol. RMB: aim the rifle (the steady stance), or fire the left pistol.
@@ -45,6 +47,7 @@ export function trooperKey(k, repeat){
   if (k === '1') switchWeapon('rifle');
   if (k === '2') switchWeapon('pistols');
   if (k === '3' && G.unlocked.launcher) switchWeapon('launcher');
+  if (k === 't' && !repeat) battlefieldCall();   // BATTLEFIELD CALLS: reinforce or a supply drop, for COMMAND POINTS (allies/calls.js)
   trooperPowerKey(k, repeat);   // the powers: player/trooper/abilities.js
 }
 // the mouse wheel: the other gun
@@ -75,9 +78,10 @@ export function updateTrooperKit(dt){
   } else player.fragT = 0;
   if (player.bashCd > 0) player.bashCd -= dt;
   updateTrooperPowers(dt);
+  updateCalls(dt);
 }
 export const fragMax = () => TROOPER.frag.charges + (player.up.fragExtra || 0);   // FRAG POUCH (data/trooper-progression.js) adds one
-export function resetTrooperKit(){ player.fragCharges = fragMax(); player.fragT = 0; player.bashCd = 0; resetTrooperPowers(); }
+export function resetTrooperKit(){ player.fragCharges = fragMax(); player.fragT = 0; player.bashCd = 0; resetTrooperPowers(); resetCalls(); resetCommand(); }
 function fragTarget(F, from){
   const aim = mandoAimPoint(), ray = mandoAimRay();
   const o = ray.origin, d = ray.direction;

@@ -2,8 +2,8 @@
 // CLONE ARC TROOPER kit tuning (testing only: the hero shows on the menu with ?trooper in the URL). Edit freely.
 // The trooper is a GUNNER like the Mando (state.js isGunner): it shares the reticle, bolts, heat and hit markers, but
 // it fights on foot with no jetpack, leads a clone squad, and its guns are its own (TROOPER_WEAPONS below).
-// STILL TO BUILD before it leaves testing: its own store, skills and mastery (it borrows none yet), gamepad binds (the
-// Mando's for now), its cutscene and mission lines (the Mando's for now), its own DC-15 model (the carbine's for now),
+// STILL TO BUILD before it leaves testing: gamepad binds (the Mando's for now), its cutscene and mission lines (the
+// Mando's for now), its own DC-15 model (the carbine's for now),
 // a heat bar per pistol, its prologue and its own trial chapters (data/campaign-trooper.js).
 
 /* WEAPONS — the same fields as data/mando.js MANDO_WEAPONS (heat, cool, spreads, falloff), plus:
@@ -29,6 +29,20 @@ export const GUN_LOOK = { rifle: 'carbine', pistols: 'dual', launcher: 'repeater
 export const gunLook = (w) => GUN_LOOK[w] || w;
 
 export const TROOPER = {
+  /* COMMAND POINTS (player/trooper/command.js): earned in the fight, spent on the orders that matter and the
+     battlefield calls (T). ON ME, MOVE, HOLD, COVER and GET THEM UP stay free */
+  command: {
+    max: 100, start: 30,
+    gain: { kill: 5, elite: 12, squadKill: 3 },
+    cost: { attack: 10, grenade: 15, suppress: 15 },
+    // SUPPRESS: for `time` the squad fires `fire` × as often on the foes within `radius` of the point; a foe its bolts
+    // hit is PINNED for `pin` s: it moves at `slow` × and coils its shots `windup` × as long
+    suppress: { time: 8, radius: 8, fire: 0.5, pin: 2.5, slow: 0.35, windup: 1.6, prefer: 8 },
+    // BATTLEFIELD CALLS (T): REINFORCE when someone is down (everyone up now), otherwise a SUPPLY DROP that lands beside
+    // you after `delay`: grenades topped up, the guns cooled, `heal` of your health back
+    supply: { cost: 30, delay: 1.2, heal: 0.15, cd: 5 },
+    reinforce: { cost: 40, cd: 5 },
+  },
   // ACTIVE VENT (R) while overheated: press inside the window (seconds into the overheat) for a perfect vent that
   // clears the gun at once; press outside it and the gun jams for `jam` more seconds. Not overheated, R is a plain vent.
   vent: { window: [0.35, 0.7], jam: 0.7 },

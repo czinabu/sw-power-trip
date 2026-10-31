@@ -366,6 +366,10 @@ body.sandbox #xpmeter,body.sandbox #xphud{display:none !important}   /* the sand
 #squadhud .sq-bar i{display:block;height:100%;background:var(--accent);transition:width .15s linear}
 #squadhud .sq-row.down{color:#ff9a8a}
 #squadhud .sq-row.down .sq-bar i{background:#7bffae}
+#squadhud .sq-cp{display:flex;align-items:center;gap:8px;font:700 11px/1 var(--font-ui);letter-spacing:1.5px;color:#ffd35a;margin:1px 0 3px}
+#squadhud .sq-cpbar{flex:1;height:5px;border-radius:2px;background:rgba(255,211,90,.16);overflow:hidden}
+#squadhud .sq-cpbar i{display:block;height:100%;background:#ffd35a;transition:width .2s linear}
+#squadhud .sq-cp .sq-ord kbd{font:700 9px/1 var(--font-ui);padding:1px 4px;border:1px solid currentColor;border-radius:3px;margin-left:3px}
 #squadhud .sq-o{width:58px;font-size:9px;letter-spacing:1.4px;color:var(--accent);white-space:nowrap}
 #squadhud .sq-row.down .sq-o{color:#ff9a8a}
 #squadhud .sq-gr{font-size:10px;letter-spacing:1.4px;color:var(--ink-dim);margin-top:2px}
