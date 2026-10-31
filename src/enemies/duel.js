@@ -10,7 +10,7 @@ import { sfx, S } from '../audio/sfx.js';
 import { V3, rand, clamp, TMP, dampToward } from '../utils.js';
 import { burst } from '../fx/particles.js';
 import { floater, screenFlash } from '../fx/floaters.js';
-import { sparks, clashFlash } from '../fx/ink.js';
+import { sparks, clashFlash, clashSparks } from '../fx/ink.js';
 import { spawnHitSpark, spawnGroundShock } from '../fx/vfx.js';
 import { G, enemies, player } from '../state.js';
 import { fwd, playerPos, stance } from '../player/helpers.js';
@@ -122,7 +122,7 @@ export function rallyParry(e, sw, at){
   const g = e.group, pp = playerPos(), dx = pp.x - g.position.x, dz = pp.z - g.position.z, dl = Math.hypot(dx, dz) || 1;
   const cp = at || V3(g.position.x + dx / dl * 0.7, g.position.y + 1.5, g.position.z + dz / dl * 0.7);
   clashFlash(cp, G.hero === 'mando' ? 0xffd28a : stance().blade, true);
-  sparks(cp, 0xffe9b0, 12, 12, { life: 0.3 });
+  clashSparks(cp, 0xffe9b0, 5);
   S.clash(cp, true, e.form);
   sfx(1700 + n * 220, 0.08, 'triangle', 0.035, 1200);   // each beat rings a little higher
   G.hitstop = Math.max(G.hitstop, 0.07); G.shake = Math.max(G.shake, 0.35);
@@ -638,7 +638,7 @@ export function duelDefend(e, line, kind, heavy, at){
   if (addPosture(e, cost, dx / dl, dz / dl)) return 'break';
   e.arcFlash = 0.6;
   clashFlash(cp, G.hero === 'mando' ? 0xffd28a : stance().blade, false);
-  sparks(cp, 0xffe9b0, 8, 10, { life: 0.26 });
+  clashSparks(cp, 0xffe9b0, 4);
   S.clash(cp, false, e.form);
   G.hitstop = Math.max(G.hitstop, 0.05); G.shake = Math.max(G.shake, 0.2);
   if (p.tire && G.hero !== 'mando'){ player.stam = Math.max(0, player.stam - p.tire); player.stamDelay = stamDelay(); }   // SORESU: the wall wears you out
@@ -689,7 +689,7 @@ function punishMash(cp, form){
   player.flinchT = player.flinchMax = Math.max(player.flinchT || 0, R.flinch);
   player.queuedAtk = false;
   clashFlash(cp, 0xff8a5a, true);
-  sparks(cp, 0xffc890, 12, 12, { life: 0.3 });
+  clashSparks(cp, 0xffc890, 5);
   S.parry(cp, form);
   G.hitstop = Math.max(G.hitstop, 0.09); G.shake = Math.max(G.shake, 0.45);
 }
@@ -706,7 +706,7 @@ export function addPosture(e, amt, awayX, awayZ){
   if (e.dp.brace){ e.st = WARBRINGER.open; e.openUntil = G.gt + e.st; }   // the Warbringer's break: a long opening, every blow lands harder
   const g = e.group, cp = V3(g.position.x, g.position.y + 1.6, g.position.z);
   clashFlash(cp, 0xffd24a, true);
-  sparks(cp, 0xffd24a, 16, 13, { life: 0.36 });
+  clashSparks(cp, 0xffd24a, 6);
   G.hitstop = Math.max(G.hitstop, 0.12); G.shake = Math.max(G.shake, 0.6);
   G.slowmo = Math.min(G.slowmo, 0.4); G.slowmoT = Math.max(G.slowmoT, 0.15);
   return true;
@@ -779,7 +779,7 @@ export function startLock(e, kind){
   player.lockFace = player.faceYaw = Math.atan2(TMP.x, TMP.z);   // squared to it for the whole bind (player/animation.js)
   const cp = lockPoint();
   clashFlash(cp, stance().blade, true);
-  sparks(cp, 0xffe9b0, 18, 14, { life: 0.4 });
+  clashSparks(cp, 0xffe9b0, 6);
   S.clash(cp, true, e.form);
   G.hitstop = Math.max(G.hitstop, 0.12); G.shake = Math.max(G.shake, 0.6);
   G.slowmo = Math.min(G.slowmo, 0.35); G.slowmoT = Math.max(G.slowmoT, 0.25);
@@ -844,7 +844,7 @@ export function updateSaberLock(dt){
   }
   // the bind sizzles: sparks spit from the contact, a crackling buzz, the lens trembles (all of it harder in a surge)
   const cp = lockPoint();
-  if ((LOCK.fx -= dt) <= 0){ LOCK.fx = surging ? 0.025 : 0.05; sparks(cp, Math.random() < 0.5 ? 0xffe9b0 : stance().blade, surging ? 5 : 3, surging ? 10 : 7, { life: 0.22, size: 0.45 }); }
+  if ((LOCK.fx -= dt) <= 0){ LOCK.fx = surging ? 0.025 : 0.05; sparks(cp, Math.random() < 0.5 ? 0xffe9b0 : stance().blade, surging ? 3 : 2, surging ? 8 : 6, { life: 0.16, size: 0.34 }); }
   if ((LOCK.buzz -= dt) <= 0){ LOCK.buzz = surging ? 0.07 : 0.11; sfx(rand(90, 120), 0.12, 'sawtooth', 0.03, rand(140, 180)); }
   G.shake = Math.max(G.shake, 0.1 + Math.abs(LOCK.bal) * 0.15 + (surging ? 0.15 : 0));
   if (lockFill) lockFill.style.left = (50 + clamp(LOCK.bal, -1, 1) * 50) + '%';
@@ -904,8 +904,8 @@ function winLock(label, knock){
   player.riposteT = CFG.player.riposteTime + 0.3; player.ripLine = null;
   const cp = lockPoint();
   clashFlash(cp, 0xffd24a, true);
-  sparks(cp, 0xffe27a, 18, 15, { dir: V3(dx / dl, 0.2, dz / dl), cone: 0.8, life: 0.36 });
-  screenFlash('radial-gradient(ellipse at center, rgba(255,240,180,.5), transparent 65%)', 0.8, 0.3);
+  clashSparks(cp, 0xffe27a, 6, { dir: V3(dx / dl, 0.2, dz / dl), cone: 0.8 });
+  screenFlash('radial-gradient(ellipse at center, rgba(255,240,180,.22), transparent 45%)', 0.5, 0.2);
   G.hitstop = Math.max(G.hitstop, 0.16); G.slowmo = Math.min(G.slowmo, 0.3); G.slowmoT = Math.max(G.slowmoT, 0.3);
   S.parry(cp, LOCK.foe && LOCK.foe.form);
   if (G.stats) G.stats.locksWon = (G.stats.locksWon || 0) + 1;

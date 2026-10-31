@@ -6,6 +6,11 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'Effects from the palm, small at the contact', status: 'done',
+    items: ['Force powers leave the Jedi\'s hands: Push, Pull, Repulse, Barrier and Grasp come from the free palm with the saber drawn and from both palms with it holstered, as Judgement already did; holstered strikes burst from the hand that threw them',
+            'Lightsaber contact is a small, sharp flash right where the blades meet: parries, deflects, blocks, clashes, binds and saber hits lost the big rings, sprays and screen flashes',
+            'The Mando\'s flamethrower, wrist rocket and whistling birds leave his left gauntlet, the detonator his hand, and blaster bolts the barrel of the gun that fired them; melee and bolt impacts are small and local',
+            'Visual only: damage, reach and timing are unchanged. Same in every mode, and a co-op partner\'s powers come out of their palms on your screen too'] },
   { title: 'Dark robes you can read', status: 'done',
     items: ['Black and near-black outfits (umbra robes, dark hair and skin) no longer render as a flat shadow, especially standing in shade: a soft neutral fill and rim in the arena keep folds and edges visible, while the menu stand keeps them true black',
             'Applies to every hero model in every mode: story, training, survival, sandbox, missions and co-op'] },
@@ -194,12 +199,6 @@ export const ROADMAP = [
             'Done: every form has its own swing and clash sound, the hero\'s and a master\'s alike: Makashi\'s thin flick, Djem So\'s heavy stroke and ringing clash, Soresu\'s dead block, Ataru\'s double flourish',
             'Done: a balance pass on the forms: Shii-Cho keeps the widest arc (Ataru\'s narrows to hunt the back line), Soresu cuts a little harder, Juyo\'s swings cost more breath, Niman loses some of its edge on armour, and the Wall\'s trial guard is a touch less absolute',
             'Done: a second balance pass: a saber blow staggers and shoves a foe a few metres instead of batting it across the arena (every form, the darksaber too, in co-op as well), Djem So\'s finisher really floors brutes, its armour and boss damage comes down, Juyo\'s fury tops out at +35%, Soresu hits a little harder'] },
-  { title: 'Force-imbued unarmed combat', status: 'done',
-    items: ['Holstered (4), the Jedi fights with Force-lit fists and palms: jab, cross, then a finisher the keys pick (burst, lunge, backhand sweep, launcher)',
-            'Hold LMB to charge a palm blast: guard break, elite and boss stagger, bolts and grenades turned back',
-            'E mid-string spins a kick round the ring, in the air stomps down · every blow landed feeds the Force back',
-            'Push or Pull straight after a blow flows out of it: a cheap Palm Push, or a Pull that drags them onto the next strike',
-            'Every mode, co-op included: the partner sees the strikes and the glowing hands'] },
   { title: 'Duellists with your moves', status: 'next',
     items: ['Foes get more of the saber moves you have, so duels feel less scripted'] },
   { title: 'Balance, round two', status: 'next',

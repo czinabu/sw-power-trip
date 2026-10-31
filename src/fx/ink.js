@@ -210,27 +210,34 @@ export function muzzleFlash(pos, dir, color, size = 1){
   sparks(pos, color, 3, 9 * size, { dir, cone: 0.35, life: 0.14, grav: 0, size: 0.4 });
 }
 
-/* HIT SPARK — a cel impact star, a thin shock ring and a spray of streaks */
+/* Contact effects stay small and sit right on the point of contact: a quick hot star a hand or two across, a few
+   short sparks, and (for the heavier blows) a tight ring. Nothing here should cover the fighters. */
+
+/* HIT SPARK — a small cel impact star at the contact point and a few short streaks */
 export function hitSpark(pos, color, power = 1){
-  inkSprite({ pos, shape: 'star', points: 6 + (power > 1.2 ? 2 : 0), sharp: 0.2, color, size: [0.5 + 0.35 * power, 1.1 + 0.5 * power],
-              life: 0.13, fadeAt: 0.3, steps: 3, coreW: 0.4 });
-  inkSprite({ pos, shape: 'ring', inner: 0.78, color, size: [0.4, 1.3 + 1.1 * power], life: 0.18, ease: 3, coreW: 0.25, inkW: 0.22, op: 0.9 });
-  sparks(pos, color, Math.round(4 + 3 * power), 8 + 4 * power, { life: 0.26, grav: 10, size: 0.5 });
+  inkSprite({ pos, shape: 'star', points: 6 + (power > 1.4 ? 2 : 0), sharp: 0.2, color, size: [0.18 + 0.08 * power, 0.36 + 0.16 * power],
+              life: 0.09, fadeAt: 0.3, steps: 2, coreW: 0.42 });
+  if (power > 1.2) inkSprite({ pos, shape: 'ring', inner: 0.8, color, size: [0.15, 0.45 + 0.25 * power], life: 0.12, ease: 3, coreW: 0.25, inkW: 0.22, op: 0.75 });
+  sparks(pos, color, Math.round(3 + 1.5 * power), 6 + 2 * power, { life: 0.18, grav: 10, size: 0.36 });
 }
 
-/* BOLT IMPACT — a small cel splash where a blaster bolt lands, sparks kicked back off the surface */
+/* BOLT IMPACT — a small cel splash where a blaster bolt lands, a few sparks kicked back off the surface */
 export function boltImpact(pos, color, dir){
-  inkSprite({ pos, shape: 'star', points: 5, sharp: 0.25, color, size: [0.45, 0.9], life: 0.1, steps: 2, coreW: 0.45 });
-  inkSprite({ pos, shape: 'ring', inner: 0.75, color, size: [0.3, 1.2], life: 0.14, ease: 3, inkW: 0.24, coreW: 0.2, op: 0.85 });
-  sparks(pos, color, 4, 7, { dir: dir ? _d.copy(dir).negate() : null, cone: 0.9, life: 0.2, size: 0.4 });
+  inkSprite({ pos, shape: 'star', points: 5, sharp: 0.25, color, size: [0.2, 0.42], life: 0.08, steps: 2, coreW: 0.45 });
+  sparks(pos, color, 3, 6, { dir: dir ? _d.copy(dir).negate() : null, cone: 0.9, life: 0.16, size: 0.34 });
 }
 
-/* BLOCK / PARRY — the clash: a big eight-point star, a white flash disc, a ring and a hard spray of sparks */
+/* BLOCK / PARRY / DEFLECT — the clash: a white pin-point, a small spinning star and a few sparks, right where the blades
+   (or blade and bolt) meet. big: a parry, a bind or a guard break, a touch larger and with a tight ring */
 export function clashFlash(pos, color, big = true){
-  inkSprite({ pos, shape: 'disc', color: 0xffffff, size: [0.4, 0.8], life: 0.06, steps: 2, coreW: 0.75, inkW: 0.1 });
-  inkSprite({ pos, shape: 'star', points: 8, sharp: 0.14, color, size: [0.7, big ? 1.5 : 1.0], life: 0.15, fadeAt: 0.3, steps: 3, coreW: 0.34, spin: 2 });
-  inkSprite({ pos, shape: 'ring', inner: 0.8, color, core: color, coreHot: 1.2, size: [0.3, big ? 2.4 : 1.6], life: 0.2, ease: 3, inkW: 0.22, coreW: 0.2, op: 0.8 });
-  sparks(pos, color, big ? 6 : 4, 9, { life: 0.2, size: 0.4 });
+  inkSprite({ pos, shape: 'disc', color: 0xffffff, size: [0.12, big ? 0.3 : 0.22], life: 0.05, steps: 2, coreW: 0.75, inkW: 0.1 });
+  inkSprite({ pos, shape: 'star', points: big ? 8 : 6, sharp: 0.14, color, size: [0.22, big ? 0.62 : 0.42], life: 0.1, fadeAt: 0.3, steps: 2, coreW: 0.36, spin: 2 });
+  if (big) inkSprite({ pos, shape: 'ring', inner: 0.8, color, core: color, coreHot: 1.2, size: [0.15, 0.8], life: 0.12, ease: 3, inkW: 0.22, coreW: 0.2, op: 0.7 });
+  sparks(pos, color, big ? 4 : 3, 7, { life: 0.16, size: 0.34 });
+}
+// the white-hot spit off two blades meeting: a capped handful of short sparks (the call sites used to throw 12-18)
+export function clashSparks(pos, color, n = 4, o = {}){
+  sparks(pos, color, Math.min(n, 6), o.speed || 7, { life: 0.18, size: 0.34, dir: o.dir, cone: o.cone });
 }
 
 /* GROUND SHOCK — a flat ink ring racing outward along the floor */
