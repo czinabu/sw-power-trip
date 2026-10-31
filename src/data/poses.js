@@ -37,19 +37,22 @@ const OFF_POLE = [-0.55, -0.8, -0.25], POLE = [0.55, -0.8, -0.25];
 /* ---------------- GUARDS: ready (idle) and block, per grip and form ---------------- */
 export const SABER_GUARDS = {
   regular: {
-    // FORM IV ATARU — Qui-Gon's sprung coil: low, bladed, both hands on the hilt by the hip, tip up at the foe's eyes
+    // FORM IV ATARU — Qui-Gon against Maul on Tatooine and Naboo (The Phantom Menace): sunk low and bladed, the weapon
+    // side turned back, both hands on the hilt at the weapon side of the belly, the blade angled up across the body at
+    // the foe's eyes; coiled to spring. (The hilt sat too low for the off hand to reach it: it now closes on the pommel.)
     ataru: {
-      ready: { hand: [0.12, -0.24, 0.24], blade: [-0.22, 0.82, 0.52], two: true, twist: -0.38, torso: -0.1, pole: [0.6, -0.7, -0.3] },
+      ready: { hand: [0.06, 0.02, 0.3], blade: [-0.3, 0.72, 0.62], two: true, twist: -0.38, torso: -0.1, pole: [0.6, -0.7, -0.3] },
       // a quick one-handed high cover (Yoda): blade flat over the brow, off hand flung out for balance
       block: { hand: [0.18, 0.55, 0.3], blade: [-0.92, 0.28, 0.25], twist: -0.12, lean: 0.02, pole: [0.8, -0.2, -0.4],
                off: { hand: [-0.52, -0.05, 0.12], pole: [-0.3, -0.9, -0.3] } },
     },
-    // FORM I SHII-CHO — the first guard every initiate learns (Kit Fisto, Luke at the Sarlacc): square to the foe, both
-    // hands on the hilt at the belly, the blade up at the foe's eyes
+    // FORM I SHII-CHO — the first guard every initiate learns: the plain middle guard of the Jedi younglings' training
+    // (Attack of the Clones), Kit Fisto and Luke on the sail barge. Square to the foe, both hands on the hilt on the centre
+    // line in front of the stomach, arms forward, the blade angled out at the foe's throat (a swordsman's middle guard)
     shiicho: {
-      ready: { hand: [0.08, -0.14, 0.3], blade: [-0.1, 0.84, 0.52], two: true, twist: -0.04, torso: 0, lean: 0.06, pole: [0.6, -0.7, -0.3] },
-      // a broad two-handed bar across the front, the blade near level
-      block: { hand: [0.18, 0.3, 0.4], blade: [-0.92, 0.36, 0.1], two: true, twist: 0.04, lean: 0.12, pole: [0.6, -0.8, 0] },
+      ready: { hand: [0.04, -0.04, 0.32], blade: [-0.04, 0.62, 0.78], two: true, twist: -0.02, torso: 0, lean: 0.06, pole: [0.6, -0.75, -0.2] },
+      // a broad two-handed bar across the front, the blade near level (hilt central so the off hand reaches the pommel)
+      block: { hand: [-0.02, 0.3, 0.36], blade: [-0.9, 0.4, 0.15], two: true, twist: 0.04, lean: 0.12, pole: [0.6, -0.8, 0] },
     },
     // FORM II MAKASHI — Dooku's guard: square to the foe, feet narrow and close, the saber arm straight out to the side
     // with the blade carrying the line and the off hand at the back with its elbow flared. Two blocks alternate
@@ -84,32 +87,35 @@ export const SABER_GUARDS = {
     // foe, the off hand open and forward so a Push or a Pull is one gesture away
     niman: {
       ready: { hand: [0.24, 0.0, 0.32], blade: [-0.28, 0.72, 0.62], twist: 0.18, torso: 0.06, lean: 0.05, pole: [0.7, -0.6, -0.3], palm: 1,
-               off: { hand: [-0.4, 0.1, 0.42], pole: [-0.5, -0.85, 0.15] },
+               off: { hand: [-0.36, 0.18, 0.44], pole: [-0.5, -0.85, 0.15] },
                offMove: { hand: [-0.3, -0.1, 0.34], pole: OFF_POLE } },
       // the blade up before the chest, the open palm beside it: the Force hand helps catch
       block: { hand: [0.14, 0.12, 0.42], blade: [-0.3, 0.94, 0.14], twist: 0.04, lean: 0.06, pole: POLE,
                off: { hand: [-0.22, 0.16, 0.4], pole: OFF_POLE } },
     },
-    // FORM VII JUYO — the predator's guard (Maul, Vader in fury): the blade cocked high back over the weapon shoulder in
-    // one hand, the off hand clawed out at the foe, the body pitched forward to spring
+    // FORM VII JUYO — Maul's prowl in the Naboo hangar (The Phantom Menace): pitched forward and low, head down, the saber
+    // in one hand held out low in front of the weapon hip with the blade slanting down and forward at the foe's legs,
+    // ready to rip upward; the off hand raised and clawed beside the head
     juyo: {
-      ready: { hand: [0.26, 0.3, 0.26], blade: [0.3, 0.78, -0.55], twist: 0.26, torso: 0.08, lean: 0.16, pole: [0.8, -0.3, -0.4],
-               off: { hand: [-0.36, 0.16, 0.46], pole: [-0.6, -0.6, -0.3] } },
+      ready: { hand: [0.3, -0.1, 0.38], blade: [0.1, -0.35, 0.93], twist: 0.22, torso: 0.08, lean: 0.18, pole: [0.8, -0.4, -0.4],
+               off: { hand: [-0.42, 0.3, 0.32], pole: [-0.6, -0.6, -0.3] } },
       // a hard one-handed bar thrown high across the front; it meets the blow and is already coming back
       block: { hand: [0.2, 0.38, 0.4], blade: [-0.9, 0.42, 0.1], twist: 0.08, lean: 0.14, pole: [0.8, -0.3, -0.4],
                off: { hand: [-0.42, 0.06, 0.32], pole: OFF_POLE } },
     },
-    // FORM VII VAAPAD — Mace Windu's guard: both hands at the chest, the blade straight up before the face, utterly still
+    // FORM VII VAAPAD — Mace Windu facing Palpatine (Revenge of the Sith): both hands close together at the weapon side of
+    // the chest, elbows down, the blade standing dead upright beside the face, utterly still
     vaapad: {
-      ready: { hand: [0.06, 0.18, 0.36], blade: [0.08, 0.98, 0.14], two: true, twist: 0.06, torso: 0.02, lean: 0.04, pole: [0.6, -0.7, -0.3] },
+      ready: { hand: [0.1, 0.14, 0.3], blade: [0.04, 1, 0.04], two: true, twist: 0.1, torso: 0.02, lean: 0.04, pole: [0.6, -0.75, -0.25] },
       // the same blade dropped to a slanted two-handed bar: it takes the blow on the forte and turns it
-      block: { hand: [0.14, 0.3, 0.42], blade: [-0.86, 0.5, 0.1], two: true, twist: 0.04, lean: 0.1, pole: [0.6, -0.8, 0] },
+      block: { hand: [0.0, 0.3, 0.42], blade: [-0.86, 0.5, 0.1], two: true, twist: 0.04, lean: 0.1, pole: [0.6, -0.8, 0] },
     },
-    // FORM V DJEM SO — Anakin's high guard: both hands by the weapon shoulder, blade up and back, ready to hammer down
+    // FORM V DJEM SO — Anakin against Dooku (Revenge of the Sith) and Luke on Bespin (The Empire Strikes Back): both hands
+    // on the hilt up by the weapon shoulder, beside the ear, the blade cocked up and back, ready to hammer down
     djemso: {
-      ready: { hand: [0.2, 0.16, 0.22], blade: [0.22, 0.7, -0.68], two: true, twist: 0.18, torso: 0.05, pole: [0.7, -0.6, -0.2] },
-      // Vader's wall: blade near level across the face, two hands, leaning into the hit
-      block: { hand: [0.24, 0.36, 0.4], blade: [-0.95, 0.3, 0.05], two: true, twist: 0.05, lean: 0.24, pole: [0.6, -0.8, 0] },
+      ready: { hand: [0.16, 0.3, 0.2], blade: [0.2, 0.8, -0.56], two: true, twist: 0.2, torso: 0.05, pole: [0.7, -0.6, -0.2] },
+      // Vader's wall: blade near level across the face, two hands, leaning into the hit (hilt central so both hands reach)
+      block: { hand: [0.0, 0.34, 0.4], blade: [-0.95, 0.3, 0.05], two: true, twist: 0.05, lean: 0.24, pole: [0.6, -0.8, 0] },
     },
     darksaber: {
       // a heavy blade held with effort: two hands, cocked up by the weapon shoulder, tip wavering

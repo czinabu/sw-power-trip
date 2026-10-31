@@ -18,6 +18,17 @@ the body language comes from the form.
 | VI · Niman | Many Clone Wars Jedi | Balanced and moderate; blends saber work with Force pushes. Fits the Force-heavy kit. |
 | VII · Juyo / Vaapad | Mace Windu, Maul | Ferocious, unpredictable, aggressive chains. Mace's signature form and a natural future stance. |
 
+Film references for each form's ready guard (`SABER_GUARDS` in `src/data/poses.js`):
+
+- **I · Shii-Cho:** the plain two-handed middle guard (younglings' training in *Attack of the Clones*, Luke on the sail barge): square, hilt on the centre line, tip at the foe's throat.
+- **IV · Ataru:** Qui-Gon against Maul (*The Phantom Menace*): low and bladed, two hands at the weapon side of the belly, blade angled up across the body.
+- **V · Djem So:** Anakin against Dooku (*Revenge of the Sith*), Luke on Bespin: two hands up by the weapon shoulder, blade cocked up and back.
+- **VI · Niman:** the Jedi in the Geonosis arena: saber one-handed mid-guard, the off palm open and forward for the Force.
+- **VII · Juyo:** Maul's prowl in the Naboo hangar: pitched low, saber out low at the weapon hip, blade slanting down at the foe's legs, off hand clawed up.
+- **VII · Vaapad:** Mace Windu facing Palpatine: two hands at the weapon side of the chest, blade dead upright.
+
+Two-handed poses must keep the pommel within the off arm's reach (shoulders at x ±0.27, y 0.32; arm 0.64 m): a hilt held low or far out to the weapon side leaves the off hand short of it.
+
 The game's three switchable stances, and how they move now:
 
 | Key | Stance | Gameplay role (unchanged) | How it moves |
