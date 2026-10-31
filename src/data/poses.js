@@ -55,7 +55,7 @@ export const SABER_GUARDS = {
     // down at the foe, the off arm swept back and out with the palm open, the feet narrow and close
     makashi: {
       ready: { hand: [0.3, -0.1, 0.52], blade: [-0.14, -0.42, 0.9], twist: 0.6, torso: 0.22, lean: 0.0, pole: [0.8, -0.6, -0.2], palm: 1,
-               off: { hand: [-0.78, 0.06, -0.28], pole: [-0.6, -0.7, -0.4] } },
+               off: { hand: [-0.52, -0.08, -0.14], pole: [-0.5, -0.85, -0.3] } },
       // a small turn of the wrist: the blade stands up near the centre line and barely leaves it
       block: { hand: [0.14, 0.12, 0.46], blade: [-0.06, 0.98, 0.16], twist: 0.4, lean: 0.02, pole: [0.8, -0.4, -0.3],
                off: { hand: [-0.28, -0.32, -0.24], pole: [-0.5, -0.8, -0.3] } },
