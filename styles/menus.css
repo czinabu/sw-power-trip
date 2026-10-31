@@ -359,6 +359,60 @@ body.fovpreview #fovpill{background:rgba(1,4,10,.82)}
 .sb-chip.locked:hover{border-color:var(--edge);color:var(--ink-soft)}
 .sb-story{font:600 12px/1.4 var(--font-ui);letter-spacing:1.2px;color:var(--gold);margin:-4px 0 12px}
 .sb-foot{display:flex;justify-content:flex-end;margin-top:16px}
+.sb-saves{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.sb-save{display:flex;flex-direction:column;gap:6px;padding:8px 9px;border-radius:var(--r);border:1px solid var(--edge);background:rgba(8,18,33,.55);min-width:0}
+.sb-save .sv-t{font:600 12px/1.2 var(--font-ui);letter-spacing:1.2px;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-save .sv-t b{color:var(--gold);font-weight:700}
+.sb-save .sv-b{display:flex;gap:5px}
+.sb-save .btn{padding:7px 0;flex:1;font-size:12px;letter-spacing:1.5px}
+.sb-save .btn.off{opacity:.35;cursor:not-allowed}
+#sbreplay.off{opacity:.35;cursor:not-allowed}
+/* THE BATTLE SETUP (ui/battlesim-ui.js): a bar along the top and the palette along the bottom, over an overhead view */
+#bsplan{position:fixed;inset:0;z-index:29;display:none;user-select:none;-webkit-user-select:none}
+body.bsplan #bsplan{display:block}
+body.bsplan #hud > *:not(#banner),body.bsplan #threats,body.bsplan #hitmark,body.bsplan #boonstrip{display:none !important}
+.bs-field{position:absolute;inset:0;cursor:crosshair}
+.bs-aim{position:absolute;left:50%;top:50%;width:26px;height:26px;margin:-13px 0 0 -13px;border:2px solid rgba(255,255,255,.85);border-radius:50%;
+  box-shadow:0 0 0 1px rgba(0,0,0,.5);pointer-events:none;display:none}
+body.pad .bs-aim{display:block}
+.bs-top{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:18px;padding:12px 18px;pointer-events:none;
+  background:linear-gradient(rgba(4,10,20,.85),rgba(4,10,20,0))}
+.bs-title{font:700 22px/1 var(--font-display);letter-spacing:3px;color:var(--ink)}
+.bs-title span{font:600 13px/1 var(--font-ui);letter-spacing:2px;color:var(--gold);margin-left:8px}
+.bs-counts{font:600 13px/1 var(--font-ui);letter-spacing:1.5px;color:var(--ink-soft)}
+.bs-counts .f{color:#ff8a7a}.bs-counts .a{color:#7fd0ff}
+.bs-hover{margin-left:auto;font:600 13px/1 var(--font-ui);letter-spacing:1.5px;color:var(--ink-dim)}
+.bs-bar{position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;gap:8px;padding:28px 16px 12px;
+  background:linear-gradient(rgba(4,10,20,0),rgba(4,10,20,.88) 30%)}
+.bs-pal{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.bs-pal .grp{font:700 11px/1 var(--font-ui);letter-spacing:2px;color:var(--ink-faint);margin:0 2px 0 8px}
+.bs-pal .grp:first-child{margin-left:0}
+.bs-chip{pointer-events:auto;cursor:pointer;font:600 12px/1 var(--font-ui);letter-spacing:1.2px;padding:7px 10px;border-radius:var(--r-chip);
+  border:1px solid var(--edge);background:rgba(8,18,33,.75);color:var(--ink-soft);white-space:nowrap}
+.bs-chip:hover{border-color:var(--edge-mid);color:var(--ink)}
+.bs-chip.hero{border-color:rgba(255,210,74,.45)}.bs-chip.ally{border-color:rgba(63,184,255,.45)}.bs-chip.foe{border-color:rgba(255,90,80,.4)}
+.bs-chip.special{border-style:dashed}
+.bs-chip.on{color:#03111d;border-color:transparent}
+.bs-chip.hero.on{background:var(--gold)}.bs-chip.ally.on{background:#3fb8ff}.bs-chip.foe.on{background:#ff6a5a}
+.bs-chip.locked{opacity:.3;cursor:not-allowed;border-style:dashed}
+.bs-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.bs-row .btn{padding:9px 16px;font-size:13px}
+.bs-row .btn.primary{margin-left:auto;padding:12px 40px 12px 30px;font-size:16px}
+.bs-keys{font:500 12px/1.5 var(--font-body);color:var(--ink-faint)}
+.bs-keys kbd{font-size:.75em}
+@media (max-width:760px){ .sb-saves{grid-template-columns:1fr} .bs-top{flex-wrap:wrap;gap:6px 14px} .bs-hover{margin-left:0} }
+/* a short or narrow window: the palette becomes one row that scrolls sideways, so the map keeps the screen */
+@media (max-height:560px),(max-width:760px){
+  .bs-pal{flex-wrap:nowrap;overflow-x:auto;padding-bottom:2px;scrollbar-width:thin}
+  .bs-chip{padding:5px 8px;font-size:11px}
+  .bs-keys{display:none}
+  .bs-bar{padding-top:10px;gap:6px}
+  .bs-row{gap:5px}
+  .bs-row .btn{padding:6px 10px;font-size:11px;letter-spacing:1.5px}
+  .bs-row .btn.primary{padding:8px 28px 8px 18px;font-size:13px}
+  .bs-row .setpill{padding:6px 10px}
+  .bs-top{padding:8px 12px}.bs-title{font-size:17px}
+}
 @media (max-width:760px){ .sb-cols{grid-template-columns:1fr} }
 
 /* ---------- ONLINE CO-OP panel (ui/coop-ui.js) ---------- */

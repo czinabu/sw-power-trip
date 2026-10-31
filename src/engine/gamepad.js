@@ -16,6 +16,9 @@ import { wheelStick } from '../allies/wheel.js';
    direction; the W A S D keys are pressed too, for everything that reads those) */
 export const padMove = { on: false, x: 0, y: 0 };
 export const pad = { connected: false, family: 'xbox', active: false };   // active: the pad is what's being played with
+// a screen that reads the pad itself (the sandbox's battle setup: ui/battlesim-ui.js) sets `own`: while it returns true the
+// pad drives it instead of the fight or the menu focus ring. (btn: pressed now · down(i): just pressed · sticks · dt)
+export const padHooks = { own: null };
 
 const overlay = document.getElementById('overlay');
 const prev = new Array(PAD_BUTTONS.length).fill(false);
@@ -140,6 +143,7 @@ function poll(t){
   const down = (i) => btn[i] && !prev[i] && !blocked.has(i);
   const up = (i) => !btn[i] && prev[i];
 
+  if (padHooks.own && padHooks.own(btn, down, lx, ly, rx, ry, dt)){ prev.splice(0, prev.length, ...btn); return; }
   if (now) fight(btn, down, up, lx, ly, rx, ry, dt);
   else menu(btn, down, lx, ly, ry, dt);
   prev.splice(0, prev.length, ...btn);

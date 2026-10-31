@@ -13,7 +13,7 @@ import { kitTier } from '../game/sandbox-unlocks.js';
 
 // each hero's room: the Jedi train in the temple's training room, the Mandalorian in the throne room at Sundari
 /* ARENAS — the panel's map row: the hero's own room, or any battle map (data/battlemaps.js) to try big fights on */
-export const SANDBOX_MAPS = [{ id: 'room', nm: { jedi: 'TRAINING ROOM', mando: 'THRONE ROOM' } },
+export const SANDBOX_MAPS = [{ id: 'room', nm: { jedi: 'TRAINING ROOM', mando: 'THRONE ROOM', trooper: 'HANGAR' } },
   ...Object.values(BATTLE_MAPS).map(m => ({ id: m.id, nm: m.short }))];
 
 export const SANDBOX_LEVELS = {
