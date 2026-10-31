@@ -922,11 +922,24 @@ export function skipObjective(){
   return true;
 }
 // the on-screen checklist: the mission's objectives, ticked off as they fall
-// where the live objective is (its first shown marker), for the HUD's waypoint arrow (ui/hud.js); null when there's no spot to point at
+// where the live objective is, for the HUD's waypoint arrow (ui/hud.js); null when there's no spot to point at.
+// Multi-part objectives (charges, consoles, posts) point at the nearest part still to do: a finished part's marker turns green and is skipped.
+// A pursuit points at its quarry, or the spot it was last seen, not at a shortcut lane.
 export function objectiveTarget(){
   if (!M.on || !M.o || M.won) return null;
-  const m = M.markers.find(k => k && k.visible !== false && k.userData && k.userData.ring);
-  return m ? m.position : null;
+  if (M.o.kind === 'pursuit'){
+    const s = M.s, q = M.quarry;
+    if (s && s.last && s.last.visible) return s.last.position;
+    return q ? q.g.position : (M.net && M.net.q ? V3(M.net.q[0], 0, M.net.q[2]) : null);
+  }
+  const pp = playerPos();
+  let best = null, bd = Infinity;
+  for (const k of M.markers){
+    if (!k || k.visible === false || !k.userData || !k.userData.ring || k.userData.ring.material.color.getHex() === GREEN) continue;
+    const d = Math.hypot(k.position.x - pp.x, k.position.z - pp.z);
+    if (d < bd){ bd = d; best = k; }
+  }
+  return best ? best.position : null;
 }
 export function missionChecklist(){
   if (!M.on) return null;

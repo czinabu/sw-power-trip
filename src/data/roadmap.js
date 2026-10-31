@@ -42,7 +42,7 @@ export const ROADMAP = [
             'No spoilers: a lesson, form or tip you haven\'t reached stays sealed, on Before the Fight, the forms page and How to Play',
             'Both training grounds rebuilt: stations with signs and lit lanes, the temple gate, bolt range and garden, the covert door, the range and armoury'] },
   { title: 'Objectives you can\'t miss', status: 'done',
-    items: ['A new objective now shows a centred banner for a few seconds with the task under it', 'The objectives list is bigger and brighter, and flashes when the objective changes', 'A gold waypoint with a distance floats over the objective spot, and slides to the screen edge when it is off-screen or behind you'] },
+    items: ['A new objective now shows a centred banner for a few seconds with the task under it', 'The objectives list is bigger and brighter, and flashes when the objective changes', 'A gold waypoint with a distance floats over the objective spot, and slides to the screen edge when it is off-screen or behind you', 'The waypoint follows multi-part objectives: it points at the nearest charge, console or post still to do and moves on after each one is done, and on a chase it tracks the quarry (also in co-op)'] },
   { title: 'Powers that follow the story', status: 'done',
     items: ['In the campaign, new powers open at the chapter that fits them, not by wave count',
             'Jedi: Barrier or Throw with Soresu\'s trial, Jump Attack or Mend with Ataru\'s, Judgement or Repulse once Niman joins the forms at Mustafar, the Dark Lord\'s Grip with Form VII',
