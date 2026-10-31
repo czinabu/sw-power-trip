@@ -146,7 +146,7 @@ function updateDarkThrow(dt){
     const step = A.speed * dt;
     dp.pos.addScaledVector(dp.dir, step); dp.traveled += step;
     _dmid.copy(dp.pos); collideSolids(_dmid, 0.25, false);
-    const floor = groundAt(dp.pos.x, dp.pos.z, Infinity) + 0.4;   // thrown down at the deck, it latches where it lands
+    const floor = groundAt(dp.pos.x, dp.pos.z, dp.pos.y + 0.5) + 0.4;   // thrown down at the deck, it latches where it lands (only what's under the blade: an overhead girder is not the deck)
     const wall = _dmid.distanceToSquared(dp.pos) > 1e-6 || dp.pos.y < floor;
     if (wall){ dp.pos.copy(_dmid); dp.pos.y = Math.max(floor, dp.pos.y); spawnHitSpark(dp.pos.clone(), 0xe7dcff, 0.9); sfx(1400, 0.05, 'square', 0.04, 600); }
     darkCut(dp);
