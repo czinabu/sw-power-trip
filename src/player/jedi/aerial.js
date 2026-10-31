@@ -20,7 +20,7 @@ import { inkSprite, sparks } from '../../fx/ink.js';
 import { DUEL } from '../../data/duel.js';
 import { isGuarding, guardImpact } from '../../enemies/duel.js';
 import { inReach } from '../../enemies/bodyshape.js';
-import { SLAM_LAND_T, rushFlip } from '../anim/agility.js';
+import { SLAM_LAND_T, rushFlip, endFlip } from '../anim/agility.js';
 import { scarBody, severLimbs } from '../../enemies/scars.js';
 
 /* wind: the beat with the blade drawn back (longer if a flip has to finish first) · dash: the flight in (homes on the
@@ -180,7 +180,7 @@ export function updateAirCut(dt){
     player.vel.multiplyScalar(Math.pow(0.25, dt));
     if (tgt) c.face = Math.atan2(tgt.group.position.x - pp.x, tgt.group.position.z - pp.z);
     if (c.t < c.wind) return;
-    if (player.flip){ player.flip = null; player.vis.rotation.set(0, 0, 0); player.vis.position.set(0, 0, 0); }   // (a rushed flip has landed its turn)
+    if (player.flip) endFlip();   // (a rushed flip has landed its turn)
     c.phase = 'dash'; c.t = 0; c.v0 = Math.hypot(player.vel.x, player.vel.z);
     S.dash(); sfx(320, 0.22, 'sawtooth', 0.05, 90);
     burst(V3(pp.x, pp.y + 1.2, pp.z), stance().blade, 8, 6, 2, 0.6);

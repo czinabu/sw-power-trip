@@ -20,7 +20,7 @@ import { ensureJudgeLines } from './judgement-fx.js';
 import { damageEnemy, flinchEnemy } from '../../enemies/damage.js';
 import { damageBoss, bossStun, bossStagger } from '../../boss/boss.js';
 import { cancelSwing } from './combat.js';
-import { rushFlip } from '../anim/agility.js';
+import { rushFlip, endFlip } from '../anim/agility.js';
 import { spawnPushWave, spawnGroundShock } from '../../fx/vfx.js';
 import { inkSprite, sparks, motes, dustRing, barrierMaterial, bindBarrier } from '../../fx/ink.js';
 import { castFrom, castHands } from '../../fx/palms.js';
@@ -154,7 +154,7 @@ export function updateJumpAttack(dt){
   if (player.vy < 1.2) player.vy = 1.2;   // hang at the top while the blade is up
   if (player.slamWind > 0) return;
   player.slamWind = 0;
-  if (player.flip){ player.flip = null; player.vis.rotation.set(0, 0, 0); player.vis.position.set(0, 0, 0); }   // (any rushed flip has landed its turn by now)
+  if (player.flip) endFlip();   // (any rushed flip has landed its turn by now)
   player.vel.multiplyScalar(0.5);        // keep some of the carry so the strike lands on the foe you jumped at
   player.vy = -32;                       // drive straight down
   S.dash();
