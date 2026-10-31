@@ -859,7 +859,9 @@ function completeObjective(){
 function missionComplete(){
   const def = M.def;
   try { localStorage.setItem('sw_mission_' + def.id + '_' + G.hero, '1'); } catch(e){}
-  showPanel(MISSION_VOICE[G.hero], def.done[G.hero], '', M.chapter ? 'Chapter complete' : 'Mission complete', { drill: true, done: true });
+  // a campaign chapter's card carries the chapter's clear lines (what the mission taught, who joins), not a second voice line on the comms strip
+  const clearLines = M.chapter && M.chapter.clear;
+  showPanel(MISSION_VOICE[G.hero], clearLines && clearLines.length ? clearLines.join(' ') : def.done[G.hero], '', M.chapter ? 'Chapter complete' : 'Mission complete', { drill: true, done: true });
   if (!M.guest && hooks.missionDone) hooks.missionDone();   // co-op: the guest's mission ends with it
   if (M.chapter){   // a campaign chapter: no victory screen, the run carries on into the next chapter (game/campaign.js)
     M.panelT = 6; M.o = null;
