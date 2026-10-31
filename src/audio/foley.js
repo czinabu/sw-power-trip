@@ -43,7 +43,7 @@ function gear(w, run){
   }
 }
 
-let acc = 0, prevX = 0, prevZ = 0, prevInit = false;
+let slideSnd = 0, wallSnd = 0, acc = 0, prevX = 0, prevZ = 0, prevInit = false;
 const seen = new WeakMap();   // foe → { x, z, acc }
 
 export function updateFoley(dt){
@@ -65,6 +65,14 @@ export function updateFoley(dt){
       if (!tooSoon('hstep', 0.12)){ floor()(w); gear(w, run); }
     }
   } else if (!rooted || speed < 1.2) acc = Math.min(acc, 0.6);
+
+  // ── slide: a dragging scrape with a gritty tail; wall-run: quick scuffs of boots on the wall ──
+  if (player.slideT > 0 && player.grounded){
+    if ((slideSnd -= dt) <= 0){ slideSnd = 0.11; N({ color: 'pink', g: 0.045, a: 0.02, d: 0.16, filt: { type: 'bandpass', f: rand(900, 1500), q: 0.7 }, verb: 0.1 }); }
+  } else slideSnd = 0;
+  if (player.wallRun){
+    if ((wallSnd -= dt) <= 0){ wallSnd = 0.2; N({ g: 0.035, a: 0.002, d: 0.06, filt: { type: 'bandpass', f: rand(1800, 2800), q: 1 } }); T({ type: 'sine', f: 110, f2: 60, g: 0.04, d: 0.07 }); }
+  } else wallSnd = 0;
 
   // ── nearby foes ──
   let budget = 3;
