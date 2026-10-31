@@ -11,6 +11,8 @@
 //   lift  — extra height of the arc, metres        bank / pitch — lean into the move at mid-flight
 //   legs  — tuck · pike · layout · split · slide   arms — an AIR_GUARDS key for the saber hand(s)
 //   ease  — 'flip' (fast through the middle, hanging at the ends) or 'twirl' (even spin)
+//   twist and spin are WHOLE turns (1, 2): the body must land facing the way it took off. A half turn leaves the hero
+//   landing backwards, which the game then has to turn back round (anim/agility.js settleYaw).
 //
 // `roll` is the ground ROLL, the duel dodge on SHIFT in a fight (player/mobility.js, tuning in data/mobility.js): it
 // stays on the ground, so a negative lift keeps a somersault low (a shoulder roll) and the rest are sidesteps.
@@ -31,7 +33,7 @@ export const AGILITY = {
       back: { somer: -1, lift: -0.45, legs: 'tuck', arms: 'tuck' },
     },
     jump:   { tuck: 0.55, arms: null },
-    double: { somer: 1, lift: 0.25, legs: 'tuck', arms: 'tuck' },                      // a simple front tuck
+    double: { pitch: 0.1, lift: 0.2, legs: 'straddle', arms: 'layout', tuckHold: 1 },  // a broad straddle leap, arms flung wide: no flip, all reach
     evade: {
       back: { somer: -1, lift: 0.35, legs: 'tuck', arms: 'tuck' },
       fwd:  { somer: 1, lift: 0.3, legs: 'tuck', arms: 'tuck' },
@@ -58,7 +60,7 @@ export const AGILITY = {
       back: { pitch: -0.1, drop: 0.06, legs: 'stride', arms: null },
     },
     jump:   { tuck: 0.35, arms: null },
-    double: { somer: -1, lift: 0.2, legs: 'layout', arms: 'layout' },                  // one elegant back layout
+    double: { pitch: 0.06, legs: 'balestra', arms: null, tuckHold: 1 },               // a fencer's balestra leap: upright, the point kept on the line
     evade: {
       back: { somer: -1, lift: 0.3, legs: 'layout', arms: 'layout' },
       fwd:  { pitch: 0.14, drop: 0.06, legs: 'stride', arms: null },
@@ -85,7 +87,7 @@ export const AGILITY = {
       back: { pitch: -0.18, drop: 0.18, legs: 'slide', arms: null },
     },
     jump:   { tuck: 0.5, arms: null },
-    double: { somer: 1, lift: 0.25, legs: 'tuck', arms: 'tuck' },                      // a tight front tuck (the leap faces its travel)
+    double: { somer: 1, lift: 0.2, legs: 'tuck', arms: null },                         // a small, tight front tuck that never lets the guard drop
     evade: {
       back: { somer: -1, lift: 0.3, legs: 'tuck', arms: 'tuck' },
       fwd:  { somer: 1, lift: 0.25, legs: 'tuck', arms: 'tuck' },
@@ -115,10 +117,10 @@ export const AGILITY = {
     double: { somer: 1, twist: 1, lift: 0.4, legs: 'tuck', arms: 'tuck' },              // front flip with a full twist
     evade: {
       back: { somer: -1, twist: 1, lift: 0.5, legs: 'layout', arms: 'layout' },          // back layout full
-      fwd:  { somer: 1, twist: 0.5, lift: 0.4, legs: 'pike', arms: 'tuck' },             // front handspring, half-out
-      side: { roll: 1, twist: 0.5, lift: 0.45, legs: 'split', arms: 'layout' },          // no-hands aerial
+      fwd:  { somer: 1, twist: 1, lift: 0.4, legs: 'pike', arms: 'tuck' },               // front pike, full-out (lands facing on)
+      side: { roll: 1, lift: 0.45, legs: 'split', arms: 'layout' },                      // no-hands aerial
     },
-    wall:   { back: { somer: -1, twist: 0.5, legs: 'tuck', arms: 'tuck' }, fwd: { somer: 1, twist: 1, legs: 'tuck', arms: 'tuck' } },
+    wall:   { back: { somer: -1, twist: 1, legs: 'tuck', arms: 'tuck' }, fwd: { somer: 1, twist: 1, legs: 'tuck', arms: 'tuck' } },
     glide:  { legs: 'tuck', pitch: 0.28, arms: 'trail' },            // a crouched cat drop, blade trailing
     rise:   { pitch: 0.18, arms: 'trail' },                           // hurdler's leap, lead knee high
     slam:   { pitch: 0.12, legs: 'tuck', arms: 'plunge', land: 'plunge', kneel: 0.85 },   // blade-first plunge
@@ -194,13 +196,13 @@ export const AGILITY = {
       back: { somer: -1, lift: -0.35, legs: 'tuck', arms: 'tuck' },
     },
     jump:   { tuck: 0.9, spin: 1, arms: 'tuck' },
-    double: { somer: 1, twist: 1, lift: 0.35, legs: 'tuck', arms: 'hammer' },          // a twisting front flip, blade raised to hammer
+    double: { somer: 2, lift: 0.4, legs: 'tuck', arms: 'hammer' },                     // a whipping double front tuck, blade raised to hammer
     evade: {
       back: { somer: -1, twist: 1, lift: 0.45, legs: 'tuck', arms: 'tuck' },
-      fwd:  { somer: 1, twist: 0.5, lift: 0.35, legs: 'tuck', arms: 'tuck' },
-      side: { roll: 1, twist: 0.5, lift: 0.4, legs: 'split', arms: 'layout' },
+      fwd:  { somer: 1, lift: 0.35, legs: 'tuck', arms: 'hammer' },                     // a front tuck straight into the cut
+      side: { roll: 1, lift: 0.4, legs: 'split', arms: 'layout' },
     },
-    wall:   { back: { somer: -1, twist: 1, legs: 'tuck', arms: 'tuck' }, fwd: { somer: 1, twist: 0.5, legs: 'tuck', arms: 'tuck' } },
+    wall:   { back: { somer: -1, twist: 1, legs: 'tuck', arms: 'tuck' }, fwd: { somer: 1, twist: 1, legs: 'tuck', arms: 'tuck' } },
     glide:  { legs: 'tuck', pitch: 0.2, arms: 'hammer' },
     rise:   { pitch: 0.2, arms: 'hammer' },
     slam:   { pitch: 0.1, legs: 'tuck', arms: 'hammer', land: 'smash', kneel: 0.75 },
@@ -220,7 +222,7 @@ export const AGILITY = {
       back: { somer: -1, lift: -0.45, legs: 'tuck', arms: 'tuck' },
     },
     jump:   { tuck: 0.6, arms: null },
-    double: { somer: 1, lift: 0.3, legs: 'tuck', arms: 'tuck' },
+    double: { somer: 1, lift: 0.3, legs: 'pike', arms: 'hammer' },                     // one decisive front pike, the blade cocked to come down
     evade: {
       back: { somer: -1, lift: 0.4, legs: 'tuck', arms: 'tuck' },
       fwd:  { somer: 1, lift: 0.3, legs: 'tuck', arms: 'tuck' },
@@ -246,14 +248,14 @@ export const AGILITY = {
       fwd:  { somer: 1, lift: -0.4, legs: 'tuck', arms: 'tuck' },
       back: { somer: -1, lift: -0.4, legs: 'tuck', arms: 'tuck' },
     },
-    jump:   { tuck: 0.6, spin: 0.5, arms: null },
-    double: { somer: 1, twist: 0.5, lift: 0.3, legs: 'tuck', arms: 'tuck' },          // a front tuck with a half twist
+    jump:   { tuck: 0.75, arms: null },                               // knees snapped up, no spin (a half spin landed him backwards)
+    double: { spin: 1, tilt: 1.1, lift: 0.35, legs: 'split', arms: 'tuck', ease: 'twirl' },   // Starkiller's corkscrew: laid flat, one full turn
     evade: {
-      back: { somer: -1, twist: 0.5, lift: 0.35, legs: 'tuck', arms: 'tuck' },
+      back: { somer: -1, lift: 0.35, legs: 'tuck', arms: 'tuck' },                    // a tight back tuck, blade hugged along the arm
       fwd:  { somer: 1, lift: 0.3, legs: 'tuck', arms: 'tuck' },
-      side: { roll: 1, lift: 0.3, legs: 'split', arms: 'layout' },
+      side: { roll: 1, lift: 0.3, legs: 'split', arms: 'tuck' },                      // Ahsoka's aerial, the blade kept in along the arm
     },
-    wall:   { back: { somer: -1, twist: 0.5, legs: 'tuck', arms: 'tuck' }, fwd: { somer: 1, legs: 'tuck', arms: 'tuck' } },
+    wall:   { back: { somer: -1, legs: 'tuck', arms: 'tuck' }, fwd: { somer: 1, twist: 1, legs: 'tuck', arms: 'tuck' } },
     glide:  { legs: 'tuck', pitch: 0.12, arms: 'trail' },            // a crouched drop, blade trailing along the arm
     rise:   { pitch: 0.12, arms: 'trail' },
     slam:   { pitch: 0.1, legs: 'tuck', arms: 'plunge', land: 'plunge', kneel: 0.9 },   // a reverse-grip plunge into the ground
