@@ -18,6 +18,9 @@ import { storyWords, answer } from '../game/choices.js';
 // `opens` names Missions-list missions that clearing the chapter opens besides its own (the Extraction with the breakout,
 // the Grass Sea battle with its Exegol copy).
 // `arena` stages the chapter on its own map: { layout, arena } laid over the level or mission's own (world/arena.js).
+// `story` on a base chapter keeps it to that story alone (chapterOrder: a run telling another story skips it).
+// `prologue: true` (with a `story`): a chapter before chapter 1 that goes by PROLOGUE, not a number (chapterNo), and counts
+// no step deeper into the run (`steps: 0`). The ARC trooper's (testing) is the first; any story can have one.
 // `lines` is what's said during the chapter, on the comms strip (game/story.js), per hero. `wave` has one entry per wave
 // of the chapter; the rest are story beats: duel (a mission's duel foe steps in) · escape (it breaks off) · boss · clear.
 // A line is a string (the voice: VOICE) or { who, say } for anyone else; `rival: true` marks the enemy talking.
@@ -48,6 +51,14 @@ export const ACT_TWO = {
 };
 
 export const CHAPTERS = [
+  // ---------------- PROLOGUE (the ARC trooper's, testing: data/campaign-trooper.js has its words) ----------------
+  { id: 'order', act: 0, kind: 'mission', mission: 'order66', world: 'THE NIGHT OF THE ORDER, EIGHT YEARS AGO', story: 'trooper', prologue: true, steps: 0,
+    title: 'THE NIGHT OF THE ORDER',
+    brief: { jedi: ['Eight years ago, in a jungle on the edge of the war, the order came.', 'Get the General out.'],
+             mando: ['Eight years ago, in a jungle on the edge of the war, the order came.', 'Get the General out.'] },
+    lines: { duel: { jedi: [{ who: 'THE MARSHAL', rival: true, say: 'Step aside.' }], mando: [{ who: 'THE MARSHAL', rival: true, say: 'Step aside.' }] },
+             escape: { jedi: ['Let him go. The General first.'], mando: ['Let him go. The General first.'] },
+             clear: { jedi: ['The ship lifts over the canopy.'], mando: ['The ship lifts over the canopy.'] } } },
   // ---------------- ACT I ----------------
   { id: 'siege', act: 0, kind: 'waves', level: 0, waves: [0, 2], world: 'JEDHA',
     title: 'SIEGE OF THE TEMPLE',
@@ -190,7 +201,12 @@ export function chapterOrder(first, story = storyHero()){
   const lothal = CHAPTERS.filter(c => c.pair === 'lothal'), hoth = CHAPTERS.filter(c => c.pair === 'hoth');
   const pairs = first === 'hoth' ? [...hoth, ...lothal] : [...lothal, ...hoth];
   const at = CHAPTERS.findIndex(c => c.pair);
-  return [...CHAPTERS.slice(0, at), ...pairs, ...CHAPTERS.slice(at).filter(c => !c.pair)].map(c => storyChapter(c, story));
+  return [...CHAPTERS.slice(0, at), ...pairs, ...CHAPTERS.slice(at).filter(c => !c.pair)].filter(c => !c.story || c.story === story).map(c => storyChapter(c, story));
+}
+// the number a chapter goes by: a story's prologue has none, and doesn't shift the rest ('PROLOGUE', 'CHAPTER 1'…)
+export function chapterNo(pos, list = chapterOrder()){
+  const c = list[pos]; if (!c) return '';
+  return c.prologue ? 'PROLOGUE' : 'CHAPTER ' + (pos + 1 - list.filter((d, i) => i < pos && d.prologue).length);
 }
 // the story's words that aren't a chapter's: its voice, its acts, Act II's pick and the epilogue. A story of its own
 // has them as plain words (whoever plays it hears them); the shared story's are per hero.
@@ -207,9 +223,9 @@ export const actTitle = (i, story = storyHero()) => own(story) ? storyWords(own(
 export const actOpen = (i, story = storyHero()) => own(story) ? storyWords(own(story).acts[i].open) : forHero(ACTS[i].open, G.hero);
 export const actTwoLine = (k, story = storyHero()) => own(story) ? own(story).actTwo[k] : forHero(ACT_TWO[k].line, G.hero);
 export const epilogueText = (key, story = storyHero()) => own(story) ? storyWords(own(story).epilogue()[key]) : forHero(EPILOGUE[key], G.hero);
-// where the pick is made: the first chapter of Act II
-export const ACT_TWO_AT = CHAPTERS.findIndex(c => c.pair);
+// where the pick is made: the first chapter of Act II, in this story's order (a story's own prologue comes before it)
+export const actTwoAt = (story = storyHero()) => chapterOrder(null, story).findIndex(c => c.pair);
 // a save from before the chapters (data/levels.js index) picks up on the chapter that opens that level
-export const CHAPTER_OF_LEVEL = [0, CHAPTERS.findIndex(c => c.id === 'mustafar'), CHAPTERS.findIndex(c => c.id === 'exegol')];
+export const CHAPTER_OF_LEVEL = ((o) => [0, o.findIndex(c => c.id === 'mustafar'), o.findIndex(c => c.id === 'exegol')])(chapterOrder(null, false));
 // (a hero with no entry of its own yet, the trooper in testing, falls back to the Mando's words: state.js heroKey)
 export const forHero = (v, hero) => v && typeof v === 'object' && !Array.isArray(v) ? heroKey(v, hero) : v;

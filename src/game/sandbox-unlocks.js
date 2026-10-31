@@ -8,7 +8,7 @@
 // the other sw_camp_ keys). The sandbox offers what either hero has reached.
 
 import { G, isGunner } from '../state.js';
-import { CHAPTERS, chapterOrder, storyMissions } from '../data/campaign.js';
+import { CHAPTERS as ALL_CHAPTERS, chapterOrder, chapterNo, storyMissions } from '../data/campaign.js';
 import { LEVELS } from '../data/levels.js';
 import { MISSIONS } from '../data/missions.js';
 import { ENEMY_TYPES } from '../data/enemies.js';
@@ -18,6 +18,7 @@ import { JEDI_AUTO, MANDO_AUTO, JEDI_STORE, MANDO_STORE } from '../data/store.js
 import { STORE_TIER_STAGE } from './progression.js';
 
 const HEROES = ['jedi', 'mando'];
+const CHAPTERS = ALL_CHAPTERS.filter(c => !c.story);   // the story every hero shares (a story's own chapter, the ARC trooper's prologue, isn't a gate)
 const key = (hero) => 'sw_camp_ch_' + hero;
 function read(hero){
   try { const v = JSON.parse(localStorage.getItem(key(hero))); if (Array.isArray(v)) return v; } catch(e){}
@@ -58,8 +59,8 @@ export function missionUnlocked(id){
 }
 // 'CHAPTER 3' for the card of a locked mission: where the campaign reaches it ('' when no chapter does)
 export function missionChapterNo(id){
-  const i = chapterOrder(G.actTwo).findIndex(c => playsMission(c, id));
-  return i < 0 ? '' : 'CHAPTER ' + (i + 1);
+  const list = chapterOrder(G.actTwo), i = list.findIndex(c => playsMission(c, id));
+  return i < 0 ? '' : chapterNo(i, list);
 }
 
 /* ---------- what the story so far has shown ---------- */

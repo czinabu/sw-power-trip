@@ -11,6 +11,7 @@ import { enemyHpScale, applyElite } from './elites.js';
 import { attachHitboxDebug } from './bodyshape.js';
 import { foeTipToast } from '../game/upgrades.js';
 import { initDuel } from './duel.js';
+import { foeType } from './look.js';
 
 // a floating boss-style health bar for elite/mid-boss units, billboarded toward the camera each frame
 export function makeBossBar(e){
@@ -47,7 +48,7 @@ let nextNid = 0;   // every foe's number, the same on both screens in co-op (net
 export function spawnEnemy(typeName, pos){
   const t = ENEMY_TYPES[typeName];
   const nid = ++nextNid;
-  const g = buildEnemyMesh(t, { seed: nid });   // (its marking and face follow its number: the same on both co-op screens)
+  const g = buildEnemyMesh(foeType(typeName), { seed: nid });   // (dressed as the mission has it: enemies/look.js) (its marking and face follow its number: the same on both co-op screens)
   g.position.copy(pos);
   scene.add(g);
   const hp = Math.round(t.hp * enemyHpScale());

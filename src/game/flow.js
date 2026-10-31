@@ -50,6 +50,7 @@ import { coopRun } from '../net/run.js';
 import { resetReadout, beginWave } from './readout.js';
 import { nextChapter, retryChapter } from './campaign.js';
 import { storyBeat, clearComms, commsBusy } from './story.js';
+import { setFoeLook } from '../enemies/look.js';
 
 /* ============================================================
    LEVEL / WAVE FLOW
@@ -84,6 +85,8 @@ export function startLevel(idx, opts){
   G.training = !!(opts && opts.training);
   G.mission = !!(opts && opts.mission);
   G.sandbox = !!(opts && opts.sandbox);
+  setFoeLook(opts && opts.foeLook);   // a story mission's uniform for the foes it sends (enemies/look.js), or none
+  G.squadCap = (opts && opts.squadCap) || 0;   // and the most squadmates its story has (allies/squad.js trooperSquad), or no cap
   const L = (opts && opts.level) || LEVELS[idx];
   // clear battlefield
   for (const e of enemies) removeEnemy(e);

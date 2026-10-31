@@ -51,7 +51,10 @@ export function mandoAimPoint(){
 }
 /* ===== BLASTER WEAPONS — single / dual / disruptor, with ammo & reload ===== */
 export function aCost(base){ return base * (player.up.abilityCostMul || 1); }   // abilities start steep; upgrades drop the multiplier
-export function mandoWeapon(){ return MANDO_WEAPONS[player.weapon] || MANDO_WEAPONS.dual; }
+export function mandoWeapon(){
+  const W = MANDO_WEAPONS[player.weapon] || MANDO_WEAPONS.dual;
+  return (W.mods && W.mods[player.rifleMod]) || W;   // the trooper's DC-15 with a module fitted (data/trooper.js RIFLE_MODS)
+}
 export function syncWeaponMesh(){   // show only the equipped weapon's mesh (or none, off-hero); holstered, the one put away
   const m = isGunner(), raw = player.weapon === 'fists' ? player.drawnWeapon : player.weapon, w = gunLook(raw);   // (the trooper's guns are held like the Mando's: data/trooper.js GUN_LOOK)
   if (player.pistols){ player.pistols.R.visible = m && (w === 'single' || w === 'dual'); player.pistols.L.visible = m && w === 'dual'; }

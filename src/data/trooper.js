@@ -4,7 +4,7 @@
 // it fights on foot with no jetpack, leads a clone squad, and its guns are its own (TROOPER_WEAPONS below).
 // STILL TO BUILD before it leaves testing: gamepad binds (the Mando's for now), its cutscene and mission lines (the
 // Mando's for now), its own DC-15 model (the carbine's for now),
-// a heat bar per pistol, its prologue and its own trial chapters (data/campaign-trooper.js).
+// a heat bar per pistol and its own trial chapters (data/campaign-trooper.js).
 
 /* WEAPONS — the same fields as data/mando.js MANDO_WEAPONS (heat, cool, spreads, falloff), plus:
      fire 'burst'  the DC-15 rifle: one click fires `burst` bolts `burstGap` apart. RMB aims (the steady stance)
@@ -23,6 +23,23 @@ export const TROOPER_WEAPONS = {
               heat: 0.45, cool: 0.5, overCool: 0.4, hipSpread: 0, braceSpread: 0, braceDmg: 1, foStart: 999, foEnd: 999, foMin: 1,
               twoHand: true, vent: 0.9, trooper: true },
 };
+/* THE MODULAR DC-15 — one rifle, its MODULES swapped by pressing 1 again while it's in hand (player/trooper/kit.js
+   swapModule). Each is the rifle's own numbers with these laid over; the run hands them over (data/trooper-progression.js
+   TROOPER_AUTO: `unlock` is the G.unlocked key). The heat stays with the gun through a swap.
+     burst     the stock rifle (above): a three-bolt burst a click
+     auto      AUTO BARREL: hold LMB to fire, lighter bolts, more heat and a wider cone: the crowd and suppression module
+     marksman  MARKSMAN SCOPE: one heavy bolt a click with a long reach; RMB raises the scope (zoomed, dead steady) */
+export const RIFLE_MODS = {
+  burst:    { label: 'BURST' },
+  auto:     { label: 'AUTO BARREL', unlock: 'modAuto', fire: 'auto', fireCd: 0.1, dmg: 11, heat: 0.036, cool: 0.55, overCool: 0.42,
+              hipSpread: 0.022, braceSpread: 0.009, foStart: 16, foEnd: 38 },
+  marksman: { label: 'MARKSMAN SCOPE', unlock: 'modScope', fire: 'semi', fireCd: 0.8, dmg: 58, heat: 0.2, cool: 0.55, overCool: 0.42,
+              hipSpread: 0.012, braceSpread: 0, braceDmg: 1.25, foStart: 40, foEnd: 80, foMin: 0.8, scope: true, vent: 0.6 },
+};
+export const RIFLE_MOD_ORDER = ['burst', 'auto', 'marksman'];
+{ const R = TROOPER_WEAPONS.rifle;   // each module as a whole weapon (mando/weapons.js mandoWeapon returns it while it's fitted)
+  R.mods = {};
+  for (const k of RIFLE_MOD_ORDER) if (k !== 'burst') R.mods[k] = { ...R, ...RIFLE_MODS[k], mods: null, mod: k, name: 'DC-15 · ' + RIFLE_MODS[k].label, short: 'DC-15 · ' + RIFLE_MODS[k].label.split(' ')[0] }; }
 export const TROOPER_WEAPON_ORDER = ['rifle', 'pistols', 'launcher'];
 // the trooper's guns borrow the Mando's held-weapon models and poses for now: the rifle is the carbine's model on the
 // long-gun mount, the pistols the dual blasters (player/animation.js, holster.js, model/weapons.js)
