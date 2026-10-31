@@ -25,3 +25,13 @@ export default {
 To move an existing item (say `next` -> `done`), edit only that item's own file.
 `index.js` gathers every `*.js` here and sorts by `date`, newest first. Files named `legacy-*` are the
 entries migrated from the old single file (ordered by `seq`).
+
+## Old branch still editing `src/data/roadmap.js`?
+
+A merge will show a modify/delete conflict on it. Turn its new entries into files and drop it:
+
+```sh
+git show MERGE_HEAD:src/data/roadmap.js > /tmp/old-roadmap.mjs   # or <your-branch>:src/data/roadmap.js
+node tools/roadmap-migrate.mjs /tmp/old-roadmap.mjs
+git rm src/data/roadmap.js
+```

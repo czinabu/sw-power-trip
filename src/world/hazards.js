@@ -1,6 +1,7 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
 // Shock vents and explosive barrels.
 
+import { blastAllies } from '../allies/squad.js';
 import * as THREE from 'three';
 import { scene } from '../engine/renderer.js';
 import { S } from '../audio/sfx.js';
@@ -105,6 +106,7 @@ function explodeBarrel(b, idx){
   }
   if (shared.boss && shared.boss.hp > 0 && shared.boss.group.position.distanceTo(p) < 6) damageBoss(50);
   const pp = playerPos();
+  blastAllies(p, 5, 18);   // a barrel catches the squad too
   if (pp.distanceTo(p) < 5 && player.dashT <= 0) hurtPlayer(18, p);
   for (const ob of barrels){ if (ob !== b && ob.fuse < 0 && ob.mesh.position.distanceTo(p) < 5) ob.fuse = rand(0.15, 0.4); }
   scene.remove(b.mesh);

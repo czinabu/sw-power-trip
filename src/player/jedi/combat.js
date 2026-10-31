@@ -218,12 +218,12 @@ export function applySwingDamage(step, only){
   if (finisher && st.finisherKnock) knock = Math.max(knock, FINISHER_FLOOR);   // DJEM SO: the finisher floors what it hits, a brute too (a short shove: config saberShove)
   // a ringing BESKAR CLANG on every heavy darksaber blow (the finisher, or any hit while a foe is in range)
   const beskarClang = () => S.clash(V3(playerPos().x + fwd().x*1.4, 1.4, playerPos().z + fwd().z*1.4), false);
-  // DARKSABER — MAUL-STYLE OVERHEAD: the 3rd combo hit is a big downward smash (extra knockback + a quake)
+  // DARKSABER — MAUL-STYLE OVERHEAD: the 3rd combo hit is a big downward smash (extra knockback + weight, but no
+  // Force shockwave: the blade is beskar and a Mandalorian's, so the blow only lands on what it actually hits)
   if (isDark && finisher){
-    knock *= 1.6;
+    knock *= 1.8;
     const pp0 = playerPos();
-    G.shake = Math.max(G.shake, 1.1); G.hitstop = Math.max(G.hitstop, 0.1);
-    spawnGroundShock(V3(pp0.x + fwd().x*1.6, 0.1, pp0.z + fwd().z*1.6), 0xc9a6ff, 6, 0.4, 0.7);
+    G.shake = Math.max(G.shake, 1.1); G.hitstop = Math.max(G.hitstop, 0.13);
     burst(V3(pp0.x + fwd().x*1.6, 0.6, pp0.z + fwd().z*1.6), 0xc9a6ff, 16, 9, 5, 1.0);
     S.slam(); beskarClang();
   }
