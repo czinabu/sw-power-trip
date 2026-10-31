@@ -46,7 +46,7 @@ window.addEventListener('gamepaddisconnected', () => {
 
 /* ---------- PROMPTS: keyboard key labels said the pad's way ('LMB' → RT, 'F' → Y, 'W A S D' → LS) ---------- */
 const KB_ALIAS = { space: ' ', lmb: 0, rmb: 2 };
-function padKey(tok, hero){
+export function padKey(tok, hero){
   const gl = PAD_GLYPHS[pad.family], B = PAD_BINDS[hero];
   const t = tok.toLowerCase();
   if (t === 'mouse' || t === 'aim') return gl.RS;
@@ -292,7 +292,7 @@ function menu(btn, down, lx, ly, ry, dt){
     if (focus){ if (focus.tagName === 'INPUT') focus.focus(); else focus.click(); }
   }
   if (down(1)){   // B — back: close what's on top, or resume from the pause screen
-    if (panelUp()){ sendKey('escape', true); sendKey('escape', false); }
+    if (panelUp() || (ovUp() && /\bst-menu\b/.test(overlay.className) && /\bmpage\b/.test(overlay.className))){ sendKey('escape', true); sendKey('escape', false); }   // (the Missions page: back to the menu, ui/missions-ui.js)
     else if (ovUp() && overlay.classList.contains('st-pause')){ sendKey('tab', true); sendKey('tab', false); }
   }
   if (down(9)){   // MENU — resume from pause; anywhere else on the overlay, the main button

@@ -10,7 +10,7 @@ import { acquireParticle, burst } from '../../fx/particles.js';
 import { floater, screenFlash } from '../../fx/floaters.js';
 import { shared, G, enemies, bolts, vfx, keys, player, isGunner, isMando, isTrooper } from '../../state.js';
 import { MANDO, MANDO_WEAPONS, weaponUnlocked, BESKAR_PARRY } from '../../data/mando.js';
-import { setLongGun, longMuzzle } from '../model/weapons.js';
+import { setLongGun, longMuzzle, OWN_MODEL } from '../model/weapons.js';
 import { diffWindow } from '../../data/difficulty.js';
 import { abil } from '../../data/mastery.js';
 import { fwd, rightV, playerPos, maxStam } from '../helpers.js';
@@ -53,10 +53,10 @@ export function mandoAimPoint(){
 export function aCost(base){ return base * (player.up.abilityCostMul || 1); }   // abilities start steep; upgrades drop the multiplier
 export function mandoWeapon(){ return MANDO_WEAPONS[player.weapon] || MANDO_WEAPONS.dual; }
 export function syncWeaponMesh(){   // show only the equipped weapon's mesh (or none, off-hero); holstered, the one put away
-  const m = isGunner(), w = gunLook(player.weapon === 'fists' ? player.drawnWeapon : player.weapon);   // (the trooper's guns wear the Mando's models: data/trooper.js GUN_LOOK)
+  const m = isGunner(), raw = player.weapon === 'fists' ? player.drawnWeapon : player.weapon, w = gunLook(raw);   // (the trooper's guns are held like the Mando's: data/trooper.js GUN_LOOK)
   if (player.pistols){ player.pistols.R.visible = m && (w === 'single' || w === 'dual'); player.pistols.L.visible = m && w === 'dual'; }
   const LW = MANDO_WEAPONS[w];
-  if (player.rifleMesh){ player.rifleMesh.visible = m && !!(LW && LW.twoHand); if (LW && LW.twoHand) setLongGun(player, w); }   // one long-gun mount, the drawn gun's model on it
+  if (player.rifleMesh){ player.rifleMesh.visible = m && !!(LW && LW.twoHand); if (LW && LW.twoHand) setLongGun(player, OWN_MODEL[raw] || w); }   // one long-gun mount, the drawn gun's model on it (the DC-15 its own)
   if (player.darksaberMesh) player.darksaberMesh.visible = (m && w === 'darksaber') || !!shared.darkProj;   // a thrown blade stays seen until it's caught
   syncHolster();   // in the hand, or on the belt / thighs / pack (player/holster.js)
 }
@@ -212,7 +212,7 @@ export function fireTrigger(){
     return;
   }
   if (player.overheat){ if ((player.dryT || 0) <= 0){ player.dryT = 0.25; sfx(120, 0.04, 'square', 0.04, 80); } return; }   // dry-fire CLICK while overheated
-  if (W.fire === 'twin'){ firePistol(W, 1); return; }   // the trooper's twin DC-17s: LMB is the right-hand pistol
+  if (W.fire === 'twin'){ fireTwin(W); return; }   // the trooper's twin DC-17s: each click, the other pistol
   if (W.fire === 'launcher'){   // the trooper's AT launcher (the Commando's): one heavy rocket a pull
     if (player.fireCd > 0) return;
     player.aiming = 0.8;
@@ -229,8 +229,18 @@ export function fireTrigger(){
   if (W.fire === 'burst'){ player.burstLeft = W.burst; player.burstT = 0; burstRound(W); return; }   // the rest of the burst: updateMandoCombat
   fireBlaster(W);
 }
-// THE TWIN DC-17s (the trooper) — each mouse button fires one pistol (side 1 = right on LMB, -1 = left on RMB), each
-// on its own cooldown, both into the one heat bar. They fire straight out of a roll or a slide.
+// THE TWIN DC-17s (the trooper) — semi-automatic: each click of LMB fires the other pistol (right, left, right…), each
+// on its own cooldown, both into the one heat bar, so a quick finger fires twice as fast as one gun. RMB aims (the
+// tighter cone). They fire straight out of a roll or a slide.
+function fireTwin(W){
+  if ((player.twinGapT || 0) > G.gt) return;   // the fastest two clicks can land: data/trooper.js `twinGap`
+  const side = player.twinNext || 1;
+  const ready = s => (s > 0 ? player.fireCd : (player.fireCdL || 0)) <= 0;
+  const s = ready(side) ? side : ready(-side) ? -side : 0;
+  if (!s) return;
+  firePistol(W, s);
+  player.twinNext = -s; player.twinGapT = G.gt + (W.twinGap || 0);
+}
 export function firePistol(W, side){
   if (G.mode !== 'play' || player.overheat) return;
   if (side > 0 ? player.fireCd > 0 : (player.fireCdL || 0) > 0) return;

@@ -57,7 +57,7 @@ for (const [hero, mode, mission] of [['jedi', 'campaign'], ['mando', 'campaign']
     await page.click('#hero-' + hero);
     // restyle the hero in the customizer first, so the fight runs on a rebuilt player model
     if (mode === 'campaign'){ await page.click('#cztoggle'); await page.click('#czrandom'); await page.click('#czdone'); }
-    // a story mission: MISSIONS on the mode row, then its card in the list that opens under it
+    // a story mission: MISSIONS on the mode row opens the Missions page (ui/missions-ui.js), then its card there
     if (mode === 'mission'){ await page.click('#mode-mission'); await page.click('#msn-' + mission); }
     else await page.click('#mode-' + mode);
     // BEGIN, then give the game a few seconds to drop into the fight; click again if it's still on the menu

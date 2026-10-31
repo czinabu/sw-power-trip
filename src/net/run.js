@@ -4,7 +4,7 @@
 // own modules can read it without a cycle.
 
 /* the host's run, last heard of: on while the host is fighting a Survival run, with its arena and wave */
-export const coopRun = { on: false, k: 'e', mid: '', lv: 0, ch: -1, a2: null, wf: 0, ar: 0, w: 0, wt: 0, ph: '', mut: null,
+export const coopRun = { on: false, k: 'e', mid: '', lv: 0, ch: -1, a2: null, sh: null, wf: 0, ar: 0, w: 0, wt: 0, ph: '', mut: null,
   live: false,          // this browser is in a shared fight right now: the world keeps going whatever one hero's pause or hitstop does
   guestPicking: false,     // host side: the guest has its upgrade screen open, so the next wave waits
   guestScene: false };     // host side: the guest is watching a cutscene (game/cutscene.js), so the foes hold

@@ -104,7 +104,7 @@ export function regroupSquad(){
     const s = findClearSpawn(pp.x - fx * 3 + (i % 2 ? 1.8 : -1.8) * (1 + (i >> 1)), pp.z - fz * 3, 0.9);
     a.group.position.set(s.x, 0, s.z); a.mv.x = a.mv.z = 0; a.legs = null;
   });
-  allies.forEach(a => { a.ord = FOLLOW; a.mark = null; });
+  allies.forEach(a => { a.ord = FOLLOW; a.mark = null; a.flank = 0; });
 }
 export function dismissSquadmate(){
   const a = allies.pop();
@@ -217,7 +217,7 @@ const setOrd = (list, mk) => list.forEach(a => { a.ord = mk(a); a.prevOrd = null
 const ORDER_FN = {
   follow(list, l, tag){
     const lead = C && C.partner ? 'partner' : 'me';   // ON ME from the co-op partner: they follow the partner
-    list.forEach(a => { a.ord = lead === 'me' ? FOLLOW : FOLLOW_PARTNER; a.prevOrd = null; a.mark = null; });
+    list.forEach(a => { a.ord = lead === 'me' ? FOLLOW : FOLLOW_PARTNER; a.prevOrd = null; a.mark = null; a.flank = 0; });
     banner(tag + ' · ON ME'); say(l, 'MOVING UP!', 'ON YOU.');
   },
   hold(list, l, tag){
@@ -235,8 +235,10 @@ const ORDER_FN = {
     const e = C ? (C.target === 'B' ? shared.boss : enemies.find(o => o.nid === C.target && !o.dead)) : aimedFoe();
     if (!e){ banner('NO TARGET UNDER THE CROSSHAIR'); return false; }
     if (e === shared.boss || (!isFodder(e) && !COMMAND.markElites)){ say(l, "THAT ONE'S YOURS, GENERAL!", 'THAT ONE IS YOURS.'); return false; }
-    list.forEach(a => { a.mark = e; a.markT = G.gt; a.seekT = 0; });
-    banner(tag + ' · ATTACK MY TARGET'); say(l, isFodder(e) ? 'ENGAGING!' : 'COVERING FIRE!', isFodder(e) ? 'ON IT.' : 'SUPPRESSING.');
+    // the ARC trooper's squad FLANKS it: the first two standing swing round to its sides (wantSpot) and hit it harder there
+    let fl = 0;
+    list.forEach(a => { a.mark = e; a.markT = G.gt; a.seekT = 0; a.flank = isTrooper() && standing(a) && fl < 2 && !a.net ? (fl++ % 2 ? 1 : -1) : 0; });
+    banner(tag + (fl ? ' · FLANK MY TARGET' : ' · ATTACK MY TARGET')); say(l, isFodder(e) ? 'ENGAGING!' : 'COVERING FIRE!', isFodder(e) ? 'ON IT.' : 'SUPPRESSING.');
   },
   cover(list, l, tag){
     setOrd(list, () => ({ kind: 'cover', at: null, reT: 0, found: false }));
@@ -427,7 +429,7 @@ export function foeAllyTarget(e, pp){
    ============================================================ */
 function markLive(a){
   const m = a.mark;
-  if (m && (m.dead || m.converted || !enemies.includes(m) || G.gt - a.markT > COMMAND.markFor)) a.mark = null;
+  if (m && (m.dead || m.converted || !enemies.includes(m) || G.gt - a.markT > COMMAND.markFor)){ a.mark = null; a.flank = 0; }
   return a.mark;
 }
 function pickTarget(a){
@@ -452,6 +454,16 @@ function pickTarget(a){
   }
   return best;
 }
+// a flanker on its mark, out to the mark's side (well off the hero's line): its bolts hit harder (data/trooper.js flank)
+function flankMul(a, e){
+  if (!a.flank || e !== a.mark) return 1;
+  const pp = playerPos(), mp = e.group.position, p = a.group.position;
+  const ax = p.x - mp.x, az = p.z - mp.z, hx = pp.x - mp.x, hz = pp.z - mp.z;
+  const cos = (ax * hx + az * hz) / ((Math.hypot(ax, az) * Math.hypot(hx, hz)) || 1);
+  if (cos > 0.35) return 1;   // still on the hero's side of it
+  if (!e.flankSaid || G.gt - e.flankSaid > 6){ e.flankSaid = G.gt; floater(V3(mp.x, mp.y + 2.4, mp.z), 'FLANKED', '#ffd35a'); }
+  return TROOPER.command.flank.dmg;
+}
 function shoot(a, e){
   const g = a.group, sc = a.t.scale;
   const fy = g.rotation.y, mx = g.position.x + Math.sin(fy) * 0.55, mz = g.position.z + Math.cos(fy) * 0.55;
@@ -461,7 +473,7 @@ function shoot(a, e){
   const sp = a.role.spread;
   dir.x += rand(-sp, sp); dir.y += rand(-sp, sp) * 0.5; dir.z += rand(-sp, sp); dir.normalize();
   a.kick = 1;
-  fireBolt(muzzle, dir, a.role.boltSpeed, a.role.dmg * (SQUAD.dmg[diffKey()] || 1) * (isFodder(e) ? 1 : COMMAND.markEliteDmg) * (player.up.squadDmg || 1), true, true, a);
+  fireBolt(muzzle, dir, a.role.boltSpeed, a.role.dmg * (SQUAD.dmg[diffKey()] || 1) * (isFodder(e) ? 1 : COMMAND.markEliteDmg) * (player.up.squadDmg || 1) * flankMul(a, e), true, true, a);
   bolts[bolts.length - 1].ally = a;
   bolts[bolts.length - 1].mark = isFodder(e) ? null : e;   // an elite only takes the bolts meant for it (enemies/bolts.js)
   bolts[bolts.length - 1].mesh.material.color.setHex(isMando() ? 0xffa040 : 0x4aa8ff);
@@ -508,6 +520,11 @@ function wantSpot(a, medic, dt){
   if (o.kind === 'revive'){ const v = o.who.group.position; return { x: v.x, z: v.z, r: 1.2 }; }
   // ATTACK TARGET: a mark out of reach or out of sight draws them in, then they go back to their order
   const m = markLive(a), p = a.group.position;
+  // FLANK (the ARC trooper's ATTACK TARGET): the first two swing wide to the mark's sides while the hero holds its front
+  if (m && a.flank && o.kind !== 'cover'){
+    const mp = m.group.position, hx = mp.x - pp.x, hz = mp.z - pp.z, hl = Math.hypot(hx, hz) || 1, F = TROOPER.command.flank;
+    return { x: mp.x + (-hz / hl) * a.flank * F.wide - hx / hl * F.back, z: mp.z + (hx / hl) * a.flank * F.wide - hz / hl * F.back, r: 1.4, chase: true };
+  }
   if (m && o.kind !== 'cover'){
     const mp = m.group.position, d = Math.hypot(mp.x - p.x, mp.z - p.z);
     if (d > a.role.range || segBlockedBySolids(p.x, p.z, mp.x, mp.z)){
