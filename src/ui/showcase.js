@@ -11,6 +11,10 @@ import { applySaberGrip } from '../player/model/weapons.js';
 import { settleCloth, stepCloth } from '../player/model/cloth.js';
 import { blink } from '../player/model/life.js';
 import { lookOf, loadPicks, disposeTree } from '../player/mesh.js';
+import { STANCES, SWING_PATTERNS } from '../data/stances.js';
+import { FORM_OF, FOOTWORK } from '../data/poses.js';
+import { formGrip } from '../data/forms.js';
+import { guardPose, swingPose, applySaberPose, releaseSaberPose } from '../player/anim/saber.js';
 
 const HERO_X = 0.72;     // where the figure stands across the screen (0 = left edge, 1 = right)
 const TURN = 0.32;       // turntable speed, rad/s
@@ -347,7 +351,64 @@ function setTheme(k, now){
 }
 
 export function showcaseActive(){
-  return G.mode === 'menu' && !G.fovPreview && document.getElementById('overlay').style.display !== 'none';
+  return !!pv.id || (G.mode === 'menu' && !G.fovPreview && document.getElementById('overlay').style.display !== 'none');
+}
+
+/* ---------- the STANCE PREVIEW: the unlock screen (game/meditation.js) shows the hero on the stand, running a form's own
+   guard and cuts through the game's own saber animation (anim/saber.js), looping: guard, the three-cut string, the block ---------- */
+const pv = { id: null, t: 0, phase: 0, sw: null, vy: 0 };
+const PV_PLAN = [{ guard: 1.1 }, { cut: 0 }, { cut: 1 }, { cut: 2 }, { guard: 0.9 }, { block: 1.1 }];
+export function previewStance(id){
+  if (!id){
+    if (!pv.id) return;
+    pv.id = null; pv.sw = null;
+    if (R){ releaseSaberPose(R, 1); R.chest.rotation.y = 0; fig.vis.rotation.y = 0; fig.vis.position.y = pv.vy; if (shown) dress(shown); }
+    document.body.classList.remove('stance-preview');
+    return;
+  }
+  if (!pv.id) pv.vy = fig.vis.position.y;
+  Object.assign(pv, { id, t: 0, phase: 0, sw: null });
+  dress('jedi'); setTheme('jedi', true);
+  const st = STANCES[id];
+  applySaberGrip(fig, formGrip(id, G.saberGrip), true);
+  const crystal = fig.look.jedi.saber != null ? fig.look.jedi.saber : st.blade;
+  fig.blade.glow.material.color.setHex(crystal); fig.blade.light.color.setHex(crystal);
+  releaseSaberPose(R, 1);   // the next guard seeds the pose from the figure's own arm
+  document.body.classList.add('stance-preview');
+}
+const SWAY = { y: 0, z: 0, off: 0, moving: false }, smooth = (k) => k * k * (3 - 2 * k);
+function previewPose(dt){
+  const id = pv.id, form = FORM_OF[id], st = STANCES[id], grip = formGrip(id, G.saberGrip), F = FOOTWORK[form];
+  const held = { node: fig.saberHand, root: fig.saberBladeRoot }, plan = PV_PLAN[pv.phase];
+  pv.t += dt;
+  let cue = null, sw = null;
+  if (plan.cut != null){
+    if (!pv.sw){
+      const step = plan.cut, dur = (step === 2 ? 0.52 : 0.4) / st.speed * 1.25;   // a touch slower than the fight, so the cut reads
+      pv.sw = { t: 0, dur, step, applied: false, dir: step === 2 ? 'neutral' : step ? 'left' : 'right', pat: step === 2 ? SWING_PATTERNS.forward : step ? SWING_PATTERNS.left : SWING_PATTERNS.right, h: 'mid', riposte: false, flowCut: false };
+    }
+    sw = pv.sw; sw.t += dt;
+    cue = swingPose(R, held, grip, form, sw);
+    if (sw.t >= sw.dur){ pv.sw = null; pv.phase++; pv.t = 0; }
+  } else {
+    guardPose(dt, R, held, grip, form, !!plan.block, SWAY);
+    if (pv.t >= (plan.guard || plan.block)){ pv.phase = (pv.phase + 1) % PV_PLAN.length; pv.t = 0; }
+  }
+  applySaberPose(R, held, true, dt);
+  // the body turns with the blade (a finisher spins all the way round) and settles square between cuts
+  const vis = fig.vis;
+  if (cue){
+    const turn = Math.sign(sw.pat.yT - sw.pat.yF);
+    vis.rotation.y = cue.spin ? smooth(cue.cut) * Math.PI * 2 * cue.spin * -(cue.side || 1) : cue.env * st.twist * turn * 0.55;
+    vis.position.y = pv.vy + (cue.hop ? Math.sin(Math.PI * cue.k) * cue.hop : 0);
+    R.hips.position.y -= cue.drop * cue.env * 0.5;
+  } else {
+    vis.rotation.y *= Math.max(0, 1 - dt * 12); vis.position.y += (pv.vy - vis.position.y) * Math.min(1, dt * 12);
+  }
+  // the form's own footing: crouch and splay
+  R.hips.position.y += F.crouch * 0.5;
+  R.legL.hip.rotation.z = -0.05 - F.splay * 0.32; R.legR.hip.rotation.z = 0.05 + F.splay * 0.32;
+  R.legL.knee.rotation.x = R.legR.knee.rotation.x = 0.25 - F.crouch * 1.4;
 }
 
 // TEMPORARY flicker hunt: ?dbg=noink,noskin,noblade,nolight,nocull hides parts of the figure (not for merging)
@@ -383,17 +444,18 @@ export function renderShowcase(dt){
       bgMat.uniforms.rayA.value.copy(bgMat.uniforms.rayB.value);
     }
   }
-  focus += (focusTo - focus) * Math.min(1, dt * 4);
+  focus += ((pv.id ? 0.45 : focusTo) - focus) * Math.min(1, dt * 4);
   const f = focus * focus * (3 - 2 * focus);
   cam.position.set(0, 1.9 + f * 0.12, camZ * (1 - f * 0.32));
   cam.lookAt(0, 1.3 + f * 0.25, 0);
-  spin += (TURN + boost) * dt;
-  table.rotation.y = spin;
+  if (pv.id) table.rotation.y = 0.5;   // three-quarter view, not turning: the cuts are what is on show
+  else { spin += (TURN + boost) * dt; table.rotation.y = spin; }
   // a slow breath and a small weight shift, so the figure on display isn't a statue
   const t = performance.now() / 1000, P = POSES[shown];
   R.torso.rotation.x = P.torso[0] + Math.sin(t * 1.7) * 0.025;
   R.head.rotation.y = P.head[1] + Math.sin(t * 0.6) * 0.08;
   R.hips.position.y = hipsY + (P.drop || 0) + Math.sin(t * 1.7) * 0.008;
+  if (pv.id) previewPose(dt);
   stepCloth(fig, dt, PED_H);
   blink(fig, dt);   // and a blink now and then (model/life.js)
   updateCpuSkin();
