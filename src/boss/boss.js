@@ -303,7 +303,7 @@ export function updateBoss(dt){
         else if (dist < BOSS_CFG.combo.range && player.dashT > 0) perfectDodge(g.position);   // dashed through it on the beat
         else if (dist < BOSS_CFG.combo.range && player.dashT <= 0){
           const cut = BOSS_CUTS.cuts[shared.boss.cut];
-          const res = hurtPlayer(BOSS_CFG.combo.dmg, g.position, false, true, false, cut ? { line: cut.line } : null);   // melee — high ground denies it (your guard meets it on its line)
+          const res = hurtPlayer(BOSS_CFG.combo.dmg, g.position, false, true, false, { by: shared.boss, line: cut ? cut.line : null });   // melee — high ground denies it (your guard meets it on its line)
           if (res === 'clashed' && shared.boss.swingsLeft > 1){
             // your cut met his: the blades ring apart and he's thrown back a step, but the chain presses on
             // (no posture break: that's still the parry's reward). A clash on the last blow just ends the chain.
