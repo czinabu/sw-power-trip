@@ -6,7 +6,7 @@ import { sfx, S } from '../audio/sfx.js';
 import { V3 } from '../utils.js';
 import { burst } from '../fx/particles.js';
 import { floater } from '../fx/floaters.js';
-import { shared, G, player, isGunner } from '../state.js';
+import { shared, G, player, isGunner, isTrooper } from '../state.js';
 import { playerPos } from '../player/helpers.js';
 import { syncMandoChips, syncJediChips, chapterClosed } from '../game/flow.js';
 import {
@@ -124,7 +124,7 @@ export function renderProgress(){
   // the Jedi sits in meditation (and sees the forms carried); the Mando works at the forge
   // the forms known, and the ones this chapter has just taught (learned as the next chapter opens: game/meditation.js)
   const sub = tree.querySelector('.sub');
-  if (mando) sub.textContent = 'AT THE FORGE';
+  if (mando) sub.textContent = isTrooper() ? 'BACK AT THE LINE' : 'AT THE FORGE';
   else {
     const known = Object.keys(FORMS).filter(id => FORMS[id].ready && stanceUnlocked(id));
     const fresh = G.chapter >= 0 ? FORM_PATH.filter(p => !FORMS[p.form].fork && !known.includes(p.form) && chapterClosed(p.chapter)).map(p => p.form) : [];
@@ -179,7 +179,7 @@ export function renderProgress(){
   hide('abilsec', storyRun() && !store.querySelector('.card'));   // the story: only when a chapter brings something
   document.querySelector('#abilsec .sh-h').textContent = storyRun() ? 'Given by the story · a pair is a free choice, the other closes for this run'
     : 'Spend XP · paired cards are a choice, the other locks for this run';
-  document.getElementById('storehdr').textContent = mando ? 'NEW GEAR' : 'NEW POWERS';
+  document.getElementById('storehdr').textContent = isTrooper() ? 'NEW ORDERS' : mando ? 'NEW GEAR' : 'NEW POWERS';
   // ---- SURVIVAL POWER-UPS — repeatable stat upgrades (endless only): an XP sink that never runs out ----
   const pow = document.getElementById('powcards');
   pow.innerHTML = '';
@@ -213,7 +213,7 @@ export function renderProgress(){
   // ---- TRAINING (spend SKILL POINTS) — a separate track, never gated by ability choice ----
   const wrap = document.getElementById('skillcards');
   wrap.innerHTML = '';
-  document.getElementById('freehdr').textContent = mando ? 'WEAPON UPGRADES' : 'TRAINING';
+  document.getElementById('freehdr').textContent = isTrooper() ? 'GAR TRAINING' : mando ? 'WEAPON UPGRADES' : 'TRAINING';
   // what training opens next — "KNIGHT opens after 1 more" — so the tier gate reads as a goal, not a mystery
   const spent = G.skillSpent || 0, nextT = [2, 3].find(t => spent < TIER_REQ[t] || !tierStoryOpen(t));
   const gate = !nextT ? '' : !tierStoryOpen(nextT) ? ' · ' + tierName(nextT) + ' opens in Act ' + (TIER_CHAPTER[nextT] === 'mustafar' ? 'III' : 'II')

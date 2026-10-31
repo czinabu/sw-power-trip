@@ -91,7 +91,8 @@ export function spawnSquad(n, at){
 // the ARC trooper never fights alone: top its squad up to TROOPER.squadMin in every mode but the training grounds
 export function trooperSquad(){
   if (!isTrooper() || G.training || G.coopGuest) return;
-  if (allies.length < TROOPER.squadMin) spawnSquad(TROOPER.squadMin - allies.length);
+  const want = Math.min(SQUAD.max, TROOPER.squadMin + (player.up.squadExtra || 0) + (G.unlocked.medic ? 1 : 0));   // the run adds to it (data/trooper-progression.js)
+  if (allies.length < want) spawnSquad(want - allies.length);
 }
 // put the squad back around the hero (a new arena built in place, a jump ahead): clear spots just behind
 export function regroupSquad(){
@@ -296,7 +297,7 @@ export const grenadeLeft = () => SQ.netGren != null && guest() ? SQ.netGren : Ma
    ============================================================ */
 export function hurtAlly(a, dmg, from){
   if (!a || a.net || !standing(a) || !(dmg > 0)) return;   // (a co-op guest's puppet: the host's browser does the harm)
-  a.hp -= dmg * SQUAD.takeDmg * diffDmgMul() * (a.inCover ? COMMAND.coverTake : 1);
+  a.hp -= dmg * SQUAD.takeDmg * diffDmgMul() * (a.inCover ? COMMAND.coverTake : 1) * (player.up.squadDr || 1);   // (the trooper's LEAD FROM THE FRONT)
   a.hitAt = G.gt; a.flash = 0.14;
   if (a.hp <= 0) downAlly(a);
 }
@@ -345,7 +346,8 @@ function downAlly(a){
   burst(V3(a.group.position.x, 1.2, a.group.position.z), 0xff6a4a, 10, 5, 4);
   if (!SQ.tipped){ SQ.tipped = true; showBanner('SQUADMATE DOWN', 'Stand beside them to get them up, or they rise on their own.', 2.6); }
   a.body = goDown({
-    kind: 'ally', pos: () => a.group.position, need: REVIVE.ally.time, bleed: Infinity, selfUp: SQUAD.downTime[diffKey()],
+    kind: 'ally', pos: () => a.group.position, need: REVIVE.ally.time * (player.up.reviveMul || 1) * (G.unlocked.medic ? TROOPER.medic.revive : 1),   // (the trooper's FIELD MEDIC and BAND OF BROTHERS)
+    bleed: Infinity, selfUp: SQUAD.downTime[diffKey()],
     onUp(how){ a.body = null; standUp(a, how === 'self' ? SQUAD.getUpHp : Math.max(SQUAD.getUpHp, 0.65)); },
   });
 }
@@ -429,7 +431,7 @@ function shoot(a, e){
   const sp = a.role.spread;
   dir.x += rand(-sp, sp); dir.y += rand(-sp, sp) * 0.5; dir.z += rand(-sp, sp); dir.normalize();
   a.kick = 1;
-  fireBolt(muzzle, dir, a.role.boltSpeed, a.role.dmg * (SQUAD.dmg[diffKey()] || 1) * (isFodder(e) ? 1 : COMMAND.markEliteDmg), true, true, a);
+  fireBolt(muzzle, dir, a.role.boltSpeed, a.role.dmg * (SQUAD.dmg[diffKey()] || 1) * (isFodder(e) ? 1 : COMMAND.markEliteDmg) * (player.up.squadDmg || 1), true, true, a);
   bolts[bolts.length - 1].ally = a;
   bolts[bolts.length - 1].mark = isFodder(e) ? null : e;   // an elite only takes the bolts meant for it (enemies/bolts.js)
   bolts[bolts.length - 1].mesh.material.color.setHex(isMando() ? 0xffa040 : 0x4aa8ff);

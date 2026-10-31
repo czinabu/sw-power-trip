@@ -11,7 +11,8 @@ import { hand } from './jedi.js';
 import { seg, rounded } from './skin.js';
 import { DIM } from './rig.js';
 
-const SOFT = rounded(chamfer(0.42)), SOFT_HEAD = rounded(HEAD);
+// rounded sections, as the hero and NPC passes use (enemies/mesh.js SOFT*): pressed armour, not cut blocks
+const SOFT = rounded(chamfer(0.42)), SOFT_HEAD = rounded(HEAD), SOFT_BODY = rounded(SHIELD), SOFT_LIMB = rounded(chamfer(0.4));
 const mirror = pts => pts.map(([x, y]) => [-x, y]).reverse();
 
 export const TROOPER_PARTS = {
@@ -72,7 +73,9 @@ function torso(R, k, arc){
   ], { bones: [R.hips, R.torso, R.chest], at: [DIM.torsoY, DIM.torsoY + DIM.chestY], blend: 0.07, profile: SHIELD, dir: 1 });
   // codpiece and the white utility belt with its boxes
   k.add(plate([[-0.08,0.02],[0.08,0.02],[0.05,-0.12],[-0.05,-0.12]], 0.04, 0.012), 'plate', R.hips, [0, -0.04, 0.12], [-0.12, 0, 0]);
-  k.add(loft([{ y:0.0, w:0.4, d:0.27 }, { y:0.075, w:0.39, d:0.265 }], SHIELD), 'plate', R.torso, [0, -0.02, 0]);
+  k.add(loft([{ y:0.0, w:0.4, d:0.27 }, { y:0.075, w:0.39, d:0.265 }], SOFT_BODY), 'plate', R.torso, [0, -0.02, 0]);
+  // the layered waist (as the NPC troopers'): a dark strap cinched over the white belt, so it reads light-dark-light
+  k.add(loft([{ y:0.0, w:0.408, d:0.276 }, { y:0.026, w:0.406, d:0.274 }], SOFT_BODY), 'grey', R.torso, [0, 0.005, 0], [0, 0, 0], { outline: false });
   for (const bx of [-0.15, -0.075, 0.075, 0.15]) k.add(block(0.06, 0.07, 0.05, 0.25), 'plate', R.torso, [bx, 0.015, 0.14 - Math.abs(bx) * 0.25]);
   for (const sx of [-1, 1]) k.add(block(0.07, 0.06, 0.12, 0.25), 'plate', R.torso, [0.205 * sx, 0.015, 0.02]);
   // abdomen plates
@@ -91,7 +94,7 @@ function torso(R, k, arc){
   k.add(block(0.2, 0.12, 0.08, 0.3), 'plate', R.chest, [0, 0.22, -0.16]);   // the back pack
   if (arc){
     // the ARC's black collar plate across the top of the chest and shoulders, with two ammo pouches hanging off it
-    k.add(loft([{ y:0.29, w:0.44, d:0.29 }, { y:0.34, w:0.46, d:0.29 }, { y:0.39, w:0.36, d:0.25 }, { y:0.43, w:0.22, d:0.18 }], SHIELD), 'grey', R.chest);
+    k.add(loft([{ y:0.29, w:0.44, d:0.29 }, { y:0.34, w:0.46, d:0.29 }, { y:0.39, w:0.36, d:0.25 }, { y:0.43, w:0.22, d:0.18 }], SOFT_BODY), 'grey', R.chest);
     // the two ammo pouches hanging off it, on the chest plate's upper edge, each with a white snap
     for (const bx of [-0.06, 0.06]){
       k.add(block(0.075, 0.1, 0.045, 0.3), 'grey', R.chest, [bx, 0.27, 0.172], [-0.12, 0, 0]);
@@ -106,7 +109,7 @@ function arms(R, k, kind){
     k.skin('suit', [
       ...seg(0.34, [[-0.18,0.14,0.14],[0.06,0.15,0.15],[0.5,0.125,0.125],[1,0.1,0.105]]),
       ...seg(0.3, [[0.5,0.095,0.095],[1,0.08,0.08]], 0.34),
-    ], { bones: [A.sh, A.el], at: [0.34], blend: 0.05, profile: chamfer(0.4) });
+    ], { bones: [A.sh, A.el], at: [0.34], blend: 0.05, profile: SOFT_LIMB });
     // white bicep plate
     k.add(limb(0.2, [[0,0.13,0.125],[1,0.115,0.11]], KEEL), 'plate', A.sh, [0, -0.08, 0]);
     // pauldrons: the ARC's big one in the legion colour on the left shoulder (the right keeps a plain white cap), or
@@ -121,6 +124,8 @@ function arms(R, k, kind){
     }
     else if (kind === 'captain' && s < 0) k.add(loft([{ y:-0.1, w:0.28, d:0.26 }, { y:0.03, w:0.27, d:0.25 }, { y:0.1, w:0.16, d:0.18 }], SOFT), 'mark', A.sh, [0.05*s, 0.045, 0], [0, 0, -0.42*s]);
     else k.add(loft([{ y:-0.05, w:0.2, d:0.19 }, { y:0.03, w:0.19, d:0.18 }, { y:0.07, w:0.12, d:0.14 }], SOFT), 'plate', A.sh, [0.02*s, 0.03, 0], [0, 0, -0.3*s]);
+    // a rounded elbow cop over the joint, as the NPC arms have
+    k.add(loft([{ y:-0.045, w:0.11, d:0.115 }, { y:0.0, w:0.12, d:0.128 }, { y:0.045, w:0.105, d:0.112 }], SOFT_LIMB), 'plate', A.el, [0, 0.0, 0.012]);
     // forearm bracer with a legion band; the ARC's is grey
     k.add(limb(0.24, [[0,0.11,0.105],[0.6,0.118,0.112],[1,0.1,0.097]], KEEL), 'plate', A.el, [0, -0.04, 0]);
     if (kind === 'arc' && s > 0) k.add(block(0.05, 0.11, 0.02, 0.2), 'mark', A.el, [0, -0.15, 0.06], [0, 0, 0], { outline: false });   // the wrist comlink

@@ -76,7 +76,7 @@ function migrateUnlocked(su){
 }
 
 // a loaded save's run waits on the menu (G.resumeRun) until BEGIN picks it up, as long as the same hero is picked
-export const canResume = () => !!(G.resumeRun && G.resumeRun.hero === G.hero);
+export function canResume(){ return !!(G.resumeRun && G.resumeRun.hero === G.hero); }   // (a declaration: menus.js can call it while modules are still loading)
 export const resumeLabel = () => savedChapter(G.resumeRun, G.hero);
 // 'ACT II · CH 6' for the saved run the menu would continue (the campaign tile)
 export function resumeProgress(){

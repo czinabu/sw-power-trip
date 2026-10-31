@@ -105,5 +105,15 @@ export const SANDBOX_KIT = {
     { id: 'bacta',      nm: 'BACTA STIM',      key: 'G',        ...flag('bacta') },
     { id: 'jetmissile', nm: 'JETPACK MISSILE', key: 'Z',        ...flag('jetmissile') },
   ],
-  trooper: [],   // (testing: the trooper's kit is its starting guns and grenades; its own powers come later)
+  // the ARC trooper (testing): its powers (data/trooper-progression.js); the guns and frags are always in hand
+  trooper: [
+    { id: 'scan',      nm: 'RECON SCAN',       key: 'Q',        ...flag('scan') },
+    { id: 'bshield',   nm: 'BUBBLE SHIELD',    key: 'V',        ...flag('bshield') },
+    { id: 'medic',     nm: 'FIELD MEDIC',      key: '',         ...flag('medic') },
+    { id: 'ion',       nm: 'ION GRENADE',      key: 'F', slot: 'tf', ...flag('ion') },
+    { id: 'breach',    nm: 'BREACH CHARGE',    key: 'F', slot: 'tf', ...flag('breach') },
+    { id: 'artillery', nm: 'ARTILLERY BARRAGE', key: 'Z',      ...flag('artillery') },
+    { id: 'launcher',  nm: 'AT LAUNCHER',      key: '3',        ...flag('launcher') },
+    { id: 'strafe',    nm: 'GUNSHIP STRAFE',   key: 'X',        ...flag('strafe') },
+  ],
 };
