@@ -11,7 +11,7 @@ import { V3 } from '../utils.js';
 import { burst } from '../fx/particles.js';
 import { S } from '../audio/sfx.js';
 import { shared, G, keys, enemies, player } from '../state.js';
-import { fwd, rightV, playerPos } from './helpers.js';
+import { fwd, rightV, playerPos, stance } from './helpers.js';
 import { cancelSwing } from './jedi/combat.js';
 import { flipStyle, launchFlip, formNow } from './anim/agility.js';
 import { tutEvent } from '../game/tutor-bus.js';
@@ -103,6 +103,7 @@ export function groundRoll(){
   player.rollT = R.time; player.rollAt = G.gt;
   player.cds.roll = R.time + R.cd * (F.cd || 1);
   player.swingLock = Math.max(player.swingLock || 0, R.time * 0.6 + R.swingLock);
+  if (G.hero !== 'mando' && stance().swoop) player.momentum = { kind: 'swoop', until: G.gt + R.time + 0.5 };   // ATARU: SHIFT in a fight rolls, and a cut out of the roll is the Hawk-Bat Swoop too (jedi/combat.js)
   tutEvent('dash');   // the dodge lessons count a roll as a dash
   launchFlip({ ...flipStyle('roll', dd), t: 0, dur: R.time, side: side ? (drr >= 0 ? 1 : -1) : 1 }, dd);
   burst(playerPos().clone().setY(0.25), 0xb9c2cc, 6, 3, 1.5, 0.8);

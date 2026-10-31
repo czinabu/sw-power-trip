@@ -93,6 +93,7 @@ export const DUEL = {
      within `cover` degrees of the centre, fading to the off-line odds `feather` degrees further out, so a cut placed
      just past the edge of its guard gets through. Blocked cuts within `repeat` degrees of the last one count as the
      same cut for its read (adaptAfter): vary the angle and it can't lock you down. */
+  // A cut that lands inside `cover` (cover > 0.5) is ALWAYS blocked: the crescent is a wall (enemies/duel.js decide).
   arc: { cover: 40, feather: 25, repeat: 30, high: 30, low: 60 },
   /* READING A CUT — a duellist that holds a guard sees your cut coming: while the blade is still in its chamber (before
      `by` of the swing) and you are within `range` and squared up to it, it decides then and there whether it will turn

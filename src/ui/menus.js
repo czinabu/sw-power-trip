@@ -480,6 +480,7 @@ renderer.domElement.addEventListener('mousedown', () => { if (shared.lockFallbac
 document.addEventListener('pointerlockchange', () => {
   const locked = document.pointerLockElement === renderer.domElement;
   if (G.skillSelect && !locked) return;   // skill tree owns the cursor — don't show the pause overlay
+  if (locked && G.cardUp){ document.exitPointerLock(); return; }   // a card or the lesson board is up: a lock that lands late (the click's request) is let go so the cursor stays free
   if (locked){
     shared.lockFallback = false;
     shared.lockWorked = true;

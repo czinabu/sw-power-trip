@@ -15,14 +15,14 @@ import { damageEnemy, flinchEnemy, nearestEnemyInCone, staggerEnemy, interruptEn
 import { damageBoss } from '../../boss/boss.js';
 import { FOCUS, focusTier, focusDmgMul, addFocus, freeRiposte } from './focus.js';
 import { spawnHitSpark, spawnGroundShock } from '../../fx/vfx.js';
-import { inkSprite, sparks, clashFlash } from '../../fx/ink.js';
+import { inkSprite, sparks, clashFlash, clashSparks } from '../../fx/ink.js';
 import { scorchGround } from '../../fx/scorch.js';
 import { DUEL } from '../../data/duel.js';
 import { cutLine, duelDefend, isGuarding, guardImpact, rallyParry } from '../../enemies/duel.js';
 import { bodyRadius } from './bladehit.js';
 import { bounceOff, contactPoint } from './clash.js';
 import { inReach } from '../../enemies/bodyshape.js';
-import { scarBody, severArm } from '../../enemies/scars.js';
+import { scarBody, severLimbs } from '../../enemies/scars.js';
 import { tutEvent } from '../../game/tutor-bus.js';
 import { masteryXp } from '../../game/progression.js';
 import { momentumStrike } from '../parkour.js';
@@ -205,7 +205,7 @@ export function cancelSwing(){
    (the arc flash) with nothing hit. With no list at all (no blade in hand) it falls back to
    striking everything in the swing's arc and radius. */
 // a blade's blow: where it met the foe (bladehit.js), and the cap on how far it throws it (data/config.js saberShove)
-export const bladeOpts = (at) => Object.assign({ shove: CFG.player.saberShove.max }, at);
+export const bladeOpts = (at) => Object.assign({ shove: CFG.player.saberShove.max, blade: true }, at);
 const FINISHER_FLOOR = 27;   // over the 26 a blow needs to floor a brute (enemies/damage.js)
 export function applySwingDamage(step, only){
   const st = stance();
@@ -247,8 +247,8 @@ export function applySwingDamage(step, only){
     G.slowmo = Math.min(G.slowmo, 0.3); G.slowmoT = Math.max(G.slowmoT, 0.14);
     const rfp = V3(rp.x + fwd().x, 1.6, rp.z + fwd().z);
     clashFlash(rfp, 0xffd24a, true);
-    sparks(rfp, 0xffe27a, 14, 15, { dir: fwd(), cone: 0.7, life: 0.34 });
-    screenFlash('radial-gradient(ellipse at center, rgba(255,255,255,.45), rgba(255,210,90,.1) 55%, transparent 72%)', 0.85, 0.32);
+    clashSparks(rfp, 0xffe27a, 6, { dir: fwd(), cone: 0.7 });
+    screenFlash('radial-gradient(ellipse at center, rgba(255,255,255,.2), rgba(255,210,90,.05) 35%, transparent 50%)', 0.5, 0.22);
     S.riposte(); sfx(140, 0.22, 'sawtooth', 0.14, 50);
   }
   // MOMENTUM — a cut out of a vault, climb, slide, wall-run or landing roll lands harder (data/movement.js MOVE.flow)
@@ -267,10 +267,11 @@ export function applySwingDamage(step, only){
   const A = CFG.player.swingArc, sdir = player.swing && player.swing.dir;
   const arcCos = finisher ? A.finisher : (sdir === 'left' || sdir === 'right' || back) ? A.sweep : A.cut;
   const reachUp = radius * 0.85;   // VERTICAL reach — a swing from the air can't hit foes far below you
+  const reachDown = player.grounded ? reachUp : radius * 1.4;   // ...but a cut struck mid-leap still reaches the ground at your feet (Ataru's lesson)
   const tryHit = (pos, fn, obj) => {
     if (only){ if (only.includes(obj) && fn() !== false) hits++; return; }   // the blade decided: it touched this
     TMP.subVectors(pos, pp);
-    if (Math.abs(TMP.y) > reachUp) return;   // must be at roughly your height (aim at them, don't sweep the ground from above)
+    if (TMP.y > reachUp || -TMP.y > reachDown) return;   // must be at roughly your height (aim at them, don't sweep the ground from above)
     TMP.y = 0;
     const d = TMP.length();
     if (obj && obj !== shared.boss && obj.group && obj.t){ if (!inReach(obj, pp, radius, d > 0.3 ? f : null, arcCos)) return; }   // a foe: any of its body
@@ -304,7 +305,7 @@ export function applySwingDamage(step, only){
       if (shat && !e.dead) staggerEnemy(e, f.x, f.z);
       // the blade leaves its mark: a burnt cut where it crossed, and a killing blow may take the sword arm (enemies/scars.js)
       scarBody(e.group, f, sw0 && sw0.dir, finisher || G.stance === 'djemso' || isDark, sw0 && sw0.hitAt && sw0.hitAt.get(e));
-      if (e.dead) severArm(e, f, finisher ? 0.6 : G.stance === 'djemso' || isDark ? 0.4 : 0.25);
+      if (e.dead) severLimbs(e, f, finisher ? 0.8 : G.stance === 'djemso' || isDark ? 0.55 : 0.35, sw0 && sw0.hitAt && sw0.hitAt.get(e));
       if (!riposte && !e.dead) interruptEnemy(e, f, finisher || st.form === 'djemso' || isDark);   // striking first beats a wind-up
       if (mom === 'slide' && !riposte && !e.dead) staggerEnemy(e, f.x, f.z);   // a SLIDE CUT sweeps the legs out
       if (riposte && !e.dead) staggerEnemy(e, f.x, f.z);   // a RIPOSTE floors what it answers — a true counter, wide open after

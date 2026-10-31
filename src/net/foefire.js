@@ -15,7 +15,7 @@ import { throwGrenade, grenades } from '../enemies/grenades.js';
 import { staggerEnemy } from '../enemies/damage.js';
 import { endLunge, paintLungeLine } from '../enemies/tactics.js';
 import { updateAimLine } from '../enemies/specials.js';
-import { addPosture, drainBreath } from '../enemies/duel.js';
+import { addPosture, drainBreath, netGuardHit } from '../enemies/duel.js';
 import { DUEL } from '../data/duel.js';
 import { gainXp } from '../game/progression.js';
 import { hurtPlayer } from '../player/damage.js';
@@ -30,6 +30,8 @@ import { players } from '../player/players.js';
 import { tellFx } from '../fx/tells.js';
 import { burst } from '../fx/particles.js';
 import { spawnGroundShock } from '../fx/vfx.js';
+import { castHands } from '../fx/palms.js';
+import { partnerPower } from './partner-fx.js';
 import { S } from '../audio/sfx.js';
 import { net, on, send, connected } from './session.js';
 import { hooks } from './run.js';
@@ -78,6 +80,20 @@ on('hres', (m) => {
     if (!(m.k === 'brace' && e.dp && e.dp.brace && addPosture(e, DUEL.posture.parry, ax, az))) staggerEnemy(e, ax, az);
     if (m.r === 'parried') drainBreath(e, DUEL.breath.parried);
   } else if (m.r === 'blocked' && m.k !== 'lunge') blockedOnBlade(e);
+});
+
+/* ---------------- the guest's blows on a duellist's guard ----------------
+   The guest's screen decides a cut is turned (enemies/duel.js netDefend), or a kick or shove batters the guard; the posture
+   and breath it costs go on the host's real foe, which breaks open there when the bar fills. */
+hooks.guard = (e, k, a, l) => { if (asGuest()) send({ t: 'grd', n: e.nid, k, a: r2(a), l }); };
+on('grd', (m) => {
+  if (net.role !== 'host') return;
+  const e = enemies.find(o => o.nid === m.n);
+  if (!e || e.dead) return;
+  const mate = players.find(p => !p.local);
+  let ax = e.group.position.x - (mate ? mate.pos.x : 0), az = e.group.position.z - (mate ? mate.pos.z : 0);
+  const l = Math.hypot(ax, az) || 1;
+  netGuardHit(e, m.k, +m.a || 1, m.l, ax / l, az / l);
 });
 
 /* ---------------- shots ---------------- */
@@ -150,16 +166,15 @@ on('pb', (m) => {
   b.ghost = true; b.mesh.material.color.setHex(m.c); b.mesh.scale.set(m.k, m.k * 1.3, m.k);
 });
 
-/* ---------------- the partner's one-shot Force powers: a ring where they stand ---------------- */
+/* ---------------- the partner's one-shot Force powers: out of their palms, or a ring where they stand ---------------- */
 hooks.power = (k, color, r) => {
   if (!asHost() && !asGuest()) return;
   const p = playerPos();
-  send({ t: 'pw', k, c: color, r: r2(r), x: r2(p.x), z: r2(p.z) });
+  send({ t: 'pw', k, c: color, r: r2(r), x: r2(p.x), z: r2(p.z), h: castHands().length });
 };
 on('pw', (m) => {
   if (!asHost() && !asGuest()) return;
-  spawnGroundShock(V3(m.x, 0.1, m.z), m.c, m.r, 0.45, 0.7);
-  burst(V3(m.x, 1.0, m.z), m.c, 10, 8, 4);
+  partnerPower(m.k, m.c, m.r, m.h || 1, m.x, m.z);
 });
 
 /* ---------------- shared XP: a kill pays both heroes ---------------- */

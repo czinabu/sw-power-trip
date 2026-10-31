@@ -16,7 +16,7 @@ import { duelDefend, guardImpact, isGuarding, lockKick } from '../../enemies/due
 import { bodyRadius } from '../jedi/bladehit.js';
 import { damageBoss } from '../../boss/boss.js';
 import { spawnHitSpark, spawnGroundShock } from '../../fx/vfx.js';
-import { inkSprite, sparks, puff, clashFlash, thrust } from '../../fx/ink.js';
+import { inkSprite, sparks, puff, clashFlash, clashSparks, thrust } from '../../fx/ink.js';
 import { tutEvent } from '../../game/tutor-bus.js';
 import { masteryXp } from '../../game/progression.js';
 import { diffWindow } from '../../data/difficulty.js';
@@ -133,11 +133,11 @@ function landStrike(B){
     G.shake = Math.max(G.shake, B.heavy ? 0.5 : 0.28);
     const violet = B.name === 'blade' || cut, blue = B.name === 'bash';
     spawnHitSpark(ip, violet ? 0xc9a6ff : blue ? 0x9fe6ff : 0xffd28a, B.heavy ? 1.5 : 0.9);
-    sparks(ip, violet ? 0xc9a6ff : blue ? 0x9fe6ff : 0xffe7b0, B.heavy ? 8 : 5, 11, { dir: f, cone: cut ? 1.1 : 0.6, life: 0.24 });
+    sparks(ip, violet ? 0xc9a6ff : blue ? 0x9fe6ff : 0xffe7b0, B.heavy ? 4 : 3, 8, { dir: f, cone: cut ? 1.1 : 0.6, life: 0.18, size: 0.36 });
     if (cut){ sfx(1800, 0.08, 'square', 0.04, 720); }
     if (blue){ player.shieldFlash = Math.max(player.shieldFlash || 0, 0.3); sfx(1100, 0.08, 'square', 0.05, 500); }   // the disc flares on the bash
     if (B.name === 'blade'){   // the wrist VIBROBLADE: a sharp violet slash arc and a ringing edge
-      inkSprite({ pos: ip, shape: 'ring', inner: 0.86, arc: 1.1, color: 0xc9a6ff, size: [1.6, 2.6], life: 0.14, steps: 2, coreW: 0.3, inkW: 0.25,
+      inkSprite({ pos: ip, shape: 'ring', inner: 0.86, arc: 1.1, color: 0xc9a6ff, size: [0.6, 1.2], life: 0.12, steps: 2, coreW: 0.3, inkW: 0.25,
                   rot: Math.PI * (0.35 + Math.random() * 0.3) });
       sfx(1800, 0.09, 'square', 0.05, 720); sfx(2400, 0.07, 'triangle', 0.04, 900);
     }
@@ -158,11 +158,10 @@ export function mandoCatch(fromPos){
   TMP.subVectors(fromPos, pp); TMP.y = 0; if (TMP.lengthSq() > 0.001) TMP.normalize(); else TMP.copy(fwd());
   const cp = V3(pp.x + TMP.x * 0.8, pp.y + 1.55, pp.z + TMP.z * 0.8);
   clashFlash(cp, 0xffd28a, true);
-  sparks(cp, 0xffe7b0, 16, 13, { life: 0.34 });
-  spawnHitSpark(cp, 0xffffff, 1.8);
+  clashSparks(cp, 0xffe7b0, 6);
   G.hitstop = Math.max(G.hitstop, 0.16); G.shake = Math.max(G.shake, 0.7);
   G.slowmo = Math.min(G.slowmo, 0.3); G.slowmoT = Math.max(G.slowmoT, 0.3);
-  screenFlash('radial-gradient(ellipse at center, rgba(255,230,170,.5), transparent 66%)', 0.8, 0.3);
+  screenFlash('radial-gradient(ellipse at center, rgba(255,230,170,.22), transparent 45%)', 0.5, 0.22);
   floater(pp, 'CAUGHT! ⟲ TAKEDOWN', '#ffd28a');
   S.clash(cp, true); sfx(2600, 0.12, 'triangle', 0.04, 1800);
   if (G.stats) G.stats.parries++;
@@ -195,8 +194,8 @@ function takedown(e){
   damageEnemy(e, dmg, dir, 24, true, false, NO_LAUNCH);   // a finisher that puts it down, not a launch
   if (!e.dead && !e.t.heavy && !e.t.fly){ e.state = 'knockdown'; e.st = 0.9; e.vel.copy(dir).multiplyScalar(3); e.vel.y = 2.5; }   // slammed to the floor at your feet
   const ip = V3(g.position.x, 1.4, g.position.z);
-  inkSprite({ pos: ip, shape: 'ring', inner: 0.84, arc: 1.4, color: 0xc9a6ff, size: [2, 3.2], life: 0.18, steps: 2, coreW: 0.32, inkW: 0.25, rot: rand(0, Math.PI) });
-  sparks(ip, 0xc9a6ff, 14, 14, { dir, cone: 0.7, life: 0.3 });
+  inkSprite({ pos: ip, shape: 'ring', inner: 0.84, arc: 1.4, color: 0xc9a6ff, size: [0.7, 1.4], life: 0.14, steps: 2, coreW: 0.32, inkW: 0.25, rot: rand(0, Math.PI) });
+  sparks(ip, 0xc9a6ff, 6, 10, { dir, cone: 0.7, life: 0.2, size: 0.38 });
   spawnHitSpark(ip, 0xffffff, 2);
   G.hitstop = Math.max(G.hitstop, 0.2); G.shake = Math.max(G.shake, 0.9);
   G.slowmo = Math.min(G.slowmo, 0.35); G.slowmoT = Math.max(G.slowmoT, 0.25);
@@ -244,7 +243,7 @@ function updateCharge(dt){
   if (isGuarding(e)) guardImpact(e, DUEL.posture.charge);
   damageEnemy(e, C.dmg * (player.up.dmg || 1), dir, C.knock, true);
   const ip = V3(pp.x + dir.x * 1.1, 1.3, pp.z + dir.z * 1.1);
-  spawnHitSpark(ip, 0xffd28a, 1.6); sparks(ip, 0xffe7b0, 10, 12, { dir, cone: 0.6, life: 0.28 });
+  spawnHitSpark(ip, 0xffd28a, 1.6); sparks(ip, 0xffe7b0, 5, 9, { dir, cone: 0.6, life: 0.2, size: 0.38 });
   G.hitstop = Math.max(G.hitstop, 0.1); G.shake = Math.max(G.shake, 0.7);
   S.punch(ip, 1.6); S.heavy(ip);
   player.meleeT = player.meleeMax = 0.3; player.meleeKind = 'cross'; player.meleeSkip = 0.1;   // the pose picks up AT the impact

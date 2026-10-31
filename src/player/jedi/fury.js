@@ -11,6 +11,8 @@ import { playerPos } from '../helpers.js';
 const HOLD = 2.0, DRAIN = 0.2;   // seconds fury holds after the last feed, then the share lost per second
 
 const furyForm = () => G.hero !== 'mando' && stance() && stance().furyDmg;
+// which Form VII is active ('juyo' | 'vaapad'), else null: the HUD's fury bar shows only then
+export const furyKind = () => furyForm() ? stance().form : null;
 export function addFury(amt){
   if (!furyForm() || !(amt > 0)) return;
   const was = player.fury || 0;

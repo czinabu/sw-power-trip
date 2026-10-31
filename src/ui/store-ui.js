@@ -18,6 +18,7 @@ import { masterySet, masteryRank } from '../data/mastery.js';
 import { chapterLabel } from '../game/campaign.js';
 import { FORMS, FORM_PATH } from '../data/forms.js';
 import { stanceUnlocked } from '../data/stances.js';
+import { storeAbilityCard } from './ability-card.js';
 import { TIER_REQ, TIER_CHAPTER } from '../data/skills.js';
 import { ENDLESS_POWERS } from '../data/store.js';
 import { LEVELS } from '../data/levels.js';
@@ -60,6 +61,7 @@ export function openSkillTree(){
   if (G.endless && (G.boonsOwed || 0) > 0){ G.boonsOwed--; G.boonOffer = rollBoons(); G.boonPicked = false; } else { G.boonOffer = null; }
   // the story hands over the single powers its chapter brings (a fork pair stays a free pick on the page)
   grantedNow = grantStoryPowers();
+  for (const n of grantedNow) storeAbilityCard(n);
   if (grantedNow.length){ if (G.hero === 'mando') syncMandoChips(); else syncJediChips(); }
   rollFreeCards();
   if (!somethingToTake()){
@@ -244,6 +246,7 @@ function buyStore(n){
   if (!G.skillSelect || !storeAvail(n) || (G.xp||0) < cost) return;
   G.xp -= cost;
   n.buy();
+  storeAbilityCard(n);
   if (G.hero === 'mando') syncMandoChips(); else syncJediChips();
   document.getElementById('xpval').textContent = G.xp;
   floater(playerPos(), n.nm + '!', n.final ? '#ff9a6a' : '#7fe0a8');

@@ -12,13 +12,13 @@ export const coopRun = { on: false, k: 'e', mid: '', lv: 0, ch: -1, a2: null, wf
 /* hits the guest has landed on puppet foes. A continuous source (the flamethrower, a held Force power) calls damageEnemy
    every frame, so ticks on one foe are summed into one entry; foes.js sends the lot about 20 times a second */
 export const hitQueue = [];
-export function queueHit(e, dmg, knockDir, knockPow, finisher, tick, shove){   // (shove: a blade's cap on the throw, enemies/damage.js)
+export function queueHit(e, dmg, knockDir, knockPow, finisher, tick, shove, blade){   // (shove: a blade's cap on the throw, enemies/damage.js; blade: a saber cut, which may sever a limb on the host)
   if (tick){
     const same = hitQueue.find(h => h[0] === e.nid && h[6]);
     if (same){ same[1] += dmg; return; }
   }
-  hitQueue.push([e.nid, dmg, knockDir ? +knockDir.x.toFixed(2) : 0, knockDir ? +knockDir.z.toFixed(2) : 0, knockPow || 0, finisher ? 1 : 0, tick ? 1 : 0, shove || 0]);
+  hitQueue.push([e.nid, dmg, knockDir ? +knockDir.x.toFixed(2) : 0, knockDir ? +knockDir.z.toFixed(2) : 0, knockPow || 0, finisher ? 1 : 0, tick ? 1 : 0, shove || 0, blade ? 1 : 0]);
 }
 
 // what the foe code calls to tell the other browser (set by net/foefire.js; null in solo, so nothing changes there)
-export const hooks = { hurt: null, bolt: null, bx: null, blast: null, tell: null, gren: null, pbolt: null, xp: null, aim: null, lunge: null, ring: null, bctl: null, bossDead: null, missionDone: null, mbanner: null, comms: null, power: null };
+export const hooks = { hurt: null, bolt: null, bx: null, blast: null, tell: null, gren: null, pbolt: null, xp: null, aim: null, lunge: null, ring: null, bctl: null, bossDead: null, missionDone: null, mbanner: null, comms: null, power: null, guard: null };

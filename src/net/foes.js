@@ -14,6 +14,7 @@ import { buildEnemyMesh } from '../enemies/mesh.js';
 import { dressElite } from '../enemies/elites.js';
 import { damageEnemy } from '../enemies/damage.js';
 import { removeEnemy } from '../enemies/cleanup.js';
+import { severLimbs, applyCuts } from '../enemies/scars.js';
 import { makeBossBar } from '../enemies/spawn.js';
 import { updateLegs } from '../enemies/gait.js';
 import { updateUpper } from '../enemies/upper.js';
@@ -30,6 +31,7 @@ import { damageBoss, bossStagger, bossStun, makeBossPuppet, dropBossPuppet } fro
 import { net, on, send, connected } from './session.js';
 import { coopRun, hitQueue } from './run.js';
 import { STANCES } from '../data/stances.js';
+import { duelRec, updatePuppetDuel } from '../enemies/duel.js';
 
 const DEAD = 1, WALKING = 2, WARBRINGER = 4;
 let sentAt = 0, hostSent = false, runListeners = [];
@@ -56,7 +58,8 @@ function snapshot(){
       u.bodyMat ? u.bodyMat.emissive.getHex() : 0, u.bodyMat ? r2(u.bodyMat.emissiveIntensity) : 0,
       u.weaponArm ? r2(u.weaponArm.rotation.z) : 0, u.staff ? r2(u.staff.rotation.x) : 0,   // (the weapon's other axis: which line a guard or block covers)
       e.form || '',   // a form master's form: its blade colour (game/mission.js)
-      u.weaponArm ? r2(u.weaponArm.rotation.y) : 0, r2(e.cutDrop || 0), e.cutTwist != null ? r2(e.cutTwist) : null]);   // a duellist's cut: a low sweep's yaw, the hips' drop, the chest's turn (enemies/duel.js)
+      u.weaponArm ? r2(u.weaponArm.rotation.y) : 0, r2(e.cutDrop || 0), e.cutTwist != null ? r2(e.cutTwist) : null, e.cut || 0,
+      duelRec(e)]);   // a duellist's cut: a low sweep's yaw, the hips' drop, the chest's turn (enemies/duel.js); the limbs a saber has taken off (enemies/scars.js); a duellist's guard, posture and breath (duel.js duelRec)
   }
   const bs = shared.boss, bu = bs && bs.group.userData;
   const boss = bs && !bs.net ? [r2(bs.group.position.x), r2(bs.group.position.y), r2(bs.group.position.z), r2(bs.group.rotation.y), r2(bs.group.rotation.x),
@@ -83,11 +86,12 @@ function hostTick(){
 // the guest's blows, applied here exactly as if this browser's hero had struck them
 on('hits', (m) => {
   if (net.role !== 'host') return;
-  for (const [id, dmg, kx, kz, kpow, fin, tick, shove] of m.h || []){
+  for (const [id, dmg, kx, kz, kpow, fin, tick, shove, blade] of m.h || []){
     if (id === 'B'){ if (shared.boss && !shared.boss.net) damageBoss(dmg, !!tick); continue; }   // the boss
     const e = enemies.find(o => o.nid === id);
     if (!e || e.dead) continue;
     damageEnemy(e, dmg, kx || kz ? V3(kx, 0, kz) : null, kpow, !!fin, !!tick, shove ? { shove } : undefined);
+    if (blade && e.dead) severLimbs(e, V3(kx, 0, kz), fin ? 0.8 : 0.4);   // the guest's killing cut may take limbs; the snapshot shows them to both
   }
 });
 
@@ -139,7 +143,7 @@ function makePuppet(rec){
 }
 
 function applyRec(e, rec){
-  const [, , x, y, z, rx, ry, rz, sc, hp, maxHp, state, flags, , wA, sZ, em, ei, wZ, sX, , wY, drop, twist] = rec;
+  const [, , x, y, z, rx, ry, rz, sc, hp, maxHp, state, flags, , wA, sZ, em, ei, wZ, sX, , wY, drop, twist, cut, duel] = rec;
   e.group.scale.setScalar(sc);
   sendCtl(e);   // a control state put on it here since the last frame goes out before the snapshot overwrites it
   e.hp = hp; e.maxHp = maxHp; e.walking = !!(flags & WALKING);
@@ -152,7 +156,9 @@ function applyRec(e, rec){
   e.dead = dying;
   const u = e.group.userData;
   if (u.weaponArm){ u.weaponArm.rotation.x = wA; if (wZ != null) u.weaponArm.rotation.z = wZ; u.weaponArm.rotation.y = wY || 0; }
+  if (cut) applyCuts(e, cut);   // limbs the host's saber (or the partner's) took: lift them off here too
   e.cutDrop = drop || 0; e.cutTwist = twist ?? null;
+  e.ng = duel || null;   // its guard as the host holds it: the crescent, the posture bar, and whether it turns this player's cuts (duel.js)
   if (u.staff){ u.staff.rotation.z = sZ; if (sX != null) u.staff.rotation.x = sX; }
   if (u.bodyMat){ u.bodyMat.emissive.setHex(em); u.bodyMat.emissiveIntensity = ei; }
 }
@@ -303,6 +309,7 @@ export function updatePuppets(dt){
     }
     updateLegs(e, g, dt, e.dead || NO_FEET[e.state] ? 'off' : (e.t.fly || e.state === 'leap') ? 'air' : e.walking ? 'walk' : 'ground');
     updateUpper(e, g, dt, null, e.dead || NO_FEET[e.state] ? 'off' : 'on');   // breath, glances, the wind-up twist (enemies/upper.js)
+    updatePuppetDuel(e, dt);
   }
 }
 

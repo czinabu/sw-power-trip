@@ -10,7 +10,7 @@ import { sfx, S } from '../audio/sfx.js';
 import { V3, rand, clamp, TMP, dampToward } from '../utils.js';
 import { burst } from '../fx/particles.js';
 import { floater, screenFlash } from '../fx/floaters.js';
-import { sparks, clashFlash } from '../fx/ink.js';
+import { sparks, clashFlash, clashSparks } from '../fx/ink.js';
 import { spawnHitSpark, spawnGroundShock } from '../fx/vfx.js';
 import { G, enemies, player } from '../state.js';
 import { fwd, playerPos, stance } from '../player/helpers.js';
@@ -23,6 +23,7 @@ import { tutEvent } from '../game/tutor-bus.js';
 import { dropToken } from './director.js';
 import { tellFx } from '../fx/tells.js';
 import { heroesHere } from '../player/players.js';
+import { hooks } from '../net/run.js';
 
 const LINES = ['L', 'R', 'H', 'Lo'];   // the lines a guard covers (Lo: the legs)
 const SIDES = ['L', 'R', 'H'];         // the lines a foe strikes from
@@ -122,7 +123,7 @@ export function rallyParry(e, sw, at){
   const g = e.group, pp = playerPos(), dx = pp.x - g.position.x, dz = pp.z - g.position.z, dl = Math.hypot(dx, dz) || 1;
   const cp = at || V3(g.position.x + dx / dl * 0.7, g.position.y + 1.5, g.position.z + dz / dl * 0.7);
   clashFlash(cp, G.hero === 'mando' ? 0xffd28a : stance().blade, true);
-  sparks(cp, 0xffe9b0, 12, 12, { life: 0.3 });
+  clashSparks(cp, 0xffe9b0, 5);
   S.clash(cp, true, e.form);
   sfx(1700 + n * 220, 0.08, 'triangle', 0.035, 1200);   // each beat rings a little higher
   G.hitstop = Math.max(G.hitstop, 0.07); G.shake = Math.max(G.shake, 0.35);
@@ -263,7 +264,7 @@ function makeGuardArc(e){
   m.renderOrder = 5;
   e.group.add(m); e.group.userData.guardArc = m;
 }
-function makePostureBar(e){
+function makePostureBar(e, hasBreath = !!e.dp.stam){
   const grp = new THREE.Group();
   const bg = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.11), new THREE.MeshBasicMaterial({ color: 0x140d04, transparent: true, opacity: 0.75, depthTest: false }));
   const fill = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.06), new THREE.MeshBasicMaterial({ color: 0xffd24a, depthTest: false, toneMapped: false }));
@@ -274,7 +275,7 @@ function makePostureBar(e){
   const breath = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.03), new THREE.MeshBasicMaterial({ color: 0x9fd8ff, depthTest: false, toneMapped: false }));
   breath.position.set(0, -0.1, 0.01);
   grp.add(bg, fill, bbg, breath); grp.renderOrder = 998; grp.userData.fill = fill; grp.userData.breath = breath;
-  bbg.visible = !!e.dp.stam;
+  bbg.visible = hasBreath;
   scene.add(grp); e.postBar = grp;
 }
 
@@ -574,6 +575,7 @@ export function stringDone(e){
 // kind: 'cut' | 'finisher' | 'punch' | 'punchHeavy'. Returns 'block', 'dodge', 'break' (guard shattered, blow lands)
 // or null (it lands normally).
 export function duelDefend(e, line, kind, heavy, at){
+  if (e.net) return netDefend(e, line, kind, heavy, at);   // a co-op guest's blow on the host's duellist (below)
   const p = e.dp;
   if (!p || e.dead || e.converted || !GUARDING[e.state] || e.stunT > 0 || e.dodgeT > 0) return null;
   const g = e.group, pp = playerPos();
@@ -638,7 +640,7 @@ export function duelDefend(e, line, kind, heavy, at){
   if (addPosture(e, cost, dx / dl, dz / dl)) return 'break';
   e.arcFlash = 0.6;
   clashFlash(cp, G.hero === 'mando' ? 0xffd28a : stance().blade, false);
-  sparks(cp, 0xffe9b0, 8, 10, { life: 0.26 });
+  clashSparks(cp, 0xffe9b0, 4);
   S.clash(cp, false, e.form);
   G.hitstop = Math.max(G.hitstop, 0.05); G.shake = Math.max(G.shake, 0.2);
   if (p.tire && G.hero !== 'mando'){ player.stam = Math.max(0, player.stam - p.tire); player.stamDelay = stamDelay(); }   // SORESU: the wall wears you out
@@ -665,7 +667,10 @@ function decide(e, line, kind, rhyN){
     const A = DUEL.arc, d = angDist(ang, GUARD_ANG[e.guard] ?? 90);
     cover = 1 - THREE.MathUtils.smoothstep(d, A.cover, A.cover + A.feather);
   }
+  // SEALED ARC — a cut that arrives inside the glowing crescent (the side it is guarding) never gets through: flank it to the
+  // open side, or break its guard (kick, parry, saber lock, posture) / wait out its shift. Winded or caught open it has no arc.
   const onLine = cover > 0.5;
+  if (onLine && has(DUEL.breath.block)) return 'block';
   let chance = p.block * (DUEL.offLine + (1 - DUEL.offLine) * cover);
   if (onLine && e.lineStreak >= DUEL.adaptAfter) chance = 0.95;   // it has your rhythm: same cut, same answer
   if (kind === 'finisher') chance *= 0.75;
@@ -689,7 +694,7 @@ function punishMash(cp, form){
   player.flinchT = player.flinchMax = Math.max(player.flinchT || 0, R.flinch);
   player.queuedAtk = false;
   clashFlash(cp, 0xff8a5a, true);
-  sparks(cp, 0xffc890, 12, 12, { life: 0.3 });
+  clashSparks(cp, 0xffc890, 5);
   S.parry(cp, form);
   G.hitstop = Math.max(G.hitstop, 0.09); G.shake = Math.max(G.shake, 0.45);
 }
@@ -706,20 +711,21 @@ export function addPosture(e, amt, awayX, awayZ){
   if (e.dp.brace){ e.st = WARBRINGER.open; e.openUntil = G.gt + e.st; }   // the Warbringer's break: a long opening, every blow lands harder
   const g = e.group, cp = V3(g.position.x, g.position.y + 1.6, g.position.z);
   clashFlash(cp, 0xffd24a, true);
-  sparks(cp, 0xffd24a, 16, 13, { life: 0.36 });
+  clashSparks(cp, 0xffd24a, 6);
   G.hitstop = Math.max(G.hitstop, 0.12); G.shake = Math.max(G.shake, 0.6);
   G.slowmo = Math.min(G.slowmo, 0.4); G.slowmoT = Math.max(G.slowmoT, 0.15);
   return true;
 }
 // a kick or shoulder-check into a guard: no block roll, just posture (JA: the kick is the answer to a turtle)
 export function guardImpact(e, amt){
+  if (e.net){ if (isGuarding(e) && hooks.guard) hooks.guard(e, 'impact', amt, line0(e)); return false; }   // co-op guest: the host's foe takes it
   if (!e.dp || !GUARDING[e.state]) return false;
   const pp = playerPos(), g = e.group;
   const dx = g.position.x - pp.x, dz = g.position.z - pp.z, dl = Math.hypot(dx, dz) || 1;
   return addPosture(e, amt, dx / dl, dz / dl);
 }
 // is this foe holding a guard right now (facing you, not mid-swing)?
-export const isGuarding = e => !!e.dp && !!GUARDING[e.state] && !e.converted && !e.dead;
+export const isGuarding = e => e.net ? !!(e.ng && e.ng[1]) && !e.dead : !!e.dp && !!GUARDING[e.state] && !e.converted && !e.dead;
 
 /* ---------------- a saber user bats your blaster bolt straight back ---------------- */
 export function deflectPlayerBolt(e, b){
@@ -779,7 +785,7 @@ export function startLock(e, kind){
   player.lockFace = player.faceYaw = Math.atan2(TMP.x, TMP.z);   // squared to it for the whole bind (player/animation.js)
   const cp = lockPoint();
   clashFlash(cp, stance().blade, true);
-  sparks(cp, 0xffe9b0, 18, 14, { life: 0.4 });
+  clashSparks(cp, 0xffe9b0, 6);
   S.clash(cp, true, e.form);
   G.hitstop = Math.max(G.hitstop, 0.12); G.shake = Math.max(G.shake, 0.6);
   G.slowmo = Math.min(G.slowmo, 0.35); G.slowmoT = Math.max(G.slowmoT, 0.25);
@@ -844,7 +850,7 @@ export function updateSaberLock(dt){
   }
   // the bind sizzles: sparks spit from the contact, a crackling buzz, the lens trembles (all of it harder in a surge)
   const cp = lockPoint();
-  if ((LOCK.fx -= dt) <= 0){ LOCK.fx = surging ? 0.025 : 0.05; sparks(cp, Math.random() < 0.5 ? 0xffe9b0 : stance().blade, surging ? 5 : 3, surging ? 10 : 7, { life: 0.22, size: 0.45 }); }
+  if ((LOCK.fx -= dt) <= 0){ LOCK.fx = surging ? 0.025 : 0.05; sparks(cp, Math.random() < 0.5 ? 0xffe9b0 : stance().blade, surging ? 3 : 2, surging ? 8 : 6, { life: 0.16, size: 0.34 }); }
   if ((LOCK.buzz -= dt) <= 0){ LOCK.buzz = surging ? 0.07 : 0.11; sfx(rand(90, 120), 0.12, 'sawtooth', 0.03, rand(140, 180)); }
   G.shake = Math.max(G.shake, 0.1 + Math.abs(LOCK.bal) * 0.15 + (surging ? 0.15 : 0));
   if (lockFill) lockFill.style.left = (50 + clamp(LOCK.bal, -1, 1) * 50) + '%';
@@ -904,8 +910,8 @@ function winLock(label, knock){
   player.riposteT = CFG.player.riposteTime + 0.3; player.ripLine = null;
   const cp = lockPoint();
   clashFlash(cp, 0xffd24a, true);
-  sparks(cp, 0xffe27a, 18, 15, { dir: V3(dx / dl, 0.2, dz / dl), cone: 0.8, life: 0.36 });
-  screenFlash('radial-gradient(ellipse at center, rgba(255,240,180,.5), transparent 65%)', 0.8, 0.3);
+  clashSparks(cp, 0xffe27a, 6, { dir: V3(dx / dl, 0.2, dz / dl), cone: 0.8 });
+  screenFlash('radial-gradient(ellipse at center, rgba(255,240,180,.22), transparent 45%)', 0.5, 0.2);
   G.hitstop = Math.max(G.hitstop, 0.16); G.slowmo = Math.min(G.slowmo, 0.3); G.slowmoT = Math.max(G.slowmoT, 0.3);
   S.parry(cp, LOCK.foe && LOCK.foe.form);
   if (G.stats) G.stats.locksWon = (G.stats.locksWon || 0) + 1;
@@ -936,4 +942,109 @@ export function endLock(){
   lockBar(false);
   if (e && e.state === 'lock' && !e.dead){ e.state = 'recover'; e.st = 0.4; }
   if (e) e.flourishNext = G.gt + DUEL.flourish.after + 0.6;   // the bind broken, it resets its stance with a twirl
+}
+
+/* ---------------- online co-op: the host's duellists on the guest's screen ----------------
+   The host runs every duellist (net/foes.js), so its guard, posture and breath live there. Each snapshot carries a
+   foe's guard as `duelRec`; the guest keeps it on the puppet (e.ng) to draw the crescent and the posture bar, and to
+   meet its own cuts with the same rules a solo fight has (the sealed arc, the off-line odds). A cut the guest's screen
+   turns is sent back (hooks.guard), and the host puts the posture and breath it costs on the real foe. */
+const NG = { line: 0, up: 1, posture: 2, breath: 3, read: 4, block: 5, brace: 6, winded: 7 };
+const line0 = e => LINES[e.ng ? e.ng[NG.line] : 2] || 'H';
+// host: a duellist's guard as the snapshot sends it, or 0
+export function duelRec(e){
+  const p = e.dp;
+  if (!p) return 0;
+  const up = !p.brace && GUARDING[e.state] && !e.converted && !(e.stunT > 0) && !(e.dodgeT > 0) && !(G.gt < (e.openUntil || 0)) && !e.winded;
+  return [Math.max(0, LINES.indexOf(e.guard)), up ? 1 : 0, Math.round(clamp(e.posture / p.posture, 0, 1) * 100),
+    e.breath != null ? Math.round(clamp(e.breath / e.breathMax, 0, 1) * 100) : -1, e.lineStreak >= DUEL.adaptAfter ? 1 : 0,
+    Math.round((p.block || 0) * 100), p.brace ? 1 : 0, e.winded ? 1 : 0];
+}
+// guest: does the host's duellist turn this blow? Same rules as duelDefend, read off the snapshot
+function netDefend(e, line, kind, heavy, at){
+  const n = e.ng;
+  if (!n || e.dead) return null;
+  const g = e.group, pp = playerPos();
+  const dx = pp.x - g.position.x, dz = pp.z - g.position.z, dl = Math.hypot(dx, dz) || 1;
+  if ((Math.sin(g.rotation.y) * dx + Math.cos(g.rotation.y) * dz) / dl < 0.35) return null;   // the flank or the back always lands
+  const P = DUEL.posture;
+  const mul = G.hero !== 'mando' ? stance().postureMul || 1 : heavy ? P.heavyMul : 1;
+  if (n[NG.brace]){ if (hooks.guard) hooks.guard(e, kind, mul, line); return null; }   // the Warbringer braces: the strain builds on the host
+  if (!n[NG.up]) return null;
+  const ang = kind === 'cut' || kind === 'finisher' ? arrival(player.swing) : null;
+  const guard = LINES[n[NG.line]] || 'H';
+  let cover = line === guard ? 1 : 0;
+  if (ang != null){ const A = DUEL.arc, d = angDist(ang, GUARD_ANG[guard] ?? 90); cover = 1 - THREE.MathUtils.smoothstep(d, A.cover, A.cover + A.feather); }
+  const onLine = cover > 0.5;   // the SEALED ARC: inside the crescent it is always turned
+  let chance = n[NG.block] / 100 * (DUEL.offLine + (1 - DUEL.offLine) * cover) * diffMul() * eliteRamp();
+  if (kind === 'finisher') chance *= 0.75;
+  if (G.hero !== 'mando') chance *= stance().duelBlockMul || 1;
+  if (!onLine && !(Math.random() < Math.min(0.95, chance))) return null;
+  if (hooks.guard) hooks.guard(e, kind, mul, line);
+  e.arcFlash = 0.6;
+  const cp = at || V3(g.position.x + dx / dl * 0.7, g.position.y + 1.5, g.position.z + dz / dl * 0.7);
+  clashFlash(cp, G.hero === 'mando' ? 0xffd28a : stance().blade, false);
+  clashSparks(cp, 0xffe9b0, 4);
+  S.clash(cp, false, e.form);
+  G.hitstop = Math.max(G.hitstop, 0.05); G.shake = Math.max(G.shake, 0.2);
+  floater(V3(g.position.x, g.position.y + 1.3, g.position.z), n[NG.read] ? 'READ YOU' : 'BLOCKED', n[NG.read] ? '#ffb35a' : '#c8d4e0');
+  return 'block';
+}
+// host: the guest's blow met this duellist's guard (kind 'impact': a kick, a shove or a fall into it, amt its posture).
+// (ax, az): away from the guest's hero
+export function netGuardHit(e, kind, amt, line, ax, az){
+  const p = e.dp;
+  if (!p || e.dead) return;
+  const P = DUEL.posture;
+  if (kind === 'impact'){ if (GUARDING[e.state]) addPosture(e, amt, ax, az); return; }
+  const base = kind === 'finisher' ? P.finisher : kind === 'punchHeavy' ? P.punchHeavy : kind === 'punch' ? P.punch : P.cut;
+  if (p.brace){
+    const W = WARBRINGER, light = kind === 'cut' || kind === 'punch';
+    drainBreath(e, kind === 'finisher' ? W.drain.finisher : W.drain.cut);
+    addPosture(e, base * (light ? W.cut : 1) * amt, ax, az);
+    return;
+  }
+  spend(e, DUEL.breath.block);
+  if (LINES.includes(line)){ e.lineStreak = e.lastLine === line ? e.lineStreak + 1 : 1; e.lastLine = line; e.guard = line; }
+  e.arcFlash = 0.6;
+  addPosture(e, base * amt, ax, az);
+}
+// guest: the crescent and the posture bar over a host's duellist, from the snapshot (updateDuel draws them for the host)
+export function updatePuppetDuel(e, dt){
+  const n = e.ng, g = e.group, a = g.userData.guardArc;
+  if (!n){ if (a) a.visible = false; if (e.postBar) e.postBar.visible = false; return; }
+  const pp = playerPos(), dist = Math.hypot(pp.x - g.position.x, pp.z - g.position.z);
+  if (n[NG.block] >= 40){
+    if (!a) makeGuardArc(e);
+    const arc = g.userData.guardArc;
+    arc.visible = !!n[NG.up] && !e.dead && dist < DUEL.guardRange;
+    if (arc.visible){
+      const L = LINES[n[NG.line]];
+      const want = L === 'R' ? 0 : L === 'L' ? Math.PI : L === 'Lo' ? -Math.PI / 2 : Math.PI / 2;
+      arc.rotation.z = dampToward(arc.rotation.z, want, dt, 14);
+      e.arcFlash = Math.max(0, (e.arcFlash || 0) - dt * 4);
+      arc.material.opacity = clamp(1 - dist / DUEL.guardRange, 0.15, 0.6) + e.arcFlash;
+      arc.material.color.setHex(n[NG.read] ? 0xffb35a : 0xfff0c8);
+    }
+  }
+  const brace = !!n[NG.brace], hasBreath = n[NG.breath] >= 0, spent = hasBreath && n[NG.breath] < 99;
+  if ((n[NG.posture] > 0 || spent || brace) && !e.dead && (brace || dist < DUEL.guardRange * 2)){
+    if (!e.postBar) makePostureBar(e, hasBreath);
+    const b = e.postBar, k = n[NG.posture] / 100;
+    b.visible = true;
+    if (brace){ b.position.set(g.position.x, g.position.y + 2.7 * g.scale.x - 0.38, g.position.z); b.scale.set(1.9, 1.9, 1); }
+    else b.position.set(g.position.x, g.position.y + 2.55 * (e.t.scale || 1), g.position.z);
+    b.quaternion.copy(camera.quaternion);
+    b.userData.fill.scale.x = Math.max(0.001, k);
+    b.userData.fill.position.x = -(1 - k) * 0.55;
+    b.userData.fill.material.color.setHex(e.state === 'stagger' && brace ? 0xffffff : k > 0.75 ? 0xff6a3a : 0xffd24a);
+    const br = b.userData.breath;
+    br.visible = hasBreath;
+    if (hasBreath){
+      const kb = n[NG.breath] / 100;
+      br.scale.x = Math.max(0.001, kb);
+      br.position.x = -(1 - kb) * 0.55;
+      br.material.color.setHex(n[NG.winded] ? 0x3a5a8a : 0x9fd8ff);
+    }
+  } else if (e.postBar) e.postBar.visible = false;
 }

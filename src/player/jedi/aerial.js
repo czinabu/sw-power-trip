@@ -21,7 +21,7 @@ import { DUEL } from '../../data/duel.js';
 import { isGuarding, guardImpact } from '../../enemies/duel.js';
 import { inReach } from '../../enemies/bodyshape.js';
 import { SLAM_LAND_T, rushFlip } from '../anim/agility.js';
-import { scarBody, severArm } from '../../enemies/scars.js';
+import { scarBody, severLimbs } from '../../enemies/scars.js';
 
 /* wind: the beat with the blade drawn back (longer if a flip has to finish first) · dash: the flight in (homes on the
    foe), reaching full speed over `ramp`, skimming in at `level` above the foe's feet · range/cone: who it picks ·
@@ -105,9 +105,9 @@ function strike(pp, tgt){
   if (tgt && tgt === shared.boss){ damageBoss(dmg * st.heavyDmg); scarBody(tgt.group, dir, 'neutral', true); hit = true; }
   else if (tgt){
     if (isGuarding(tgt)) guardImpact(tgt, DUEL.posture.charge);   // the weight of the fall cracks a guard
-    damageEnemy(tgt, dmg * (tgt.t.heavy ? st.heavyDmg : 1) * backLineMul(st, tgt) * swordMul(st, tgt), dir.clone(), knock, true, false, { shove: CFG.player.saberShove.max });   // (a blade's short shove: config saberShove)
+    damageEnemy(tgt, dmg * (tgt.t.heavy ? st.heavyDmg : 1) * backLineMul(st, tgt) * swordMul(st, tgt), dir.clone(), knock, true, false, { shove: CFG.player.saberShove.max, blade: true });   // (a blade's short shove: config saberShove)
     scarBody(tgt.group, dir, 'neutral', true);   // the falling cut burns its line in (enemies/scars.js)
-    if (tgt.dead) severArm(tgt, dir, 0.5);
+    if (tgt.dead) severLimbs(tgt, dir, 0.7);
     if (!tgt.dead) flinchEnemy(tgt, dir, 0.7);   // rocked back, not floored: you still have to finish it
     // the foe goes flying the way the cut was travelling: anyone it crashes into goes down with it
     player.airCutFling = { e: tgt, t: AIR_CUT.fling, dir: dir.clone(), dmg: dmg * AIR_CUT.flingDmg, knock: knock * 0.5, hit: new Set([tgt]) };
@@ -124,8 +124,8 @@ function strike(pp, tgt){
     const tp = tgt.group.position, ip = V3(tp.x - dir.x * 0.3, Math.max(pp.y, tp.y) + 1.2, tp.z - dir.z * 0.3);
     G.hitstop = Math.max(G.hitstop, 0.07); G.shake = Math.max(G.shake, 0.5);
     spawnHitSpark(ip, 0xffffff, 1.5);
-    sparks(ip, st.blade, 12, 13, { dir, cone: 0.6, life: 0.3 });
-    inkSprite({ pos: ip, shape: 'star', points: 6, sharp: 0.15, color: st.blade, size: [1.0, 2.6], life: 0.14, steps: 2, coreW: 0.4 });
+    sparks(ip, st.blade, 5, 9, { dir, cone: 0.6, life: 0.2, size: 0.38 });
+    inkSprite({ pos: ip, shape: 'star', points: 6, sharp: 0.15, color: st.blade, size: [0.3, 0.8], life: 0.1, steps: 2, coreW: 0.4 });
     S.heavy(ip);
     addFocus(FOCUS.gainFin);
   }

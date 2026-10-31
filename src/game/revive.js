@@ -4,7 +4,7 @@
 //
 //   a DOWNED BODY: { kind: 'hero' | 'ally', pos(): Vector3, need (s of channel to get it up), bleed (s until it's lost,
 //                    Infinity = never), selfUp (s until it rises on its own, Infinity = never), onUp(), onLost() }
-//   a REVIVER:     { kind: 'hero' | 'ally' | 'partner', pos: Vector3, hitAt (G.gt of its last hit) } — anything standing
+//   a REVIVER:     { kind: 'hero' | 'ally' | 'medic' | 'partner', pos: Vector3, hitAt (G.gt of its last hit) } — anything standing
 //                  by a downed body. Who may get whom up is WHO below.
 // The rules live in data/allies.js (REVIVE).
 
@@ -20,7 +20,7 @@ import { REVIVE } from '../data/allies.js';
 import { showBanner } from '../ui/banners.js';
 import { killHero } from '../player/damage.js';
 
-const WHO = { hero: { ally: 1, partner: 1 }, ally: { hero: 1, partner: 1 } };
+const WHO = { hero: { ally: 1, partner: 1, medic: 1 }, ally: { hero: 1, partner: 1, medic: 1 } };   // a medic: a squadmate sent to GET THEM UP
 export const downed = [];
 // anything that can stand in as a reviver for the hero registers a check here (the squad does: allies/squad.js),
 // so the killing blow knows whether going down is a second chance or the end
