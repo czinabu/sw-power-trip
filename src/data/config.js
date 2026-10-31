@@ -32,6 +32,9 @@ export const CFG = {
     // batting it across the arena. How hard a cut lands (knock) still decides whether it floors, and a brute's floor too;
     // Force powers and explosions keep their full throw.
     saberShove: { max: 8, lift: [2.5, 4] },
+    // JEDI FRONT KICK (E) — a STAGGER, not a launch: the knock value is a marker (enemies/damage.js reads it, so a co-op
+    // guest's kick staggers the host's foe too); `step` m is the short shove back, `stun` s the reel.
+    kickStagger: { knock: 12, step: 0.7, stun: 0.9 },
     // swing ARCS as cosines off your facing: a cut hits ~140° in front, a strafe sweep ~160°, the finisher ~190°
     swingArc: { cut: 0.34, sweep: 0.17, finisher: -0.1 },
     // HIT REACTIONS — a blow that lands staggers you: the swing is knocked loose and your feet slow

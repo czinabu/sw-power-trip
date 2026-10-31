@@ -378,9 +378,9 @@ export function applySwingDamage(step, only){
 }
 
 // JEDI FRONT KICK (E) — the Jedi's hands are full of saber, so the free melee is a leg: a snapping Force-assisted
-// front kick that SHOVES the front rank back to make room. Always available, NO Force cost, light damage — a pure
+// front kick that STAGGERS the front rank (a step back and a reel, no launch) to make room. Always available, NO Force cost, light damage — a pure
 // space-maker (the Mando's gauntlet-punch counterpart). The short recovery (kickT) keeps it from being mashed.
-const JEDI_KICK = { reach: 1.75, arc: 0.62, dmg: 10, knock: 28, recover: 0.4 };
+const JEDI_KICK = { reach: 1.75, arc: 0.62, dmg: 10, knock: CFG.player.kickStagger.knock, recover: 0.4 };   // a stagger, not a launch (config kickStagger)
 export function forceKick(){
   if (G.mode !== 'play' || G.hero === 'mando' || player.kickT > 0 || player.judgeT > 0 || player.mendT > 0 || player.flip || player.slamming || player.hang || player.flinchT > 0) return;
   const A = JEDI_KICK;
