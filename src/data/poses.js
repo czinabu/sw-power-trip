@@ -56,13 +56,13 @@ export const SABER_GUARDS = {
     // behind (off, the stage Dooku) or clasped at the small of the back (offAlt, the Clone Wars Dooku). Walking and blocking
     // always keep it behind the back; a cut flings it out for balance (SWING_STYLE.makashi.offKeys)
     makashi: {
-      ready: { hand: [0.3, -0.2, 0.6], blade: [-0.1, -0.62, 0.78], twist: 0.12, torso: 0.04, lean: 0.0, pole: [0.8, -0.6, -0.2], palm: 1,
+      ready: { hand: [0.68, 0.1, 0.5], blade: [0.5, -0.42, 0.76], twist: 0.12, torso: 0.04, lean: 0.0, pole: [0.3, -1, 0], palm: 1,
                off: { hand: [-0.52, -0.08, -0.14], pole: [-0.5, -0.85, -0.3] },
-               offAlt: { hand: [-0.1, -0.3, -0.32], pole: [-1, -0.05, -0.1] },
-               offMove: { hand: [-0.1, -0.3, -0.32], pole: [-1, -0.05, -0.1] } },
+               offAlt: { hand: [-0.02, -0.28, -0.36], pole: [-1, 0.2, -0.2] },
+               offMove: { hand: [-0.02, -0.28, -0.36], pole: [-1, 0.2, -0.2] } },
       // a small turn of the wrist: a fencer's parry, the blade angled up and across the line, the arm still out low
       block: { hand: [0.3, 0.0, 0.5], blade: [-0.3, 0.8, 0.5], twist: 0.1, lean: 0.02, pole: [0.8, -0.5, -0.3],
-               off: { hand: [-0.1, -0.3, -0.32], pole: [-1, -0.05, -0.1] } },
+               off: { hand: [-0.02, -0.28, -0.36], pole: [-1, 0.2, -0.2] } },
     },
     // FORM III SORESU — Obi-Wan's signature guard: sunk into a deep, wide stance and turned side-on, the saber raised high
     // over and behind the head with the blade laid level and pointing on at the foe, the off arm thrown out long toward
