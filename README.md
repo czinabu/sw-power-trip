@@ -181,3 +181,4 @@ The main menu's ONLINE CO-OP panel hosts a room (a 5-letter code) or joins one. 
 - `npm run smoke:coop-run` checks the shared Survival fight: the guest joins the host's run, shows its foes as puppets, and a blow on one reaches the host.
 - `npm run smoke:coop-campaign` checks the shared campaign: the guest joins the host's level, shows its foes as puppets, and follows the host's wave clear.
 - `npm run smoke:coop-mission` checks a shared story mission: the guest joins the host's mission, follows its objectives, markers and quarry, and finishes with it.
+- `npm run smoke:coop-four` checks four players: a host and three guests join one Survival run, see each other, take blows meant for them, and drop a guest who leaves.

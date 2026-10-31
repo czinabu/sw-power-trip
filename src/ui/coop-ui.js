@@ -35,13 +35,17 @@ const waveText = () => coopRun.k === 'm' || coopRun.mid ? '' : ', wave ' + (coop
 function render(){
   const s = net.status;
   statusEl.className = s === 'connected' ? 'ok' : s === 'failed' ? 'bad' : '';
-  if (s === 'hosting') statusEl.innerHTML = 'Room code<span class="code">' + net.code + '</span>Waiting for your friend to join…';
+  if (s === 'hosting') statusEl.innerHTML = 'Room code<span class="code">' + net.code + '</span>Waiting for your friends to join (up to 3)…';
   else if (s === 'joining') statusEl.textContent = 'Joining room ' + net.code + '…';
   else if (s === 'connected'){
     const guest = net.role === 'guest';
-    statusEl.textContent = !coopRun.on ? (guest ? 'Connected. Waiting for the host to start a run, then you can join it here.' : 'Connected. Start a campaign, a story mission or a Survival run and your friend can join it. Training and the sandbox you each play on your own.')
+    const msg = !coopRun.on ? (guest ? 'Connected. Waiting for the host to start a run, then you can join it here.' : 'Connected. Start a campaign, a story mission or a Survival run and your friends can join it. Training and the sandbox you each play on your own.')
       : guest ? (G.coopGuest ? 'Fighting alongside the host' + waveText() + '.' : G.mode === 'menu' ? 'The host is on ' + runName() + waveText() + '.' : 'The host is in a run. Go back to the main menu to join it.')
-      : 'Your friend can join your run from this panel.';
+      : 'Your friends can join your run from this panel.';
+    // the host keeps the code in view while there is room: one more friend can still come in
+    if (!guest && net.guests < 3) statusEl.innerHTML = '<span class="players">' + (net.guests + 1) + ' of 4 players</span> Room code<span class="code">' + net.code + '</span>' + msg;
+    else if (!guest) statusEl.innerHTML = '<span class="players">4 of 4 players</span>' + msg;
+    else statusEl.textContent = msg;
   }
   else if (s === 'failed') statusEl.textContent = net.error;
   else statusEl.textContent = '';

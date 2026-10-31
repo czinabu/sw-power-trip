@@ -22,7 +22,7 @@ const SEND_MS = 100;
 let sentAt = 0, hostSent = false, heardAt = 0;
 
 /* ---------- host ---------- */
-squadLink.partner = () => (asHost() ? partnerSpot() : null);
+squadLink.partner = (slot) => (asHost() ? partnerSpot(slot) : null);
 squadLink.shot = (m, d, speed) => {
   if (!asHost()) return;
   send({ t: 'sqb', p: [r2(m.x), r2(m.y), r2(m.z)], d: [r2(d.x), r2(d.y), r2(d.z)], s: speed, c: G.hero === 'mando' ? 0xffa040 : 0x4aa8ff });
@@ -34,7 +34,7 @@ squadLink.lob = (from, at) => {
 // an order the guest gave, given here with the guest's aim; ON ME means on them
 on('sqo', (m) => {
   if (!asHost()) return;
-  giveOrder(m.id, m.idx == null ? null : m.idx, { partner: true, at: m.at, target: m.target });
+  giveOrder(m.id, m.idx == null ? null : m.idx, { partner: m.from || true, at: m.at, target: m.target });   // (partner: whose ON ME it is)
 });
 on('sqadd', () => { if (asHost()) addSquadmate(); });
 

@@ -384,5 +384,7 @@ on('csp', (m) => {
   else if (s.k === 'scene') playScene(s.id, { mark: s.mark, share: false });
 });
 on('csk', (m) => { if (C.on && (!m.k || m.k === C.key)) finish(false); });
-on('cso', (m) => { if (net.role === 'host') coopRun.guestScene = !!m.o; });
-on('status', (n) => { if (n.status !== 'connected') coopRun.guestScene = false; });
+const watching = new Set();   // the guests whose cutscene is playing
+on('cso', (m) => { if (net.role !== 'host') return; if (m.o) watching.add(m.from); else watching.delete(m.from); coopRun.guestScene = watching.size > 0; });
+on('closed', (slot) => { if (slot < 0) watching.clear(); else watching.delete(slot); coopRun.guestScene = watching.size > 0; });
+on('status', (n) => { if (n.status !== 'connected'){ watching.clear(); coopRun.guestScene = false; } });
