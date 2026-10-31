@@ -200,7 +200,7 @@ export const LESSONS = {
       steps: [
         { sec: 'ATARU', say: 'Ataru is the form of the acrobat. Its cuts land harder in the air. Leap, and strike as you fall.',
           keys: '2 · SPACE · LMB', do: 'In Ataru, land 3 cuts off the ground', ev: 'cutHit', air: true, stance: 'ataru', need: 3, respawn: true,
-          spawn: dummies(CIRCLE, { sparring: true }) },
+          spawn: [...dummies(CIRCLE, { sparring: true }), { type: 'flyer', at: [0, -8], sparring: true }] },   // (a jet trooper hovers at your height: cuts in the air reach it too)
         { say: 'Dash, and cut out of the dash. That is the Hawk-Bat Swoop: it springs you off the ground and drives you in twice as far.',
           keys: 'SHIFT · LMB', do: 'In Ataru, land 2 Hawk-Bat Swoops', ev: 'swoop', stance: 'ataru', need: 2, respawn: true,
           spawn: dummies([[0, -6], [-2.5, -6.5], [2.5, -6.5]], { sparring: true }) },
