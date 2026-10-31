@@ -6,6 +6,9 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'Makashi stance like Dooku\'s', status: 'done',
+    items: ['Form II Makashi\'s ready guard now follows Count Dooku\'s: upright and side-on, the saber one-handed out low and forward with the blade angled down at the foe, the off arm swept back and out with the palm open, feet narrow and close',
+            'Pose only, the hero\'s look is unchanged. Same guard in every mode: story, training, survival, sandbox, missions, the stance unlock screen and co-op'] },
   { title: 'Lesson board keeps your cursor', status: 'done',
     items: ['Opening the training lesson board now frees the mouse and holds the camera still behind it, in solo and co-op, and hands both back when you pick a lesson'] },
   { title: 'Ataru training lesson fixed', status: 'done',

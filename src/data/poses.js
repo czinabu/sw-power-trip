@@ -16,7 +16,7 @@ export const FORM_OF = { shiicho: 'shiicho', makashi: 'makashi', soresu: 'soresu
    width (robe flare). Read when the hero is settled and planted. */
 export const FOOTWORK = {
   shiicho:   { crouch: -0.16, splay: 0.36, lead: 0.2,  lean: 0.08, width: 1.1 },    // square and athletic, feet under the shoulders
-  makashi:   { crouch: -0.12, splay: 0.16, lead: 0.5,  lean: 0.02, width: 0.9 },    // a fencer's line: narrow, lead foot well forward, upright
+  makashi:   { crouch: -0.1,  splay: 0.1,  lead: 0.3,  lean: 0.0,  width: 0.9 },    // a fencer's line: feet narrow and close, upright
   soresu:    { crouch: -0.2,  splay: 0.44, lead: 0.34, lean: 0.05, width: 1.25 },   // Obi-Wan's deep, wide, side-on stance
   ataru:     { crouch: -0.24, splay: 0.12, lead: 0.42, lean: 0.16, width: 0.86 },   // coiled, on the balls of the feet
   niman:     { crouch: -0.17, splay: 0.34, lead: 0.28, lean: 0.06, width: 1.15 },   // balanced and easy, ready to move or cast
@@ -51,11 +51,11 @@ export const SABER_GUARDS = {
       // a broad two-handed bar across the front, the blade near level
       block: { hand: [0.18, 0.3, 0.4], blade: [-0.92, 0.36, 0.1], two: true, twist: 0.04, lean: 0.12, pole: [0.6, -0.8, 0] },
     },
-    // FORM II MAKASHI — Dooku's guard: side-on, one hand, the arm out with the blade angled down the line at the foe,
-    // the off hand tucked away behind the back
+    // FORM II MAKASHI — Dooku's guard: upright and side-on, the saber one-handed out low and forward with the blade angled
+    // down at the foe, the off arm swept back and out with the palm open, the feet narrow and close
     makashi: {
-      ready: { hand: [0.2, 0.02, 0.5], blade: [-0.12, 0.2, 0.97], twist: 0.55, torso: 0.2, lean: 0.02, pole: [0.8, -0.5, -0.3],
-               off: { hand: [-0.28, -0.32, -0.24], pole: [-0.5, -0.8, -0.3] } },
+      ready: { hand: [0.3, -0.1, 0.52], blade: [-0.14, -0.42, 0.9], twist: 0.6, torso: 0.22, lean: 0.0, pole: [0.8, -0.6, -0.2], palm: 1,
+               off: { hand: [-0.52, -0.08, -0.14], pole: [-0.5, -0.85, -0.3] } },
       // a small turn of the wrist: the blade stands up near the centre line and barely leaves it
       block: { hand: [0.14, 0.12, 0.46], blade: [-0.06, 0.98, 0.16], twist: 0.4, lean: 0.02, pole: [0.8, -0.4, -0.3],
                off: { hand: [-0.28, -0.32, -0.24], pole: [-0.5, -0.8, -0.3] } },
