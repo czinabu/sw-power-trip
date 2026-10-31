@@ -137,7 +137,13 @@ function fieldSpawn(type, x, z){
   spawnEnemy(type, V3(s.x, 0, s.z));
   return enemies[enemies.length - 1];
 }
-function queueGroup(g, opts){ for (const t in g) for (let n = 0; n < g[t]; n++) queueSpawn(t, opts); }
+// a story chapter played late (the Act II world left for second: a chapter's `harder`, data/campaign-jedi.js) has its foes dug in:
+// one more of each group's first kind
+function queueGroup(g, opts){
+  for (const t in g) for (let n = 0; n < g[t]; n++) queueSpawn(t, opts);
+  const first = Object.keys(g)[0];
+  if (M.chapter && M.chapter.harder && first) queueSpawn(first, opts);
+}
 // a clear spot on the edge ring, within an arc of it
 function arcSpawn(a0, a1){
   const a = a0 + Math.random() * (a1 - a0);

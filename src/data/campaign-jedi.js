@@ -116,6 +116,7 @@ export const JEDI_CHAPTERS = {
 
   // ---------------- ACT II: THE SCATTERED MASTERS ----------------
   lothal: {
+    harder: 'hoth',   // left for second (Hoth picked first): its foes are dug in (game/mission.js queueGroup)
     title: 'THE PENS', world: 'TESSARIL, THE INQUISITORS\' PRISON MOON', mission: 'pens',
     brief: { by: 'actTwo',
       lothal: [{ by: 'ledger', saved: 'The Ledger marks a moon called Tessaril: the pens, where the Inquisitors keep the children they catch until the ships come for them.', burned: 'Tarn has heard of a moon called Tessaril: the pens, where the Inquisitors keep the children they catch until the ships come for them.' },
@@ -142,6 +143,7 @@ export const JEDI_CHAPTERS = {
     lines: {
       clear: ['Sera laughs for the first time in a year. She teaches you Ataru the only way she knows: at full speed.', say(SERA, 'I will fly with you. Not for Vael. For the kids in that Ledger.')] } },
   hoth: {
+    harder: 'lothal',   // left for second (the pens picked first): its foes are dug in
     title: 'THE LAST ENCLAVE', world: 'HOTH, AN ENCLAVE UNDER THE ICE',
     brief: { by: 'actTwo',
       hoth: [{ by: 'ledger', saved: 'The Ledger lists an enclave under the ice on Hoth: forty children, hidden there since the Purge.', burned: 'Tarn says there is an enclave under the ice on Hoth: forty children, hidden there since the Purge.' },
@@ -247,22 +249,42 @@ export const JEDI_CHAPTERS = {
         struck: [[SERA, 'Was it the right thing, with Ilsa?'], [HERO, 'It was the thing that had to happen.'], [SERA, 'That is what Vexis would say.']] } },
     lines: {
       clear: { by: 'ilsa', spared: [say(ILSA, 'The door is open. He is through there, and so is Vael.')], struck: ['The door is down. Vael is through there.'] } } },
+  chains: {
+    voice: JEDI_VOICE_LATE,
+    mission: { by: 'ilsa', spared: 'chains', struck: 'chains-alone' },   // (without Ilsa, all three chains are yours, and the hold is longer)
+    brief: { by: 'ilsa',
+      spared: ['Vael is chained before the throne, and the children Vexis took from the academy are in the stands, waiting to be his.', 'Ilsa knows the chains. She takes one. Break the other two, and get the children out.'],
+      struck: ['Vael is chained before the throne, and the children Vexis took from the academy are in the stands, waiting to be his.', 'Three chains, and nobody left who knows them. Break them all, and get the children out.'] },
+    talk: { where: 'THE CITADEL, BEHIND THE DOOR',
+      lines: { by: 'ilsa',
+        spared: [[ILSA, 'He keeps them in the stands so they can watch. That is how he taught me.'], [HERO, 'Then this is the last thing they watch here.']],
+        struck: [[KAST, 'Forty children in those stands, and Vael on his knees in front of them.'], [HERO, 'Not for long.']] } },
+    opening: { lines: [[VAEL, 'You came. I told Ilsa you would. I told Vexis too.']] },
+    says: [{ by: 'ilsa', spared: 'Ilsa has the left chain. Break the other two. Stand at each anchor until it gives.',
+                         struck: 'Three chains, and nobody left who knows them. Stand at each anchor until it gives.' },
+           'The children are running for the gate. Hold the floor until the last one is past you. Vael is with them. He will not let one fall behind.',
+           'His Grand Inquisitor. Every hunter who came for the children answered to it. It answers to you now.'],
+    lines: {
+      duel: [rival('THE GRAND INQUISITOR', 'Every name in that Ledger was mine to collect.'), say(VAEL, 'Go. I have the children.')],
+      clear: [say(VAEL, 'I am free, and they are out. Now there is only my old apprentice.'), 'Vexis is on his feet. He is coming down off that throne.'] } },
   exegol: {
     voice: JEDI_VOICE_LATE,
-    brief: ['Vexis is on the throne of Exegol, and Master Vael is chained beside it.', 'Whatever waits on that throne, you are not facing it alone.'],
+    brief: ['Vael is free and the children are out. Vexis has thrown everything he has left between you and the throne.', 'Whatever waits on that throne, you are not facing it alone.'],
     opening: { lines: [[KAST, 'Exegol. Whatever he was to Vael once, to you he is only the last door.']] },
     lines: {
       wave: [
         ['This is where the Sith once ruled. Do not listen to the voices in the stone.'],
         ['Tarn holds the left, Sera the sky, my troopers the right. Keep moving forward.'],
         ['He is sending everything now. That means he is afraid.'],
-        [{ by: 'ilsa', spared: say(ILSA, 'Vael is alive. I can see him from here. Keep Vexis busy, and I will get to him.'), struck: 'The last of his guard. Vael is still alive. I can see him.' }] ],
-      boss: [rival(VEXIS, { by: 'ilsa', spared: 'Ilsa. You brought them here. Then you can watch them die with Oren.', struck: 'You killed Ilsa. Oren\'s Knight, killing a girl on her knees. You will make a fine Sith.' }),
-             say(VAEL, 'Catch his lightning, and do not let him make you angry. He is better at anger than you.')] } },
+        [{ by: 'ilsa', spared: say(ILSA, 'Vael is at the gate with the children. Keep Vexis looking at you, and he will never reach them.'), struck: 'The last of his guard. Vael is at the gate with the children. Nothing gets past you.' }] ],
+      boss: [rival(VEXIS, { by: 'ilsa', spared: 'Ilsa. You brought them here. Then you can watch them die, the way you watched the temple burn.', struck: 'You killed Ilsa. Oren\'s Knight, killing a girl on her knees. You will make a fine Sith.' }),
+             say(VAEL, 'Catch his lightning, and do not let him make you angry. He is better at anger than you.')],
+      phase2: [rival(VEXIS, { by: 'ilsa', spared: 'You think the girl will save you? She opened one door for me already. She will open another.', struck: 'Do you feel it? The part of you that struck her down on the dock. Let it out.' }),
+               say(VAEL, 'Breathe. He wants you angry.')],
+      phase3: [rival(VEXIS, 'Oren! Watch your Knight die, the way you watched me fall!'),
+               { by: 'ilsa', spared: say(ILSA, 'Now! He is open. Finish it!'), struck: say(KAST, 'Now, Knight. End it.') }] } },
 };
 
-// an Act II world that was left for second: its foes are already dug in (this chapter id's `harder` shows on its card)
-export const JEDI_LATE = { lothal: 'hoth', hoth: 'lothal' };   // the second pair, by the act's pick
 
 /* THE CHOICES — asked on a card after a chapter is cleared (`after`), or after the last boss falls (`after: 'end'`).
    The run remembers the answer (G.story, saved with the run) and the words above pick by it; `default` stands in until
