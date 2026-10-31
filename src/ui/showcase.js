@@ -14,7 +14,7 @@ import { lookOf, loadPicks, disposeTree } from '../player/mesh.js';
 import { STANCES, SWING_PATTERNS } from '../data/stances.js';
 import { FORM_OF, FOOTWORK } from '../data/poses.js';
 import { formGrip } from '../data/forms.js';
-import { guardPose, swingPose, applySaberPose, releaseSaberPose } from '../player/anim/saber.js';
+import { guardPose, swingPose, applySaberPose, releaseSaberPose, saberPose } from '../player/anim/saber.js';
 
 const HERO_X = 0.72;     // where the figure stands across the screen (0 = left edge, 1 = right)
 const TURN = 0.32;       // turntable speed, rad/s
@@ -395,6 +395,7 @@ function previewPose(dt){
     if (pv.t >= (plan.guard || plan.block)){ pv.phase = (pv.phase + 1) % PV_PLAN.length; pv.t = 0; }
   }
   applySaberPose(R, held, true, dt);
+  if (!cue) R.head.rotation.y -= saberPose.gaze * R.chest.rotation.y;   // a side-on guard (Soresu) keeps its eyes on the foe
   // the body turns with the blade (a finisher spins all the way round) and settles square between cuts
   const vis = fig.vis;
   if (cue){

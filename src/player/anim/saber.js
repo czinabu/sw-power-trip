@@ -91,6 +91,7 @@ export const saberPose = {
   off: new THREE.Vector3().copy(OFF_REST), offPole: new THREE.Vector3().copy(OFF_POLE), two: 0,
   twist: 0, lean: 0,
   palm: 0,   // how open the free hand is held (1: the flat Force palm of Niman's reaching guard), for the fingers
+  gaze: 0,   // how much of the upper body's turn the head undoes, so a side-on guard (Soresu) still looks at the foe
 };
 
 /* the held weapon: { node, axis } — axis is the blade direction in the node's own frame (flips with the grip) */
@@ -135,6 +136,7 @@ export function guardPose(dt, R, held, grip, form, blocking, sway, over = null, 
     saberPose.off.lerp(_p, Math.min(1, dt * 8 * rate)); saberPose.offPole.lerp(off.pole, k).normalize();
   }
   saberPose.palm += ((g.palm && off === g.off ? g.palm : 0) - saberPose.palm) * Math.min(1, dt * 8);
+  saberPose.gaze += ((g.gaze || 0) - saberPose.gaze) * Math.min(1, dt * 9 * rate);
   saberPose.twist += ((g.twist || 0) - saberPose.twist) * Math.min(1, dt * 9 * rate);
   saberPose.lean += ((g.lean || 0) - saberPose.lean) * Math.min(1, dt * 10 * rate);
   return { torso: g.torso || 0 };

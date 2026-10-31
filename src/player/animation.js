@@ -346,7 +346,9 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
   R.torso.rotation.y = dr(R.torso.rotation.y, 0, 11);
   // the master's gaze tracks the camera even when the body doesn't
   const lookDiff = wrapAngle(G.yaw - player.faceYaw);
-  if (!player.backRun) R.head.rotation.y = dr(R.head.rotation.y, clamp(lookDiff, -0.7, 0.7) * MIRROR, 10);   // (running away: anim/guns.js turns it to the target)
+  // a side-on guard (saberPose.gaze, data/poses.js) turns the head back against the chest and hips so the eyes stay on the foe
+  const gaze = G.hero !== 'mando' && saberPose.live && !(player.atkT > 0) ? saberPose.gaze * (R.chest.rotation.y + R.torso.rotation.y) : 0;
+  if (!player.backRun) R.head.rotation.y = dr(R.head.rotation.y, clamp(lookDiff, -0.7, 0.7) * MIRROR - gaze, 10);   // (running away: anim/guns.js turns it to the target)
   if (G.hero !== 'mando') R.head.rotation.x = dr(R.head.rotation.x, 0, 9);   // JEDI level head; the Mando pose drives its own head pitch (don't fight it)
   return { ph, inten, gait };
 }
