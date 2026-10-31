@@ -105,6 +105,7 @@ function removeAlly(a){
   if (a.body){ const i = downed.indexOf(a.body); if (i >= 0) downed.splice(i, 1); if (a.body.mark) scene.remove(a.body.mark); a.body = null; }
   scene.remove(a.group, a.tag);
   a.tag.material.dispose();
+  if (a.bar){ scene.remove(a.bar); a.bar = null; }
 }
 // a fresh level (startLevel in game/flow.js): nobody carries over
 export function clearSquad(){
@@ -299,6 +300,24 @@ export function blastAllies(pos, r, dmg){
     if (!standing(a) || a.net) continue;
     const d = Math.hypot(a.group.position.x - pos.x, a.group.position.z - pos.z);
     if (d < r) hurtAlly(a, dmg * (1 - d / r * 0.4), pos);
+  }
+}
+// a shockwave ring (r ± half-width) catches each squadmate once (`hit` is the ring's own Set)
+export function ringAllies(center, r, half, dmg, hit){
+  for (const a of allies){
+    if (!standing(a) || a.net || hit.has(a)) continue;
+    const d = Math.hypot(a.group.position.x - center.x, a.group.position.z - center.z);
+    if (Math.abs(d - r) < half){ hit.add(a); hurtAlly(a, dmg, center); }
+  }
+}
+// a lancer's lunge path (ox,oz → x,z) catches any squadmate it sweeps through; `hit` is the lunge's own Set
+export function sweepAllies(ox, oz, x, z, rad, dmg, hit, from){
+  const sx = x - ox, sz = z - oz, sl = sx*sx + sz*sz || 1;
+  for (const a of allies){
+    if (!standing(a) || a.net || hit.has(a)) continue;
+    const p = a.group.position;
+    const k = clamp(((p.x - ox) * sx + (p.z - oz) * sz) / sl, 0, 1);
+    if (Math.hypot(p.x - (ox + sx*k), p.z - (oz + sz*k)) < rad){ hit.add(a); hurtAlly(a, dmg, from); }
   }
 }
 // the first standing squadmate a bolt's step a→b passes through: { ally, t } or null (enemies/bolts.js)
@@ -513,6 +532,26 @@ function updateMarkTag(dt){
   markTag.position.set(p.x, p.y + 2.9 * sc, p.z);
   markTag.rotation.y += dt * 4;
 }
+// a small health bar over a hurt squadmate's head (only while they're below full health and still standing)
+const _barBg = new THREE.PlaneGeometry(1, 0.13), _barFill = new THREE.PlaneGeometry(1, 0.09);
+function updateAllyBar(a){
+  const frac = clamp(a.hp / a.maxHp, 0, 1), show = standing(a) && frac < 0.999;
+  if (!a.bar){
+    if (!show) return;
+    const bar = new THREE.Group();
+    const bg = new THREE.Mesh(_barBg, new THREE.MeshBasicMaterial({ color: 0x0b1018, toneMapped: false, depthTest: false, transparent: true, opacity: 0.85 }));
+    const fill = new THREE.Mesh(_barFill, new THREE.MeshBasicMaterial({ color: 0x7bffae, toneMapped: false, depthTest: false, transparent: true }));
+    bg.scale.x = 1.0; bg.renderOrder = 996; fill.renderOrder = 997; fill.position.z = 0.001;
+    bar.add(bg, fill); bar.userData.fill = fill; scene.add(bar); a.bar = bar;
+  }
+  const bar = a.bar; bar.visible = show;
+  if (!show) return;
+  const p = a.group.position;
+  bar.position.set(p.x, p.y + 2.45 * a.t.scale, p.z);
+  bar.quaternion.copy(camera.quaternion);
+  const f = bar.userData.fill; f.scale.x = Math.max(0.01, frac * 0.96); f.position.x = -(1 - frac * 0.96) * 0.5;
+  f.material.color.setHex(frac > 0.5 ? 0x7bffae : frac > 0.25 ? 0xffd24a : 0xff5a4a);
+}
 function updateAlly(a, dt, medic, pp){
   const g = a.group, u = g.userData, p = g.position;
   // the hit flash
@@ -521,6 +560,7 @@ function updateAlly(a, dt, medic, pp){
   a.tag.position.set(p.x, p.y + 2.75 * a.t.scale + (standing(a) ? 0 : -1.6), p.z);
   a.tag.rotation.y += dt * 2;
   a.tag.material.color.setHex(standing(a) ? ALLY_COLOR : ALLY_DOWN);
+  updateAllyBar(a);
   updateFriendRing(g, !standing(a));
   if (!standing(a)){
     g.rotation.x += (-1.2 - g.rotation.x) * Math.min(1, dt * 7);
@@ -676,6 +716,7 @@ function updatePuppet(a, dt){
   a.tag.position.set(p.x, p.y + 2.75 * a.t.scale + (standing(a) ? 0 : -1.6), p.z);
   a.tag.rotation.y += dt * 2;
   a.tag.material.color.setHex(standing(a) ? ALLY_COLOR : ALLY_DOWN);
+  updateAllyBar(a);
   updateFriendRing(g, !standing(a));
   if (!standing(a)){
     g.rotation.x += (-1.2 - g.rotation.x) * Math.min(1, dt * 7);

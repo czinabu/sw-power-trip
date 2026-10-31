@@ -1,6 +1,7 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
 // Darth Vexis: build, spawn, damage, stagger, AI, shockwave rings.
 
+import { blastAllies, ringAllies } from '../allies/squad.js';
 import * as THREE from 'three';
 import { CFG } from '../data/config.js';
 import { stamDelay } from '../player/stamina.js';
@@ -299,6 +300,7 @@ export function updateBoss(dt){
         burst(V3(g.position.x + tx*2, 1.8, g.position.z + tz*2), 0xff3333, 10, 8, 3);
         G.shake = Math.max(G.shake, 0.35);
         S.swing('strong'); S.whoosh(g.position, true);
+        if (!remote) blastAllies(g.position, BOSS_CFG.combo.range, BOSS_CFG.combo.dmg);   // his blade cuts the squad too
         if (remote){ if (dist < BOSS_CFG.combo.range && hooks.hurt) hooks.hurt(shared.boss, BOSS_CFG.combo.dmg, g.position, 'bossmelee', false); }   // their browser parries or takes it (net/foefire.js)
         else if (dist < BOSS_CFG.combo.range && player.dashT > 0) perfectDodge(g.position);   // dashed through it on the beat
         else if (dist < BOSS_CFG.combo.range && player.dashT <= 0){
@@ -548,6 +550,7 @@ export function updateRings(dt){
     r.mesh.visible = r.r > 0.3;                                  // a later NOVA wave (r0<0) stays hidden until it emerges
     r.mesh.scale.set(Math.max(0.01, r.r), Math.max(0.01, r.r), 1);
     r.mesh.material.opacity = Math.max(0, 0.85 * (1 - r.r/BOSS_CFG.pulse.maxR));
+    if (r.r > 0.3){ if (!r.allyHit) r.allyHit = new Set(); ringAllies(r.center, r.r, 1.0, BOSS_CFG.pulse.dmg, r.allyHit); }   // the shockwave catches the squad
     if (!r.hitPlayer && r.r > 0.3){
       const d = Math.hypot(pp.x - r.center.x, pp.z - r.center.z);
       if (Math.abs(d - r.r) < 1.0 && pp.y < 1.1 && player.dashT <= 0){
