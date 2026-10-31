@@ -27,7 +27,7 @@ import { MOCAP_ON, MOCAP_LAND_T, mocapLand, mocapAirLegs, airPhase, mocapCut } f
 import { footingLegs, releaseFooting } from './anim/footing.js';
 import { stepCloth } from './model/cloth.js';
 import { blink, gripHands } from './model/life.js';
-import { jediAirLegs, jediAgilityArms, jediAgilityPost, mandoAgilityPost, landingStyle, slamPitch, headToReticle } from './anim/agility.js';
+import { jediAirLegs, jediAgilityArms, jediAgilityPost, mandoAgilityPost, gunnerAgilityLegs, landingStyle, slamPitch, headToReticle } from './anim/agility.js';
 
 const smooth01 = k => { k = clamp(k, 0, 1); return k * k * (3 - 2 * k); };
 
@@ -240,6 +240,8 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
   // legs: stride + knee lift (+ knee = the shin folds back, a real knee bend); the Jedi's air, flip and dive legs come from anim/agility.js
   if (!isGunner() && jediAirLegs(dt, dr, R)){
     // posed: jump phases, Force leap and glide, flip tuck/pike/layout, slam dive
+  } else if (isGunner() && gunnerAgilityLegs(dt, dr, R)){
+    // posed: the gunners' wall-run stride and ledge hang
   } else if (player.grounded && !player.flip){
     const lead = planted ? POSE.lead : 0;   // bladed/staggered footing when planted, neutral when moving
     // a swing steps into the cut: the off-side foot drives forward, the back leg loads
@@ -703,9 +705,16 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
   // JETPACK SLAM (mando/gadgets.js jetSlam) — the arms leave the guns for the fist: cocked overhead through the wind-up,
   // driven down through the plunge, planted on the deck in the three-point landing
   const slamArms = w !== 'darksaber' && player.darkT <= 0 && (player.slamming || player.slamLandT > 0);
-  const gunsIK = !flyingFree && !slamArms && player.meleeT <= 0 && player.darkT <= 0 && w !== 'fists';
+  const hangArms = !!player.hang;   // both hands up on the lip: the guns ride on the hands
+  const gunsIK = !flyingFree && !slamArms && !hangArms && player.meleeT <= 0 && player.darkT <= 0 && w !== 'fists';
   if (!flyingFree){
-  if (slamArms){
+  if (hangArms){
+    for (const A of [R.armR, R.armL]){
+      A.sh.rotation.x = dr(A.sh.rotation.x, -2.75, 12); A.sh.rotation.y = dr(A.sh.rotation.y, 0, 12);
+      A.el.rotation.x = dr(A.el.rotation.x, -0.25, 12);
+    }
+    R.armR.sh.rotation.z = dr(R.armR.sh.rotation.z, -0.18, 12); R.armL.sh.rotation.z = dr(R.armL.sh.rotation.z, 0.18, 12);
+  } else if (slamArms){
     const wind = player.slamming && player.slamWind > 0, land = !player.slamming;
     // [shoulder x, shoulder z, elbow x] right (the fist) and left (the balance arm)
     const RA = wind ? [-2.75, -0.35, -1.7] : land ? [-0.55, -0.12, -0.08] : [-0.75, -0.1, -0.15];

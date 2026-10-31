@@ -217,6 +217,16 @@ function wallLegs(dr, R, W){
   player._ankPose = [ank(0) * w, ank(Math.PI) * w];
 }
 
+/* the gunners' share of the wall-run and the ledge hang: the same legs and wall state as the Jedi's, posed here because
+   their air legs are the jetpack's. Returns true when it posed them. */
+export function gunnerAgilityLegs(dt, dr, R){
+  const W = wallState(dt, dr);
+  if (player.flip || player.slamming) return false;
+  if (W && W.w > 0.02 && !player.hang){ wallLegs(dr, R, W); return true; }
+  if (player.hang){ poseLegs(R, dr, LEGS.float, 1, 10); return true; }
+  return false;
+}
+
 /* JEDI LEGS off the ground (and through a flip): returns true when it posed them. */
 export function jediAirLegs(dt, dr, R){
   const A = agilityOf();
@@ -432,6 +442,12 @@ function mandoBody(dt, dr, vis, R, fl){
    into a three-point landing. Arms stay with the weapon code. */
 export function mandoAgilityPost(dt, dr, vis, R, f, r){
   const M = MANDO_AGILITY;
+  // WALL-RUN: the body rolls out away from the wall and pitches into the run, as the Jedi's does (a little less: the pack is on his back)
+  const WW = player._wall;
+  if (WW && WW.w > 0.05 && !player.flip && !player.slamming){
+    vis.rotation.z = dr(vis.rotation.z, 0.62 * WW.wx * WW.w, 12);
+    vis.rotation.x = dr(vis.rotation.x, 0.1 * WW.w, 9);
+  }
   if (player.flip && !player.slamming){ mandoBody(dt, dr, vis, R, player.flip); if (player.flip && player.flip.kind === 'slide') slideTwist(dr, R, player.flip.hold || 0, MANDO_MOBILITY.slide.twist); }
   if (player._ankPose){ R.legL.ank.rotation.x = dr(R.legL.ank.rotation.x, player._ankPose[0], 18); R.legR.ank.rotation.x = dr(R.legR.ank.rotation.x, player._ankPose[1], 18); player._ankPose = null; }
   if (player.slamming) poseLegs(R, dr, LEGS.tuck, player.slamWind > 0 ? 1 : 0.35, player.slamWind > 0 ? 12 : 18);   // knees up in the wind-up, braced near-straight for the impact
