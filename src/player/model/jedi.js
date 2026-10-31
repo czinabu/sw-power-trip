@@ -32,6 +32,17 @@ const JAW = (() => {
   return outer.concat(inner.reverse());
 })();
 
+// a film of stubble: a thin shell that stops before the ears, so it follows the jaw and chin instead of filling the lower face
+const STUB = (() => {
+  const outer = [], inner = [], N = 9, open = 1.25;
+  for (let i = 0; i <= N; i++){
+    const a = -Math.PI/2 + open + (i / N) * (Math.PI*2 - open*2);
+    outer.push([Math.cos(a), Math.sin(a)]);
+    inner.push([Math.cos(a) * 0.97, Math.sin(a) * 0.97]);
+  }
+  return outer.concat(inner.reverse());
+})();
+
 export const JEDI_PARTS = {
   legs: {
     // dark trousers into tall chiseled boots
@@ -139,14 +150,14 @@ export const JEDI_PARTS = {
   beard: {
     none(){},
     // a few days' growth: a faint translucent shadow on the chin, lower jaw and upper lip, no ink line
-    stubble(R, k){ const o = { outline: false, mat: k.mat('skin', { shade: 0.45, o: 0.34 }), noBurns: true, low: true }; jaw(R, k, 0.001, o); moustache(R, k, 0.003, o); },
+    stubble(R, k){ const o = { outline: false, mat: k.mat('skin', { shade: 0.45, o: 0.34 }), noBurns: true, low: true }; stubbleFilm(R, k, o); moustache(R, k, 0.003, o); },
     // a pointed tuft on the chin under a moustache
     goatee(R, k){
       k.add(loft([{ y:-0.035, w:0.03, d:0.03, z:0.1 }, { y:0.0, w:0.06, d:0.05, z:0.098 }, { y:0.06, w:0.07, d:0.045, z:0.092 }], chamfer(0.4)), 'hair', R.head);
       moustache(R, k, 0.012);
     },
-    // full and squared off along the jaw, the moustache over it
-    full(R, k){ jaw(R, k, 0.018); moustache(R, k, 0.014); },
+    // full and solid along the jaw, hugging it close, the moustache over it
+    full(R, k){ const o = { outline: false, noBurns: true }; jaw(R, k, 0.002, o); moustache(R, k, 0.006, o); },
     // just the moustache, its ends turned down past the mouth
     moustache(R, k){ moustache(R, k, 0.014); },
   },
@@ -252,6 +263,15 @@ function jaw(R, k, lift, o){
   ], JAW, { capTop: false, capBottom: false }), o?.mat || 'hair', R.head, [0, 0, 0], [0, 0, 0], o);
   if (!o?.noBurns) for (const sx of [-1, 1]) k.add(block(0.016 + lift, 0.07, 0.05, 0.4), 'hair', R.head, [0.098*sx, 0.13, 0.01], [0, 0, 0], { outline: false });   // sideburns
   if (lift > 0.01) k.add(block(0.05, 0.006, 0.01, 0.2), k.mat('skin', { shade: 0.42 }), R.head, [0, 0.087, 0.114 + lift], [0, 0, 0], { outline: false });
+}
+// stubble: rings just proud of the face's own jaw and chin (see face()), from under the chin up to the lip line
+function stubbleFilm(R, k, o){
+  const t = 0.004;
+  k.add(loft([
+    { y:0.008, w:0.075 + t, d:0.085 + t, z:0.07 },
+    { y:0.02,  w:0.1 + t,  d:0.11 + t, z:0.045 },
+    { y:0.06,  w:0.16 + t, d:0.17 + t, z:0.019 },
+  ], STUB, { capTop: false, capBottom: false }), o.mat, R.head, [0, 0, 0], [0, 0, 0], o);
 }
 function moustache(R, k, t, o = { outline: false }){
   k.add(plate([[-0.04,0.008],[0,0.012],[0.04,0.008],[0.046,-0.018],[0.034,-0.02],[0.026,-0.002],[-0.026,-0.002],[-0.034,-0.02],[-0.046,-0.018]], t, 0.002),
