@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { CFG } from '../data/config.js';
 import { stamDelay } from '../player/stamina.js';
-import { DUEL, DUEL_PROFILES, WARBRINGER, WARBRINGER_PROFILE, GUARD_POSE, BLOCK_POSE, WIND } from '../data/duel.js';
+import { DUEL, DUEL_PROFILES, WARBRINGER, WARBRINGER_PROFILE, GUARD_POSE, BLOCK_POSE, WIND, FOE_CUTS, FOE_STRINGS, FOOTWORK, STRING_DIFF } from '../data/duel.js';
 import { scene, camera } from '../engine/renderer.js';
 import { sfx, S } from '../audio/sfx.js';
 import { V3, rand, clamp, TMP, dampToward } from '../utils.js';
@@ -187,8 +187,25 @@ export function updateDuel(e, dt, dist){
       if (e.dodgeT <= 0){ e.flipY = 0; g.rotation.x = 0; }
     } else {
       g.position.x += e.dodgeX * DUEL.dodgeStep * dt; g.position.z += e.dodgeZ * DUEL.dodgeStep * dt;
-      g.rotation.x = -0.25 * Math.max(0, e.dodgeT) / 0.3;
+      if (e.dodgeSide) g.rotation.z = -0.22 * e.dodgeSide * Math.max(0, e.dodgeT) / 0.3;   // leaning out the way it steps
+      else g.rotation.x = -0.25 * Math.max(0, e.dodgeT) / 0.3;
+      if (e.dodgeT <= 0) g.rotation.z = 0;
     }
+  }
+  // out of a cut: the hips come back up, the chest squares, a low sweep's yaw unwinds; a finished string skips back out
+  if (e.state !== 'windup' && e.state !== 'strike'){
+    if (e.cutDrop) e.cutDrop = dampToward(e.cutDrop, 0, dt, 10);
+    if (e.cutTwist) e.cutTwist = dampToward(e.cutTwist, 0, dt, 10);
+    e.cutYaw = 0;
+    if (g.userData.weaponArm && g.userData.weaponArm.rotation.y) g.userData.weaponArm.rotation.y = dampToward(g.userData.weaponArm.rotation.y, 0, dt, 12);
+  }
+  if (e.skipT > 0){
+    e.skipT -= dt;
+    if (e.state === 'recover' && !(e.dodgeT > 0)){
+      const pp = playerPos(), ax = g.position.x - pp.x, az = g.position.z - pp.z, al = Math.hypot(ax, az) || 1;
+      const v = FOOTWORK.back / FOOTWORK.backT;
+      g.position.x += ax / al * v * dt; g.position.z += az / al * v * dt;
+    } else e.skipT = 0;
   }
   const guarding = !p.brace && GUARDING[e.state] && dist < DUEL.guardRange && !e.converted;   // (a bracing foe holds no guard: no pose, no arc)
   // hold the weapon on the guarded line (the readable tell), back to the carry otherwise
@@ -331,36 +348,103 @@ function readCut(e, dist){
   (sw.reads || (sw.reads = new Map())).set(e, { line, dec });
   if (dec === 'block' || dec === 'parry'){ e.blockLine = line; e.blockAt = G.gt; }
 }
+/* THE CUT IN MOTION (data/duel.js FOE_CUTS) — the weapon travels from wherever it was when the wind-up began (the
+   guard, or the end of the last cut in a string, so a string flows) back to the cut's wind-up, then through it to the
+   follow-through. The chest turns with it, the body leans, the hips sink under a low cut, the spin turns the whole body.
+   A plan without a cut (the old three lines) takes the line's WIND pose. */
+const lerp = (a, b, k) => a + (b - a) * k;
+const STAFF_END = { L: [-1.6, 0.9], R: [1.7, 0.9], H: [0.9, 0.9], T: [-1.5, -0.3], Lo: [-1.2, -1.0] };   // where a staff's cut on each line ends
+function armNow(e){
+  const u = e.group.userData;
+  if (u.staff) return [u.staff.rotation.z, u.staff.rotation.x];
+  if (u.weaponArm) return [u.weaponArm.rotation.x, u.weaponArm.rotation.z, u.weaponArm.rotation.y];
+  return null;
+}
+function cutFrom(e){
+  const pl = e.plan, c = pl.c, u = e.group.userData;
+  if (u.staff) return c && c.staff ? c.staff.from : WIND.staff[pl.side] || WIND.staff.H;
+  return c ? c.from : WIND.sword[pl.side] || WIND.sword.H;
+}
+function setArm(e, p){
+  const u = e.group.userData;
+  if (u.staff){ u.staff.rotation.z = p[0]; u.staff.rotation.x = p[1]; }
+  else if (u.weaponArm){ u.weaponArm.rotation.x = p[0]; u.weaponArm.rotation.z = p[1]; u.weaponArm.rotation.y = p[2] || 0; }
+}
 export function windupPose(e, coil){
-  const u = e.group.userData, s = e.plan.side, heavy = !!e.t.heavy;
-  if (u.staff){
-    const w = WIND.staff[s];
-    u.staff.rotation.z = 0.5 + (w[0] - 0.5) * coil;
-    u.staff.rotation.x = 0.3 + (w[1] - 0.3) * coil;
-  } else if (u.weaponArm){
-    const w = WIND.sword[s];
-    u.weaponArm.rotation.x = -0.35 + (w[0] + 0.35) * coil * (heavy ? 1.1 : 1);
-    u.weaponArm.rotation.z = w[1] * coil;
-  }
-  if (s === 'T') e.group.rotation.x = -coil * 0.25;   // a thrust loads back onto the rear foot, low
+  const pl = e.plan, c = pl.c, s = pl.side, u = e.group.userData;
+  const w = cutFrom(e), w0 = pl.w0 || (u.staff ? [0.5, 0.3] : [-0.35, 0, 0]);
+  setArm(e, (u.staff ? [0, 1] : [0, 1, 2]).map(i => lerp(w0[i] || 0, w[i] || 0, coil)));
+  if (!c){ if (s === 'T') e.group.rotation.x = -coil * 0.25; return; }   // a thrust loads back onto the rear foot, low
+  e.group.rotation.x = c.lean[0] * coil;
+  e.cutTwist = c.twist[0] * coil;
+  e.cutDrop = c.slam ? 0 : (c.drop || 0) * coil;
+  e.cutYaw = c.yaw ? c.yaw[0] * coil : 0;
+  e.group.rotation.y += e.cutYaw;   // (ai.js has just squared it to the target)
 }
 // strike: from the wind-up through to the far side of the body (a thrust drives straight out)
 export function strikePose(e, chop){
-  const u = e.group.userData, s = e.plan.side;
-  if (u.staff){
-    const w = WIND.staff[s];
-    const endZ = s === 'L' ? -1.6 : s === 'R' ? 1.7 : s === 'T' ? -1.5 : 0.9;
-    u.staff.rotation.z = w[0] + (endZ - w[0]) * chop;
-    u.staff.rotation.x = s === 'T' ? -0.4 + chop * 0.1 : 0.9;
-  } else if (u.weaponArm){
-    const w = WIND.sword[s];
-    if (s === 'T'){ u.weaponArm.rotation.x = w[0] + (-1.55 - w[0]) * chop; u.weaponArm.rotation.z = 0; }
-    else {
-      u.weaponArm.rotation.x = w[0] + ((s === 'H' ? 0.75 : -0.9) - w[0]) * chop;
-      u.weaponArm.rotation.z = w[1] + ((s === 'H' ? 0 : -w[1] * 0.8) - w[1]) * chop;
+  const pl = e.plan, c = pl.c, u = e.group.userData, s = pl.side;
+  if (!c){
+    if (u.staff){
+      const w = WIND.staff[s];
+      const endZ = s === 'L' ? -1.6 : s === 'R' ? 1.7 : s === 'T' ? -1.5 : 0.9;
+      u.staff.rotation.z = w[0] + (endZ - w[0]) * chop;
+      u.staff.rotation.x = s === 'T' ? -0.4 + chop * 0.1 : 0.9;
+    } else if (u.weaponArm){
+      const w = WIND.sword[s];
+      if (s === 'T'){ u.weaponArm.rotation.x = w[0] + (-1.55 - w[0]) * chop; u.weaponArm.rotation.z = 0; }
+      else {
+        u.weaponArm.rotation.x = w[0] + ((s === 'H' ? 0.75 : -0.9) - w[0]) * chop;
+        u.weaponArm.rotation.z = w[1] + ((s === 'H' ? 0 : -w[1] * 0.8) - w[1]) * chop;
+      }
     }
+    e.group.rotation.x = s === 'T' ? -0.25 + chop * 0.55 : -0.4 * (1 - chop) + 0.22 * chop;
+    return;
   }
-  e.group.rotation.x = s === 'T' ? -0.25 + chop * 0.55 : -0.4 * (1 - chop) + 0.22 * chop;
+  // the spin throws the arm straight out and lets the body's turn carry the blade round
+  const ka = c.yaw ? Math.min(1, chop * 4) : chop;
+  const from = cutFrom(e), to = u.staff ? (c.staff ? c.staff.to : STAFF_END[s]) : c.to;
+  setArm(e, (u.staff ? [0, 1] : [0, 1, 2]).map(i => lerp(from[i] || 0, to[i] || 0, ka)));
+  e.group.rotation.x = lerp(c.lean[0], c.lean[1], chop);
+  e.cutTwist = lerp(c.twist[0], c.twist[1], chop);
+  e.cutDrop = (c.drop || 0) * (c.line === 'Lo' ? 1 - 0.3 * chop : c.slam ? chop : 1 - chop);
+  e.cutYaw = c.yaw ? lerp(c.yaw[0], c.yaw[1], chop) : 0;
+  const face = e.group.rotation.y;
+  e.group.rotation.y = face + e.cutYaw;
+  // footwork: the step goes the way the cut sweeps, a little at a time through the strike
+  if (c.side){
+    const want = c.side * 0.35 * chop, d = want - (pl.sideDone || 0);
+    e.group.position.x += Math.cos(face) * d; e.group.position.z -= Math.sin(face) * d;
+    pl.sideDone = want;
+  }
+}
+// the strike begins: how far its step carries it in (spread over the strike up to the blow: ai.js)
+export function startCut(e, dist){
+  const pl = e.plan, c = pl.c;
+  const base = pl.side === 'T' ? 1.4 : e.t.heavy ? 0.9 : 0.5;
+  pl.lunge = Math.min(base + (c ? c.step : 0), Math.max(0, dist - 1.2));
+  pl.lunged = 0; pl.sideDone = 0;
+  if (c && c.yaw) sfx(rand(210, 250), 0.3, 'sawtooth', 0.025, rand(520, 600));   // the spin's rising hum
+}
+// one strike frame's share of the step in; returns how far it moved this frame
+export function cutStep(e, k, tx, tz){
+  const pl = e.plan;
+  if (!pl || !(pl.lunge > 0)) return 0;
+  const want = pl.lunge * Math.min(1, k / (pl.hitK || 0.5)), d = want - pl.lunged;
+  if (d <= 0) return 0;
+  e.group.position.x += tx * d; e.group.position.z += tz * d;
+  pl.lunged = want;
+  return d;
+}
+// the blow lands: a slam drives into the ground
+export function cutLands(e){
+  const c = e.plan && e.plan.c;
+  if (!c || !c.slam) return;
+  const g = e.group, f = g.rotation.y - (e.cutYaw || 0);
+  const at = V3(g.position.x + Math.sin(f) * 1.6, 0.05, g.position.z + Math.cos(f) * 1.6);
+  spawnGroundShock(at, e.form ? 0xffd27a : e.t.eye, 2.6, 0.35, 0.7);
+  sparks(V3(at.x, 0.2, at.z), 0xffe0a0, 10, 9, { life: 0.3 });
+  G.shake = Math.max(G.shake, 0.4);
 }
 
 /* ---------------- offence: plan a wind-up ---------------- */
@@ -368,22 +452,52 @@ export function strikePose(e, chop){
 export function planAttack(e, quick){
   const p = e.dp, m = diffMul();
   const sides = SIDES.filter(l => l !== e.lastSide);
-  const plan = { side: sides[(Math.random() * sides.length) | 0], feint: false, hold: 0, chain: 0, thrust: false };
+  const plan = { side: sides[(Math.random() * sides.length) | 0], cut: null, c: null, feint: false, hold: 0, chain: 0, thrust: false, n: 1, w0: armNow(e) };
   spend(e, quick ? DUEL.breath.counter : DUEL.breath.swing);   // (it swings on an empty tank too, but the tank shows it)
   if (!quick){
+    e.measT = null;   // its next turn measures the distance afresh (FOOTWORK)
     plan.thrust = Math.random() < p.thrust * m;
     const r = p.ramp ? tacticsRamp() : 1;   // the rank and file pick up their tricks as the run deepens (tactics.js)
     const rd = G.hero !== 'mando' ? stance().readMul || 1 : 1;   // Makashi reads intent: fewer feints and held strikes get through
     plan.feint = !plan.thrust && Math.random() < p.feint * m * r * rd;
     plan.hold = Math.random() < p.delay * m * r * rd ? rand(DUEL.delayHold[0], DUEL.delayHold[1]) : 0;
-    plan.chain = p.chain ? (Math.random() * (p.chain + 1)) | 0 : 0;
+    plan.chain = stringLen(e);
     if (e.winded) plan.chain = 0;
   }
+  setCut(plan, plan.thrust ? 'thrust' : nextCut(e, null));
   if (plan.thrust){ plan.side = 'T'; plan.chain = 0; thrustTell(e); }
   e.plan = plan;
   e.lastSide = plan.side;
   e.wuBase = e.wu;
   e.wu += plan.hold; e.st = e.wu;
+}
+// how many more cuts this string runs to: up to the profile's chain, shorter on Padawan, longer for a Master's duellists
+function stringLen(e){
+  const p = e.dp;
+  if (!p.chain) return 0;
+  const d = STRING_DIFF[G.diff] || 0;
+  const max = Math.max(0, p.chain + (d > 0 && !p.elite ? 0 : d));
+  return (Math.random() * (max + 1)) | 0;
+}
+// the next cut of its string (FOE_STRINGS), one that doesn't come in on `avoid`; null for a foe with no string
+function nextCut(e, avoid){
+  const S = e.dp && FOE_STRINGS[e.dp.moves];
+  if (!S) return null;
+  if (e.strI == null || G.gt - (e.strAt || -9) > FOE_STRINGS.reset) e.strI = (Math.random() * S.cuts.length) | 0;   // a new string starts somewhere new
+  let id = S.cuts[e.strI % S.cuts.length];
+  for (let n = 0; n < S.cuts.length; n++){
+    const c = S.cuts[(e.strI + n) % S.cuts.length];
+    if (FOE_CUTS[c].line !== avoid){ id = c; e.strI += n; break; }
+  }
+  e.strI++; e.strAt = G.gt;
+  return id;
+}
+function setCut(plan, id){
+  const c = id && FOE_CUTS[id];
+  plan.cut = c ? id : null; plan.c = c || null;
+  plan.hitK = c && c.hitK || 0.5; plan.swingMul = c && c.swing || 1; plan.dmg = c && c.dmg || 1;
+  plan.fin = !!(c && c.fin);
+  if (c) plan.side = c.line;
 }
 // a THRUST can't be stopped by a held guard: the shared parry-or-dodge tell (fx/tells.js)
 function thrustTell(e){ tellFx('parry', e.group.position, 2.6); }
@@ -400,27 +514,60 @@ export function maybeFeint(e, wk){
   const pl = e.plan;
   if (!pl || !pl.feint || wk < DUEL.feintAt) return false;
   pl.feint = false;
-  const o = ['L', 'R', 'H'].filter(l => l !== pl.side);
-  pl.side = o[(Math.random() * o.length) | 0];
+  const was = pl.side;
+  setCut(pl, nextCut(e, was));
+  if (!pl.c || pl.side === was || pl.side === 'T'){   // (no string, or it only had the one line: the old switch)
+    const o = ['L', 'R', 'H'].filter(l => l !== was);
+    setCut(pl, null); pl.side = o[(Math.random() * o.length) | 0];
+  }
+  pl.w0 = armNow(e);
   e.lastSide = pl.side;
   e.wu = e.wuBase = DUEL.feintRewind; e.st = e.wu;
   if (e.form) S.swing(e.form, e.group.position); else S.whoosh(e.group.position, false);
   sparks(V3(e.group.position.x, 1.9, e.group.position.z), e.t.eye, 4, 5, { life: 0.2 });
   return true;
 }
-// after a strike: another cut in the string? (returns true if it chained)
+// after a strike: another cut in the string? (returns true if it chained). The last cut of a long enough string may be
+// its FINISHER (the spin, the slam: FOE_STRINGS fin), wound up longer and lit amber so it reads
 export function chainNext(e){
   const pl = e.plan;
   if (!pl || pl.chain <= 0 || e.dead) return false;
   pl.chain--;
   if (!spend(e, DUEL.breath.chain)){ pl.chain = 0; return false; }   // out of breath: the string ends here
-  const o = ['L', 'R', 'H'].filter(l => l !== pl.side);
-  pl.side = o[(Math.random() * o.length) | 0];
+  const Str = FOE_STRINGS[e.dp.moves], p = e.dp;
+  const fin = pl.chain === 0 && Str && Str.fin && p.finisher && G.diff !== 'padawan' && pl.n + 1 >= Str.finAfter
+    && Math.random() < p.finisher * skill(e);
+  const was = pl.side;
+  pl.w0 = armNow(e);
+  setCut(pl, fin ? Str.fin : nextCut(e, was));
+  if (!pl.c){ const o = ['L', 'R', 'H'].filter(l => l !== was); pl.side = o[(Math.random() * o.length) | 0]; }
+  pl.n++;
   e.lastSide = pl.side;
   pl.hold = 0; pl.feint = false;
-  e.state = 'windup'; e.wu = e.wuBase = DUEL.chainWindup; e.st = e.wu;
-  S.windup(e.group.position, false);
+  const wu = pl.fin ? Math.max(DUEL.chainWindup, e.t.windup * 0.8) * (pl.c.wind || 1) : DUEL.chainWindup;
+  e.state = 'windup'; e.wu = e.wuBase = wu; e.st = e.wu;
+  if (pl.side === 'T') thrustTell(e);
+  S.windup(e.group.position, pl.fin);
   return true;
+}
+
+/* ---------------- footwork (data/duel.js FOOTWORK) ---------------- */
+// with its turn, a duellist holds just outside its reach for a beat before it steps in (true while it measures)
+export function measuring(e, dt, dist){
+  const F = FOOTWORK;
+  if (!e.dp || !e.dp.footwork || !e.token || e.winded){ e.measT = null; return false; }
+  if (e.measT == null){
+    if (dist > e.t.range + F.reachIn + F.measure + 1.5) return false;
+    e.measT = rand(F.beat[0], F.beat[1]) * (G.diff === 'padawan' ? F.padawan : 1);
+  }
+  if (e.measT > 0){ e.measT -= dt; return true; }
+  return false;
+}
+// how much further out than a plain trooper it may start its wind-up (its cut steps in to close it)
+export const footReach = e => e.dp && e.dp.footwork && !e.winded ? FOOTWORK.reachIn : 0;
+// its string is over: it skips back out of your reach (not after a finisher: that one leaves it standing there, open)
+export function stringDone(e){
+  if (e.dp && e.dp.footwork && !(e.plan && e.plan.fin) && Math.random() < 0.6) e.skipT = FOOTWORK.backT;
 }
 
 /* ---------------- defence: does this blow get turned? ---------------- */
@@ -455,8 +602,11 @@ export function duelDefend(e, line, kind, heavy, at){
   // a light cut seen coming: the agile ones slip it with a backstep
   if (dec === 'dodge' && spend(e, DUEL.breath.dodge)){
     e.dodgeT = p.flip ? DUEL.flipTime : 0.3; e.dodgeX = -dx / dl; e.dodgeZ = -dz / dl;
+    // a SIDESTEP: out to one side of the cut and round you a little, instead of straight back
+    e.dodgeSide = !p.flip && Math.random() < (p.side || 0) ? (Math.random() < 0.5 ? 1 : -1) : 0;
+    if (e.dodgeSide){ const sx = -dz / dl * e.dodgeSide - dx / dl * 0.35, sz = dx / dl * e.dodgeSide - dz / dl * 0.35, sl = Math.hypot(sx, sz); e.dodgeX = sx / sl; e.dodgeZ = sz / sl; }
     e.state = 'recover'; e.st = Math.max(e.st, e.dodgeT + 0.05);
-    floater(V3(g.position.x, g.position.y + 1.2, g.position.z), p.flip ? 'FLIPPED CLEAR' : 'SLIPPED', '#c8d4e0');
+    floater(V3(g.position.x, g.position.y + 1.2, g.position.z), p.flip ? 'FLIPPED CLEAR' : e.dodgeSide ? 'SIDESTEP' : 'SLIPPED', '#c8d4e0');
     S.dash();
     if (Math.random() < p.counter * m) e.counterQueued = true;
     return 'dodge';
@@ -599,7 +749,7 @@ export function deflectPlayerBolt(e, b){
    blade gets through. Hold too long and the bind breaks apart. Where the blades met sets the kind of bind (high, low,
    mid, or body to body out of a long exchange: DUEL.lockKinds), how it looks, how hard it bears down and how it ends.
    ============================================================ */
-export const LOCK = { foe: null, bal: 0, t: 0, fx: 0, buzz: 0, kind: 'mid' };
+export const LOCK = { foe: null, bal: 0, t: 0, fx: 0, buzz: 0, kind: 'mid', next: 0, tell: 0, surge: 0, met: 0 };
 const lockKind = () => DUEL.lockKinds[LOCK.kind] || DUEL.lockKinds.mid;
 // the kind of bind a clash at `at` makes (no contact point: the height of your cut)
 export function lockKindAt(at){
@@ -612,10 +762,12 @@ let lockEl = null, lockFill = null;
 function lockBar(show){
   if (!lockEl){ lockEl = document.getElementById('lockbar'); lockFill = lockEl && lockEl.querySelector('.lb-fill'); }
   if (lockEl) lockEl.classList.toggle('on', show);
+  if (lockEl && !show) lockEl.classList.remove('tell', 'surge');
 }
 export function startLock(e, kind){
   if (LOCK.foe || !e.dp || !e.dp.lock) return false;
   LOCK.foe = e; LOCK.bal = 0; LOCK.t = 0; LOCK.fx = 0; LOCK.buzz = 0; LOCK.kind = DUEL.lockKinds[kind] ? kind : 'mid';
+  LOCK.next = rand(DUEL.lock.surge.first[0], DUEL.lock.surge.first[1]); LOCK.tell = LOCK.surge = 0; LOCK.met = 0;
   const K = lockKind();
   e.flourishT = 0; e.fl0 = null;
   e.state = 'lock'; e.st = 99; e.plan = null;
@@ -624,6 +776,7 @@ export function startLock(e, kind){
   TMP.subVectors(g.position, pp); TMP.y = 0; const d = TMP.length() || 1; TMP.divideScalar(d);
   g.position.x = pp.x + TMP.x * K.dist; g.position.z = pp.z + TMP.z * K.dist;   // close in, blade to blade (body to body)
   g.rotation.y = Math.atan2(-TMP.x, -TMP.z);
+  player.lockFace = player.faceYaw = Math.atan2(TMP.x, TMP.z);   // squared to it for the whole bind (player/animation.js)
   const cp = lockPoint();
   clashFlash(cp, stance().blade, true);
   sparks(cp, 0xffe9b0, 18, 14, { life: 0.4 });
@@ -636,9 +789,11 @@ export function startLock(e, kind){
   if (G.stats) G.stats.locks = (G.stats.locks || 0) + 1;
   return true;
 }
+// where the blades cross: between you, slid toward whoever is giving ground
 function lockPoint(){
   const pp = playerPos(), q = LOCK.foe ? LOCK.foe.group.position : pp;
-  return V3((pp.x + q.x) / 2, pp.y + lockKind().y, (pp.z + q.z) / 2);
+  const k = 0.5 + clamp(LOCK.bal, -1, 1) * DUEL.lock.press3d.slide;
+  return V3(pp.x + (q.x - pp.x) * k, pp.y + lockKind().y, pp.z + (q.z - pp.z) * k);
 }
 export function updateSaberLock(dt){
   const e = LOCK.foe;
@@ -646,26 +801,52 @@ export function updateSaberLock(dt){
   if (e.dead || e.state !== 'lock' || G.mode !== 'play'){ endLock(); return; }
   if (player.dashT > 0 || player.flinchT > 0.3){ splitLock(); return; }   // dashed (or knocked) out of it
   LOCK.t += dt;
-  const K = lockKind();
-  LOCK.bal -= e.dp.push * K.push * diffMul() * dt * (0.8 + LOCK.t * 0.15);   // it bears down harder the longer it lasts
-  const g = e.group, pp = playerPos(), u = g.userData;
-  // face to face, weapon on the bind's line, leaning in (body to body: chest to chest)
-  g.rotation.y = Math.atan2(pp.x - g.position.x, pp.z - g.position.z);
-  g.rotation.x = dampToward(g.rotation.x, (LOCK.kind === 'body' ? 0.24 : 0.14) + Math.max(0, -LOCK.bal) * 0.12, dt, 10);
-  if (u.weaponArm){ u.weaponArm.rotation.x = dampToward(u.weaponArm.rotation.x, K.arm[0] + Math.sin(G.gt * 31) * 0.04, dt, 14); u.weaponArm.rotation.z = dampToward(u.weaponArm.rotation.z, K.arm[1], dt, 14); }
-  if (u.staff){ u.staff.rotation.z = dampToward(u.staff.rotation.z, K.staff[0], dt, 14); u.staff.rotation.x = dampToward(u.staff.rotation.x, K.staff[1], dt, 14); }
-  g.userData.bodyMat.emissive.setHex(0xff3a1a); g.userData.bodyMat.emissiveIntensity = 0.3 + Math.max(0, -LOCK.bal) * 0.8;
-  // your blade braced against it (the catch pose, held at the bind)
-  if (G.hero !== 'mando' || player.weapon === 'darksaber'){
-    const dx = g.position.x - pp.x, dz = g.position.z - pp.z, fy = player.faceYaw;
-    if (!player.deflectAnim) player.deflectAnim = { t: 0, dur: 0.3, pose: null, side: (dx * -Math.cos(fy) + dz * Math.sin(fy)) / (Math.hypot(dx, dz) || 1) * 0.3, h: K.h };
-    player.deflectAnim.t = Math.min(player.deflectAnim.t, 0.07);
+  const K = lockKind(), L = DUEL.lock, Sg = L.surge, P3 = L.press3d;
+  // THE SURGE — every so often it gathers itself (its body flares, the bar's edge glows: the tell), then bears down
+  // hard for a beat. Meet it with your own presses and you hold the line; let it come and the bind slides your way.
+  if (LOCK.surge > 0) LOCK.surge -= dt;
+  else if (LOCK.tell > 0){
+    if ((LOCK.tell -= dt) <= 0){
+      LOCK.surge = Sg.dur; LOCK.met = 0;
+      sfx(rand(70, 85), 0.3, 'sawtooth', 0.05, rand(40, 50));   // the grind of it bearing down
+      G.shake = Math.max(G.shake, 0.4);
+    }
+  } else if ((LOCK.next -= dt) <= 0){
+    LOCK.tell = Sg.tell / Math.sqrt(diffMul()); LOCK.next = rand(Sg.every[0], Sg.every[1]);
+    sfx(rand(300, 340), Sg.tell, 'triangle', 0.025, rand(620, 700));   // the rising whine before it pushes
+    if (!G.seenSurge){ G.seenSurge = true; floater(V3(e.group.position.x, e.group.position.y + 2.1, e.group.position.z), 'IT BEARS DOWN · MASH TO MEET IT', '#ff9a6a'); }
   }
-  // the bind sizzles: sparks spit from the contact, a crackling buzz, the lens trembles
+  if (lockEl){ lockEl.classList.toggle('tell', LOCK.tell > 0); lockEl.classList.toggle('surge', LOCK.surge > 0); }
+  const surging = LOCK.surge > 0;
+  LOCK.bal -= e.dp.push * K.push * diffMul() * dt * (0.8 + LOCK.t * 0.15) * (surging ? Sg.mul : 1);   // it bears down harder the longer it lasts
+  const g = e.group, pp = playerPos(), u = g.userData;
+  // face to face, weapon on the bind's line; whoever is winning leans in, the loser bends back (body to body: chest to chest)
+  const ax = g.position.x - pp.x, az = g.position.z - pp.z, ad = Math.hypot(ax, az) || 1;
+  g.rotation.y = Math.atan2(-ax, -az);
+  player.lockFace = Math.atan2(ax, az);
+  const b = clamp(LOCK.bal, -1, 1);
+  const want = K.dist + b * P3.give;   // driven back as you win, crowding you as it does
+  g.position.x = pp.x + ax / ad * dampToward(ad, want, dt, 6); g.position.z = pp.z + az / ad * dampToward(ad, want, dt, 6);
+  g.rotation.x = dampToward(g.rotation.x, (LOCK.kind === 'body' ? 0.24 : 0.14) - b * P3.lean + (surging ? 0.1 : 0), dt, 10);
+  const tr = Math.sin(G.gt * 31) * (0.04 + (surging ? 0.05 : 0));   // the blades tremble against each other, worse in a surge
+  if (u.weaponArm){ u.weaponArm.rotation.x = dampToward(u.weaponArm.rotation.x, K.arm[0] + tr - b * P3.arm, dt, 14); u.weaponArm.rotation.z = dampToward(u.weaponArm.rotation.z, K.arm[1], dt, 14); }
+  if (u.staff){ u.staff.rotation.z = dampToward(u.staff.rotation.z, K.staff[0] - b * P3.arm, dt, 14); u.staff.rotation.x = dampToward(u.staff.rotation.x, K.staff[1], dt, 14); }
+  const flare = LOCK.tell > 0 ? 0.6 + Math.sin(G.gt * 40) * 0.4 : 0;
+  g.userData.bodyMat.emissive.setHex(flare ? 0xffd0a0 : 0xff3a1a); g.userData.bodyMat.emissiveIntensity = 0.3 + Math.max(0, -b) * 0.8 + flare + (surging ? 0.5 : 0);
+  // your blade braced against it (the catch pose, held at the bind): pressed down toward you as you lose, up and over it
+  // as you win
+  if (G.hero !== 'mando' || player.weapon === 'darksaber'){
+    const fy = player.faceYaw;
+    if (!player.deflectAnim) player.deflectAnim = { t: 0, dur: 0.3, pose: null, side: (ax * -Math.cos(fy) + az * Math.sin(fy)) / ad * 0.3, h: K.h };
+    player.deflectAnim.t = Math.min(player.deflectAnim.t, 0.07);
+    if (player.lockPush > 0) player.lockPush -= dt;
+    player.deflectAnim.h = K.h + (b < 0 ? b * P3.sink : b * P3.rise) + tr * 0.5 + Math.max(0, player.lockPush || 0) * 0.8;
+  }
+  // the bind sizzles: sparks spit from the contact, a crackling buzz, the lens trembles (all of it harder in a surge)
   const cp = lockPoint();
-  if ((LOCK.fx -= dt) <= 0){ LOCK.fx = 0.05; sparks(cp, Math.random() < 0.5 ? 0xffe9b0 : stance().blade, 3, 7, { life: 0.22, size: 0.45 }); }
-  if ((LOCK.buzz -= dt) <= 0){ LOCK.buzz = 0.11; sfx(rand(90, 120), 0.12, 'sawtooth', 0.03, rand(140, 180)); }
-  G.shake = Math.max(G.shake, 0.1 + Math.abs(LOCK.bal) * 0.15);
+  if ((LOCK.fx -= dt) <= 0){ LOCK.fx = surging ? 0.025 : 0.05; sparks(cp, Math.random() < 0.5 ? 0xffe9b0 : stance().blade, surging ? 5 : 3, surging ? 10 : 7, { life: 0.22, size: 0.45 }); }
+  if ((LOCK.buzz -= dt) <= 0){ LOCK.buzz = surging ? 0.07 : 0.11; sfx(rand(90, 120), 0.12, 'sawtooth', 0.03, rand(140, 180)); }
+  G.shake = Math.max(G.shake, 0.1 + Math.abs(LOCK.bal) * 0.15 + (surging ? 0.15 : 0));
   if (lockFill) lockFill.style.left = (50 + clamp(LOCK.bal, -1, 1) * 50) + '%';
   if (LOCK.bal >= 1) winLock(K.win);
   else if (LOCK.bal <= -1) loseLock();
@@ -678,7 +859,11 @@ export function lockPress(){
   const formMul = G.hero === 'mando' ? 1.1 : G.stance === 'djemso' ? L.heavyPress : G.stance === 'ataru' ? L.fastPress : 1;
   const dry = player.stam < L.stam;
   player.stam = Math.max(0, player.stam - L.stam); player.stamDelay = stamDelay();
-  LOCK.bal += L.press * formMul * (dry ? 0.35 : 1);
+  // a press into its surge MEETS it: worth more, and the first few say so
+  const meet = LOCK.surge > 0 ? L.surge.meet : 1;
+  LOCK.bal += L.press * formMul * (dry ? 0.35 : 1) * meet;
+  if (meet > 1 && ++LOCK.met === 3) floater(V3(LOCK.foe.group.position.x, LOCK.foe.group.position.y + 1.9, LOCK.foe.group.position.z), 'MET IT', '#ffe9a8');
+  player.lockPush = 0.12;   // each shove jolts your blade up into its (updateSaberLock)
   sparks(lockPoint(), 0xffffff, 3, 9, { life: 0.18, size: 0.4 });
   sfx(rand(150, 190), 0.06, 'square', 0.03, 90);
 }
@@ -746,7 +931,7 @@ function splitLock(){
 export function endLock(){
   const e = LOCK.foe;
   LOCK.foe = null;
-  player.saberLock = false;
+  player.saberLock = false; player.lockFace = null;
   player.deflectAnim = null;
   lockBar(false);
   if (e && e.state === 'lock' && !e.dead){ e.state = 'recover'; e.st = 0.4; }

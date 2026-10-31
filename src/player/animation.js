@@ -91,8 +91,12 @@ function poseBody(dt, dr, vis, planted, POSE, moving){
   let face = G.yaw;
   if ((G.hero !== 'mando' && !inCombatPose && moving) || player.backRun)
     face = Math.atan2(player.moveVel.x, player.moveVel.z);
+  // SABER LOCK — squared to the blade he's bound with for the whole bind, whatever the camera does (enemies/duel.js)
+  const bound = player.saberLock && player.lockFace != null;
+  if (bound) face = player.lockFace;
   // (the dive and the slide turn him the way they go: anim/agility.js mandoBody)
-  if (G.hero === 'mando') player.faceYaw = mandoTurn(player.flip && player.flip.face != null ? player.flip.face : face, player.flip ? 30 : player.backRun ? 11 : player._unwindT > 0 ? 12 : 26, dt);
+  if (bound) player.faceYaw += wrapAngle(dampAngle(player.faceYaw, face, 30, dt) - player.faceYaw);
+  else if (G.hero === 'mando') player.faceYaw = mandoTurn(player.flip && player.flip.face != null ? player.flip.face : face, player.flip ? 30 : player.backRun ? 11 : player._unwindT > 0 ? 12 : 26, dt);
   else {
     // TURNING WEIGHT — the Jedi eases round at a capped rate (slower still at a sprint) instead of snapping; on a
     // ledge he faces the wall

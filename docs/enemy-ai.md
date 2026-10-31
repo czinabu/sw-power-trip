@@ -84,11 +84,33 @@ frame per living duellist.
 - **Offence:** each swing is planned when it starts: its line (shown by the wind-up pose), whether it is a feint (it
   switches side at `DUEL.feintAt` and comes in fast, so a reflex parry whiffs), a held strike (waits at the apex), a
   thrust (white tell; a held block can't stop it, parry or dodge), and how many cuts follow in the string.
+- **Real cuts:** a duellist swings the hero's own cuts (`FOE_CUTS` in `src/data/duel.js`): flat cuts, the downward
+  diagonals, the overhead, the rising cuts, a sweep at the knees (the low line, so your guard drops to meet it) and the
+  thrust. Each has a wind-up pose that shows where it comes from, a follow-through, a chest turn, a lean, a hip drop and
+  a step that goes the way it sweeps. `windupPose` / `strikePose` in `enemies/duel.js` play them; a string flows, each
+  cut winding up from where the last one ended. `tools/enemy-lab.html?cut=all&only=acolyte,duelist` loops them all.
+- **Strings:** the profile's `moves` picks the order it walks its cuts in (`FOE_STRINGS`): the rank and file a few plain
+  cuts, the magnaguard spinning its staff through, the acolyte round the clock, each form master in its form. A string
+  of two or more cuts may end in its FINISHER (`finisher` chance): a spinning cut (the body turns a full circle, the blow
+  lands as it comes round) or Djem So's two-handed slam into the ground. A finisher winds up longer, lit amber, and
+  leaves the foe standing open. Padawan strings run a cut shorter with no finishers; Master's duellists one longer
+  (`STRING_DIFF`).
+- **Footwork:** duellists with `footwork` fight at the edge of your reach (`FOOTWORK`). With an attack turn they first
+  measure you from just outside it for a beat, then wind up from up to `reachIn` further out than a trooper would and
+  step in through the wind-up and the cut. After a string (not a finisher) they skip back out. A share of their slips
+  (`side`) are sidesteps round you instead of a backstep. The attack-turn limit is unchanged: measuring holds the turn.
 - **Counter:** a foe that turns a blow may answer at once, but only if it holds or can take a free attack turn.
 - **Saber lock:** your cut meeting a duellist's strike mid-arc binds the blades (`LOCK`). Mash LMB to drive through, or
   break it with a kick (stamina) or a Force push (Force). Win and the foe reels with your riposte ready; lose and its
   blade gets through.
+- **The struggle:** in a lock the foe bears down in SURGES (`DUEL.lock.surge`): its body flares and the bar's edge glows
+  for a beat, then it pushes `mul`× as hard. Presses inside a surge meet it and count `meet`×. The balance shows on the
+  bodies (`press3d`): the loser is driven back and bends away, its blade forced up, and the crossing point slides
+  toward it. You stay squared to the foe for the whole bind whatever the camera does (`player.lockFace`).
 - **Bolts:** acolytes bat blaster fire back at the shooter from the front.
+- **Bosses:** Vexis and the Magistrate swing real cuts too (`BOSS_CUTS` in `src/data/bosses.js`, `bossCut` in
+  `boss/boss.js`): each blow of a chain is a different cut, never the same line twice running, and the last is always the
+  overhead. The blade comes through the cut as the blow lands, and the last one follows through.
 
 - **Breath:** duellists (staff magnaguards, Sith acolytes) have their own stamina (`stam` in the profile, `DUEL.breath`).
   Blocking, slipping a cut, swinging, stringing and countering spend it; a parried swing or a lost lock drains it. Run

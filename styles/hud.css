@@ -269,6 +269,10 @@ body.mando #stancebox,body.mando #xh,body.mando #fcmeter{display:none!important}
 #lockbar .lb-fill{position:absolute;left:50%;top:-5px;width:6px;height:18px;margin-left:-3px;border-radius:3px;background:#fff;box-shadow:0 0 12px #ffe6b0,0 0 4px #fff}
 #lockbar .lb-hint{margin-top:8px;font-size:11px;letter-spacing:1.5px;color:var(--ink-soft)}
 #lockbar .lb-hint b{color:var(--ink)}
+/* the foe's surge (enemies/duel.js): the track's edge glows as it gathers itself, then flares red while it bears down */
+#lockbar.tell .lb-track{box-shadow:0 0 0 1px rgba(255,200,150,.7),0 0 14px rgba(255,150,80,.55)}
+#lockbar.surge .lb-track{box-shadow:0 0 0 2px rgba(255,80,50,.9),0 0 22px rgba(255,60,40,.75)}
+#lockbar.surge .lb-k{color:#ffb090}
 
 /* ---------- TRAINING: the teacher's panel (game/tutorial.js) — their line in character, then the task ---------- */
 #tutor{position:fixed;left:50%;top:13%;transform:translate(-50%,-8px);width:min(620px,calc(100vw - 32px));padding:12px 18px 13px;box-sizing:border-box;

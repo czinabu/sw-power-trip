@@ -26,16 +26,20 @@
               you lose stamina and it ripostes. Spacing your cuts (or changing line) never gets parried.
      elite    its skill climbs with run depth (DUEL.eliteRamp): a little gentler than listed early on, past it at the end
      rally    chance it keeps an EXCHANGE going when you parry it (DUEL.exchange): instead of reeling it recovers in time to
-              turn your riposte and come straight back at you, faster each beat */
+              turn your riposte and come straight back at you, faster each beat
+     moves    which string of cuts it swings (FOE_STRINGS: the hero's own cuts, walked in its form's order)
+     finisher chance a long string ends in its string's finisher (the spin, the slam: FOE_CUTS fin)
+     footwork it fights at the edge of your reach: measures, steps in with the cut, skips back out (FOOTWORK)
+     side     share of its slips that are a sidestep round you instead of a backstep */
 export const DUEL_PROFILES = {
   // the rank and file: barely a guard, rarely an answer (they learn a few tricks as the run deepens: `ramp`)
-  grunt:   { block: 0.06, posture: 28,  feint: 0.2,  delay: 0.3,  chain: 0, counter: 0.05, thrust: 0,    dodge: 0, ramp: true },
-  phalanx: { block: 0,    posture: 60,  feint: 0.15, delay: 0.35, chain: 1, counter: 0.3,  thrust: 0,    dodge: 0, ramp: true },
+  grunt:   { block: 0.06, posture: 28,  feint: 0.2,  delay: 0.3,  chain: 0, counter: 0.05, thrust: 0,    dodge: 0, ramp: true, moves: 'blade' },
+  phalanx: { block: 0,    posture: 60,  feint: 0.15, delay: 0.35, chain: 1, counter: 0.3,  thrust: 0,    dodge: 0, ramp: true, moves: 'blade' },
   // the duellists: a guard, breath to manage, and a parry for anyone who mashes
   duelist: { block: 0.55, posture: 70,  feint: 0.25, delay: 0.25, chain: 1, counter: 0.45, thrust: 0.1,  dodge: 0.1, lock: true, push: 0.38,
-             stam: 100, parry: 0.5, elite: true, rally: 0.45 },
+             stam: 100, parry: 0.5, elite: true, rally: 0.45, moves: 'staff', finisher: 0.6, footwork: true, side: 0.4 },
   acolyte: { block: 0.72, posture: 95,  feint: 0.3,  delay: 0.3,  chain: 2, counter: 0.6,  thrust: 0.15, dodge: 0.2, deflect: 0.75, lock: true, push: 0.5,
-             stam: 130, parry: 0.7, elite: true, rally: 0.65 },
+             stam: 130, parry: 0.7, elite: true, rally: 0.65, moves: 'niman', finisher: 0.7, footwork: true, side: 0.5 },
 };
 
 /* A FORM MASTER — a duel objective with a `form` (the trials in data/missions.js) is a master of that lightsaber form
@@ -49,13 +53,13 @@ export const DUEL_PROFILES = {
 export const FORM_DUEL = {
   // the Wall: barely strikes, turns nearly everything, sends every bolt home and wears you out
   soresu: { block: 0.82, posture: 180, feint: 0.1, delay: 0.2, chain: 1, counter: 0.3, thrust: 0, dodge: 0.05, deflect: 1,
-            lock: true, push: 0.45, stam: 190, parry: 0.55, elite: true, rally: 0.5, tire: 6 },
+            lock: true, push: 0.45, stam: 190, parry: 0.55, elite: true, rally: 0.5, tire: 6, moves: 'soresu', finisher: 0.5, footwork: true, side: 0.3 },
   // the Acrobat: a light guard, flips out of your cuts and comes back in long, quick strings
   ataru:  { block: 0.42, posture: 80, feint: 0.4, delay: 0.15, chain: 3, counter: 0.5, thrust: 0.2, dodge: 0.45, deflect: 0.35,
-            lock: true, push: 0.35, stam: 120, parry: 0.4, elite: true, rally: 0.55, flip: 2.2 },
+            lock: true, push: 0.35, stam: 120, parry: 0.4, elite: true, rally: 0.55, flip: 2.2, moves: 'ataru', finisher: 0.85, footwork: true, side: 0.5 },
   // the Knight: meets a blow on the guard and answers it at once, harder; drives a saber lock
   djemso: { block: 0.7, posture: 170, feint: 0.25, delay: 0.3, chain: 2, counter: 0.75, thrust: 0.15, dodge: 0.05, deflect: 0.6,
-            lock: true, push: 0.7, stam: 150, parry: 0.55, elite: true, rally: 0.6, riposte: 1.35 },
+            lock: true, push: 0.7, stam: 150, parry: 0.55, elite: true, rally: 0.6, riposte: 1.35, moves: 'djemso', finisher: 0.75, footwork: true, side: 0.25 },
 };
 
 /* THE WARBRINGER (survival's champion, game/survival.js spawnChampion; the sandbox and campaign mid-bosses call the
@@ -141,7 +145,15 @@ export const DUEL = {
   dodgeStep: 7,           // backstep speed when it slips a cut
   flipTime: 0.5, flipHeight: 1.3,   // an Ataru master's slip is a backflip this long and this high (FORM_DUEL flip)
   // SABER LOCK — blades bind; mash LMB to drive through, or break it with a kick (E) or a Force push (F)
-  lock: { chance: 0.7, time: 3.2, press: 0.15, stam: 3, kickStam: 22, pushCost: 18, loseDmg: 16, heavyPress: 1.35, fastPress: 0.85 },
+  lock: { chance: 0.7, time: 4.2, press: 0.15, stam: 3, kickStam: 22, pushCost: 18, loseDmg: 16, heavyPress: 1.35, fastPress: 0.85,
+    /* SURGE — the foe's push comes in waves: `first` / `every` s apart it gathers itself for `tell` s (its body flares,
+       the bar's edge glows, a whine rises), then bears down `mul`× as hard for `dur` s. A press inside the surge MEETS
+       it and counts `meet`×. */
+    surge: { first: [0.8, 1.2], every: [1.0, 1.6], tell: 0.32, dur: 0.45, mul: 2.6, meet: 1.6 },
+    /* THE STRUGGLE ON SCREEN — how far the balance (−1 … 1) moves the bodies: give (m) the foe is driven back / crowds
+       in, lean its pitch (back as it loses), arm its blade forced up, slide how far the crossing point moves toward the
+       loser, sink / rise your blade's catch height pressed down toward you / up over it */
+    press3d: { give: 0.35, lean: 0.2, arm: 0.35, slide: 0.12, sink: 0.35, rise: 0.12 } },
   /* LOCK KINDS — where the blades bind sets how the lock looks and how it ends (enemies/duel.js startLock). A clash more
      than `at.high` m above your feet binds HIGH, one under `at.low` binds LOW; an exchange run to `lockAt` beats ends
      CORPS-À-CORPS, hilt to hilt. label: called out as it binds. win / lose: called out at the end. h: your catch height.
@@ -182,6 +194,64 @@ export const WIND = {
   sword: { R: [-1.75, 1.35], L: [-1.9, -1.15], H: [-2.6, 0.2], T: [0.15, 0.1] },
   staff: { R: [-2.0, 0.4],   L: [1.9, 0.5],     H: [-2.9, 1.2], T: [-1.4, -0.4] },
 };
+
+/* THEIR CUTS — a duellist swings the hero's own cuts (data/stances.js SWING_PATTERNS / CUT_ANGLE): flat cuts, the
+   downward diagonals, the overhead, the rising cuts, a sweep at the knees and the thrust, plus two string finishers
+   (a spinning cut and a two-handed slam). enemies/duel.js windupPose / strikePose drive the weapon from `from` (where
+   the wind-up rears back to: the tell) through `to` (the far side of the follow-through).
+     line    where it comes in (its side: R its right = your left; H overhead; Lo the legs; T the thrust): your guard
+             meets it there (GUARD_LINE), and its feint switches to a cut on another line
+     from/to sword arm [weaponArm.rotation.x (raise), .z (out +, across -), .y (yaw: sweeps a low cut round the front)]
+     staff   the staff's [rotation.z, rotation.x] (missing: the line's WIND pose, as before)
+     twist   the chest's turn [at the wind-up, through the strike] (+ draws the weapon shoulder back)
+     lean    the body's pitch [wind-up, strike] (− back onto the rear foot)
+     drop    how far the hips sink into it (m): the low cut crouches under, the slam drives down at the end
+     step    how far the cut carries the feet in (m, on top of the old lunge); side: the step goes the way it sweeps
+     yaw     the whole body's turn [wind-up, strike end] (the spinning cut: a full turn, back to you at the end)
+     hitK    how far through the strike the blow lands (0.5: halfway; the spin lands as it comes round)
+     swing   × the foe's strike time (the spin and the slam take longer to come through)
+     wind    × its wind-up (a finisher's tell is longer)
+     dmg     × its damage   ·   fin: a string finisher (an amber wind-up glow, shown as it rears back) */
+export const FOE_CUTS = {
+  flatR:    { line: 'R',  from: [-1.55, 1.45], to: [-1.45, -1.35], twist: [0.45, -0.4],  lean: [-0.25, 0.15], step: 0.35, side: -1 },
+  flatL:    { line: 'L',  from: [-1.6, -1.3],  to: [-1.45, 1.35],  twist: [-0.35, 0.4], lean: [-0.25, 0.15], step: 0.35, side: 1 },
+  diagR:    { line: 'R',  from: [-2.5, 0.95],  to: [-0.75, -0.95], twist: [0.4, -0.35],  lean: [-0.35, 0.25], step: 0.4,  side: -0.5 },
+  diagL:    { line: 'L',  from: [-2.55, -0.85], to: [-0.8, 0.95],  twist: [-0.3, 0.35], lean: [-0.35, 0.25], step: 0.4,  side: 0.5 },
+  overhead: { line: 'H',  from: [-2.75, 0.15], to: [-0.55, 0.05],  twist: [0.15, -0.1],  lean: [-0.4, 0.3],   step: 0.45,
+              staff: { from: [-2.9, 1.2], to: [0.9, 0.9] } },
+  riseR:    { line: 'R',  from: [-0.4, 0.9],   to: [-2.3, -0.8],   twist: [0.35, -0.3],  lean: [0.1, -0.2],   step: 0.25, side: -0.4, drop: 0.12 },
+  riseL:    { line: 'L',  from: [-0.45, -0.8], to: [-2.3, 0.9],    twist: [-0.3, 0.3],  lean: [0.1, -0.2],   step: 0.25, side: 0.4,  drop: 0.12 },
+  sweepLo:  { line: 'Lo', from: [0, 0.9, 0.35], to: [0, 0.9, -2.9], twist: [0.4, -0.45], lean: [0.05, 0.25], step: 0.3, side: -0.6, drop: 0.42,
+              staff: { from: [0.9, -0.9], to: [-1.2, -1.0] } },
+  thrust:   { line: 'T',  from: [0.15, 0.1],   to: [-1.55, 0],     twist: [0.3, -0.15],  lean: [-0.25, 0.3],  step: 0.6 },
+  // FINISHERS — the end of a long string: a longer, amber-lit tell, and they land harder
+  spin:     { line: 'L',  from: [-1.4, -1.25], to: [-1.5, 1.45],   twist: [-0.3, 0.2],  lean: [-0.15, 0.1],  step: 0.6,  yaw: [1.5, Math.PI * 2],
+              hitK: 0.8, swing: 2.4, wind: 1.25, dmg: 1.25, fin: true, staff: { from: [1.9, 0.5], to: [-1.6, 0.9] } },
+  slam:     { line: 'H',  from: [-3.0, 0.1],   to: [-0.3, 0.0],    twist: [0.1, -0.1],   lean: [-0.6, 0.45],  step: 0.55, drop: 0.3,
+              swing: 1.3, wind: 1.35, dmg: 1.3, fin: true, slam: true, staff: { from: [-2.9, 1.3], to: [1.0, 1.0] } },
+};
+/* THEIR STRINGS — the order a duellist walks its cuts in, each starting where the last one finished (the same flow as
+   your form's string: CUT_ANGLE.strings). Picked by the profile's `moves` (a form master: its form). `fin` is the cut
+   that closes a string of `finAfter` or more cuts, and only from a foe whose profile has `finisher`. */
+export const FOE_STRINGS = {
+  blade:  { cuts: ['diagR', 'flatL', 'overhead', 'diagL'] },                         // the rank and file: a few plain cuts
+  staff:  { cuts: ['flatR', 'flatL', 'overhead', 'sweepLo', 'flatR', 'riseL'], fin: 'spin', finAfter: 2 },   // the magnaguard spins its staff through
+  niman:  { cuts: ['diagR', 'riseL', 'flatR', 'overhead', 'diagL', 'sweepLo'], fin: 'spin', finAfter: 2 },   // the acolyte: round the clock
+  soresu: { cuts: ['diagR', 'riseR', 'diagL', 'riseL'], fin: 'thrust', finAfter: 2 },  // short cuts that come back to the guard
+  ataru:  { cuts: ['flatR', 'riseL', 'diagR', 'flatL', 'sweepLo', 'riseR'], fin: 'spin', finAfter: 2 },       // whipped side to side, then the spin
+  djemso: { cuts: ['diagR', 'riseL', 'overhead', 'diagL', 'riseR'], fin: 'slam', finAfter: 2 },               // heavy diagonals, then the slam
+  reset: 1.6,             // seconds without swinging before it starts a fresh string (somewhere new in the order)
+};
+/* FOOTWORK — a duellist fights at the edge of your reach, the way a real duel is spaced: with its attack turn it
+   MEASURES just outside its own reach (`measure` m beyond it) for a beat (`beat` s, circling), then steps in WITH the
+   cut (its windup may start `reachIn` m further out than a plain trooper's: it closes at `inSpeed` m/s through the
+   wind-up while still out of reach, and the cut's step does the rest). Once a string
+   ends it skips back out (`back` m over `backT` s) instead of standing in your face. Only foes whose profile sets
+   `footwork`. `padawan` scales the beat (a longer wait on the easy setting). */
+export const FOOTWORK = { measure: 0.7, beat: [0.25, 0.8], reachIn: 1.1, inSpeed: 3.2, back: 1.8, backT: 0.32, padawan: 1.5 };
+/* STRINGS BY DIFFICULTY — added to a profile's `chain` (the most extra cuts after the first): Padawan strings are a cut
+   shorter and never end in a finisher; Master adds one to the duellists (elite profiles) */
+export const STRING_DIFF = { padawan: -1, knight: 0, master: 1 };
 
 /* YOUR GUARD ON THEIR LINE (player/jedi/guardline.js). Hold the guard while a duellist within `range` winds up at you
    and your blade goes to meet that strike where it will come in, the way Jedi Academy's blocks did: catch is where on

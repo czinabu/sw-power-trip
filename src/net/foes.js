@@ -55,13 +55,15 @@ function snapshot(){
       u.weaponArm ? r2(u.weaponArm.rotation.x) : 0, u.staff ? r2(u.staff.rotation.z) : 0,
       u.bodyMat ? u.bodyMat.emissive.getHex() : 0, u.bodyMat ? r2(u.bodyMat.emissiveIntensity) : 0,
       u.weaponArm ? r2(u.weaponArm.rotation.z) : 0, u.staff ? r2(u.staff.rotation.x) : 0,   // (the weapon's other axis: which line a guard or block covers)
-      e.form || '']);   // a form master's form: its blade colour (game/mission.js)
+      e.form || '',   // a form master's form: its blade colour (game/mission.js)
+      u.weaponArm ? r2(u.weaponArm.rotation.y) : 0, r2(e.cutDrop || 0), e.cutTwist != null ? r2(e.cutTwist) : null]);   // a duellist's cut: a low sweep's yaw, the hips' drop, the chest's turn (enemies/duel.js)
   }
   const bs = shared.boss, bu = bs && bs.group.userData;
   const boss = bs && !bs.net ? [r2(bs.group.position.x), r2(bs.group.position.y), r2(bs.group.position.z), r2(bs.group.rotation.y), r2(bs.group.rotation.x),
     Math.round(bs.hp), Math.round(bs.maxHp), bs.state, bs.phase, bs.kind, bs.enraged ? 1 : 0, bu.hand ? r2(bu.hand.rotation.z) : 0, bu.eyes ? r2(bu.eyes.scale.y) : 1,
     bu.bodyMat ? bu.bodyMat.emissive.getHex() : 0, bu.bodyMat ? r2(bu.bodyMat.emissiveIntensity) : 0,
-    bs.hero && !bs.hero.local ? [r2(bs.hero.pos.x), r2(bs.hero.pos.z)] : [r2(playerPos().x), r2(playerPos().z)]] : null;
+    bs.hero && !bs.hero.local ? [r2(bs.hero.pos.x), r2(bs.hero.pos.z)] : [r2(playerPos().x), r2(playerPos().z)],
+    bu.pivot ? r2(bu.pivot.rotation.x) : 0, bu.pivot ? r2(bu.pivot.rotation.z) : 0] : null;   // (his shoulder: the cut he's swinging, boss/boss.js bossCut)
   return { t: 'e', run: 1, boss, k: runKind(), ms: G.mission ? missionSnap() : undefined, lv: G.levelIdx, ch: G.chapter, a2: G.actTwo, wf: G.waveFrom, ar: G.arenaRot, w: G.endless ? G.endlessWave : G.wave, wt: G.waveTotal, ph: shared.levelPhase, mut: G.mut, list };
 }
 
@@ -137,7 +139,7 @@ function makePuppet(rec){
 }
 
 function applyRec(e, rec){
-  const [, , x, y, z, rx, ry, rz, sc, hp, maxHp, state, flags, , wA, sZ, em, ei, wZ, sX] = rec;
+  const [, , x, y, z, rx, ry, rz, sc, hp, maxHp, state, flags, , wA, sZ, em, ei, wZ, sX, , wY, drop, twist] = rec;
   e.group.scale.setScalar(sc);
   sendCtl(e);   // a control state put on it here since the last frame goes out before the snapshot overwrites it
   e.hp = hp; e.maxHp = maxHp; e.walking = !!(flags & WALKING);
@@ -149,7 +151,8 @@ function applyRec(e, rec){
   if (dying && !e.dead) burst(e.group.position, 0x888888, 6, 4, 3);
   e.dead = dying;
   const u = e.group.userData;
-  if (u.weaponArm){ u.weaponArm.rotation.x = wA; if (wZ != null) u.weaponArm.rotation.z = wZ; }
+  if (u.weaponArm){ u.weaponArm.rotation.x = wA; if (wZ != null) u.weaponArm.rotation.z = wZ; u.weaponArm.rotation.y = wY || 0; }
+  e.cutDrop = drop || 0; e.cutTwist = twist ?? null;
   if (u.staff){ u.staff.rotation.z = sZ; if (sX != null) u.staff.rotation.x = sX; }
   if (u.bodyMat){ u.bodyMat.emissive.setHex(em); u.bodyMat.emissiveIntensity = ei; }
 }
@@ -227,7 +230,7 @@ on('e', (m) => {
     let b = shared.boss;
     if (!b || !b.net) b = makeBossPuppet(r[9], r[5], r[6]);
     b.want.pos.set(r[0], r[1], r[2]); b.want.ry = r[3]; b.want.rx = r[4];
-    b.hp = r[5]; b.maxHp = r[6]; b.state = r[7]; b.phase = r[8]; b.enraged = !!r[10]; b.hand = r[11]; b.eyes = r[12]; b.em = r[13]; b.ei = r[14]; b.tp = r[15];
+    b.hp = r[5]; b.maxHp = r[6]; b.state = r[7]; b.phase = r[8]; b.enraged = !!r[10]; b.hand = r[11]; b.eyes = r[12]; b.em = r[13]; b.ei = r[14]; b.tp = r[15]; b.piv = r[16] != null ? [r[16], r[17]] : null;
   } else if (shared.boss && shared.boss.net) dropBossPuppet();
 
   // the foes
