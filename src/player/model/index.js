@@ -32,7 +32,7 @@ export function buildHeroModel(target, lookIn = {}){
   for (const p of trooper.parts) p.visible = false;
   mountLoadout(R, S, target);
   // dust, scuffs and the fight's soot (model/wear.js): each hero worn as much as its look says
-  target.wearU = [heroWear(jedi.parts, look.jedi.wear ?? 0.4), heroWear(mando.parts, look.mando.wear ?? 0.4)];
+  target.wearU = [heroWear(jedi.parts, look.jedi.wear ?? 0.4), heroWear(mando.parts, look.mando.wear ?? 0.4), heroWear(trooper.parts, look.trooper.wear ?? 0.4)];
 
   target.vis = R.vis;
   target.rig = {
