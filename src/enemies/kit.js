@@ -32,6 +32,9 @@ export const NPC_MATERIALS = {
   gun:     { c: 0x16191e, r: 0.4, m: 0.6 },   // blaster bodies
   leather: { c: 0x2a2018, r: 0.8 },
   skin:    { c: 0x9c7a62, r: 0.75 },         // a bare face (the officer under its cap)
+  eyew:    { c: 0xcfc6b8, r: 0.6 },          // the whites of its eyes
+  hair:    { c: 0x2a2018, r: 0.85 },
+  lip:     { c: 0x6a4434, r: 0.7 },
   cloth:   { c: 0x4a3f33, r: 0.95, side: THREE.DoubleSide },
   mark:    { c: 0xc8601c, r: 0.6, m: 0.3 },   // rank and field paint (enemies/mesh.js markings)
 };

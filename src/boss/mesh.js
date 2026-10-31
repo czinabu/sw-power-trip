@@ -10,7 +10,7 @@ import * as THREE from 'three';
 import { glow } from '../engine/renderer.js';
 import { loft, limb, plate, block, shard, chamfer, ngon, HEAD } from '../player/model/shapes.js';
 import { bakeDesign, instantiate } from '../enemies/kit.js';
-import { legs, hips, torso, pauldrons, sideArm, upper, cape, NECK } from '../enemies/mesh.js';
+import { legs, hips, torso, pauldrons, sideArm, upper, cape, NECK, SOFT, SOFT_COLLAR, SOFT_LIMB, dome, cap } from '../enemies/mesh.js';
 
 const PI = Math.PI;
 const BODY = 1.4;   // the bosses are the trooper kit at 1.4x
@@ -28,12 +28,12 @@ function sith(k, L){
   const w = 1.3;
   legs(b, w, { boot: 'armor2' }); hips(b, w);
   // long split robe over the legs
-  b.add(loft([{ y:0.22, w:0.78, d:0.6 }, { y:0.62, w:0.66, d:0.48 }, { y:1.08, w:0.52, d:0.34 }], chamfer(0.42)), 'cloth');
+  b.add(loft([{ y:0.22, w:0.78, d:0.6 }, { y:0.62, w:0.66, d:0.48 }, { y:1.08, w:0.52, d:0.34 }], SOFT), 'cloth');
   b.add(plate([[-0.14,0.02],[0.14,0.02],[0.16,-0.82],[0,-0.9],[-0.16,-0.82]], 0.02, 0.006), 'armor2', b.root, [0, 1.06, 0.2], [-0.16, 0, 0]);
   b = upper(b);   // everything above the waist rides the chest (enemies/upper.js)
   torso(b, w, { box: false, pack: false });
   // spiked pauldrons over a heavy mantle
-  b.add(loft([{ y:1.66, w:0.96, d:0.5 }, { y:1.84, w:0.72, d:0.42 }, { y:1.92, w:0.4, d:0.3 }], chamfer(0.45)), 'cloth');
+  b.add(loft([{ y:1.66, w:0.96, d:0.5 }, { y:1.84, w:0.72, d:0.42 }, { y:1.92, w:0.4, d:0.3 }], SOFT_COLLAR), 'cloth');
   pauldrons(b, w, 'armor', 1.2);
   for (const s of [-1, 1]){
     b.add(shard(0.06, 0.22, 0.06), 'metal', b.root, [0.52*s, 1.9, 0.06], [0, 0, -0.35*s]);
@@ -49,11 +49,11 @@ function sith(k, L){
   // helm: a skull-like dome, a flared neck guard, a fanged breather, burning eye slits — under a raised hood
   const h = b.bone('head', b.root, [0, 1.95, 0], [0,0,0], NECK);
   b.add(loft([{ y:-0.04, w:0.15, d:0.15 }, { y:0.08, w:0.14, d:0.14 }], ngon(6, PI/6)), 'suit', h);
-  b.add(loft([{ y:-0.02, w:0.27, d:0.28 }, { y:0.12, w:0.3, d:0.32 }, { y:0.27, w:0.3, d:0.32 }, { y:0.37, w:0.22, d:0.27 }, { y:0.42, w:0.1, d:0.16 }], HEAD), 'armor', h);
-  b.add(loft([{ y:-0.08, w:0.44, d:0.36, z:-0.04 }, { y:0.08, w:0.32, d:0.3, z:-0.02 }], chamfer(0.4)), 'armor2', h);   // neck guard
+  b.add(dome([{ y:-0.02, w:0.27, d:0.28 }, { y:0.12, w:0.3, d:0.32 }, { y:0.27, w:0.3, d:0.32 }, { y:0.37, w:0.22, d:0.27 }, { y:0.42, w:0.1, d:0.16 }]), 'armor', h);
+  b.add(loft([{ y:-0.08, w:0.44, d:0.36, z:-0.04 }, { y:0.08, w:0.32, d:0.3, z:-0.02 }], SOFT_COLLAR), 'armor2', h);   // neck guard
   b.add(loft([{ y:-0.06, w:0.12, d:0.06, z:0.0 }, { y:0.1, w:0.2, d:0.08, z:0.0 }], ngon(3, -PI/2)), 'armor2', h, [0, 0, 0.14]);   // breather
   for (const s of [-1, 1]) b.add(shard(0.04, 0.08, 0.03), 'metal', h, [0.04*s, 0.0, 0.16], [PI, 0, 0], { outline: false });
-  b.add(loft([{ y:-0.02, w:0.46, d:0.44, z:-0.05 }, { y:0.22, w:0.42, d:0.42, z:-0.05 }, { y:0.42, w:0.3, d:0.36, z:-0.07 }, { y:0.5, w:0.12, d:0.18, z:-0.1 }], chamfer(0.45)), 'cloth', h, [0, 0, -0.03]);
+  b.add(loft([{ y:-0.02, w:0.46, d:0.44, z:-0.05 }, { y:0.22, w:0.42, d:0.42, z:-0.05 }, { y:0.42, w:0.3, d:0.36, z:-0.07 }, { y:0.5, w:0.12, d:0.18, z:-0.1 }], SOFT_COLLAR), 'cloth', h, [0, 0, -0.03]);
   const eyes = b.live(new THREE.Group(), h, 'eyes');
   for (const s of [-1, 1]){
     const m = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.03, 0.02), new THREE.MeshBasicMaterial({ color: L.eye, toneMapped: false }));
@@ -94,7 +94,7 @@ function mando(k, L){
   // helm: Mandalorian dome, T-visor, cheek flares, rangefinder
   const h = b.bone('head', b.root, [0, 1.95, 0], [0,0,0], NECK);
   b.add(loft([{ y:-0.04, w:0.15, d:0.15 }, { y:0.08, w:0.14, d:0.14 }], ngon(6, PI/6)), 'suit', h);
-  b.add(loft([{ y:-0.02, w:0.27, d:0.29, z:0.005 }, { y:0.08, w:0.28, d:0.3, z:0.005 }, { y:0.24, w:0.3, d:0.32 }, { y:0.36, w:0.28, d:0.31 }, { y:0.43, w:0.21, d:0.25 }, { y:0.46, w:0.1, d:0.13 }], HEAD), 'armor', h);
+  b.add(dome([{ y:-0.02, w:0.27, d:0.29, z:0.005 }, { y:0.08, w:0.28, d:0.3, z:0.005 }, { y:0.24, w:0.3, d:0.32 }, { y:0.36, w:0.28, d:0.31 }, { y:0.43, w:0.21, d:0.25 }, { y:0.46, w:0.1, d:0.13 }]), 'armor', h);
   b.add(plate([[-0.125,0.03],[0.125,0.03],[0.132,-0.012],[0.032,-0.024],[0.03,-0.14],[-0.03,-0.14],[-0.032,-0.024],[-0.132,-0.012]], 0.02, 0.004), 'black', h, [0, 0.26, 0.152], [0,0,0], { outline: false });
   b.add(block(0.17, 0.06, 0.08, 0.4), 'armor2', h, [0, 0.03, 0.11]);
   for (const s of [-1, 1]) b.add(block(0.04, 0.09, 0.1, 0.35), 'armor2', h, [0.15*s, 0.2, 0]);
@@ -108,11 +108,11 @@ function mando(k, L){
 // the weapon arm: shoulder pivot (pivot) → hand (hand, swings on rotation.z) → saber or war-spear
 function weaponArm(k, L, kind){
   const pivot = k.slot('pivot', k.root, [0.75, 2.1, 0.1]);
-  k.add(loft([{ y:-0.08, w:0.36, d:0.36 }, { y:0.05, w:0.34, d:0.34 }, { y:0.13, w:0.2, d:0.24 }], chamfer(0.42)), 'armor', pivot, [0.04, 0.32, -0.08], [0, 0, -0.32]);
-  k.add(limb(0.5, [[-0.12,0.23,0.23],[0.1,0.22,0.22],[1,0.17,0.17]], chamfer(0.4)), 'suit', pivot, [0.02, 0.32, -0.08], [0, 0, -0.25]);
+  k.add(loft(cap(0.36, 0.36).map(c => ({ ...c, y: c.y * 1.4 })), SOFT), 'armor', pivot, [0.04, 0.32, -0.08], [0, 0, -0.32]);
+  k.add(limb(0.5, [[-0.12,0.23,0.23],[0.1,0.22,0.22],[1,0.17,0.17]], SOFT_LIMB), 'suit', pivot, [0.02, 0.32, -0.08], [0, 0, -0.25]);
   k.add(block(0.2, 0.15, 0.21, 0.4), 'armor2', pivot, [-0.1, -0.2, -0.1]);
   const hand = k.slot('hand', pivot, [0, 0, 0], [0, 0, -0.6]);
-  k.add(block(0.17, 0.2, 0.18, 0.35), 'suit', hand, [0, 0.0, 0]);
+  k.add(loft([{ y:-0.1, w:0.16, d:0.17 }, { y:0.0, w:0.18, d:0.19 }, { y:0.1, w:0.16, d:0.17 }], SOFT_LIMB), 'suit', hand);   // the gauntlet
   if (kind === 'sith'){
     k.add(loft([{ y:-0.14, w:0.07, d:0.07 }, { y:0.18, w:0.075, d:0.075 }, { y:0.2, w:0.095, d:0.095 }, { y:0.23, w:0.085, d:0.085 }], ngon(8, PI/8)), 'metal', hand);
     k.add(block(0.03, 0.05, 0.03, 0.3), 'armor2', hand, [0, 0.08, 0.045], [0,0,0], { outline: false });
@@ -141,9 +141,11 @@ export function buildBoss(kind){
   }, { armor: L.armor, armor2: L.armor2, suit: L.suit, cloth: L.cloth, metal: L.metal });
   // like the troopers (enemies/mesh.js): the group carries place and heading, `vis` inside it takes the gait's bob and lean.
   // The trooper legs sit in the 1.4x body group, so enemies/gait.js is told how much bigger they are (legScale)
-  const vis = instantiate(baked), g = new THREE.Group();
+  const vis = instantiate(baked, { wear: 0.2 }), g = new THREE.Group();   // a warlord keeps his armour clean: battle-worn, not grimy
+  g.rotation.order = 'YXZ';   // leans and the fall in his own frame, as the troopers (enemies/mesh.js)
   g.add(vis);
   g.userData = vis.userData;
+  g.userData.armSwing = [0.55, 0];   // the free left arm swings with his stride (enemies/upper.js)
   g.userData.vis = vis; g.userData.legScale = BODY;
   g.scale.setScalar(1.35);
   return g;

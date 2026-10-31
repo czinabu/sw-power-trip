@@ -61,6 +61,7 @@ function wallBetween(ax, az, b){
   return b.y < c.h - 0.5;
 }
 
+const CORPSE = 1.4;   // seconds a body lies (the last 0.6 of them sinking away) before it is cleared
 const NO_REACT = { ragdoll: 1, knockdown: 1, getup: 1, fade: 1, spawn: 1, lock: 1, lunge: 1, grasped: 1 };   // states that own the whole body
 const LUNGING = { lungewind: 1, lunge: 1 };
 const NO_FEET = { ragdoll: 1, knockdown: 1, getup: 1, fade: 1, spawn: 1, grasped: 1 };   // states the legs don't stand in (enemies/gait.js)
@@ -563,18 +564,38 @@ export function updateEnemies(dt){
           g.rotation.x = dampToward(g.rotation.x, -1.5, dt, 5); g.rotation.z = dampToward(g.rotation.z, 0, dt, 8);
           if (g.position.y <= 0){
             g.position.y = 0; e.vel.y = 0; e.vel.x *= Math.max(0, 1 - dt * 8); e.vel.z *= Math.max(0, 1 - dt * 8);
-            if (g.rotation.x < -1.4){ e.vel.set(0,0,0); e.state = 'fade'; e.st = 0.8; }
+            if (g.rotation.x < -1.4){ e.vel.set(0,0,0); e.state = 'fade'; e.st = CORPSE; }
           }
           break;
         }
-        g.rotation.x += dt * 7; g.rotation.z += dt * 5;
+        /* THE FALL — the body goes the way the blow threw it, in its own frame (the group turns YXZ: enemies/mesh.js):
+           driven back from the front it topples onto its back, from behind onto its face, twisting a little off the
+           line; a big launch flips it over once in the air. The limbs fold as it goes (enemies/gait.js, upper.js
+           fallPose). Where it flies and lands is unchanged. */
+        if (!e.fall){
+          const sy = Math.sin(g.rotation.y), cy = Math.cos(g.rotation.y), sp = Math.hypot(e.vel.x, e.vel.z);
+          const fw = e.vel.x * sy + e.vel.z * cy, sd = e.vel.x * cy - e.vel.z * sy;
+          e.fall = { s: fw > 0.3 * sp ? 1 : -1, roll: clamp(-sd / Math.max(sp, 1), -1, 1) * 0.35 + (Math.random() - 0.5) * 0.2,
+                     flip: sp > 11 && e.vel.y > 4, yaw: (Math.random() - 0.5) * (sp > 8 ? 2.4 : 0.8) };
+        }
+        const F = e.fall, up = g.position.y > 0.05;
+        if (F.flip && up){ g.rotation.x += F.s * dt * 7.5; g.rotation.y += F.yaw * dt; }
+        else {
+          if (F.flip){ g.rotation.x = Math.atan2(Math.sin(g.rotation.x), Math.cos(g.rotation.x)); F.s = g.rotation.x >= 0 ? 1 : -1; F.flip = false; }   // landed: onto whichever side it came down on
+          g.rotation.x = dampToward(g.rotation.x, F.s * 1.5, dt, up ? 4 : 9);
+          if (up) g.rotation.y += F.yaw * dt * 0.6;
+        }
+        g.rotation.z = dampToward(g.rotation.z, F.roll, dt, 5);
         if (g.position.y < 0){
           g.position.y = 0;
           if (Math.abs(e.vel.y) > 3){ e.vel.y *= -0.35; e.vel.x *= 0.6; e.vel.z *= 0.6; burst(g.position, 0x888888, 3, 3, 2); }
           else {
-            e.vel.set(0,0,0);
-            if (e.dead){ e.state = 'fade'; e.st = 0.8; }
-            else { e.state = 'chase'; g.rotation.x = 0; g.rotation.z = 0; }
+            e.vel.x *= Math.max(0, 1 - dt * 10); e.vel.z *= Math.max(0, 1 - dt * 10); e.vel.y = 0;   // a short skid, not a dead stop
+            if (Math.abs(g.rotation.x - F.s * 1.5) < 0.2 && e.vel.x * e.vel.x + e.vel.z * e.vel.z < 0.5){
+              e.vel.set(0,0,0);
+              if (e.dead){ e.state = 'fade'; e.st = CORPSE; }
+              else { e.state = 'chase'; g.rotation.x = 0; g.rotation.z = 0; e.fall = null; }
+            }
           }
         }
         // flying bodies hit other enemies
@@ -614,8 +635,8 @@ export function updateEnemies(dt){
         break;
       }
       case 'fade':
-        g.scale.multiplyScalar(Math.max(0.01, 1 - dt*2.2));
-        g.position.y -= dt * 0.6;
+        // the body lies where it fell a moment, then sinks away into the ground (it no longer shrinks to a point)
+        if (e.st < 0.6){ g.position.y -= dt * 1.1; g.scale.multiplyScalar(Math.max(0.01, 1 - dt * 0.5)); }
         if (e.st <= 0){ removeEnemy(e); enemies.splice(i,1); }
         break;
     }

@@ -69,6 +69,41 @@ export function updateUpper(o, g, dt, aim, mode = 'on'){
   ch.rotation.set(U.pitch + breath - kick * 0.16 + U.fl * 0.3, U.yaw + U.twist, -U.fr * 0.25);
   if (hd) hd.rotation.set(U.hx0 + U.hp - breath * 0.6 + kick * 0.05 + U.fl * 0.2 - snap * 0.55, U.hy - U.twist * 0.6 - snap * (U.snapSide || 0) * 0.4, -U.fr * 0.15 + snap * (U.snapSide || 0) * 0.35);
   if (u.cape0) capeSwing(U, g, u, dt, mode);
+  if (u.offArm || u.offArmR) armsSwing(U, o, g, u, dt, mode, breath);
+  // FALLING (dead, floored): the chest curls and the head lolls with the body's tip, so a fall isn't a rigid plank
+  if (mode === 'off'){
+    const f = fallOf(g);
+    if (f){
+      ch.rotation.x += f * 0.24;   // curled in over the belly, whichever way it falls
+      if (hd){ hd.rotation.x += -Math.sign(g.rotation.x || 1) * f * 0.35; hd.rotation.z += (U.lollSide || (U.lollSide = Math.random() < 0.5 ? -1 : 1)) * f * 0.3; }
+    }
+  }
+}
+
+// how far the body has tipped over (0 upright → 1 lying flat), from the group's pitch and roll
+export const fallOf = g => Math.min(1, Math.max(Math.abs(Math.atan2(Math.sin(g.rotation.x), Math.cos(g.rotation.x))), Math.abs(g.rotation.z) * 1.4) / 1.35);
+
+/* the FREE ARMS (enemies/mesh.js ARM_SWING): on the move each swings opposite its own side's leg, wider as the unit
+   runs, and the elbow-led swing settles to a hang when it stops; standing, they ride the breath. Felled, they fling
+   out from the body as it goes over and fall loose */
+function armsSwing(U, o, g, u, dt, mode, breath){
+  const A = U.arms || (U.arms = { base: [u.offArm, u.offArmR].map(a => a ? a.rotation.clone() : null), sw: 0, fl: 0, out: Math.random() * 0.4 });
+  const amp = u.armSwing || [0, 0];
+  const L = o.legs, sp = L ? Math.hypot(L.vx, L.vz) / (g.scale.x || 1) : 0;
+  const run = mode === 'on' ? Math.min(1, sp / 5) : 0;
+  A.sw = ease(A.sw, run, dt, 8);
+  const ph = L ? L.cyc * Math.PI * 2 : 0;
+  A.fl = ease(A.fl, mode === 'off' && !u.staff && !u.shield ? fallOf(g) : 0, dt, 10);   // (hands on a staff or behind a shield keep their hold)
+  [u.offArm, u.offArmR].forEach((a, i) => {
+    const b = A.base[i];
+    if (!a || !b) return;
+    const s = i ? 1 : -1;   // the left arm swings with the right leg (cycle phase 0.5), the right with the left
+    const swing = amp[i] * A.sw * 0.55 * Math.sin(ph + (i ? 0 : Math.PI));
+    const k = A.fl;   // felled: the arm lets go of its pose and flops out to the side, palm to the floor
+    a.rotation.x = (b.x + swing + (amp[i] ? breath * 0.6 : 0)) * (1 - k) - k * (0.25 + A.out * 0.5);
+    a.rotation.z = (b.z + s * amp[i] * A.sw * 0.06) * (1 - k) + s * k * (0.95 + A.out);
+    a.rotation.y = b.y;
+  });
 }
 
 /* the cape's bands are springs: each is pushed toward an angle set by how the body moves (forward speed lifts it
