@@ -10,6 +10,7 @@
 import { AE, loop, play, place, setRoom, setMuffle } from './engine.js';
 import { MUSIC } from './music.js';
 import { S } from './sfx.js';
+import { updateFoley } from './foley.js';
 import { shared, G, player, isGunner } from '../state.js';
 import { maxHp } from '../player/helpers.js';
 import { clamp, rand } from '../utils.js';
@@ -100,6 +101,7 @@ export function distantBoom(dist){
 export function updateAudio(dt){
   if (!AE.ready || !shared.AC || shared.AC.state !== 'running') return;
   ensureLoops();
+  updateFoley(dt);
   const t = shared.AC.currentTime;
   const playing = G.mode === 'play' && !G.paused && !G.skillSelect;
   const inWorld = G.mode === 'play' || G.mode === 'dead' || G.mode === 'victory';
