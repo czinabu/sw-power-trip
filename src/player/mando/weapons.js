@@ -232,7 +232,10 @@ function fireRifle(W){
   const aim = mandoAimPoint();
   const o = muzzleOrigin(0.06);
   spawnBlasterBolt(o, V3(aim.x-o.x, aim.y-o.y, aim.z-o.z).normalize(), W.dmg * player.up.dmg, 0x7fe0ff, 2.0, W, { to: aim });
-  disruptorWake(gunMuzzle(o).clone(), V3(aim.x-o.x, aim.y-o.y, aim.z-o.z).normalize());
+  // the wake hangs along the bolt's real line: from the rifle's barrel tip (where the bolt now leaves) to the aimed point,
+  // not from the shoulder origin (that skewed the rings off the crosshair, worst on near targets)
+  const mz = gunMuzzle(o).clone();
+  disruptorWake(mz, V3(aim.x-mz.x, aim.y-mz.y, aim.z-mz.z).normalize());
   player.recoil = 0.5; player.recoilKick = 0.5;
   G.shake = Math.max(G.shake, 0.4); G.hitstop = Math.max(G.hitstop, 0.05);
   screenFlash('radial-gradient(ellipse at center, rgba(120,210,255,.2), transparent 60%)', 0.35, 0.2);
