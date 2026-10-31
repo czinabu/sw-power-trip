@@ -267,10 +267,11 @@ export function applySwingDamage(step, only){
   const A = CFG.player.swingArc, sdir = player.swing && player.swing.dir;
   const arcCos = finisher ? A.finisher : (sdir === 'left' || sdir === 'right' || back) ? A.sweep : A.cut;
   const reachUp = radius * 0.85;   // VERTICAL reach — a swing from the air can't hit foes far below you
+  const reachDown = player.grounded ? reachUp : radius * 1.4;   // ...but a cut struck mid-leap still reaches the ground at your feet (Ataru's lesson)
   const tryHit = (pos, fn, obj) => {
     if (only){ if (only.includes(obj) && fn() !== false) hits++; return; }   // the blade decided: it touched this
     TMP.subVectors(pos, pp);
-    if (Math.abs(TMP.y) > reachUp) return;   // must be at roughly your height (aim at them, don't sweep the ground from above)
+    if (TMP.y > reachUp || -TMP.y > reachDown) return;   // must be at roughly your height (aim at them, don't sweep the ground from above)
     TMP.y = 0;
     const d = TMP.length();
     if (obj && obj !== shared.boss && obj.group && obj.t){ if (!inReach(obj, pp, radius, d > 0.3 ? f : null, arcCos)) return; }   // a foe: any of its body

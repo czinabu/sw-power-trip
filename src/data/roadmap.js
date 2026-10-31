@@ -6,6 +6,10 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'Ataru training lesson fixed', status: 'done',
+    items: ['A cut struck mid-leap now reaches foes standing on the ground at your feet, so "land 3 cuts off the ground" can be done on the drill dummies',
+            'The Ataru drill also gets a hovering jet trooper that matches your height, as a second target for air cuts',
+            'Same in every mode: story, training, survival, sandbox, missions and co-op'] },
   { title: 'Co-op: duellist guards for the guest', status: 'done',
     items: ['The joining player now sees a duellist\'s guard crescent, posture bar and breath, exactly as the host does',
             'Their cuts and punches meet the same guard: inside the crescent they are always turned, with the BLOCKED spark and clash; off-line they are turned by the foe\'s usual odds',
