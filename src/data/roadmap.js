@@ -136,7 +136,7 @@ export const ROADMAP = [
             'Done: only Shien holds a reverse grip, and Niman can take one (G); the other forms keep a forward grip, as in canon',
             'Done: each trial\'s master fights in the form it teaches, its blade in that form\'s colour: the Wall in Soresu (every cut it blocks wears you out), the Acrobat in Ataru (flips clear of your cuts), the Knight in Djem So (answers a block with a harder riposte)',
             'Done: every form has its own swing and clash sound, the hero\'s and a master\'s alike: Makashi\'s thin flick, Djem So\'s heavy stroke and ringing clash, Soresu\'s dead block, Ataru\'s double flourish',
-            'Done: a balance pass on the forms: Shii-Cho keeps the widest arc (Ataru\'s narrows to hunt the back line), Soresu cuts a little harder, Juyo\'s swings cost more breath, Niman loses some of its edge on armour, and the Wall\'s trial guard is a touch less absolute,
+            'Done: a balance pass on the forms: Shii-Cho keeps the widest arc (Ataru\'s narrows to hunt the back line), Soresu cuts a little harder, Juyo\'s swings cost more breath, Niman loses some of its edge on armour, and the Wall\'s trial guard is a touch less absolute',
             'Done: a second balance pass: a saber blow staggers and shoves a foe a few metres instead of batting it across the arena (every form, the darksaber too, in co-op as well), Djem So\'s finisher really floors brutes, its armour and boss damage comes down, Juyo\'s fury tops out at +35%, Soresu hits a little harder'] },
   { title: 'Force-imbued unarmed combat', status: 'done',
     items: ['Holstered (4), the Jedi fights with Force-lit fists and palms: jab, cross, then a finisher the keys pick (burst, lunge, backhand sweep, launcher)',
