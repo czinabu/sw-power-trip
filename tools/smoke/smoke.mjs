@@ -52,6 +52,7 @@ for (const [hero, mode, mission] of [['jedi', 'campaign'], ['mando', 'campaign']
   try {
     await page.goto(page_url);
     await page.waitForFunction(() => window.GAME && window.GAME.G, null, { timeout: 30000 });
+    if (mode === 'mission') await page.evaluate(([m, h]) => localStorage.setItem('sw_mission_' + m + '_' + h, '1'), [mission, hero]);   // missions stay locked until the campaign clears them
     await page.click('#hero-' + hero);
     // restyle the hero in the customizer first, so the fight runs on a rebuilt player model
     if (mode === 'campaign'){ await page.click('#cztoggle'); await page.click('#czrandom'); await page.click('#czdone'); }
