@@ -217,3 +217,8 @@ document.addEventListener('keydown', (e) => {
   }
 });
 document.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; if (e.key.toLowerCase() === 'c' && G.hero !== 'mando') pullRelease(); if (e.key === 'Alt') e.preventDefault(); });
+// A held key whose keyup never arrives (ALT-TAB, ALT+click, a browser menu, focus lost) would stay down forever: strafe stuck
+// on, and no sprint or slide. Losing focus releases everything; any key event that says ALT is up releases ALT.
+window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
+document.addEventListener('keydown', (e) => { if (!e.altKey && keys['alt']) keys['alt'] = false; }, true);
+document.addEventListener('mousedown', (e) => { if (!e.altKey && keys['alt']) keys['alt'] = false; }, true);

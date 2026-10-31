@@ -14,6 +14,7 @@
 //   kit / any   a gear or power lesson: it opens once the story has reached that unlock (an auto-unlock key or a store
 //            id from data/store.js), or any of the ids in `any`
 //   loadout  the three forms on 1 / 2 / 3 while it runs (Jedi). The basics teach in Shii-Cho alone
+//   holstered  (Jedi) the saber starts on the belt, unignited; lessons without it start with the blade drawn
 //   done     the teacher's line when it's passed
 //
 // Step fields
@@ -76,7 +77,7 @@ const BASE = ['shiicho', null, null];   // the basics teach in Shii-Cho, Form I,
 export const LESSONS = {
   jedi: [
     /* ---------------- THE BASICS ---------------- */
-    { id: 'steps', group: 'basics', name: 'FIRST STEPS', sub: 'Walk, jump, dash, sprint, slide and glide', loadout: BASE,
+    { id: 'steps', group: 'basics', name: 'FIRST STEPS', sub: 'Walk, jump, dash, sprint, slide and glide', loadout: BASE, holstered: true,
       done: 'Good. Your feet know the Force now. Next, the lanes.',
       steps: [
         { sec: 'THE TERRACE', say: 'Every lesson begins with a single step. Come to the circle.',
@@ -86,13 +87,13 @@ export const LESSONS = {
         { say: 'A Jedi is never where the blow falls. Step aside in an instant, any way you choose.',
           keys: 'SHIFT', do: 'Dash: press SHIFT while holding any direction (or none)', ev: 'dash', need: 3 },
         { say: 'Run with your whole body.',
-          keys: 'Q · W', do: 'Sprint: run forward with W (Q switches to a walk and back)', poll: 'sprint', need: 1.5 },
+          keys: 'W', do: 'Sprint: hold W to run forward (you run by default; Q switches to a walk and back, so tap it again if you are walking)', poll: 'sprint', need: 1.5 },
         { say: 'Now drop low and let the Force carry you, far past where your legs would. The dash is for dodging; the slide is for distance, and it bowls over whoever stands in the way.',
-          keys: 'Q · W · Z', do: 'Force-slide: press Z during a sprint', ev: 'slide', need: 2 },
+          keys: 'W · Z', do: 'Force-slide: press Z during a sprint (running, not strafing: let go of ALT, and tap Q if you are walking)', ev: 'slide', need: 2 },
         { say: 'Reach for the Force as you leave the ground, and it will hold you.',
           keys: 'HOLD SPACE', do: 'Force-leap and glide', poll: 'glide', need: 1.2 },
       ] },
-    { id: 'lanes', group: 'basics', name: 'THE LANES', sub: 'Vault, climb, roll, run the wall, then the gauntlet', loadout: BASE,
+    { id: 'lanes', group: 'basics', name: 'THE LANES', sub: 'Vault, climb, roll, run the wall, then the gauntlet', loadout: BASE, holstered: true,
       done: 'You flow over the ground like water. Now, the blade.',
       steps: [
         { sec: 'THE LANES', say: 'Stones in your path are only stones. Do not jump them: run straight at one and flow over it without breaking stride.',
@@ -105,7 +106,7 @@ export const LESSONS = {
           keys: 'W + SPACE', do: 'Run at the east wall, jump alongside it and hold W', ev: 'wallrun', need: 2, mark: [12.2, 7.5] },
         { sec: 'THE GAUNTLET', say: 'Now all of it, without stopping. Under, over, up, down, along the wall, and back to me.',
           course: [
-            { at: [-8, 11], r: 1.6, slide: true, keys: 'Q · W · Z', do: 'Sprint west and Force-slide under the bar', hint: 'SLIDE UNDER IT' },
+            { at: [-8, 11], r: 1.6, slide: true, keys: 'W · Z', do: 'Sprint west and Force-slide under the bar', hint: 'SLIDE UNDER IT' },
             { at: [-12, -8.5], after: 'vault', keys: 'W · SPACE', do: 'Vault the blocks down the west lane', hint: 'VAULT THE BLOCKS' },
             { at: [-17.4, -16, 7.4], keys: 'SPACE · W', do: 'Climb the watchtower' },
             { at: [-17.4, -9.5], r: 3, after: 'roll', land: true, keys: 'SHIFT', do: 'Drop off the north side and roll as you land', hint: 'ROLL AS YOU LAND' },

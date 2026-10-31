@@ -105,6 +105,7 @@ export function retryTutorial(){ retryId = T.lesson ? T.lesson.id : null; startT
 export function endTutorial(){
   if (!T.on) return;
   T.on = false;
+  if (T.hero !== 'mando' && player.holstered) toggleHolster();   // leave with the blade drawn, whatever the lesson left
   setTutListener(null);
   clearSpawned();
   clearBeacons();
@@ -123,7 +124,7 @@ function beginLesson(L){
   baseKit();
   if (T.hero !== 'mando'){
     setLoadout(L.loadout || trainingLoadout());
-    if (player.holstered) toggleHolster();
+    if (!!player.holstered !== !!L.holstered) toggleHolster();   // movement lessons keep the saber on the belt; the blade lesson ignites it
     switchStance(G.loadout.find(Boolean) || 'shiicho', true); setStanceHud();
   }
   player.hp = maxHp(); player.force = CFG.player.maxForce; player.stam = maxStam();
