@@ -159,7 +159,8 @@ export function updateLegs(o, g, dt, mode = 'ground'){
   // a cut at the legs buckles the knees for a moment (enemies/damage.js zoneReact): the hips drop, the feet stay planted
   let buckle = 0;
   if (o.buckle > 0){ o.buckle = Math.max(0, o.buckle - dt); buckle = Math.sin(Math.PI * Math.min(1, (0.4 - o.buckle) / 0.4)) * 0.2; }
-  vis.position.set(L.sway, L.bob + sink - buckle, 0);
+  // a duellist's low cut sinks the hips under it (enemies/duel.js cutDrop), the feet planted as for a buckle
+  vis.position.set(L.sway, L.bob + sink - buckle - (o.cutDrop || 0) / gs, 0);
   vis.rotation.set(L.lean, 0, L.bank + (body ? body.roll * 0.5 * w : 0));
 
   // IK — each ankle onto its target, in the body's own frame (so a coil, a lean or a hit reaction never lifts the

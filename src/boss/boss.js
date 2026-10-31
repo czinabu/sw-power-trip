@@ -5,12 +5,12 @@ import * as THREE from 'three';
 import { CFG } from '../data/config.js';
 import { stamDelay } from '../player/stamina.js';
 import { LEVELS } from '../data/levels.js';
-import { BOSS_CFG, BOSS_MANDO, BOSS_GAIT } from '../data/bosses.js';
+import { BOSS_CFG, BOSS_MANDO, BOSS_GAIT, BOSS_CUTS } from '../data/bosses.js';
 import { updateLegs } from '../enemies/gait.js';
 import { updateUpper } from '../enemies/upper.js';
 import { scene } from '../engine/renderer.js';
 import { sfx, S } from '../audio/sfx.js';
-import { V3, rand, TMP } from '../utils.js';
+import { V3, rand, TMP, clamp } from '../utils.js';
 import { burst } from '../fx/particles.js';
 import { floater } from '../fx/floaters.js';
 import { shared, G, enemies, bolts, rings, player } from '../state.js';
@@ -302,7 +302,8 @@ export function updateBoss(dt){
         if (remote){ if (dist < BOSS_CFG.combo.range && hooks.hurt) hooks.hurt(shared.boss, BOSS_CFG.combo.dmg, g.position, 'bossmelee', false); }   // their browser parries or takes it (net/foefire.js)
         else if (dist < BOSS_CFG.combo.range && player.dashT > 0) perfectDodge(g.position);   // dashed through it on the beat
         else if (dist < BOSS_CFG.combo.range && player.dashT <= 0){
-          const res = hurtPlayer(BOSS_CFG.combo.dmg, g.position, false, true);   // melee — high ground denies it
+          const cut = BOSS_CUTS.cuts[shared.boss.cut];
+          const res = hurtPlayer(BOSS_CFG.combo.dmg, g.position, false, true, false, cut ? { line: cut.line } : null);   // melee — high ground denies it (your guard meets it on its line)
           if (res === 'clashed' && shared.boss.swingsLeft > 1){
             // your cut met his: the blades ring apart and he's thrown back a step, but the chain presses on
             // (no posture break: that's still the parry's reward). A clash on the last blow just ends the chain.
@@ -508,6 +509,7 @@ export function updateBoss(dt){
       }
       break;
   }
+  bossCut(shared.boss, dt);   // his blade through the cut he's swinging (data/bosses.js BOSS_CUTS)
   // LEGS — the troopers' planted-foot gait on what he actually did this frame (enemies/gait.js): a walk until phase III,
   // a run after; jet boosts, hops and slides leave the ground; the death sequence lets them go
   const sNow = shared.boss.state;
@@ -555,6 +557,57 @@ export function updateRings(dt){
     }
     if (r.r > BOSS_CFG.pulse.maxR){ scene.remove(r.mesh); rings.splice(i,1); }
   }
+}
+
+/* ---------------- his cuts (data/bosses.js BOSS_CUTS) ---------------- */
+const lerp3 = (a, b, k) => [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k];
+// the next blow of a chain: round the order, never the same line twice running; the chain's last is always `last`
+function pickBossCut(b){
+  const C = BOSS_CUTS, prev = C.cuts[b.cut];
+  if (b.swingsLeft <= 1) return C.last;
+  for (let n = 0; n < C.order.length; n++){
+    const id = C.order[((b.cutI = ((b.cutI ?? -1) + 1)) % C.order.length)];
+    if (!prev || C.cuts[id].line !== prev.line) return id;
+  }
+  return C.order[0];
+}
+/* Run after his state machine each frame. A wind-up coils from wherever the blade is (the last blow's, in a chain) to
+   the cut's `wind`, then in its last `release` comes through toward `mid`, where the blow lands; a chain's next wind-up
+   starts from there, and the last blow follows through to `end`. Outside a cut his shoulder settles back and his hand
+   eases to whatever the state wants instead of snapping there. */
+function bossCut(b, dt){
+  const C = BOSS_CUTS, u = b.group.userData;
+  if (!u.pivot || !u.hand) return;
+  const now = () => [u.pivot.rotation.x, u.pivot.rotation.z, u.hand.rotation.z];
+  const set = p => { u.pivot.rotation.x = p[0]; u.pivot.rotation.z = p[1]; u.hand.rotation.z = p[2]; };
+  if (b.state === 'windup'){
+    if (b.cutState !== 'windup' || b.st > b.cutLastSt + 1e-4){   // a new blow
+      b.cut = pickBossCut(b); b.cutWu = Math.max(b.st, 0.05); b.cutFrom = b.cutPose || now();
+    }
+    b.cutLastSt = b.st;
+    const c = C.cuts[b.cut], wk = clamp(1 - b.st / b.cutWu, 0, 1), R = C.release;
+    let p;
+    if (wk < 1 - R){ const k = Math.sqrt(wk / (1 - R)); p = lerp3(b.cutFrom, c.wind, k); b.cutTwist = c.twist[0] * k; }
+    else { const k = (wk - (1 - R)) / R, kk = k * k; p = lerp3(c.wind, c.mid, kk); b.cutTwist = c.twist[0] + (c.twist[1] - c.twist[0]) * kk; }
+    set(p); b.cutPose = p;
+    b.ftT = 0;
+  } else {
+    if (b.cutState === 'windup' && b.cut){ b.ftT = C.follow; b.ftCut = b.cut; }   // the last blow: through to the end
+    b.cutTwist = null;
+    if (b.ftT > 0 && b.state !== 'dying' && b.state !== 'stunned'){
+      b.ftT -= dt;
+      const c = C.cuts[b.ftCut], k = 1 - Math.max(0, b.ftT) / C.follow;
+      set(b.cutPose = lerp3(c.mid, c.end, Math.sqrt(k)));
+    } else {
+      // settle: the shoulder back to rest, the hand eased toward wherever the state just put it
+      u.pivot.rotation.x += (0 - u.pivot.rotation.x) * (1 - Math.exp(-8 * dt));
+      u.pivot.rotation.z += (0 - u.pivot.rotation.z) * (1 - Math.exp(-8 * dt));
+      if (b.cutPose && b.state !== 'dying'){ const h = b.cutPose[2] + (u.hand.rotation.z - b.cutPose[2]) * (1 - Math.exp(-14 * dt)); u.hand.rotation.z = h; }
+      b.cutPose = now();
+      b.cut = null;
+    }
+  }
+  b.cutState = b.state;
 }
 
 /* ---------------- co-op ---------------- */
@@ -611,6 +664,7 @@ function updateBossPuppet(dt){
   g.rotation.x = dampB(g.rotation.x, w.rx, 14, dt);
   g.rotation.y += Math.atan2(Math.sin(w.ry - g.rotation.y), Math.cos(w.ry - g.rotation.y)) * (1 - Math.exp(-14 * dt));
   if (u.hand) u.hand.rotation.z = b.hand;
+  if (u.pivot && b.piv){ u.pivot.rotation.x = b.piv[0]; u.pivot.rotation.z = b.piv[1]; }
   if (u.eyes) u.eyes.scale.set(b.eyes, b.eyes, 1);
   if (u.bodyMat){ u.bodyMat.emissive.setHex(b.em); u.bodyMat.emissiveIntensity = b.ei; }
   if (b.state === 'dying'){ g.rotation.x += dt * 0.5; g.position.y -= dt * 0.4; }

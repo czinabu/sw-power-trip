@@ -39,6 +39,27 @@ export const BOSS_CFG = {
   summon: { grunt: 3, blaster: 2 },                      // phase 3 entry
 };
 
+/* HIS CUTS — the bosses swing real cuts too (boss/boss.js bossCutPose), not one chop over and over: each blow of a chain
+   is a different one of these, never the same line twice running, and the chain's last blow is always `last`.
+   Keys are [pivot.x (the shoulder: − tips the arm forward, + back), pivot.z, hand.z (the blade's angle across the
+   front: 0 straight up, + toward his left, − his right, ±π down)]. wind is the tell he coils to; the blade comes
+   through `mid` as the blow lands (`release` of the wind-up before it: the cut's start) and on to `end` over `follow` s.
+   line is where it arrives on you (data/duel.js GUARD_LINE): your guard goes to meet it there. step: how far he
+   drives in with it (m). */
+export const BOSS_CUTS = {
+  rest: [0, 0, -0.6],
+  release: 0.2, follow: 0.2,
+  cuts: {
+    diagR:    { line: 'R', wind: [0.35, 0, -1.25], mid: [-1.45, 0, -0.35], end: [-0.5, 0, 2.3], twist: [0.4, -0.35] },
+    diagL:    { line: 'L', wind: [0.3, 0, 1.35],   mid: [-1.45, 0, 0.35],  end: [-0.5, 0, -2.2], twist: [-0.3, 0.35] },
+    flatR:    { line: 'R', wind: [-1.2, 0, -1.7],  mid: [-1.5, 0, 0],      end: [-1.25, 0, 1.7], twist: [0.45, -0.4] },
+    riseL:    { line: 'L', wind: [-0.25, 0, -2.6], mid: [-1.4, 0, -0.2],   end: [0.25, 0, 1.25], twist: [0.3, -0.3] },
+    overhead: { line: 'H', wind: [0.95, 0, 0.1],   mid: [-1.35, 0, 0.05],  end: [-2.2, 0, 0.1],  twist: [0.15, -0.1], step: 0.4 },
+  },
+  order: ['diagR', 'flatR', 'diagL', 'riseL'],
+  last: 'overhead',
+};
+
 /* THE IRON MAGISTRATE — the MANDO's boss (chosen when you fight as the Mandalorian). A beskar warlord built to
    counter the hunter: heavy ARMOR shrugs off chip fire (reward precision/braced shots & rockets), and instead of
    Force lightning he unloads a sustained BLASTER BARRAGE you must BRACE, break line-of-sight on, or darksaber-deflect.

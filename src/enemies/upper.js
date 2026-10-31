@@ -41,7 +41,9 @@ export function updateUpper(o, g, dt, aim, mode = 'on'){
       hy = U.look;
     }
     // the melee wind-up: the weapon shoulder (+x) draws back with the coil, then whips through the strike
-    if (o.t && !o.t.ranged && o.state === 'windup') twist = 0.32 * Math.sqrt(clamp(1 - Math.max(o.st, 0) / (o.wu || 1), 0, 1));
+    // (a duellist's cut turns the chest its own way through the swing: enemies/duel.js cutTwist)
+    if (o.cutTwist != null && (o.state === 'windup' || o.state === 'strike')) twist = o.cutTwist;
+    else if (o.t && !o.t.ranged && o.state === 'windup') twist = 0.32 * Math.sqrt(clamp(1 - Math.max(o.st, 0) / (o.wu || 1), 0, 1));
     else if (o.t && !o.t.ranged && o.state === 'strike') twist = -0.26;
   }
   const r = mode === 'off' ? 6 : 9;
