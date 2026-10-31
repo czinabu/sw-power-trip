@@ -1,7 +1,7 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
 // CO-OP SMOKE TEST — runs a local PeerServer, opens two browsers on the BUILT game (dist/index.html), hosts in one,
-// joins from the other with the room code, starts play in both and checks each sees the other's hero, posed from the
-// network, and that enemies go after both heroes.
+// joins from the other with the room code, has the guest join the host's campaign run from the co-op panel and checks
+// each sees the other's hero, posed from the network, and that enemies go after both heroes.
 //   npm run build && npm run smoke:coop
 
 import { chromium } from 'playwright';
@@ -55,14 +55,16 @@ try {
       await page.waitForTimeout(800);
     }
   };
-  await host.click('#coopclose'); await host.click('#hero-jedi'); await play(host);
-  // the Jedi's story opens on a one-on-one sparring duel (the prologue): go on to the siege, a crowd for both heroes
-  await host.evaluate(() => GAME.startChapter(1)); await begin(host);
+  await host.click('#coopclose'); await host.click('#hero-jedi'); await play(host); await begin(host);
   await guest.click('#coopclose'); await guest.click('#hero-mando');
   await guest.click('#mode-coop');
   await guest.waitForFunction(() => document.getElementById('coopjoinrun').style.display !== 'none', null, { timeout: 20000, polling: 250 });
   await guest.click('#coopjoinrun'); await play(guest); await begin(guest);
-  if (!(await guest.evaluate(() => GAME.G.coopGuest && GAME.G.chapter === 1))) throw new Error('the guest did not join the host\'s chapter');
+  // the Jedi's story opens on its prologue, a sparring duel with Ilsa: the guest (a Mando) joins that too
+  if (!(await guest.evaluate(() => GAME.G.coopGuest && GAME.G.chapter === 0 && GAME.missionState().def.id === 'last-lesson'))) throw new Error('the guest did not join the host\'s prologue');
+  // ...then the host goes on to the siege, a crowd for both heroes, and the guest follows
+  await host.evaluate(() => GAME.startChapter(1)); await begin(host);
+  await guest.waitForFunction(() => GAME.G.coopGuest && GAME.G.chapter === 1, null, { timeout: 60000, polling: 250 }); await begin(guest);
   await host.evaluate(() => GAME.player.group.position.set(5, 0, 3));
   await guest.waitForFunction(() => GAME.partnerShown(), null, { timeout: 15000, polling: 250 });
   await host.waitForFunction(() => GAME.partnerShown(), null, { timeout: 15000, polling: 250 });
