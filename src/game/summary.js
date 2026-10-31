@@ -1,6 +1,7 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
 // End of run: run summary and victory.
 
+import { autosave } from './autosave.js';
 import { clamp } from '../utils.js';
 import { G, player } from '../state.js';
 import { BOON_BY_ID } from '../data/boons.js';
@@ -67,6 +68,7 @@ export function victory(afterEpilogue){
   // record this hero's CAMPAIGN clear — SURVIVAL unlocks once BOTH heroes have finished the campaign
   const hadBoth = survivalUnlocked();
   try { localStorage.setItem('sw_camp_' + G.hero, '1'); } catch(e){}
+  autosave('campaign won', { finished: true });
   const newlyUnlocked = !hadBoth && survivalUnlocked();
   refreshSurvivalLock();
   showBanner('YOU WIN', 'Balance restored. The legend grows.', 999);

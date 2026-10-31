@@ -6,6 +6,7 @@
 // It waits for whatever is in front of it (a chapter card, a cutscene, the upgrade screen, the pause menu) and freezes the fight
 // while it is up, the same way those do.
 
+import { autosave } from './autosave.js';
 import { G, shared } from '../state.js';
 import { renderer } from '../engine/renderer.js';
 import { audioInit, S } from '../audio/sfx.js';
@@ -146,6 +147,7 @@ function rise(){
   if (!draft) return;
   if (!draft.some(Boolean)) draft[0] = STARTING_FORMS[0];
   setLoadout(draft); draft = null; phase = null; learnedNow = [];
+  autosave('form');
   setStanceHud();
   close();
   if (pending.length) tickMeditation();
@@ -158,7 +160,7 @@ el.addEventListener('click', (e) => {
   if (f){
     G.formFork = f.dataset.fork;
     (G.stanceUnlocked = G.stanceUnlocked || {})[G.formFork] = true;
-    startCards([...learnedNow, G.formFork]); S.reward(1); return;
+    startCards([...learnedNow, G.formFork]); S.reward(1); autosave('form fork'); return;
   }
   if (t.closest('[data-next]')){ if (phase === 'unlock') nextCard(); return; }
   const tr = t.closest('[data-train]');
