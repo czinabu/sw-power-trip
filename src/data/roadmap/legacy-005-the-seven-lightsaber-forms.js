@@ -1,0 +1,25 @@
+// POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
+export default {
+  title: "The seven lightsaber forms",
+  status: "done",
+  date: "2026-01-01", seq: 5,
+  items: [
+    "Done: 1 / 2 / 3 and the wheel switch the three forms in your form loadout",
+    "Done: Shii-Cho, Makashi and Soresu in the sandbox (B, then click a form slot), each with its own guard, cuts, footwork and flips",
+    "Shii-Cho: wide sweeps, the Sarlacc Sweep finisher disarms blaster troopers · Makashi: +40% vs blades, reads feints, weak to blasters · Soresu: a held guard sends bolts home, no chip, wears attackers out",
+    "Done: Shien, the reverse-grip Form V: every deflect goes home and hits +50% · G swaps Djem So and Shien",
+    "Ataru: +35% air cuts, and a cut out of a Force dash is the Hawk-Bat Swoop · Djem So: a blow on the held guard readies a Fluid Riposte",
+    "Done: all nine forms playable in the sandbox · Niman: cheaper swings and powers, cast mid-string",
+    "Form VII: Juyo burns Force with every swing and builds fury from hits, Vaapad builds fury from blocks and finds the Shatterpoint with a parry; both take more damage, and you can only hold one",
+    "Done: a run learns the forms in the tiers the Order teaches them: Shii-Cho from the start; Soresu at the Wall and Ataru from the Acrobat; Djem So and Shien from the Knight, Makashi on Jakku, Niman at Mustafar; Form VII after the chase",
+    "Done: Before the Fight is one screen: your three, a compact grid of forms (name, numeral, best against) and a side panel with the pros and cons of the one you click; missions and the sandbox choose their three there",
+    "Done: Training and any run with only one form learned skip Before the Fight and go straight in; training lessons still pick their form between lessons",
+    "Done: the pause screen's Lightsaber Forms page keeps the full cards with lore and famous users",
+    "Done: after each new form, a meditation screen lets you choose the three forms you carry · after the chase, choose Juyo or Vaapad for the rest of the run",
+    "Done: only Shien holds a reverse grip, and Niman can take one (G); the other forms keep a forward grip, as in canon",
+    "Done: each trial's master fights in the form it teaches, its blade in that form's colour: the Wall in Soresu (every cut it blocks wears you out), the Acrobat in Ataru (flips clear of your cuts), the Knight in Djem So (answers a block with a harder riposte)",
+    "Done: every form has its own swing and clash sound, the hero's and a master's alike: Makashi's thin flick, Djem So's heavy stroke and ringing clash, Soresu's dead block, Ataru's double flourish",
+    "Done: a balance pass on the forms: Shii-Cho keeps the widest arc (Ataru's narrows to hunt the back line), Soresu cuts a little harder, Juyo's swings cost more breath, Niman loses some of its edge on armour, and the Wall's trial guard is a touch less absolute",
+    "Done: a second balance pass: a saber blow staggers and shoves a foe a few metres instead of batting it across the arena (every form, the darksaber too, in co-op as well), Djem So's finisher really floors brutes, its armour and boss damage comes down, Juyo's fury tops out at +35%, Soresu hits a little harder",
+  ],
+};

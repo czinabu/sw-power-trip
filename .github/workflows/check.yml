@@ -19,6 +19,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+      - name: Roadmap entries live one per file in src/data/roadmap/ (see its README)
+        run: test ! -e src/data/roadmap.js || { echo '::error file=src/data/roadmap.js::src/data/roadmap.js is gone; add your entry as a new file in src/data/roadmap/ instead (see src/data/roadmap/README.md)'; exit 1; }
       - run: npx playwright install --with-deps chromium
       - run: npm run smoke
       - run: npm run smoke:coop
