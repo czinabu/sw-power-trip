@@ -19,7 +19,7 @@ import { enemyDmgScale } from '../game/survival.js';
 import { staggerEnemy } from './damage.js';
 import { TELLS, tellFx } from '../fx/tells.js';
 import { behindCamera } from './director.js';
-import { showBanner } from '../ui/banners.js';
+import { foeTipToast } from '../game/upgrades.js';
 
 /* ---------------- the ramp ---------------- */
 // 0..1-ish: how much of each trick's full chance applies right now (run depth × difficulty)
@@ -132,7 +132,7 @@ export function tryOrder(e, dt, dist, pp){
   floater(V3(g.position.x, g.position.y + 1.6, g.position.z), e.order === 'volley' ? 'VOLLEY!' : 'FLANK!', '#ffc040');
   spawnGroundShock(g.position, 0xffc040, 3, 0.45, 0.55);
   sfx(1250, 0.1, 'square', 0.045, 1550); setTimeout(() => sfx(1550, 0.14, 'square', 0.04, 1250), 120);   // a two-note whistle
-  if (!G.seenOrder){ G.seenOrder = true; if (G.mode === 'play' && !G.training) showBanner('ORDERS', 'An officer is calling the shots. Hit it while its arm is up to cut the order off, or drop it and its squad falters.', 3.2); }
+  if (!G.seenOrder){ G.seenOrder = true; if (G.mode === 'play' && !G.training) foeTipToast('ORDERS', 'An officer is calling the shots. Hit it while its arm is up to cut the order off, or drop it and its squad falters.'); }
   return true;
 }
 function volleyTroops(e, pp){
@@ -222,7 +222,7 @@ export function tryLunge(e, dt, dist, pp){
   e.state = 'lungewind'; e.st = LUNGE.tell;
   e.lungeDir = { x: 0, z: 1 }; e.lungeHit = false;
   tellFx('parry', g.position, 2.6);   // the shared parry-or-dodge tell
-  if (!G.seenLunge){ G.seenLunge = true; if (G.mode === 'play' && !G.training) showBanner('LUNGE', 'The line on the ground is where the lancer strikes. Step off it as it locks, or parry the point.', 2.6); }
+  if (!G.seenLunge){ G.seenLunge = true; if (G.mode === 'play' && !G.training) foeTipToast('LUNGE', 'The line on the ground is where the lancer strikes. Step off it as it locks, or parry the point.'); }
   return true;
 }
 export function updateLungeWind(e, dt, pp){
