@@ -3,6 +3,7 @@
 // walk someone across the field, chase a quarry, win a duel.
 // Built from the objective kit (game/objectives.js) so later modes can reuse the same pieces.
 
+import { autosave } from './autosave.js';
 import * as THREE from 'three';
 import { scene } from '../engine/renderer.js';
 import { sfx, S } from '../audio/sfx.js';
@@ -862,6 +863,7 @@ function completeObjective(){
 function missionComplete(){
   const def = M.def;
   try { localStorage.setItem('sw_mission_' + def.id + '_' + G.hero, '1'); } catch(e){}
+  if (!M.chapter) autosave('mission');   // (a chapter's win is saved as the next chapter starts)
   // a campaign chapter's card carries the chapter's clear lines (what the mission taught, who joins), not a second voice line on the comms strip
   const clearLines = M.chapter && M.chapter.clear;
   showPanel(MISSION_VOICE[G.hero], clearLines && clearLines.length ? clearLines.join(' ') : def.done[G.hero], '', M.chapter ? 'Chapter complete' : 'Mission complete', { drill: true, done: true });

@@ -2,6 +2,7 @@
 // TRAINING: runs the training grounds' lessons (data/tutorial.js) step by step, the LESSON BOARD between them, and the
 // short unlock drills in a real run.
 
+import { autosave } from './autosave.js';
 import { sfx, S, audioInit } from '../audio/sfx.js';
 import { MUSIC } from '../audio/music.js';
 import { V3 } from '../utils.js';
@@ -262,6 +263,7 @@ function finishLesson(skipped){
     try { localStorage.setItem(lessonKey(T.hero, L.id), '1'); } catch(e){}
     if (LESSONS[T.hero].filter(x => x.group === 'basics').every(x => lessonDone(T.hero, x.id))){ try { localStorage.setItem('sw_trained_' + T.hero, '1'); } catch(e){} }
   }
+  autosave('lesson');
   setTimeout(() => {
     if (!T.on || T.lesson !== L) return;
     clearBeacons();
