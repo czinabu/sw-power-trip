@@ -496,9 +496,7 @@ export function updateBoss(dt){
       if (shared.boss.st <= 0){ shared.boss.state = 'think'; g.rotation.x = 0; }
       break;
     case 'dying':
-      g.rotation.x += dt * 0.5;
-      g.position.y -= dt * 0.4;
-      g.scale.multiplyScalar(Math.max(0.01, 1 - dt*0.25));
+      bossFall(shared.boss, g, dt, true);
       if (shared.boss.st <= 0){
         scene.remove(g);
         shared.boss = null;
@@ -658,6 +656,16 @@ export function dropBossPuppet(){
   shared.boss = null;
   document.getElementById('bosswrap').style.display = 'none';
 }
+/* HIS FALL (the 1.4 s death, timing unchanged): the knees buckle and he sinks onto them (enemies/gait.js kneel), sways
+   a beat, then pitches forward onto his face and sinks into the floor. He no longer shrinks away */
+function bossFall(b, g, dt, host){
+  const t = b.dieT = (b.dieT || 0) + dt;
+  const ss = (a, c, x) => { const k = Math.min(1, Math.max(0, (x - a) / (c - a))); return k * k * (3 - 2 * k); };
+  b.kneel = ss(0, 0.4, t);
+  g.rotation.x = -0.12 * ss(0, 0.3, t) * (1 - ss(0.45, 0.6, t)) + 1.45 * ss(0.5, 1.1, t) * ss(0.5, 1.1, t);
+  g.rotation.z = 0.08 * Math.sin(t * 6) * (1 - ss(0.4, 0.9, t));
+  if (host && t > 1.05) g.position.y -= dt * 0.9;
+}
 const dampB = (a, b2, k, dt) => a + (b2 - a) * (1 - Math.exp(-k * dt));
 function updateBossPuppet(dt){
   const b = shared.boss, g = b.group, w = b.want, u = g.userData;
@@ -670,7 +678,7 @@ function updateBossPuppet(dt){
   if (u.pivot && b.piv){ u.pivot.rotation.x = b.piv[0]; u.pivot.rotation.z = b.piv[1]; }
   if (u.eyes) u.eyes.scale.set(b.eyes, b.eyes, 1);
   if (u.bodyMat){ u.bodyMat.emissive.setHex(b.em); u.bodyMat.emissiveIntensity = b.ei; }
-  if (b.state === 'dying'){ g.rotation.x += dt * 0.5; g.position.y -= dt * 0.4; }
+  if (b.state === 'dying') bossFall(b, g, dt, false);   // (his sink comes in the host's position)
   // the Force lightning: a beam from his hand to the hero he is channelling it at
   if (b.state === 'lightning' && b.kind !== 'mando' && b.tp){
     const handPt = V3(g.position.x, 2.6, g.position.z);

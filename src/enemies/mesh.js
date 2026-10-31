@@ -14,10 +14,26 @@ import * as THREE from 'three';
 import { loft, limb, plate, block, shard, chamfer, ngon, KEEL, SHIELD, HEAD } from '../player/model/shapes.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { bakeDesign, instantiate } from './kit.js';
+import { rounded } from '../player/model/skin.js';
 
 const PI = Math.PI;
 const shade = (hex, k) => new THREE.Color(hex).multiplyScalar(k).getHex();
 const scalePts = (pts, s) => pts.map(([x, y]) => [x * s, y * s]);
+/* ROUNDED SECTIONS (the hero pass, player/model/skin.js rounded): every corner of a profile cut in two, so helms,
+   shoulders, chests and gloves shade as pressed armour instead of cut blocks. The joints and sizes are unchanged */
+export const SOFT = rounded(chamfer(0.42)), SOFT_COLLAR = rounded(chamfer(0.45)), SOFT_LIMB = rounded(chamfer(0.4));
+export const SOFT_HEAD = rounded(HEAD), SOFT_BODY = rounded(SHIELD);
+// a helm's crown: one more section between the last two, bulged out, so the dome curves over instead of stepping in
+function crown(secs){
+  if (secs.length < 2) return secs;
+  const a = secs[secs.length - 2], b = secs[secs.length - 1];
+  const m = { ...a, y: a.y + (b.y - a.y) * 0.62, w: a.w - (a.w - b.w) * 0.3, d: a.d - (a.d - b.d) * 0.3 };
+  if (a.z != null || b.z != null) m.z = ((a.z || 0) + (b.z || 0)) / 2;
+  return [...secs.slice(0, -1), m, b];
+}
+export const dome = secs => loft(crown(secs), SOFT_HEAD);
+// a pauldron's sections: a bell that rolls over the shoulder (a curved cap, like the hero's deltoids), w × d at its rim
+export const cap = (w, d) => [{ y:-0.08, w, d }, { y:0.02, w:w*0.97, d:d*0.97 }, { y:0.065, w:w*0.82, d:d*0.86 }, { y:0.09, w:w*0.58, d:d*0.68 }, { y:0.1, w:w*0.3, d:d*0.4 }];
 const BOOT = [[-0.075,0.035],[-0.09,-0.075],[0.16,-0.085],[0.21,-0.05],[0.1,0.0],[0.03,0.04]];
 
 /* ---------------- shared trooper body ----------------
@@ -49,19 +65,24 @@ export function legs(k, w, o = {}){
 }
 
 export function hips(k, w){
-  k.add(loft([{ y:0.84, w:0.38*w, d:0.26 }, { y:0.98, w:0.44*w, d:0.29 }, { y:1.08, w:0.4*w, d:0.27 }], SHIELD), 'suit');
-  k.add(loft([{ y:1.0, w:0.47*w, d:0.31 }, { y:1.1, w:0.46*w, d:0.305 }], SHIELD), 'armor2');
+  k.add(loft([{ y:0.84, w:0.38*w, d:0.26 }, { y:0.98, w:0.44*w, d:0.29 }, { y:1.08, w:0.4*w, d:0.27 }], SOFT_BODY), 'suit');
+  k.add(loft([{ y:1.0, w:0.47*w, d:0.31 }, { y:1.1, w:0.46*w, d:0.305 }], SOFT_BODY), 'armor2');
   k.add(plate([[-0.06,-0.04],[0.06,-0.04],[0.06,0.04],[-0.06,0.04]], 0.02, 0.006), 'metal', k.root, [0, 1.05, 0.16], [0,0,0], { outline: false });
   k.add(plate([[-0.08,0],[0.08,0],[0.05,-0.15],[-0.05,-0.15]], 0.025, 0.008), 'armor', k.root, [0, 0.98, 0.14], [-0.1, 0, 0]);
   for (const s of [-1, 1]) k.add(block(0.08, 0.1, 0.07, 0.3), 'black', k.root, [0.2*w*s, 1.04, 0.1], [0, 0.3*s, 0], { outline: false });   // belt pouches
+  // LAYERED WAIST (as the hero's sash and belt): a dark strap cinched over the plate belt, so the waist reads as
+  // layers, light-dark-light, from any distance
+  k.add(loft([{ y:1.032, w:0.478*w, d:0.316 }, { y:1.068, w:0.476*w, d:0.314 }], SOFT_BODY), 'black', k.root, [0,0,0], [0,0,0], { outline: false });
 }
 
 export function torso(k, w, o = {}){
-  k.add(loft([{ y:1.07, w:0.36*w, d:0.24 }, { y:1.33, w:0.38*w, d:0.25 }], SHIELD), 'suit');
+  k.add(loft([{ y:1.07, w:0.36*w, d:0.24 }, { y:1.33, w:0.38*w, d:0.25 }], SOFT_BODY), 'suit');
   const ab = plate([[-0.12,-0.035],[0.12,-0.035],[0.13,0.03],[-0.13,0.03]], 0.026, 0.008);
   k.add(ab, 'armor2', k.root, [0, 1.17, 0.125], [0.04, 0, 0], { scale: [w, 1, 1] });
   k.add(ab, 'armor2', k.root, [0, 1.25, 0.13], [0.06, 0, 0], { scale: [w * 1.06, 1, 1] });
-  k.add(loft([{ y:1.3, w:0.42*w, d:0.28 }, { y:1.48, w:0.6*w, d:0.36 }, { y:1.7, w:0.64*w, d:0.36 }, { y:1.82, w:0.48*w, d:0.3 }, { y:1.88, w:0.28, d:0.22 }], SHIELD), 'armor');
+  k.add(loft([{ y:1.3, w:0.42*w, d:0.28 }, { y:1.48, w:0.6*w, d:0.36 }, { y:1.7, w:0.64*w, d:0.36 }, { y:1.82, w:0.48*w, d:0.3 }, { y:1.88, w:0.28, d:0.22 }], SOFT_BODY), 'armor');
+  // the chest plate's lower lip, a darker rim the plate sits on, so the cuirass reads as a separate layer over the suit
+  k.add(loft([{ y:1.28, w:0.44*w, d:0.29 }, { y:1.33, w:0.47*w, d:0.305 }], SOFT_BODY), 'armor2', k.root, [0,0,0], [0,0,0], { outline: false });
   // chest detail: a centre seam, a control box, and the backpack
   k.add(block(0.03, 0.26, 0.03, 0.3), 'armor2', k.root, [0, 1.58, 0.185], [0,0,0], { outline: false });
   if (o.box !== false) k.add(block(0.13, 0.07, 0.04, 0.3), 'black', k.root, [0.12*w, 1.62, 0.18], [0,0,0], { outline: false });
@@ -72,12 +93,12 @@ export function torso(k, w, o = {}){
     k.add(loft([{ y:0, w:0.018, d:0.018 }, { y:0.62, w:0.012, d:0.012 }], ngon(6)), 'metal', k.root, [0.12*w, 1.84, -0.26], [-0.12, 0, 0], { outline: false });
     k.add(block(0.03, 0.03, 0.03, 0.3), 'mark', k.root, [0.12*w, 2.45, -0.33], [0,0,0], { outline: false });
   }
-  k.add(loft([{ y:1.83, w:0.28, d:0.22 }, { y:1.98, w:0.18, d:0.16 }], chamfer(0.45)), 'suit');   // gorget
+  k.add(loft([{ y:1.83, w:0.28, d:0.22 }, { y:1.98, w:0.18, d:0.16 }], SOFT_COLLAR), 'suit');   // gorget
 }
 
 export function pauldrons(k, w, key = 'armor', size = 1){
   for (const s of [-1, 1]){
-    k.add(loft([{ y:-0.08, w:0.24*w*size, d:0.24*size }, { y:0.03, w:0.23*w*size, d:0.23*size }, { y:0.09, w:0.15*w*size, d:0.17*size }], chamfer(0.42)),
+    k.add(loft(cap(0.24*w*size, 0.24*size), SOFT),
       k.v === 1 && s < 0 ? 'mark' : key, k.root, [0.39*w*s, 1.8, 0], [0, 0, -0.32*s]);
   }
 }
@@ -85,11 +106,13 @@ export function pauldrons(k, w, key = 'armor', size = 1){
 /* an arm hanging from `parent`'s origin: upper, elbow (its own group so it can bend), forearm, glove.
    Returns the grip group (centre of the fist) for a held weapon. */
 export function arm(k, parent, w, o = {}){
-  k.add(limb(0.4, [[-0.06,0.15*w,0.15],[0.1,0.15*w,0.15],[1,0.115*w,0.115]], chamfer(0.4)), 'suit', parent);
+  k.add(limb(0.4, [[-0.06,0.15*w,0.15],[0.1,0.15*w,0.15],[1,0.115*w,0.115]], SOFT_LIMB), 'suit', parent);
   const el = k.group(parent, [0, -0.41, 0], [o.bend || 0, 0, 0]);
-  k.add(block(0.13*w, 0.1, 0.14, 0.4), 'armor2', el, [0, 0, 0.01]);
+  k.add(loft([{ y:-0.05, w:0.125*w, d:0.13 }, { y:0.0, w:0.135*w, d:0.145 }, { y:0.05, w:0.12*w, d:0.13 }], SOFT_LIMB), 'armor2', el, [0, 0, 0.01]);   // elbow cop
   k.add(limb(0.3, [[0,0.13*w,0.13],[0.6,0.135*w,0.13],[1,0.105*w,0.1]], KEEL), o.fore || 'armor', el, [0, -0.02, 0.005]);
-  k.add(block(0.12*w, 0.13, 0.13, 0.35), 'suit', el, [0, -0.38, 0.02]);
+  // the glove: a rounded fist with a cuff, not a cube
+  k.add(loft([{ y:0.06, w:0.115*w, d:0.115 }, { y:0.035, w:0.12*w, d:0.12 }], SOFT_LIMB), 'black', el, [0, -0.38, 0.02], [0,0,0], { outline: false });
+  k.add(loft([{ y:-0.075, w:0.1*w, d:0.11 }, { y:-0.02, w:0.122*w, d:0.13 }, { y:0.04, w:0.112*w, d:0.12 }], SOFT_LIMB), 'suit', el, [0, -0.38, 0.02]);
   return k.group(el, [0, -0.38, 0.03]);
 }
 // a static arm from the left (-x) or right (+x) shoulder; rot = [forward lift (negative = forward), twist, outward splay
@@ -158,7 +181,7 @@ function clipY(pts, lo, hi){
 const HELMETS = {
   // PURGE TROOPER: tall angular helm, swept faceplate, one burning visor slit, centre crest
   purge(k, h, t){
-    k.add(loft([{ y:-0.02, w:0.25, d:0.27 }, { y:0.12, w:0.29, d:0.31 }, { y:0.28, w:0.28, d:0.31 }, { y:0.37, w:0.2, d:0.27 }, { y:0.42, w:0.08, d:0.2 }], HEAD), 'armor', h);
+    k.add(dome([{ y:-0.02, w:0.25, d:0.27 }, { y:0.12, w:0.29, d:0.31 }, { y:0.28, w:0.28, d:0.31 }, { y:0.37, w:0.2, d:0.27 }, { y:0.42, w:0.08, d:0.2 }]), 'armor', h);
     k.add(loft([{ y:-0.04, w:0.22, d:0.08, z:0.13 }, { y:0.16, w:0.27, d:0.08, z:0.15 }], chamfer(0.3)), 'armor2', h);
     k.add(block(0.24, 0.05, 0.05, 0.3), 'black', h, [0, 0.19, 0.17], [0,0,0], { outline: false });
     k.add(block(0.035, 0.24, 0.34, 0.3), 'armor2', h, [0, 0.36, -0.01]);
@@ -167,7 +190,7 @@ const HELMETS = {
   },
   // STORMTROOPER: domed helm, brow ridge, teardrop lenses, frowning breather, ear caps
   storm(k, h, t){
-    k.add(loft([{ y:-0.02, w:0.25, d:0.26 }, { y:0.08, w:0.3, d:0.31 }, { y:0.22, w:0.31, d:0.31 }, { y:0.33, w:0.27, d:0.28 }, { y:0.4, w:0.15, d:0.17 }], HEAD), 'armor', h);
+    k.add(dome([{ y:-0.02, w:0.25, d:0.26 }, { y:0.08, w:0.3, d:0.31 }, { y:0.22, w:0.31, d:0.31 }, { y:0.33, w:0.27, d:0.28 }, { y:0.4, w:0.15, d:0.17 }]), 'armor', h);
     k.add(block(0.29, 0.04, 0.06, 0.3), 'armor2', h, [0, 0.27, 0.13], [-0.2, 0, 0]);
     k.add(loft([{ y:-0.03, w:0.16, d:0.1, z:0.14 }, { y:0.1, w:0.12, d:0.08, z:0.13 }], chamfer(0.4)), 'armor', h);
     k.add(plate([[-0.06,0.01],[0.06,0.01],[0.04,-0.04],[-0.04,-0.04]], 0.015, 0.004), 'black', h, [0, 0.05, 0.19], [0,0,0], { outline: false });
@@ -181,7 +204,7 @@ const HELMETS = {
   },
   // HEAVY: wide squat helm with a grilled faceplate and a deep visor slot
   heavy(k, h, t){
-    k.add(loft([{ y:-0.04, w:0.33, d:0.33 }, { y:0.16, w:0.36, d:0.36 }, { y:0.28, w:0.31, d:0.33 }, { y:0.35, w:0.18, d:0.22 }], HEAD), 'armor', h);
+    k.add(dome([{ y:-0.04, w:0.33, d:0.33 }, { y:0.16, w:0.36, d:0.36 }, { y:0.28, w:0.31, d:0.33 }, { y:0.35, w:0.18, d:0.22 }]), 'armor', h);
     k.add(loft([{ y:-0.06, w:0.28, d:0.09, z:0.15 }, { y:0.15, w:0.3, d:0.09, z:0.16 }], chamfer(0.25)), 'armor2', h);
     for (let i = 0; i < 3; i++) k.add(block(0.2, 0.018, 0.02, 0.2), 'black', h, [0, -0.02 + i*0.04, 0.21], [0,0,0], { outline: false });
     k.add(block(0.26, 0.05, 0.05, 0.3), 'black', h, [0, 0.19, 0.2], [0,0,0], { outline: false });
@@ -190,9 +213,9 @@ const HELMETS = {
   },
   // MAGNAGUARD: narrow droid skull, twin eyes, a wrapped cowl
   magna(k, h, t){
-    k.add(loft([{ y:0.0, w:0.17, d:0.19 }, { y:0.18, w:0.21, d:0.24 }, { y:0.3, w:0.18, d:0.22 }, { y:0.36, w:0.1, d:0.14 }], HEAD), 'armor', h);
+    k.add(dome([{ y:0.0, w:0.17, d:0.19 }, { y:0.18, w:0.21, d:0.24 }, { y:0.3, w:0.18, d:0.22 }, { y:0.36, w:0.1, d:0.14 }]), 'armor', h);
     k.add(block(0.14, 0.08, 0.06, 0.3), 'black', h, [0, 0.07, 0.1], [0,0,0], { outline: false });
-    k.add(loft([{ y:-0.08, w:0.4, d:0.36 }, { y:0.06, w:0.32, d:0.3 }, { y:0.16, w:0.26, d:0.27, z:-0.02 }, { y:0.3, w:0.2, d:0.22, z:-0.04 }], chamfer(0.45)), 'cloth', h, [0, 0, -0.02]);
+    k.add(loft([{ y:-0.08, w:0.4, d:0.36 }, { y:0.06, w:0.32, d:0.3 }, { y:0.16, w:0.26, d:0.27, z:-0.02 }, { y:0.3, w:0.2, d:0.22, z:-0.04 }], SOFT_COLLAR), 'cloth', h, [0, 0, -0.02]);
     const eyes = k.live(new THREE.Group(), h, 'eye');
     for (const s of [-1, 1]){
       const m = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.04, 0.03), new THREE.MeshBasicMaterial({ color: t.eye, toneMapped: false }));
@@ -201,7 +224,7 @@ const HELMETS = {
   },
   // JET TROOPER: rounded helm, T-visor, a rangefinder stalk
   jet(k, h, t){
-    k.add(loft([{ y:-0.02, w:0.25, d:0.26 }, { y:0.08, w:0.29, d:0.3 }, { y:0.22, w:0.3, d:0.31 }, { y:0.33, w:0.27, d:0.28 }, { y:0.4, w:0.14, d:0.16 }], HEAD), 'armor', h);
+    k.add(dome([{ y:-0.02, w:0.25, d:0.26 }, { y:0.08, w:0.29, d:0.3 }, { y:0.22, w:0.3, d:0.31 }, { y:0.33, w:0.27, d:0.28 }, { y:0.4, w:0.14, d:0.16 }]), 'armor', h);
     k.add(loft([{ y:-0.03, w:0.18, d:0.1, z:0.12 }, { y:0.1, w:0.2, d:0.08, z:0.13 }], chamfer(0.4)), 'armor2', h);
     k.add(plate([[-0.11,0.025],[0.11,0.025],[0.11,-0.012],[0.025,-0.02],[0.022,-0.12],[-0.022,-0.12],[-0.025,-0.02],[-0.11,-0.012]], 0.02, 0.004), 'black', h, [0, 0.21, 0.15], [0,0,0], { outline: false });
     const eyes = k.live(new THREE.Group(), h, 'eye');
@@ -212,7 +235,7 @@ const HELMETS = {
   },
   // SHORETROOPER: domed helm under a wide brim, dark visor band
   riot(k, h, t){
-    k.add(loft([{ y:-0.02, w:0.26, d:0.27 }, { y:0.1, w:0.3, d:0.31 }, { y:0.24, w:0.3, d:0.31 }, { y:0.34, w:0.25, d:0.27 }, { y:0.4, w:0.12, d:0.14 }], HEAD), 'armor', h);
+    k.add(dome([{ y:-0.02, w:0.26, d:0.27 }, { y:0.1, w:0.3, d:0.31 }, { y:0.24, w:0.3, d:0.31 }, { y:0.34, w:0.25, d:0.27 }, { y:0.4, w:0.12, d:0.14 }]), 'armor', h);
     k.add(loft([{ y:0.0, w:0.4, d:0.42, z:0.02 }, { y:0.03, w:0.38, d:0.4, z:0.02 }], chamfer(0.5)), 'armor2', h, [0, 0.24, 0]);
     k.add(plate([[-0.12,0.03],[0.12,0.03],[0.1,-0.03],[-0.1,-0.03]], 0.02, 0.004), 'black', h, [0, 0.18, 0.15], [0,0,0], { outline: false });
     k.add(loft([{ y:-0.04, w:0.17, d:0.1, z:0.12 }, { y:0.1, w:0.15, d:0.08, z:0.13 }], chamfer(0.4)), 'armor', h);
@@ -220,16 +243,29 @@ const HELMETS = {
   },
   // IMPERIAL OFFICER: a bare face under a peaked cap, the cap badge lit (the tell that swells as it aims or calls)
   officer(k, h, t){
-    k.add(loft([{ y:-0.03, w:0.18, d:0.2 }, { y:0.12, w:0.22, d:0.24 }, { y:0.25, w:0.22, d:0.24 }], HEAD), 'skin', h);
-    k.add(block(0.17, 0.025, 0.03, 0.3), 'black', h, [0, 0.16, 0.115], [0,0,0], { outline: false });   // the brow's shadow
-    k.add(block(0.08, 0.018, 0.02, 0.3), 'black', h, [0, 0.06, 0.118], [0,0,0], { outline: false });   // a thin mouth
-    k.add(loft([{ y:0.22, w:0.25, d:0.27 }, { y:0.33, w:0.3, d:0.32 }, { y:0.38, w:0.29, d:0.31 }], chamfer(0.3)), 'armor', h);   // crown
-    k.add(loft([{ y:0, w:0.23, d:0.12, z:0.12 }, { y:0.025, w:0.23, d:0.12, z:0.12 }], chamfer(0.5)), 'black', h, [0, 0.22, 0.03]);   // brim
+    // a real face under the cap, made the way the hero's is: a rounded skull and jaw, ears, a nose, eyes set in
+    // shadowed sockets, brows and a thin mouth (the small details skip the outline so no stray ink crosses the face)
+    k.add(dome([{ y:-0.05, w:0.15, d:0.17, z:0.01 }, { y:0.04, w:0.19, d:0.22 }, { y:0.15, w:0.215, d:0.24 }, { y:0.26, w:0.21, d:0.235 }]), 'skin', h);
+    k.add(loft([{ y:-0.06, w:0.1, d:0.08, z:0.06 }, { y:0.02, w:0.15, d:0.1, z:0.06 }], SOFT_LIMB), 'skin', h);   // the jaw and chin
+    for (const s of [-1, 1]){
+      k.add(block(0.025, 0.06, 0.045, 0.45), 'skin', h, [0.108*s, 0.13, -0.005], [0, 0.2*s, 0]);   // ears
+      k.add(block(0.05, 0.03, 0.02, 0.4), 'black', h, [0.045*s, 0.145, 0.107], [0, 0, 0], { outline: false });   // eye socket shadow
+      k.add(block(0.032, 0.016, 0.012, 0.4), 'eyew', h, [0.045*s, 0.143, 0.115], [0,0,0], { outline: false });
+      k.add(block(0.013, 0.014, 0.01, 0.3), 'black', h, [0.045*s, 0.143, 0.121], [0,0,0], { outline: false });   // the pupil
+      k.add(block(0.052, 0.012, 0.015, 0.3), 'hair', h, [0.047*s, 0.172, 0.115], [0, 0, -0.12*s], { outline: false });   // brow
+    }
+    k.add(shard(0.034, 0.07, 0.03), 'skin', h, [0, 0.1, 0.12], [0.2, 0, 0], { outline: false });   // nose
+    k.add(block(0.06, 0.012, 0.012, 0.3), 'lip', h, [0, 0.045, 0.112], [0,0,0], { outline: false });   // a thin mouth
+    k.add(loft([{ y:-0.02, w:0.215, d:0.235 }, { y:0.04, w:0.215, d:0.235 }], SOFT_HEAD), 'hair', h, [0, 0.215, -0.005]);   // cropped hair under the cap
+    k.add(loft([{ y:0.22, w:0.25, d:0.27 }, { y:0.3, w:0.29, d:0.31 }, { y:0.36, w:0.3, d:0.32 }, { y:0.385, w:0.28, d:0.3 }], SOFT_HEAD), 'armor', h);   // crown
+    k.add(loft([{ y:0, w:0.215, d:0.12, z:0.13 }, { y:0.022, w:0.215, d:0.12, z:0.13 }], SOFT_COLLAR), 'black', h, [0, 0.22, 0.02]);   // brim
+    k.add(loft([{ y:0, w:0.26, d:0.28 }, { y:0.03, w:0.258, d:0.278 }], SOFT_HEAD), 'black', h, [0, 0.235, 0], [0,0,0], { outline: false });   // cap band
     k.glow(new THREE.BoxGeometry(0.06, 0.04, 0.01), t.eye, h, [0, 0.31, 0.162], [0,0,0], { tag: 'eye' });
   },
+
   // CLONE TROOPER (a squadmate): domed helm, a T-visor, a cheek frame, a fin crest in the unit's markings
   clone(k, h, t){
-    k.add(loft([{ y:-0.02, w:0.25, d:0.26 }, { y:0.08, w:0.29, d:0.3 }, { y:0.22, w:0.3, d:0.31 }, { y:0.33, w:0.27, d:0.28 }, { y:0.41, w:0.15, d:0.17 }], HEAD), 'armor', h);
+    k.add(dome([{ y:-0.02, w:0.25, d:0.26 }, { y:0.08, w:0.29, d:0.3 }, { y:0.22, w:0.3, d:0.31 }, { y:0.33, w:0.27, d:0.28 }, { y:0.41, w:0.15, d:0.17 }]), 'armor', h);
     k.add(loft([{ y:-0.04, w:0.2, d:0.09, z:0.13 }, { y:0.1, w:0.22, d:0.08, z:0.14 }], chamfer(0.35)), 'armor', h);
     k.add(plate([[-0.12,0.025],[0.12,0.025],[0.12,-0.015],[0.03,-0.022],[0.026,-0.13],[-0.026,-0.13],[-0.03,-0.022],[-0.12,-0.015]], 0.02, 0.004), 'black', h, [0, 0.22, 0.155], [0,0,0], { outline: false });
     k.add(block(0.03, 0.1, 0.3, 0.3), 'cloth', h, [0, 0.38, -0.01]);   // the crest in the unit's colour
@@ -238,7 +274,7 @@ const HELMETS = {
   },
   // MANDALORIAN WARRIOR (a squadmate): a tall beskar helm with the T-visor, a rangefinder and a flared jaw
   mandalorian(k, h, t){
-    k.add(loft([{ y:-0.03, w:0.25, d:0.27 }, { y:0.1, w:0.28, d:0.3 }, { y:0.26, w:0.29, d:0.31 }, { y:0.36, w:0.25, d:0.27 }, { y:0.42, w:0.13, d:0.16 }], HEAD), 'armor', h);
+    k.add(dome([{ y:-0.03, w:0.25, d:0.27 }, { y:0.1, w:0.28, d:0.3 }, { y:0.26, w:0.29, d:0.31 }, { y:0.36, w:0.25, d:0.27 }, { y:0.42, w:0.13, d:0.16 }]), 'armor', h);
     k.add(loft([{ y:-0.05, w:0.27, d:0.12, z:0.1 }, { y:0.08, w:0.25, d:0.1, z:0.12 }], chamfer(0.3)), 'armor2', h);
     k.add(plate([[-0.12,0.03],[0.12,0.03],[0.12,-0.01],[0.028,-0.02],[0.025,-0.15],[-0.025,-0.15],[-0.028,-0.02],[-0.12,-0.01]], 0.022, 0.004), 'black', h, [0, 0.25, 0.16], [0,0,0], { outline: false });
     k.add(block(0.022, 0.18, 0.022, 0.3), 'metal', h, [0.165, 0.32, 0.02], [0.25, 0, -0.1]);
@@ -246,7 +282,7 @@ const HELMETS = {
   },
   // SCOUT TROOPER: big brow visor jutting forward, a long breather snout
   scout(k, h, t){
-    k.add(loft([{ y:0.0, w:0.24, d:0.25 }, { y:0.14, w:0.27, d:0.28 }, { y:0.3, w:0.26, d:0.28 }, { y:0.38, w:0.14, d:0.17 }], HEAD), 'armor', h);
+    k.add(dome([{ y:0.0, w:0.24, d:0.25 }, { y:0.14, w:0.27, d:0.28 }, { y:0.3, w:0.26, d:0.28 }, { y:0.38, w:0.14, d:0.17 }]), 'armor', h);
     k.add(loft([{ y:0.0, w:0.3, d:0.14, z:0.12 }, { y:0.1, w:0.32, d:0.17, z:0.14 }], chamfer(0.35)), 'armor2', h, [0, 0.17, 0]);
     k.add(loft([{ y:-0.06, w:0.1, d:0.12, z:0.15 }, { y:0.14, w:0.14, d:0.12, z:0.12 }], chamfer(0.4)), 'armor', h);
     k.add(block(0.27, 0.045, 0.05, 0.3), 'black', h, [0, 0.2, 0.24], [0,0,0], { outline: false });
@@ -388,7 +424,7 @@ export const MODELS = {
   heavy(k, t){
     const w = 1.3;
     legs(k, w, { boot: 'armor2' }); hips(k, w); k = upper(k); torso(k, w);
-    k.add(loft([{ y:1.78, w:0.62, d:0.42 }, { y:1.98, w:0.5, d:0.4 }], chamfer(0.4)), 'armor2');   // raised collar
+    k.add(loft([{ y:1.78, w:0.62, d:0.42 }, { y:1.98, w:0.5, d:0.4 }], SOFT_COLLAR), 'armor2');   // raised collar
     pauldrons(k, w, 'armor', 1.25);
     for (const s of [-1, 1]) k.add(shard(0.07, 0.18, 0.07), 'metal', k.root, [0.5*s, 1.92, 0], [0, 0, -0.3*s]);
     sideArm(k, w, -1, [-0.1, 0, 0.08]);
@@ -401,7 +437,7 @@ export const MODELS = {
     legs(k, w, { shin: 'metal' }); hips(k, w); k = upper(k); torso(k, w, { pack: false });
     // cloak: a cape off both shoulders and a short mantle
     cape(k, [[-0.3,0],[0.3,0],[0.36,-1.2],[0.12,-1.32],[-0.12,-1.32],[-0.36,-1.2]], [0, 1.86, -0.21], 0.1);
-    k.add(loft([{ y:1.62, w:0.66, d:0.44 }, { y:1.82, w:0.52, d:0.36 }, { y:1.9, w:0.3, d:0.26 }], chamfer(0.45)), 'cloth');
+    k.add(loft([{ y:1.62, w:0.66, d:0.44 }, { y:1.82, w:0.52, d:0.36 }, { y:1.9, w:0.3, d:0.26 }], SOFT_COLLAR), 'cloth');
     sideArm(k, w, 1, [-0.75, 0, -0.1], { bend: -0.6, fore: 'metal' });
     sideArm(k, w, -1, [-0.6, 0, -0.2], { bend: -0.6, fore: 'metal' });
     const staff = k.slot('staff', k.root, [0.55, 1.5, 0.2], [0.3, 0, 0.5]);
@@ -419,7 +455,7 @@ export const MODELS = {
     const w = 0.96;
     legs(k, w); hips(k, w); k = upper(k); torso(k, w, { pack: false });
     cape(k, [[-0.32,0],[0.32,0],[0.4,-1.45],[0.14,-1.6],[-0.14,-1.6],[-0.4,-1.45]], [0, 1.86, -0.22], 0.08);
-    k.add(loft([{ y:1.6, w:0.64, d:0.44 }, { y:1.82, w:0.5, d:0.36 }, { y:1.9, w:0.3, d:0.26 }], chamfer(0.45)), 'cloth');
+    k.add(loft([{ y:1.6, w:0.64, d:0.44 }, { y:1.82, w:0.5, d:0.36 }, { y:1.9, w:0.3, d:0.26 }], SOFT_COLLAR), 'cloth');
     k.add(plate([[-0.22,0],[0.22,0],[0.26,-0.62],[-0.26,-0.62]], 0.014, 0.004), 'cloth', k.root, [0, 1.12, 0.17], [-0.05, 0, 0], { outline: false });   // tabard
     sideArm(k, w, -1, [-0.3, 0, 0.12], { bend: -0.5 });
     weaponArm(k, t, w);
@@ -469,7 +505,7 @@ export const MODELS = {
     k.add(loft([{ y:0.86, w:0.32, d:0.18 }, { y:1.0, w:0.34, d:0.2 }], chamfer(0.4)), 'armor2');
     k = upper(k);
     k.add(loft([{ y:1.0, w:0.06, d:0.06 }, { y:1.32, w:0.06, d:0.06 }], ngon(6)), 'metal');   // spine
-    k.add(loft([{ y:1.28, w:0.36, d:0.2 }, { y:1.5, w:0.44, d:0.28 }, { y:1.72, w:0.42, d:0.26 }, { y:1.8, w:0.3, d:0.2 }], SHIELD), 'armor');
+    k.add(loft([{ y:1.28, w:0.36, d:0.2 }, { y:1.5, w:0.44, d:0.28 }, { y:1.72, w:0.42, d:0.26 }, { y:1.8, w:0.3, d:0.2 }], SOFT_BODY), 'armor');
     k.add(block(0.32, 0.4, 0.18, 0.3), 'armor2', k.root, [0, 1.52, -0.2]);   // backpack
     k.add(loft([{ y:1.78, w:0.05, d:0.05 }, { y:2.02, w:0.045, d:0.045 }], ngon(6)), 'metal', k.root, [0, 0, 0.03], [0.18, 0, 0]);   // neck
     for (const s of [-1, 1]){
@@ -498,12 +534,12 @@ export const MODELS = {
   officer(k, t){
     const w = 0.94;
     legs(k, w, { shin: 'cloth', boot: 'black' }); hips(k, w); k = upper(k); torso(k, w, { box: false, pack: false });
-    k.add(loft([{ y:1.03, w:0.42*w, d:0.29 }, { y:1.1, w:0.42*w, d:0.29 }], SHIELD), 'black');   // belt
+    k.add(loft([{ y:1.03, w:0.42*w, d:0.29 }, { y:1.1, w:0.42*w, d:0.29 }], SOFT_BODY), 'black');   // belt
     k.add(block(0.05, 0.04, 0.03, 0.3), 'metal', k.root, [0, 1.065, 0.15], [0,0,0], { outline: false });
     k.add(block(0.13, 0.055, 0.02, 0.3), 'black', k.root, [0.15*w, 1.66, 0.185], [0,0,0], { outline: false });   // rank plaque
     for (let i = 0; i < 3; i++) k.glow(new THREE.BoxGeometry(0.022, 0.022, 0.01), i ? 0x4a8cff : 0xff3a2a, k.root, [0.11*w + i*0.035, 1.66 - (i % 2)*0.012, 0.197]);
     for (const x of [-0.12, -0.16]) k.add(loft([{ y:0, w:0.025, d:0.025 }, { y:0.07, w:0.025, d:0.025 }], ngon(6)), 'metal', k.root, [x*w, 1.64, 0.18], [0,0,0], { outline: false });   // code cylinders
-    k.add(loft([{ y:1.86, w:0.27, d:0.22 }, { y:1.95, w:0.22, d:0.18 }], chamfer(0.45)), 'armor2');   // the high collar
+    k.add(loft([{ y:1.86, w:0.27, d:0.22 }, { y:1.95, w:0.22, d:0.18 }], SOFT_COLLAR), 'armor2');   // the high collar
     cape(k, [[-0.27,0],[0.27,0],[0.31,-0.98],[0.18,-1.04],[-0.18,-1.04],[-0.31,-0.98]], [0, 1.84, -0.19], 0.16);   // a short service cape off both shoulders
     sideArm(k, w, -1, [0.35, 0, 0.0], { bend: -1.2 });   // hand tucked at the small of its back
     weaponArm(k, t, w);
@@ -557,11 +593,15 @@ export const MODELS = {
   scout(k, t){
     const w = 0.95;
     legs(k, w); hips(k, w); k = upper(k); torso(k, w);
-    k.add(loft([{ y:1.3, w:0.78, d:0.52 }, { y:1.62, w:0.7, d:0.46 }, { y:1.84, w:0.48, d:0.34 }, { y:1.94, w:0.24, d:0.2 }], chamfer(0.45)), 'cloth');   // poncho
+    k.add(loft([{ y:1.3, w:0.78, d:0.52 }, { y:1.62, w:0.7, d:0.46 }, { y:1.84, w:0.48, d:0.34 }, { y:1.94, w:0.24, d:0.2 }], SOFT_COLLAR), 'cloth');   // poncho
     rifle(k, t, w, true);
     helmet(k, 'scout', t);
   },
 };
+
+/* ARM SWING (enemies/upper.js): how far each free arm (offArm on the left, offArmR the right) swings with the stride.
+   Arms that hold something stay put: both hands on a rifle or a staff, the riot shield, the officer's tucked hand */
+const ARM_SWING = { purge: [1, 0], heavy: [0.7, 0], acolyte: [0.75, 0], grenadier: [0.9, 0] };
 
 /* ---------------- build ---------------- */
 
@@ -575,13 +615,17 @@ export function buildEnemyMesh(t, o = {}){
   // the unit's group carries its place, heading and the AI's poses; inside it `vis` takes the gait's bob, sway and
   // lean (enemies/gait.js), so the two never fight over one transform. No two of a squad are quite alike: each is a
   // touch taller or shorter (vis only: hitboxes keep the type's size), its armour a shade off and worn its own way
-  const vis = instantiate(baked, { seed: Math.random() * 97, wear: o.wear ?? 0.15 + Math.random() * 0.8 }), g = new THREE.Group();
+  const vis = instantiate(baked, { seed: Math.random() * 97, wear: o.wear ?? 0.1 + Math.random() * 0.45 }), g = new THREE.Group();
   vis.scale.setScalar(0.96 + Math.random() * 0.08);
   const tone = 0.93 + Math.random() * 0.1;
   vis.userData.bodyMat.color.multiplyScalar(tone);
   if (vis.userData.plateMat) vis.userData.plateMat.color.multiplyScalar(tone);
+  /* YXZ: the heading first, then every lean, tip and fall in the unit's OWN frame. (Three's default XYZ pitches about
+     the world's x axis, so a wind-up lean, a hit's rock or a knockdown went sideways on a foe facing east or west.) */
+  g.rotation.order = 'YXZ';
   g.add(vis);
   const u = g.userData = vis.userData;
+  u.armSwing = ARM_SWING[t.model] || null;
   u.vis = vis;
   if (u.shield) u.shieldMat = u.shield.children[0].material;
   if (u.eye) u.eyeMat = u.eye.material || u.eye.children[0].material;

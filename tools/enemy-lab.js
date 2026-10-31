@@ -1,7 +1,7 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
 // Enemy lab (dev only: `npm run dev`, then open /tools/enemy-lab.html).
 // Lines up every enemy type (or both bosses) under the game's own lights, so enemy model changes can be judged
-// without playing. URL params: ?set=troops|bosses  &pose=idle|windup|guardL|guardR|guardH|guardLo|blockL|blockR|blockH|blockLo|windL|windR|windH|windT (a duellist's guards, blocks and wind-ups)  &elite=swift|vital|volatile  &view=front|back
+// without playing. URL params: ?set=troops|bosses|squad  &pose=idle|windup|guardL|guardR|guardH|guardLo|blockL|blockR|blockH|blockLo|windL|windR|windH|windT (a duellist's guards, blocks and wind-ups)  &elite=swift|vital|volatile  &view=front|back  &z=<camera distance>
 // &orbit=1 (slow turntable). &cut=diagR|all plays a duellist's cut on a loop (data/duel.js FOE_CUTS; all: every cut in
 // turn, named in the corner); &at=0..2 freezes it there instead (0→1 the wind-up, 1→2 the strike). The stats corner shows draw calls per frame.
 
@@ -11,6 +11,7 @@ import { ENEMY_TYPES } from '../src/data/enemies.js';
 import { buildEnemyMesh } from '../src/enemies/mesh.js';
 import { buildBoss } from '../src/boss/mesh.js';
 import { ELITES } from '../src/data/enemies.js';
+import { SQUAD } from '../src/data/allies.js';
 import { GUARD_POSE, BLOCK_POSE, WIND, FOE_CUTS } from '../src/data/duel.js';
 
 const q = new URLSearchParams(location.search);
@@ -50,6 +51,13 @@ if (SET === 'bosses'){
     pose(g, true);
     figs.push({ g, label: kind === 'sith' ? 'Darth Vexis' : 'Iron Magistrate', w: 4.2 });
   }
+} else if (SET === 'squad'){
+  // the squadmates (allies/squad.js): two of each side's troopers, on the same trooper kit
+  for (const side of ['jedi', 'mando']) for (const m of SQUAD.roster[side].slice(0, 2)){
+    const t = { scale: 1, ...m };
+    const g = buildEnemyMesh(t);
+    figs.push({ g, label: m.name, w: 2.1 });
+  }
 } else {
   const ONLY = q.get('only');   // &only=grunt,brute — a subset, for close-ups
   for (const [name, t] of Object.entries(ENEMY_TYPES)){
@@ -75,7 +83,7 @@ for (const f of figs){
 
 camera.fov = 30;
 if (SET === 'bosses'){ camera.position.set(0, 3.0, 12.5); camera.lookAt(0, 2.4, 0); }
-else { const z = Math.max(5, total * 0.95); camera.position.set(0, 1.4 + z * 0.08, z); camera.lookAt(0, 1.45, 0); }
+else { const z = +q.get('z') || Math.max(5, total * 0.95); camera.position.set(0, 1.4 + z * 0.08, z); camera.lookAt(0, 1.45, 0); }
 camera.updateProjectionMatrix();
 const fill = new THREE.DirectionalLight(0xdfe8ff, 0.55); fill.position.set(-4, 5, 12); scene.add(fill);
 
@@ -91,7 +99,7 @@ function placeLabels(){
 }
 const btn = (on, label, params) => `<button class="${on ? 'on' : ''}" onclick="location.search='${new URLSearchParams({ set: SET, pose: POSE, elite: ELITE, view: VIEW, ...params })}'">${label}</button>`;
 document.getElementById('bar').innerHTML =
-  btn(SET === 'troops', 'Troops', { set: 'troops' }) + btn(SET === 'bosses', 'Bosses', { set: 'bosses' })
+  btn(SET === 'troops', 'Troops', { set: 'troops' }) + btn(SET === 'bosses', 'Bosses', { set: 'bosses' }) + btn(SET === 'squad', 'Squad', { set: 'squad' })
   + btn(POSE === 'idle', 'Idle', { pose: 'idle' }) + btn(POSE === 'windup', 'Windup', { pose: 'windup' })
   + ['', ...Object.keys(ELITES)].map(n => btn(n === ELITE, n || 'no elite', { elite: n })).join('')
   + btn(false, VIEW === 'back' ? 'Front view' : 'Back view', { view: VIEW === 'back' ? 'front' : 'back' });
