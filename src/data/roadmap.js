@@ -6,6 +6,10 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'Shots land on the crosshair', status: 'done',
+    items: ['Aiming at open air (a far wall, the sky) used to converge the shot only 40 metres out, so every bolt crossed the reticle and flew on past it, off to the right; the shot now aims at the arena wall it will really hit, or far out, so it lands on the crosshair',
+            'Blaster, dual, disruptor (rings too, scoped as well), rockets and missiles share that aim, as do the squad\'s orders',
+            'Same in every mode: story, training, survival, sandbox, missions and co-op'] },
   { title: 'Makashi: Dooku\'s fencing poise', status: 'done',
     items: ['Idle: Form II Makashi stands square to the foe with the saber arm held straight out to the side and angled down, the blade carrying the line, and the off hand set on the small of the back with its elbow flared out',
             'Fighting (a foe close, or a blow given or taken a moment ago): the off arm drops out low to the side for balance; cuts and the run keep it there',
