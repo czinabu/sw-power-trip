@@ -31,6 +31,7 @@ body.in-menu #hud,body.in-menu #boonstrip{opacity:0;transition:none}
 .uptoast span{font-size:12.5px;color:var(--ink-soft)}
 .uptoast.sp{border-color:rgba(255,210,90,.5)} .uptoast.sp b{color:var(--gold)}
 .uptoast.mast{border-color:rgba(255,210,90,.5)} .uptoast.mast b{color:#ffe9a8}
+.uptoast.foe{border-color:rgba(255,120,100,.45)} .uptoast.foe b{color:#ff9a8a}
 .uptoast.out{opacity:0;transform:translateX(-10px)}
 #xphud .xpk{font-size:10px;letter-spacing:2.5px;color:#5fae84;margin-right:6px;vertical-align:1px}
 #streak{position:fixed;top:96px;left:20px;font:700 26px/1 var(--font-display);letter-spacing:2px;color:var(--gold);
@@ -353,15 +354,15 @@ body.sandbox #xpmeter,body.sandbox #xphud{display:none !important}   /* the sand
 .ro-hint{margin-top:6px}
 
 /* ---------- CAMPAIGN COMMS (game/story.js): the voice in your ear during a chapter, as a subtitle ---------- */
-#comms{position:fixed;left:50%;bottom:21%;transform:translate(-50%,6px);width:max-content;max-width:min(640px,calc(100vw - 32px));
+#comms{position:fixed;left:50%;bottom:21%;transform:translate(-50%,6px);width:max-content;max-width:min(780px,calc(100vw - 32px));
   padding:8px 16px 9px;box-sizing:border-box;text-align:center;border-radius:var(--r-lg);background:rgba(4,10,20,.62);
   box-shadow:0 6px 22px rgba(0,0,0,.35);opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;z-index:4}
 #comms.on{opacity:1;transform:translate(-50%,0)}
-#comms .cm-who{font:700 11px/1 var(--font-ui);letter-spacing:2.6px;color:var(--gold);margin-bottom:5px}
-#comms .cm-say{font:500 17px/1.35 var(--font-body);color:var(--ink);text-shadow:0 1px 6px rgba(0,0,0,.8)}
+#comms .cm-who{font:700 13px/1 var(--font-ui);letter-spacing:2.6px;color:var(--gold);margin-bottom:5px}
+#comms .cm-say{font:500 21px/1.35 var(--font-body);color:var(--ink);text-shadow:0 1px 6px rgba(0,0,0,.8)}
 #comms.rival .cm-who{color:#ff5a5a}
 #comms.rival .cm-say{font-style:italic}
-@media (max-width:620px){ #comms{bottom:26%} #comms .cm-say{font-size:15px} }
+@media (max-width:620px){ #comms{bottom:26%} #comms .cm-say{font-size:17px} }
 
 /* ---------- CUTSCENES (game/cutscene.js): letterbox bars, the chapter's title, a subtitle, the skip hint ---------- */
 body.cutscene #hud,body.cutscene #boonstrip,body.cutscene #threats,body.cutscene #comms{opacity:0 !important;transition:opacity .2s}
@@ -372,21 +373,22 @@ body.cutscene #hud,body.cutscene #boonstrip,body.cutscene #threats,body.cutscene
 #cutscene .cs-bar{position:absolute;left:0;right:0;height:var(--bars,11vh);background:#000}
 #cutscene .cs-bar.top{top:0;animation:csTop .5s var(--ease,ease) both}
 #cutscene .cs-bar.bot{bottom:0;animation:csBot .5s var(--ease,ease) both}
-#cutscene .cs-title{position:absolute;left:6vw;bottom:calc(var(--bars,11vh) + 5vh);opacity:0;max-width:70vw}
+#cutscene .cs-title{position:absolute;left:6vw;bottom:calc(var(--bars,11vh) + 17vh);opacity:0;max-width:70vw}
 #cutscene .cs-title.on{animation:csRise 3.4s ease both}
 #cutscene .cs-k{font-size:13px;letter-spacing:3px;color:var(--accent,#5ad2ff)}
 #cutscene.mando .cs-k{color:#ffa040}
 #cutscene .cs-h{margin-top:6px;font:700 clamp(30px,4.6vw,56px)/1 var(--font-display,inherit);letter-spacing:4px;color:#f2f8ff;text-shadow:0 2px 24px rgba(0,0,0,.6)}
 #cutscene .cs-p{margin-top:6px;font-size:15px;letter-spacing:2.4px;color:rgba(230,240,255,.75)}
-#cutscene .cs-line{position:absolute;left:50%;bottom:calc(var(--bars,11vh) * .5);transform:translate(-50%,50%);width:min(860px,88vw);text-align:center;opacity:0}
+#cutscene .cs-line{position:absolute;left:50%;bottom:calc(var(--bars,11vh) + 2.5vh);transform:translate(-50%,0);width:max-content;max-width:min(980px,90vw);box-sizing:border-box;padding:10px 22px 12px;border-radius:var(--r-lg,10px);
+  background:linear-gradient(rgba(0,0,0,.5),rgba(0,0,0,.66));box-shadow:0 0 28px 10px rgba(0,0,0,.45);text-align:center;opacity:0}
 #cutscene .cs-line.on{animation:csLine .35s ease both}
-#cutscene .cs-who{font-size:12px;letter-spacing:3px;color:var(--accent,#5ad2ff);margin-bottom:4px}
+#cutscene .cs-who{font-size:clamp(13px,1.1vw,17px);font-weight:700;letter-spacing:3px;text-shadow:0 1px 6px #000;color:var(--accent,#5ad2ff);margin-bottom:4px}
 #cutscene.mando .cs-who{color:#ffa040}
-#cutscene .cs-say{font-size:clamp(15px,1.6vw,20px);line-height:1.35;color:#eef4ff}
+#cutscene .cs-say{font-size:clamp(19px,2.1vw,31px);line-height:1.35;color:#fff;text-shadow:0 1px 3px #000,0 2px 10px rgba(0,0,0,.9)}
 #cutscene .cs-skip{position:absolute;right:3vw;top:calc(var(--bars,11vh) * .5);transform:translateY(-50%);font-size:12px;letter-spacing:2px;color:rgba(230,240,255,.55)}
 #cutscene .cs-skip b{color:rgba(230,240,255,.85);font-weight:600}
 @keyframes csIn{from{opacity:0}to{opacity:1}}
 @keyframes csTop{from{transform:translateY(-100%)}to{transform:none}}
 @keyframes csBot{from{transform:translateY(100%)}to{transform:none}}
-@keyframes csLine{from{opacity:0;transform:translate(-50%,calc(50% + 6px))}to{opacity:1;transform:translate(-50%,50%)}}
+@keyframes csLine{from{opacity:0;transform:translate(-50%,6px)}to{opacity:1;transform:translate(-50%,0)}}
 @keyframes csRise{0%{opacity:0;transform:translateY(10px)}12%{opacity:1;transform:none}85%{opacity:1}100%{opacity:0}}

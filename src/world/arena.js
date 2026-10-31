@@ -61,7 +61,7 @@ export function buildArena(L){
   shared.arenaHalfZ = (L.arenaZ || L.arena) / 2;   // L.arenaZ: a long arena, deeper north–south than it is wide
   shared.arenaLevel = L;
   shared.arenaBig = L.arena > BIG_ARENA;            // a battle map: spawns, pathing, light and sky work around the hero (see BIG_ARENA)
-  shared.ambient = null;
+  shared.ambient = null; shared.mist = null;
   shared.dojoRemotes = null;      // the sandbox room's hovering remotes (world/arenas/dojo.js)
   shared.templeBrazier = null;   // cleared each rebuild; the temple layout re-assigns it (so we never flicker a stale mesh)
   pillars.length = 0;

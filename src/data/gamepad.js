@@ -1,5 +1,5 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
-// GAMEPAD: the controller layout, as data. engine/gamepad.js reads it; How to Play renders it (ui/controls.js).
+// GAMEPAD: the controller layout, as data. engine/gamepad.js reads it; Controls renders it (ui/controls.js).
 
 /* Every bind turns a pad button into the keyboard key (or mouse button) the game already answers to, so a pad press
    runs exactly the code the key does, in every mode. Change a key in engine/input.js and the matching bind here moves
@@ -93,7 +93,7 @@ export const PAD_GLYPHS = {
 };
 export const padFamily = (id) => /054c|playstation|dualsense|dualshock|wireless controller/i.test(id || '') ? 'ps' : 'xbox';
 
-// the menu controls, for How to Play
+// the menu controls, for Controls
 export const PAD_MENU = [
   ['LS / D-PAD', 'Move between options', 'Left / right also slides a setting'],
   ['A', 'Select'],

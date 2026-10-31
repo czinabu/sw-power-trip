@@ -45,7 +45,7 @@ src/
   net/               online co-op: room-code connection over WebRTC (session.js), the partner's hero (partner.js) and pose sync (pose.js); see below
   world/             arena builder, arenas/ (temple, foundry, plains layouts; hall and forge for training; refuge and pursuit for the story missions; dojo and throne for the sandbox; grassland, icefront and graveyard, the battle maps, with field.js for their shared pieces), Ink bake, painted skies/floors, backdrops, atmosphere, collision, hazards (see docs/world-guidelines.md)
   game/              level/wave flow, survival mode, training (tutorial.js), story missions (mission.js, objectives.js), the campaign's chapters (campaign.js) and cutscenes (cutscene.js, words in data/cutscenes.js), the sandbox (sandbox.js), progression, boons, end-of-run summary
-  ui/                banners, threat markers, HUD, store overlay, menus, the sandbox panel (sandbox-ui.js), the title screen's hero turntable (showcase.js), controls (How to Play data)
+  ui/                banners, threat markers, HUD, store overlay, menus, the sandbox panel (sandbox-ui.js), the title screen's hero turntable (showcase.js), controls (Controls data)
 ```
 
 Each file starts with a one-line description. Balance changes usually only touch `src/data/`.
@@ -54,7 +54,7 @@ Each file starts with a one-line description. Balance changes usually only touch
 
 **Load order.** Module top-level code runs once at startup in the order `src/main.js` imports it, which matches the order of the original single file. Keep new top-level code to declarations where possible and do setup in functions.
 
-**Adding an ability:** add its function (under `player/jedi/` or `player/mando/`), a HUD slot (`#ab-*` in `index.html`; powers go in `#abilities`, basic moves in `#basics`), a keybind (`engine/input.js`), a How to Play row (`ui/controls.js`), a store/auto-unlock entry (`data/store.js`), and a HUD cooldown row (`ui/hud.js`).
+**Adding an ability:** add its function (under `player/jedi/` or `player/mando/`), a HUD slot (`#ab-*` in `index.html`; powers go in `#abilities`, basic moves in `#basics`), a keybind (`engine/input.js`), a Controls row (`ui/controls.js`), a store/auto-unlock entry (`data/store.js`), and a HUD cooldown row (`ui/hud.js`).
 
 **Changing the heroes' look:** the menu's CUSTOMIZE screen (`src/ui/customizer.js`) offers the rows and options listed in `src/data/customize.js` (skin, hair, robes, helmet, armour colours…); each option is a partial look, and the player's picks are saved in localStorage and rebuild the hero when they press DONE. Everything a look can change lives in `src/player/model/appearance.js` as plain data: outfit variant per slot, colours, build (bulk, shoulders, head) and the Mando's glowing seams. New outfit pieces are a function under a slot in `jedi.js` / `mando.js`: `k.add()` hangs a rigid piece (armour, boots, a belt) on one joint, and `k.skin()` lays one continuous skinned surface over a run of joints (trousers over hip and knee, a sleeve over shoulder and elbow, the torso from pelvis to collar) so cloth and suits bend at the joints instead of showing a seam (`skin.js`), and `k.cloth()` hangs a piece of simulated cloth from a joint (the robe panels and cape hem; `cloth.js`); new weapons are an entry in `weapons.js` (its `grip` decides how it's held). Preview with `npm run dev` and open `/tools/model-lab.html`, which lines both heroes up in key poses (`?look=hooded` shows a sample alternate look; `?style=shard|forged` shows the other render styles).
 
