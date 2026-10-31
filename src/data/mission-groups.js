@@ -31,7 +31,7 @@ const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'];
 // the chapter that plays a mission for this hero (its own mission, or one its story version opens), and where it falls
 const playsFor = (c, id, hero) => forHero(c.mission, hero) === id || (forHero(c.opens, hero) || []).includes(id);
 export function missionChapter(id, hero){
-  const order = chapterOrder(false), i = order.findIndex(c => playsFor(c, id, hero));
+  const order = chapterOrder(false, hero), i = order.findIndex(c => playsFor(c, id, hero));
   return i < 0 ? null : { chapter: order[i], pos: i };
 }
 export const missionForHero = (m, hero) => !m.campaignOnly && (!m.heroes || m.heroes.includes(hero));

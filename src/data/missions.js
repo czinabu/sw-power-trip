@@ -125,6 +125,7 @@ export const MISSIONS = {
   covert: {
     id: 'covert',
     title: 'THE LAST SHIP',
+    heroes: ['mando'],   // (the Mandalorian's own story: the covert, its foundlings, VX-7)
     blurb: 'hold the ramp, kill the jammers, duel VX-7',
     level: { name: 'MISSION — THE COVERT', sub: 'The Magistrate has found the covert. One ship is left to carry the foundlings out.',
              arena: 60, floor: 0x8a5a44, fog: 0x6a3428, sky: 0x1a1830, layout: 'covert', waves: [], hazards: {} },
