@@ -50,6 +50,7 @@ export const G = {
   adsSens: 0.4,          // player preference: share of it while the disruptor is scoped in
   padSens: 1,            // player preference: gamepad right-stick look speed multiplier (engine/gamepad.js)
   padInvert: false,      // player preference: gamepad look up/down inverted
+  flashScale: 1,         // player preference: full-screen flash brightness (0 = off, 1.5 = extra)
   shakeScale: 1,         // player preference: screen shake strength (0 = off, 1.5 = extra)
   fov: 60,               // player preference: resting vertical FOV in degrees (the FOV slider, 50-90)
   sbMenu: false,         // the sandbox B panel is open (same cinematic cuts as the pause screen)
