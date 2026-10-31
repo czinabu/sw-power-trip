@@ -104,8 +104,9 @@ function inkSurface(m, metal, rough){
         } else {
           surf += uSky * rim * (1.0 - uRough) * 0.35 * diffuseColor.rgb;   // leather catches a little; wool almost none
           // dark cloth in the arena: an albedo-independent sky fill plus a cool rim so black robes keep their folds and edges
-          float dark = 1.0 - smoothstep(0.01, 0.07, dot(diffuseColor.rgb, vec3(0.333)));
-          surf += uSky * (0.04 + 0.4 * rim) * dark * uFill;
+          float dark = 1.0 - smoothstep(0.004, 0.03, dot(diffuseColor.rgb, vec3(0.333)));   // black cloth and hair only, never skin
+          vec3 fill = mix(vec3(dot(uSky, vec3(0.333))), uSky, 0.25);                       // near-neutral so black stays black
+          surf += fill * (0.035 + 0.3 * rim) * dark * uFill;
         }
         outgoingLight += surf;
         #include <opaque_fragment>`);
