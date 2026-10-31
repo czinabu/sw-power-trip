@@ -135,11 +135,11 @@ export const SABER_GUARDS = {
                off: { hand: [-0.55, 0.15, 0.4], pole: [-0.7, -0.5, -0.3] } },
       block: { hand: [0.16, 0.26, 0.42], blade: [0.08, -1, 0.18], two: true, twist: 0, lean: 0.22, pole: [0.9, -0.1, -0.3] },
     },
-    // SHIEN: the saber fist held forward at the weapon-side ribs, the blade laid back along the forearm and raked down
-    // behind the hip, the free hand out in front, open, measuring the shooter; low and coiled
+    // SHIEN: Kylo Ren's trailing guard (the old reverse-grip Djem So stance): saber arm hanging long and low out at the
+    // weapon side, blade raked down and back, hunched forward, off hand raised out ahead, clawed
     shien: {
-      ready: { hand: [0.26, -0.04, 0.32], blade: [0.55, -0.5, -0.67], twist: 0.14, torso: 0.05, lean: 0.12, pole: [0.5, -0.6, -0.6],
-               off: { hand: [-0.3, 0.12, 0.44], pole: [-0.6, -0.6, -0.3] } },
+      ready: { hand: [0.4, -0.24, 0.12], blade: [0.62, -0.45, -0.64], twist: -0.18, lean: 0.14, pole: [0.5, -0.3, -0.8],
+               off: { hand: [-0.55, 0.15, 0.4], pole: [-0.7, -0.5, -0.3] } },
       // the forearm up across the body, blade hanging down in front: a wall the bolts glance off back down the line
       block: { hand: [0.1, 0.24, 0.42], blade: [0.3, -0.94, 0.14], twist: 0.05, lean: 0.08, pole: [0.9, -0.2, -0.3],
                off: { hand: [-0.2, 0.0, 0.36], pole: OFF_POLE } },

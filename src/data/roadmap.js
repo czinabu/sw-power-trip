@@ -6,6 +6,9 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'Shien: the old Kylo Ren reverse grip', status: 'done',
+    items: ['Form V Shien\'s reverse-grip ready pose is the earlier trailing guard again: saber arm hanging long and low at the weapon side, blade raked down and back, hunched forward with the free hand raised ahead',
+            'Pose only: Shien\'s cuts, block, footwork and deflects are unchanged. Same in every mode, co-op included'] },
   { title: 'Makashi stance like Dooku\'s', status: 'done',
     items: ['Form II Makashi\'s ready guard now follows Count Dooku\'s: upright and side-on, the saber one-handed out low and forward with the blade angled down at the foe, the off arm swept back and out with the palm open, feet narrow and close',
             'Pose only, the hero\'s look is unchanged. Same guard in every mode: story, training, survival, sandbox, missions, the stance unlock screen and co-op'] },
