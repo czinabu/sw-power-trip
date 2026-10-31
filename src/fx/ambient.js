@@ -8,6 +8,9 @@ import { makeEmberSprite } from '../world/textures.js';
 import { updateAtmosphere } from '../world/atmosphere.js';
 import { updateAir } from '../world/air.js';
 import { updateWarfront } from '../world/warfront.js';
+import { sparks } from './ink.js';
+import { gust } from '../audio/director.js';
+import { V3 } from '../utils.js';
 
 /* L.ambient (from the world theme): { kind: 'embers' (rise) | 'ash' | 'snow' (fall) | 'dust' (drift), color, count, size } */
 export function buildAmbient(L){
@@ -62,7 +65,30 @@ function box(){
   const p = player.group.position;
   return { x: p.x, z: p.z, hx: NEAR, hz: NEAR };
 }
+/* WIND GUSTS — now and then (every 7-14 s) a gust sweeps through: a loose handful of long streaks skimming past in one
+   steady wind direction (snow spindrift, dust, drifting ash, embers) with a swell of wind to match. Sparse and quiet on
+   purpose: the air should feel alive, never busy. Only in a fight's calm moments of play, never in menus or cutscenes. */
+const GUST = { snow: 0xdfe9ff, dust: 0xe8c890, ash: 0xb8b0b0, embers: 0xff9a50 };
+const _gp = V3(), _gd = V3();
+let gustT = 2;   // (the first gust comes soon after a fight starts)
+function updateGusts(dt){
+  const col = GUST[shared.ambientKind];
+  if (!col || G.mode !== 'play' || G.paused || G.cutscene){ return; }
+  if ((gustT -= dt) > 0) return;
+  gustT = rand(7, 14);
+  // the wind blows across the view (a steady side per arena) so the streaks are seen crossing the scene, ahead of the hero
+  const pp = player.group.position, side = (shared.windSide ?? (shared.windSide = Math.random() < 0.5 ? -1 : 1));
+  const fx = -Math.sin(G.yaw), fz = -Math.cos(G.yaw);   // the way the camera looks along the ground
+  _gd.set(-fz * side, rand(-0.02, 0.04), fx * side);
+  for (let i = 0; i < 5; i++){   // five bursts staggered along the gust's front, each a few streaks
+    const ahead = rand(5, 22);
+    _gp.set(pp.x + fx * ahead - _gd.x * 14 + rand(-3, 3), rand(0.4, 3.5), pp.z + fz * ahead - _gd.z * 14 + rand(-3, 3));
+    sparks(_gp, col, 5, 24, { dir: _gd, cone: 0.05, life: 1.2, grav: 0, stretch: 10, size: 0.3 });
+  }
+  gust(shared.ambientKind);
+}
 export function updateAmbient(dt){
+  updateGusts(dt);
   updateAtmosphere(dt);
   updateAir(dt);
   updateWarfront(dt);

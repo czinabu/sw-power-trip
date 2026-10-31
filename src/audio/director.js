@@ -97,6 +97,13 @@ export function thunder(){
   play({ bus: 'amb', src: 'noise', color: 'brown', at: lag, g: 0.3 - far * 0.12, a: 0.05, hold: 0.3, d: 2.6, filt: { type: 'lowpass', f: 600, f2: 70 }, drive: 0.3, pan, verb: 0.6, pri: 2 });
 }
 
+/* a gust of wind sweeping through (fx/ambient.js): a soft swell of filtered air that rises and falls over a couple of seconds */
+export function gust(kind){
+  if (!AE.ready) return;
+  const hi = kind === 'snow' ? 1100 : 700, pan = rand(-0.5, 0.5);
+  play({ bus: 'amb', src: 'noise', color: 'pink', g: 0.05, a: 0.9, hold: 0.3, d: 1.4, filt: { type: 'bandpass', f: hi * 0.6, f2: hi, q: 0.9 }, pan, verb: 0.3, pri: 0 });
+}
+
 /* a blast in the battle beyond the walls (world/warfront.js): a low thud that arrives after the flash, by distance,
    quieter and duller the further off it was */
 export function distantBoom(dist){
