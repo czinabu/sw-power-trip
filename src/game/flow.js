@@ -28,6 +28,7 @@ import { spawnChampion, startEndlessWave, endlessWaveCleared } from './survival.
 import { applyJetTier, payWaveClear } from './progression.js';
 import { MANDO_AUTO, JEDI_AUTO } from '../data/store.js';
 import { DEFAULT_LOADOUT, RUN_LOADOUT, STARTING_FORMS } from '../data/forms.js';
+import { queueAbilityCards, tickAbilityCards, clearAbilityCards, hasAbilityCard } from '../ui/ability-card.js';
 import { queueMeditation, formsTaught, autoLoadout, tickMeditation, clearMeditation } from './meditation.js';
 import { chapterOrder } from '../data/campaign.js';
 import { openSkillTree } from '../ui/store-ui.js';
@@ -162,7 +163,7 @@ export function startLevel(idx, opts){
     //  Brace (RMB) + Rocket (Dual auto-unlocks after wave 1, Flame after wave 2).
     G.unlocked = G.hero === 'jedi' ? { push: true, dash: true } : { rocket: true };
     G.stanceUnlocked = {};   // SHII-CHO is known from the start; the rest is learned (data/forms.js FORM_PATH). The training grounds add what the story has taught (game/tutorial.js)
-    G.formFork = null; clearMeditation();   // the run's Form VII choice; nothing left waiting from the last run
+    G.formFork = null; clearMeditation(); clearAbilityCards();   // the run's Form VII choice; nothing left waiting from the last run
     // a run (campaign or survival) and the training grounds start on the forms the hero knows and grow (each lesson slots
     // its own: game/tutorial.js); the missions keep the old three (a mission then slots what its kit teaches)
     G.loadout = [...(G.mission || G.sandbox ? DEFAULT_LOADOUT : RUN_LOADOUT)];
@@ -273,6 +274,9 @@ function announceUnlocks(announce, bannerDelay){
   const forms = announce.filter(u => u.form);
   if (forms.length) queueMeditation(forms.map(u => u.key));
   announce = announce.filter(u => !u.form);
+  // an ability with a card (data/ability-cards.js) gets its own small screen; the rest keep the banner
+  queueAbilityCards(announce.filter(hasAbilityCard));
+  announce = announce.filter(u => !hasAbilityCard(u));
   announce.forEach((u, i) => {
     setTimeout(() => { if (G.mode !== 'play') return;
       showBanner(u.name, /^HOLD /.test(u.hud) ? '' : 'PRESS', 3.0, { kicker: 'UNLOCKED', key: u.hud });
@@ -374,6 +378,7 @@ export function coopCampaignCleared(){
 
 export function updateFlow(dt){
   tickMeditation();   // a learned form waits for the screens in front of it to close (meditation.js)
+  tickAbilityCards();   // so does a new ability's card (ui/ability-card.js)
   if (G.coopGuest) return;   // the host runs this run's spawns and waves: net/foes.js tells this browser what they did
   // the lull: once the first half of a long wave is down, hold the rest behind a short beat, then release it
   const bar = G.spawnQueue.find(s => s.barrier);
