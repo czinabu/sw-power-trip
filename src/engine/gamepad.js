@@ -16,6 +16,9 @@ import { wheelStick } from '../allies/wheel.js';
    direction; the W A S D keys are pressed too, for everything that reads those) */
 export const padMove = { on: false, x: 0, y: 0 };
 export const pad = { connected: false, family: 'xbox', active: false };   // active: the pad is what's being played with
+// a screen that reads the pad itself (the sandbox's battle setup: ui/battlesim-ui.js) sets `own`: while it returns true the
+// pad drives it instead of the fight or the menu focus ring. (btn: pressed now · down(i): just pressed · sticks · dt)
+export const padHooks = { own: null };
 
 const overlay = document.getElementById('overlay');
 const prev = new Array(PAD_BUTTONS.length).fill(false);
@@ -46,7 +49,7 @@ window.addEventListener('gamepaddisconnected', () => {
 
 /* ---------- PROMPTS: keyboard key labels said the pad's way ('LMB' → RT, 'F' → Y, 'W A S D' → LS) ---------- */
 const KB_ALIAS = { space: ' ', lmb: 0, rmb: 2 };
-function padKey(tok, hero){
+export function padKey(tok, hero){
   const gl = PAD_GLYPHS[pad.family], B = PAD_BINDS[hero];
   const t = tok.toLowerCase();
   if (t === 'mouse' || t === 'aim') return gl.RS;
@@ -140,6 +143,7 @@ function poll(t){
   const down = (i) => btn[i] && !prev[i] && !blocked.has(i);
   const up = (i) => !btn[i] && prev[i];
 
+  if (padHooks.own && padHooks.own(btn, down, lx, ly, rx, ry, dt)){ prev.splice(0, prev.length, ...btn); return; }
   if (now) fight(btn, down, up, lx, ly, rx, ry, dt);
   else menu(btn, down, lx, ly, ry, dt);
   prev.splice(0, prev.length, ...btn);
@@ -292,7 +296,7 @@ function menu(btn, down, lx, ly, ry, dt){
     if (focus){ if (focus.tagName === 'INPUT') focus.focus(); else focus.click(); }
   }
   if (down(1)){   // B — back: close what's on top, or resume from the pause screen
-    if (panelUp()){ sendKey('escape', true); sendKey('escape', false); }
+    if (panelUp() || (ovUp() && /\bst-menu\b/.test(overlay.className) && /\bmpage\b/.test(overlay.className))){ sendKey('escape', true); sendKey('escape', false); }   // (the Missions page: back to the menu, ui/missions-ui.js)
     else if (ovUp() && overlay.classList.contains('st-pause')){ sendKey('tab', true); sendKey('tab', false); }
   }
   if (down(9)){   // MENU — resume from pause; anywhere else on the overlay, the main button

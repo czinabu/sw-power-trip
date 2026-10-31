@@ -33,7 +33,7 @@ const clone = (v) => v == null ? v : JSON.parse(JSON.stringify(v));
 export function inCampaignRun(){ return G.mode === 'play' && (G.chapter >= 0 || (!G.endless && !G.training && !G.mission && !G.sandbox)); }
 function snapshotRun(){
   return {
-    idx: G.levelIdx, chapter: G.chapter, actTwo: G.actTwo, checkpoint: clone(G.checkpoint), stance: G.stance, loadout: [...G.loadout], mandoKit: { ...(G.mandoKit || RUN_KIT) }, weapon: player.weapon,
+    idx: G.levelIdx, chapter: G.chapter, actTwo: G.actTwo, story: clone(G.story) || {}, checkpoint: clone(G.checkpoint), stance: G.stance, loadout: [...G.loadout], mandoKit: { ...(G.mandoKit || RUN_KIT) }, weapon: player.weapon,
     unlocked: clone(G.unlocked), stanceUnlocked: clone(G.stanceUnlocked), formFork: G.formFork || null, mandoChoiceShown: G.mandoChoiceShown,
     xp: G.xp, xpEarned: G.xpEarned, skillPoints: G.skillPoints, skillSpent: G.skillSpent,
     powerLv: clone(G.powerLv), mastery: clone(G.mastery), masteryUse: clone(G.masteryUse), xpPoints: G.xpPoints, seenTypes: clone(G.seenTypes),
@@ -56,6 +56,7 @@ export function restoreRun(run){
   // hands out the primaries again as it goes on: game/flow.js checkUnlocks)
   G.mandoKit = cleanKit(run.mandoKit || { sidearm: run.weapon === 'dual' ? 'dual' : 'single', primary: null });
   { const W = MANDO_WEAPONS[player.weapon]; if (W && W.slot && G.mandoKit[W.slot] !== player.weapon) player.weapon = G.mandoKit.sidearm; }
+  G.story = clone(run.story) || {};   // the story's choices so far (game/choices.js)
   G.formFork = run.formFork || null; clearMeditation();   // (forms the saved chapter has passed are taught again as it starts)
   G.xp = run.xp || 0; G.xpEarned = run.xpEarned || 0; G.skillPoints = run.skillPoints || 0; G.skillSpent = run.skillSpent || 0;
   G.powerLv = clone(run.powerLv) || {}; G.mastery = clone(run.mastery) || {}; G.seenTypes = clone(run.seenTypes) || {};

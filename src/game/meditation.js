@@ -16,6 +16,9 @@ import { STANCES, stanceUnlocked } from '../data/stances.js';
 import { setLoadout, setStanceHud } from '../player/jedi/stance.js';
 import { previewStance } from '../ui/showcase.js';
 import { coopLive } from '../net/foes.js';
+import { chapterOrder, storyVoice, storyHero } from '../data/campaign.js';
+import { JEDI_FORK_LINE } from '../data/campaign-jedi.js';
+import { storyWords } from './choices.js';
 
 const el = document.getElementById('meditate');
 const pending = [];   // form ids learned and not yet shown
@@ -68,10 +71,15 @@ function close(quiet){
 }
 
 /* ---------- Form VII: keep one ---------- */
+// who offers it: the campaign story's voice for the chapter (General Kast, by the chase, in the Jedi's), and the Jedi's
+// story has a word on it about what was just done to Ilsa (data/campaign-jedi.js JEDI_FORK_LINE)
+function forkVoice(){ const c = G.chapter >= 0 && chapterOrder(G.actTwo)[G.chapter]; return c ? storyVoice(undefined, c) : 'MASTER VAEL'; }
+const forkLine = () => G.chapter >= 0 && storyHero() === 'jedi' ? storyWords(JEDI_FORK_LINE) : null;
 function renderFork(ids){
   el.innerHTML = '<div class="cc-inner hero-jedi"><div class="cc-act">FORM VII</div>' +
     '<h1 class="cc-title">THE SEVENTH FORM</h1>' +
-    '<div class="cc-voice"><div class="cc-who">THE BATTLEMASTER</div><p>Few Jedi ever reach the seventh form, and none walk both of its roads. Juyo lets the fury in. Vaapad takes it from the one who attacks you. Choose, and the other road closes for good.</p></div>' +
+    '<div class="cc-voice"><div class="cc-who">' + forkVoice() + '</div><p>Few Jedi ever reach the seventh form, and none walk both of its roads. Juyo lets the fury in. Vaapad takes it from the one who attacks you. Choose, and the other road closes for good.</p>' +
+    (forkLine() ? '<p>' + forkLine() + '</p>' : '') + '</div>' +
     '<div class="cc-pick">' + ids.map(id => '<div class="cc-opt" data-fork="' + id + '" style="--c:' + hex(STANCES[id].blade) + '"><b>' + FORMS[id].name + '</b><span>' + formLine(id) + '</span></div>').join('') + '</div>' +
     '<div class="cc-hint">The choice holds for the rest of this run</div></div>';
 }

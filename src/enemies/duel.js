@@ -286,11 +286,11 @@ function guardPose(e, dt){
   const blk = e.blockLine && G.gt - e.blockAt < DUEL.read.hold;
   const P = blk ? BLOCK_POSE : GUARD_POSE, line = blk ? e.blockLine : e.guard, k = blk ? DUEL.read.rate : 9;
   if (u.staff){
-    const p = P.staff[line];
+    const p = P.staff[line] || P.staff.H;   // (a line with no pose of its own, an angle cut's or a thrust's: the high guard)
     u.staff.rotation.z = dampToward(u.staff.rotation.z, p[0], dt, k);
     u.staff.rotation.x = dampToward(u.staff.rotation.x, p[1], dt, k);
   } else if (u.weaponArm){
-    const p = P.sword[line];
+    const p = P.sword[line] || P.sword.H;
     u.weaponArm.rotation.x = dampToward(u.weaponArm.rotation.x, p[0], dt, k);
     u.weaponArm.rotation.z = dampToward(u.weaponArm.rotation.z, p[1], dt, k);
   }

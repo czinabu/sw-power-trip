@@ -54,6 +54,7 @@ export const G = {
   shakeScale: 1,         // player preference: screen shake strength (0 = off, 1.5 = extra)
   fov: 60,               // player preference: resting vertical FOV in degrees (the FOV slider, 50-90)
   sbMenu: false,         // the sandbox B panel is open (same cinematic cuts as the pause screen)
+  sbPlan: false,         // the sandbox's battle setup is up: the sim holds still under an overhead view (game/battlesim.js)
   fovPreview: false,     // the FOV slider is being adjusted: settings fade away to show the live in-game view
   levelIdx: 0, wave: 0, waveTotal: -1,   // waveTotal = cumulative waves started (drives Mando ability unlocks)
   waveFrom: 0, waveEnd: null,            // the stretch of the level's waves being played (a campaign chapter's, game/flow.js)
@@ -70,6 +71,7 @@ export const G = {
   hero: 'jedi',          // 'jedi' (saber/Force), 'mando' (jetpack/blasters) or 'trooper' (clone ARC trooper, testing only) — chosen on the menu
   // SURVIVAL / ENDLESS mode
   modeSel: 'campaign',   // menu pick: 'campaign' | 'endless' | 'training' | 'mission' | 'sandbox'
+  story: {},             // the campaign story's choices so far, { choice id: answer } (game/choices.js), saved with the run
   storyHero: null,      // whose story a campaign run tells (data/campaign.js storyHero): null is the hero's own; a co-op guest takes the host's
   missionId: 'refuge',   // which story mission (data/missions.js) the menu's MISSIONS list has picked
   endless: false,        // true while a survival run is active

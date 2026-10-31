@@ -12,6 +12,8 @@ import { camera, scene } from '../engine/renderer.js';
 import { G, shared, player, isGunner } from '../state.js';
 import { VOICE, storyHero } from '../data/campaign.js';
 import { MANDO_BOSS, MANDO_CAST } from '../data/campaign-mando.js';
+import { JEDI_BOSS, JEDI_DUELS, JEDI_CAST } from '../data/campaign-jedi.js';
+import { storyWords } from './choices.js';
 import { playerPos, stance, fwd, rightV } from '../player/helpers.js';
 import { animatePlayer } from '../player/animation.js';
 import { cameraClearance, sightClear, updatePropFade } from '../world/camblock.js';
@@ -220,7 +222,7 @@ function showShot(){
   // the speaker works its jaw (or nods under its helmet) while its line is up (enemies/upper.js talking)
   C.actors.forEach((a, i) => { if (a.g) a.g.userData.talk = !!(s.line && s.on === 'actor' && i === 0); });
   // the hero speaks a line of its own (not the voice in its ear): the Jedi's jaw works (player/model/life.js express)
-  player.talking = !!(s.line && s.on === 'hero' && s.line[0] && !Object.values(VOICE).includes(s.line[0]) && !MANDO_CAST.has(s.line[0]));
+  player.talking = !!(s.line && s.on === 'hero' && s.line[0] && !Object.values(VOICE).includes(s.line[0]) && !JEDI_CAST.includes(s.line[0]) && !MANDO_CAST.has(s.line[0]));   // (a voice or the story's cast isn't the hero)
   pickSide(s);
 }
 
@@ -326,7 +328,8 @@ export function playOpening(id, title, own){
 // a mission duel's entrance (game/mission.js, before its foe steps in). spec: { mid, foe, name, kicker, tint, scale,
 // at: [x, z], line, quarry } as the host's hero sees the foe. Returns false when no scene plays (seen, or one is up).
 export function playDuelIntro(spec, share = true){
-  const lines = ((DUELS[spec.mid] && pick(DUELS[spec.mid])) || (spec.line ? [[null, spec.line]] : [])).slice();
+  const jedi = G.chapter >= 0 && storyHero() === 'jedi' && JEDI_DUELS[spec.mid];   // (the Jedi's story has its own words for some)
+  const lines = ((jedi && storyWords(jedi)) || (DUELS[spec.mid] && pick(DUELS[spec.mid])) || (spec.line ? [[null, spec.line]] : [])).slice();
   const actors = [];
   let at = spec.at;
   if (spec.quarry){
@@ -354,7 +357,8 @@ export function playBossIntro(share = true){
   const b = boundActor('boss');
   if (!b) return false;
   b.scale = 1.4;
-  const lines = (G.chapter >= 0 && storyHero() === 'mando' ? MANDO_BOSS : pick(BOSS)).slice(),   // (the Mando's own story: data/campaign-mando.js)
+  const own = G.chapter >= 0 && { mando: MANDO_BOSS, jedi: storyWords(JEDI_BOSS) }[storyHero()];
+  const lines = (own || pick(BOSS)).slice(),   // (a story's own: data/campaign-mando.js, data/campaign-jedi.js)
         [name, epithet] = (isGunner() ? BOSS_MANDO.name : BOSS_CFG.name).split(' — ');
   const first = shot('actor', [0.6, 5, 0.9], [0.4, 4.4, 1.3], lineTime(lines[0]), { on: 'actor', h: 2.2 },
                      { line: lines[0], title: { k: 'EXEGOL', h: name, p: epithet || '' }, mirror: true });
@@ -367,7 +371,7 @@ export function playBossIntro(share = true){
 export function playScene(id, opts = {}){
   const d = SCENES[id];
   if (!d) return false;
-  const lines = (pick(d) || []).slice(), actors = [];
+  const lines = (opts.lines || pick(d) || []).slice(), actors = [];   // (opts.lines: a story's own words for the scene)
   let shots;
   if (d.shots === 'mark' && opts.mark){
     const [mx, mz] = opts.mark;
