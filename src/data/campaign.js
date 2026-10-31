@@ -1,5 +1,5 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
-import { heroKey } from '../state.js';
+import { G, heroKey } from '../state.js';
 import { mergeTrooperStory } from './campaign-trooper.js';
 // THE CAMPAIGN, as data: three acts of chapters, played in order (game/campaign.js runs them). Edit the words freely.
 //
@@ -15,6 +15,8 @@ import { mergeTrooperStory } from './campaign-trooper.js';
 // `opens` names Missions-list missions that clearing the chapter opens besides its own (the Extraction with the breakout,
 // the Grass Sea battle with its Exegol copy).
 // `arena` stages the chapter on its own map: { layout, arena } laid over the level or mission's own (world/arena.js).
+// `prologue: true` (the ARC trooper's, testing): a chapter before chapter 1 that only a run begun with that hero plays
+// (G.prologue, kept with the run and sent to a co-op partner). It counts no step deeper into the run (`steps: 0`).
 // `lines` is what's said during the chapter, on the comms strip (game/story.js), per hero. `wave` has one entry per wave
 // of the chapter; the rest are story beats: duel (a mission's duel foe steps in) · escape (it breaks off) · boss · clear.
 // A line is a string (the voice: VOICE) or { who, say } for anyone else; `rival: true` marks the enemy talking.
@@ -40,6 +42,14 @@ export const ACT_TWO = {
 };
 
 export const CHAPTERS = [
+  // ---------------- PROLOGUE (the ARC trooper's, testing: data/campaign-trooper.js has its words) ----------------
+  { id: 'order', act: 0, kind: 'mission', mission: 'order66', world: 'THE NIGHT OF THE ORDER, EIGHT YEARS AGO', prologue: true, steps: 0,
+    title: 'THE NIGHT OF THE ORDER',
+    brief: { jedi: ['Eight years ago, in a jungle on the edge of the war, the order came.', 'Get the General out.'],
+             mando: ['Eight years ago, in a jungle on the edge of the war, the order came.', 'Get the General out.'] },
+    lines: { duel: { jedi: [{ who: 'THE MARSHAL', rival: true, say: 'Step aside.' }], mando: [{ who: 'THE MARSHAL', rival: true, say: 'Step aside.' }] },
+             escape: { jedi: ['Let him go. The General first.'], mando: ['Let him go. The General first.'] },
+             clear: { jedi: ['The ship lifts over the canopy.'], mando: ['The ship lifts over the canopy.'] } } },
   // ---------------- ACT I ----------------
   { id: 'siege', act: 0, kind: 'waves', level: 0, waves: [0, 2], world: 'JEDHA',
     title: 'SIEGE OF THE TEMPLE',
@@ -167,15 +177,20 @@ export const EPILOGUE = {
 mergeTrooperStory(ACTS, ACT_TWO, CHAPTERS, EPILOGUE);
 
 // the order a run plays them in: Act II's pairs follow the player's pick (default Lothal first, before the pick is made)
-export function chapterOrder(first){
+export function chapterOrder(first, prologue = G.prologue){
   const lothal = CHAPTERS.filter(c => c.pair === 'lothal'), hoth = CHAPTERS.filter(c => c.pair === 'hoth');
   const pairs = first === 'hoth' ? [...hoth, ...lothal] : [...lothal, ...hoth];
   const at = CHAPTERS.findIndex(c => c.pair);
-  return [...CHAPTERS.slice(0, at), ...pairs, ...CHAPTERS.slice(at).filter(c => !c.pair)];
+  return [...CHAPTERS.slice(0, at), ...pairs, ...CHAPTERS.slice(at).filter(c => !c.pair)].filter(c => prologue || !c.prologue);
 }
-// where the pick is made: the first chapter of Act II
-export const ACT_TWO_AT = CHAPTERS.findIndex(c => c.pair);
+// where the pick is made: the first chapter of Act II (in this run's order)
+export const actTwoAt = () => chapterOrder().findIndex(c => c.pair);
+// the number a chapter goes by: a prologue has none, and doesn't shift the rest ('PROLOGUE', 'CHAPTER 1'…)
+export function chapterNo(pos, list = chapterOrder()){
+  const c = list[pos]; if (!c) return '';
+  return c.prologue ? 'PROLOGUE' : 'CHAPTER ' + (pos + 1 - list.filter((d, i) => i < pos && d.prologue).length);
+}
 // a save from before the chapters (data/levels.js index) picks up on the chapter that opens that level
-export const CHAPTER_OF_LEVEL = [0, CHAPTERS.findIndex(c => c.id === 'mustafar'), CHAPTERS.findIndex(c => c.id === 'exegol')];
+export const CHAPTER_OF_LEVEL = ((o) => [0, o.findIndex(c => c.id === 'mustafar'), o.findIndex(c => c.id === 'exegol')])(chapterOrder(null, false));
 // (a hero with no entry of its own yet, the trooper in testing, falls back to the Mando's words: state.js heroKey)
 export const forHero = (v, hero) => v && typeof v === 'object' && !Array.isArray(v) ? heroKey(v, hero) : v;

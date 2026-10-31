@@ -17,6 +17,7 @@ import { cameraClearance, sightClear, updatePropFade } from '../world/camblock.j
 import { findClearSpawn, groundAt, segBlockedBySolids } from '../world/collision.js';
 import { ENEMY_TYPES } from '../data/enemies.js';
 import { buildEnemyMesh } from '../enemies/mesh.js';
+import { foeType } from '../enemies/look.js';
 import { updateLegs } from '../enemies/gait.js';
 import { updateUpper } from '../enemies/upper.js';
 import { resetCameraRig } from '../engine/camera.js';
@@ -60,8 +61,7 @@ const binders = {
 };
 export function bindActor(name, fn){ binders[name] = fn; }
 function makeActor(def, x, z, yaw){
-  const t = ENEMY_TYPES[def.foe] || ENEMY_TYPES.duelist;
-  const g = buildEnemyMesh(t);
+  const g = buildEnemyMesh(foeType(ENEMY_TYPES[def.foe] ? def.foe : 'duelist'));   // (in the mission's uniform: enemies/look.js)
   g.scale.multiplyScalar(def.scale || 1);
   if (def.tint != null && g.userData.bodyMat) g.userData.bodyMat.color.lerp(new THREE.Color(def.tint), 0.5);
   if (def.blade != null && g.userData.bladeGlow) g.userData.bladeGlow.material.color.setHex(def.blade);   // a form master's blade (game/mission.js)

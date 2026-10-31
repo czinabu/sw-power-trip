@@ -6,6 +6,8 @@
 // unlocks in data/store.js check against), so a mission plays with a mid-run kit instead of the bare starting one.
 // `start` is [x, z, yaw] where the hero stands when it begins (yaw 0 faces north, +z). `grant` is the abilities each
 // hero gets on top (G.unlocked keys; one from a fork pair, data/store.js). Foes are as tough as a run's first wave.
+// `foeLook` dresses the foe types it sends in another uniform ({ type: { model, color, eye, cloth } }, enemies/look.js);
+// `squadCap` is the most squadmates it has (the ARC trooper otherwise tops his squad up to his own size).
 //
 // Objective kinds and their fields
 //   hold      stand by a spot until a timer runs out
@@ -66,9 +68,13 @@ import { REFUGE_SPOTS } from '../world/arenas/refuge.js';
 import { PURSUIT_SPOTS } from '../world/arenas/pursuit.js';
 import { BATTLE_MAPS, GRASSLAND_SPOTS, ICEFRONT_SPOTS, GRAVEYARD_SPOTS } from './battlemaps.js';
 import { LEVELS } from './levels.js';
+import { JUNGLE_SPOTS } from '../world/arenas/jungle.js';
+import { TURNED } from './allies.js';
 
 export const MISSION_VOICE = { jedi: 'THE BATTLEMASTER', mando: 'THE ARMORER', trooper: 'THE CAPTAIN' };
 export const MISSION_COLOR = { jedi: 0x5ad2ff, mando: 0xffa040, trooper: 0x4aa8ff };
+// the same words (or value) for every hero: a mission with one story whoever plays it
+const all = (v) => ({ jedi: v, mando: v, trooper: v });
 
 export const MISSIONS = {
   refuge: {
@@ -484,6 +490,65 @@ export const MISSIONS = {
     done: { jedi: 'The forge is ash. But it fell too easily. This was never his army.',
             mando: 'The forge is ash, and it was too easy. This was bait.' },
   },
+  // THE NIGHT OF THE ORDER: the ARC trooper's prologue (testing), eight years before the campaign. A jungle firebase at
+  // night; the order has come, the company has turned, and the trooper and two brothers who refused it get their
+  // wounded General out. Campaign only (the trooper's first chapter, data/campaign.js); one voice for every hero, so a
+  // co-op partner of any kind hears the same story. The foes wear the turned company's armour (`foeLook`).
+  order66: {
+    id: 'order66',
+    title: 'THE NIGHT OF THE ORDER',
+    campaignOnly: true,
+    blurb: 'get the General out when the company turns',
+    level: { name: 'MISSION — THE NIGHT OF THE ORDER', sub: all('Eight years ago. The order came at midnight.'),
+             arena: 76, floor: 0x34442a, fog: 0x18302a, sky: 0x070c18, layout: 'jungle', waves: [], hazards: {} },
+    start: JUNGLE_SPOTS.start,   // the ruin's courtyard, where the General fell back, looking south at the firebase
+    kit: 2,
+    grant: all([]),
+    squad: 2, squadCap: 2,       // VANT and BRISK: the two who refused it with you (and no more: the trooper's run tops up to its own size)
+    foeLook: TURNED,
+    escort: all({ model: 'officer', name: 'THE GENERAL', kicker: 'JEDI · WOUNDED', color: 0x8a7458, eye: 0x5ad2ff, cloth: 0x5a4030, hp: 360 }),
+    objectives: [
+      { kind: 'sabotage', title: 'CUT THE COMPANY\'S COMMS', consoleName: 'RELAY', consoleDone: 'CUT',
+        doneLine: 'THE RELAYS ARE DOWN', doneSub: 'No gunship will find the General tonight.', music: 'battle',
+        say: all('They turned on the General mid-sentence, brother. Our own company. Their relays are calling the gunships down on that ruin. Cut both.'),
+        task: all('Stand at each relay console to cut it'),
+        consoles: [ { at: JUNGLE_SPOTS.relays[0], guards: { blaster: 3 } },
+                    { at: JUNGLE_SPOTS.relays[1], guards: { blaster: 2, grenadier: 1 } } ],
+        time: 4, r: 2.4, hitLoss: 1.0,
+        trickle: { every: 15, cap: 6, group: { blaster: 2 } } },
+
+      { kind: 'escort', title: 'GET THE GENERAL OUT', start: [-11, 4, 0],
+        say: all('The General can walk, barely. North through the trees to the landing zone. It will not walk into fire, so clear the way.'),
+        task: all('Stay near the General and keep the company off it'),
+        path: JUNGLE_SPOTS.walk,
+        speed: 2.2, leash: 14, threat: 6, dps: 4, regen: 3, aggro: 7,
+        ambush: [ { at: [-14, 12], group: { blaster: 2, grenadier: 1 }, from: [Math.PI - 0.6, Math.PI + 0.6] },
+                  { at: [-4, 19], group: { blaster: 2, sniper: 1 }, from: [-0.6, 0.6] },
+                  { at: [2, 22], group: { blaster: 2, officer: 1 }, from: [-Math.PI + 0.4, -0.4] } ],
+        trickle: { every: 16, cap: 6, group: { blaster: 1, grenadier: 1 } }, from: [-Math.PI + 0.4, -0.4] },
+
+      { kind: 'hold', title: 'HOLD THE LANDING ZONE', music: 'defend', start: [6, 24, Math.PI],
+        say: all('A friend with a fast ship owes me a favour, and it is coming in dark. Hold the pad until it is down. They know where we are now.'),
+        task: all('Hold the landing zone until the ship is down'),
+        at: [8, 26], r: 7, time: 45, awayRate: 0.35, squadRate: 0.55, holding: 'SHIP INBOUND',
+        overrun: 'CLEAR THE PAD', unguarded: 'PAD UNGUARDED', doneLine: 'THE SHIP IS DOWN', doneSub: 'And someone walks out of the trees.',
+        pulses: [ { blaster: 3 }, { blaster: 2, grenadier: 1 }, { blaster: 2, officer: 1 }, { blaster: 2, sniper: 1 }, { blaster: 3, grenadier: 1 } ],
+        every: [8, 12], cap: 8, from: [-Math.PI + 0.2, -0.2], aggro: 8 },
+
+      { kind: 'duel', title: 'FACE THE MARSHAL', start: [6, 24, Math.PI],
+        say: all('The Marshal. Same batch, same tank, same instructors. He is the one who gave the order to fire. Put him down, or at least make him run.'),
+        task: all('Beat the Marshal while the squad holds the pad'),
+        enter: all('The company falls back. One of them keeps walking.'),
+        foe: 'officer', name: 'THE MARSHAL', kicker: 'COMMANDER · YOUR BATCH', hp: 4, dmg: 1.1, scale: 1.12, tint: 0x9a7a2a, at: JUNGLE_SPOTS.duel,
+        line: all('Good soldiers follow orders, brother. You were the best of us.'),
+        rage: 0.5, rageDuel: {},
+        // he breaks off instead of falling: the trooper's campaign is where it ends
+        escape: 0.3, escapeLine: all('He falls back into the trees. He will be back.'), escapeScene: 'marshal-escape',
+        trickle: { every: 14, cap: 3, group: { blaster: 2 } }, from: [-Math.PI + 0.4, -0.4] },
+    ],
+    done: all('The General is aboard, and the three of us with it. Nobody is coming to save the clones who refused. So we save each other. Starting tonight.'),
+  },
+
   // TRIALS: the campaign's quiet one-on-ones between the battles (data/campaign.js). A master tests the hero before
   // teaching its form; for the Mando, a rival of the old clans. Stand-ins for now: built from today's duellists until the
   // seven forms' gatekeepers land, on the arenas their chapters borrow. `trial` keeps them off the Missions list until

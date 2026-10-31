@@ -34,13 +34,15 @@ import { buildGraveyardArena } from '../src/world/arenas/graveyard.js';
 import { buildArchiveArena } from '../src/world/arenas/archive.js';
 import { buildPrisonArena } from '../src/world/arenas/prison.js';
 import { buildHangarArena } from '../src/world/arenas/hangar.js';
+import { buildJungleArena } from '../src/world/arenas/jungle.js';
 import { buildSithArena } from '../src/world/arenas/sith.js';
 import { CHAPTERS } from '../src/data/campaign.js';
 
 const BUILDERS = { temple: buildTempleArena, foundry: buildFoundryArena, plains: buildPlainsArena, hall: buildHallArena,
   forge: buildForgeArena, refuge: buildRefugeArena, pursuit: buildPursuitArena, dojo: buildDojoArena, throne: buildThroneArena,
   grassland: buildGrasslandArena, icefront: buildIcefrontArena, graveyard: buildGraveyardArena,
-  approach: buildGrasslandArena, archive: buildArchiveArena, prison: buildPrisonArena, hangar: buildHangarArena, sith: buildSithArena };
+  approach: buildGrasslandArena, archive: buildArchiveArena, prison: buildPrisonArena, hangar: buildHangarArena, sith: buildSithArena,
+  jungle: buildJungleArena };
 
 const STEP = 0.4;          // sample spacing
 const SINK = 0.45;         // a visible top this far over the collision top is a miss (thin caps and trims sit under it)

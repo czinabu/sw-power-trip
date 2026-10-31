@@ -93,7 +93,7 @@ export function spawnSquad(n, at){
 // the ARC trooper never fights alone: top its squad up to TROOPER.squadMin in every mode but the training grounds
 export function trooperSquad(){
   if (!isTrooper() || G.training || G.coopGuest) return;
-  const want = Math.min(SQUAD.max, TROOPER.squadMin + (player.up.squadExtra || 0) + (G.unlocked.medic ? 1 : 0));   // the run adds to it (data/trooper-progression.js)
+  const want = Math.min(G.squadCap || SQUAD.max, TROOPER.squadMin + (player.up.squadExtra || 0) + (G.unlocked.medic ? 1 : 0));   // the run adds to it (data/trooper-progression.js)
   if (allies.length < want) spawnSquad(want - allies.length);
 }
 // put the squad back around the hero (a new arena built in place, a jump ahead): clear spots just behind

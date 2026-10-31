@@ -11,6 +11,7 @@ import { ENEMY_TYPES } from '../data/enemies.js';
 import { NET } from '../data/coop.js';
 import { V3, clamp } from '../utils.js';
 import { buildEnemyMesh } from '../enemies/mesh.js';
+import { foeType } from '../enemies/look.js';
 import { dressElite } from '../enemies/elites.js';
 import { damageEnemy } from '../enemies/damage.js';
 import { removeEnemy } from '../enemies/cleanup.js';
@@ -67,7 +68,7 @@ function snapshot(){
     bu.bodyMat ? bu.bodyMat.emissive.getHex() : 0, bu.bodyMat ? r2(bu.bodyMat.emissiveIntensity) : 0,
     bs.hero && !bs.hero.local ? [r2(bs.hero.pos.x), r2(bs.hero.pos.z)] : [r2(playerPos().x), r2(playerPos().z)],
     bu.pivot ? r2(bu.pivot.rotation.x) : 0, bu.pivot ? r2(bu.pivot.rotation.z) : 0] : null;   // (his shoulder: the cut he's swinging, boss/boss.js bossCut)
-  return { t: 'e', run: 1, boss, k: runKind(), ms: G.mission ? missionSnap() : undefined, lv: G.levelIdx, ch: G.chapter, a2: G.actTwo, wf: G.waveFrom, ar: G.arenaRot, w: G.endless ? G.endlessWave : G.wave, wt: G.waveTotal, ph: shared.levelPhase, mut: G.mut, list };
+  return { t: 'e', run: 1, boss, k: runKind(), ms: G.mission ? missionSnap() : undefined, lv: G.levelIdx, ch: G.chapter, a2: G.actTwo, pr: G.prologue ? 1 : 0, wf: G.waveFrom, ar: G.arenaRot, w: G.endless ? G.endlessWave : G.wave, wt: G.waveTotal, ph: shared.levelPhase, mut: G.mut, list };
 }
 
 function hostTick(){
@@ -124,7 +125,7 @@ function makePuppet(rec){
   const [nid, type, , , , , , , sc, hp, maxHp, state, flags, elite] = rec;
   const t = ENEMY_TYPES[type];
   if (!t) return null;
-  const g = buildEnemyMesh(t, { seed: typeof nid === 'number' ? nid : undefined });   // the host's marking and face (enemies/spawn.js)
+  const g = buildEnemyMesh(foeType(type), { seed: typeof nid === 'number' ? nid : undefined });   // the host's marking and face (enemies/spawn.js)
   g.scale.setScalar(sc);
   if (elite) dressElite(g, elite);
   if (rec[20] && STANCES[rec[20]] && g.userData.bladeGlow) g.userData.bladeGlow.material.color.setHex(STANCES[rec[20]].blade);   // a form master's blade
@@ -187,7 +188,7 @@ on('e', (m) => {
   }
   const ch = m.ch ?? -1;
   const changed = !coopRun.on || coopRun.w !== m.w || coopRun.ar !== m.ar || coopRun.k !== m.k || coopRun.lv !== m.lv || coopRun.ch !== ch || coopRun.mid !== (m.ms ? m.ms.id : '');
-  Object.assign(coopRun, { on: true, k: m.k || 'e', mid: m.ms ? m.ms.id : '', lv: m.lv || 0, ch, a2: m.a2 || null, wf: m.wf || 0, ar: m.ar, w: m.w, wt: m.wt, ph: m.ph, mut: m.mut });
+  Object.assign(coopRun, { on: true, k: m.k || 'e', mid: m.ms ? m.ms.id : '', lv: m.lv || 0, ch, a2: m.a2 || null, pr: m.pr || 0, wf: m.wf || 0, ar: m.ar, w: m.w, wt: m.wt, ph: m.ph, mut: m.mut });
   if (changed) runChanged();
   // this guest fell out of the shared fight without the host's run ending (died and retried, restarted): it was playing its
   // own foes and waves. Back in: its own foes go, and the host's take their place
@@ -205,7 +206,7 @@ on('e', (m) => {
   } else if (m.k === 'c'){   // the campaign: the host's chapter (a stretch of a level's waves, or a mission), or its level and wave
     if (G.endless || (G.mission && G.chapter < 0)){ endGuest(); return; }
     if (ch >= 0){
-      if (G.chapter !== ch){ dropPuppets(); followChapter(ch, m.a2); }
+      if (G.chapter !== ch || !G.prologue !== !m.pr){ dropPuppets(); followChapter(ch, m.a2, m.pr); }
     } else if (G.levelIdx !== m.lv || G.chapter >= 0){ dropPuppets(); startLevel(m.lv, { resume: true }); G.coopGuest = true; showBanner('', 'THE HOST MOVES ON', 1.6); }
     if (G.mission){ if (m.ms) coopMissionSync(m.ms); }   // a mission chapter: shown the host's objectives
     else if (m.ph === 'fighting' && (shared.levelPhase !== 'fighting' || G.wave !== m.w)) coopCampaignWave(m.w, m.wt);

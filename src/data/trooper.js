@@ -4,7 +4,7 @@
 // it fights on foot with no jetpack, leads a clone squad, and its guns are its own (TROOPER_WEAPONS below).
 // STILL TO BUILD before it leaves testing: gamepad binds (the Mando's for now), its cutscene and mission lines (the
 // Mando's for now), its own DC-15 model (the carbine's for now),
-// a heat bar per pistol, its prologue and its own trial chapters (data/campaign-trooper.js).
+// a heat bar per pistol and its own trial chapters (data/campaign-trooper.js).
 
 /* WEAPONS — the same fields as data/mando.js MANDO_WEAPONS (heat, cool, spreads, falloff), plus:
      fire 'burst'  the DC-15 rifle: one click fires `burst` bolts `burstGap` apart. RMB aims (the steady stance)

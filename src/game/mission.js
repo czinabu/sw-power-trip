@@ -39,7 +39,7 @@ import { showPanel, hidePanel, makeBeacon, makeConsole, setMarkerColor, pulseMar
          heroIn, nearHero, hostilesIn, hostilesAlive, setObjectiveHud, objectiveHud, mmss } from './objectives.js';
 import { MISSIONS, MISSION_VOICE, MISSION_COLOR } from '../data/missions.js';
 import { ALLY_COLOR, addFriendRing, updateFriendRing, makeFriendTag } from '../fx/friend.js';
-import { spawnSquad, squadIn, squadStanding } from '../allies/squad.js';
+import { spawnSquad, squadIn, squadStanding, allies } from '../allies/squad.js';
 import { collideSolids } from '../world/collision.js';
 import { players, targetable } from '../player/players.js';
 import { diffDmgMul } from '../data/difficulty.js';
@@ -69,9 +69,9 @@ export function startMission(id = 'refuge', fromObjective = 0, guest = false, op
   if (!opts.retry) resetScenes();   // a fresh start plays the mission's scenes again (a retry after a death or an escape doesn't)
   const sub = def.level.sub && typeof def.level.sub === 'object' ? heroKey(def.level.sub) : def.level.sub;
   if (ch){
-    startLevel(G.levelIdx, { level: { ...def.level, ...ch.arena, name: ch.name, sub: ch.sub || sub }, mission: true, resume: true, chapter: true });   // the run's hero and build, on the mission's arena (or the chapter's own)
+    startLevel(G.levelIdx, { level: { ...def.level, ...ch.arena, name: ch.name, sub: ch.sub || sub }, mission: true, resume: !ch.fresh, chapter: true, foeLook: def.foeLook, squadCap: def.squadCap });   // (fresh: a new run that opens on a mission, the trooper's prologue: a new build)   // the run's hero and build, on the mission's arena (or the chapter's own)
   } else {
-    startLevel(0, { level: { ...def.level, sub }, mission: true });   // fresh hero, kit and stats, on the mission's arena
+    startLevel(0, { level: { ...def.level, sub }, mission: true, foeLook: def.foeLook, squadCap: def.squadCap });   // fresh hero, kit and stats, on the mission's arena
     for (const k of (def.grant && heroKey(def.grant)) || []) G.unlocked[k] = true;
     G.waveTotal = def.kit; checkUnlocks();                 // a mid-run kit: forms, Force jump / jetpack boosters, dual blasters
     G.waveTotal = 0;   // ...but foes as tough as the first wave (HP and elite odds climb with waveTotal)
@@ -91,7 +91,7 @@ export function startMission(id = 'refuge', fromObjective = 0, guest = false, op
   if (def.quarry) placeQuarry(def.objectives[fromObjective]);
   if (def.escort) placeVip(fromObjective);
   // a STRIKE TEAM mission: the squad forms up beside the hero (allies/squad.js), and the wider battle rages past the walls
-  if (def.squad) spawnSquad(def.squad, st);
+  if (def.squad) spawnSquad(def.squadCap ? Math.max(0, def.squadCap - allies.length) : def.squad, st);   // (a capped squad counts the trooper's own, already called in)
   if (def.battle) startBattleFx(isMando() ? 0xffa040 : 0x4aa8ff);
   // retrying past the evacuation: the transport has already gone
   if (def.objectives.slice(0, fromObjective).some(o => o.kind === 'hold' && o.evacuees)) shipGone();
@@ -471,7 +471,8 @@ const KINDS = {
       if (o.escape && !gone && e.hp <= e.hpFloor + 0.01){ escapeDuel(o, e); return true; }
       if (!s.raged && !gone && e.hp <= e.maxHp * o.rage){
         s.raged = true;
-        e.dp = { ...e.dp, ...o.rageDuel }; e.spd *= 1.15;
+        if (e.dp) e.dp = { ...e.dp, ...o.rageDuel };   // (a gunfighter has no duelling profile to sharpen)
+        e.spd *= 1.15;
         showBanner('', o.name + ' PRESSES THE ATTACK', 1.8); S.roar(e.group.position);
       }
       // trickle: troops keep coming for the squad to hold off while you take the duel (a strike team's last stand)
@@ -725,7 +726,7 @@ function escapeDuel(o, e){
   G.shake = Math.max(G.shake, 0.8);
   S.roar(p);
   showBanner(o.name + ' ESCAPES', heroText(o.escapeLine) || '', 3.0);
-  playScene('inq-escape', { mark: [p.x, p.z] });   // its parting words, where it stood (game/cutscene.js)
+  playScene(o.escapeScene || 'inq-escape', { mark: [p.x, p.z] });   // its parting words, where it stood (game/cutscene.js)
   storyBeat('escape', { name: o.name });
 }
 function quarryEscaped(){

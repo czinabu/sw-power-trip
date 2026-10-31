@@ -22,7 +22,15 @@ export const CUT = { bars: 0.11, fadeIn: 0.4, fadeOut: 0.35, minLine: 2.6, readR
 const INQ = { jedi: { foe: 'acolyte', name: 'THE INQUISITOR', tint: 0xa01a22, scale: 1.18 },
               mando: { foe: 'duelist', name: 'VX-7', tint: 0x4a5a6a, scale: 1.12 } };
 
+const ORDER_OPENS = [[VOICE.trooper, 'Midnight. The comms lit up, and every visor in the company turned to the General. Not ours.'],
+                     [VOICE.trooper, 'Whatever that order was, brother, we are not following it.']];
+const MARSHAL = { foe: 'officer', name: 'THE MARSHAL', tint: 0x9a7a2a, scale: 1.12 };   // in the turned company's armour (enemies/look.js)
+const MARSHAL_LEAVES = [['THE MARSHAL', 'Run, then. Hide your General. I will find you both, brother. It is what we were made for.']];
+
 export const OPENINGS = {
+  // the ARC trooper's prologue (testing): one set of words for whoever plays it
+  order: {
+    jedi:  ORDER_OPENS, mando: ORDER_OPENS },
   // ---------------- ACT I ----------------
   siege: {
     jedi:  [[VOICE.jedi, 'Listen. That is the sound of a thousand years ending, unless you stand in its way.']],
@@ -99,6 +107,7 @@ export const DUELS = {
   forge: {
     jedi:  [[null, 'You broke my forge. I will make your blade from what is left of it.']],
     mando: [[null, 'Beskar melts like anything else. So will you.']] },
+  order66: [[null, 'Good soldiers follow orders, brother. Step aside.'], [VOICE.trooper, 'He means it. So do we.']],
   breakout: {
     jedi:  [[null, 'Those were my prisoners, Jedi. I will have every one of them back.']],
     mando: [[null, 'You emptied my cells. I\'ll fill one with you.']] },
@@ -118,6 +127,9 @@ export const SCENES = {
   'inq-escape': { shots: 'mark', actor: { jedi: INQ.jedi, mando: INQ.jedi },
     jedi:  [['THE INQUISITOR', 'Not today, Knight. I have seen which way the ships went.']],
     mando: [['THE INQUISITOR', 'Keep your foundlings, hunter. For now. I have seen which way the ships went.']] },
+  // the ARC trooper's prologue (data/missions.js order66): the Marshal breaks off into the jungle
+  'marshal-escape': { shots: 'mark', actor: { jedi: MARSHAL, mando: MARSHAL },
+    jedi: MARSHAL_LEAVES, mando: MARSHAL_LEAVES },
   // (the epilogue's card says the rest: game/campaign.js showEpilogue)
   epilogue: { shots: 'hero',
     jedi:  [[VOICE.jedi, 'It is over.']],
