@@ -29,6 +29,7 @@ await page.addInitScript(() => {
   Element.prototype.requestPointerLock = function(){ return Promise.reject(new DOMException('shots', 'NotSupportedError')); };
 });
 page.on('pageerror', e => console.log('page error', e.message));
+if (process.env.YAWS){ page.on('console', m => { if (m.text().startsWith('yaw')) console.log(m.text()); }); await page.addInitScript(() => { window.__yawLog = true; }); }
 await page.goto(pathToFileURL(process.env.DIST || path.join(root, 'dist/index.html')).href);
 const run = ms => page.waitForTimeout(ms);
 await page.waitForFunction(() => window.GAME && window.GAME.G && document.getElementById('hero-jedi'), null, { timeout: 60000 });
@@ -52,6 +53,7 @@ async function frame(file){
     c.fov = 34; c.aspect = innerWidth / innerHeight; c.updateProjectionMatrix(); c.updateMatrixWorld();
     GAME.gfx.composer.render();
     // (read straight back after the render, before the buffer is cleared)
+    if (window.__yawLog) console.log('yaw', g.rotation.y.toFixed(2), p.vis.rotation.y.toFixed(2), p.vis.rotation.z.toFixed(2), p.flip ? (p.flip.p || 0).toFixed(2) : '-', p.grounded);
     return { yaw: g.rotation.y + p.vis.rotation.y, img: shoot ? GAME.gfx.renderer.domElement.toDataURL('image/jpeg', 0.85) : null };
   }, !!file);
   if (file) writeFileSync(file, Buffer.from(r.img.split(',')[1], 'base64'));

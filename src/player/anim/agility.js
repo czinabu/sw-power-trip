@@ -83,16 +83,17 @@ const POP_DROP = 0.6;     // share of the slide's hip drop the pop-up's squat ke
 
 /* A flip, twist or spin that ends off a whole turn (one cut short by the ground or an attack) hands what is left of its
    yaw to the body's facing, so the hero comes out of it the way the move left him and turns round from there at his
-   own turn rate, instead of the body snapping half a turn in one frame. */
-function settleYaw(vis){
-  const ry = Math.atan2(Math.sin(vis.rotation.y), Math.cos(vis.rotation.y));
+   own turn rate, instead of the body snapping half a turn in one frame.
+   `yaw` is the turn the move itself last posed (not vis.rotation.y, which the idle re-centring may already have eased). */
+function settleYaw(vis, yaw){
+  const ry = Math.atan2(Math.sin(yaw || 0), Math.cos(yaw || 0));
   if (Math.abs(ry) > 0.02 && !isGunner()){ player.faceYaw += ry; player.group.rotation.y = player.faceYaw; }
   vis.rotation.y = 0;
 }
 /* End the flip now: the body comes out square (settleYaw keeps its facing). */
 export function endFlip(){
   const vis = player.vis;
-  if (vis){ settleYaw(vis); vis.rotation.set(0, 0, 0); vis.position.set(0, 0, 0); }
+  if (vis){ settleYaw(vis, player.flip && player.flip.ry); vis.rotation.set(0, 0, 0); vis.position.set(0, 0, 0); }
   player.flip = null;
 }
 /* how far through its flip `fl` is. A RUSHED flip (rushFlip) runs out its remaining turn over `rush.w` instead. */
@@ -128,6 +129,7 @@ export function flipBody(dt, vis, fl){
   const ry = ((fl.spin || 0) + (fl.twist || 0)) * s * TAU * (fl.twist && !fl.spin ? clamp((e - 0.15) / 0.7, 0, 1) : e);
   const rz = (fl.roll || 0) * s * TAU * e + ((fl.tilt || 0) + (fl.bank || 0)) * s * hold;
   vis.rotation.set(rx, ry, rz);
+  fl.ry = ry;
   // turning in place about the hips means moving the feet: rotate the centre of mass back to where it started
   const piv = (fl.somer || fl.roll || fl.legs === 'kneeslide') ? COM : fl.spin ? COM * 0.55 : 0;
   _v.set(0, piv, 0).applyEuler(_e.set(rx, ry, rz));
@@ -316,13 +318,13 @@ export function jediAgilityPost(dt, dr, vis, R, ctx){
   if (!player.grounded && player._agiGrounded && player.vy > 5 && !player.flip && !player.gliding && !player.slamming && A.jump.spin)
     player._airSpin = { t: 0, dur: 0.56, side: player.moveVel.x * Math.cos(G.yaw) - player.moveVel.z * Math.sin(G.yaw) > 0 ? -1 : 1 };
   player._agiGrounded = player.grounded;
-  if (player._airSpin && (player.flip || player.slamming || player.grounded)){ settleYaw(vis); player._airSpin = null; }   // (cut short: no snap back)
+  if (player._airSpin && (player.flip || player.slamming || player.grounded)){ settleYaw(vis, player._airSpin.ry); player._airSpin = null; }   // (cut short: no snap back)
   if (player.flip && (!player.slamming || player.flip.rush)) flipBody(dt, vis, player.flip);
   else if (player._airSpin){
     const sp = player._airSpin; sp.t += dt;
     const p = clamp(sp.t / sp.dur, 0, 1);
-    vis.rotation.y = twirlEase(p) * TAU * A.jump.spin * sp.side;
-    if (p >= 1){ settleYaw(vis); player._airSpin = null; }
+    vis.rotation.y = sp.ry = twirlEase(p) * TAU * A.jump.spin * sp.side;
+    if (p >= 1){ settleYaw(vis, sp.ry); player._airSpin = null; }
   } else if (!player.slamming){
     vis.position.x = dr(vis.position.x, 0, 14); vis.position.z = dr(vis.position.z, 0, 14);
   }
