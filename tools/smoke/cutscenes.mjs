@@ -82,6 +82,7 @@ try {
   await guest.click('#mode-coop'); await guest.fill('#coopcode', code); await guest.click('#coopjoin');
   for (const p of [host, guest]) await p.waitForFunction(() => /Connected/.test(document.getElementById('coopstatus').textContent), null, poll);
   await host.click('#coopclose'); await guest.click('#coopclose');
+  await host.evaluate(() => localStorage.setItem('sw_mission_refuge_jedi', '1'));   // missions stay locked until the campaign clears them
   await host.click('#hero-jedi'); await host.click('#mode-mission'); await host.click('#msn-refuge');
   for (let i = 0; i < 5 && !(await host.evaluate(() => GAME.G.mode === 'play')); i++){
     if (await host.isVisible('#goText')) await host.click('#goText', { timeout: 2000 }).catch(() => {});

@@ -25,7 +25,7 @@ const MOVES = {
 
 if (!existsSync(path.join(root, 'dist/index.html'))){ console.error('dist/index.html missing: run `npm run build` first'); process.exit(1); }
 
-const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--autoplay-policy=no-user-gesture-required'] });
+const browser = await chromium.launch({ executablePath: process.env.CHROMIUM || undefined, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--autoplay-policy=no-user-gesture-required'] });
 let failed = false;
 
 // a mission run passes once its last objective (a duel) is up: the HUD line then names the opponent
@@ -36,13 +36,14 @@ for (const [hero, mode, mission] of [['jedi', 'campaign'], ['mando', 'campaign']
   const errors = [];
   // small window on the LOW preset: headless Chromium draws WebGL in software, and this keeps it at a usable frame rate
   const page = await browser.newPage({ viewport: { width: 480, height: 270 } });
-  await page.addInitScript(sandbox => {
+  await page.addInitScript(([sandbox, unlock]) => {
     if (sandbox) try { localStorage.setItem('sw_camp_mando', '1'); } catch(e){}   // the sandbox unlocks after a campaign win
+    if (unlock) try { localStorage.setItem('sw_mission_' + unlock + '_jedi', '1'); } catch(e){}   // missions stay locked until the campaign clears them
     try { localStorage.setItem('jpt_quality', 'low'); localStorage.setItem('sw_fullscreen', '0'); } catch(e){}   // fullscreen has its own check below
     // headless pointer lock grants or refuses at random from run to run; refuse it every time so the game takes its
     // unlocked fallback (the embedded-preview path) and the run always starts the same way
     Element.prototype.requestPointerLock = function(){ return Promise.reject(new DOMException('smoke test', 'NotSupportedError')); };
-  }, mode === 'sandbox');
+  }, [mode === 'sandbox', mode === 'mission' ? mission : '']);
   page.on('pageerror', e => errors.push('page error: ' + (e.stack || e.message)));
   const log = [];
   page.on('console', m => { log.push(m.type() + ': ' + m.text()); if (m.type() === 'error') errors.push('console error: ' + m.text()); });

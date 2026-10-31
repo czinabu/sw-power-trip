@@ -1,5 +1,5 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
-// HOW TO PLAY: the per-hero controls reference, as data, rendered into the menu's help panel.
+// CONTROLS: the per-hero controls reference, as data, rendered into the menu's help panel.
 
 /* Each group is a list of rows: [keys, action, note?]. Keys are split on spaces; '/' and '+' stay as separators.
    Keep this in step with engine/input.js when binds change. */
