@@ -85,7 +85,17 @@ function updatePauseCam(){
 // a cutscene ended (game/cutscene.js): the Jedi rig starts over from its ideal spot instead of swooping in from before it
 export function resetCameraRig(){ jaLive = false; camFov = camera.fov; }
 
+// BATTLE SETUP (game/battlesim.js): the lens hangs over the map at shared.planCam, tipped down at its pitch
+function updatePlanCam(){
+  const c = shared.planCam, back = c.h / Math.tan(c.pitch);
+  camera.position.set(c.x - Math.sin(c.yaw) * back, c.h, c.z - Math.cos(c.yaw) * back);
+  camera.up.set(0, 1, 0);
+  camera.lookAt(c.x, 0, c.z);
+  if (Math.abs(camera.fov - 50) > 0.02){ camera.fov = 50; camera.updateProjectionMatrix(); }
+}
+
 export function updateCamera(dt){
+  if (G.sbPlan && shared.planCam && G.mode === 'play'){ updatePlanCam(); return; }
   // the FOV slider wants the real gameplay camera, so the cut slideshow stands down while it's dragged
   if ((G.paused || G.sbMenu) && G.mode === 'play' && !G.fovPreview){ updatePauseCam(); return; }
   if (pauseCam){

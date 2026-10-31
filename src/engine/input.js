@@ -44,7 +44,7 @@ import { pingHere } from '../net/ping.js';
 import { noteFlick } from '../player/jedi/cutaim.js';
 import { trooperMouseDown, trooperKey, trooperCycle } from '../player/trooper/kit.js';
 
-const inputActive = () => !G.cutscene && !G.cardUp && (document.pointerLockElement === renderer.domElement || (shared.lockFallback && G.mode === 'play'));   // (a cutscene takes no fight input)
+const inputActive = () => !G.cutscene && !G.cardUp && !G.sbPlan && (document.pointerLockElement === renderer.domElement || (shared.lockFallback && G.mode === 'play'));   // (a cutscene takes no fight input)
 document.addEventListener('mousemove', (e) => {
   if (!inputActive()) return;
   if (wheelLook(e.movementX, e.movementY)) return;   // the squad's command wheel is up: the mouse points at an order (allies/wheel.js)

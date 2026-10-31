@@ -36,7 +36,8 @@ export function registerProp(o){
   if (!geo.boundingBox) geo.computeBoundingBox();
   // a world bounding sphere, so the per-frame tests can skip props nowhere near the hero (a battle map has hundreds)
   const box = geo.boundingBox.clone(), c = box.getCenter(new THREE.Vector3()), r = box.getSize(_c).length() / 2 * o.matrixWorld.getMaxScaleOnAxis();
-  props.push({ inv: o.matrixWorld.clone().invert(), box, solid: o.material.side !== THREE.DoubleSide, c: c.applyMatrix4(o.matrixWorld), r });
+  const lowY = box.clone().applyMatrix4(o.matrixWorld).min.y;   // its underside (the battle setup's overhead view looks past what hangs above head height)
+  props.push({ inv: o.matrixWorld.clone().invert(), box, solid: o.material.side !== THREE.DoubleSide, c: c.applyMatrix4(o.matrixWorld), r, lowY });
   return props.length - 1;
 }
 
@@ -100,6 +101,13 @@ export function updatePropFade(cam, px, py, pz, dt, spare = 0.3){
     if (byte !== fadeBytes[i]){ fadeBytes[i] = byte; dirty = true; }
   }
   if (dirty) fadeTex.needsUpdate = true;
+}
+
+/* OVERHEAD — the sandbox's battle setup looks down on the whole floor (game/battlesim.js): every prop hanging clear above
+   head height (rafters, roofs, gantries) fades out of the way. Play's own fade (updatePropFade) eases them back after */
+export function fadeOverhead(above = 3.2){
+  for (let i = 0; i < props.length; i++) if (props[i].lowY > above){ fade[i] = 1; fadeBytes[i] = 255; }
+  fadeTex.needsUpdate = true;
 }
 
 /* slab test: does segment a→b pass through box at all (starting inside counts) */

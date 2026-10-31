@@ -4,6 +4,7 @@
 // It holds the game still while it's open and frees the cursor, the same way the upgrade screen does.
 
 import { renderer } from '../engine/renderer.js';
+import { showBanner } from './banners.js';
 import { G, shared, isGunner, heroKey } from '../state.js';
 import { SANDBOX_FOES, SANDBOX_COUNTS, SANDBOX_KIT, SANDBOX_MAPS } from '../data/sandbox.js';
 import { addSquadmate, dismissSquadmate, squadSize } from '../allies/squad.js';
@@ -12,6 +13,9 @@ import { readoutOn, setReadoutOn, restartReadout } from '../game/readout.js';
 import { SB, sandboxSpawn, sandboxClear, sandboxHeal, setSandboxDummy, setSandboxKit, sandboxKitAll, kitAvailable, setSandboxMap, cycleSandboxSlot } from '../game/sandbox.js';
 import { FORMS, LOADOUT_SLOTS } from '../data/forms.js';
 import { foeOffered, mapOffered, kitOffered, sandboxIsFull, sandboxProgress } from '../game/sandbox-unlocks.js';
+import { battleArmed, replayBattle, savedSetups, saveSetup, loadSetup, BS } from '../game/battlesim.js';
+import { openBattleSetup } from './battlesim-ui.js';
+import { BATTLE_SIM } from '../data/battlesim.js';
 
 const panel = document.getElementById('sandbox');
 const $ = (id) => document.getElementById(id);
@@ -42,6 +46,14 @@ function render(){
   $('sbmap').innerHTML = SANDBOX_MAPS.map(m => { const ok = mapOffered(m.id);
     return `<span data-map="${m.id}" class="${m.id === SB.map ? 'on' : ''}${ok ? '' : ' locked'}"${ok ? '' : ` title="${LATER}"`}>${typeof m.nm === 'object' ? heroKey(m.nm) : m.nm}</span>`; }).join('');
   $('sbcount').innerHTML = SANDBOX_COUNTS.map(n => `<span data-n="${n}" class="${n === SB.count ? 'on' : ''}">×${n}</span>`).join('');
+  $('sbreplay').classList.toggle('off', !battleArmed());
+  const mapNm = (id) => { const m = SANDBOX_MAPS.find(o => o.id === id); return m ? (typeof m.nm === 'object' ? heroKey(m.nm) : m.nm) : ''; };
+  $('sbsaves').innerHTML = savedSetups().map((v, i) => {
+    const f = v ? v.units.filter(u => u.k === 'foe').length : 0, a = v ? v.units.filter(u => u.k === 'ally').length : 0;
+    const t = v ? `<b>${i + 1}</b> · ${mapNm(v.map)} · ${f}F ${a}A` : `<b>${i + 1}</b> · EMPTY`;
+    return `<div class="sb-save"><div class="sv-t" title="${v ? f + ' foes, ' + a + ' squadmates' : 'Nothing saved here'}">${t}</div><div class="sv-b">` +
+      `<div class="btn${BS.plan.length ? '' : ' off'}" data-save="${i}">SAVE</div><div class="btn${v && mapOffered(v.map) ? '' : ' off'}" data-load="${i}">LOAD</div></div></div>`;
+  }).join('');
   pill('sbelite', SB.elite); pill('sbdummy', SB.dummy); pill('sbgod', !!G.sandboxGod); pill('sbreadout', readoutOn());
   $('sbsquadn').textContent = squadSize() + ' / ' + SQUAD.max;
   $('sbfoes').innerHTML = SANDBOX_FOES.map(f => {
@@ -68,7 +80,12 @@ panel.addEventListener('click', (e) => {
   const slot = t.closest('[data-slot]');
   if (slot){ cycleSandboxSlot(+slot.dataset.slot); render(); return; }
   const n = t.closest('[data-n]'), foe = t.closest('[data-foe]'), kit = t.closest('[data-kit]'), map = t.closest('[data-map]');
-  if (t.closest('.locked')) return;   // not reached in the story yet
+  if (t.closest('.locked, .off')) return;   // not reached in the story yet (or nothing to do)
+  const sv = t.closest('[data-save]'), ld = t.closest('[data-load]');
+  if (sv){ if (saveSetup(+sv.dataset.save)) showBanner('', 'SETUP SAVED TO SLOT ' + (+sv.dataset.save + 1), 1.2); render(); return; }
+  if (ld){ if (loadSetup(+ld.dataset.load)) openBattleSetup(); return; }
+  if (t.closest('#sbbattle')){ openBattleSetup(); return; }
+  if (t.closest('#sbreplay')){ closeSandboxPanel(); replayBattle(); return; }
   if (map){ if (map.dataset.map !== SB.map){ setSandboxMap(map.dataset.map); render(); } return; }
   if (n){ SB.count = +n.dataset.n; render(); return; }
   if (foe){ sandboxSpawn(foe.dataset.foe); foe.classList.remove('pop'); void foe.offsetWidth; foe.classList.add('pop'); return; }
@@ -80,7 +97,7 @@ panel.addEventListener('click', (e) => {
   if (t.closest('#sbroreset')){ restartReadout(); return; }
   if (t.closest('#sbsquadadd')){ addSquadmate(); render(); return; }
   if (t.closest('#sbsquaddrop')){ dismissSquadmate(); render(); return; }
-  if (t.closest('#sbclear')){ sandboxClear(); return; }
+  if (t.closest('#sbclear')){ sandboxClear(); BS.live = false; return; }   // (a set-up battle swept away isn't a win)
   if (t.closest('#sbheal')){ sandboxHeal(); return; }
   if (t.closest('#sball')){ sandboxKitAll(true); render(); return; }
   if (t.closest('#sbnone')){ sandboxKitAll(false); render(); return; }

@@ -398,6 +398,12 @@
       <section class="sb-col">
         <div class="sec-label">ARENA <span class="sb-hint">The battle maps are big open fields</span></div>
         <div class="sb-opts"><div class="sb-seg" id="sbmap"></div></div>
+        <div class="sec-label">BATTLE SIMULATOR <span class="sb-hint">Place foes and squadmates, then fight it out</span></div>
+        <div class="sb-row">
+          <div class="btn" id="sbbattle">SET UP A BATTLE</div>
+          <div class="btn" id="sbreplay">REPLAY THE BATTLE</div>
+        </div>
+        <div class="sb-saves" id="sbsaves"></div>
         <div class="sec-label">CALL IN FOES</div>
         <div class="sb-opts">
           <div class="sb-seg" id="sbcount"></div>
@@ -434,6 +440,27 @@
       </section>
     </div>
     <div class="sb-foot"><div class="btn primary" id="sbdone">BACK TO THE FLOOR</div></div>
+  </div>
+</div>
+<div id="bsplan">   <!-- the sandbox's battle setup: an overhead view to place the battle in (ui/battlesim-ui.js) -->
+  <div class="bs-field" id="bsfield"></div>
+  <div class="bs-aim" id="bsaim"></div>
+  <div class="bs-top">
+    <div class="bs-title">BATTLE SETUP <span id="bsmap"></span></div>
+    <div class="bs-counts" id="bscounts"></div>
+    <div class="bs-hover" id="bshover"></div>
+  </div>
+  <div class="bs-bar">
+    <div class="bs-pal" id="bspal"></div>
+    <div class="bs-row">
+      <div class="sb-seg" id="bscount"></div>
+      <div class="setpill" id="bselite" title="Foes placed from now come with an elite trait">ELITE<span class="setval">OFF</span></div>
+      <div class="btn" id="bsundo">UNDO</div>
+      <div class="btn" id="bsclear">CLEAR ALL</div>
+      <div class="btn" id="bsmenu">SANDBOX PANEL</div>
+      <div class="btn primary" id="bsstart">START BATTLE</div>
+    </div>
+    <div class="bs-keys" id="bskeys"></div>
   </div>
 </div>
 <div id="cine"></div>
