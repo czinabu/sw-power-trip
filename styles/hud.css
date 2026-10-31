@@ -63,6 +63,18 @@ body.mando #fpbar{background:linear-gradient(90deg,#d98a2b,#ffd9a0)}
 #fcbar{background:linear-gradient(90deg,#caa23a,#ffe27a);transition:width .1s ease-out}
 #fclabel{color:#e8cf7a}
 #fcwrap.t3{box-shadow:0 0 14px rgba(255,210,90,.65);border-color:rgba(255,210,90,.7)}
+/* FORM VII fury meter — shown only while Juyo (FURY, red) or Vaapad (CONTROL, violet) is the active form */
+#fymeter{display:none}
+#fymeter.on{display:block}
+#fywrap{height:8px;width:85%}
+#fybar{background:linear-gradient(90deg,#b81f1f,#ff7a5a);transition:width .1s ease-out}
+#fylabel{color:#ff8a72}
+#fymeter.vaapad #fybar{background:linear-gradient(90deg,#7a2fd0,#d6a8ff)}
+#fymeter.vaapad #fylabel{color:#c9a0ff}
+#fymeter.full #fywrap{box-shadow:0 0 16px rgba(255,90,58,.8);border-color:rgba(255,120,90,.85);animation:fypulse .7s ease-in-out infinite alternate}
+#fymeter.vaapad.full #fywrap{box-shadow:0 0 16px rgba(176,77,255,.85);border-color:rgba(200,150,255,.9)}
+#fymeter.full .mval{color:#fff}
+@keyframes fypulse{from{filter:brightness(1)}to{filter:brightness(1.5)}}
 #smwrap{display:none}
 #smbar{background:linear-gradient(90deg,#e8a23a,#ffe2a8)}
 
@@ -153,7 +165,7 @@ body.mando .j-ab{display:none!important}
 body.mando .ab.hint.m-ab{display:flex}
 body.mando .ab.slot.m-ab{display:flex}
 body.mando .weaponbox{display:flex}
-body.mando #stancebox,body.mando #xh,body.mando #fcmeter{display:none!important}
+body.mando #stancebox,body.mando #xh,body.mando #fcmeter,body.mando #fymeter{display:none!important}
 
 /* ---------- centre banners ---------- */
 #banner{position:fixed;top:20%;left:0;right:0;text-align:center;opacity:0;transition:opacity .4s}

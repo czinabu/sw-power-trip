@@ -10,6 +10,7 @@ import { MANDO, MANDO_WEAPONS, weaponUnlocked } from '../data/mando.js';
 import { abil } from '../data/mastery.js';
 import { maxHp, maxStam } from '../player/helpers.js';
 import { FOCUS, focusTier } from '../player/jedi/focus.js';
+import { furyKind } from '../player/jedi/fury.js';
 import { mandoWeapon } from '../player/mando/weapons.js';
 import { MUTATORS } from '../data/mutators.js';
 import { nextStoreGoal } from '../game/progression.js';
@@ -126,6 +127,16 @@ export function updateHud(){
     setText($('fclabel'), t > 0 ? ('FOCUS · ' + FOCUS.names[t]) : 'FOCUS');
     fcw.classList.toggle('t3', t >= 3);
   }
+  // FORM VII FURY meter — only while Juyo (FURY) or Vaapad (CONTROL) is the active form; glows when full
+  { const fk = furyKind(), fm = $('fymeter');
+    fm.classList.toggle('on', !!fk);
+    if (fk){
+      const f = player.fury || 0, full = f >= 0.999;
+      fm.classList.toggle('vaapad', fk === 'vaapad'); fm.classList.toggle('full', full);
+      $('fybar').style.width = (f * 100) + '%';
+      setText($('fylabel'), fk === 'juyo' ? 'FURY' : 'CONTROL');
+      setText($('fyval'), full ? 'FULL' : '');
+    } }
   // JET FUEL now reads on the JETPACK itself (diegetic LED gauge); JEDI stamina lives by the crosshair — bar unused
   document.getElementById('smwrap').style.display = 'none';
   // Crosshair-side gauge — sits right beside the reticle/crosshair so your swing fuel reads without glancing away.

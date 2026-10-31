@@ -6,6 +6,10 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'Fury and Control bars', status: 'done',
+    items: ['Juyo and Vaapad now show their fury on the HUD: a red FURY bar for Juyo, a violet CONTROL bar for Vaapad, above Focus at the bottom left, only while that form is active',
+            'The bar fills as fury builds (Juyo: cuts that land · Vaapad: blocks and parries), pulses and reads FULL at max, when fury is giving its full bonus damage',
+            'Same in every mode: story, missions, training, survival, sandbox and co-op'] },
   { title: 'Squad command wheel', status: 'done',
     items: ['Tap H (VIEW on a pad) for the smart order: aim at a trooper and the squad attacks it, at open ground and they move there, tap again to call them back on you',
             'Hold H for the command wheel, with the world slowed: on me, hold here, move there, attack target, take cover, grenade, spread out / stack up, and get them up',
