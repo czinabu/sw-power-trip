@@ -30,6 +30,7 @@ import { buildArchiveArena } from './arenas/archive.js';
 import { buildPrisonArena } from './arenas/prison.js';
 import { buildHangarArena } from './arenas/hangar.js';
 import { buildSithArena } from './arenas/sith.js';
+import { buildJungleArena } from './arenas/jungle.js';
 import { buildNav } from '../enemies/nav.js';
 import { clearScorch } from '../fx/scorch.js';
 import { clearSevered } from '../enemies/scars.js';
@@ -133,6 +134,7 @@ export function buildArena(L){
   else if (L.layout === 'prison'){ buildPrisonArena(LP); }
   else if (L.layout === 'hangar'){ buildHangarArena(LP); }
   else if (L.layout === 'sith'){ buildSithArena(LP); }
+  else if (L.layout === 'jungle'){ buildJungleArena(LP); }
   else {
   // pick a spot at least `gap` clear of every other obstacle so cover stays SPREAD OUT — clustered obstacles
   // form walls that trap the enemy AI. Returns null if no open spot is found (so we just place fewer).

@@ -6,7 +6,7 @@ import { LEVELS } from '../data/levels.js';
 import { MISSIONS } from '../data/missions.js';
 import { switchStance } from '../player/jedi/stance.js';
 import { resumeChapter, chapterLabel } from './campaign.js';
-import { chapterOrder, forHero, CHAPTER_OF_LEVEL } from '../data/campaign.js';
+import { chapterOrder, chapterNo, forHero, CHAPTER_OF_LEVEL } from '../data/campaign.js';
 import { DEFAULT_LOADOUT, cleanLoadout, migrateForm } from '../data/forms.js';
 import { clearMeditation } from './meditation.js';
 import { MANDO_WEAPONS, RUN_KIT, cleanKit } from '../data/mando.js';
@@ -33,7 +33,7 @@ const clone = (v) => v == null ? v : JSON.parse(JSON.stringify(v));
 export function inCampaignRun(){ return G.mode === 'play' && (G.chapter >= 0 || (!G.endless && !G.training && !G.mission && !G.sandbox)); }
 function snapshotRun(){
   return {
-    idx: G.levelIdx, chapter: G.chapter, actTwo: G.actTwo, story: clone(G.story) || {}, checkpoint: clone(G.checkpoint), stance: G.stance, loadout: [...G.loadout], mandoKit: { ...(G.mandoKit || RUN_KIT) }, weapon: player.weapon,
+    idx: G.levelIdx, chapter: G.chapter, actTwo: G.actTwo, story: clone(G.story) || {}, checkpoint: clone(G.checkpoint), stance: G.stance, loadout: [...G.loadout], mandoKit: { ...(G.mandoKit || RUN_KIT) }, weapon: player.weapon, rifleMod: player.rifleMod || 'burst',
     unlocked: clone(G.unlocked), stanceUnlocked: clone(G.stanceUnlocked), formFork: G.formFork || null, mandoChoiceShown: G.mandoChoiceShown,
     xp: G.xp, xpEarned: G.xpEarned, skillPoints: G.skillPoints, skillSpent: G.skillSpent,
     powerLv: clone(G.powerLv), mastery: clone(G.mastery), masteryUse: clone(G.masteryUse), xpPoints: G.xpPoints, seenTypes: clone(G.seenTypes),
@@ -49,6 +49,7 @@ export function restoreRun(run){
   G.levelIdx = run.idx; G.checkpoint = clone(run.checkpoint) || { idx: run.idx, waveTotal: -1, boss: false };
   G.waveTotal = G.checkpoint.waveTotal;
   player.weapon = run.weapon || (run.hero === 'trooper' ? 'rifle' : 'single');
+  player.rifleMod = run.rifleMod || 'burst';   // the DC-15's fitted module (data/trooper.js RIFLE_MODS)
   G.unlocked = clone(run.unlocked) || {}; G.stanceUnlocked = migrateUnlocked(run.stanceUnlocked);
   if ((run.loadout || []).includes('niman') || run.stance === 'niman') G.stanceUnlocked.niman = true;   // a run saved when every hero started on Niman keeps it
   G.loadout = cleanLoadout(run.loadout || DEFAULT_LOADOUT); G.mandoChoiceShown = !!run.mandoChoiceShown;
@@ -82,8 +83,8 @@ export const resumeLabel = () => savedChapter(G.resumeRun, G.hero);
 // 'ACT II · CH 6' for the saved run the menu would continue (the campaign tile)
 export function resumeProgress(){
   const run = G.resumeRun; if (!run) return '';
-  const pos = run.chapter != null && run.chapter >= 0 ? run.chapter : CHAPTER_OF_LEVEL[run.idx] || 0, c = chapterOrder(run.actTwo)[pos];
-  return c ? 'ACT ' + ['I', 'II', 'III'][c.act] + ' · CH ' + (pos + 1) : '';
+  const pos = run.chapter != null && run.chapter >= 0 ? run.chapter : CHAPTER_OF_LEVEL[run.idx] || 0, list = chapterOrder(run.actTwo, run.hero), c = list[pos];
+  return c ? 'ACT ' + ['I', 'II', 'III'][c.act] + ' · ' + chapterNo(pos, list).replace('CHAPTER', 'CH') : '';
 }
 export const hasSaves = () => { for (const i of [0, 1, 2, AUTO]) if (readSlot(i)) return true; return false; };
 export function resumeRun(){
@@ -94,8 +95,8 @@ export function resumeRun(){
 }
 // 'CHAPTER 3 · THE LAST EVACUATION' for a saved run, without starting it
 function savedChapter(run, hero){
-  const pos = run.chapter != null && run.chapter >= 0 ? run.chapter : CHAPTER_OF_LEVEL[run.idx] || 0, c = chapterOrder(run.actTwo, hero)[pos];
-  return c ? 'CHAPTER ' + (pos + 1) + ' · ' + forHero(c.title, hero) : 'LEVEL ' + (run.idx + 1) + ' · ' + placeOf(LEVELS[run.idx]);
+  const pos = run.chapter != null && run.chapter >= 0 ? run.chapter : CHAPTER_OF_LEVEL[run.idx] || 0, list = chapterOrder(run.actTwo, hero), c = list[pos];
+  return c ? chapterNo(pos, list) + ' · ' + forHero(c.title, hero) : 'LEVEL ' + (run.idx + 1) + ' · ' + placeOf(LEVELS[run.idx]);
 }
 
 /* ---------- slots ---------- */
