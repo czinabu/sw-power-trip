@@ -6,6 +6,10 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'Ability unlock cards', status: 'done',
+    items: ['Each ability you earn opens a small card: its name and key, what it does, and a short looping clip of it in the game. Force Pull, Force Jump I and II, the Flamethrower, Dual Blasters, Jetpack Boosters and Power Cells come with the story; every upgrade-store ability (Saber Throw, Force Barrier, Jump Attack, Force Mend, Judgement, Repulse, Dark Lord\'s Grip and both finals, Grappling Hook, Jetpack Slam, Bacta Stim, Whistling Birds, Thermal Detonator, the Disruptor, the Darksaber, Jetpack Missile) shows its card once the store page closes',
+            'The fight freezes while it is up; CONTINUE, Enter or Space goes on. Several unlocks at once show one card after another',
+            'Same in the campaign, survival and co-op; missions, the sandbox and training hand their kit out up front, as before. The Wrist Rocket is in the starting kit, so it has no card'] },
   { title: 'Autosave', status: 'done',
     items: ['The game saves by itself when a chapter or level begins, at the boss checkpoint, after a story mission is won, a lesson is passed or a form is learned, and when the campaign is won',
             'A small AUTOSAVED note flashes at the bottom right; the save sits in its own AUTO slot at the top of LOAD GAME, so your three slots are never overwritten',
