@@ -19,7 +19,8 @@
     "smoke:training": "node tools/smoke/training.mjs",
     "perf": "node tools/smoke/perf.mjs",
     "smoke:coop-four": "node tools/smoke/coop-four.mjs",
-    "perf:hitch": "node tools/smoke/hitch.mjs"
+    "perf:hitch": "node tools/smoke/hitch.mjs",
+    "shots:maps": "node tools/shots/maps.mjs"
   },
   "dependencies": {
     "peerjs": "^1.5.5",
