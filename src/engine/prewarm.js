@@ -6,7 +6,7 @@ import { scene, compileLive } from './renderer.js';
 import { arenaBuilt } from '../world/arena.js';
 import { ENEMY_TYPES } from '../data/enemies.js';
 import { SQUAD } from '../data/allies.js';
-import { buildEnemyMesh, variantsOf } from '../enemies/mesh.js';
+import { buildEnemyMesh, variantsOf, facesOf } from '../enemies/mesh.js';
 import { buildBoss } from '../boss/mesh.js';
 import { inkProbe } from '../fx/ink.js';
 import { ensureBossLight } from '../boss/light.js';
@@ -67,7 +67,7 @@ arenaBuilt.push(prewarmShaders);
    hitch), and whatever is still left when an arena is built gets built right there, under the load, so no spawn mid-
    fight pays for it. */
 const jobs = [];
-for (const t of Object.values(ENEMY_TYPES)) for (const variant of variantsOf(t)) jobs.push(() => buildEnemyMesh(t, { variant }));   // every marking
+for (const t of Object.values(ENEMY_TYPES)) for (const variant of variantsOf(t)) for (const face of facesOf(t, variant)) jobs.push(() => buildEnemyMesh(t, { variant, face }));   // every marking and face
 for (const roster of Object.values(SQUAD.roster)) for (const d of roster) jobs.push(() => buildEnemyMesh({ model: d.model, color: d.color, eye: d.eye, cloth: d.cloth, scale: d.scale || 1, ranged: true }));
 jobs.push(() => buildBoss('sith'), () => buildBoss('mando'));
 const run = job => { try { job(); } catch(e){} };

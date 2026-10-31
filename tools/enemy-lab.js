@@ -2,7 +2,8 @@
 // Enemy lab (dev only: `npm run dev`, then open /tools/enemy-lab.html).
 // Lines up every enemy type (or both bosses) under the game's own lights, so enemy model changes can be judged
 // without playing. URL params: ?set=troops|bosses|squad  &pose=idle|windup|guardL|guardR|guardH|guardLo|blockL|blockR|blockH|blockLo|windL|windR|windH|windT (a duellist's guards, blocks and wind-ups)  &elite=swift|vital|volatile  &view=front|back  &z=<camera distance>
-// &orbit=1 (slow turntable). &cut=diagR|all plays a duellist's cut on a loop (data/duel.js FOE_CUTS; all: every cut in
+// &orbit=1 (slow turntable). &variant=0..4 (4: bare-headed) &face=0..4 force a marking and a face; &talk=1 has them talk;
+// &cam=x,y,z,lookY places the lens for a close-up. &cut=diagR|all plays a duellist's cut on a loop (data/duel.js FOE_CUTS; all: every cut in
 // turn, named in the corner); &at=0..2 freezes it there instead (0→1 the wind-up, 1→2 the strike). The stats corner shows draw calls per frame.
 
 import * as THREE from 'three';
@@ -10,6 +11,7 @@ import { scene, camera, composer, renderer } from '../src/engine/renderer.js';
 import { ENEMY_TYPES } from '../src/data/enemies.js';
 import { buildEnemyMesh } from '../src/enemies/mesh.js';
 import { buildBoss } from '../src/boss/mesh.js';
+import { updateUpper } from '../src/enemies/upper.js';
 import { ELITES } from '../src/data/enemies.js';
 import { SQUAD } from '../src/data/allies.js';
 import { GUARD_POSE, BLOCK_POSE, WIND, FOE_CUTS } from '../src/data/duel.js';
@@ -62,7 +64,8 @@ if (SET === 'bosses'){
   const ONLY = q.get('only');   // &only=grunt,brute — a subset, for close-ups
   for (const [name, t] of Object.entries(ENEMY_TYPES)){
     if (ONLY && !ONLY.split(',').includes(name)) continue;
-    const g = buildEnemyMesh(t);
+    const g = buildEnemyMesh(t, { variant: q.get('variant') != null ? +q.get('variant') : undefined, face: q.get('face') != null ? +q.get('face') : undefined });
+    if (q.get('talk')) g.userData.talk = true;
     if (ELITE && ELITES[ELITE]){
       const m = ELITES[ELITE];
       g.scale.multiplyScalar(m.scale);
@@ -84,6 +87,7 @@ for (const f of figs){
 camera.fov = 30;
 if (SET === 'bosses'){ camera.position.set(0, 3.0, 12.5); camera.lookAt(0, 2.4, 0); }
 else { const z = +q.get('z') || Math.max(5, total * 0.95); camera.position.set(0, 1.4 + z * 0.08, z); camera.lookAt(0, 1.45, 0); }
+if (q.get('cam')){ const [cx, cy, cz, ly] = q.get('cam').split(',').map(Number); camera.position.set(cx, cy, cz); camera.lookAt(cx, ly ?? cy, 0); }   // &cam=x,y,z,lookY: a close-up
 camera.updateProjectionMatrix();
 const fill = new THREE.DirectionalLight(0xdfe8ff, 0.55); fill.position.set(-4, 5, 12); scene.add(fill);
 
@@ -157,7 +161,11 @@ function playCuts(ms){
 const stats = document.getElementById('stats');
 const orbit = q.get('orbit') === '1';
 renderer.info.autoReset = false;
+const LIVE = q.get('live') === '1';   // &live=1: run the upper-body life (stance, breath, blinks, talking, belt gear)
+let lastT = 0;
 renderer.setAnimationLoop(t => {
+  const dt = lastT ? Math.min(0.05, (t - lastT) / 1000) : 0; lastT = t;
+  if (LIVE && dt > 0) for (const f of figs){ f.o = f.o || { state: 'idle' }; updateUpper(f.o, f.g, dt, null); }
   if (orbit) for (const f of figs) f.g.rotation.y = f.yaw0 = t * 0.0004;
   playCuts(window.LAB && window.LAB.clock != null ? window.LAB.clock : t);
   placeLabels();

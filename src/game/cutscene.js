@@ -94,6 +94,7 @@ function updateActor(a, dt){
   updateUpper(a, g, dt, pp);
 }
 function dropActors(){
+  for (const a of C.actors) if (a.g) a.g.userData.talk = false;
   for (const a of C.actors) if (a.own) scene.remove(a.g);
   C.actors = [];
 }
@@ -213,6 +214,8 @@ function showShot(){
   if (s.line !== C.shown){ setLine(s.line || null); C.shown = s.line; }
   if (s.title) setTitle(s.title); else if (C.i > 0 && C.shots[C.i - 1].title) setTitle(null);
   if (s.walk){ const a = C.actors[0]; if (a && a.own) walkTo(a, s.walk[0], s.walk[1], s.walk[2]); }
+  // the speaker works its jaw (or nods under its helmet) while its line is up (enemies/upper.js talking)
+  C.actors.forEach((a, i) => { if (a.g) a.g.userData.talk = !!(s.line && s.on === 'actor' && i === 0); });
   pickSide(s);
 }
 
