@@ -103,6 +103,12 @@ export function buildSithArena(L){
     K.rubble(x, z, len, 0.3, stoneD, ax);
   }
 
+  // ---- BROKEN PIECES across the lane from the south gate to the dais (1.4, vault them): no straight shot down it ----
+  for (const [x, z, hx, ry] of [[-3.2, 0.5, 1.8, 0.0], [3.4, -12.5, 1.6, 0.0]]){
+    K.box(x, z, hx, 0.5, 1.4, stoneD);
+    K.deco(new THREE.BoxGeometry(hx*1.1, 0.4, 0.7), stone, x + 0.4, 1.55, z, 0.2, 0.3 + ry, 0.12);   // a chunk fallen on it
+  }
+
   // ---- the OBELISK (the overwatch climb) in the south-west ----
   K.gantry(-28, 28, { a: dark, b: stoneD, strut: metal, beacon: glowC }, [1, -1]);
 

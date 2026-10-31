@@ -48,15 +48,26 @@ export const JEDI_ACT_TWO_WARN = 'Whichever you leave for second will not wait w
 // and `escapeLines` are the words of its duel foe's escape scene (data/cutscenes.js SCENES).
 export const JEDI_CHAPTERS = {
   // ---------------- ACT I: THE FALL OF JEDHA ----------------
-  siege: {
-    brief: ['They are already on the pilgrim road. Somebody let them in.',
-            'Hold the steps, Knight. I will find out who. Do not go looking for them yourself.'],
+  'last-lesson': {
+    brief: ['Jedha, the night before. The temple is asleep, except for the dojo.', 'One more round with Ilsa before lights out. She has never let you win one.'],
     talk: { where: 'THE TEMPLE DOJO, THE NIGHT BEFORE',
       lines: [[ILSA, 'Again. You drop your guard when you are tired. Vexis would have had your head twice tonight.'],
            [HERO, 'Vexis is a story Master Vael tells to keep us in the dojo.'],
-           [ILSA, 'Is he? Then ask Vael why the Order hides, while the Empire hunts children in the open. Ask him why he never answers.'],
-           [VAEL, 'Enough for tonight, both of you. Ilsa, a word.'],
-           [ILSA, 'Not tonight, Master. I have somewhere to be.']] },
+           [ILSA, 'Is he? Then ask Vael why the Order hides, while the Empire hunts children in the open. Ask him why he never answers.']] },
+    opening: { lines: [[VAEL, 'One more round, then bed. Both of you.']] },
+    says: ['Training blades, first to yield. Ilsa is faster than you and knows it. Block her chain, then answer when she overreaches.'],
+    lines: {
+      duel: [rival(ILSA, 'Guard up. You always drop it when you are tired.')],
+      clear: [say(ILSA, 'Fine. That one is yours. Do not get used to it.'),
+              say(VAEL, 'Enough for tonight, both of you. Ilsa, a word.'),
+              say(ILSA, 'Not tonight, Master. I have somewhere to be.')] } },
+  siege: {
+    brief: ['They are already on the pilgrim road. Somebody let them in.',
+            'Hold the steps, Knight. I will find out who. Do not go looking for them yourself.'],
+    talk: { where: 'THE TEMPLE STEPS, BEFORE DAWN',
+      lines: [[VAEL, 'The pilgrim gate is open. Nobody on watch opened it by mistake.'],
+           [HERO, 'Ilsa had the watch.'],
+           [VAEL, 'I know.']] },
     opening: { lines: [[VAEL, 'Listen. That is the sound of a thousand years ending, unless you stand in its way.'],
               [VAEL, 'And Ilsa is not at her post.']] },
     lines: {
@@ -200,19 +211,42 @@ export const JEDI_CHAPTERS = {
     lines: {
       duel: [rival(ILSA, 'He has Vael. Do you understand? If I go back with nothing, he kills him.'), 'She is not lying. Do not let that stop you. Stop her.'],
       clear: ['She is down. Her saber is out of reach.', say(ILSA, 'Go on. He taught me that the Order always finishes it. Prove him right.')] } },
+  return: {
+    voice: JEDI_VOICE_LATE,
+    brief: { by: 'ilsa',
+      spared: ['Tarn found it in the archive\'s ashes. Vexis never came to Jedha for the Ledger. He came for the old Sith gate under the dais, his own road to Exegol.', 'Ilsa knows it. She stood watch over it the night she opened the temple. Go back, and open it.'],
+      struck: ['Tarn found it in the archive\'s ashes. Vexis never came to Jedha for the Ledger. He came for the old Sith gate under the dais, his own road to Exegol.', 'Nobody living knows how to open it. Go back to the temple and find out.'] },
+    talk: { where: 'JEDHA, THE TEMPLE STEPS AT NIGHT',
+      lines: [[TARN, 'I grew up on these steps. I never once wondered what was under the dais.'],
+           [KAST, 'An old Sith gate. A road to Exegol that no fleet can follow, and the Empire has kept it for him.'],
+           { by: 'ilsa',
+             spared: [ILSA, 'He made me stand watch over it the night I opened the temple. I never asked where it went. I should have.'],
+             struck: [HERO, 'Then we take his road.'] }] },
+    opening: { lines: [[KAST, 'The last time you stood here, it was burning. Now it is only dark. Watch the shadows.']] },
+    says: ['The Inquisitors left three seals round the dais and a garrison to keep them. Stand at each seal until it breaks.',
+           { by: 'ilsa', spared: 'Ilsa is reading the gate. Hold the dais until she has it open, and keep off the summit while it burns.',
+                         struck: 'The gate is waking on its own. Hold the dais until it opens, and keep off the summit while it burns.' },
+           'The gate shows you something with a blade. It is not real. Its strikes are.'],
+    lines: {
+      duel: [{ by: 'ilsa',
+        spared: rival('THE ECHO', 'You spared her on the dock. You will spare him too, when the time comes, and he will kill you for it.'),
+        struck: rival('THE ECHO', 'You struck her down on the dock. You will finish what he started. You already have.') },
+        'It is the gate talking, not her. Do not listen. Fight.'],
+      clear: [{ by: 'ilsa', spared: say(ILSA, 'It is open. Exegol is on the other side, and so is Vael.'), struck: 'The gate is open. Exegol is on the other side, and so is Vael.' },
+              say(TARN, 'Something else is on the other side too. I felt it look at us.')] } },
   spearhead: {
     voice: JEDI_VOICE_LATE,
     brief: { by: 'ilsa',
-      spared: ['Everyone you found is here: Tarn, Sera, my troopers. And Ilsa, which I still cannot believe.', 'She knows the gate. Break the line in front of it, and she will open it for us.'],
-      struck: ['Everyone you found is here: Tarn, Sera and my troopers.', 'Break their line before the gate. With Ilsa gone, we open it the hard way.'] },
+      spared: ['Everyone you found is here: Tarn, Sera, my troopers. And Ilsa, which I still cannot believe.', 'She knows the Citadel. Break the line in front of its door, and she will open it for us.'],
+      struck: ['Everyone you found is here: Tarn, Sera and my troopers.', 'Break their line before the Citadel\'s door. With Ilsa gone, we open it the hard way.'] },
     says: ['My troopers are with you, Knight. Take their forward posts one by one. Leave the troopers to the squad, and the blades to yourself.'],
     opening: { lines: [[KAST, 'Look around you. Masters, troopers, the hope of every child in that Ledger. You built this army.']] },
-    talk: { where: 'ABOARD KAST\'S GUNSHIP, ON THE ROAD TO EXEGOL',
+    talk: { where: 'THROUGH THE GATE, ON THE ROAD TO EXEGOL',
       lines: { by: 'ilsa',
-        spared: [[ILSA, 'Why did you spare me?'], [HERO, 'Because you were scared, not cruel. And I need someone who knows that gate.'], [ILSA, 'Then I will open it. And after that, I will find out if I can still be a Jedi.']],
+        spared: [[ILSA, 'Why did you spare me?'], [HERO, 'Because you were scared, not cruel. And I need someone who knows the Citadel.'], [ILSA, 'Then I will get you inside it. And after that, I will find out if I can still be a Jedi.']],
         struck: [[SERA, 'Was it the right thing, with Ilsa?'], [HERO, 'It was the thing that had to happen.'], [SERA, 'That is what Vexis would say.']] } },
     lines: {
-      clear: { by: 'ilsa', spared: [say(ILSA, 'The gate is open. He is through there, and so is Vael.')], struck: ['The gate is down. Vael is through there.'] } } },
+      clear: { by: 'ilsa', spared: [say(ILSA, 'The door is open. He is through there, and so is Vael.')], struck: ['The door is down. Vael is through there.'] } } },
   exegol: {
     voice: JEDI_VOICE_LATE,
     brief: ['Vexis is on the throne of Exegol, and Master Vael is chained beside it.', 'Whatever waits on that throne, you are not facing it alone.'],

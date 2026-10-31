@@ -26,7 +26,10 @@ await page.evaluate((ch) => { document.getElementById('chapcard').classList.remo
 await page.waitForTimeout(3000);
 await page.screenshot({ path: out + '/' + ch + '-v1-card.png' });
 await page.click('#chapcard [data-go="1"]');
-for (let i = 0; i < 16; i++){ await page.keyboard.press(i % 2 ? 'Enter' : 'Escape'); await page.waitForTimeout(500); }
+for (let i = 0; i < 16; i++){
+  if (await page.isVisible('#meditate [data-fork]')) await page.click('#meditate [data-fork="vaapad"]').catch(() => {});   // (a late chapter: the Form VII pick)
+  await page.keyboard.press(i % 2 ? 'Enter' : 'Escape'); await page.waitForTimeout(500);
+}
 await page.waitForTimeout(9000);
 await page.screenshot({ path: out + '/' + ch + '-v2-play.png' });
 const st = await page.evaluate(() => { const m = GAME.missionState && GAME.missionState(); return m ? { id: m.def && m.def.id, i: m.i } : null; });
