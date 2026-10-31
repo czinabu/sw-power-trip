@@ -14,6 +14,7 @@ import { clearMeditation } from './meditation.js';
    look, the sandbox's picks). A slot copies those keys, so loading one puts every mode's locks and ticks back exactly.
    Settings (volume, sensitivity, FOV, graphics, fullscreen) are the player's, not the save's, and stay as they are. */
 export const SLOTS = 3;
+export const AUTO = 'auto';   // the autosave's own slot (game/autosave.js): shown beside the three, loadable but never saved to by hand
 const slotKey = (i) => 'sw_save_' + i;
 const PROGRESS = /^sw_(camp_|trained_|lesson_|best_|sandbox_|mission_.+_(jedi|mando)$)|^sw_(asktrain|look)$/;
 // what NEW GAME clears: everything above but the hero's look and the sandbox's map/kit picks
@@ -78,7 +79,7 @@ export function resumeProgress(){
   const pos = run.chapter != null && run.chapter >= 0 ? run.chapter : CHAPTER_OF_LEVEL[run.idx] || 0, c = chapterOrder(run.actTwo)[pos];
   return c ? 'ACT ' + ['I', 'II', 'III'][c.act] + ' · CH ' + (pos + 1) : '';
 }
-export const hasSaves = () => { for (let i = 0; i < SLOTS; i++) if (readSlot(i)) return true; return false; };
+export const hasSaves = () => { for (const i of [0, 1, 2, AUTO]) if (readSlot(i)) return true; return false; };
 export function resumeRun(){
   const run = G.resumeRun; G.resumeRun = null;
   restoreRun(run);
@@ -95,11 +96,18 @@ function savedChapter(run, hero){
 export function readSlot(i){
   try { const d = JSON.parse(localStorage.getItem(slotKey(i))); return d && d.v === 1 ? d : null; } catch(e){ return null; }
 }
-export function writeSlot(i){
+// opts.auto: the autosave. A co-op guest's run is the host's, so only its progress is kept; away from a campaign run (training,
+// a mission, survival…) the slot keeps the campaign run it already had, unless opts.finished (the campaign was won) lets it go
+export function writeSlot(i, opts = {}){
   const progress = {};
   try { for (const k of progressKeys()) progress[k] = localStorage.getItem(k); } catch(e){}
-  const data = { v: 1, at: Date.now(), hero: G.hero, diff: G.diff, modeSel: G.modeSel, missionId: G.missionId, progress,
-                 where: whereNow(), run: inCampaignRun() ? snapshotRun() : (G.mode === 'menu' && canResume() ? G.resumeRun : null) };
+  let run, where = whereNow(), hero = G.hero;
+  if (inCampaignRun()) run = G.coopGuest ? null : snapshotRun();
+  else if (G.mode === 'menu' && canResume()) run = G.resumeRun;
+  else run = null;
+  if (opts.auto && !run && !opts.finished){ const prev = readSlot(i); if (prev && prev.run){ run = prev.run; where = prev.where; hero = prev.hero; } }
+  const data = { v: 1, at: Date.now(), hero, diff: G.diff, modeSel: G.modeSel, missionId: G.missionId, progress, where, run };
+  if (opts.auto) data.auto = true;
   try { localStorage.setItem(slotKey(i), JSON.stringify(data)); return true; } catch(e){ return false; }
 }
 export function deleteSlot(i){ try { localStorage.removeItem(slotKey(i)); } catch(e){} }

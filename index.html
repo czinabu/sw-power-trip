@@ -36,6 +36,10 @@
 
   <!-- bottom-left: your vitals -->
   <div id="status">
+    <div class="meter" id="fymeter">
+      <div class="mrow"><span class="barlabel" id="fylabel">FURY</span><span class="mval" id="fyval"></span></div>
+      <div class="barwrap" id="fywrap"><div class="bar" id="fybar"></div></div>
+    </div>
     <div class="meter" id="fcmeter">
       <div class="mrow"><span class="barlabel" id="fclabel">FOCUS</span></div>
       <div class="barwrap" id="fcwrap"><div class="bar" id="fcbar"></div></div>
@@ -171,6 +175,7 @@
           </div>
           <div id="campsaves">
             <div class="btn" id="campNewBtn">NEW GAME</div>
+            <div class="btn" id="campSaveBtn">SAVE GAME</div>
             <div class="btn" id="campLoadBtn">LOAD GAME</div>
           </div>
           <div id="missionpick">
@@ -272,6 +277,7 @@
       </div>
     </div>
   </div>
+  <div id="autosave" aria-live="polite"></div>
   <div id="saves">
     <div class="howto-panel">
       <div class="howto-head"><div class="howto-title" id="savestitle">LOAD GAME</div><div class="rm-sub" id="savessub"></div><div class="howto-x" id="savesclose">✕</div></div>

@@ -15,7 +15,7 @@ import { flinchEnemy, staggerEnemy } from '../enemies/damage.js';
 import { FOCUS, addFocus, riposteWindow } from './jedi/focus.js';
 import { addFury } from './jedi/fury.js';
 import { deflectAnim, cancelSwing } from './jedi/combat.js';
-import { sparks, clashFlash } from '../fx/ink.js';
+import { clashFlash, clashSparks } from '../fx/ink.js';
 import { TELLS, tellCss } from '../fx/tells.js';
 import { spawnHitSpark, spawnParryFlash, spawnGroundShock } from '../fx/vfx.js';
 import { updateBoonStrip } from '../game/boons.js';
@@ -137,7 +137,7 @@ export function bladeClash(fromPos, foe, at){
     floater(playerPos(), 'CLASH', '#ffe9b0');
   }
   clashFlash(cp, stance().blade, true);
-  sparks(cp, 0xffe9b0, 8, 10, { life: 0.22 });
+  clashSparks(cp, 0xffe9b0, 4);
   theirSparks(foe, cp);
   G.hitstop = Math.max(G.hitstop, 0.08); G.shake = Math.max(G.shake, boss ? 0.6 : 0.45);
   S.clash(cp, true);
@@ -193,7 +193,7 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
           noteDefense('blocks', fromPos, opts);
           player.stamDelay = stamDelay();
           // ENERGY SHIELD soak — a blue ripple across the disc + a metallic beskar ring underneath
-          burst(cpp, 0x6fd0ff, 8, 9, 4, 0.8); burst(cpp, 0xcfe0ec, 5, 5, 3);
+          clashSparks(cpp, 0x6fd0ff, 4);
           spawnHitSpark(cpp, 0x9fe6ff, 0.9);
           G.shake = Math.max(G.shake, 0.18); G.hitstop = Math.max(G.hitstop, 0.03);
           player.braceFlash = 0.12;   // chest plate glints (drawn in updatePlayer)
@@ -226,10 +226,9 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
         G.shake = Math.max(G.shake, 0.35);
         G.slowmo = Math.min(G.slowmo, 0.5); G.slowmoT = Math.max(G.slowmoT, 0.14);   // a brief beat of clarity on a perfect parry
         const fp = contact || V3(pp.x + fwd().x, 1.6, pp.z + fwd().z);   // the clash is where the blades meet
-        burst(fp, 0xffe9a8, 12, 9, 5); burst(fp, 0xffffff, 6, 11, 4);
+        clashSparks(fp, 0xffe9a8, 5);
         spawnParryFlash(fp, 0xffd24a);
-        spawnHitSpark(fp, 0xffffff, 1.0);
-        screenFlash('radial-gradient(ellipse at center, rgba(255,240,180,.22), transparent 60%)', 0.5, 0.2);
+        screenFlash('radial-gradient(ellipse at center, rgba(255,240,180,.12), transparent 40%)', 0.35, 0.16);
         floater(pp, (player.cancelRiposte ? 'PARRY! ⟲ CRUSHING RIPOSTE' : 'PARRY! ⟲ RIPOSTE READY'), '#ffe27a');
         S.parry(fp);   // a bright ringing clash
         if (G.stats) G.stats.parries++;
@@ -248,7 +247,7 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
         const heavy = Math.max(1, dmg / CFG.player.blockHeavy);
         player.stam = Math.max(0, player.stam - CFG.player.blockStamCost * heavy * player.up.blockStam * (stance().blockStamMul || 1));
         player.stamDelay = stamDelay();
-        burst(V3(pp.x + fwd().x, 1.5, pp.z + fwd().z), stance().blade, 5, 4, 3);
+        clashFlash(V3(pp.x + fwd().x * 0.8, 1.5, pp.z + fwd().z * 0.8), stance().blade, false);   // the blow meets the blade
         G.shake = Math.max(G.shake, 0.15 * heavy);
         player.vel.addScaledVector(fwd(), -2.5 * heavy);   // the blow drives you back a step
         sfx(900, 0.07, 'square', 0.05, 500);

@@ -58,7 +58,7 @@ import './world/arena.js';
 import './world/textures.js';
 import { updateAmbient } from './fx/ambient.js';
 import { updateScorch } from './fx/scorch.js';
-import { updateSevered, scarBody, severArm } from './enemies/scars.js';
+import { updateSevered, scarBody, severLimbs } from './enemies/scars.js';
 import './world/arenas/temple.js';
 import './world/arenas/foundry.js';
 import './world/arenas/plains.js';
@@ -99,12 +99,14 @@ import { DUEL, DUEL_PROFILES, MANDO_MELEE } from './data/duel.js';
 import { LOCK, startLock, endLock, duelDefend, eliteRamp } from './enemies/duel.js';
 import { foeBlade, bossBlade, contactPoint } from './player/jedi/clash.js';
 import { updateCoop, partnerShown, partnerInfo } from './net/partner.js';
-import { allies, updateSquad, updateSquadHud, spawnSquad, addSquadmate, squadOrder } from './allies/squad.js';
+import { allies, updateSquad, updateSquadHud, spawnSquad, addSquadmate, squadOrder, hurtAlly, giveOrder, squadOrderName, squadFormation, grenadeLeft } from './allies/squad.js';
+import { updateWheel, wheelOpen } from './allies/wheel.js';
 import { downed } from './game/revive.js';
 import { updateComms, clearComms, commsBusy, storyBeat } from './game/story.js';
 import './ui/coop-ui.js';
 import { updateFoes, updatePuppets, coopLive } from './net/foes.js';
 import './net/foefire.js';
+import { updateSquadNet } from './net/squad.js';
 import { hooks as coopHooks, coopRun } from './net/run.js';
 import './ui/saves-ui.js';   // NEW GAME / SAVE GAME / LOAD GAME and the save-slot panel
 
@@ -118,6 +120,7 @@ function tick(){
   requestAnimationFrame(tick);
   const rawDt = Math.min(clock.getDelta(), 0.05);
   let dt = rawDt;
+  updateWheel();   // the squad's command wheel: opens on a held H and slows the world while it's up (allies/wheel.js)
   if (G.slowmoT > 0){
     G.slowmoT -= rawDt;
     if (G.slowmoT <= 0 && (!shared.boss || shared.boss.state !== 'dying')) G.slowmo = 1;
@@ -161,6 +164,7 @@ function tick(){
   updateComms(G.paused || G.skillSelect || G.cutscene ? 0 : rawDt);   // the voice in your ear during a campaign chapter (game/story.js)
   updateTutorial(G.paused || G.skillSelect || G.cutscene ? 0 : dt);   // the training lessons, and the unlock drills in a real run
   updateFoes();
+  updateSquadNet();   // online co-op: the host's squad, sent to the guest and commanded from both screens (net/squad.js)
   updateCoop(rawDt);     // online co-op: send my pose, pose the partner's hero (net/partner.js)
   updateTrail(dt);
   updateJudgeFX();
@@ -190,9 +194,9 @@ window.GAME = { shared, coopRun, coopHooks, partnerShown, partnerInfo, CFG, ENEM
   hitMarker, spawnBlasterBolt, mandoWeapon, updateBolts, updateHud,
   hazardZones, updateHazardZones, hazardContains, setOverlayState, nav: { NAV, buildNav, updateNav, navSteer, navDist },
   duel: { DUEL, DUEL_PROFILES, MANDO_MELEE, LOCK, startLock, endLock, duelDefend, eliteRamp, foeBlade, bossBlade, contactPoint },
-  scars: { scarBody, severArm },
+  scars: { scarBody, severLimbs },
   tactics: { RAMP, TROOP_MELEE, TROOP_FIRE, PINCER, ORDERS, GRENADE, LUNGE, tacticsRamp, grenades, pushGrenades },
-  squad: { allies, spawnSquad, addSquadmate, squadOrder, downed },
+  squad: { allies, spawnSquad, addSquadmate, squadOrder, hurtAlly, giveOrder, squadOrderName, squadFormation, grenadeLeft, wheelOpen, downed },
   aim: { heroAim, aimFrom, crosshairPoint, inAim, bossInAim, lastAim },
   get boss(){ return shared.boss; }, get saberProj(){ return shared.saberProj; }, get darkProj(){ return shared.darkProj; } };
 

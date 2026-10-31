@@ -63,6 +63,18 @@ body.mando #fpbar{background:linear-gradient(90deg,#d98a2b,#ffd9a0)}
 #fcbar{background:linear-gradient(90deg,#caa23a,#ffe27a);transition:width .1s ease-out}
 #fclabel{color:#e8cf7a}
 #fcwrap.t3{box-shadow:0 0 14px rgba(255,210,90,.65);border-color:rgba(255,210,90,.7)}
+/* FORM VII fury meter — shown only while Juyo (FURY, red) or Vaapad (CONTROL, violet) is the active form */
+#fymeter{display:none}
+#fymeter.on{display:block}
+#fywrap{height:8px;width:85%}
+#fybar{background:linear-gradient(90deg,#b81f1f,#ff7a5a);transition:width .1s ease-out}
+#fylabel{color:#ff8a72}
+#fymeter.vaapad #fybar{background:linear-gradient(90deg,#7a2fd0,#d6a8ff)}
+#fymeter.vaapad #fylabel{color:#c9a0ff}
+#fymeter.full #fywrap{box-shadow:0 0 16px rgba(255,90,58,.8);border-color:rgba(255,120,90,.85);animation:fypulse .7s ease-in-out infinite alternate}
+#fymeter.vaapad.full #fywrap{box-shadow:0 0 16px rgba(176,77,255,.85);border-color:rgba(200,150,255,.9)}
+#fymeter.full .mval{color:#fff}
+@keyframes fypulse{from{filter:brightness(1)}to{filter:brightness(1.5)}}
 #smwrap{display:none}
 #smbar{background:linear-gradient(90deg,#e8a23a,#ffe2a8)}
 
@@ -153,7 +165,7 @@ body.mando .j-ab{display:none!important}
 body.mando .ab.hint.m-ab{display:flex}
 body.mando .ab.slot.m-ab{display:flex}
 body.mando .weaponbox{display:flex}
-body.mando #stancebox,body.mando #xh,body.mando #fcmeter{display:none!important}
+body.mando #stancebox,body.mando #xh,body.mando #fcmeter,body.mando #fymeter{display:none!important}
 
 /* ---------- centre banners ---------- */
 #banner{position:fixed;top:20%;left:0;right:0;text-align:center;opacity:0;transition:opacity .4s}
@@ -326,7 +338,7 @@ body.sandbox #xpmeter,body.sandbox #xphud{display:none !important}   /* the sand
 @media (max-width:700px){ #objlist{width:200px;top:40px} }
 
 /* ---------- the squad (allies/squad.js): a strip above the vitals, and the prompt while you're down ---------- */
-#squadhud{position:fixed;left:20px;bottom:170px;width:200px;display:flex;flex-direction:column;gap:3px;pointer-events:none;
+#squadhud{position:fixed;left:20px;bottom:170px;width:240px;display:flex;flex-direction:column;gap:3px;pointer-events:none;
   text-shadow:0 1px 6px rgba(0,0,0,.9)}
 #squadhud .sq-head{display:flex;justify-content:space-between;font:700 11px/1 var(--font-ui);letter-spacing:2px;color:var(--ink-dim);margin-bottom:2px}
 #squadhud .sq-ord{color:var(--accent)}
@@ -337,6 +349,10 @@ body.sandbox #xpmeter,body.sandbox #xphud{display:none !important}   /* the sand
 #squadhud .sq-bar i{display:block;height:100%;background:var(--accent);transition:width .15s linear}
 #squadhud .sq-row.down{color:#ff9a8a}
 #squadhud .sq-row.down .sq-bar i{background:#7bffae}
+#squadhud .sq-o{width:58px;font-size:9px;letter-spacing:1.4px;color:var(--accent);white-space:nowrap}
+#squadhud .sq-row.down .sq-o{color:#ff9a8a}
+#squadhud .sq-gr{font-size:10px;letter-spacing:1.4px;color:var(--ink-dim);margin-top:2px}
+#squadhud .sq-gr.ready{color:#ffc46a}
 #squadhud .sq-rev{font-size:10px;letter-spacing:1.4px;color:var(--ink-dim);margin-top:2px}
 #downed{position:fixed;left:50%;top:58%;transform:translateX(-50%);text-align:center;pointer-events:none;text-shadow:0 1px 10px rgba(0,0,0,.95)}
 #downed .dn-t{font:700 26px/1 var(--font-display);letter-spacing:4px;color:#ff8a7a}
@@ -413,3 +429,25 @@ body.mission-play #objlist{width:330px;border-color:rgba(255,210,90,.5);backgrou
 #waypoint.edge{opacity:.85}
 @keyframes wpbob{50%{box-shadow:0 0 24px var(--gold)}}
 @media (max-width:700px){ body.mission-play #objlist{width:230px} }
+
+/* ---------- the squad's command wheel (allies/wheel.js): hold H ---------- */
+#sqwheel{position:fixed;left:50%;top:50%;width:0;height:0;pointer-events:none;opacity:0;transition:opacity .12s;z-index:30}
+#sqwheel.open{opacity:1}
+#sqwheel .sw-ring{position:absolute;left:-178px;top:-178px;width:356px;height:356px;border-radius:50%;
+  background:radial-gradient(circle,rgba(6,12,22,.9) 0 27%,rgba(92,198,255,.35) 27.4%,rgba(6,12,22,.55) 28% 100%);border:1px solid rgba(92,198,255,.28);box-shadow:0 0 40px rgba(0,0,0,.5)}
+#sqwheel .sw-o{position:absolute;left:0;top:0;width:96px;padding:7px 4px 6px;border-radius:10px;text-align:center;
+  background:rgba(14,26,42,.78);border:1px solid rgba(255,255,255,.12);color:var(--ink-soft);transition:transform .08s,background .08s,border-color .08s;
+  text-shadow:0 1px 4px rgba(0,0,0,.9)}
+#sqwheel .sw-o b{display:block;font:700 20px/1 var(--font-ui);color:var(--accent)}
+#sqwheel .sw-o span{display:block;margin-top:4px;font:700 11px/1.05 var(--font-ui);letter-spacing:1.2px}
+#sqwheel .sw-o em{display:block;min-height:10px;margin-top:2px;font:600 9px/1 var(--font-ui);font-style:normal;letter-spacing:1px;color:#ffc46a}
+#sqwheel .sw-o.on{background:rgba(92,198,255,.28);border-color:var(--accent);color:#fff;box-shadow:0 0 18px var(--accent-glow)}
+#sqwheel .sw-o.cool{opacity:.5}
+#sqwheel .sw-c{position:absolute;left:-84px;top:-38px;width:168px;text-align:center;text-shadow:0 1px 6px rgba(0,0,0,.95)}
+#sqwheel .sw-t{font:700 15px/1 var(--font-ui);letter-spacing:2px;color:#fff}
+#sqwheel .sw-n{margin-top:4px;font:600 10px/1.2 var(--font-ui);letter-spacing:.8px;color:var(--ink-soft);min-height:24px}
+#sqwheel .sw-who{display:flex;flex-wrap:wrap;justify-content:center;gap:3px;margin-top:4px}
+#sqwheel .sw-who span{font:700 9px/1 var(--font-ui);letter-spacing:1px;padding:3px 5px;border-radius:4px;background:rgba(255,255,255,.08);color:var(--ink-dim)}
+#sqwheel .sw-who span.on{background:var(--accent);color:#06121e}
+#sqwheel .sw-who span.down{color:#ff9a8a}
+#sqwheel .sw-who kbd{font:700 8px/1 var(--font-ui);margin-right:3px;opacity:.8}

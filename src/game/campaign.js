@@ -4,6 +4,7 @@
 // a chapter card: where you are in the story, the voice's briefing and the act's chapters so far. Between Act I and
 // Act II the card asks which pair of chapters comes first.
 
+import { autosave } from './autosave.js';
 import { G, shared } from '../state.js';
 import { renderer } from '../engine/renderer.js';
 import { audioInit, S } from '../audio/sfx.js';
@@ -48,7 +49,7 @@ export function startChapter(pos, opts = {}){
   if (c.kind === 'waves'){
     startLevel(c.level, { level: { ...LEVELS[c.level], ...c.arena, name, sub }, waves: c.waves, resume: !opts.fresh, retry: opts.retry, chapter: true });
   } else {
-    if (!opts.retry) G.checkpoint = { idx: G.levelIdx, ch: pos, waveTotal: G.waveTotal, boss: false };
+    if (!opts.retry){ G.checkpoint = { idx: G.levelIdx, ch: pos, waveTotal: G.waveTotal, boss: false }; autosave('chapter'); }
     startMission(c.mission, 0, !!opts.guest, { retry: !!opts.retry, chapter: { name, sub, arena: c.arena, kicker: 'CHAPTER ' + (pos + 1) + ' · ' + title, clear: (c.lines && forHero(c.lines.clear, G.hero)) || null, done: chapterCleared } });
   }
   if (opts.guest){ G.coopGuest = true; G.coopWasGuest = true; G.coopJoin = false; shared.levelPhase = G.mission ? 'mission' : 'between'; shared.phaseT = 0; }

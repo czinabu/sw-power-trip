@@ -388,6 +388,10 @@ body.fovpreview #fovpill{background:rgba(1,4,10,.82)}
 #saves{position:fixed;inset:0;z-index:25;display:none;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;
   background:rgba(1,4,10,.72);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);cursor:default}
 #saves.open{display:flex}
+#autosave{position:fixed;right:18px;bottom:18px;z-index:24;padding:6px 12px;border:1px solid var(--edge);border-radius:var(--r-lg);background:rgba(4,10,20,.78);
+  color:#bfe3ff;font-size:11px;letter-spacing:.18em;pointer-events:none;opacity:0;transform:translateY(6px);transition:opacity .25s,transform .25s}
+#autosave.on{opacity:1;transform:none}
+#autosave.bad{color:#ff9a8a}
 #saves .howto-panel{width:min(620px,100%)}
 .sv-list{display:flex;flex-direction:column;gap:8px}
 .sv-slot{display:flex;align-items:center;gap:14px;padding:12px 14px;border:1px solid var(--edge);border-radius:var(--r-lg);background:rgba(255,255,255,.025)}

@@ -36,12 +36,15 @@ await page.click('#hero-mando'); await page.click('#mode-campaign'); await page.
 if (await page.isVisible('#forms [data-go]')) await page.click('#forms [data-go]', { timeout: 2000 }).catch(() => {});   // the Jedi's forms page before the fight: FIGHT
 await playing();
 await page.evaluate(() => { const { G, player, startLevel } = GAME; G.xp = 777; player.up.dmg = 1.5; G.unlocked.flame = true; startLevel(1); });
-await page.waitForTimeout(500);
+await page.waitForTimeout(900);
+// AUTOSAVE: starting the level wrote the AUTO slot with the build, and flashed the note
+check(await page.evaluate(() => { const d = JSON.parse(localStorage.getItem('sw_save_auto')); return d && d.auto && d.run && d.run.idx === 1 && d.run.xp === 777; }), 'level start autosaved to the AUTO slot with its build');
 await pause();
 await shot('02-pause');
 await page.click('#saveBtn'); await shot('03-save-panel');
 await page.click('[data-act="save"][data-i="0"]');
 check(await page.evaluate(() => { const d = JSON.parse(localStorage.getItem('sw_save_0')); return d && d.run && d.run.idx === 1 && d.run.xp === 777; }), 'campaign saved to slot 1 with its build');
+check(await page.evaluate(() => !document.querySelector('[data-act="save"][data-i="auto"]') && document.querySelectorAll('.sv-slot').length === 3), 'the save list has no hand-save for the autosave');
 await page.click('#savesclose');
 await page.click('#homeBtn'); await page.click('#homeYes');
 
@@ -56,6 +59,7 @@ check(await page.evaluate(() => GAME.G.levelIdx === 0 && GAME.G.xp === 0 && loca
 // LOAD from the pause screen → menu shows CONTINUE CAMPAIGN → back on level 2 with the build
 await pause();
 await page.click('#loadBtn'); await shot('05-load-panel');
+check(await page.evaluate(() => !!document.querySelector('[data-act="load"][data-i="auto"]')), 'the load list offers the autosave');
 await page.click('[data-act="load"][data-i="0"]');   // first click asks (leaves the run)
 await page.click('[data-act="load"][data-i="0"]');
 await page.waitForFunction(() => GAME.G.mode === 'menu');
