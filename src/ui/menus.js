@@ -15,6 +15,7 @@ import { startTutorial, retryTutorial, skipStep, setTrainingExit, trainingDone, 
 import { setTrainHook } from '../game/meditation.js';
 import { startMission, startCoopMission, retryMission, missionDone, missionTitle } from '../game/mission.js';
 import { startSandbox, sandboxUnlocked } from '../game/sandbox.js';
+import { battleArmed, leaveSetup } from '../game/battlesim.js';
 import { sandboxFull, sandboxProgress, missionUnlocked, missionChapterNo } from '../game/sandbox-unlocks.js';
 import { closeSandboxPanel } from './sandbox-ui.js';
 import { MISSIONS } from '../data/missions.js';
@@ -67,7 +68,7 @@ export function setOverlayState(state){
     const where = G.chapter >= 0 ? 'CAMPAIGN · ' + chapterLabel() : G.training ? 'TRAINING' : G.sandbox ? 'SANDBOX' : G.mission ? missionTitle(G.missionId) : G.endless ? 'SURVIVAL' : 'CAMPAIGN';
     document.getElementById('ovctx').textContent = where + ' · ' + (isGunner() ? 'MANDALORIAN' : 'JEDI');
   } else if (state === 'dead'){
-    go.textContent = G.endless ? 'NEW SURVIVAL RUN' : G.mission ? 'RETRY THIS OBJECTIVE' : G.sandbox ? 'BACK TO THE SANDBOX' : retryIsBoss() ? 'RETRY THE BOSS' : G.chapter >= 0 ? 'RETRY THIS CHAPTER' : 'RETRY THIS LEVEL';
+    go.textContent = G.endless ? 'NEW SURVIVAL RUN' : G.mission ? 'RETRY THIS OBJECTIVE' : G.sandbox ? (battleArmed() ? 'REPLAY THE BATTLE' : 'BACK TO THE SANDBOX') : retryIsBoss() ? 'RETRY THE BOSS' : G.chapter >= 0 ? 'RETRY THIS CHAPTER' : 'RETRY THIS LEVEL';
     sub.textContent = '';   // the run summary's own title carries the moment
   } else if (state === 'victory'){
     go.textContent = 'PLAY AGAIN';
@@ -108,7 +109,7 @@ function beginPlay(){
     else if (G.modeSel === 'endless') startEndless(); else if (G.modeSel === 'training') startTutorial(); else if (G.modeSel === 'mission') startMission(G.missionId); else if (G.modeSel === 'sandbox') startSandbox(); else if (canResume()) resumeRun(); else startCampaign();
   } else if (G.mode === 'dead'){
     G.mode = 'play'; G.slowmo = 1;
-    if (G.endless) startEndless(); else if (G.training) retryTutorial(); else if (G.mission) retryMission(); else if (G.sandbox) startSandbox(); else retryLevel();   // survival retry = a fresh survival run
+    if (G.endless) startEndless(); else if (G.training) retryTutorial(); else if (G.mission) retryMission(); else if (G.sandbox) startSandbox({ replay: true }); else retryLevel();   // survival retry = a fresh survival run
   } else if (G.mode === 'play'){
     overlay.style.display = 'none';  // resume from pause
   }
@@ -524,7 +525,7 @@ function restartRun(toTraining){
   G.mode = 'play'; G.slowmo = 1; G.paused = false;
   document.body.classList.remove('in-menu'); setHowTo(false); setSettings(false);
   closeCard(true);
-  if (toTraining) startTutorial(); else if (G.chapter >= 0) startCampaign(); else if (G.endless) startEndless(); else if (G.training) startTutorial(); else if (G.mission) startMission(G.missionId); else if (G.sandbox) startSandbox(); else startCampaign();   // a survival run restarts as survival, not the campaign
+  if (toTraining) startTutorial(); else if (G.chapter >= 0) startCampaign(); else if (G.endless) startEndless(); else if (G.training) startTutorial(); else if (G.mission) startMission(G.missionId); else if (G.sandbox) startSandbox({ replay: true }); else startCampaign();   // a survival run restarts as survival, not the campaign
   if (!shared.lockFallback) requestLock();
 }
 document.getElementById('restartBtn').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); restartRun(); });
@@ -541,6 +542,7 @@ setTrainHook((formId) => {
 export function goHome(){
   overlay.classList.remove('confirming');
   closeSandboxPanel(false);
+  leaveSetup(false);   // the sandbox's battle setup, if it's up (game/battlesim.js)
   closeCard(true);
   document.getElementById('skilltree').style.display = 'none';
   G.skillSelect = false; G.sbMenu = false;

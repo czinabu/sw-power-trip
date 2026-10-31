@@ -62,11 +62,15 @@ export const squadIn = (x, z, r) => allies.filter(a => standing(a) && Math.hypot
 /* ============================================================
    CALLING THEM IN
    ============================================================ */
-// add the next squadmate on the hero's roster (up to SQUAD.max), at `at` or just behind the hero
-export function addSquadmate(at){
-  if (allies.length >= SQUAD.max) return null;
+// add the next squadmate on the hero's roster (up to SQUAD.max), at `at` or just behind the hero.
+// opts (the sandbox's battle setup, game/battlesim.js): `role` asks for one of that role (any specialist, earned or not),
+// `cap` lets the squad grow past SQUAD.max
+export function addSquadmate(at, opts){
+  if (allies.length >= ((opts && opts.cap) || SQUAD.max)) return null;
   if (guest()){ squadLink.add(); return null; }   // co-op guest: the host's browser runs the squad
-  const roster = (heroKey(SQUAD.roster) || SQUAD.roster.jedi).filter(d => !d.need || G.unlocked[d.need]);   // (a specialist the run hasn't earned yet waits)
+  const full = heroKey(SQUAD.roster) || SQUAD.roster.jedi, askRole = opts && opts.role;
+  const roster = askRole && full.some(d => d.role === askRole) ? full.filter(d => d.role === askRole)
+    : full.filter(d => !d.need || G.unlocked[d.need]);   // (a specialist the run hasn't earned yet waits)
   const def = roster.find(d => !allies.some(a => a.def === d)) || roster[allies.length % roster.length];
   const role = SQUAD.roles[def.role];
   const t = { model: def.model, color: def.color, eye: def.eye, cloth: def.cloth, scale: def.scale || 1, ranged: true };
@@ -105,6 +109,11 @@ export function regroupSquad(){
     a.group.position.set(s.x, 0, s.z); a.mv.x = a.mv.z = 0; a.legs = null;
   });
   allies.forEach(a => { a.ord = FOLLOW; a.mark = null; a.flank = 0; });
+}
+// one particular squadmate goes (the battle setup taking back what it placed)
+export function removeSquadmate(a){
+  const i = allies.indexOf(a); if (i < 0) return;
+  allies.splice(i, 1); removeAlly(a);
 }
 export function dismissSquadmate(){
   const a = allies.pop();

@@ -25,6 +25,7 @@ import { regroupSquad } from '../allies/squad.js';
 import { FORMS, LOADOUT_SLOTS, DEFAULT_LOADOUT, STARTING_FORMS, migrateForm, cleanLoadout } from '../data/forms.js';
 import { setLoadout } from '../player/jedi/stance.js';
 import { refreshSandboxScope, foeOffered, mapOffered, kitOffered, formOffered } from './sandbox-unlocks.js';
+import { battleMapChanged, battleAfterRestart, updateBattle } from './battlesim.js';
 export { sandboxUnlocked } from './sandbox-unlocks.js';
 
 // the panel's settings: how many foes a pick calls in, whether they come elite or stand still as dummies
@@ -33,7 +34,8 @@ export { sandboxUnlocked } from './sandbox-unlocks.js';
 export const SB = { count: 1, elite: false, dummy: false, map: savedMap() };
 function savedMap(){ try { const m = localStorage.getItem('sw_sandbox_map'); if (m && BATTLE_MAPS[m]) return m; } catch(e){} return 'room'; }
 
-export function startSandbox(){
+// opts.replay: the fallen screen's retry, which goes back into the battle that was set up (game/battlesim.js)
+export function startSandbox(opts){
   refreshSandboxScope();
   if (!mapOffered(SB.map)) SB.map = 'room';   // a world the story hasn't reached yet
   startLevel(0, { level: sandboxLevel(), sandbox: true });   // fresh hero and starting kit, in the hero's room (or the picked battle map)
@@ -42,6 +44,7 @@ export function startSandbox(){
   const kit = savedKit();
   if (kit) applyKit(kit); else sandboxKitAll(true);   // the first visit: everything (the first of each key-sharing pair)
   if (!isGunner()) applyForms(savedForms());
+  battleAfterRestart(!!(opts && opts.replay));
 }
 
 /* ---------- the forms loadout ---------- */
@@ -80,7 +83,7 @@ export function cycleSandboxSlot(i){
 /* ---------- the arena ---------- */
 function sandboxLevel(){ const m = BATTLE_MAPS[SB.map]; return m ? m.level : (heroKey(SANDBOX_LEVELS) || SANDBOX_LEVELS.jedi); }
 // the room: south of centre, facing the north wall (the crest, or the throne) · a battle map: where the allies start
-function placeHero(){
+export function placeHero(){
   const m = BATTLE_MAPS[SB.map], [x, z, yaw] = m ? m.spots.allyStart : [0, -10, 0];
   const s = findClearSpawn(x, z, CFG.player.radius + 1.0);
   playerPos().set(s.x, 0, s.z); G.yaw = player.faceYaw = yaw;
@@ -90,6 +93,7 @@ function placeHero(){
 export function setSandboxMap(id){
   if ((id !== 'room' && !BATTLE_MAPS[id]) || !mapOffered(id)) return;
   SB.map = id;
+  battleMapChanged();   // a battle set up on the old map doesn't carry over
   try { localStorage.setItem('sw_sandbox_map', id); } catch(e){}
   if (!G.sandbox) return;
   sandboxClear();
@@ -194,6 +198,7 @@ export function sandboxHeal(){
 /* called every frame in play: god mode keeps the hero topped up, and the room's remotes drift */
 export function updateSandbox(dt){
   if (!G.sandbox) return;
+  updateBattle();
   if (G.sandboxGod){ player.hp = maxHp(); player.force = CFG.player.maxForce; }
   for (const r of shared.dojoRemotes || []){
     const b = r.userData.base, t = G.gt + r.userData.ph;

@@ -54,6 +54,7 @@ export const G = {
   shakeScale: 1,         // player preference: screen shake strength (0 = off, 1.5 = extra)
   fov: 60,               // player preference: resting vertical FOV in degrees (the FOV slider, 50-90)
   sbMenu: false,         // the sandbox B panel is open (same cinematic cuts as the pause screen)
+  sbPlan: false,         // the sandbox's battle setup is up: the sim holds still under an overhead view (game/battlesim.js)
   fovPreview: false,     // the FOV slider is being adjusted: settings fade away to show the live in-game view
   levelIdx: 0, wave: 0, waveTotal: -1,   // waveTotal = cumulative waves started (drives Mando ability unlocks)
   waveFrom: 0, waveEnd: null,            // the stretch of the level's waves being played (a campaign chapter's, game/flow.js)
