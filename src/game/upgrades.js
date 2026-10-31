@@ -2,9 +2,9 @@
 // LEARN BY DOING: what a run earns in the fight itself, without stopping it.
 //  · MASTERY — every power you own ranks up from using it in a fight (data/mastery.js `uses`). No XP, no screen: a
 //    small note in the corner names what changed.
-//  · SKILL POINTS — one for each wave cleared, plus one now and then for skilled defence (parries, perfect dodges,
-//    clashes, catches, ripostes). A point is only noted mid-fight; it is spent on the upgrade page (ui/store-ui.js),
-//    which opens once at a chapter's close (every SURVIVAL_EVERY waves in survival).
+//  · SKILL POINTS — the story pays one for every XP_PER_POINT XP (kills, clears, parries and the rest all count);
+//    survival pays one per wave cleared. A point is only noted mid-fight; it is spent on the upgrade page
+//    (ui/store-ui.js), which opens once at a chapter's close (every SURVIVAL_EVERY waves in survival).
 
 import { S } from '../audio/sfx.js';
 import { burst } from '../fx/particles.js';
@@ -14,8 +14,6 @@ import { playerPos } from '../player/helpers.js';
 import { masterySet, masteryRank } from '../data/mastery.js';
 
 export const SURVIVAL_EVERY = 3;     // survival: the upgrade page opens every 3rd wave cleared
-const FEATS_PER_POINT = 25;          // skilled answers to a blow that add up to a bonus skill point
-const FEAT_KINDS = { parry: 1, perfectDodge: 1, clash: 1, catch: 1, riposte: 1 };   // (bolt parries are too common to count)
 const RANK_NUM = ['', 'I', 'II', 'III'];
 
 // the training grounds and the sandbox hand powers out; every real fight (campaign, survival, missions, co-op) teaches
@@ -86,28 +84,36 @@ export function trainHeld(id, dt){
 export function settleMastery(){ for (const m of masterySet()) if (m.owned()) settle(m); }
 
 /* ---------------- skill points ---------------- */
-// one wave cleared (campaign, survival, a mission chapter): +1 point, a note in the corner instead of a screen
+// the story campaign: every XP_PER_POINT XP earned is a skill point, the one thing its upgrade page spends (powers
+// come with the chapters, data/store.js). Survival (and the old level-by-level run) pays a point per wave cleared
+// instead and keeps XP as a currency of its own (abilities and survival powers).
+export const XP_PER_POINT = 500;
+export const storyRun = () => G.chapter >= 0 && !G.training && !G.sandbox;
+export function xpTowardPoint(){ return (G.xpEarned || 0) - (G.xpPoints || 0) * XP_PER_POINT; }
+// progression.js gainXp, after every payout
+export function xpPointCheck(){
+  if (!storyRun() || G.mode !== 'play') return;
+  const due = Math.floor((G.xpEarned || 0) / XP_PER_POINT);
+  if (G.xpPoints == null) G.xpPoints = due;   // (a run saved before XP paid in points: start counting from here)
+  if (due <= G.xpPoints) return;
+  G.skillPoints = (G.skillPoints || 0) + (due - G.xpPoints);
+  G.xpPoints = due;
+  const sp = G.skillPoints;
+  upToast(sp > 1 ? sp + ' SKILL POINTS READY' : 'SKILL POINT READY', 'Spend ' + (sp > 1 ? 'them' : 'it') + ' when the chapter ends', 'sp');
+}
+// one wave cleared: outside the story it pays a point (survival also owes a boon pick); everywhere it settles mastery
 export function earnWavePoint(){
-  G.skillPoints = (G.skillPoints || 0) + 1;
-  if (G.endless) G.boonsOwed = (G.boonsOwed || 0) + 1;   // a survival wave also owes a boon pick
+  if (!storyRun()) G.skillPoints = (G.skillPoints || 0) + 1;
+  if (G.endless) G.boonsOwed = (G.boonsOwed || 0) + 1;
   settleMastery();
   return G.skillPoints;
 }
-// say what the clear earned, unless the upgrade page is about to open anyway
+// survival, between the pages: say what the clear earned
 export function noteWavePoint(){
+  if (storyRun()) return;
   const sp = G.skillPoints || 0;
-  const when = G.endless ? 'Spend it after wave ' + (Math.ceil(((G.endlessWave || 0) + 1) / SURVIVAL_EVERY) * SURVIVAL_EVERY)
-    : 'Spend ' + (sp > 1 ? 'them' : 'it') + ' when the chapter ends';
-  upToast(sp > 1 ? sp + ' SKILL POINTS READY' : 'SKILL POINT READY', when, 'sp');
-}
-// skilled defence (progression.js masteryXp): every FEATS_PER_POINT of them is a bonus point, at most one per wave
-export function noteFeat(kind){
-  if (!FEAT_KINDS[kind] || !learning() || (G.mission && G.chapter < 0)) return;   // (a lone mission has no page to spend on)
-  G.feats = (G.feats || 0) + 1;
-  if (G.feats < FEATS_PER_POINT || G.featWave === G.waveTotal) return;
-  G.feats = 0; G.featWave = G.waveTotal;
-  G.skillPoints = (G.skillPoints || 0) + 1;
-  upToast('YOUR DISCIPLINE GROWS', '+1 skill point for your defence', 'sp');
+  upToast(sp > 1 ? sp + ' SKILL POINTS READY' : 'SKILL POINT READY', !G.endless ? 'Spend ' + (sp > 1 ? 'them' : 'it') + ' when the area is cleared'
+    : 'Spend ' + (sp > 1 ? 'them' : 'it') + ' after wave ' + (Math.ceil(((G.endlessWave || 0) + 1) / SURVIVAL_EVERY) * SURVIVAL_EVERY), 'sp');
 }
 // a fresh run
-export function resetUpgrades(){ G.masteryUse = {}; G.feats = 0; G.featWave = null; G.boonsOwed = 0; heldT = {}; }
+export function resetUpgrades(){ G.masteryUse = {}; G.xpPoints = 0; G.boonsOwed = 0; heldT = {}; }

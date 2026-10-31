@@ -12,6 +12,7 @@ import { FOCUS, focusTier } from '../player/jedi/focus.js';
 import { mandoWeapon } from '../player/mando/weapons.js';
 import { MUTATORS } from '../data/mutators.js';
 import { nextStoreGoal } from '../game/progression.js';
+import { storyRun, xpTowardPoint, XP_PER_POINT } from '../game/upgrades.js';
 import { updateBoonStrip } from '../game/boons.js';
 import { renderThreats } from './threats.js';
 import { readoutLiveHtml } from './readout-ui.js';
@@ -122,11 +123,16 @@ export function updateHud(){
       }
       em.style.transform = (G.hero === 'mando') ? 'translate(' + player.aimOff.x.toFixed(1) + 'px,' + player.aimOff.y.toFixed(1) + 'px)' : 'none';
     } }
-  // bottom XP meter — fills toward the next affordable ability
+  // bottom XP meter — fills toward the next skill point in the story (game/upgrades.js), else the next affordable ability
   { const goal = nextStoreGoal(), xm = document.getElementById('xpmeter');
     const showX = G.mode === 'play';
     xm.style.display = showX ? 'block' : 'none';
-    if (showX){
+    if (showX && storyRun()){
+      const have = xpTowardPoint();
+      $('xpmeterfill').style.width = (clamp(have / XP_PER_POINT, 0, 1) * 100) + '%';
+      xm.classList.remove('ready');
+      setHtml($('xpmetertxt'), '<span class="nx">NEXT</span> SKILL POINT <span class="nx">· ' + have + ' / ' + XP_PER_POINT + ' XP</span>');
+    } else if (showX){
       if (goal){ const frac = clamp((G.xp || 0) / goal.cost, 0, 1);
         $('xpmeterfill').style.width = (frac*100) + '%';
         xm.classList.toggle('ready', frac >= 1);

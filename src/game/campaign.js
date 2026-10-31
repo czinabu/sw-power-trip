@@ -41,7 +41,7 @@ export function startCampaign(){
 export function startChapter(pos, opts = {}){
   const c = chapterAt(pos);
   if (!c) return;
-  G.chapter = pos;
+  G.chapter = pos; G.chapterClosed = null;   // (set again when it closes: game/flow.js chapterClosed)
   if (!opts.guest) recordChapters(pos);   // the sandbox follows the story (a co-op guest's is followChapter's)
   const title = chapterTitle(c), name = 'CHAPTER ' + (pos + 1) + ' — ' + title, sub = 'ACT ' + ROMAN[c.act] + ' · ' + c.world;
   if (opts.retry && G.checkpoint && G.checkpoint.ch === pos) G.waveTotal = G.checkpoint.waveTotal;
@@ -84,6 +84,7 @@ export function followChapter(pos, actTwo){
 // wind, the upgrade screen, then the next chapter. A co-op guest waits for the host to move the run on.
 function chapterCleared(){
   G.waveTotal++;   // a mission counts as a step deeper into the run (foes, store tiers and the Mando's gear follow it)
+  G.chapterClosed = G.chapter;   // its closing page offers the powers it hands out (game/flow.js chapterClosed)
   chapterRewards();
   earnWavePoint();   // a mission chapter's skill point (game/upgrades.js), spent on the page that opens next
   storyBeat('clear');
