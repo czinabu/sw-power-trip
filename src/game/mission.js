@@ -234,7 +234,7 @@ const KINDS = {
         if (Math.floor(c.prog * 4) !== Math.floor((c.prog - dt) * 4)) sfx(700 + c.prog * 160, 0.04, 'square', 0.02, 900 + c.prog * 160);
         if (c.prog >= o.time){
           c.done = true; left--; at = null;
-          setMarkerColor(c.m, GREEN); c.m.userData.beam.visible = false;
+          setMarkerColor(c.m, GREEN); c.m.userData.beam.visible = false; c.m.userData.done = true;
           burst(V3(c.x, 1.2, c.z), GREEN, 16, 6, 4, 0.8); S.reward(1);
           floater(V3(c.x, 1.8, c.z), o.consoleName ? o.consoleName + ' ' + (o.consoleDone || (o.consoleName === 'CHARGE' ? 'SET' : 'SECURED')) : 'UPLINK DOWN', '#7bffae');
           // a console can hold something more than its objective (the Jakku cruiser's holocron): its own banner
@@ -281,7 +281,7 @@ const KINDS = {
                : 'POST ' + (s.k + 1) + ' / ' + n + ' · GET ON IT, OR SEND THE SQUAD (H)') + (alive ? ' · ' + alive + ' HOSTILE' + (alive === 1 ? '' : 'S') : ''),
         warn: foes > 0 });
       if (P.prog >= o.time){
-        setMarkerColor(P.m, GREEN); P.m.userData.beam.visible = false;
+        setMarkerColor(P.m, GREEN); P.m.userData.beam.visible = false; P.m.userData.done = true;
         burst(V3(P.x, 1.2, P.z), GREEN, 16, 6, 4, 0.8); S.reward(1);
         floater(V3(P.x, 1.8, P.z), (o.postName || 'POST') + ' TAKEN', '#7bffae');
         for (const e of enemies) if (e.goal) e.goal = null;
@@ -927,6 +927,12 @@ export function skipObjective(){
 // where the live objective is, for the HUD's waypoint arrow (ui/hud.js); null when there's no spot to point at.
 // Multi-part objectives (charges, consoles, posts) point at the nearest part still to do: a finished part's marker turns green and is skipped.
 // A pursuit points at its quarry, or the spot it was last seen, not at a shortcut lane.
+// a finished part: flagged by the host, or (a co-op guest only sees the synced colour) tinted green, within a channel or two since colours round-trip through linear space
+const isDoneMarker = k => {
+  if (k.userData.done) return true;
+  const h = k.userData.ring.material.color.getHex();
+  return Math.abs((h >> 16) - (GREEN >> 16)) < 4 && Math.abs(((h >> 8) & 255) - ((GREEN >> 8) & 255)) < 4 && Math.abs((h & 255) - (GREEN & 255)) < 4;
+};
 export function objectiveTarget(){
   if (!M.on || !M.o || M.won) return null;
   if (M.o.kind === 'pursuit'){
@@ -937,7 +943,7 @@ export function objectiveTarget(){
   const pp = playerPos();
   let best = null, bd = Infinity;
   for (const k of M.markers){
-    if (!k || k.visible === false || !k.userData || !k.userData.ring || k.userData.ring.material.color.getHex() === GREEN) continue;
+    if (!k || k.visible === false || !k.userData || !k.userData.ring || isDoneMarker(k)) continue;
     const d = Math.hypot(k.position.x - pp.x, k.position.z - pp.z);
     if (d < bd){ bd = d; best = k; }
   }
