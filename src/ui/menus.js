@@ -11,7 +11,8 @@ import { setHero } from '../player/hero.js';
 import { startLevel, retryLevel, retryIsBoss, startCoopCampaign } from '../game/flow.js';
 import { coopRun } from '../net/run.js';
 import { startEndless } from '../game/survival.js';
-import { startTutorial, retryTutorial, skipStep, setTrainingExit, trainingDone, openLessonBoard } from '../game/tutorial.js';
+import { startTutorial, retryTutorial, skipStep, setTrainingExit, trainingDone, openLessonBoard, trainOnForm } from '../game/tutorial.js';
+import { setTrainHook } from '../game/meditation.js';
 import { startMission, startCoopMission, retryMission, missionDone, missionTitle } from '../game/mission.js';
 import { startSandbox, sandboxUnlocked } from '../game/sandbox.js';
 import { sandboxFull, sandboxProgress, missionUnlocked, missionChapterNo } from '../game/sandbox-unlocks.js';
@@ -27,7 +28,7 @@ import { LEVELS } from '../data/levels.js';
 import { buildArena } from '../world/arena.js';
 import { findClearSpawn } from '../world/collision.js';
 import { playerPos, heldGrip } from '../player/helpers.js';
-import { canResume, resumeRun, resumeLabel, resumeProgress } from '../game/saves.js';
+import { canResume, resumeRun, resumeLabel, resumeProgress, captureRun } from '../game/saves.js';
 import { startCampaign, joinCampaign, closeCard, chapterLabel } from '../game/campaign.js';
 import { pad } from '../engine/gamepad.js';
 import { openPrefight } from './forms-ui.js';
@@ -494,7 +495,7 @@ document.addEventListener('pointerlockchange', () => {
   }
 });
 // RESTART RUN — wipe progress and drop back into level 1 from scratch
-function restartRun(){
+function restartRun(toTraining){
   overlay.style.display = 'none';
   document.getElementById('restartBtn').style.display = 'none';
   document.getElementById('banner').style.opacity = '0';
@@ -503,10 +504,18 @@ function restartRun(){
   G.mode = 'play'; G.slowmo = 1; G.paused = false;
   document.body.classList.remove('in-menu'); setHowTo(false); setSettings(false);
   closeCard(true);
-  if (G.chapter >= 0) startCampaign(); else if (G.endless) startEndless(); else if (G.training) startTutorial(); else if (G.mission) startMission(G.missionId); else if (G.sandbox) startSandbox(); else startCampaign();   // a survival run restarts as survival, not the campaign
+  if (toTraining) startTutorial(); else if (G.chapter >= 0) startCampaign(); else if (G.endless) startEndless(); else if (G.training) startTutorial(); else if (G.mission) startMission(G.missionId); else if (G.sandbox) startSandbox(); else startCampaign();   // a survival run restarts as survival, not the campaign
   if (!shared.lockFallback) requestLock();
 }
 document.getElementById('restartBtn').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); restartRun(); });
+// the stance unlock screen's TRAIN button (game/meditation.js): the campaign run is kept for CONTINUE CAMPAIGN, and the
+// training opens on the lesson for the form just learned; leaving training lands back on the menu with the run waiting
+setTrainHook((formId) => {
+  G.resumeRun = captureRun();
+  trainOnForm(formId);
+  setModeSel('training');
+  restartRun(true);
+});
 // MAIN MENU — abandon the run and go back to the title screen. From pause it asks first (a run is easy to lose
 // by accident); from the fallen/victory screens the run is already over, so it goes straight there.
 export function goHome(){

@@ -463,6 +463,24 @@ body.fovpreview #fovpill{background:rgba(1,4,10,.82)}
 #meditate .md-form.in{opacity:.45}
 #meditate .md-form.new b::after{content:' NEW';font-size:11px;letter-spacing:1.5px;color:var(--gold)}
 #meditate .cc-opt{border-left:3px solid var(--c,var(--edge-mid))}
+/* THE STANCE UNLOCK: the card keeps to the left and the hero performs the form on the stand beside it (ui/showcase.js) */
+#meditate.unlock{justify-content:flex-start;padding-left:max(24px,5vw);background:linear-gradient(90deg,rgba(1,3,8,.94) 0,rgba(1,3,8,.86) 42%,rgba(1,3,8,.2) 62%,rgba(1,3,8,0) 100%)}
+#meditate.unlock .cc-inner{width:min(540px,100%)}
+#meditate .su-lore{margin:14px 0 0;font:500 16px/1.45 var(--font-body);color:var(--ink-soft)}
+#meditate .su-lore i{color:var(--ink-dim)}
+#meditate .su-best{margin-top:14px;font-size:12px;letter-spacing:2px;color:var(--c,var(--cc))}
+#meditate .su-cols{margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:14px}
+#meditate .su-cols h4{margin:0 0 6px;font:700 12px/1 var(--font-ui);letter-spacing:2.2px}
+#meditate .su-cols .good h4{color:var(--xp)}
+#meditate .su-cols .bad h4{color:#ff8a6a}
+#meditate .su-cols ul{margin:0;padding:0;list-style:none;display:grid;gap:5px}
+#meditate .su-cols li{font:500 14px/1.35 var(--font-body);color:var(--ink);padding-left:14px;position:relative}
+#meditate .su-cols .good li::before{content:'+';position:absolute;left:0;color:var(--xp)}
+#meditate .su-cols .bad li::before{content:'−';position:absolute;left:0;color:#ff8a6a}
+#meditate .su-note{margin-top:10px;font:500 13px/1.4 var(--font-body);color:var(--ink-dim)}
+#meditate .su-count{float:right;color:var(--ink-faint)}
+@media (max-width:900px){ #meditate.unlock{background:rgba(1,3,8,.86)} }
+@media (max-width:620px){ #meditate .su-cols{grid-template-columns:1fr} }
 @media (max-width:620px){ #meditate .md-slots{grid-template-columns:1fr} }
 :is(#chapcard,#meditate,#lessonboard) .cc-pick{margin-top:22px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
 :is(#chapcard,#meditate,#lessonboard) .cc-opt{position:relative;cursor:pointer;padding:16px;border:1px solid var(--edge-mid);border-radius:var(--r);background:var(--panel-solid);

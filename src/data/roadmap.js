@@ -6,6 +6,10 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'Stance unlock screen', status: 'done',
+    items: ['Each lightsaber stance you earn (after a trial in the campaign, and as survival waves climb) opens an unlock screen: its name, what it is good and bad at, and the hero performing it live on the stand, looping its guard, three-cut string and block',
+            'TRAIN IN [STANCE] saves your run and opens that stance\'s lesson in Training; leaving training puts CONTINUE CAMPAIGN back where you were. CONTINUE goes on to choose your three forms',
+            'Survival and co-op show the same screen (training from it is a campaign-only button there: its lesson waits in Training); missions, the sandbox and training hand their forms out up front, as before'] },
   { title: 'Dark robes you can read', status: 'done',
     items: ['Black and near-black outfits (umbra robes, dark hair and skin) no longer render as a flat shadow, especially standing in shade: a soft neutral fill and rim in the arena keep folds and edges visible, while the menu stand keeps them true black',
             'Applies to every hero model in every mode: story, training, survival, sandbox, missions and co-op'] },
