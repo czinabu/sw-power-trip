@@ -119,7 +119,8 @@ export function updateMovement(dt, pp, st, f, r){
       const against = !moving || want.dot(player.moveVel) < 0 || player.pivotT > 0;
       // RUN mode (Jedi, on the ground): a very short wind-up and wind-down, full speed in a fraction of a second
       const run = !isGunner() && player.sprintOn && !airborne;
-      let accel = run ? (against ? MOVE.runBrake : MOVE.runAccel) * (st.accel || 1)
+      const gunRun = isGunner() && !airborne;   // Mando and trooper on their feet: quick start, firm plant
+      let accel = gunRun ? (against ? MOVE.gunnerBrake : MOVE.gunnerAccel) * (st.accel || 1) : run ? (against ? MOVE.runBrake : MOVE.runAccel) * (st.accel || 1)
                       : (against ? MOVE.brake : MOVE.accel) * (st.accel || 1) * (player.sprinting && !against ? MOVE.sprintAccel : 1);
       if (airborne) accel = MOVE.accel * (st.accel || 1) * (player.gliding ? 0.5 : MOVE.airControl) * airControlMul();   // a leap in a fight steers less
       if (dl > 0.001) player.moveVel.addScaledVector(TMP.normalize(), Math.min(dl, accel * dt));

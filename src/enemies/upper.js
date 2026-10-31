@@ -19,6 +19,7 @@
 
 import { clamp } from '../utils.js';
 import { LID_OPEN } from './detail.js';
+import { solveHolds } from './holds.js';
 
 const ease = (cur, want, dt, rate) => cur + (want - cur) * (1 - Math.exp(-rate * dt));
 const wrap = a => Math.atan2(Math.sin(a), Math.cos(a));
@@ -102,6 +103,7 @@ export function updateUpper(o, g, dt, aim, mode = 'on'){
   if (u.gearL || u.gearR || u.gearB) gearSwing(U, o, g, u, dt, mode);
   if (u.cape0) capeSwing(U, g, u, dt, mode);
   if (u.offArm || u.offArmR) armsSwing(U, o, g, u, dt, mode, breath);
+  if (u.holds && mode !== 'off') solveHolds(u);   // hands that stay on a staff or a pike haft as it moves (enemies/holds.js)
   // FALLING (dead, floored): the chest curls and the head lolls with the body's tip, so a fall isn't a rigid plank
   if (mode === 'off'){
     const f = fallOf(g);

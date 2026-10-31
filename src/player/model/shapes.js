@@ -33,7 +33,43 @@ export const HEAD = [[0,1],[0.55,0.86],[0.92,0.35],[1,-0.25],[0.72,-0.82],[0,-1]
    sections: [{ y, w, d, x?, z?, p? }] bottom → top. w/d are full width/depth. p (optional) overrides the profile
    for that ring (must have the same point count). Returns an INDEXED geometry with smooth normals; styles
    decide whether to facet it (flatShading) or crease it. */
+/* DETAIL: how smooth every lofted part is (heroes, NPCs, bosses: everything built here).
+   rings: up to this many extra rings per segment, on a Catmull-Rom curve through the authored rings, so a calf or a
+          helmet's crown bulges in a curve instead of a straight chamfer. Added only where the curve actually leaves
+          the straight line (more than EPS per ring), so straight limbs, hilts and plates cost nothing extra.
+   round: Chaikin passes on every profile under 24 corners (chamfered boxes, KEEL limbs, hilts, the rounded helms), so a
+          cross-section reads as a pressed curve. Finer profiles (already rounded twice) are left alone.
+   The authored rings stay exactly where they were, so joints, sizes and hitboxes don't move. Lab: ?rings=&round= */
+export const DETAIL = { rings: 3, round: 1 };
+const EPS = 0.004;
+const chaikin = pr => { const o = []; for (let i = 0; i < pr.length; i++){ const [ax, az] = pr[i], [bx, bz] = pr[(i+1) % pr.length]; o.push([ax*0.75+bx*0.25, az*0.75+bz*0.25], [ax*0.25+bx*0.75, az*0.25+bz*0.75]); } return o; };
+const cr = (a, b, c, d, t) => 0.5 * ((2*b) + (-a + c)*t + (2*a - 5*b + 4*c - d)*t*t + (-a + 3*b - 3*c + d)*t*t*t);
+function densify(sec){
+  const out = [];
+  for (let i = 0; i < sec.length - 1; i++){
+    const a = sec[Math.max(0, i-1)], b = sec[i], c = sec[i+1], d = sec[Math.min(sec.length-1, i+2)];
+    out.push(b);
+    if (Math.abs(c.y - b.y) < 1e-4) continue;   // a step (a lip, a rim): keep it sharp
+    const f = (key, t) => cr(a[key] || 0, b[key] || 0, c[key] || 0, d[key] || 0, t);
+    // how far the curve bows off the straight line at mid-segment (half-width / half-depth / offset)
+    let dev = 0;
+    for (const key of ['w', 'd', 'x', 'z']){
+      const k = key === 'w' || key === 'd' ? 0.5 : 1;
+      dev = Math.max(dev, Math.abs(f(key, 0.5) - ((b[key] || 0) + (c[key] || 0)) / 2) * k);
+    }
+    const n = Math.min(DETAIL.rings, Math.floor(dev / EPS));
+    for (let j = 1; j <= n; j++){
+      const t = j / (n + 1);
+      out.push({ y: b.y + (c.y - b.y) * t, w: Math.max(0.001, f('w', t)), d: Math.max(0.001, f('d', t)), x: f('x', t), z: f('z', t),
+        p: b.p && c.p ? b.p.map((q, m) => [q[0] + (c.p[m][0]-q[0])*t, q[1] + (c.p[m][1]-q[1])*t]) : (b.p || c.p) });
+    }
+  }
+  out.push(sec[sec.length - 1]);
+  return out;
+}
 export function loft(sections, profile = chamfer(), { capTop = true, capBottom = true } = {}){
+  if (DETAIL.rings && sections.length > 2) sections = densify(sections);
+  for (let r = 0; r < DETAIL.round && profile.length < 24; r++){ profile = chaikin(profile); sections = sections.map(s => s.p ? { ...s, p: chaikin(s.p) } : s); }
   const n = profile.length;
   const pos = [], idx = [];
   for (const s of sections){
@@ -89,7 +125,7 @@ export function limb(len, rings, profile = KEEL, ox = 0, oz = 0){
 export function plate(outline, depth = 0.04, bevel = 0.012){
   const shape = new THREE.Shape(outline.map(([x, y]) => new THREE.Vector2(x, y)));
   const g = new THREE.ExtrudeGeometry(shape, {
-    depth, bevelEnabled: bevel > 0, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 1, curveSegments: 1,
+    depth, bevelEnabled: bevel > 0, bevelThickness: bevel, bevelSize: bevel, bevelSegments: DETAIL.round ? 3 : 1, curveSegments: 1,   // 3: a rolled edge that catches the light
   });
   g.translate(0, 0, -depth / 2);
   g.computeVertexNormals();
@@ -104,4 +140,49 @@ export function block(w, h, d, c = 0.3, taper = 1){
 // a sharp wedge / shard: a pointed tip, used for spikes, finials, beard, nose
 export function shard(w, h, d){
   return loft([{ y: 0, w, d }, { y: h * 0.35, w: w * 1.1, d: d * 1.1 }, { y: h, w: 0.001, d: 0.001 }], ngon(4, Math.PI/4));
+}
+
+/* ---------- gripHand: a gloved hand closed round a grip (a hilt, a haft, a rifle's grip, a shield's handle) ----------
+   In the grip's own frame: the grip runs along y through the origin, its cross-section an ellipse rx × rz (half-widths).
+   Four fingers curl round it from the palm side (-z) the long way, each a tube with a rounded tip, stacked down the
+   grip (the little finger a touch thinner); the thumb closes over them the other way at the top, and the palm sits
+   on -z. One geometry, so a hand costs nothing per finger once baked. */
+export function gripHand({ rx = 0.025, rz = 0.025, t = 0.0125 } = {}){
+  const parts = [];
+  const ring = (y, r, a0, a1, rad, seg = 9) => {
+    const pts = [];
+    for (let i = 0; i <= seg; i++){
+      const a = a0 + (a1 - a0) * i / seg;
+      pts.push(new THREE.Vector3(Math.sin(a) * (rx + r), y, -Math.cos(a) * (rz + r)));
+    }
+    parts.push(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), seg, rad, 6, false));
+    const tip = new THREE.SphereGeometry(rad, 6, 4); tip.translate(pts[seg].x, pts[seg].y, pts[seg].z);
+    parts.push(tip);
+  };
+  const step = t * 1.9;
+  for (let i = 0; i < 4; i++){
+    const rad = t * (i === 3 ? 0.82 : 1);
+    ring(step * (1.5 - i) - t * 0.4, rad * 0.9, 0.55, Math.PI * 2 - 0.75, rad);
+  }
+  ring(step * 1.5 + t * 1.5, t * 1.05, -0.35, -Math.PI * 0.95, t * 1.05, 6);   // the thumb, closing over the top
+  // the palm: a rounded pad on -z, as tall as the fingers, its far edge where they leave it
+  const palm = new THREE.SphereGeometry(1, 8, 6);
+  palm.scale(rx + t * 1.6, step * 2.4, t * 1.8); palm.translate(0, step * 0.15, -(rz + t * 1.4));
+  parts.push(palm);
+  return mergeAll(parts);
+}
+function mergeAll(gs){
+  // a tiny local merge (positions + normals + index) so this file needs no addons
+  let n = 0; const pos = [], nor = [], idx = [];
+  for (const g of gs){
+    const p = g.attributes.position, q = g.attributes.normal, ix = g.index;
+    for (let i = 0; i < p.count; i++){ pos.push(p.getX(i), p.getY(i), p.getZ(i)); nor.push(q.getX(i), q.getY(i), q.getZ(i)); }
+    for (let i = 0; i < ix.count; i++) idx.push(ix.getX(i) + n);
+    n += p.count;
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+  g.setIndex(idx);
+  return g;
 }

@@ -8,6 +8,7 @@ import { V3, rand, clamp, TMP, dampToward } from '../utils.js';
 import { burst } from '../fx/particles.js';
 import { G, enemies, solids, isGunner } from '../state.js';
 import { MELEE_WINDUP_GAP } from '../data/mando.js';
+import { TROOPER } from '../data/trooper.js';
 import { playerPos, stance } from '../player/helpers.js';
 import { bomberExplode, updateAimLine, warbringerSlam, breakJetpack } from './specials.js';
 import { damageEnemy, hostileTargetFor, easeWeaponHome, telegraphWindup, staggerEnemy } from './damage.js';
@@ -282,7 +283,7 @@ export function updateEnemies(dt){
           mx = ux - uz * e.unstickSide * 1.4; mz = uz + ux * e.unstickSide * 1.4;
         }
         const ml = Math.hypot(mx, mz) || 1;
-        const esp = e.rooted ? 0 : e.spd * paceMul * (G.mut === 'berserk' ? 1.3 : 1);   // BERSERK mutator: enemies surge in faster · a ROOTED training foe holds its spot
+        const esp = e.rooted ? 0 : e.spd * paceMul * (G.mut === 'berserk' ? 1.3 : 1) * (e.suppT > G.gt ? TROOPER.command.suppress.slow : 1);   // PINNED (the ARC trooper's SUPPRESS): a crawl · BERSERK mutator: enemies surge in faster · a ROOTED training foe holds its spot
         // MOMENTUM — the hero's ground handling (data/movement.js MOVE): speed builds at `accel`, stopping or turning
         // back against the momentum brakes harder, and reversing hard at speed plants the feet for a beat (a pivot)
         const mv = e.mv || (e.mv = { x: 0, z: 0 });
@@ -322,6 +323,7 @@ export function updateEnemies(dt){
           else if (t.ranged || e.converted || onAlly || G.gt - (G.lastMeleeWindupT ?? -9) >= MELEE_WINDUP_GAP){
             // a swing coiled BEHIND the camera gets a longer tell, so off-screen hits stay fair
             e.wu = t.windup * (!t.ranged && !e.converted && !onAlly && !remote && behindCamera(g.position) ? ENGAGE.rearWindup : 1) * (e.converted || onAlly ? 1 : diffTellMul());   // DIFFICULTY: longer tells on Padawan
+            if (e.suppT > G.gt && t.ranged) e.wu *= TROOPER.command.suppress.windup;   // PINNED: it takes its time over the shot
             e.state = 'windup'; e.st = e.wu; telegraphWindup(e); e.heldTell = false;
             // a duellist picks its line, and whether this one is a feint, a held strike or the start of a string; a plain
             // trooper may hold or feint (tactics.js); a line trooper plans a double-tap or a held aim
@@ -707,6 +709,14 @@ export function updateEnemies(dt){
         e.hpBarFill.position.x = -(1 - frac) * 1.13;
         e.hpBarFill.material.color.setHex(frac > 0.5 ? 0xff3b3b : frac > 0.22 ? 0xff8a2a : 0xffd24a);
       }
+    }
+    // a flung or floored body can't pass through a pillar or crate: it is pushed out and rebounds off the face
+    if ((e.state === 'ragdoll' || e.state === 'knockdown') && !e.t.fly){
+      const bx = g.position.x, bz = g.position.z, by = g.position.y;
+      collideSolids(g.position, 0.5 * (e.t.scale || 1), false);
+      g.position.y = by;
+      const mx = g.position.x - bx, mz = g.position.z - bz;
+      if (mx || mz){ const m = Math.hypot(mx, mz), nx = mx / m, nz = mz / m, vn = e.vel.x * nx + e.vel.z * nz; if (vn < 0){ e.vel.x -= nx * vn * 1.4; e.vel.z -= nz * vn * 1.4; } }
     }
     clampToArena(g.position, (e.state === 'ragdoll' || e.state === 'knockdown') ? e.vel : null, e);
     // SAFETY — a LIVING foe must never be stuck under the floor or pitched into a broken (side/upside-down) angle.

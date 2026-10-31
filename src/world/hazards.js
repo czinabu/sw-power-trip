@@ -17,6 +17,8 @@ import { toon, toonUnique, inkify, hullGeo, inkHull } from './ink.js';
 import { scorchGround } from '../fx/scorch.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { TELLS } from '../fx/tells.js';
+import { MOVE } from '../data/movement.js';
+import { collideSolids, clampToArena } from './collision.js';
 
 // the world theme's hazard colours (set by buildArena); null = the original look
 let hzPal = null;
@@ -112,6 +114,35 @@ function explodeBarrel(b, idx){
   scene.remove(b.mesh);
   barrels.splice(idx, 1);
 }
+// a barrel is a physical thing: a body moving through it (a run, a slide, a ragdoll flung into it) shoves it along, it
+// slides to a stop and rebounds off pillars and crates (a barrel hit hard enough still blows: grenades/bolts/the Force)
+function shoveBarrel(b, dt){
+  const P = MOVE.prop, m = b.mesh.position;
+  const hit = (x, z, vx, vz) => {
+    const dx = m.x - x, dz = m.z - z, d = Math.hypot(dx, dz), sp = Math.hypot(vx, vz);
+    if (d > P.reach || d < 0.001 || sp < P.shoveSpeed) return;
+    if (dx * vx + dz * vz <= 0) return;   // only a body moving TOWARD it pushes
+    b.vel.x += dx / d * sp * P.shove * dt * 6; b.vel.z += dz / d * sp * P.shove * dt * 6;
+  };
+  const pp = playerPos();
+  hit(pp.x, pp.z, player.moveVel.x + player.vel.x, player.moveVel.z + player.vel.z);
+  for (const e of enemies){
+    if (e.dead && e.state !== 'ragdoll') continue;
+    if (e.state === 'ragdoll' || e.state === 'knockdown') hit(e.group.position.x, e.group.position.z, e.vel.x, e.vel.z);
+  }
+  const sp = Math.hypot(b.vel.x, b.vel.z);
+  if (sp > P.maxSpeed){ b.vel.x *= P.maxSpeed / sp; b.vel.z *= P.maxSpeed / sp; }
+  if (sp < 0.05){ b.vel.x = b.vel.z = 0; return; }
+  m.x += b.vel.x * dt; m.z += b.vel.z * dt;
+  const bx = m.x, bz = m.z, by = m.y;
+  collideSolids(m, P.radius, false); m.y = by;
+  const mx = m.x - bx, mz = m.z - bz;
+  if (mx || mz){ const l = Math.hypot(mx, mz), nx = mx / l, nz = mz / l, vn = b.vel.x * nx + b.vel.z * nz; if (vn < 0){ b.vel.x -= nx * vn * (1 + P.bounce); b.vel.z -= nz * vn * (1 + P.bounce); } }
+  clampToArena(m, b.vel, null);
+  b.mesh.rotation.z = dampTo(b.mesh.rotation.z, 0, dt);
+  const k = Math.max(0, 1 - dt * P.drag); b.vel.x *= k; b.vel.z *= k;
+}
+const dampTo = (v, t, dt) => v + (t - v) * Math.min(1, dt * 8);
 export function updateBarrels(dt){
   for (let i = barrels.length-1; i >= 0; i--){
     const b = barrels[i];
@@ -120,6 +151,7 @@ export function updateBarrels(dt){
       b.mesh.material.emissiveIntensity = 2 + Math.sin(G.gt*40)*1.5;
       if (b.fuse <= 0){ explodeBarrel(b, i); continue; }
     }
+    if (!b.flying) shoveBarrel(b, dt);
     if (b.flying){
       b.vel.y -= 20*dt;
       b.mesh.position.addScaledVector(b.vel, dt);

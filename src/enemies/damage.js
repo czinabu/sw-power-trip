@@ -22,6 +22,8 @@ import { tutEvent } from '../game/tutor-bus.js';
 import { officerDown } from './tactics.js';
 import { hideIndicators } from './cleanup.js';
 import { SQUAD } from '../data/allies.js';
+import { TROOPER } from '../data/trooper.js';
+import { gainCP } from '../player/trooper/command.js';
 import { queueHit, hooks } from '../net/run.js';
 
 /* opts.launch === false: a blow with no rocket behind it (the Mandalorian's fists, knee and blade). It never floors or
@@ -45,6 +47,12 @@ export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick, opts){
   }
   const byAlly = !!(opts && opts.ally);
   if (e.scanT > G.gt && dmg > 0) dmg *= e.scanMul || 1;   // marked by the ARC trooper's recon scan (player/trooper/abilities.js)
+  // the ARC trooper's SUPPRESS order (allies/squad.js): a squad bolt that lands in the zone PINS its foe (enemies/ai.js)
+  const sup = G.suppress;
+  if (byAlly && dmg > 0 && sup && sup.until > G.gt && Math.hypot(e.group.position.x - sup.x, e.group.position.z - sup.z) < sup.r + 2){
+    if (!(e.suppT > G.gt)) floater(V3(e.group.position.x, e.group.position.y + 2.2, e.group.position.z), 'PINNED', '#ffd35a');
+    e.suppT = G.gt + TROOPER.command.suppress.pin;
+  }
   if (dmg > 0 && !byAlly){
     player.lastStrikeT = G.gt;   // a blow landed keeps you in the fight (player/mobility.js)
     if (!tick){ G.squadFocus = e; G.squadFocusT = G.gt; }   // the squad prefers the trooper you're fighting
@@ -136,7 +144,7 @@ export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick, opts){
     }
     if (byAlly){
       // the squad's kill: a share of the bounty, none of the hero's rewards
-      if (!e.converted){ gainXp(e.t.score * 4 * SQUAD.killXp); if (G.stats) G.stats.squadKills = (G.stats.squadKills || 0) + 1; }
+      if (!e.converted){ gainXp(e.t.score * 4 * SQUAD.killXp); if (G.stats) G.stats.squadKills = (G.stats.squadKills || 0) + 1; gainCP('squadKill'); }
       S.kill(cp, !!e.t.heavy);
       burst(V3(p.x, p.y+1.2, p.z), 0xffaa44, 8, 6, 4);
       return;
@@ -148,6 +156,7 @@ export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick, opts){
       const xp = e.t.score * 4 * killBonus() * (e.elite ? 1.6 : 1);
       gainXp(xp); if (hooks.xp) hooks.xp(xp);   // co-op: the partner earns the kill too
       if (G.stats) G.stats.kills++;
+      gainCP(e.elite || e.t.heavy || e.champion || e.warbringer ? 'elite' : 'kill');   // the ARC trooper's COMMAND POINTS
     }   // small per-kill bounty, ×1–3 on a kill streak, elites pay more
     if (e.elite === 'volatile' && !e.converted){ if (e.group.userData.eliteRing) e.group.userData.eliteRing.visible = false; volatileBlast(p.clone(), e); }
     else if (G.mut === 'volatile' && !e.converted) volatileBlast(p.clone(), e);   // VOLATILE mutator: every corpse erupts

@@ -4,8 +4,9 @@
 // whole squad; right click (B) or Esc puts the wheel away. A quick tap of H skips the wheel: the smart order
 // (allies/squad.js squadOrder). The orders and timings are data/allies.js ORDERS and COMMAND.
 
-import { G, player } from '../state.js';
-import { ORDERS, COMMAND } from '../data/allies.js';
+import { G, player, isTrooper } from '../state.js';
+import { ordersFor, COMMAND } from '../data/allies.js';
+import { orderCost, commandPoints } from '../player/trooper/command.js';
 import { allies, giveOrder, squadOrder, orderLabel, grenadeLeft, squadFormation } from './squad.js';
 import { sfx } from '../audio/sfx.js';
 
@@ -24,7 +25,7 @@ export function wheelKeyUp(){
   if (W.open){
     const sel = W.sel, who = W.who;
     close();
-    if (sel >= 0) giveOrder(ORDERS[sel].id, who);
+    if (sel >= 0) giveOrder(list()[sel].id, who);
   } else if (G.mode === 'play') squadOrder();   // a tap: the smart order
 }
 // the mouse while the wheel is open points at an order instead of turning the camera
@@ -59,7 +60,8 @@ function pick(){
   if (l > 28){
     // clockwise from twelve o'clock
     const a = (Math.atan2(W.x, -W.y) + Math.PI * 2) % (Math.PI * 2);
-    sel = Math.round(a / (Math.PI * 2 / ORDERS.length)) % ORDERS.length;
+    const n = list().length;
+    sel = Math.round(a / (Math.PI * 2 / n)) % n;
   }
   if (sel !== W.sel){ W.sel = sel; if (sel >= 0) sfx(760, 0.03, 'triangle', 0.02, 900); render(); }
 }
@@ -70,8 +72,12 @@ export function updateWheel(){
   if (W.down && !W.open && performance.now() - W.downAt > COMMAND.tapTime * 1000) open();
   if (W.open){ G.slowmo = Math.min(G.slowmo, COMMAND.slowmo); G.slowmoT = Math.max(G.slowmoT, 0.08); }
 }
+// the wheel's orders: the ARC trooper's has SUPPRESS where SPREAD / STACK sits (data/allies.js TROOPER_ORDERS)
+const list = () => ordersFor(isTrooper());
+let builtFor = null;
 function open(){
   W.open = true;
+  if (el && builtFor !== list()){ el.remove(); el = null; }   // the hero changed: draw it again
   if (!el) build();
   el.classList.add('open');
   sfx(440, 0.05, 'triangle', 0.03, 560);
@@ -85,7 +91,7 @@ function close(){
 /* ---------- THE PICTURE ---------- */
 function build(){
   el = document.createElement('div'); el.id = 'sqwheel';
-  const R = 150, n = ORDERS.length;
+  const ORDERS = builtFor = list(), R = 150, n = ORDERS.length;
   el.innerHTML = '<div class="sw-ring"></div>' + ORDERS.map((o, i) => {
     const a = i / n * Math.PI * 2, x = Math.sin(a) * R, y = -Math.cos(a) * R;
     return '<div class="sw-o" data-i="' + i + '" style="transform:translate(calc(-50% + ' + x.toFixed(1) + 'px), calc(-50% + ' + y.toFixed(1) + 'px))">' +
@@ -95,13 +101,13 @@ function build(){
 }
 function render(){
   if (!el || !W.open) return;
-  const gl = grenadeLeft(), pad = !!document.body.classList.contains('pad');
+  const gl = grenadeLeft(), pad = !!document.body.classList.contains('pad'), ORDERS = list();
   el.querySelectorAll('.sw-o').forEach((d, i) => {
-    const o = ORDERS[i];
+    const o = ORDERS[i], cost = orderCost(o.id), broke = cost > commandPoints();
     d.classList.toggle('on', i === W.sel);
     const em = d.querySelector('em');
-    em.textContent = o.id === 'grenade' ? (gl > 0 ? Math.ceil(gl) + 'S' : '') : o.id === 'formation' ? (squadFormation() === 'wide' ? '→ STACK' : '→ SPREAD') : '';
-    d.classList.toggle('cool', o.id === 'grenade' && gl > 0);
+    em.textContent = o.id === 'grenade' && gl > 0 ? Math.ceil(gl) + 'S' : cost ? cost + ' CP' : o.id === 'formation' ? (squadFormation() === 'wide' ? '→ STACK' : '→ SPREAD') : '';
+    d.classList.toggle('cool', (o.id === 'grenade' && gl > 0) || broke);   // (the trooper: short of COMMAND POINTS)
   });
   const o = W.sel >= 0 ? ORDERS[W.sel] : null;
   el.querySelector('.sw-t').textContent = o ? o.name : 'SQUAD ORDERS';
