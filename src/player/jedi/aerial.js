@@ -105,7 +105,7 @@ function strike(pp, tgt){
   if (tgt && tgt === shared.boss){ damageBoss(dmg * st.heavyDmg); scarBody(tgt.group, dir, 'neutral', true); hit = true; }
   else if (tgt){
     if (isGuarding(tgt)) guardImpact(tgt, DUEL.posture.charge);   // the weight of the fall cracks a guard
-    damageEnemy(tgt, dmg * (tgt.t.heavy ? st.heavyDmg : 1) * backLineMul(st, tgt) * swordMul(st, tgt), dir.clone(), knock, true);
+    damageEnemy(tgt, dmg * (tgt.t.heavy ? st.heavyDmg : 1) * backLineMul(st, tgt) * swordMul(st, tgt), dir.clone(), knock, true, false, { shove: CFG.player.saberShove.max });   // (a blade's short shove: config saberShove)
     scarBody(tgt.group, dir, 'neutral', true);   // the falling cut burns its line in (enemies/scars.js)
     if (tgt.dead) severArm(tgt, dir, 0.5);
     if (!tgt.dead) flinchEnemy(tgt, dir, 0.7);   // rocked back, not floored: you still have to finish it

@@ -16,6 +16,7 @@ import { addStreak } from '../player/damage.js';
 import { gainXp, killBonus } from '../game/progression.js';
 import { ENGAGE } from '../data/enemies.js';
 import { DUEL } from '../data/duel.js';
+import { CFG } from '../data/config.js';
 import { dropToken } from './director.js';
 import { tutEvent } from '../game/tutor-bus.js';
 import { officerDown } from './tactics.js';
@@ -25,13 +26,17 @@ import { queueHit, hooks } from '../net/run.js';
 
 /* opts.launch === false: a blow with no rocket behind it (the Mandalorian's fists, knee and blade). It never floors or
    throws a live foe (the caller staggers or shoves it), and a foe it kills crumples where it stands instead of flying. */
+/* opts.shove: a blade's blow (data/config.js player.saberShove): whatever it floors or kills goes no faster than this
+   across the ground, and only a little up: a heavy stagger and a short shove, not a launch. */
 /* opts.ally: a squadmate's bolt (allies/squad.js). It lands as plain damage: no opening bonus, no hitstop or shake, and a
    kill it makes pays SQUAD.killXp of the XP and feeds no streak, Focus, lifesteal or boon (data/allies.js). */
+// how fast a floored or killed foe leaves across the ground: a blade's shove is capped (opts.shove), anything else is not
+const shoveCap = (v, opts) => opts && opts.shove ? Math.min(v, opts.shove) : v;
 export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick, opts){
   if (e.dead) return;
   if (e.net){   // a foe the host owns (co-op): the blow goes to the host, which applies it; here only the spark and the feel
     if (opts && opts.ally) return;
-    queueHit(e, dmg, knockDir, knockPow, isFinisher, tick);
+    queueHit(e, dmg, knockDir, knockPow, isFinisher, tick, opts && opts.shove);
     if (dmg > 0 && !tick){
       spawnHitSpark(opts && opts.at ? opts.at : V3(e.group.position.x, e.group.position.y + 1.3, e.group.position.z), e.t.eye, 0.8);
       G.hitstop = Math.max(G.hitstop, 0.03); G.shake = Math.max(G.shake, 0.14);
@@ -125,8 +130,8 @@ export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick, opts){
       e.vel.copy(d.multiplyScalar(Math.min(knockPow || 0, 8) * 0.35));
       e.vel.y = 1.5;
     } else {
-      e.vel.copy(d.multiplyScalar((knockPow||14) * (e.t.heavy ? 0.5 : 1)));
-      e.vel.y = rand(5, 9) * (e.t.heavy ? 0.6 : 1);
+      e.vel.copy(d.multiplyScalar(shoveCap((knockPow||14) * (e.t.heavy ? 0.5 : 1), opts)));
+      e.vel.y = (opts && opts.shove ? rand(...CFG.player.saberShove.lift) : rand(5, 9)) * (e.t.heavy ? 0.6 : 1);
     }
     if (byAlly){
       // the squad's kill: a share of the bounty, none of the hero's rewards
@@ -165,13 +170,13 @@ export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick, opts){
     // a LIVE knockdown — controlled tip-back, stops acting, then gets up (NOT the free-spin death ragdoll).
     // A JET TROOPER drops out of the air too, and the crash breaks its jetpack (ai.js knockdown).
     e.state = 'knockdown'; e.st = 0.7;
-    e.vel.copy(knockDir.clone().multiplyScalar(knockPow));
-    e.vel.y = rand(4, 7);
+    e.vel.copy(knockDir.clone().multiplyScalar(shoveCap(knockPow, opts)));
+    e.vel.y = opts && opts.shove ? rand(...CFG.player.saberShove.lift) : rand(4, 7);
   } else if (knockDir && e.t.heavy){
     if (knockPow > 26){   // only truly heavy blows (Strong stance, Slam, Repulse) floor a brute
       e.state = 'knockdown'; e.st = 0.95;   // brutes stay down a touch longer
-      e.vel.copy(knockDir.clone().multiplyScalar(knockPow * 0.5));
-      e.vel.y = 4.5;
+      e.vel.copy(knockDir.clone().multiplyScalar(shoveCap(knockPow * 0.5, opts)));
+      e.vel.y = opts && opts.shove ? 3 : 4.5;
     } else {
       e.group.position.addScaledVector(knockDir, 0.8);  // otherwise brutes only stagger
       // ...and a light blow does NOT break a brute's wind-up or swing: parry it, floor it, or get clear

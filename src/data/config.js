@@ -27,6 +27,11 @@ export const CFG = {
     comboRange: 5.0,                 // lunge targeting range
     lungeMax: 2.4,                   // the farthest a cut's lunge closes on a foe — close the rest of the gap yourself
     hitRadius: 3.2,                  // swing damage radius
+    // SABER SHOVE — the furthest a blade throws a foe: a cut that floors or kills one sends it off at no more than this
+    // (m/s, across the ground) and lifts it `lift` m/s, so a heavy blow staggers and drops it a few metres away instead of
+    // batting it across the arena. How hard a cut lands (knock) still decides whether it floors, and a brute's floor too;
+    // Force powers and explosions keep their full throw.
+    saberShove: { max: 8, lift: [2.5, 4] },
     // swing ARCS as cosines off your facing: a cut hits ~140° in front, a strafe sweep ~160°, the finisher ~190°
     swingArc: { cut: 0.34, sweep: 0.17, finisher: -0.1 },
     // HIT REACTIONS — a blow that lands staggers you: the swing is knocked loose and your feet slow
