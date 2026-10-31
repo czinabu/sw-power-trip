@@ -7,8 +7,9 @@
 
 export const ROADMAP = [
   { title: 'Makashi: Dooku\'s fencing poise', status: 'done',
-    items: ['Form II Makashi stands square to the foe, feet narrow and close: the saber arm held straight out to the side and angled down, the blade carrying the line, the off hand at the small of the back with its elbow flared',
-            'Fighting and walking drop the off hand out low to the side; two blocks alternate, the blade level across the belly or laid diagonally across the head',
+    items: ['Idle: Form II Makashi stands square to the foe with the saber arm held straight out to the side and angled down, the blade carrying the line, and the off hand set on the small of the back with its elbow flared out',
+            'Fighting (a foe close, or a blow given or taken a moment ago): the off arm drops out low to the side for balance; cuts and the run keep it there',
+            'Two blocks alternate each time the guard goes up: the blade level across the belly, or laid diagonally across the head, the off hand on the back for both',
             'Same in every mode: story, training, survival, sandbox, missions, the stance unlock screen and co-op'] },
   { title: 'Steadier frames in big fights', status: 'done',
     items: ['Enemy pathfinding only maps the ground as far as the foes actually are, instead of the whole arena several times a second: up close in a duel it costs a sliver of what it did',

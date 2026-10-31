@@ -55,17 +55,19 @@ export const SABER_GUARDS = {
     // with the blade carrying the line and the off hand at the back with its elbow flared. Two blocks alternate
     // (level across the belly, diagonal across the head)
     makashi: {
-      // IDLE: the saber arm straight out to the weapon side and a little down, the blade carrying the line; the off hand tucked
-      // at the small of the back with its elbow flared. Walking and fighting let that hand drop out low to the side (offMove).
-      ready: { hand: [0.7, 0.0, 0.12], blade: [0.86, -0.42, 0.28], twist: 0.04, torso: 0.0, lean: 0.0, pole: [0.3, -1, 0],
-               off: { hand: [-0.02, -0.28, -0.36], pole: [-1, 0.2, -0.2] },
-               offMove: { hand: [-0.5, -0.3, -0.06], pole: [-0.7, -0.6, -0.2] } },
-      // BLOCK 1: the blade held level across the belly, tip toward the off side, the elbow flared and the hand at the back
-      block: { hand: [0.3, -0.2, 0.36], blade: [-0.95, 0.05, 0.25], twist: 0.04, lean: 0.02, pole: [0.8, -0.7, -0.2],
-               off: { hand: [-0.02, -0.28, -0.36], pole: [-1, 0.2, -0.2] } },
-      // BLOCK 2 (the blocks alternate): the hand up by the weapon shoulder, the blade laid diagonally across the head
+      // IDLE: the saber arm held straight out to the weapon side and a little down, the blade carrying the same line; the
+      // off hand set on the small of the back with its elbow flared out to the side (the arm makes a triangle).
+      // FIGHTING (offFight: a foe near, or a blow given or taken a moment ago): the off arm drops out low to the side,
+      // a little bent, for balance. Walking out of a fight keeps the hand on the back.
+      ready: { hand: [0.78, 0.0, 0.19], blade: [0.8, -0.5, 0.3], twist: 0.04, torso: 0.0, lean: 0.0, pole: [0.2, -1, 0.3],
+               off: { hand: [-0.2, -0.02, -0.27], pole: [-1, 0, -0.1] },
+               offFight: { hand: [-0.66, -0.08, 0.04], pole: [-0.2, -1, -0.3] } },
+      // BLOCK 1: the blade held level across the belly, tip toward the off side; the off hand on the back, elbow flared
+      block: { hand: [0.32, -0.12, 0.3], blade: [-0.95, 0.05, 0.25], twist: 0.04, lean: 0.02, pole: [0.8, -0.7, -0.2],
+               off: { hand: [-0.2, -0.02, -0.27], pole: [-1, 0, -0.1] } },
+      // BLOCK 2 (the two blocks alternate): the hand up by the weapon shoulder, the blade laid diagonally across the head
       block2: { hand: [0.42, 0.42, 0.3], blade: [-0.82, 0.5, 0.15], twist: 0.04, lean: 0.02, pole: [0.8, -0.3, -0.3],
-                off: { hand: [-0.02, -0.28, -0.36], pole: [-1, 0.2, -0.2] } },
+                off: { hand: [-0.2, -0.02, -0.27], pole: [-1, 0, -0.1] } },
     },
     // FORM III SORESU — Obi-Wan's signature guard: sunk into a deep, wide stance and turned side-on, the saber raised high
     // over and behind the head with the blade laid level and pointing on at the foe, the off arm thrown out long toward
@@ -330,7 +332,7 @@ export const SWING_STYLE = {
                load: 0.1, accel: 2.3, lag: 0.3, recover: 0.5, weight: 0.07 },   // broad two-handed sweeps that carry round the body
     // Shii-Cho finishes with the SARLACC SWEEP: a full turn with the blade held out, through everything around you
   makashi:   { tc: 0.18, ts: 0.39, tf: 0.62, reach: 0.8, two: false, spinHop: 0, drop: 0.02, offFlare: 1, overshoot: 0,
-               offKeys: [[-0.3, -0.28, -0.2], [-0.55, -0.24, -0.05], [-0.5, -0.26, -0.05]],   // the free hand drops out low to the side, the elbow flared, as the blade goes in
+               offKeys: [[-0.5, -0.04, 0.0], [-0.7, -0.06, 0.02], [-0.66, -0.08, 0.04]],   // the free hand stays out low to the side, opening a touch as the blade goes in
                twist: 0.3, finisher: { pattern: 'thrust', spin: 0, hop: 0 },
                load: 0.04, accel: 2.6, lag: 0.65, recover: 0.75, weight: 0.08 },   // small, exact, wrist-led cuts that snap back on the line
     // Makashi finishes with a full lunge: the thrust, all the body behind the point

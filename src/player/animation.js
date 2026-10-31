@@ -13,6 +13,7 @@ import { MANDO_MELEE } from '../data/duel.js';
 import { MOVE, GAIT } from '../data/movement.js';
 import { stance, maxStam, heldGrip } from './helpers.js';
 import { tryAttack, applySwingDamage, FLOW } from './jedi/combat.js';
+import { inCombat } from './mobility.js';
 import { mandoAimPoint, mandoWeapon, mandoShielding } from './mando/weapons.js';
 import { DARK_DUR } from './mando/darksaber.js';
 import { FORM_OF, FOOTWORK, FOOTWORK_GRIP, SWING_STYLE } from '../data/poses.js';
@@ -479,7 +480,8 @@ function animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait){
     // a moving hero isn't a statue — the guard rides the stride a little (the shape still reads)
     const sway = { y: moving && !blocking ? Math.sin(ph * 2) * 0.025 * inten : Math.sin(G.gt * 1.9) * 0.01,
                    z: moving && !blocking ? Math.sin(ph) * 0.04 * inten * gait.amp : 0,
-                   off: moving && !blocking ? -Math.sin(ph) * 0.08 * inten : 0, moving: moving && !blocking };   // a free hand swings with the step
+                   off: moving && !blocking ? -Math.sin(ph) * 0.08 * inten : 0, moving: moving && !blocking,   // a free hand swings with the step
+                   fight: !blocking && inCombat() };   // a guard can carry its free hand differently in a fight (offFight)
     // AGILITY guards: flips hug the hilt in or open the arms, the dive cocks or plunges the blade, the run carries it
     // the form's way with the free hand pumping against the stride (data/agility.js AIR_GUARDS)
     const running = G.hero !== 'mando' && moving && !planted && player.grounded && inten > 0.5;
