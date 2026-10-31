@@ -63,11 +63,12 @@ export const squadIn = (x, z, r) => allies.filter(a => standing(a) && Math.hypot
    CALLING THEM IN
    ============================================================ */
 // add the next squadmate on the hero's roster (up to SQUAD.max), at `at` or just behind the hero
-export function addSquadmate(at){
+// own: a story's guest fighter instead of the next from the hero's roster (a chapter's `guests`: game/mission.js)
+export function addSquadmate(at, own){
   if (allies.length >= SQUAD.max) return null;
   if (guest()){ squadLink.add(); return null; }   // co-op guest: the host's browser runs the squad
   const roster = (heroKey(SQUAD.roster) || SQUAD.roster.jedi).filter(d => !d.need || G.unlocked[d.need]);   // (a specialist the run hasn't earned yet waits)
-  const def = roster.find(d => !allies.some(a => a.def === d)) || roster[allies.length % roster.length];
+  const def = own || roster.find(d => !allies.some(a => a.def === d)) || roster[allies.length % roster.length];
   const role = SQUAD.roles[def.role];
   const t = { model: def.model, color: def.color, eye: def.eye, cloth: def.cloth, scale: def.scale || 1, ranged: true };
   const g = buildEnemyMesh(t);

@@ -17,7 +17,7 @@ const CHOICE = {};
 for (const s in CHOICES) for (const c of CHOICES[s]) CHOICE[c.id] = c;
 export const answered = (id) => !!(G.story && G.story[id]);
 export function answer(id){
-  if (id === 'actTwo') return G.actTwo || null;
+  if (id === 'actTwo') return G.actTwo || 'lothal';   // (Lothal first until the pick is made, as the chapters run)
   return (G.story && G.story[id]) || (CHOICE[id] && CHOICE[id].default) || null;
 }
 export function choose(id, key){ G.story = { ...(G.story || {}), [id]: key }; }

@@ -53,7 +53,7 @@ export function startChapter(pos, opts = {}){
     startLevel(c.level, { level: { ...LEVELS[c.level], ...c.arena, name, sub }, waves: c.waves, resume: !opts.fresh, retry: opts.retry, chapter: true });
   } else {
     if (!opts.retry){ G.checkpoint = { idx: G.levelIdx, ch: pos, waveTotal: G.waveTotal, boss: false }; autosave('chapter'); }
-    startMission(c.mission, 0, !!opts.guest, { retry: !!opts.retry, chapter: { name, sub, arena: c.arena, kicker: 'CHAPTER ' + (pos + 1) + ' · ' + title, clear: (c.lines && forHero(c.lines.clear, G.hero)) || null, done: chapterCleared } });
+    startMission(c.mission, 0, !!opts.guest, { retry: !!opts.retry, chapter: { name, sub, arena: c.arena, guests: c.guests, evacuees: c.evacuees, kicker: 'CHAPTER ' + (pos + 1) + ' · ' + title, clear: (c.lines && forHero(c.lines.clear, G.hero)) || null, done: chapterCleared } });
   }
   if (opts.guest){ G.coopGuest = true; G.coopWasGuest = true; G.coopJoin = false; shared.levelPhase = G.mission ? 'mission' : 'between'; shared.phaseT = 0; }
   if (!opts.retry || opts.card) showCard(pos);

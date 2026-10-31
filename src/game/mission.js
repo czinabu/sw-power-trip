@@ -41,7 +41,7 @@ import { MISSIONS, MISSION_VOICE, MISSION_COLOR } from '../data/missions.js';
 import { storyVoice } from '../data/campaign.js';
 import { chapterAt } from './campaign.js';
 import { ALLY_COLOR, addFriendRing, updateFriendRing, makeFriendTag } from '../fx/friend.js';
-import { spawnSquad, squadIn, squadStanding } from '../allies/squad.js';
+import { spawnSquad, addSquadmate, squadIn, squadStanding } from '../allies/squad.js';
 import { collideSolids } from '../world/collision.js';
 import { players, targetable } from '../player/players.js';
 import { diffDmgMul } from '../data/difficulty.js';
@@ -94,6 +94,8 @@ export function startMission(id = 'refuge', fromObjective = 0, guest = false, op
   if (def.escort) placeVip(fromObjective);
   // a STRIKE TEAM mission: the squad forms up beside the hero (allies/squad.js), and the wider battle rages past the walls
   if (def.squad) spawnSquad(def.squad, st);
+  // a story's guest fighters for the chapter (the Jedi's Jakku: the Mandalorian after the same cores), beside the squad
+  if (ch && ch.guests) ch.guests.forEach((d, i) => addSquadmate(st && { x: st[0] + (i % 2 ? 2.2 : -2.2), z: st[1] - 1.5 }, d));
   if (def.battle) startBattleFx(isMando() ? 0xffa040 : 0x4aa8ff);
   // retrying past the evacuation: the transport has already gone
   if (def.objectives.slice(0, fromObjective).some(o => o.kind === 'hold' && o.evacuees)) shipGone();
@@ -125,6 +127,8 @@ function sayLine(o){
   const c = G.chapter >= 0 && chapterAt(G.chapter), i = M.def ? M.def.objectives.indexOf(o) : -1;
   return (c && c.says && i >= 0 && c.says[i]) || heroKey(o.say);
 }
+// a hold's evacuees, as the campaign chapter's story has them (the Jedi's Lothal: the pens' children, not prisoners)
+const evac = (o) => M.chapter && M.chapter.evacuees ? { ...o.evacuees, ...M.chapter.evacuees } : o.evacuees;
 function say(o, opts){ showPanel(missionVoice(), sayLine(o), '', heroKey(o.task), { drill: true, ...opts }); M.panelT = 7; }
 function fieldSpawn(type, x, z){
   const s = findClearSpawn(x, z, 1.0);
@@ -174,7 +178,7 @@ const KINDS = {
     begin(o, s){
       s.prog = 0; s.pulse = 0; s.pulseT = 2.5;
       M.markers.push(s.zone = makeBeacon(o.at[0], o.at[1], 0, heroKey(MISSION_COLOR), o.r / 0.9));
-      if (o.evacuees) beginEvacuees(o.evacuees, s);
+      if (o.evacuees) beginEvacuees(evac(o), s);
     },
     update(o, s, dt){
       const officers = enemies.some(e => !e.dead && !e.converted && e.type === 'officer');
@@ -192,12 +196,12 @@ const KINDS = {
       const mates = o.squadRate ? squadIn(o.at[0], o.at[1], o.r) : 0;
       const rate = inZone ? 1 : mates ? o.squadRate * (foes ? 0.5 : 1) : foes ? 0 : o.awayRate;
       s.prog += dt * rate; s.rate = rate; s.inZone = inZone;
-      if (s.kids) updateEvacuees(o.evacuees, s, dt, Math.min(1, s.prog / o.time), rate);
+      if (s.kids) updateEvacuees(evac(o), s, dt, Math.min(1, s.prog / o.time), rate);
       setMarkerColor(s.zone, rate === 0 ? RED : heroKey(MISSION_COLOR));
       s.zone.userData.beam.visible = !inZone;   // the column guides you back; standing in it, it would only fill the screen
       pulseMarker(s.zone, dt, G.gt);
       const total = alive ? ' · ' + alive + ' HOSTILE' + (alive === 1 ? '' : 'S') : '';
-      const who = o.evacuees ? heroKey(o.evacuees.name) + ' ' + (o.evacuees.verb || 'ABOARD') + ' ' + s.aboard + ' / ' + o.evacuees.count : (o.holding || 'HOLDING');
+      const who = o.evacuees ? heroKey(evac(o).name) + ' ' + (evac(o).verb || 'ABOARD') + ' ' + s.aboard + ' / ' + evac(o).count : (o.holding || 'HOLDING');
       setObjectiveHud({ kicker: M.kick, title: o.title, frac: s.prog / o.time,
         status: (rate === 0 ? 'OVERRUN: ' + (o.overrun || 'RETAKE THE RAMP') : inZone ? who + ' · ' + mmss(o.time - s.prog)
                : mates ? 'SQUAD HOLDING ' + mmss(o.time - s.prog) : (o.unguarded || 'RAMP UNGUARDED') + ' ' + mmss(o.time - s.prog)) + total,
