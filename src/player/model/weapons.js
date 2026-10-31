@@ -90,6 +90,39 @@ export const WEAPON_MODELS = {
     },
   },
 
+  // DC-15A BLASTER RIFLE — the clone trooper's: a long slim barrel in a vented shroud, a boxy receiver with the power
+  // pack slotted in its left side, a scope riding the top, a skeletal stock and a white grip panel. Muzzle at z 0.95.
+  dc15: {
+    hold: 'rifle-2h', socket: 'handR', grip: { pos: [0, GRIP_Y, 0], rot: [1.15, 0, 0] }, muzzle: [0, 0.11, 0.97],
+    build(S){
+      const g = new THREE.Group();
+      // the stock: a skeletal frame, its butt plate and the struts back to the receiver
+      S.add(block(0.04, 0.13, 0.04, 0.3), 'gunDark', g, [0, 0.05, -0.32]);
+      for (const y of [0.1, 0.0]) S.add(block(0.022, 0.022, 0.24, 0.3), 'gunDark', g, [0, y, -0.2], [y ? 0.06 : -0.1, 0, 0]);
+      // the receiver and the grip
+      S.add(loft([{ y:-0.17, w:0.07, d:0.1 }, { y:0.17, w:0.066, d:0.095 }], chamfer(0.35)), 'gunMetal', g, [0, 0.1, 0.08], [Math.PI/2, 0, 0]);
+      S.add(block(0.072, 0.03, 0.3, 0.3), 'gunDark', g, [0, 0.145, 0.08]);                     // its top rail
+      S.add(block(0.05, 0.12, 0.06, 0.3), 'gunDark', g, [0, 0, 0.0], [0.3, 0, 0]);            // grip
+      S.add(block(0.012, 0.05, 0.04, 0.2), 'gunDark', g, [0, 0.03, 0.06], [0, 0, 0], { outline: false });   // trigger guard
+      // the power pack slotted in the left side, its cell lit
+      S.add(block(0.05, 0.06, 0.14, 0.3), 'gunDark', g, [-0.055, 0.085, 0.1]);
+      const cell = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.025, 0.08), new THREE.MeshBasicMaterial({ color: 0x8fe8ff })); cell.position.set(-0.081, 0.085, 0.1); g.add(cell);
+      // the barrel shroud (a long vented tube) and the barrel inside it to the muzzle
+      S.add(loft([{ y:-0.22, w:0.062, d:0.062 }, { y:0.22, w:0.056, d:0.056 }], ngon(10)), 'gunDark', g, [0, 0.11, 0.47], [Math.PI/2, 0, 0]);
+      for (let i = 0; i < 6; i++) S.add(block(0.064, 0.012, 0.022, 0.2), 'gunMetal', g, [0, 0.142, 0.32 + i*0.055], [0, 0, 0], { outline: false });   // the vents
+      S.add(loft([{ y:-0.13, w:0.03, d:0.03 }, { y:0.13, w:0.028, d:0.028 }], ngon(8)), 'gunMetal', g, [0, 0.11, 0.82], [Math.PI/2, 0, 0]);
+      S.add(loft([{ y:-0.025, w:0.044, d:0.044 }, { y:0.025, w:0.04, d:0.04 }], ngon(8)), 'gunDark', g, [0, 0.11, 0.93], [Math.PI/2, 0, 0]);   // the flash hider
+      // the scope on the top rail, offset left, with its lens
+      S.add(loft([{ y:-0.09, w:0.04, d:0.04 }, { y:0.07, w:0.04, d:0.04 }, { y:0.09, w:0.05, d:0.05 }], ngon(8)), 'gunDark', g, [-0.02, 0.19, 0.12], [Math.PI/2, 0, 0]);
+      for (const z of [0.07, 0.17]) S.add(block(0.02, 0.03, 0.02, 0.2), 'gunDark', g, [-0.012, 0.165, z], [0, 0, 0], { outline: false });
+      const lens = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, 0.01, 8), new THREE.MeshBasicMaterial({ color: 0x66ddff }));
+      lens.rotation.x = Math.PI/2; lens.position.set(-0.02, 0.19, 0.216); g.add(lens);
+      // the front sight
+      S.add(block(0.012, 0.035, 0.02, 0.2), 'gunDark', g, [0, 0.15, 0.68], [0, 0, 0], { outline: false });
+      return { group: g };
+    },
+  },
+
   // HEAVY REPEATER — a squat, heavy gun: a fat receiver with heat-sink fins, a drum cell slung underneath, a carry
   // handle, and a three-barrel cluster that SPINS with the spin-up (the `spinner` hook, turned in anim). Muzzle at z 0.86.
   repeater: {
@@ -178,10 +211,13 @@ export function mountLoadout(R, S, player){
   player.darksaberMesh = dark.group; player.darkLight = dark.light; player.darkBlades = dark.blades;
 }
 
-/* THE LONG GUNS — the disruptor, the pulse carbine and the heavy repeater share ONE mount in the right hand
+/* THE LONG GUNS — the disruptor, the pulse carbine, the heavy repeater and the trooper's DC-15 share ONE mount in the right hand
    (player.rifleMesh), holding all three models; only the drawn one shows (setLongGun). Every pose, the holster and the
    co-op pose sync keep working on player.rifleMesh whichever long gun it is. */
-export const LONG_GUNS = ['disruptor', 'carbine', 'repeater'];
+export const LONG_GUNS = ['disruptor', 'carbine', 'repeater', 'dc15'];   // (append only: co-op sends the index)
+/* a gun with a model of its own where it otherwise borrows another's look (data/trooper.js GUN_LOOK): the trooper's
+   DC-15 is held like the carbine but is its own rifle */
+export const OWN_MODEL = { rifle: 'dc15' };
 function mountLongGuns(R, S, player){
   const def = WEAPON_MODELS.disruptor, mount = new THREE.Group();
   mount.position.set(...def.grip.pos); mount.rotation.set(...def.grip.rot);
