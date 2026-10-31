@@ -29,7 +29,7 @@ const browser = await chromium.launch({ executablePath: process.env.CHROMIUM || 
 let failed = false;
 
 // a mission run passes once its last objective (a duel) is up: the HUD line then names the opponent
-const DUEL_LINE = { refuge: /INQUISITOR/, pursuit: /VX-7|SEVENTH BLADE/, strike: /WARDEN/, grassland: /SHIELD CAPTAIN/ };
+const DUEL_LINE = { refuge: /INQUISITOR/, pursuit: /VX-7|SEVENTH BLADE/, strike: /WARDEN/, grassland: /OUTRIDER/ };
 // [hero, menu mode, story mission]
 for (const [hero, mode, mission] of [['jedi', 'campaign'], ['mando', 'campaign'], ['jedi', 'mission', 'refuge'], ['mando', 'mission', 'pursuit'], ['jedi', 'mission', 'strike'], ['mando', 'mission', 'grassland'], ['mando', 'sandbox']]){
   const label = hero + (mode === 'campaign' ? '' : ' ' + (mission || mode));
