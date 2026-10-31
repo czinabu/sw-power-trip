@@ -4,6 +4,7 @@
 // The jetpack variant must set player.jetGlow / jetFuelSegs / jetMissileMesh (flight.js and gadgets.js drive them).
 
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { loft, limb, plate, block, shard, chamfer, ngon, KEEL, SHIELD, HEAD } from './shapes.js';
 import { hand } from './jedi.js';
 import { seg, rounded } from './skin.js';
@@ -15,7 +16,12 @@ const SOFT = rounded(chamfer(0.42)), SOFT_HEAD = rounded(HEAD);
 // a domed rivet head flat against a plate (+z out of it)
 let _rivet = null;
 const rivetGeo = () => _rivet || (_rivet = loft([{ y:0, w:0.02, d:0.02 }, { y:0.005, w:0.016, d:0.016 }, { y:0.009, w:0.007, d:0.007 }], ngon(6)).rotateX(Math.PI/2));
-function rivets(k, parent, pts, r = [0, 0, 0]){ for (const p of pts) k.add(rivetGeo(), 'beskar', parent, p, r, { outline: false }); }
+// several rivets on one parent as ONE mesh (a draw call, not one per rivet)
+function rivets(k, parent, pts, r = [0, 0, 0]){
+  const e = new THREE.Euler(...r), m = new THREE.Matrix4();
+  const geo = mergeGeometries(pts.map(p => rivetGeo().clone().applyMatrix4(m.makeRotationFromEuler(e).setPosition(...p))));
+  k.add(geo, 'beskar', parent, [0, 0, 0], [0, 0, 0], { outline: false });
+}
 
 const mirror = pts => pts.map(([x, y]) => [-x, y]).reverse();
 const SEAM_COOL = 0x5fd8ff, SEAM_WARM = 0xff7a3d;
