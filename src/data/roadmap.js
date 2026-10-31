@@ -6,6 +6,8 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'Ghostly Exegol', status: 'done',
+    items: ['Exegol (the road to the Citadel, the Sith amphitheatre and the wastes) is now a cold blue-grey haze: nearer fog, dimmer light, less neon', 'Mist drifts along the ground, and each lightning bolt lights up the fog'] },
   { title: 'Friends read at a glance', status: 'done',
     items: ['Squadmates and escorts wear an ally-blue ring on the ground and a bigger, ink-rimmed diamond overhead, so they never blend in with white-armoured foes on snow', 'Same blue for both heroes and every mode; the marks turn red while an ally is down or an escort is under fire'] },
   { title: 'Tidier Lightsaber Forms page', status: 'done',
