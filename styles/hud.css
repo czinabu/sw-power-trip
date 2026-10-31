@@ -5,7 +5,7 @@
    ============================================================ */
 /* the HUD sits out the main menu (it would only show stale bars behind the overlay) */
 #hud{transition:opacity .6s ease .15s}
-body.in-menu #hud,body.in-menu #boonstrip{opacity:0;transition:none}
+body.in-menu #hud,body.in-menu #boonstrip,body.stance-preview #hud,body.stance-preview #boonstrip{opacity:0;transition:none}
 
 /* ---------- top-left: run progress ---------- */
 #objective{position:fixed;top:18px;left:20px;display:flex;align-items:stretch;gap:10px}

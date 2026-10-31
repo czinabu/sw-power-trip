@@ -100,6 +100,12 @@ export function startTutorial(){
   T.wait = 2.8;   // the arrival banner first
 }
 // RETRY after a fall: the same lesson again, from its start
+// the lesson for a form, to open the training on (the unlock screen's TRAIN button): Shien shares Form V's, Vaapad Form VII's
+const LESSON_OF = { shien: 'formv', vaapad: 'formvii' };
+export function trainOnForm(formId){
+  const L = LESSONS.jedi.find(x => x.id === LESSON_OF[formId] || x.form === formId);
+  retryId = L ? L.id : null;
+}
 export function retryTutorial(){ retryId = T.lesson ? T.lesson.id : null; startTutorial(); }
 export function endTutorial(){
   if (!T.on) return;

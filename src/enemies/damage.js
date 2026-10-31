@@ -36,7 +36,7 @@ export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick, opts){
   if (e.dead) return;
   if (e.net){   // a foe the host owns (co-op): the blow goes to the host, which applies it; here only the spark and the feel
     if (opts && opts.ally) return;
-    queueHit(e, dmg, knockDir, knockPow, isFinisher, tick, opts && opts.shove);
+    queueHit(e, dmg, knockDir, knockPow, isFinisher, tick, opts && opts.shove, opts && opts.blade);
     if (dmg > 0 && !tick){
       spawnHitSpark(opts && opts.at ? opts.at : V3(e.group.position.x, e.group.position.y + 1.3, e.group.position.z), e.t.eye, 0.8);
       G.hitstop = Math.max(G.hitstop, 0.03); G.shake = Math.max(G.shake, 0.14);
@@ -104,8 +104,8 @@ export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick, opts){
       // a spray of sparks off the hit + a bright impact flash & ring — every connect reads as a real hit
       const kd = knockDir.clone().setY(0).normalize();
       if (e.hp > 0) hitReact(e, kd, 0.18 + power * 0.22, opts && opts.fold, opts);   // the body rocks with the blow
-      sparks(cp, 0xffffff, Math.round(3 + power*3), 9 + power*5, { dir: kd, cone: 0.8, life: 0.24 });
-      sparks(V3(cp.x + kd.x*0.4, cp.y, cp.z + kd.z*0.4), col, Math.round(3 + power*3), 7 + power*5, { dir: kd, cone: 1, life: 0.3 });
+      sparks(cp, 0xffffff, Math.round(2 + power*1.5), 7 + power*3, { dir: kd, cone: 0.8, life: 0.18, size: 0.36 });
+      sparks(cp, col, Math.round(2 + power*1.5), 6 + power*3, { dir: kd, cone: 1, life: 0.2, size: 0.36 });
       spawnHitSpark(cp, col, power);
       if (e.hp > 0 && !byAlly){
         G.hitstop = Math.max(G.hitstop, 0.02 + power*0.028);   // a micro-freeze on impact — the core of "punch"

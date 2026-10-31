@@ -110,7 +110,7 @@ export function updateCoop(dt){
   mate.here = show && G.mode === 'play' && world === worldKey();
   coopRevives();
   if (tag) tag.style.display = show ? 'block' : 'none';
-  updatePartnerFx(dt, puppet.group, show);
+  updatePartnerFx(dt, puppet.group, show, puppet);
   if (!show) return;
   const g = puppet.group;
   g.position.x = damp(g.position.x, want.pos.x, 14, dt);

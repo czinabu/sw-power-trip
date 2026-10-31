@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { CFG } from '../../data/config.js';
 import { DUEL } from '../../data/duel.js';
 import { sfx } from '../../audio/sfx.js';
-import { sparks } from '../../fx/ink.js';
+import { clashSparks } from '../../fx/ink.js';
 import { shared, G, enemies, player } from '../../state.js';
 import { playerPos, stance } from '../helpers.js';
 import { cutLine, duelDefend, isGuarding } from '../../enemies/duel.js';
@@ -165,8 +165,8 @@ export function bounceOff(e, cp){
 export function recoilSwing(cp){
   const sw = player.swing;
   if (cp){
-    sparks(cp, 0xffe9b0, 12, 11, { life: 0.28 });
-    sparks(cp, stance().blade, 6, 8, { life: 0.22, size: 0.5 });
+    clashSparks(cp, 0xffe9b0, 4);
+    clashSparks(cp, stance().blade, 2);
     sfx(2400, 0.09, 'triangle', 0.035, 1500);   // the bright ring of blade on blade, over the clash
   }
   if (!sw || sw.recoil || player.atkT <= 0) return;
@@ -185,7 +185,7 @@ export function formWeight(){
 
 // both blades spit: a few sparks in the other weapon's own glow colour beside yours
 export function theirSparks(e, cp){
-  if (e && e.t && e.t.eye) sparks(cp, e.t.eye, 6, 9, { life: 0.22, size: 0.5 });
+  if (e && e.t && e.t.eye) clashSparks(cp, e.t.eye, 2);
 }
 
 // a foe's weapon is knocked back off yours: shoved up and out, and its guard/AI eases it home from there
@@ -199,7 +199,7 @@ export function knockWeapon(e, amt){
    (enemies/ai.js ends it there instead of finishing the chop through your blade). */
 export function blockedOnBlade(e){
   const cp = contactPoint(e);
-  sparks(cp, 0xffe9b0, 8, 9, { life: 0.24 });
+  clashSparks(cp, 0xffe9b0, 4);
   knockWeapon(e, 0.6);
   e.st = Math.min(e.st, 0);
 }
