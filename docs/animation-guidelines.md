@@ -49,6 +49,19 @@ The stance ids in code stay `fast` / `medium` / `strong` (saves and unlocks key 
 
 The grip is a player preference (`GRIP` in the menu settings, saved like the others). It is visual only: hit arcs don't use the blade mesh. Each grip has its own guards and cuts in `src/data/poses.js`: the reverse set keeps the blade back along the arm, drives slashes with the elbow and a hard body turn (the fist leads, the blade trails), and turns the back cut into a stab driven past the hip.
 
+Reverse-grip rules (Shien always; Niman when the grip preference is reverse):
+
+- **The wrist:** the blade leaves the pinky side, so it lies back along the forearm or stands square off it, never runs on
+  past the knuckles. `applySaberPose` (`anim/saber.js`, `reverseWrist`) enforces this on every pose (guards, cuts, catches,
+  flips, blends), taking off whatever part of the blade points on along the forearm (`REV_ALONG`).
+- **The cuts:** each key carries its own elbow (`pole`): up and out at contact, so the forearm swings level and the blade
+  stands straight out in front of the fist. The fist leads across, the blade trails level behind it, whips round through
+  the front at contact and carries on to lie back along the arm on the far side. A flat or diagonal stroke whose blade turns
+  nearly half way round is routed level round the side it came from (`REV_ROUND`), never down through the legs.
+- **The overhead** is a hammer-fist: the blade hangs from the raised fist and is driven down through the front.
+- **Blocks:** two per form, alternating each raise (`block2`): Shien's hanging wall and Ahsoka's high forearm shield,
+  Niman's hanging wall and Starkiller's slanted bar.
+
 ## Combos and deflects
 
 - **Combo rhythm** (`FLOW` in `src/player/jedi/combat.js`): a press before 50% of a swing is ignored and marks that
