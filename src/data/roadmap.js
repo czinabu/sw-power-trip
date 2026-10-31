@@ -6,6 +6,9 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'Dark robes you can read', status: 'done',
+    items: ['Black and near-black outfits (umbra robes, dark hair and skin) no longer render as a flat shadow, especially standing in shade: a lightness floor, a soft sky fill and a cool rim keep folds and edges visible',
+            'Applies to every hero model in every mode: story, training, survival, sandbox, missions and co-op'] },
   { title: 'A wide Force-ready stance', status: 'done',
     items: ['Fighting with the saber holstered, the Jedi now stands in a wide, low guard: feet set well apart, knees bent, a slight hunch, both arms out to the sides with the palms open toward the foe',
             'Same stance in every mode: story, training, survival, sandbox, missions and co-op'] },
