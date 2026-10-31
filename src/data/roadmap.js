@@ -6,6 +6,12 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'Slide and wall-run, for real', status: 'done',
+    items: ['The slide sits back into a deep lean, one leg out along the floor with the toes up and the other folded under, easing in and out smoothly',
+            'The Jedi\'s free hand trails low behind in the slide and the saber hand stays out front, blade clear of the floor (bare-handed too)',
+            'The Mando\'s tactical slide gets the same legs and a softer entry and exit',
+            'The Jedi\'s wall-run: feet planted on the face one after the other, the body rolled out and pitched into the run, the arm away from the wall thrown wide for balance and the near arm held in; eased on at the catch and off at the drop',
+            'Visual only: timing, speed, hit boxes and ducking under fire are unchanged, in every mode'] },
   { title: 'Training rebuilt', status: 'done',
     items: ['Training is short lessons picked from a lesson board between them: the basics first, in Shii-Cho alone',
             'Every form the story teaches opens its own lesson: Soresu, Ataru, Djem So and Shien, Makashi, Niman, Form VII',

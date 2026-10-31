@@ -69,6 +69,10 @@ export function launchFlip(fl, dir){
   return fl;
 }
 
+/* How far down into the slide he is: sitting back into it over the first fifth, riding it, then rising out over the last
+   third in one smooth curve (no corner where the lean lets go). */
+const slideHold = p => { const a = clamp(p / 0.2, 0, 1), b = clamp((p - 0.68) / 0.32, 0, 1); return a * a * (3 - 2 * a) * (1 - b * b * (3 - 2 * b)); };
+
 /* how far through its flip `fl` is. A RUSHED flip (rushFlip) runs out its remaining turn over `rush.w` instead. */
 const flipP = fl => fl.rush ? clamp(fl.rush.p0 + (1 - fl.rush.p0) * (fl.t - fl.rush.t0) / fl.rush.w, 0, 1) : clamp(fl.t / fl.dur, 0, 1);
 /* An air attack (the aerial cut, the jump attack) fired mid-flip: rather than dropping the flip (the body would unwind
@@ -97,7 +101,7 @@ export function flipBody(dt, vis, fl){
   const s = fl.side || 1;
   // a tilt or bank that gets there early and stays through the middle; a slide drops in fast (a runner sits into it
   // in about a sixth of a second), holds, and rises out at the end
-  const hold = fl.legs === 'kneeslide' ? clamp(p / 0.2, 0, 1) * (1 - Math.pow(clamp((p - 0.75) / 0.25, 0, 1), 2)) : Math.sqrt(arc);
+  const hold = fl.legs === 'kneeslide' ? slideHold(p) : Math.sqrt(arc);
   const rx = (fl.somer || 0) * TAU * e + (fl.pitch || 0) * hold;
   const ry = ((fl.spin || 0) + (fl.twist || 0)) * s * TAU * (fl.twist && !fl.spin ? clamp((e - 0.15) / 0.7, 0, 1) : e);
   const rz = (fl.roll || 0) * s * TAU * e + ((fl.tilt || 0) + (fl.bank || 0)) * s * hold;
@@ -127,7 +131,7 @@ const LEGS = {
   hurdle: [-1.45, 1.35, 0.5, 0.95, 0.04],
   reach:  [-0.42, 0.5, -0.12, 0.28, 0.08],
   kneel:  [-1.25, 1.45, 0.25, 2.25, 0.18],   // the R (back) knee goes down: a superhero landing
-  kneeslide: [-0.8, 0.12, -0.4, 1.95, 0.1],   // a sprint slide: lead leg out along the ground, trail shin folded under
+  kneeslide: [-0.4, 2.1, -0.6, 0.06, 0.14],   // a sprint slide: the right leg out along the ground, the left shin folded under the hips
 };
 function poseLegs(R, dr, shape, w, rate){
   const [lh, lk, rh, rk, sp] = shape;
@@ -140,10 +144,62 @@ function poseLegs(R, dr, shape, w, rate){
 }
 const mixLegs = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
 
+/* The slide's legs: the lead leg shoots out first, the trailing leg folds under a beat behind it, and on the way out the
+   folded leg unfolds first to plant the foot. `shape` is the slide's [L hip, L knee, R hip, R knee, splay]. */
+function slideLegs(R, dr, p, w, shape = LEGS.kneeslide){
+  const fold = w * smoothK(clamp((p - 0.04) / 0.2, 0, 1)) * (1 - smoothK(clamp((p - 0.6) / 0.3, 0, 1)));
+  const lead = w;
+  poseLegs(R, dr, [shape[0] * fold, shape[1] * fold, shape[2] * lead, shape[3] * lead, shape[4]], 1, 20);
+  // the lead foot flexes, toes up, the heel skimming the floor (set after the ankles' own pass: jediAgilityPost)
+  player._ankPose = [0.9 * fold, -0.55 * lead];
+}
+const smoothK = k => k * k * (3 - 2 * k);
+
+/* ---------------- the wall-run ---------------- */
+const WALL_STRIDE = 12.5;   // rad/s the legs cycle at: about three foot-plants over the longest run
+/* The wall-run's pose weight and geometry, kept a moment after the run ends so the body eases off the wall (and eases
+   onto it) instead of snapping. `wx` is where the wall is across the body: +1 on his left (the free-hand side), -1 on
+   his right (the weapon side). null when there's none of it left. */
+export function wallState(dt, dr){
+  const wr = player.wallRun;
+  let W = player._wall;
+  if (wr){
+    if (!W) W = player._wall = { w: 0, wx: 0, t: 0 };
+    const c = Math.cos(player.faceYaw), sn = Math.sin(player.faceYaw);
+    W.wx = clamp(-(wr.nx * c - wr.nz * sn), -1, 1);
+    W.t = wr.t;
+    W.w = dr(W.w, 1, 11);
+  } else if (W){
+    W.w = dr(W.w, 0, 9);
+    if (W.w < 0.01) W = player._wall = null;
+  }
+  return W;
+}
+/* Feet on the wall, one then the other: each leg cycles a stride, swinging forward with the knee lifted, then planting
+   and driving back. The leg on the wall side reaches out to meet it; the far leg stays under the body. */
+function wallLegs(dr, R, W){
+  const ph = W.t * WALL_STRIDE, side = Math.sign(W.wx) || 1;
+  const leg = (off, onWall) => {
+    const s = Math.sin(ph + off), c = Math.cos(ph + off);
+    return [-0.32 - 0.62 * s, 0.5 + 0.95 * Math.max(0, c), (onWall ? 0.2 : -0.04) * side];
+  };
+  const l = leg(0, side > 0), r = leg(Math.PI, side < 0);   // (legL is the body's left, the wall side when wx > 0)
+  const w = W.w;
+  R.legL.hip.rotation.x  = dr(R.legL.hip.rotation.x,  l[0] * w, 24);
+  R.legL.knee.rotation.x = dr(R.legL.knee.rotation.x, l[1] * w, 24);
+  R.legR.hip.rotation.x  = dr(R.legR.hip.rotation.x,  r[0] * w, 24);
+  R.legR.knee.rotation.x = dr(R.legR.knee.rotation.x, r[1] * w, 24);
+  R.legL.hip.rotation.z  = dr(R.legL.hip.rotation.z, -l[2] * w, 24);
+  R.legR.hip.rotation.z  = dr(R.legR.hip.rotation.z, -r[2] * w, 24);
+  player._ankPose = [-0.1 * w, -0.1 * w];
+}
+
 /* JEDI LEGS off the ground (and through a flip): returns true when it posed them. */
 export function jediAirLegs(dt, dr, R){
   const A = agilityOf();
   const fl = player.flip;
+  const W = wallState(dt, dr);
+  if (W && W.w > 0.02 && !fl && !player.slamming && !player.hang && !player.airCut && !player.gliding){ wallLegs(dr, R, W); return true; }
   if (fl && (!player.slamming || fl.rush)){   // (a flip rushed into a jump attack plays out through its wind-up)
     // shape opens at take-off and landing, closes through the middle; a held tuck (Djem So leap) stays closed
     const env = fl.tuckHold ? Math.min(1, Math.sin(Math.PI * flipP(fl)) * 2.2) : fl.legs === 'kneeslide' ? (fl.hold || 0) : Math.pow(fl.env || 0, 0.6);
@@ -154,7 +210,8 @@ export function jediAirLegs(dt, dr, R){
     if (capLegs){
       const m = cap === MOCAP_MOVES.front ? MOCAP_MOVES.back : cap;   // (a front tuck folds like a back tuck)
       poseLegs(R, dr, flipLegs(m, flipP(fl)), 1, 22);
-    } else poseLegs(R, dr, mixLegs(LEGS.reach, LEGS[legs] || LEGS.tuck, env), 1, 22);
+    } else if (fl.legs === 'kneeslide') slideLegs(R, dr, flipP(fl), env);
+    else poseLegs(R, dr, mixLegs(LEGS.reach, LEGS[legs] || LEGS.tuck, env), 1, 22);
     return true;
   }
   if (player.grounded) return false;
@@ -190,7 +247,8 @@ export function jediAgilityArms(running){
   if (player.slamLandT > 0) return { key: A.slam.land, rate: 2.4 };
   if (player.slamming) return { key: A.slam.arms, rate: 2.4 };
   if (player.hang) return { key: 'hang', rate: 3 };   // both hands up on the lip
-  if (player.flip) return { key: player.flip.arms, rate: 2.2 };
+  if (player.flip) return { key: player.flip.arms, rate: player.flip.arms === 'slide' ? 5 : 2.2 };
+  if (player._wall && player._wall.w > 0.05) return { key: player._wall.wx > 0 ? 'wallO' : 'wallW', rate: 5 };
   if (!player.grounded){
     if (player.gliding) return { key: player.vy > 1 ? A.rise.arms : A.glide.arms, rate: 1.2 };
     return { key: A.jump.arms, rate: 1.6 };
@@ -216,6 +274,10 @@ export function jediAgilityPost(dt, dr, vis, R, ctx){
   } else if (!player.slamming){
     vis.position.x = dr(vis.position.x, 0, 14); vis.position.z = dr(vis.position.z, 0, 14);
   }
+  // the slide's and the wall-run's ankles (the ankles' own pass runs before this, and would point the toes)
+  if (player._ankPose){ R.legL.ank.rotation.x = dr(R.legL.ank.rotation.x, player._ankPose[0], 18); R.legR.ank.rotation.x = dr(R.legR.ank.rotation.x, player._ankPose[1], 18); player._ankPose = null; }
+  // saber holstered: no guard to carry the arms, so the slide and the wall-run pose them directly
+  if (player.holstered) bareArms(dr, R);
   // after a slam: the knee goes down and the blade (or palm) stays planted, then he rises out of it
   slamLanding(dt, dr, R, A.slam.kneel, ctx.inten);
   // a driven slide (Djem So's dash) sinks the hips through the move
@@ -226,6 +288,20 @@ export function jediAgilityPost(dt, dr, vis, R, ctx){
   if (!(player._gait && player._gait.body)){   // (the motion-captured stride turns the hips and shoulders itself)
     R.hips.rotation.y = dr(R.hips.rotation.y, tw * 0.16, 16);
     if (run > 0.05 && player.castT <= 0) R.torso.rotation.y = -tw * 0.24;
+  }
+}
+
+/* Arms of a bare-handed slide or wall-run. armR is the body's right, so swinging out is +y on it, -y on armL. */
+function bareArms(dr, R){
+  const W = player._wall, sl = player.flip && player.flip.legs === 'kneeslide';
+  const arm = (A, x, y, e) => { A.sh.rotation.x = dr(A.sh.rotation.x, x, 16); A.sh.rotation.y = dr(A.sh.rotation.y, y, 16); A.el.rotation.x = dr(A.el.rotation.x, e, 16); };
+  if (sl){
+    arm(R.armR, -0.75, 0.5, -0.5);    // out in front for balance
+    arm(R.armL, 0.7, -0.35, -0.2);    // the free hand trailing low behind
+  } else if (W && W.w > 0.3){
+    const wallLeft = W.wx > 0;
+    arm(R.armL, wallLeft ? -1.0 : -0.3, wallLeft ? 0.2 : -1.15, wallLeft ? -0.9 : -0.3);   // wall side: in and forward; far side: thrown wide
+    arm(R.armR, wallLeft ? -0.3 : -1.0, wallLeft ? 1.15 : -0.2, wallLeft ? -0.3 : -0.9);
   }
 }
 
@@ -263,7 +339,7 @@ const smooth = k => { k = clamp(k, 0, 1); return k * k * (3 - 2 * k); };
 const DIVE_LEGS = [0.12, 0.28, 0.06, 0.45, 0.14];     // laid out behind in the throw, knees soft
 const DIVE_LEGS_BACK = [-0.55, 0.85, -0.3, 0.55, 0.16];   // on his back: knees up, boots toward the target
 const GETUP_LEGS = [-1.2, 1.9, 0.15, 1.5, 0.18];      // one knee planted, pushing up
-const BASE_LEGS = [-0.75, 0.06, -0.05, 1.9, 0.2];      // lead leg out, trail leg folded under (the body leans back on top)
+const BASE_LEGS = [-0.4, 2.0, -0.62, 0.06, 0.2];      // the right leg out, the left folded under (the body leans back on top)
 function mandoBody(dt, dr, vis, R, fl){
   fl.t += dt;
   const p = clamp(fl.t / fl.dur, 0, 1);
@@ -299,16 +375,16 @@ function mandoBody(dt, dr, vis, R, fl){
     const S = MANDO_MOBILITY.slide;
     const sp = Math.hypot(player.moveVel.x, player.moveVel.z);
     if (sp > 1) fl.face = Math.atan2(player.moveVel.x, player.moveVel.z);   // the skid steers: keep facing it
-    const hold = smooth(p / 0.15) * (1 - smooth((p - 0.8) / 0.2));
+    const hold = smooth(p / 0.2) * (1 - smooth((p - 0.66) / 0.34));
     pitch = -S.lean * hold;
     low = hold; drop = COM - S.hips;
-    legs = BASE_LEGS; lw = hold;
+    slideLegs(R, dr, p, hold, BASE_LEGS);
   }
   // turn about the hips, then bring them down toward the floor
   vis.rotation.set(pitch, 0, bank);
   _v.set(0, COM, 0).applyEuler(_e.set(pitch, 0, bank));
   vis.position.set(-_v.x, COM - _v.y - drop * low, -_v.z);
-  poseLegs(R, dr, legs, lw, 20);
+  if (legs) poseLegs(R, dr, legs, lw, 20);
   // the visor stays on the reticle through the lay-out, however it's rolled
   if (fl.kind === 'dive') headToReticle(R, mandoAimPoint(), dt, 18);
 }
@@ -319,6 +395,7 @@ function mandoBody(dt, dr, vis, R, fl){
 export function mandoAgilityPost(dt, dr, vis, R, f, r){
   const M = MANDO_AGILITY;
   if (player.flip && !player.slamming) mandoBody(dt, dr, vis, R, player.flip);
+  if (player._ankPose){ R.legL.ank.rotation.x = dr(R.legL.ank.rotation.x, player._ankPose[0], 18); R.legR.ank.rotation.x = dr(R.legR.ank.rotation.x, player._ankPose[1], 18); player._ankPose = null; }
   if (player.slamming) poseLegs(R, dr, LEGS.tuck, player.slamWind > 0 ? 1 : 0.35, player.slamWind > 0 ? 12 : 18);   // knees up in the wind-up, braced near-straight for the impact
   slamLanding(dt, dr, R, M.slam.kneel, 0);
   if (player.grounded && player.dashT > 0 && !player.slamming && !player.flip){

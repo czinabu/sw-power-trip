@@ -136,10 +136,12 @@ function poseBody(dt, dr, vis, planted, POSE, moving){
     const gs = player._gait, gm = GAIT.accelMax;
     const af = gs && player.grounded ? clamp((gs.ax*ffx + gs.az*ffz) * GAIT.accelLean, -gm, gm) : 0;
     const ar = gs && player.grounded ? clamp((gs.ax*(-ffz) + gs.az*ffx) * GAIT.accelBank, -gm, gm) : 0;
-    vis.rotation.x = dr(vis.rotation.x, lf*0.024*leanG + af + (planted ? POSE.lean : 0) + reel + plant + (player.airCut && player.airCut.phase === 'dash' ? 0.38 : 0), reel ? 22 : 9);   // (the aerial cut's dash drives in shoulder-first)
-    // WALL-RUN — feet on the wall, body tipped out away from it (the normal in the body's own left/right)
-    const wallLean = player.wallRun ? -0.5 * (player.wallRun.nx * Math.cos(player.faceYaw) - player.wallRun.nz * Math.sin(player.faceYaw)) : 0;
-    vis.rotation.z = dr(vis.rotation.z, player.wallRun ? wallLean : lr*0.018*leanG + ar + reelSide, player.wallRun ? 14 : reelSide ? 22 : 9);   // bank INTO the strafe (was inverted — leaned the wrong way)
+    vis.rotation.x = dr(vis.rotation.x, lf*0.024*leanG + af + (planted ? POSE.lean : 0) + (player._wall ? 0.12 * player._wall.w : 0) + reel + plant + (player.airCut && player.airCut.phase === 'dash' ? 0.38 : 0), reel ? 22 : 9);   // (the aerial cut's dash drives in shoulder-first)
+    // WALL-RUN — feet on the wall, the body rolled out away from it and pitched a little into the run (anim/agility.js
+    // wallState: eased on at the catch and off at the drop, kept a moment after the run ends)
+    const W = player._wall, ww = W ? W.w : 0;
+    const wallLean = W ? 0.7 * W.wx * ww : 0;
+    vis.rotation.z = dr(vis.rotation.z, W ? wallLean : lr*0.018*leanG + ar + reelSide, W ? 12 : reelSide ? 22 : 9);   // bank INTO the strafe (was inverted — leaned the wrong way)
     vis.position.y = dr(vis.position.y, 0, 10);
   }
 

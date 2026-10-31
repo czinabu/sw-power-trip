@@ -326,3 +326,26 @@ export const AIR_GUARDS = {
               run:    { hand: [0.36, -0.12, 0.06], blade: [0.36, -0.2, -0.91], twist: -0.1, pole: [0.8, -0.3, -0.5], off: { hand: [-0.28, -0.1, 0.22], pole: OFF } } },
   },
 };
+
+/* The SLIDE and the WALL-RUN guards (chest space as above). The slide: the weapon hand carried out in front, blade up
+   and clear of the floor, the free hand trailing low behind on the tucked leg's side. The wall-run, one guard for each
+   side the wall can be on: the arm away from the wall thrown wide for balance, the arm on the wall side held in and
+   forward, fingers toward the face. The blade always points away from the wall. */
+const SLIDE_GUARD = {
+  regular: { hand: [0.42, -0.1, 0.34], blade: [0.28, 0.78, -0.56], twist: -0.1, off: { hand: [-0.5, -0.78, -0.42], pole: OFF } },
+  reverse: { hand: [0.4, -0.12, 0.3], blade: [0.2, 0.3, -0.93], twist: -0.1, pole: [0.8, -0.3, -0.5], off: { hand: [-0.5, -0.78, -0.42], pole: OFF } },
+};
+const WALL_GUARD = {   // wallW: the wall is on the weapon side; wallO: on the free-hand side
+  regular: {
+    wallW: { hand: [0.3, 0.02, 0.32], blade: [-0.2, 0.8, -0.56], twist: 0.05, off: { hand: [-0.66, 0.14, 0.04], pole: OFF } },
+    wallO: { hand: [0.66, 0.14, 0.04], blade: [0.62, 0.5, -0.6], twist: -0.05, off: { hand: [-0.3, 0.02, 0.32], pole: OFF } },
+  },
+  reverse: {
+    wallW: { hand: [0.3, 0.02, 0.32], blade: [0.1, 0.3, -0.95], twist: 0, pole: [0.8, -0.3, -0.5], off: { hand: [-0.66, 0.14, 0.04], pole: OFF } },
+    wallO: { hand: [0.66, 0.14, 0.04], blade: [0.5, 0.2, -0.85], twist: 0, pole: [0.8, -0.3, -0.5], off: { hand: [-0.3, 0.02, 0.32], pole: OFF } },
+  },
+};
+for (const grip in AIR_GUARDS) for (const form in AIR_GUARDS[grip]){
+  AIR_GUARDS[grip][form].slide = SLIDE_GUARD[grip];
+  Object.assign(AIR_GUARDS[grip][form], WALL_GUARD[grip]);
+}
