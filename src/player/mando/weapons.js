@@ -235,7 +235,7 @@ function fireRifle(W){
   // the wake hangs along the bolt's real line: from the rifle's barrel tip (where the bolt now leaves) to the aimed point,
   // not from the shoulder origin (that skewed the rings off the crosshair, worst on near targets)
   const mz = gunMuzzle(o).clone();
-  disruptorWake(mz, V3(aim.x-mz.x, aim.y-mz.y, aim.z-mz.z).normalize());
+  disruptorWake(mz, V3(aim.x-mz.x, aim.y-mz.y, aim.z-mz.z).normalize(), mz.distanceTo(aim));
   player.recoil = 0.5; player.recoilKick = 0.5;
   G.shake = Math.max(G.shake, 0.4); G.hitstop = Math.max(G.hitstop, 0.05);
   screenFlash('radial-gradient(ellipse at center, rgba(120,210,255,.2), transparent 60%)', 0.35, 0.2);
@@ -244,9 +244,10 @@ function fireRifle(W){
   addHeat(W);   // a heavy charge — overheats after a couple of shots
 }
 // the disruptor's ionised wake — a corkscrew of ink rings left hanging along the first stretch of the shot
-function disruptorWake(from, dir){
+function disruptorWake(from, dir, reach = 99){
   for (let i = 0; i < 9; i++){
     const t = 0.8 + i * 1.5;
+    if (t > reach) break;   // the trail stops at the point under the crosshair, never runs on past it
     inkSprite({ pos: V3(from.x + dir.x*t, from.y + dir.y*t, from.z + dir.z*t), normal: dir, shape: 'ring', inner: 0.7, color: 0x7fe0ff,
                 size: [0.35, 0.75 + i*0.05], life: 0.32, delay: i * 0.012, fadeAt: 0.25, coreW: 0.25, inkW: 0.24, op: 0.9 });
   }
