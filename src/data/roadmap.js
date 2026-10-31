@@ -18,6 +18,8 @@ export const ROADMAP = [
             'Powers master themselves as you use them: Push that you lean on grows into rank I and II, no XP spent',
             'Skilled defence (parries, perfect dodges, clashes, catches, ripostes) adds up to bonus skill points',
             'One page at a chapter\'s close (every 3 waves in Survival): training, new powers and mastery on one list, no tabs, named for the chapter'] },
+  { title: 'Push and Pull grow with you', status: 'done',
+    items: ['Force Push starts as a short shove and Force Pull as a short tug; Force Repulse, the Wrist Rocket and Jetpack Slam also start with less knockback; mastery ranks I and II build every one back up to its full strength'] },
   { title: 'Home screen refresh', status: 'done',
     items: ['Campaign tile shows the 13-chapter story and your saved place, like ACT II · CH 6', 'CO-OP is a mode tile; New Game and Load Game sit under Campaign, with Continue as the main button', 'Missions and Training blurbs say what they now are'] },
   { title: 'Controller support', status: 'done',
