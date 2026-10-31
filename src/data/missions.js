@@ -298,8 +298,8 @@ export const MISSIONS = {
                     { at: [-10, -31], guards: { grunt: 1, grenadier: 1, blaster: 1, officer: 1 },
                       found: { jedi: ['THE CAPTAIN\'S HOLOCRON', 'The Republic cruiser kept more than its route.'], mando: null } },
                     { at: [26, -54], guards: { phalanx: 1, grunt: 2, sniper: 1 } } ],
-        time: 4.5, r: 2.4, hitLoss: 0.8,
-        trickle: { every: 18, cap: 6, group: { grunt: 1, blaster: 1, flyer: 1 } } },
+        time: 4, r: 2.4, hitLoss: 0.6,
+        trickle: { every: 18, cap: 5, group: { grunt: 1, blaster: 1, flyer: 1 } } },
 
       { kind: 'hold', title: 'HOLD THE FREIGHTER', start: [4, 50, Math.PI],
         say: { jedi: 'The freighter needs a minute to warm its engines. Hold the camp. They will send everything they have left.',
