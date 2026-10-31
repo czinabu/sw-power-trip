@@ -183,6 +183,13 @@ export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick, opts){
       if (e.state !== 'windup' && e.state !== 'strike'){ e.state = 'recover'; e.st = 0.5; }
     }
   }
+  // the Jedi's front kick (config kickStagger): a short step back and a stagger, never a launch (its knock sits under the knockdown bar)
+  if (knockDir && knockPow === CFG.player.kickStagger.knock && !e.dead && !tick && !byAlly){
+    const K = CFG.player.kickStagger;
+    e.group.position.addScaledVector(knockDir.clone().setY(0).normalize(), K.step * (e.t.heavy ? 0.4 : 1));
+    staggerEnemy(e, knockDir.x, knockDir.z, 'STAGGERED');
+    e.st = K.stun * (e.t.staff ? 1.3 : e.t.heavy ? 1.2 : 1);
+  }
   // ECHO STRIKE boon — the blow rings out a second time for 40% (only if the first didn't kill; guarded vs recursion)
   if (player.boon && player.boon.echo && !byAlly && !tick && knockDir && !e.dead && !e._echoing && dmg > 0){
     e._echoing = true; damageEnemy(e, dmg*0.4, knockDir, 0, false, false); e._echoing = false;
