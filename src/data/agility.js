@@ -287,6 +287,10 @@ export const AIR_GUARDS = {
       plunge: { hand: [0.06, -0.06, 0.4], blade: [0.02, -0.92, 0.38], two: true, twist: -0.05, pole: [0.6, -0.4, -0.6] },
       run:    { hand: [0.3, -0.3, -0.04], blade: [0.2, -0.58, -0.79], twist: -0.08, off: { hand: [-0.28, -0.12, 0.22], pole: OFF } },
     },
+    // Makashi runs like a fencer on the advance: the saber low and forward with the blade angled down at the foe, the free hand clasped behind the back
+    makashi: {
+      run:    { hand: [0.3, -0.18, 0.5], blade: [-0.12, -0.5, 0.85], twist: 0.1, pole: [0.8, -0.6, -0.2], off: { hand: [-0.1, -0.3, -0.28], pole: [-0.8, -0.35, -0.45] } },
+    },
     niman: {
       hang:   { hand: [0.16, 0.78, 0.3], blade: [0.35, 0.25, -0.9], twist: 0, off: { hand: [-0.18, 0.78, 0.3], pole: [-0.6, -0.3, -0.5] } },   // hands up on the ledge lip
       windup: { hand: [0.06, 0.92, 0.08], blade: [0.12, 0.96, -0.22], two: true, twist: 0.04, pole: [0.7, -0.3, -0.4] },   // blade raised high overhead: the aerial wind-up
