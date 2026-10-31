@@ -6,6 +6,10 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'Tutorial heal lessons work', status: 'done',
+    items: ['The Mandalorian\'s "Use a bacta stim" step (and the Jedi\'s Force Mend step) refused to work at full health; those steps now start with you wounded and Force topped up, with a WOUNDED cue',
+            'Gear handed out mid-lesson now shows its HUD tile straight away (the bacta tile was missing)',
+            'Training only; the game modes already needed real damage to heal'] },
   { title: 'Shots land on the crosshair', status: 'done',
     items: ['Aiming at open air (a far wall, the sky) used to converge the shot only 40 metres out, so every bolt crossed the reticle and flew on past it, off to the right; the shot now aims at the arena wall it will really hit, or far out, so it lands on the crosshair',
             'Blaster, dual, disruptor (rings too, scoped as well), rockets and missiles share that aim, as do the squad\'s orders',
