@@ -214,7 +214,7 @@ export function trySlide(){
   flowLink('slide');
   player.moveVel.multiplyScalar((jedi ? hs + MOVE.forceSlideBoost : Math.max(SL.speed, hs + SL.boost)) / hs);
   player.sprinting = false;
-  if (jedi) player.flip = { t: 0, dur: MOVE.forceSlideTime, pitch: -0.55, bank: -0.1, drop: 0.6, legs: 'kneeslide', arms: 'slide', side: 1, ease: 'twirl' };
+  if (jedi) player.flip = { t: 0, dur: MOVE.forceSlideTime, pitch: -0.6, bank: -0.1, drop: 0.78, legs: 'kneeslide', arms: 'slide', side: 1, ease: 'twirl' };
   // the Mando's goes in feet first, like sliding into base, facing the way he skids (anim/agility.js mandoBody)
   else player.flip = { kind: 'slide', t: 0, dur: SL.time, face: Math.atan2(player.moveVel.x, player.moveVel.z) };
   const pp = playerPos();
@@ -279,12 +279,13 @@ export function wallBeside(pp, range){
     }
     if (d < bestD){ bestD = d; best = V3(nx, 0, nz); }
   }
-  if (best) return best;
-  const h = shared.arenaHalf - 1, hz = shared.arenaHalfZ - 1;
-  if (pp.x >  h - range) return V3(-1, 0, 0);
-  if (pp.x < -h + range) return V3( 1, 0, 0);
-  if (pp.z >  hz - range) return V3( 0, 0, -1);
-  if (pp.z < -hz + range) return V3( 0, 0,  1);
+  if (best){ best.d = bestD; return best; }   // (d: how far the face is, for the wall-run's feet)
+  const h = shared.arenaHalf - 1, hz = shared.arenaHalfZ - 1, H = shared.arenaHalf, HZ = shared.arenaHalfZ;
+  const edge = (n, d) => { n.d = d; return n; };
+  if (pp.x >  h - range) return edge(V3(-1, 0, 0), H - pp.x);
+  if (pp.x < -h + range) return edge(V3( 1, 0, 0), H + pp.x);
+  if (pp.z >  hz - range) return edge(V3( 0, 0, -1), HZ - pp.z);
+  if (pp.z < -hz + range) return edge(V3( 0, 0,  1), HZ + pp.z);
   return null;
 }
 
@@ -306,6 +307,7 @@ export function updateWallRun(dt, pp){
     player.moveVel.set(ax * MOVE.wallRunSpeed, 0, az * MOVE.wallRunSpeed);
     const vn = player.vel.x * n.x + player.vel.z * n.z;
     player.vel.x -= n.x * vn; player.vel.z -= n.z * vn;
+    wr.d = n.d;   // (the pose reaches the feet out to the face: anim/agility.js)
     if (Math.random() < 0.35) burst(V3(pp.x - n.x * 0.5, pp.y + 0.3, pp.z - n.z * 0.5), 0x9a9288, 1, 2, 1, 0.6);
     return;
   }
@@ -317,7 +319,7 @@ export function updateWallRun(dt, pp){
   if (!n) return;
   if (Math.abs(vx * n.x + vz * n.z) / sp > 0.55) return;   // heading into (or away from) the wall, not along it
   const dir = Math.sign(-n.z * vx + n.x * vz) || 1;          // which way along the face
-  player.wallRun = { t: 0, nx: n.x, nz: n.z, dir };
+  player.wallRun = { t: 0, nx: n.x, nz: n.z, dir, d: n.d };
   player.wallRunUsed = true;
   tutEvent('wallrun');
   flowLink('wallrun');
