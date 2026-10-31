@@ -15,6 +15,7 @@ import { GAIT, FOOTING } from '../data/movement.js';
 import { groundAt, STEP_UP } from '../world/collision.js';
 import { LEG, mocapStride, mocapFoot, mocapBody } from '../player/anim/mocap.js';
 import { LEG_E } from './mesh.js';
+import { fallOf } from './upper.js';
 
 const THIGH = LEG_E.hipY - LEG_E.kneeY, SHIN = LEG_E.kneeY - LEG_E.ankY, LEG_L = THIGH + SHIN;   // model units
 const HERO_SCALE = 1.18, LEG_M = LEG * HERO_SCALE;   // the hero's leg in metres (the clips are sized to it)
@@ -47,14 +48,33 @@ export function updateLegs(o, g, dt, mode = 'ground'){
   const legs = [[u.thighL, u.shinL, u.footL], [u.thighR, u.shinR, u.footR]];
 
   if (mode === 'off' || mode === 'air'){
-    // nothing to stand on: the feet let go, the legs hang (a little bent in the air) and the body settles
+    // nothing to stand on: the feet let go, the legs hang (a little bent in the air) and the body settles.
+    // FALLING (a death, a knockdown): the knees give as the body tips, one more than the other, so it folds as it goes
+    // down instead of falling like a plank. KNEELING (o.kneel 0 → 1, a boss's death): the knees buckle under it and
+    // the body sinks onto them
     L.locks = [null, null]; L.foot = null; L.ank = [null, null];
+    const f = mode === 'off' ? fallOf(g) : 0, kn = mode === 'off' ? clamp(o.kneel || 0, 0, 1) : 0;
+    const fwd = g.rotation.x > 0;   // face-down: the hips fold more, on its back the knees lift
     const hip = mode === 'air' ? -0.18 : 0, knee = mode === 'air' ? 0.4 : 0;
-    legs.forEach(([th, sh, ft], i) => {
-      th.rotation.x = ease(th.rotation.x, hip * (i ? 0.6 : 1.2), dt, 10); th.rotation.z = ease(th.rotation.z, 0, dt, 10);
-      sh.rotation.x = ease(sh.rotation.x, knee, dt, 10); ft.rotation.x = ease(ft.rotation.x, 0.2 * knee, dt, 10);
+    const want = [0, 1].map(i => {
+      const fh = f * (fwd ? -0.55 : -0.35) * (i ? 0.55 : 1), fk = f * (fwd ? 0.75 : 1.05) * (i ? 0.45 : 1);
+      return [hip * (i ? 0.6 : 1.2) + fh - kn * (i ? 0.25 : 0.55), knee + fk + kn * (i ? 1.75 : 1.55)];
     });
-    vis.position.set(0, 0, 0); vis.rotation.set(0, 0, 0);
+    legs.forEach(([th, sh, ft], i) => {
+      th.rotation.x = ease(th.rotation.x, want[i][0], dt, 10); th.rotation.z = ease(th.rotation.z, 0, dt, 10);
+      sh.rotation.x = ease(sh.rotation.x, want[i][1], dt, 10); ft.rotation.x = ease(ft.rotation.x, 0.2 * want[i][1] - (kn ? kn * 0.6 : 0), dt, 10);
+    });
+    // kneeling, the body comes down so the lower of each knee and foot meets the floor
+    let drop = 0;
+    if (kn > 0){
+      let low = 0;
+      legs.forEach(([th, sh]) => {
+        const h = th.rotation.x, k = sh.rotation.x, kneeY = -THIGH * Math.cos(h), ankY = kneeY - SHIN * Math.cos(h + k);
+        low = Math.min(low, kneeY - 0.06, ankY);
+      });
+      drop = Math.max(0, LEG_L + low) * ls;   // how much shorter the folded legs stand
+    }
+    vis.position.set(0, -drop, 0); vis.rotation.set(0, 0, 0);
     L.lean = L.bank = L.bob = L.sway = 0;
     return;
   }
