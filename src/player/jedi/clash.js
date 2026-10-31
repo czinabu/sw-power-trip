@@ -88,7 +88,7 @@ export function parryContact(e){
   GUARD_SPOT.set(pp.x + f.x * 0.7, pp.y + 1.4, pp.z + f.z * 0.7);
   const out = new THREE.Vector3();
   nearOnSeg(GUARD_SPOT, FB, FT, out);
-  const chest = Q.set(pp.x, pp.y + 1.4, pp.z), reach = 1.05;
+  const chest = Q.set(pp.x, pp.y + 1.4, pp.z), reach = 1.5;
   N.subVectors(out, chest);
   if (N.lengthSq() > reach * reach) out.copy(chest).addScaledVector(N.normalize(), reach);
   return out;
