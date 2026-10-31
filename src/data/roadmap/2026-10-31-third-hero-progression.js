@@ -6,5 +6,6 @@ export default {
   items: [
     'Its own powers handed out along the story, with a choice at each trial and an identity fork at Mustafar',
     'Its own skill cards and power mastery',
+    'Its armour picks up the rounded, layered look of the NPC pass',
   ],
 };
