@@ -6,6 +6,11 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'Limbs that come off', status: 'done',
+    items: ['A killing saber cut that lands unguarded can now take off a sword arm, the other arm, a leg (at the hip or below the knee) or the head, up to three at once on a heavy blow; a low cut favours legs, a high one the head',
+            'Droids lose limbs too (the saboteur and the magnaguards); a champion loses at most one limb and keeps its head, and bosses are never cut',
+            'Guarded, parried or dodged cuts never sever. Riflemen\'s arms are fused to their weapon and stay on',
+            'The Jedi saber, the aerial cut and the Mandalorian\'s darksaber all sever, in every mode; in co-op the host decides and both players see the same cuts'] },
   { title: 'Effects from the palm, small at the contact', status: 'done',
     items: ['Force powers leave the Jedi\'s hands: Push, Pull, Repulse, Barrier and Grasp come from the free palm with the saber drawn and from both palms with it holstered, as Judgement already did; holstered strikes burst from the hand that threw them',
             'Lightsaber contact is a small, sharp flash right where the blades meet: parries, deflects, blocks, clashes, binds and saber hits lost the big rings, sprays and screen flashes',
@@ -114,7 +119,7 @@ export const ROADMAP = [
     items: ['Troopers aim and look at their target, breathe, kick on each shot and flinch with a hit', 'Melee foes twist into the wind-up and whip through the strike',
             'No two alike: height, shade and battle wear per trooper', 'Sergeant pauldrons, veteran flashes, comms antennas',
             'Smooth bodies: hips, knees, waist and neck bend as one skin', 'Bosses turn their chest and helm to follow you',
-            'Saber cuts burn into armour where the blade met it, and stay', 'A killing cut can take a sword arm off'] },
+            'Saber cuts burn into armour where the blade met it, and stay', 'A killing cut can take limbs off (see Limbs that come off)'] },
   { title: 'Faces, hands and capes', status: 'done',
     items: ['Hero eyes, brows, lips and a blink', 'Facial hair and eye colour options, stubble now a light shadow', 'Jointed hands: fists, open palms, hooked fingers',
             'Swinging capes on officers, duellists and bosses'] },

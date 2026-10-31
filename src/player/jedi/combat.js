@@ -22,7 +22,7 @@ import { cutLine, duelDefend, isGuarding, guardImpact, rallyParry } from '../../
 import { bodyRadius } from './bladehit.js';
 import { bounceOff, contactPoint } from './clash.js';
 import { inReach } from '../../enemies/bodyshape.js';
-import { scarBody, severArm } from '../../enemies/scars.js';
+import { scarBody, severLimbs } from '../../enemies/scars.js';
 import { tutEvent } from '../../game/tutor-bus.js';
 import { masteryXp } from '../../game/progression.js';
 import { momentumStrike } from '../parkour.js';
@@ -205,7 +205,7 @@ export function cancelSwing(){
    (the arc flash) with nothing hit. With no list at all (no blade in hand) it falls back to
    striking everything in the swing's arc and radius. */
 // a blade's blow: where it met the foe (bladehit.js), and the cap on how far it throws it (data/config.js saberShove)
-export const bladeOpts = (at) => Object.assign({ shove: CFG.player.saberShove.max }, at);
+export const bladeOpts = (at) => Object.assign({ shove: CFG.player.saberShove.max, blade: true }, at);
 const FINISHER_FLOOR = 27;   // over the 26 a blow needs to floor a brute (enemies/damage.js)
 export function applySwingDamage(step, only){
   const st = stance();
@@ -304,7 +304,7 @@ export function applySwingDamage(step, only){
       if (shat && !e.dead) staggerEnemy(e, f.x, f.z);
       // the blade leaves its mark: a burnt cut where it crossed, and a killing blow may take the sword arm (enemies/scars.js)
       scarBody(e.group, f, sw0 && sw0.dir, finisher || G.stance === 'djemso' || isDark, sw0 && sw0.hitAt && sw0.hitAt.get(e));
-      if (e.dead) severArm(e, f, finisher ? 0.6 : G.stance === 'djemso' || isDark ? 0.4 : 0.25);
+      if (e.dead) severLimbs(e, f, finisher ? 0.8 : G.stance === 'djemso' || isDark ? 0.55 : 0.35, sw0 && sw0.hitAt && sw0.hitAt.get(e));
       if (!riposte && !e.dead) interruptEnemy(e, f, finisher || st.form === 'djemso' || isDark);   // striking first beats a wind-up
       if (mom === 'slide' && !riposte && !e.dead) staggerEnemy(e, f.x, f.z);   // a SLIDE CUT sweeps the legs out
       if (riposte && !e.dead) staggerEnemy(e, f.x, f.z);   // a RIPOSTE floors what it answers — a true counter, wide open after
