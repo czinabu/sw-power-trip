@@ -894,8 +894,11 @@ function missionComplete(){
   try { localStorage.setItem('sw_mission_' + def.id + '_' + G.hero, '1'); } catch(e){}
   if (!M.chapter) autosave('mission');   // (a chapter's win is saved as the next chapter starts)
   // a campaign chapter's card carries the chapter's clear lines (what the mission taught, who joins), not a second voice line on the comms strip
-  const clearLines = M.chapter && M.chapter.clear;
-  showPanel(missionVoice(), clearLines && clearLines.length ? clearLines.join(' ') : heroKey(def.done), '', M.chapter ? 'Chapter complete' : 'Mission complete', { drill: true, done: true });
+  // (the voice's own lines; when it has none, the last cast member who speaks ({ who, say }), under their own name)
+  const said = (M.chapter && M.chapter.clear) || [], own = said.filter(x => typeof x === 'string'), cast = said.filter(x => x && x.who);
+  const by = own.length || !cast.length ? null : cast[cast.length - 1].who;
+  const clearText = own.length ? own.join(' ') : by ? cast.filter(x => x.who === by).map(x => x.say).join(' ') : heroKey(def.done);
+  showPanel(by || missionVoice(), clearText, '', M.chapter ? 'Chapter complete' : 'Mission complete', { drill: true, done: true });
   if (!M.guest && hooks.missionDone) hooks.missionDone();   // co-op: the guest's mission ends with it
   if (M.chapter){   // a campaign chapter: no victory screen, the run carries on into the next chapter (game/campaign.js)
     M.panelT = 6; M.o = null;

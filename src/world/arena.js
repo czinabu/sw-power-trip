@@ -28,6 +28,7 @@ import { buildIcefrontArena } from './arenas/icefront.js';
 import { buildGraveyardArena } from './arenas/graveyard.js';
 import { buildArchiveArena } from './arenas/archive.js';
 import { buildPensArena } from './arenas/pens.js';
+import { buildJedhaNightArena } from './arenas/jedha-night.js';
 import { buildPrisonArena } from './arenas/prison.js';
 import { buildHangarArena } from './arenas/hangar.js';
 import { buildSithArena } from './arenas/sith.js';
@@ -134,6 +135,7 @@ export function buildArena(L){
   else if (L.layout === 'archive'){ buildArchiveArena(LP); }
   else if (L.layout === 'prison'){ buildPrisonArena(LP); }
   else if (L.layout === 'pens'){ buildPensArena(LP); }
+  else if (L.layout === 'jedhaNight'){ buildJedhaNightArena(LP); }
   else if (L.layout === 'hangar'){ buildHangarArena(LP); }
   else if (L.layout === 'sith'){ buildSithArena(LP); }
   else if (L.layout === 'jungle'){ buildJungleArena(LP); }
