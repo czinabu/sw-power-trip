@@ -6,6 +6,10 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'Squadmates feel every hit', status: 'done',
+    items: ['A hurt squadmate shows a health bar over their head (green, then amber, then red) so you can see who is in trouble and go cover them',
+            'Brute and boss blows, shockwaves, Warbringer quakes, lancer lunges, barrel and vent blasts now hurt the squad as well as you, not only trooper shots and swings',
+            'The host runs the damage and guests see the same bars on their squad. Same in every mode: story, missions, survival, sandbox and co-op'] },
   { title: 'Makashi: Dooku\'s fencing poise', status: 'done',
     items: ['Idle: Form II Makashi stands square to the foe with the saber arm held straight out to the side and angled down, the blade carrying the line, and the off hand set on the small of the back with its elbow flared out',
             'Fighting (a foe close, or a blow given or taken a moment ago): the off arm drops out low to the side for balance; cuts and the run keep it there',
