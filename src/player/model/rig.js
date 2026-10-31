@@ -8,7 +8,7 @@
 //                                 ├─ back (jetpack mount)
 //                                 └─ cape (cape pivot)
 //
-// Joint positions match the original rig exactly, so the existing poses in animation.js land the same.
+// Poses are joint ANGLES, so they carry over when DIM's lengths change (see DIM).
 // chest, wr, ank, the skirt flaps and the cape rest at zero; animation.js drives them (upper-body twist, wrist snap,
 // foot plant, cloth follow-through).
 
@@ -20,9 +20,13 @@ import * as THREE from 'three';
    relative to the weapon hand need nothing. */
 export const MIRROR = -1;
 
+/* Proportions: the legs are ~47% of the figure (they were 44%, which read stubby next to the shoulders) and the
+   shoulders sit a little narrower, the waist joint a touch lower. The chest, neck and arms are as they were, so every authored pose (all angles)
+   lands the same; the hips simply ride higher. Everything that measures the legs (gait, foot planting, mocap, IK,
+   the outfits) reads these numbers, so change them here only. */
 export const DIM = {
-  hipY: 1.04, hipX: 0.11, thigh: 0.45, shin: 0.41,
-  torsoY: 0.16, chestY: 0.3, headY: 0.48, shX: 0.27, shY: 0.32, upper: 0.34, fore: 0.3,
+  hipY: 1.12, hipX: 0.105, thigh: 0.49, shin: 0.45,
+  torsoY: 0.13, chestY: 0.3, headY: 0.48, shX: 0.258, shY: 0.32, upper: 0.34, fore: 0.3,
 };
 
 export function buildRig(){

@@ -18,7 +18,7 @@ import { mandoAimPoint, mandoWeapon, mandoShielding } from './mando/weapons.js';
 import { DARK_DUR } from './mando/darksaber.js';
 import { FORM_OF, FOOTWORK, FOOTWORK_GRIP, SWING_STYLE } from '../data/poses.js';
 import { pistolPose, riflePose, rifleLowered, restGun } from './anim/guns.js';
-import { MIRROR } from './model/rig.js';
+import { MIRROR, DIM } from './model/rig.js';
 import { solveArm } from './anim/ik.js';
 import { saberPose, guardPose, swingPose, deflectPose, applySaberPose, releaseSaberPose, airGuard } from './anim/saber.js';
 import { advanceGait, gaitLegs, gaitHipOffset, releaseGait } from './anim/gait.js';
@@ -215,7 +215,7 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
   // hips: crouch lowers the center of gravity per stance; on the move they sit lower and dip at each footfall
   // (set before the legs, which are solved down from here)
   player._crouch = dr(player._crouch || 0, planted ? POSE.crouch : 0, 8);
-  R.hips.position.y = 1.04 + player._crouch - (player._swingDrop || 0) - land*0.2 - (player._agiDrop || 0)
+  R.hips.position.y = DIM.hipY + player._crouch - (player._swingDrop || 0) - land*0.2 - (player._agiDrop || 0)
                       + (player.grounded && !player.flip ? gaitHipOffset(GS, gait) : 0.05);
   // a foot standing lower than the body (off a step, one foot down from a crate) needs the hips to come down to it
   const fd = player.grounded && !player.flip && player._footDrop ? Math.min(0, player._footDrop[0], player._footDrop[1]) : 0;
@@ -341,7 +341,7 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
   R.skirt.scale.z = dr(R.skirt.scale.z, skirtW, 7);
   // breathing — z-lunge and torso twist relax here; the swing block overrides them when active
   // idle breathing + a stride-synced run bob (two dips per stride at the footfalls) — STRONG stomps heaviest, FAST springs lightest
-  R.torso.position.y = 0.16 + Math.sin(G.gt * 1.7) * 0.012 - Math.abs(Math.sin(ph)) * 0.05 * inten * (gait.bob || 0.35);
+  R.torso.position.y = DIM.torsoY + Math.sin(G.gt * 1.7) * 0.012 - Math.abs(Math.sin(ph)) * 0.05 * inten * (gait.bob || 0.35);
   R.torso.position.z = dr(R.torso.position.z, 0, 11);
   R.torso.rotation.y = dr(R.torso.rotation.y, 0, 11);
   // the master's gaze tracks the camera even when the body doesn't
