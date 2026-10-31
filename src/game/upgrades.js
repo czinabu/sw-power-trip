@@ -42,6 +42,22 @@ export function upToast(head, line, kind){
   setTimeout(() => t.remove(), 4800);
 }
 
+// first-sighting foe tips: one corner note at a time, queued so a mixed wave never stacks them, and kept to a sentence
+const foeQ = [];
+let foeBusy = false;
+function nextFoeTip(){
+  const n = foeQ.shift();
+  if (!n){ foeBusy = false; return; }
+  foeBusy = true;
+  upToast(n[0], n[1], 'foe');
+  setTimeout(nextFoeTip, 5000);
+}
+export function foeTipToast(head, line){
+  const short = (line || '').split(/(?<=[.!?]) /)[0];
+  foeQ.push([head, short]);
+  if (!foeBusy) nextFoeTip();
+}
+
 /* ---------------- mastery by use ---------------- */
 const masteryOf = (id) => masterySet().find(m => m.id === id);
 // rank II also waits for its `r2` wave, so an early power still can't be maxed in the first level
