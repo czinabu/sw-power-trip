@@ -22,6 +22,7 @@ import { S } from '../audio/sfx.js';
 import { refill } from '../allies/squad.js';
 import { readPose, makePoseTrack, pushPose, stepPose } from './pose.js';
 import { on, send, sendEvery, connected, net } from './session.js';
+import { savedName, hasName, setName, forgetName, forgetAll, nameOf } from './names.js';
 import { fxOut, makePartnerFx, updatePartnerFx } from './partner-fx.js';
 
 const partners = new Map();   // slot -> that player's puppet, pose track and entry in the players list
@@ -36,7 +37,7 @@ function partnerOf(slot){
         want: { pos: new THREE.Vector3(), yaw: 0, ap: 0 } };
   /* this partner in the players list: `pos` is where the puppet stands on this screen, so what enemies chase is what
      you see them chase */
-  P.mate = { id: 'partner' + slot, slot, local: false, name: 'PLAYER ' + (slot + 1), pos: puppet.group.position, vel: new THREE.Vector3(), down: false, here: false };
+  P.mate = { id: 'partner' + slot, slot, local: false, name: nameOf(slot), pos: puppet.group.position, vel: new THREE.Vector3(), down: false, here: false };
   addHeroReviver(() => standing(P));
   addReviverSource(() => standing(P) ? { kind: 'partner', pos: puppet.group.position, hitAt: null } : null);
   partners.set(slot, P);
@@ -65,8 +66,8 @@ function dress(P, heroName){
   puppet.saberHand.visible = !mando;
 }
 
-// "PARTNER" with one other player, "PLAYER 3" and so on with more
-const label = (P) => partners.size > 1 ? 'PLAYER ' + (P.slot + 1) : 'PARTNER';
+// their picked name, else "PARTNER" with one other player, "PLAYER 3" and so on with more (net/names.js)
+const label = (P) => hasName(P.slot) || partners.size > 1 ? nameOf(P.slot) : 'PARTNER';
 function nameTag(P){
   if (P.tag) return P.tag;
   P.tag = document.createElement('div');
@@ -87,9 +88,10 @@ function coopRevives(){
   if (G.reviveLeft == null || key !== reviveWave){ reviveWave = key; refill(); }
 }
 
-on('hello', (m) => { const P = partnerOf(m.from || 0); build(P, m.picks, m.hero); addPlayer(P.mate); });
+on('hello', (m) => { setName(m.from || 0, m.name); const P = partnerOf(m.from || 0); P.mate.name = nameOf(P.slot); build(P, m.picks, m.hero); addPlayer(P.mate); });
 on('s', (m) => {
   const P = partnerOf(m.from || 0), { want, mate, puppet, track } = P;
+  if (m.name !== undefined){ setName(P.slot, m.name); mate.name = nameOf(P.slot); }
   if (!P.built) build(P, m.picks, m.hero);
   if (m.picks && keyOf(m.picks) !== P.picksKey) build(P, m.picks, m.hero);
   if (m.hero !== P.hero) dress(P, m.hero);
@@ -104,11 +106,11 @@ on('s', (m) => {
   P.fx.cur = m.fx || null; P.fx.curAt = performance.now();
 });
 // a player came in: say hello to them (the host's hello reaches every guest, and each guest's reaches the host and, through it, the rest)
-on('open', () => { sent = 0; send({ t: 'hello', hero: G.hero, picks: loadPicks() }); });
+on('open', () => { sent = 0; send({ t: 'hello', hero: G.hero, picks: loadPicks(), name: savedName() }); });
 function leaves(slot){
   const P = partners.get(slot);
   if (!P) return;
-  dropPartner(P); removePlayer(P.mate);
+  dropPartner(P); removePlayer(P.mate); forgetName(slot);
 }
 on('closed', (slot) => { if (slot < 0) for (const k of [...partners.keys()]) leaves(k); else leaves(slot); });
 on('bye', (m) => leaves(m.slot));   // another guest left (the host tells the rest)
@@ -127,7 +129,7 @@ export function updateCoop(dt){
         pose: player.rig ? readPose(player) : null, fx: fxOut() };
       const dn = heroDownState();   // down: how far along getting this hero up is, and how long they have (game/revive.js)
       if (dn) m.dn = [Math.round(dn.prog * 100), +dn.left.toFixed(1), dn.by ? 1 : 0];
-      if (sent++ % NET.picksEvery === 0) m.picks = loadPicks();
+      if (sent++ % NET.picksEvery === 0){ m.picks = loadPicks(); m.name = savedName(); }
       return m;
     });
   }
@@ -223,4 +225,4 @@ export function partnerSpot(slot){
   return any;
 }
 export function dropPartner(P){ P.puppet.group.visible = false; P.playing = false; P.mate.here = false; P.dn = null; if (P.tag) P.tag.style.display = 'none'; downMarks(P, false); }
-on('status', (n) => { if (n.status !== 'connected'){ for (const P of partners.values()){ dropPartner(P); removePlayer(P.mate); } } });
+on('status', (n) => { if (n.status !== 'connected'){ for (const P of partners.values()){ dropPartner(P); removePlayer(P.mate); } forgetAll(); } });

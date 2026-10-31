@@ -12,6 +12,7 @@ import { playerPos } from '../player/helpers.js';
 import { worldKey } from '../player/players.js';
 import { sfx } from '../audio/sfx.js';
 import { SEAT_COLORS, seatCss, makeChip, placeChip, hideChip } from '../ui/coop-marks.js';
+import { nameOf } from './names.js';
 import { net, on, send, connected } from './session.js';
 
 const PING = { life: 6, gap: 0.6, beam: 7 };   // seconds a ping stays up · the shortest gap between your own · beam height (m)
@@ -72,7 +73,7 @@ export function updatePings(){
     P.mark.userData.ring.scale.setScalar(0.4 + k * 0.6 + Math.sin(G.gt * 7) * 0.06);
     P.mark.children.forEach(c => { c.material.opacity = (c === P.mark.userData.ring ? 0.85 : 0.55) * fade; });
     const mine = slot === (net.slot || 0), d = Math.hypot(P.pos.x - pp.x, P.pos.z - pp.z);
-    const who = mine ? 'YOUR PING' : 'PLAYER ' + (slot + 1);
+    const who = mine ? 'YOUR PING' : nameOf(slot);
     const what = P.foe ? (P.foe === shared.boss ? 'BOSS' : 'ENEMY') : 'HERE';
     _top.set(P.pos.x, P.pos.y + (P.foe ? 2.9 : 1.8), P.pos.z);
     placeChip(P.chip, _top, who + ' · ' + what, d, seatCss(slot));

@@ -33,12 +33,17 @@ const connected = (page) => page.waitForFunction(() => /Connected/.test(document
 let ok = false;
 try {
   const host = await open('host'), guest = await open('guest');
-  await host.click('#mode-coop'); await host.click('#coophost');
+  // display names: typed in the panel, junk filtered, kept for next time; a blank one falls back to the seat
+  await host.click('#mode-coop'); await host.fill('#coopname', '  Kit<>  Fisto!!'); await host.click('#coophost');
   await host.waitForFunction(() => document.querySelector('#coopstatus .code'), null, { timeout: 20000, polling: 250 });
   const code = await host.evaluate(() => document.querySelector('#coopstatus .code').textContent);
-  await guest.click('#mode-coop'); await guest.fill('#coopcode', code);
+  await guest.click('#mode-coop'); await guest.fill('#coopcode', code);   // (this guest sets no name)
   await guest.click('#coopjoin');
   await Promise.all([connected(host), connected(guest)]);
+  await host.waitForFunction(() => /KIT FISTO/.test(document.getElementById('cooproster').textContent) && /PLAYER 2/.test(document.getElementById('cooproster').textContent), null, { timeout: 15000, polling: 250 });
+  await guest.waitForFunction(() => /KIT FISTO/.test(document.getElementById('cooproster').textContent), null, { timeout: 15000, polling: 250 });
+  if (process.env.SHOT) await host.screenshot({ path: process.env.SHOT });
+  if (await host.evaluate(() => localStorage.getItem('sw_coop_name')) !== 'Kit Fisto') throw new Error('the name should be saved, filtered, for next time');
   for (const [page, hero] of [[host, 'jedi'], [guest, 'mando']]){
     await page.click('#coopclose'); await page.click('#hero-' + hero);
     for (let i = 0; i < 5; i++){
@@ -60,13 +65,14 @@ try {
   const arm0 = await guest.evaluate(() => GAME.partnerInfo().armR);
   await host.evaluate(() => { try { GAME.tryAttack(); } catch(e){} });   // the host (Jedi) swings
   await guest.waitForFunction((a) => JSON.stringify(GAME.partnerInfo().armR) !== JSON.stringify(a), arm0, { timeout: 15000, polling: 250 });
+  if (await guest.evaluate(() => document.querySelector('.partnertag').textContent) !== 'KIT FISTO') throw new Error('the partner tag should carry their name');
   const hunted = await Promise.race([
     host.waitForFunction(() => GAME.partnerInfo().hunters > 0, null, { timeout: 25000, polling: 250 }).then(() => 'host'),
     guest.waitForFunction(() => GAME.partnerInfo().hunters > 0, null, { timeout: 25000, polling: 250 }).then(() => 'guest'),
   ]);
   ok = true;
   console.log('ok   co-op: connected with code ' + code + ', each side sees the other, the partner animates, and enemies on the ' + hunted + ' side go after the partner');
-} catch(e){ errors.push(e.message); for (const p of browser.contexts().flatMap(c => c.pages())) errors.push(JSON.stringify(await p.evaluate(() => ({ info: GAME.partnerInfo(), mode: GAME.G.mode, status: document.getElementById('coopstatus').textContent })).catch(x => x.message))); }
+} catch(e){ errors.push(e.message); for (const p of browser.contexts().flatMap(c => c.pages())) errors.push(JSON.stringify(await p.evaluate(() => ({ roster: document.getElementById('cooproster').textContent, nm: localStorage.getItem('sw_coop_name'), info: GAME.partnerInfo(), mode: GAME.G.mode, status: document.getElementById('coopstatus').textContent })).catch(x => x.message))); }
 await browser.close(); server.close?.();
 if (!ok || errors.length){ console.error('FAIL co-op\n' + errors.join('\n')); process.exit(1); }
 process.exit(0);
