@@ -15,7 +15,7 @@ import { damageEnemy, flinchEnemy, nearestEnemyInCone, staggerEnemy, interruptEn
 import { damageBoss } from '../../boss/boss.js';
 import { FOCUS, focusTier, focusDmgMul, addFocus, freeRiposte } from './focus.js';
 import { spawnHitSpark, spawnGroundShock } from '../../fx/vfx.js';
-import { inkSprite, sparks, clashFlash } from '../../fx/ink.js';
+import { inkSprite, sparks, clashFlash, clashSparks } from '../../fx/ink.js';
 import { scorchGround } from '../../fx/scorch.js';
 import { DUEL } from '../../data/duel.js';
 import { cutLine, duelDefend, isGuarding, guardImpact, rallyParry } from '../../enemies/duel.js';
@@ -247,8 +247,8 @@ export function applySwingDamage(step, only){
     G.slowmo = Math.min(G.slowmo, 0.3); G.slowmoT = Math.max(G.slowmoT, 0.14);
     const rfp = V3(rp.x + fwd().x, 1.6, rp.z + fwd().z);
     clashFlash(rfp, 0xffd24a, true);
-    sparks(rfp, 0xffe27a, 14, 15, { dir: fwd(), cone: 0.7, life: 0.34 });
-    screenFlash('radial-gradient(ellipse at center, rgba(255,255,255,.45), rgba(255,210,90,.1) 55%, transparent 72%)', 0.85, 0.32);
+    clashSparks(rfp, 0xffe27a, 6, { dir: fwd(), cone: 0.7 });
+    screenFlash('radial-gradient(ellipse at center, rgba(255,255,255,.2), rgba(255,210,90,.05) 35%, transparent 50%)', 0.5, 0.22);
     S.riposte(); sfx(140, 0.22, 'sawtooth', 0.14, 50);
   }
   // MOMENTUM — a cut out of a vault, climb, slide, wall-run or landing roll lands harder (data/movement.js MOVE.flow)

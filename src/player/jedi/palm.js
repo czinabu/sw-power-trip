@@ -21,6 +21,7 @@ import { pushGrenades } from '../../enemies/grenades.js';
 import { focusDmgMul, addFocus } from './focus.js';
 import { spawnPushWave, spawnGroundShock } from '../../fx/vfx.js';
 import { sparks, dustRing } from '../../fx/ink.js';
+import { palmPoints, handList } from '../../fx/palms.js';
 import { hooks } from '../../net/run.js';
 import { tutEvent } from '../../game/tutor-bus.js';
 
@@ -134,7 +135,7 @@ function landSpin(){
   sparks(V3(pp.x, pp.y + 1.1, pp.z), col, 10, 7, { dir: V3(0, 0.2, 0), cone: 3, life: 0.2, grav: 0 });
   landed(hit, true, 0.05, 0.3);
   if (hit) S.punch(V3(pp.x, pp.y + 1.1, pp.z), 1.1); else S.jump();
-  if (hooks.power) hooks.power('push', col, K.reach);   // co-op: the partner sees the ring go out
+  if (hooks.power) hooks.power('spin', col, K.reach);   // co-op: the partner sees the ring go out
 }
 
 // the stomp lands (locomotion.js calls this on touchdown)
@@ -186,7 +187,7 @@ const blowMul = () => (player.up.dmg || 1) * focusDmgMul() * forcePower();
 function landStrike(P){
   const B = P.B, f = fwd(), pp = playerPos(), cosLim = Math.cos(B.angle);
   const col = stance().blade, big = B.burst || B.charge;
-  spawnPushWave(pp.clone(), f.clone(), col, B.charge ? 0.35 + 0.5 * (B.range / 9) : big ? 0.45 : B.sweep ? 0.3 : 0.2);
+  spawnPushWave(pp.clone(), f.clone(), col, B.charge ? 0.35 + 0.5 * (B.range / 9) : big ? 0.45 : B.sweep ? 0.3 : 0.2, handList(P.hand));   // out of the striking hand(s)
   let hit = 0;
   for (const e of enemies){
     if (e.dead || e.converted || e.state === 'spawn') continue;
@@ -224,7 +225,7 @@ function landStrike(P){
     if (B.full && pushGrenades(pp, f, B.range, cosLim)) floater(pp, 'RETURNED', '#7fd4ff');
   }
   const up = B.launch ? 1.9 : 1.4, ip = V3(pp.x + f.x * 1.4, pp.y + up, pp.z + f.z * 1.4);
-  sparks(ip, col, big ? 10 : 5, big ? 9 : 6, { dir: B.launch ? V3(f.x * 0.4, 1, f.z * 0.4).normalize() : f, cone: B.sweep ? 1.1 : 0.5, life: 0.22, grav: 0 });
+  sparks(ip, col, big ? 6 : 3, big ? 8 : 6, { dir: B.launch ? V3(f.x * 0.4, 1, f.z * 0.4).normalize() : f, cone: B.sweep ? 1.1 : 0.5, life: 0.18, grav: 0, size: 0.38 });
   if (B.charge){ G.shake = Math.max(G.shake, 0.3 + 0.5 * (B.range / 9)); S.push(); }
   const fin = big || B.lunge || B.sweep || B.launch;
   landed(hit, fin, fin ? 0.06 : 0.03, fin ? 0.35 : 0.18);
@@ -284,9 +285,8 @@ function updateFistGlow(dt){
   const ch = chargeFrac();
   const want = !on ? 0 : ch >= 0 ? 0.55 + 0.45 * ch : player.palmT > 0 || (player.kickT > 0 && player.kickKind === 'spin') || player.stomp ? 0.75 : 0.22;
   glowLevel += (want - glowLevel) * Math.min(1, dt * (want > glowLevel ? 18 : 6));
-  if (ch >= 0 && Math.random() < dt * 20){   // the Force gathering: motes drawn into the palms
-    const pp = playerPos(), f = fwd();
-    sparks(V3(pp.x + f.x * 0.5, pp.y + 1.1, pp.z + f.z * 0.5), stance().blade, 1, 3, { dir: V3(0, 1, 0), cone: 3, life: 0.2, grav: 0 });
+  if (ch >= 0 && Math.random() < dt * 20){   // the Force gathering: motes drawn in round the cupped palms
+    for (const h of palmPoints(['L', 'R'])) sparks(h, stance().blade, 1, 2.5, { dir: V3(0, 1, 0), cone: 3, life: 0.18, grav: 0, size: 0.35 });
   }
   if (player.rig) setFistGlow(player, glowLevel, stance().blade);
 }
