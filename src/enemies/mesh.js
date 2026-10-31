@@ -11,7 +11,7 @@
 // plus the legs (thighL/R, shinL/R, footL/R) and the inner body group (vis) that enemies/gait.js drives
 
 import * as THREE from 'three';
-import { loft, limb, plate, block, shard, chamfer, ngon, KEEL, SHIELD, HEAD } from '../player/model/shapes.js';
+import { loft, limb, plate, block, shard, chamfer, ngon, gripHand, KEEL, SHIELD, HEAD } from '../player/model/shapes.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { bakeDesign, instantiate } from './kit.js';
 import { rounded } from '../player/model/skin.js';
@@ -104,16 +104,21 @@ export function pauldrons(k, w, key = 'armor', size = 1){
 }
 
 /* an arm hanging from `parent`'s origin: upper, elbow (its own group so it can bend), forearm, glove.
-   Returns the grip group (centre of the fist) for a held weapon. */
+   Returns the grip group (centre of the fist) for a held weapon.
+   o.hand: undefined → a closed fist; 'grip' → fingers closed round a grip running down the forearm's line through the
+   grip group (radius o.gr: a hilt, a haft); 'open' → the cuff only, the hand placed by holdArm on what it holds.
+   o.elbow: name the elbow as a bone (a hold the game re-aims each frame: enemies/holds.js) */
 export function arm(k, parent, w, o = {}){
   k.add(limb(0.4, [[-0.06,0.15*w,0.15],[0.1,0.15*w,0.15],[1,0.115*w,0.115]], SOFT_LIMB), 'suit', parent);
-  const el = k.group(parent, [0, -0.41, 0], [o.bend || 0, 0, 0]);
+  const el = o.elbow ? k.bone(o.elbow, parent, [0, -UPPER, 0], [o.bend || 0, 0, 0]) : k.group(parent, [0, -UPPER, 0], [o.bend || 0, 0, 0]);
   k.add(loft([{ y:-0.05, w:0.125*w, d:0.13 }, { y:0.0, w:0.135*w, d:0.145 }, { y:0.05, w:0.12*w, d:0.13 }], SOFT_LIMB), 'armor2', el, [0, 0, 0.01]);   // elbow cop
   k.add(limb(0.3, [[0,0.13*w,0.13],[0.6,0.135*w,0.13],[1,0.105*w,0.1]], KEEL), o.fore || 'armor', el, [0, -0.02, 0.005]);
-  // the glove: a rounded fist with a cuff, not a cube
+  // the glove's cuff, then the hand: a rounded fist, or fingers closed round what it holds
   k.add(loft([{ y:0.06, w:0.115*w, d:0.115 }, { y:0.035, w:0.12*w, d:0.12 }], SOFT_LIMB), 'black', el, [0, -0.38, 0.02], [0,0,0], { outline: false });
-  k.add(loft([{ y:-0.075, w:0.1*w, d:0.11 }, { y:-0.02, w:0.122*w, d:0.13 }, { y:0.04, w:0.112*w, d:0.12 }], SOFT_LIMB), 'suit', el, [0, -0.38, 0.02]);
-  return k.group(el, [0, -0.38, 0.03]);
+  if (!o.hand) k.add(loft([{ y:-0.075, w:0.1*w, d:0.11 }, { y:-0.02, w:0.122*w, d:0.13 }, { y:0.04, w:0.112*w, d:0.12 }], SOFT_LIMB), 'suit', el, [0, -0.38, 0.02]);
+  const grip = k.group(el, [0, -0.38, 0.03]);
+  if (o.hand === 'grip') k.add(gripHand({ rx: o.gr || 0.025, rz: o.gr || 0.025 }), 'suit', grip, [0, -0.01, 0], o.gripRot || [0, 0, 0], { outline: false });   // gripRot: a haft that leaves the fist at an angle (the pike)
+  return grip;
 }
 // a static arm from the left (-x) or right (+x) shoulder; rot = [forward lift (negative = forward), twist, outward splay
 // (negative = across the body)], mirrored for the side
@@ -123,20 +128,53 @@ export function sideArm(k, w, s, rot = [0, 0, 0], o){
   return arm(k, sh, w, o);
 }
 
-// an arm from a shoulder that lands its fist on `target` (body space): a two-bone solve, elbow hanging down
+// an arm from a shoulder that lands its wrist (o.hand 'open') or fist on `target` (body space): a two-bone solve,
+// elbow hanging down. o.slot makes the shoulder a slot of its own (so a saber cut can take the arm off)
 const UPPER = 0.41, FORE = 0.38;
 function reachArm(k, w, s, target, o = {}){
   const sp = new THREE.Vector3(0.42*w*s, 1.74, 0);
-  const dir = new THREE.Vector3(...target).sub(sp);
-  const d = Math.min(dir.length(), UPPER + FORE - 0.01);
-  dir.normalize();
-  const a = Math.acos((UPPER*UPPER + d*d - FORE*FORE) / (2*UPPER*d));      // shoulder: upper arm off the line
-  const b = Math.PI - Math.acos((UPPER*UPPER + FORE*FORE - d*d) / (2*UPPER*FORE));   // elbow bend
-  const sh = k.group(k.root, sp.toArray());
-  sh.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), dir)
-    .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), (o.twist || 0) * s))
-    .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), a));
-  return arm(k, sh, w, { ...o, bend: -b });
+  const sh = o.slot ? k.slot(o.slot, k.root, sp.toArray()) : k.group(k.root, sp.toArray());
+  sh.quaternion.copy(reachPose(sp, new THREE.Vector3(...target), (o.twist || 0) * s, _rb));
+  return arm(k, sh, w, { ...o, bend: -_rb.b });
+}
+/* the two-bone solve, shared with the live holds (enemies/holds.js): the shoulder's rotation that points the upper
+   arm so a forearm bent by out.b (radians) lands on `target`; both in the shoulder's parent space */
+const _down = new THREE.Vector3(0, -1, 0), _ax = new THREE.Vector3(1, 0, 0), _ay = new THREE.Vector3(0, 1, 0), _rb = { b: 0 };
+const _qt = new THREE.Quaternion(), _qa = new THREE.Quaternion(), _dir = new THREE.Vector3();
+export function reachPose(sp, target, twist, out, q = new THREE.Quaternion()){
+  _dir.subVectors(target, sp);
+  const d = Math.min(Math.max(_dir.length(), 0.08), UPPER + FORE - 0.01);
+  _dir.normalize();
+  const a = Math.acos(Math.min(1, (UPPER*UPPER + d*d - FORE*FORE) / (2*UPPER*d)));      // shoulder: upper arm off the line
+  out.b = Math.PI - Math.acos(Math.max(-1, Math.min(1, (UPPER*UPPER + FORE*FORE - d*d) / (2*UPPER*FORE))));   // elbow bend
+  return q.setFromUnitVectors(_down, _dir).multiply(_qt.setFromAxisAngle(_ay, twist)).multiply(_qa.setFromAxisAngle(_ax, a));
+}
+
+/* HANDS ON WHAT THEY HOLD: an arm from the s shoulder whose hand closes on `held` (a group: a rifle, the riot shield,
+   a staff) at `p`, round a grip running along `axis` (both in held's frame) with half-widths rx × rz.
+   The palm faces back toward the shoulder; the wrist lands just behind the grip and the hand is turned to the grip,
+   so the fingers wrap it from any angle. o.live names a live marker for a hold the game re-aims every frame
+   (o.live: [tag, elbowBone, handBone]: enemies/holds.js), when what it holds swings on its own (a staff) */
+function holdArm(k, w, s, held, p, axis, o = {}){
+  const rx = o.rx ?? 0.025, rz = o.rz ?? rx, c = rz + 0.05;
+  const sp = new THREE.Vector3(0.42*w*s, 1.74, 0);
+  k.root.updateWorldMatrix(true, true); held.updateWorldMatrix(true, false);
+  const P = new THREE.Vector3(...p), Y = new THREE.Vector3(...axis).normalize();
+  const toS = held.worldToLocal(k.root.localToWorld(sp.clone())).sub(P);
+  const Z = toS.addScaledVector(Y, -toS.dot(Y)).normalize().negate();          // from the wrist toward the grip
+  const X = new THREE.Vector3().crossVectors(Y, Z);
+  const frame = o.live ? k.live(new THREE.Object3D(), held, o.live[0]) : k.group(held);
+  frame.position.copy(P).addScaledVector(Z, -c);
+  frame.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(X, Y, Z));
+  frame.updateWorldMatrix(true, false);
+  const wrist = k.root.worldToLocal(frame.getWorldPosition(new THREE.Vector3()));
+  const grip = reachArm(k, w, s, wrist.toArray(), { ...o, hand: 'open', elbow: o.live && o.live[1] });
+  const el = grip.parent;
+  const hand = o.live ? k.bone(o.live[2], el, [0, -FORE, 0]) : k.group(el, [0, -FORE, 0]);
+  el.updateWorldMatrix(true, false);
+  hand.quaternion.copy(el.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(frame.getWorldQuaternion(new THREE.Quaternion())));
+  k.add(gripHand({ rx, rz }), 'suit', hand, [0, 0, c], [0, 0, 0], { outline: false });
+  return el;
 }
 
 /* the upper body hangs from a CHEST bone at the waist (enemies/upper.js turns it to aim, breathe, kick and flinch).
@@ -328,7 +366,8 @@ function cheekMarks(k, h){
 // melee weapon arm: pivots at the +x shoulder, carried at the ready (rotation.x = -0.35)
 function weaponArm(k, t, w){
   const a = k.slot('weaponArm', k.root, [0.42*w, 1.74, 0.04], [-0.35, 0, 0]);
-  const grip = arm(k, a, w, { bend: -0.15 });
+  const GR = { sword: 0.024, saber: 0.028, pistol: 0.026, pike: 0.026 };   // the handle each fist closes round (a maul's haft: 0.034)
+  const grip = arm(k, a, w, { bend: -0.15, ...(t.weapon === 'deto' ? {} : { hand: 'grip', gr: GR[t.weapon] || 0.034, gripRot: t.weapon === 'pike' ? [-1.1, 0, 0] : null }) });
   if (t.weapon === 'sword'){
     // vibro-sword: a long single-edged blade with a glowing edge line
     k.add(plate([[-0.035,0],[0.04,0],[0.05,-0.88],[0,-1.08],[-0.03,-0.94]], 0.022, 0.006), 'metal', grip, [0, -0.1, 0], [0, PI/2, 0]);
@@ -377,9 +416,9 @@ function weaponArm(k, t, w){
 function rifle(k, t, w, long){
   const at = long ? [0.2, 1.5, 0.32] : [0.22, 1.32, 0.36], yaw = long ? -0.05 : -0.18;
   const g = k.group(k.root, at, [0, yaw, 0]);
-  reachArm(k, w, 1, [at[0], at[1] - 0.14, at[2]], { twist: 0.3 });
-  const fore = new THREE.Vector3(0, -0.04, long ? 0.38 : 0.3).applyEuler(g.rotation).add(new THREE.Vector3(...at));
-  reachArm(k, w, -1, fore.toArray(), { twist: -0.3 });
+  // the trigger hand round the pistol grip, the other under the barrel
+  holdArm(k, w, 1, g, [0, -0.13, 0.02], [0, Math.cos(0.3), Math.sin(0.3)], { rx: 0.026, rz: 0.04, twist: 0.3 });
+  holdArm(k, w, -1, g, [0, 0.0, long ? 0.42 : 0.33], [0, 0, 1], { rx: 0.032, rz: 0.034, twist: -0.3 });
   k.add(block(0.08, 0.13, 0.5, 0.3), 'gun', g);
   k.add(loft([{ y:0, w:0.06, d:0.06 }, { y:long ? 0.95 : 0.36, w:0.05, d:0.05 }], ngon(8, PI/8)), 'gun', g, [0, 0.02, 0.25], [PI/2, 0, 0]);
   if (long) for (let i = 0; i < 3; i++) k.add(loft([{ y:0, w:0.075, d:0.075 }, { y:0.08, w:0.075, d:0.075 }], ngon(8, PI/8)), 'metal', g, [0, 0.02, 0.4 + i*0.2], [PI/2, 0, 0], { outline: false });
@@ -438,9 +477,10 @@ export const MODELS = {
     // cloak: a cape off both shoulders and a short mantle
     cape(k, [[-0.3,0],[0.3,0],[0.36,-1.2],[0.12,-1.32],[-0.12,-1.32],[-0.36,-1.2]], [0, 1.86, -0.21], 0.1);
     k.add(loft([{ y:1.62, w:0.66, d:0.44 }, { y:1.82, w:0.52, d:0.36 }, { y:1.9, w:0.3, d:0.26 }], SOFT_COLLAR), 'cloth');
-    sideArm(k, w, 1, [-0.75, 0, -0.1], { bend: -0.6, fore: 'metal' });
-    sideArm(k, w, -1, [-0.6, 0, -0.2], { bend: -0.6, fore: 'metal' });
     const staff = k.slot('staff', k.root, [0.55, 1.5, 0.2], [0.3, 0, 0.5]);
+    // both hands on the grips, re-aimed every frame as the staff guards, spins and strikes (enemies/holds.js)
+    holdArm(k, w, 1, staff, [0, -0.3, 0], [0, -1, 0], { rx: 0.033, slot: 'offArmR', fore: 'metal', twist: 0.2, live: ['gripR', 'elbowR', 'handR'] });
+    holdArm(k, w, -1, staff, [0, 0.3, 0], [0, 1, 0], { rx: 0.033, slot: 'offArm', fore: 'metal', twist: -0.2, live: ['gripL', 'elbowL', 'handL'] });
     k.add(loft([{ y:-0.95, w:0.065, d:0.065 }, { y:0.95, w:0.065, d:0.065 }], ngon(6)), 'metal', staff);
     for (const s of [-1, 1]){
       k.add(loft([{ y:0, w:0.1, d:0.1 }, { y:0.08, w:0.09, d:0.09 }], ngon(6)), 'black', staff, [0, 0.82*s, 0], [s < 0 ? PI : 0, 0, 0]);
@@ -482,10 +522,13 @@ export const MODELS = {
     const w = 1.05;
     legs(k, w); hips(k, w); k = upper(k); torso(k, w); pauldrons(k, w, 'armor2', 1.0);
     k.add(plate([[-0.25,0],[0.25,0],[0.28,-0.5],[-0.28,-0.5]], 0.014, 0.004), 'cloth', k.root, [0, 1.12, 0.17], [-0.06, 0, 0], { outline: false });   // kama
-    sideArm(k, w, -1, [-0.85, 0, 0.1], { bend: -0.7 });
     weaponArm(k, t, w);
     // deflector shield on the left arm: a tall chamfered slab with a view slit, a glowing rim and the Imperial cog
     const sh = k.slot('shield', k.root, [-0.46, 1.38, 0.46]);
+    // the handle on its back, and the left hand closed round it
+    k.add(loft([{ y:-0.09, w:0.04, d:0.04 }, { y:0.09, w:0.04, d:0.04 }], ngon(8, PI/8)), 'black', sh, [0.02, 0.02, -0.1], [0, 0, PI/2], { outline: false });
+    for (const x of [-0.09, 0.13]) k.add(block(0.03, 0.03, 0.08, 0.3), 'black', sh, [x, 0.02, -0.065], [0,0,0], { outline: false });
+    holdArm(k, w, -1, sh, [0.02, 0.02, -0.1], [1, 0, 0], { rx: 0.02, slot: 'offArm', twist: 0.2 });
     k.add(plate([[-0.4,0.6],[-0.3,0.7],[0.3,0.7],[0.4,0.6],[0.4,-0.56],[0.28,-0.68],[-0.28,-0.68],[-0.4,-0.56]], 0.07, 0.016), 'shield', sh);
     k.add(plate([[-0.32,0.5],[0.32,0.5],[0.32,0.44],[-0.32,0.44]], 0.02, 0.004), 'black', sh, [0, 0, 0.045], [0,0,0], { outline: false });
     k.add(plate([[-0.06,0.38],[0.06,0.38],[0.06,-0.6],[-0.06,-0.6]], 0.02, 0.006), 'armor2', sh, [0, 0, 0.045], [0,0,0], { outline: false });
@@ -565,7 +608,9 @@ export const MODELS = {
     const w = 0.98;
     legs(k, w); hips(k, w); k = upper(k); torso(k, w, { box: false }); pauldrons(k, w, 'armor2', 1.0);
     cape(k, [[-0.28,0],[0.28,0],[0.32,-0.9],[0,-1.0],[-0.32,-0.9]], [0, 1.86, -0.22], 0.1);   // short cape
-    sideArm(k, w, -1, [-0.55, 0, 0.0], { bend: -0.9 });   // the off hand forward, on the haft line
+    // the pike is carried one-handed at the hip, point forward (the off hand can't reach a haft that low on the far
+    // side), so the free arm swings with the stride
+    sideArm(k, w, -1, [-0.2, 0, 0.08]);
     weaponArm(k, t, w);
     const h = helmet(k, 'purge', t);
     for (const s of [-1, 1]) k.add(shard(0.04, 0.22, 0.12), 'armor2', h, [0.07*s, 0.42, -0.02], [-0.4, 0, 0.25*s]);
@@ -600,8 +645,15 @@ export const MODELS = {
 };
 
 /* ARM SWING (enemies/upper.js): how far each free arm (offArm on the left, offArmR the right) swings with the stride.
-   Arms that hold something stay put: both hands on a rifle or a staff, the riot shield, the officer's tucked hand */
-const ARM_SWING = { purge: [1, 0], heavy: [0.7, 0], acolyte: [0.75, 0], grenadier: [0.9, 0] };
+   Arms that hold something stay put: both hands on a rifle or a staff, the riot shield, the officer's tucked hand.
+   The staff's hands are re-aimed live onto it (HOLDS below) */
+const ARM_SWING = { purge: [1, 0], heavy: [0.7, 0], acolyte: [0.75, 0], grenadier: [0.9, 0], lancer: [0.8, 0] };
+/* LIVE HOLDS (enemies/holds.js): arms re-aimed each frame onto a grip that swings on its own: the shoulder slot, its
+   elbow and hand bones, the grip marker on what it holds, the arm's twist (as built, mirrored for the side) and how far
+   the hand may slide along the grip to reach it */
+const HOLDS = {
+  magna: [{ slot: 'offArmR', elbow: 'elbowR', hand: 'handR', grip: 'gripR', twist: 0.2, slide: 0.25 }, { slot: 'offArm', elbow: 'elbowL', hand: 'handL', grip: 'gripL', twist: 0.2, slide: 0.25 }],
+};
 
 /* ---------------- build ---------------- */
 
@@ -626,6 +678,7 @@ export function buildEnemyMesh(t, o = {}){
   g.add(vis);
   const u = g.userData = vis.userData;
   u.armSwing = ARM_SWING[t.model] || null;
+  u.holds = HOLDS[t.model] || null;
   u.vis = vis;
   if (u.shield) u.shieldMat = u.shield.children[0].material;
   if (u.eye) u.eyeMat = u.eye.material || u.eye.children[0].material;

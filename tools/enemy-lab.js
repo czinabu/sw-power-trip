@@ -12,9 +12,13 @@ import { buildEnemyMesh } from '../src/enemies/mesh.js';
 import { buildBoss } from '../src/boss/mesh.js';
 import { ELITES } from '../src/data/enemies.js';
 import { SQUAD } from '../src/data/allies.js';
+import { DETAIL } from '../src/player/model/shapes.js';
+import { surfaceDetail } from '../src/player/model/styles.js';
+import { solveHolds } from '../src/enemies/holds.js';
 import { GUARD_POSE, BLOCK_POSE, WIND, FOE_CUTS } from '../src/data/duel.js';
 
 const q = new URLSearchParams(location.search);
+{ const d = new URLSearchParams(location.search); if (d.has('rings')) DETAIL.rings = +d.get('rings'); if (d.has('round')) DETAIL.round = +d.get('round'); if (d.has('detail')) surfaceDetail.value = +d.get('detail'); }   // detail dial (player/model/shapes.js DETAIL)
 const SET = q.get('set') || 'troops';
 const POSE = q.get('pose') || 'idle';
 const ELITE = q.get('elite') || '';
@@ -160,9 +164,10 @@ renderer.info.autoReset = false;
 renderer.setAnimationLoop(t => {
   if (orbit) for (const f of figs) f.g.rotation.y = f.yaw0 = t * 0.0004;
   playCuts(window.LAB && window.LAB.clock != null ? window.LAB.clock : t);
+  for (const f of figs) if (f.g.userData.holds) solveHolds(f.g.userData);   // hands on a staff follow it (the game runs this in enemies/upper.js)
   placeLabels();
   renderer.info.reset();
   composer.render();
-  stats.textContent = `${renderer.info.render.calls} draw calls`;
+  stats.textContent = `${renderer.info.render.calls} draw calls · ${(renderer.info.render.triangles / 1000).toFixed(0)}k tris`;
 });
 window.LAB = { figs, scene, camera, renderer };
