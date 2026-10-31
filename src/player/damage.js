@@ -41,7 +41,9 @@ const MELEE_REACH_UP = 1.7;   // a melee foe can't strike you if you're perched 
 export function perfectDodge(fromPos){
   const P = CFG.player.perfectDodge;
   if (G.mode !== 'play' || !fromPos) return false;
-  if (G.gt - (player.dashStartT ?? -9) > P.window + diffWindow() || G.gt - (player.lastPerfectT ?? -9) < P.cd) return false;
+  // the same timed window as a parry (opens at the press, same form/skill/difficulty bonuses): a blow that lands in it is perfect
+  const win = CFG.player.parryWindow + P.bonus + (G.hero !== 'mando' ? (stance().parryBonus || 0) + (player.up.parry || 0) : 0) + diffWindow();
+  if (G.gt - (player.dashStartT ?? -9) > win || G.gt - (player.lastPerfectT ?? -9) < P.cd) return false;
   player.lastPerfectT = G.gt;
   G.slowmo = Math.min(G.slowmo, P.slowmo); G.slowmoT = Math.max(G.slowmoT, P.slowT);
   if (G.hero === 'mando'){

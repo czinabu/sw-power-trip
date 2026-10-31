@@ -15,7 +15,7 @@ import { spawnGroundShock } from '../fx/vfx.js';
 import { clampToArena, collideSolids, ceilHit, BODY_H } from '../world/collision.js';
 import { mandoSlamImpact } from './mando/gadgets.js';
 import { MOVE } from '../data/movement.js';
-import { MANDO_MOBILITY } from '../data/mobility.js';
+import { MANDO_MOBILITY, MOBILITY } from '../data/mobility.js';
 import { updateMantle, tryAutoMantle, updateWallRun, landingImpact, updateHang, updateForceSlide } from './parkour.js';
 import { doJump } from './movement.js';
 import { swingMoveMul, airControlMul, inCombat } from './mobility.js';
@@ -135,7 +135,10 @@ export function updateMovement(dt, pp, st, f, r){
     player._rootVX = tr.x * df / Math.max(dt, 1e-4); player._rootVZ = tr.z * df / Math.max(dt, 1e-4);
   } else player._rootVX = player._rootVZ = 0;
   const skid = player.flip && player.flip.kind === 'dive' && player.flip.landT && G.hero === 'mando';
-  const velDrag = skid ? MANDO_MOBILITY.dive.skidDrag : (player.flip || player.dashT > 0) ? 2.6 : (!player.grounded && G.hero !== 'mando') ? 1.2 : 9;   // airborne impulses (wall kicks, leaps) carry
+  // a ROLL / DIVE is a burst that eases out (fast off the mark, planted by the end), not a flat glide
+  const rolling = player.dodgeKind === 'roll' && G.gt - (player.rollAt ?? -9) < MOBILITY.roll.time;
+  const diving = G.hero === 'mando' && player.dodgeKind === 'dive' && player.flip && player.flip.kind === 'dive' && !player.flip.landT;
+  const velDrag = skid ? MANDO_MOBILITY.dive.skidDrag : rolling ? MOBILITY.roll.drag : diving ? MANDO_MOBILITY.dive.airDrag : (player.flip || player.dashT > 0) ? 2.6 : (!player.grounded && G.hero !== 'mando') ? 1.2 : 9;   // airborne impulses (wall kicks, leaps) carry
   player.vel.multiplyScalar(Math.max(0, 1 - dt*velDrag));
   if (player.kickT > 0) player.kickT -= dt;   // JEDI front-kick recovery (hero-agnostic so it always winds down)
   return moving;
