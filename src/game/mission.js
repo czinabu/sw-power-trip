@@ -239,7 +239,8 @@ const KINDS = {
         pulseMarker(c.m, dt, G.gt);
         if (!heroIn(c.x, c.z, o.r)) continue;
         at = c;
-        if (hit && c.prog > 0){ c.prog = Math.max(0, c.prog - o.hitLoss); floater(V3(c.x, 1.6, c.z), 'INTERRUPTED', '#ff9a8a'); }
+        // a hit sets the work back, once a second at most: a sniper and two blasters on you shouldn't pin it at zero forever
+        if (hit && c.prog > 0 && G.gt - (s.lossAt ?? -9) > 1){ s.lossAt = G.gt; c.prog = Math.max(0, c.prog - o.hitLoss); floater(V3(c.x, 1.6, c.z), 'INTERRUPTED', '#ff9a8a'); }
         c.prog += dt;
         if (Math.floor(c.prog * 4) !== Math.floor((c.prog - dt) * 4)) sfx(700 + c.prog * 160, 0.04, 'square', 0.02, 900 + c.prog * 160);
         if (c.prog >= o.time){
@@ -388,13 +389,16 @@ const KINDS = {
       if (cut && !cut.told){ cut.told = true; showBanner('', 'SHORTCUT · CUT IT OFF', 1.2); }
       s.onCut = !!cut;
       // a standoff: it stops to cut through a sealed way, and leaves a squad to hold you off until it's through
-      if (!s.hold){ const st = s.stand.find(t => !t.done && s.d >= t.d); if (st) beginStandoff(o, s, st); }
+      if (!s.hold){ const st = s.stand.find(t => !t.done && s.d >= t.d); if (st){ beginStandoff(o, s, st); s.holdGap = Math.min(0, gap); } }
       if (s.hold){
         s.holdT += dt;
         if (Math.random() < dt * 8) burst(V3(qp.x + Math.sin(s.yaw) * 0.9, qp.y + 1.3, qp.z + Math.cos(s.yaw) * 0.9), 0xffaa33, 3, 5, 3, 0.4);
-        if (s.holdT > 1.5 && hostilesAlive() + G.spawnQueue.length === 0 || s.holdT > 40) endStandoff(s, q.def.name + ' BREAKS THROUGH');
-        else if (gap < -10) endStandoff(s, q.def.name + ' BOLTS');   // you went round its guard: it runs for it
-      } else {
+        // through once its guard is down (a last straggler off in a doorway doesn't keep it waiting long)
+        const left = hostilesAlive() + G.spawnQueue.length;
+        if (s.holdT > 1.5 && left === 0 || s.holdT > 14 && left <= 1 || s.holdT > 30) endStandoff(s, q.def.name + ' BREAKS THROUGH');
+        else if (gap < s.holdGap - 10) endStandoff(s, q.def.name + ' BOLTS');   // you went round its guard: it runs for it
+      } else if (s.d >= s.P.len) faceHero(q, dt);   // at the end of the leg: it stops and looks back for you
+      else {
         // it runs at the pace the gap calls for: easing off when you fall behind, flat out when you close in
         let spd = paceAt(o.pace, gap);
         if (s.burstT > 0){ s.burstT -= dt; spd = Math.max(spd, 12.5); }
@@ -407,16 +411,23 @@ const KINDS = {
       if (!seen && s.seen){ s.last.position.set(qp.x, 0, qp.z); s.last.visible = true; }
       if (seen) s.last.visible = false;
       s.seen = seen;
-      // (standing still, it can't slip away; nor can it while you're on a shortcut or out ahead of it, running it down)
-      s.lostT = seen ? Math.max(0, s.lostT - dt * 2) : s.hold || s.onCut || gap <= 0 ? s.lostT : s.lostT + dt;
+      // (standing still, it can't slip away; nor can it while you're on a shortcut or just ahead of it, cutting it off.
+      // Far out ahead you've overshot it: that loses it as surely as falling behind)
+      const overshot = gap < -30, atEnd = s.d >= s.P.len;
+      s.lostT = seen ? Math.max(0, s.lostT - dt * 2) : (s.hold || s.onCut || gap <= 0) && !overshot && !atEnd ? s.lostT : s.lostT + dt;
       q.tag.visible = seen;
       if (s.last.visible) pulseMarker(s.last, dt, G.gt);
       if (s.lostT >= o.lost){ quarryEscaped(); return; }
       // caught it: on open ground it turns and fights until you've hurt it enough, then breaks away; otherwise it throws
       // you back and runs
+      // Cut it off (stand in its way, in front of it on its line) and it's caught too, from further off, and turns on
+      // you sooner: running out ahead of it doesn't leave it running behind you. Not while it's cutting through a
+      // sealed way (its guard first), and not on the last stretch of a leg (the leg's end is where it stops)
       s.clashCd -= dt;
-      if ((s.shoveCd -= dt) <= 0 && seen && dist < o.shove){
-        if (o.clash && s.clashCd <= 0 && s.y < 0.2 && s.d < s.P.len - 8){ beginClash(o, s); return; }
+      const inWay = gap < -1 && dist < o.shove + 4;
+      if ((s.shoveCd -= dt) <= 0 && seen && (dist < o.shove || inWay)){
+        const ready = o.clash && (s.clashCd <= 0 || gap < -1 && s.clashCd < o.clash.every - 5);
+        if (ready && !s.hold && s.y < 0.2 && s.d < s.P.len - 20){ beginClash(o, s); return; }
         shove(q, s);
       }
       // troops step out to cover its run as it passes their doorway
@@ -441,10 +452,12 @@ const KINDS = {
       setObjectiveHud({ kicker: M.kick, title: o.title, frac: s.d / s.P.len,
         status: s.hold ? 'CLEAR ITS GUARD · ' + (hostilesAlive() + G.spawnQueue.length) + ' LEFT'
               : s.onCut ? 'SHORTCUT · CUT IT OFF'
-              : !seen && gap <= 0 ? 'AHEAD OF IT · CUT IT OFF'
+              : !seen && overshot ? 'TOO FAR AHEAD · LET IT COME TO YOU ' + Math.max(0, o.lost - s.lostT).toFixed(1) + 'S'
+              : !seen && gap <= 0 && !atEnd ? 'AHEAD OF IT · CUT IT OFF'
               : seen ? q.def.name + ' IN SIGHT · ' + Math.round(dist) + ' M' : 'OUT OF SIGHT · FIND IT ' + Math.max(0, o.lost - s.lostT).toFixed(1) + 'S',
-        warn: !seen && !s.hold && !s.onCut && gap > 0 });
-      if (s.d >= s.P.len){
+        warn: !seen && !s.hold && !s.onCut && (gap > 0 || overshot || atEnd) });
+      // the end of the leg: it waits there only for you to catch sight of it (out of sight, the escape clock still runs)
+      if (atEnd && (seen || dist < 24)){
         q.tag.visible = false;
         if (o.leg < M.def.route.length - 1) showBanner('CHECKPOINT', 'Still on its heels. Keep going.', 2.0);
         return true;
@@ -472,7 +485,7 @@ const KINDS = {
           if (playDuelIntro(q ? { mid: M.def.id, quarry: true, name: q.name, kicker: q.kicker, scale: q.scale, line: heroText(o.line) }
                               : { mid: M.def.id, foe: o.foe, name: o.name, kicker: o.kicker, tint: o.tint, blade: o.form ? STANCES[o.form].blade : null, scale: o.scale, at: o.at, line: heroText(o.line) })) return;
         }
-        if (o.quarry && M.qHp) M.qHp = Math.max(0.55, M.qHp);   // the run wore it down, but it still has a fight in it
+        if (o.quarry && M.qHp) M.qHp = Math.max(0.6, M.qHp);   // the run wore it down, but it still has a fight in it
         s.foe = o.quarry ? spawnQuarryFoe(o) : spawnInquisitor(o, o.at, { line: heroText(o.line), kicker: o.kicker });
         if (o.escape) s.foe.hpFloor = Math.max(1, s.foe.maxHp * o.escape);   // it won't fall here: at this much left it breaks off (escapeDuel)
         storyBeat('duel', { name: o.name, quarry: !!o.quarry });
@@ -912,7 +925,14 @@ function updateMissionHost(dt){
   if (M.failT > 0){ if ((M.failT -= dt) <= 0) startMission(M.def.id, M.i, false, { chapter: M.chapter, retry: true }); return; }   // it got away: this leg again
   if (M.quarry && !(M.o && M.o.kind === 'pursuit')) faceHero(M.quarry, dt);   // between legs it stops and looks back
   if (M.won){ if ((M.endT -= dt) <= 0){ M.won = false; missionComplete(); } return; }
-  if (M.waitT > 0){ MUSIC.setCue('regroup'); if ((M.waitT -= dt) <= 0) beginObjective(); return; }
+  if (M.waitT > 0){
+    MUSIC.setCue('regroup');
+    // a chase leg starts the moment you close on the quarry: it doesn't stand there while you run up and past it
+    const next = M.def.objectives[M.i], q = M.quarry && M.quarry.g.position;
+    if (next && next.kind === 'pursuit' && q && Math.hypot(nearHero(q.x, q.z).pos.x - q.x, nearHero(q.x, q.z).pos.z - q.z) < 11) M.waitT = 0;
+    if ((M.waitT -= dt) <= 0) beginObjective();
+    return;
+  }
   if (!M.o) return;
   const K = KINDS[M.o.kind];
   if (K.update(M.o, M.s, dt)) completeObjective();
