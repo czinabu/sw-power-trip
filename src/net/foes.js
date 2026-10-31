@@ -131,7 +131,8 @@ function makePuppet(rec){
   if (rec[20] && STANCES[rec[20]] && g.userData.bladeGlow) g.userData.bladeGlow.material.color.setHex(STANCES[rec[20]].blade);   // a form master's blade
   const e = { net: true, nid, type, t, group: g, hp, maxHp, state, st: 0, vel: V3(0, 0, 0), flash: 0, hitCd: 0, dead: false,
     netState: state, converted: false, convT: 0, struck: false, stumble: 0, burn: 0, flinch: 0, spd: t.speed, elite: elite || null, shieldHp: 0, shieldBroken: false,
-    aimLine: null, want: { pos: V3(rec[2], rec[3], rec[4]), rx: rec[5], ry: rec[6], rz: rec[7] } };
+    aimLine: null, want: { pos: V3(rec[2], rec[3], rec[4]), rx: rec[5], ry: rec[6], rz: rec[7] },
+    born: state === 'spawn' ? G.gt : -1e9 };   // a foe just arriving (not one already fighting when we joined): ui/threats.js marks it
   g.position.set(rec[2], rec[3], rec[4]);
   if (flags & WARBRINGER){
     e.warbringer = e.champion = true;
