@@ -63,7 +63,7 @@ export const CUSTOMIZE = {
     ] },
     // robe + the tabard panels over it, as one pair so they always go together
     { id: 'robe', label: 'ROBES', kind: 'color', options: [
-      { id: 'earth',   name: 'Earth brown', set: pal({ robe: 0x3b2a1e, tabard: 0x5b4331 }) },
+      { id: 'earth',   name: 'Earth brown', set: pal({ robe: 0x3b2a1e, tabard: 0x6b4f37 }) },
       { id: 'umbra',   name: 'Umbra black', set: pal({ robe: 0x17161b, tabard: 0x2c2a31 }) },
       { id: 'ash',     name: 'Ash grey',    set: pal({ robe: 0x4a4b50, tabard: 0x6b6c72 }) },
       { id: 'sand',    name: 'Desert sand', set: pal({ robe: 0x8c7656, tabard: 0xb39d78 }) },

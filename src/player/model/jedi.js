@@ -8,7 +8,11 @@
 
 import * as THREE from 'three';
 import { loft, limb, plate, block, shard, chamfer, ngon, KEEL, SHIELD, HEAD } from './shapes.js';
-import { seg } from './skin.js';
+import { seg, rounded } from './skin.js';
+
+// smooth sections for cloth and skin: the chiselled profiles with their corners rounded off once, so robes and
+// skulls shade as soft forms (the ink outline and cel bands keep the low-poly read)
+const SOFT = rounded(chamfer(0.42)), SOFT_SHIELD = rounded(SHIELD), SOFT_HEAD = rounded(HEAD);
 
 // a C-shaped section (open at the front) so a hood can be lofted around the head without covering the face
 const HOOD = (() => {
@@ -65,19 +69,19 @@ export const JEDI_PARTS = {
   waist: {
     // split robe panels: each hangs from its own flap joint so it can swing on its own
     panels(R, k){
-      k.add(loft([{ y:-0.12, w:0.3, d:0.2 }, { y:0, w:0.34, d:0.22 }, { y:0.14, w:0.31, d:0.2 }], SHIELD), 'robe', R.hips);
-      k.add(loft([{ y:-0.44, w:0.46, d:0.36 }, { y:-0.12, w:0.38, d:0.27 }, { y:0.02, w:0.33, d:0.23 }], chamfer(0.42)), 'robe', R.skirt);
+      k.add(loft([{ y:-0.12, w:0.3, d:0.2 }, { y:0, w:0.34, d:0.22 }, { y:0.14, w:0.31, d:0.2 }], SOFT_SHIELD), 'robe', R.hips);
+      k.add(loft([{ y:-0.4, w:0.41, d:0.33 }, { y:-0.26, w:0.38, d:0.29 }, { y:-0.12, w:0.355, d:0.255 }, { y:0.02, w:0.32, d:0.225 }], SOFT), 'robe', R.skirt);
       // the four panels are real cloth: pinned at the belt, kicked by the legs, streaming and settling on their own
       const body = k.bodyCapsules([[R.skirt, robeLow(R, k), 0.14]]);
-      k.cloth('tabard', R.skirt, { W: 4, H: 8, rest: panel(R.flaps.F, 0.11, 0.6, 0.14), thick: 0.022, capsules: body });
-      k.cloth('robe',   R.skirt, { W: 5, H: 8, rest: panel(R.flaps.B, 0.16, 0.7, 0.12), thick: 0.022, capsules: body });
-      k.cloth('robe',   R.skirt, { W: 3, H: 7, rest: panel(R.flaps.L, 0.09, 0.52, 0.16), thick: 0.022, capsules: body });
-      k.cloth('robe',   R.skirt, { W: 3, H: 7, rest: panel(R.flaps.R, 0.09, 0.52, 0.16), thick: 0.022, capsules: body });
+      k.cloth('tabard', R.skirt, { W: 4, H: 8, rest: panel(R.flaps.F, 0.11, 0.55, 0.14), thick: 0.022, capsules: body });
+      k.cloth('robe',   R.skirt, { W: 5, H: 8, rest: panel(R.flaps.B, 0.15, 0.64, 0.12), thick: 0.022, capsules: body });
+      k.cloth('robe',   R.skirt, { W: 3, H: 7, rest: panel(R.flaps.L, 0.085, 0.47, 0.16), thick: 0.022, capsules: body });
+      k.cloth('robe',   R.skirt, { W: 3, H: 7, rest: panel(R.flaps.R, 0.085, 0.47, 0.16), thick: 0.022, capsules: body });
     },
     // one long robe to the shin, no split
     long(R, k){
-      k.add(loft([{ y:-0.12, w:0.3, d:0.2 }, { y:0, w:0.34, d:0.22 }, { y:0.14, w:0.31, d:0.2 }], SHIELD), 'robe', R.hips);
-      k.add(loft([{ y:-0.78, w:0.58, d:0.46 }, { y:-0.4, w:0.46, d:0.34 }, { y:-0.12, w:0.38, d:0.27 }, { y:0.02, w:0.33, d:0.23 }], chamfer(0.42)), 'robe', R.skirt);
+      k.add(loft([{ y:-0.12, w:0.3, d:0.2 }, { y:0, w:0.34, d:0.22 }, { y:0.14, w:0.31, d:0.2 }], SOFT_SHIELD), 'robe', R.hips);
+      k.add(loft([{ y:-0.78, w:0.54, d:0.44 }, { y:-0.4, w:0.44, d:0.33 }, { y:-0.12, w:0.37, d:0.265 }, { y:0.02, w:0.32, d:0.225 }], SOFT), 'robe', R.skirt);
       k.cloth('tabard', R.skirt, { W: 4, H: 9, rest: panel(R.flaps.F, 0.1, 0.72, 0.2, 0.05, 0.2), thick: 0.02,
         capsules: k.bodyCapsules([[R.skirt, robeLow(R, k), 0.2]]) });
     },
@@ -89,17 +93,20 @@ export const JEDI_PARTS = {
       // the tunic is one surface from waist to collar that bends and twists between the torso and chest joints
       k.skin('tunic', [
         { t:0, w:0.32, d:0.21 }, { t:0.2, w:0.3, d:0.2 },
-        ...seg(1, [[0,0.34,0.225],[0.14,0.47,0.27],[0.27,0.53,0.26],[0.35,0.37,0.2],[0.4,0.2,0.15]], 0.3),
+        ...seg(1, [[0,0.34,0.225],[0.14,0.46,0.27],[0.25,0.5,0.26],[0.31,0.45,0.235],[0.36,0.33,0.19],[0.41,0.19,0.145]], 0.3),
       ], { bones: [R.torso, R.chest], at: [0.3], blend: 0.08, profile: SHIELD, dir: 1 });
-      k.add(loft([{ y:0.04, w:0.37, d:0.255 }, { y:0.21, w:0.355, d:0.245 }], SHIELD), 'leather', R.torso);
-      k.add(plate([[-0.035,-0.045],[0.035,-0.045],[0.045,0],[0.035,0.045],[-0.035,0.045],[-0.045,0]], 0.02, 0.006), 'trim', R.torso, [0, 0.125, 0.128]);
+      // the obi: a wide sash in the tabard's cloth, a narrow leather belt cinched over it, a metal buckle. Three values
+      // stacked at the waist (light tunic, mid sash, dark belt) so the costume reads in layers, not as one mass
+      k.add(loft([{ y:0.03, w:0.37, d:0.29 }, { y:0.12, w:0.378, d:0.296 }, { y:0.22, w:0.358, d:0.284 }], SOFT_SHIELD), 'tabard', R.torso);
+      k.add(loft([{ y:0.085, w:0.39, d:0.306 }, { y:0.155, w:0.388, d:0.304 }], SOFT_SHIELD), 'leather', R.torso);
+      k.add(plate([[-0.035,-0.036],[0.035,-0.036],[0.045,0],[0.035,0.036],[-0.035,0.036],[-0.045,0]], 0.02, 0.006), 'trim', R.torso, [0, 0.12, 0.156]);
       k.add(plate([[-0.085,0.39],[0.085,0.39],[0,0.16]], 0.02, 0.004), 'leather', R.chest, [0, 0, 0.122], [0.08, 0, 0]);
       const strip = plate([[-0.045,0.4],[0.045,0.4],[0.055,-0.24],[0,-0.29],[-0.055,-0.24]], 0.018, 0.005);
       for (const sx of [-1, 1]){
         k.add(strip, 'tabard', R.chest, [0.105*sx, 0, 0.133], [0.02, 0, 0]);
         k.add(strip, 'tabard', R.chest, [0.105*sx, 0, -0.133], [-0.02, 0, 0]);
       }
-      k.add(loft([{ y:0.32, w:0.31, d:0.23 }, { y:0.41, w:0.22, d:0.18 }, { y:0.44, w:0.19, d:0.16 }], chamfer(0.45)), 'robe', R.chest);   // collar wrap
+      k.add(loft([{ y:0.32, w:0.3, d:0.225 }, { y:0.41, w:0.215, d:0.175 }, { y:0.455, w:0.175, d:0.15 }], SOFT), 'robe', R.chest);   // collar wrap
     },
   },
 
@@ -167,10 +174,10 @@ export const JEDI_PARTS = {
     sleeves(R, k){
       for (const A of [R.armL, R.armR]){
         const s = A.side;
-        k.add(loft([{ y:-0.08, w:0.2, d:0.19 }, { y:0.02, w:0.195, d:0.185 }, { y:0.075, w:0.11, d:0.13 }], chamfer(0.42)), 'tunic', A.sh, [0.02*s, 0.03, 0], [0, 0, -0.3*s]);
+        k.add(loft([{ y:-0.1, w:0.16, d:0.156 }, { y:-0.01, w:0.172, d:0.165 }, { y:0.045, w:0.142, d:0.142 }, { y:0.075, w:0.07, d:0.08 }], SOFT), 'tunic', A.sh, [0.012*s, 0.02, 0], [0, 0, -0.38*s]);   // deltoid
         k.skin('tunic', [
-          ...seg(0.34, [[-0.2,0.15,0.15],[0.06,0.165,0.16],[0.5,0.135,0.135],[1,0.105,0.11]]),
-          ...seg(0.3, [[0.1,0.1,0.1],[0.45,0.12,0.12],[0.78,0.16,0.155]], 0.34),
+          ...seg(0.34, [[-0.2,0.145,0.145],[0.06,0.155,0.152],[0.5,0.128,0.13],[1,0.102,0.106]]),
+          ...seg(0.3, [[0.1,0.098,0.098],[0.45,0.114,0.114],[0.78,0.148,0.145]], 0.34),
         ], { bones: [A.sh, A.el], at: [0.34], blend: 0.05, profile: chamfer(0.4) });
         k.add(limb(0.3, [[0.6,0.085,0.085],[1,0.075,0.075]], chamfer(0.3)), 'leather', A.el);
         hand(A, k, 'skin');
@@ -200,17 +207,17 @@ function robeLow(R, k){ return R.skirt.userData.low || (R.skirt.userData.low = k
    brows set in a frown, a nose with a bridge and wings, lips, cheekbones and a chin. All of it sits just proud of the
    skull and draws no ink line of its own, so it reads as features rather than parts stuck on */
 function face(R, k){
-  k.add(loft([{ y:-0.1, w:0.11, d:0.11 }, { y:0.06, w:0.1, d:0.1 }], ngon(6, Math.PI/6)), 'skin', R.head);
+  k.add(loft([{ y:-0.1, w:0.12, d:0.12 }, { y:0.06, w:0.105, d:0.105 }], ngon(10, Math.PI/10)), 'skin', R.head);   // neck
   k.add(loft([
-    { y:0.02, w:0.1,  d:0.11, z:0.035 },
-    { y:0.06, w:0.16, d:0.17, z:0.015 },
-    { y:0.12, w:0.2,  d:0.215 },
+    { y:0.02, w:0.114, d:0.118, z:0.035 },
+    { y:0.06, w:0.172, d:0.178, z:0.015 },
+    { y:0.12, w:0.205, d:0.218 },
     { y:0.19, w:0.215,d:0.235 },
     { y:0.25, w:0.205,d:0.23, z:-0.005 },
     { y:0.3,  w:0.165,d:0.19, z:-0.01 },
     { y:0.33, w:0.07, d:0.09, z:-0.01 },
-  ], HEAD), 'skin', R.head);
-  const flat = { outline: false }, dark = k.mat('skin', { shade: 0.62 }), deep = k.mat('skin', { shade: 0.42 });
+  ], SOFT_HEAD), 'skin', R.head);
+  const flat = { outline: false }, dark = k.mat('skin', { shade: 0.62 }), deep = k.mat('skin', { shade: 0.42 }), socket = k.mat('skin', { shade: 0.8 });
   k.add(block(0.17, 0.03, 0.04, 0.45), k.mat('skin', { shade: 0.8 }), R.head, [0, 0.192, 0.1], [0.25, 0, 0], flat);   // brow ridge
   // the nose: a bridge down from the brow, the tip, and a wing either side
   k.add(loft([{ y:-0.035, w:0.044, d:0.05, z:0.014 }, { y:-0.02, w:0.038, d:0.046, z:0.012 }, { y:0.02, w:0.024, d:0.028, z:0.004 }, { y:0.05, w:0.02, d:0.016 }], ngon(3, Math.PI/2)),
@@ -220,14 +227,14 @@ function face(R, k){
     k.add(block(0.03, 0.055, 0.045, 0.4), 'skin', R.head, [0.105*sx, 0.15, -0.005]);   // ears
     k.add(block(0.016, 0.016, 0.02, 0.4), dark, R.head, [0.017*sx, 0.118, 0.115], [0, 0, 0], flat);   // nostril wing
     // the eye: a socket in shadow, the white, the iris, and the lid (scaled down open, to full when it blinks)
-    k.add(plate([[-0.034,0.004],[-0.012,0.016],[0.02,0.014],[0.036,0.002],[0.016,-0.012],[-0.016,-0.012]], 0.008, 0.002), dark, R.head, [0.046*sx, 0.168, 0.108], [0, 0.22*sx, 0], flat);
+    k.add(plate([[-0.03,0.003],[-0.011,0.013],[0.018,0.012],[0.032,0.002],[0.014,-0.01],[-0.014,-0.01]], 0.008, 0.002), socket, R.head, [0.046*sx, 0.168, 0.108], [0, 0.22*sx, 0], flat);
     k.add(plate([[-0.021,0],[-0.007,0.007],[0.01,0.006],[0.021,0],[0.007,-0.006],[-0.009,-0.006]], 0.006, 0.0015), k.mat('skin', { c: 0xb9ae9e }), R.head, [0.046*sx, 0.168, 0.113], [0, 0.22*sx, 0], flat);
     k.add(block(0.013, 0.013, 0.006, 0.35), 'eyes', R.head, [0.043*sx, 0.167, 0.117], [0, 0.22*sx, 0], flat);
     const lid = k.group(R.head, [0.046*sx, 0.178, 0.115], [0, 0.22*sx, 0]);
     k.add(plate([[-0.028,0.002],[0.028,0.002],[0.026,-0.02],[0,-0.024],[-0.026,-0.02]], 0.008, 0.002), dark, lid, [0, 0, 0], [0, 0, 0], flat);
     lid.scale.y = 0.3; lids.push(lid);
     // brows: hair, low at the inner end (a Jedi's level frown)
-    k.add(block(0.05, 0.012, 0.014, 0.4), 'hair', R.head, [0.048*sx, 0.193, 0.114], [0, 0.22*sx, 0.14*sx], flat);
+    k.add(block(0.046, 0.009, 0.012, 0.4), 'hair', R.head, [0.048*sx, 0.194, 0.114], [0, 0.22*sx, 0.14*sx], flat);
     k.add(block(0.04, 0.022, 0.03, 0.45), 'skin', R.head, [0.068*sx, 0.128, 0.088], [0, 0.55*sx, 0], flat);   // cheekbone
   }
   R.head.userData.lids = lids;
@@ -248,7 +255,7 @@ function cap(R, k, lift, o){
     { y:0.26, w:0.208 + L, d:0.232 + L, z:-0.005 },
     { y:0.3,  w:0.17 + L, d:0.194 + L, z:-0.01 },
     { y:0.33 + lift, w:0.08, d:0.1, z:-0.01 },
-  ], HEAD), 'hair', R.head, [0, 0, 0], [0, 0, 0], o);
+  ], SOFT_HEAD), 'hair', R.head, [0, 0, 0], [0, 0, 0], o);
 }
 
 /* a beard along the jaw, `lift` proud of the skin: from the sideburns down round the chin, open over the mouth's
@@ -257,8 +264,8 @@ function jaw(R, k, lift, o){
   const L = lift * 2;
   k.add(loft([
     { y:-0.03 - lift, w:0.06 + L, d:0.05 + L, z:0.085 },
-    { y:0.02, w:0.12 + L, d:0.14 + L, z:0.045 },
-    { y:0.07, w:0.17 + L, d:0.19 + L, z:0.018 },
+    { y:0.02, w:0.134 + L, d:0.148 + L, z:0.045 },
+    { y:0.07, w:0.182 + L, d:0.198 + L, z:0.018 },
     ...(o?.low ? [] : [{ y:0.1,  w:0.2 + L, d:0.215 + L, z:0.004 }]),   // low: stop below the cheeks
   ], JAW, { capTop: false, capBottom: false }), o?.mat || 'hair', R.head, [0, 0, 0], [0, 0, 0], o);
   if (!o?.noBurns) for (const sx of [-1, 1]) k.add(block(0.016 + lift, 0.07, 0.05, 0.4), 'hair', R.head, [0.098*sx, 0.13, 0.01], [0, 0, 0], { outline: false });   // sideburns
@@ -268,9 +275,9 @@ function jaw(R, k, lift, o){
 function stubbleFilm(R, k, o){
   const t = 0.004;
   k.add(loft([
-    { y:0.008, w:0.075 + t, d:0.085 + t, z:0.07 },
-    { y:0.02,  w:0.1 + t,  d:0.11 + t, z:0.045 },
-    { y:0.06,  w:0.16 + t, d:0.17 + t, z:0.019 },
+    { y:0.008, w:0.085 + t, d:0.09 + t, z:0.07 },
+    { y:0.02,  w:0.114 + t, d:0.118 + t, z:0.045 },
+    { y:0.06,  w:0.172 + t, d:0.178 + t, z:0.019 },
   ], STUB, { capTop: false, capBottom: false }), o.mat, R.head, [0, 0, 0], [0, 0, 0], o);
 }
 function moustache(R, k, t, o = { outline: false }){

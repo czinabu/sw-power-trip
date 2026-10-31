@@ -6,7 +6,10 @@
 import * as THREE from 'three';
 import { loft, limb, plate, block, shard, chamfer, ngon, KEEL, SHIELD, HEAD } from './shapes.js';
 import { hand } from './jedi.js';
-import { seg } from './skin.js';
+import { seg, rounded } from './skin.js';
+
+// rounded-off sections: the bucket, pauldrons and gorget shade as pressed metal, not cut blocks
+const SOFT = rounded(chamfer(0.42)), SOFT_HEAD = rounded(HEAD);
 
 const mirror = pts => pts.map(([x, y]) => [-x, y]).reverse();
 const SEAM_COOL = 0x5fd8ff, SEAM_WARM = 0xff7a3d;
@@ -52,7 +55,7 @@ export const MANDO_PARTS = {
       k.add(plate(mirror(pec), 0.04, 0.012), 'beskar', R.chest, [-0.012, 0.12, 0.125], [-0.06, -0.22, 0]);
       for (const sx of [-1, 1]) k.seam(new THREE.BoxGeometry(0.008, 0.16, 0.008), SEAM_COOL, R.chest, [0.19*sx, 0.2, 0.1], [0, 0, 0.25*sx]);
       k.add(shard(0.05, 0.11, 0.03), 'accent', R.chest, [0, 0.03, 0.14]);   // keystone
-      k.add(loft([{ y:0.33, w:0.24, d:0.2 }, { y:0.43, w:0.17, d:0.16 }], chamfer(0.45)), 'suit', R.chest);   // gorget
+      k.add(loft([{ y:0.33, w:0.24, d:0.2 }, { y:0.45, w:0.165, d:0.155 }], SOFT), 'suit', R.chest);   // gorget
       k.add(plate([[-0.17,0],[0.17,0],[0.15,0.24],[-0.15,0.24]], 0.03, 0.01), 'beskar2', R.chest, [0, 0.06, -0.125]);
       for (const sx of [-1, 1]) k.add(block(0.05, 0.42, 0.03, 0.2), 'strap', R.chest, [0.13*sx, 0.18, 0.13], [-0.25, 0, 0]);
     },
@@ -157,15 +160,16 @@ function capeHem(R, k, { top, bottom, drop, dip }){
 /* the bucket: dome, T-visor and chin guard, then the optional rangefinder stalk, crest and cheek guards */
 function helmet(R, k, { rangefinder, crest, cheeks }){
   const helm = k.group(R.head);
-  k.add(loft([{ y:-0.1, w:0.12, d:0.12 }, { y:0.04, w:0.11, d:0.11 }], ngon(6, Math.PI/6)), 'suit', helm);
+  k.add(loft([{ y:-0.1, w:0.12, d:0.12 }, { y:0.04, w:0.11, d:0.11 }], ngon(10, Math.PI/10)), 'suit', helm);
   k.add(loft([
     { y:0.0,  w:0.205, d:0.225, z:0.005 },
     { y:0.07, w:0.215, d:0.235, z:0.005 },
     { y:0.2,  w:0.235, d:0.25 },
     { y:0.3,  w:0.222, d:0.24, z:-0.005 },
-    { y:0.36, w:0.165, d:0.19, z:-0.01 },
-    { y:0.385,w:0.08,  d:0.1,  z:-0.01 },
-  ], HEAD), 'beskar', helm);
+    { y:0.345, w:0.19, d:0.212, z:-0.008 },
+    { y:0.375, w:0.13, d:0.155, z:-0.01 },
+    { y:0.39, w:0.06,  d:0.075, z:-0.01 },
+  ], SOFT_HEAD), 'beskar', helm);
   k.add(plate([[-0.098,0.026],[0.098,0.026],[0.104,-0.01],[0.026,-0.02],[-0.026,-0.02],[-0.104,-0.01]], 0.02, 0.003), 'visor', helm, [0, 0.205, 0.121], [0, 0, 0], { outline: false });
   k.add(plate([[-0.024,0],[0.024,0],[0.019,-0.11],[-0.019,-0.11]], 0.02, 0.003), 'visor', helm, [0, 0.192, 0.12], [0.07, 0, 0], { outline: false });
   k.add(block(0.13, 0.05, 0.07, 0.4), 'beskar2', helm, [0, 0.03, 0.08]);   // chin guard
@@ -195,9 +199,9 @@ function arms(R, k, pauldrons){
     ], { bones: [A.sh, A.el], at: [0.34], blend: 0.05, profile: chamfer(0.4) });
     if (pauldrons === 'heavy'){
       // two overlapping plates: a broad cap and a lame below it
-      k.add(loft([{ y:-0.07, w:0.25, d:0.23 }, { y:0.03, w:0.24, d:0.22 }, { y:0.1, w:0.15, d:0.17 }], chamfer(0.42)), 'accent', A.sh, [0.04*s, 0.045, 0], [0, 0, -0.36*s]);
-      k.add(loft([{ y:-0.04, w:0.2, d:0.2 }, { y:0.03, w:0.19, d:0.19 }], chamfer(0.42)), 'beskar', A.sh, [0.07*s, -0.07, 0], [0, 0, -0.42*s]);
-    } else if (pauldrons) k.add(loft([{ y:-0.06, w:0.21, d:0.2 }, { y:0.03, w:0.2, d:0.19 }, { y:0.08, w:0.13, d:0.15 }], chamfer(0.42)),
+      k.add(loft([{ y:-0.07, w:0.25, d:0.23 }, { y:0.03, w:0.24, d:0.22 }, { y:0.1, w:0.15, d:0.17 }], SOFT), 'accent', A.sh, [0.04*s, 0.045, 0], [0, 0, -0.36*s]);
+      k.add(loft([{ y:-0.04, w:0.2, d:0.2 }, { y:0.03, w:0.19, d:0.19 }], SOFT), 'beskar', A.sh, [0.07*s, -0.07, 0], [0, 0, -0.42*s]);
+    } else if (pauldrons) k.add(loft([{ y:-0.06, w:0.21, d:0.2 }, { y:0.03, w:0.2, d:0.19 }, { y:0.08, w:0.13, d:0.15 }], SOFT),
       s > 0 ? 'accent' : 'beskar', A.sh, [0.025*s, 0.035, 0], [0, 0, -0.32*s]);
     k.add(limb(0.24, [[0,0.11,0.105],[0.6,0.115,0.11],[1,0.098,0.095]], KEEL), 'beskar2', A.el, [0, -0.04, 0]);
     k.add(plate([[-0.04,0],[0.04,0],[0.045,-0.12],[-0.045,-0.12]], 0.02, 0.006), 'beskar', A.el, [0, -0.08, 0.058]);

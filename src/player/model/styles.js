@@ -22,7 +22,7 @@ export const MATERIALS = {
   // Jedi (Mace Windu)
   robe:    { c: 0x3b2a1e, r: 0.9 },
   tunic:   { c: 0x9c7d58, r: 0.85 },
-  tabard:  { c: 0x5b4331, r: 0.88 },
+  tabard:  { c: 0x6b4f37, r: 0.88 },
   leather: { c: 0x23170f, r: 0.65 },
   skin:    { c: 0x5c3826, r: 0.55 },
   hair:    { c: 0x140e0a, r: 0.8 },
@@ -78,11 +78,16 @@ function bakeGradient(g, [lo, hi]){
    colours so every arena tints it), a hard sun glint and a bright fresnel rim; rougher metal blurs the horizon.
    Cloth and leather stay matte with only a faint soft rim, so the two materials separate at a glance. */
 const SKY = { value: hemi.color }, GROUND = { value: hemi.groundColor };
-function inkSurface(m, metal, rough){
+/* INK RIM: a thin stepped band of light just inside the ink outline, brightest on upward-facing edges (the sky
+   catching the shoulders, the crown, the top of each arm). With the black hull outside it, every character keeps a
+   light-then-dark edge that lifts it off a dark arena or a busy backdrop. One knob for the whole cast (heroes,
+   squadmates, enemies, bosses all draw through this surface). */
+export const inkRim = { value: 0.34 };
+function inkSurface(m, metal, rough, rimK = 1){
   m.onBeforeCompile = sh => {
-    Object.assign(sh.uniforms, { uSky: SKY, uGround: GROUND, uMetal: { value: metal }, uRough: { value: rough }, uFill: darkFill });
+    Object.assign(sh.uniforms, { uSky: SKY, uGround: GROUND, uMetal: { value: metal }, uRough: { value: rough }, uFill: darkFill, uRim: inkRim, uRimK: { value: rimK } });
     sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', '#include <common>\nuniform vec3 uSky, uGround;\nuniform float uMetal, uRough, uFill;')
+      .replace('#include <common>', '#include <common>\nuniform vec3 uSky, uGround;\nuniform float uMetal, uRough, uFill, uRim, uRimK;')
       .replace('#include <opaque_fragment>', `
         vec3 vv = normalize(vViewPosition);   // towards the camera
         vec3 nn = normalize(normal);
@@ -108,6 +113,12 @@ function inkSurface(m, metal, rough){
           vec3 fill = mix(vec3(dot(uSky, vec3(0.333))), uSky, 0.25);                       // near-neutral so black stays black
           surf += fill * (0.035 + 0.3 * rim) * dark * uFill;
         }
+        {
+          float upw = clamp(inverseTransformDirection(nn, viewMatrix).y, 0.0, 1.0);
+          float band = smoothstep(0.42, 0.52, rim);   // stepped, like the cel bands: an edge, not a glow
+          vec3 rimC = mix(uSky, vec3(1.0), 0.45) * (0.45 + 0.55 * upw);
+          surf += rimC * band * uRim * uRimK * (1.0 - 0.6 * uMetal);
+        }
         outgoingLight += surf;
         #include <opaque_fragment>`);
   };
@@ -130,7 +141,7 @@ export function makeStyle(name = 'ink', colors = {}){
       // cel bands flatten metal; lift metals a touch so beskar still reads bright against the suit
       const c = new THREE.Color(d.c);
       if (d.m) c.offsetHSL(0, -0.05, 0.08);
-      m = inkSurface(new THREE.MeshToonMaterial({ color: c, gradientMap: toonRamp() }), Math.min(1, Math.max(0, ((d.m || 0) - 0.2) / 0.7)), d.r ?? 0.8);
+      m = inkSurface(new THREE.MeshToonMaterial({ color: c, gradientMap: toonRamp() }), Math.min(1, Math.max(0, ((d.m || 0) - 0.2) / 0.7)), d.r ?? 0.8, d.noRim ? 0 : 1);
     } else {
       m = new THREE.MeshStandardMaterial({
         color: d.c, roughness: d.r ?? 0.8, metalness: (d.m || 0) * (cfg.env ? 1 : 0.75), flatShading: cfg.flat,
@@ -141,9 +152,14 @@ export function makeStyle(name = 'ink', colors = {}){
     if (d.e){ m.emissive = new THREE.Color(d.e); m.emissiveIntensity = d.ei ?? 1; }
     if (d.side) m.side = d.side;
     if (d.o != null){ m.transparent = true; m.opacity = d.o; m.depthWrite = false; }   // see-through parts (light stubble)
+    m.userData.ink = { key, over };
     mats.set(id, m);
     return m;
   }
+  /* small un-outlined details (eyes, brows, nose, mouth, visor slits) sit at grazing angles on the head, where the rim
+     band would draw stray light lines across the face: they get the same material without the rim (heroes only: NPC
+     bakes group meshes by material, so their materials stay one per key) */
+  const noRim = m => m.userData.ink && cfg.toon && !m.userData.ink.key.startsWith('npc:') ? mat(m.userData.ink.key, { ...m.userData.ink.over, noRim: 1 }) : m;
 
   function prep(g){
     if (g.userData.styled) return g.userData.styled;
@@ -192,7 +208,8 @@ export function makeStyle(name = 'ink', colors = {}){
 
   /* place a styled mesh: S.add(geo, 'beskar', parent, [x,y,z], [rx,ry,rz], {shadow, outline, scale}) */
   function add(geo, key, parent, p = [0,0,0], r = [0,0,0], o = {}){
-    const material = typeof key === 'string' ? mat(key) : key;
+    let material = typeof key === 'string' ? mat(key) : key;
+    if (o.outline === false) material = noRim(material);
     const m = new THREE.Mesh(prep(geo), material);
     m.position.set(p[0], p[1], p[2]);
     m.rotation.set(r[0], r[1], r[2]);
