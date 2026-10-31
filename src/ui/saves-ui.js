@@ -1,5 +1,5 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
-// NEW GAME / SAVE GAME / LOAD GAME: the buttons on the main menu and pause screen, and the save-slot panel (game/saves.js).
+// NEW GAME / SAVE GAME / LOAD GAME: the buttons on the main menu (campaign tile) and pause screen, and the save-slot panel (game/saves.js).
 
 import { G } from '../state.js';
 import { SLOTS, readSlot, writeSlot, deleteSlot, loadSlotProgress, clearProgress, slotSummary } from '../game/saves.js';
@@ -95,7 +95,7 @@ panel.addEventListener('click', (e) => {
 });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && panel.classList.contains('open')) closeSaves(); });
 
-document.getElementById('saveBtn').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); openSaves('save'); });
+for (const id of ['saveBtn', 'campSaveBtn']) document.getElementById(id).addEventListener('click', (e) => { e.stopPropagation(); audioInit(); openSaves('save'); });
 for (const id of ['loadBtn', 'campLoadBtn']) document.getElementById(id).addEventListener('click', (e) => { e.stopPropagation(); audioInit(); openSaves('load'); });
 
 // NEW GAME — a clean start: wins, unlocks, bests and training ticks reset (the look and the save slots stay), then the

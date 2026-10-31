@@ -6,6 +6,9 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'Save from the main menu', status: 'done',
+    items: ['SAVE GAME now sits beside NEW GAME and LOAD GAME on the main menu (it was pause-only), so you can save your progress without starting a run',
+            'A save keeps every mode\'s wins, unlocks, bests and training ticks plus your look, and a campaign waiting on CONTINUE comes with it'] },
   { title: 'Stance unlock screen', status: 'done',
     items: ['Each lightsaber stance you earn (after a trial in the campaign, and as survival waves climb) opens an unlock screen: its name, what it is good and bad at, and the hero performing it live on the stand, looping its guard, three-cut string and block',
             'TRAIN IN [STANCE] saves your run and opens that stance\'s lesson in Training; leaving training puts CONTINUE CAMPAIGN back where you were. CONTINUE goes on to choose your three forms',
