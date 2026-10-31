@@ -126,6 +126,100 @@ export const MISSIONS = {
             mando: 'The foundlings are safe. The hunter got away. We will see it again.' },
   },
 
+  // THE BURNING ARCHIVE (the Jedi's story, chapter 2): the archive under the temple on fire. Get the archivists out
+  // through the hall, cut into the Ledger's vault under the reading dais, and meet the Inquisitor who got there first.
+  // The arena is the archive's (world/arenas/archive.js): the dais in the middle, the stacks in two rings, doors south.
+  vault: {
+    id: 'vault',
+    title: 'THE BURNING ARCHIVE',
+    blurb: 'get the archivists out, break into the vault, face the Inquisitor',
+    story: 'campaign', act: 0, order: 1.5,   // (the Missions page: with the Burning Archive, the Jedi's chapter 2)
+    level: { name: 'MISSION — THE BURNING ARCHIVE', sub: 'The archive is burning. The Ledger of Names is in the vault below it.',
+             arena: 48, floor: 0x4a4234, fog: 0x2a1a14, sky: 0x1a1010, skyTop: 0x060304, sun: 0xffc890, ember: 0xff8a3a,
+             fill: 0.9, sunI: 1.6, fogStart: 0.62, layout: 'archive', waves: [], hazards: {} },
+    start: [0, 15, Math.PI],   // in from the south doors, looking north across the hall at the dais
+    kit: 1,
+    grant: { jedi: ['throw'], mando: ['grapple'] },
+    objectives: [
+      { kind: 'hold', title: 'GET THE ARCHIVISTS OUT',
+        say: { jedi: 'The archivists are coming out of the north stacks with whatever they can carry. Hold the middle of the hall until every one of them reaches the doors.',
+               mando: 'Robed folk with their arms full of scrolls, coming through the fire. Hold the hall until they are out.' },
+        task: { jedi: 'Hold the hall while the archivists get out', mando: 'Hold the hall while the archivists get out' },
+        at: [0, 6], r: 7, time: 60, awayRate: 0.5, unguarded: 'HALL UNGUARDED',
+        evacuees: { kind: 'archivist', count: 10, spacing: 1.6, speed: 2.4, ramp: false, verb: 'OUT', name: { jedi: 'ARCHIVISTS', mando: 'ARCHIVISTS' },
+                    path: [[-3, -21], [-3, -13], [-12, -6], [-12, 4], [-4, 11], [0, 16], [0, 23]] },
+        pulses: [ { grunt: 2, blaster: 1 }, { grunt: 2, grenadier: 1 }, { grunt: 2, blaster: 1, officer: 1 }, { grunt: 1, duelist: 1, blaster: 1 } ],
+        every: [10, 15], cap: 6, from: [0.4, Math.PI - 0.4], aggro: 8 },
+
+      { kind: 'sabotage', title: 'BREAK INTO THE VAULT', consoleName: 'VAULT SEAL', consoleDone: 'OPEN', doneLine: 'THE VAULT IS OPEN', doneSub: 'Someone has already been down there.',
+        start: [0, 10, Math.PI],
+        say: { jedi: 'The vault is under the reading dais. Its seals are on the north and south steps. Cut through both before the fire reaches it.',
+               mando: 'There is a vault under that dais. Cut the seals.' },
+        task: { jedi: 'Stand at each seal to cut through it', mando: 'Stand at each seal to cut through it' },
+        consoles: [ { at: [0, 4.2], guards: { grunt: 2, blaster: 1 } },
+                    { at: [0, -4.2], guards: { lancer: 1, grunt: 1, officer: 1 } } ],
+        time: 4.5, r: 2.2, hitLoss: 1.2,
+        trickle: { every: 15, cap: 4, group: { grunt: 2, blaster: 1 } } },
+
+      { kind: 'duel', title: 'FACE THE INQUISITOR', start: [0, 8, Math.PI],
+        say: { jedi: 'It was in the vault before you. It knows how you fight. Do not let it out with the Ledger.',
+               mando: 'A Jedi hunter, coming up out of the vault. Close the distance and break it.' },
+        task: { jedi: 'Win the duel', mando: 'Win the duel' },
+        foe: 'acolyte', name: 'THE INQUISITOR', hp: 3.5, dmg: 1.1, scale: 1.18, tint: 0xa01a22, at: [0, -9],
+        duel: { block: 0.72, posture: 150, feint: 0.3, chain: 2, counter: 0.5 },
+        rage: 0.55, rageDuel: { feint: 0.45, delay: 0.4, chain: 3, thrust: 0.2 },
+        // it breaks off: the refuge is where it comes back, and the chase where it ends
+        escape: 0.3, escapeLine: { jedi: 'The mask is off. It runs for the refuge.', mando: 'Wounded, and gone into the smoke.' } },
+    ],
+    done: { jedi: 'The archivists are out, and the vault is open. But somebody got there first.',
+            mando: 'The archivists are out. The hunter got away.' },
+  },
+
+  // THE EMBER ACADEMY (the Jedi's story, Mustafar): the forge is where Vexis trains the children he has taken. Open their
+  // cells, walk them out to the ships up the north lane, and face the academy's overseer, while Vael goes after Vexis
+  // himself somewhere in the smoke. It's a trap for Vael (the chapter's words: data/campaign-jedi.js mustafar).
+  academy: {
+    id: 'academy',
+    title: 'THE EMBER ACADEMY',
+    blurb: 'open the children\'s cells, get them to the ships, face the overseer',
+    story: 'campaign', act: 1, order: 9.5,   // (the Missions page: with the Mustafar chapter)
+    level: { ...LEVELS[1], name: 'MISSION — THE EMBER ACADEMY', sub: 'He teaches the children he has taken in the fire. Get them out.', waves: [], hazards: {} },
+    start: [0, 17, Math.PI],   // the north lane, looking down the forge floor
+    kit: 6,
+    grant: { jedi: ['throw', 'slam'], mando: ['grapple', 'birds'] },
+    objectives: [
+      { kind: 'sabotage', title: 'OPEN THE CELLS', consoleName: 'CELL', consoleDone: 'OPEN', doneLine: 'THE CELLS ARE OPEN', doneSub: 'The children are coming out.',
+        say: { jedi: 'Three cell blocks off the forge floor: by the smelter and under the two catwalks. Cut every lock. Mind the channels: the lava rises on a cycle.',
+               mando: 'Three cell blocks. Kids inside. Cut every lock, and keep off the channels when they glow.' },
+        task: { jedi: 'Stand at each cell block to cut its lock', mando: 'Stand at each cell block to cut its lock' },
+        consoles: [ { at: [-13.8, 4.2], guards: { grunt: 2, blaster: 1, acolyte: 1 } },
+                    { at: [13.8, -4.2], guards: { grunt: 2, lancer: 1, grenadier: 1 } },
+                    { at: [0, -5], guards: { phalanx: 1, grunt: 2, officer: 1 } } ],
+        time: 4.5, r: 2.4, hitLoss: 1.2,
+        trickle: { every: 14, cap: 6, group: { grunt: 1, blaster: 1, flyer: 1 } } },
+
+      { kind: 'hold', title: 'GET THE CHILDREN OUT', music: 'battle', start: [0, 12, Math.PI],
+        say: { jedi: 'They are running for the ships at the top of the north lane. Hold the lane until every one of them is aboard.',
+               mando: 'Kids running for the ships. Hold the lane until they are all aboard.' },
+        task: { jedi: 'Hold the lane while the children reach the ships', mando: 'Hold the lane while the children reach the ships' },
+        at: [0, 12], r: 6, time: 50, awayRate: 0.35, unguarded: 'LANE UNGUARDED',
+        evacuees: { count: 12, spacing: 1.2, speed: 2.4, ramp: false, verb: 'OUT', name: { jedi: 'CHILDREN', mando: 'CHILDREN' },
+                    path: [[0, -9], [0, -1], [-3, 6], [0, 13], [0, 24]] },
+        pulses: [ { grunt: 2, blaster: 2 }, { grunt: 2, acolyte: 1 }, { grunt: 2, sniper: 1, blaster: 1 },
+                  { grunt: 2, lancer: 1, bomber: 1 }, { grunt: 1, acolyte: 1, officer: 1 } ],
+        every: [8, 12], cap: 8, from: [-Math.PI + 0.3, -0.3], aggro: 8 },
+
+      { kind: 'duel', title: 'DEFEAT THE OVERSEER', start: [0, 12, Math.PI],
+        say: { jedi: 'The overseer who trained them comes out of the smoke. Read the swing, then punish it. I am going after Vexis.',
+               mando: 'The one who ran this place. Make it miss, then hit it.' },
+        task: { jedi: 'Win the duel', mando: 'Win the duel' },
+        foe: 'brute', name: 'THE OVERSEER', hp: 3.6, dmg: 1.2, scale: 1.35, tint: 0xff7a1e, at: [0, -12],
+        rage: 0.45, trickle: { every: 14, cap: 3, group: { grunt: 2 } }, from: [-Math.PI + 0.4, -0.4] },
+    ],
+    done: { jedi: 'The children are aboard and the academy is burning. But Vael has gone quiet.',
+            mando: 'The kids are out. The academy burns.' },
+  },
+
   // A STRIKE TEAM mission: `squad` squadmates form up beside the hero (allies/squad.js, data/allies.js), and `battle`
   // runs the wider war past the walls (fx/battle.js). The squad shoots the troopers; the duellists are yours.
   strike: {
@@ -455,6 +549,92 @@ export const MISSIONS = {
     ],
     done: { jedi: 'The cells are empty and the Acrobat is free. It has not said thank you. It will want to test you instead.',
             mando: 'The cells are empty and the ace is out. It wants a word with whoever came for it. This is the Way.' },
+  },
+  // THE PENS ON TESSARIL (the Jedi's Act II): the Inquisitors' prison moon, where the children taken off the Ledger's
+  // list are held until the ships come. Walk the slicer droid in from the pad, open the three cell blocks, hold the gate
+  // while the children run for the ship, then the Warden who keeps them. The breakout's plan on a world of its own.
+  pens: {
+    id: 'pens',
+    title: 'THE PENS ON TESSARIL',
+    blurb: 'walk a slicer droid into the prison moon, open the cells, get the children to the ship',
+    story: 'campaign', act: 1, order: 4.5,   // (the Missions page: with the Lothal chapter, which the Jedi plays here)
+    level: { name: 'MISSION — THE PENS ON TESSARIL', sub: { jedi: 'An Inquisitor prison moon. The children are behind that wall.', mando: 'A prison moon. The kids are behind that wall.' },
+             arena: 64, floor: 0x3a3c44, fog: 0x2a3042, sky: 0x05070e, layout: 'pens', waves: [], hazards: {} },
+    start: [3, 24, Math.PI],   // on the pad, behind the droid, looking north at the prison
+    kit: 4,
+    grant: { jedi: ['throw', 'slam'], mando: ['grapple', 'birds'] },
+    squad: 2,
+    escort: { jedi: { model: 'b1', name: 'RX-4', kicker: 'SLICER DROID', color: 0x7f93ae, eye: 0x5ad2ff, scale: 0.9, hp: 320 },
+              mando: { model: 'b1', name: 'SCRAP', kicker: 'SLICER DROID', color: 0x9a7a4e, eye: 0xffa040, scale: 0.9, hp: 320 } },
+    objectives: [
+      { kind: 'escort', title: { jedi: 'GET RX-4 TO THE GATE', mando: 'GET SCRAP TO THE GATE' },
+        say: { jedi: 'RX-4 carries the prison\'s cell codes. It will not walk into blaster fire on its own: stay close, clear the guards, and it walks on. Round the rocks to the gate.',
+               mando: 'Scrap has the cell codes. It won\'t move under fire, so keep them off it. Round the rocks, then the gate.' },
+        task: { jedi: 'Stay near the droid and keep foes off it', mando: 'Stay near the droid and keep foes off it' },
+        path: [[0, 20], [-11, 14], [-17, 3], [-12, -6], [0, -9], [0, -15]],
+        speed: 2.6, leash: 15, threat: 6, dps: 4, regen: 3, aggro: 7,
+        ambush: [ { at: [-12, 13], group: { grunt: 2, blaster: 2 }, from: [Math.PI - 0.5, Math.PI + 0.4] },
+                  { at: [-17, 0], group: { grunt: 2, lancer: 1, grenadier: 1, phalanx: 1 }, from: [Math.PI - 0.3, Math.PI + 0.6] },
+                  { at: [-6, -8], group: { grunt: 2, blaster: 1, officer: 1, flyer: 1 }, from: [-Math.PI + 0.4, -0.4] } ],
+        trickle: { every: 16, cap: 7, group: { grunt: 1, blaster: 1 } }, from: [Math.PI - 0.4, Math.PI + 0.5] },
+
+      { kind: 'sabotage', title: 'OPEN THE CELL BLOCKS', consoleName: 'CELL BLOCK', consoleDone: 'OPEN', doneLine: 'THE CELLS ARE OPEN', doneSub: 'The children are coming out.', start: [0, -15, Math.PI],
+        say: { jedi: 'We are through the wall. Three cell blocks, three door panels. Stand at each while RX-4 feeds it the codes.',
+               mando: 'Three cell blocks. Stand at each panel while Scrap feeds it the codes. Don\'t let them pull you off it.' },
+        task: { jedi: 'Stand at each cell block\'s panel to open it', mando: 'Stand at each cell block\'s panel to open it' },
+        consoles: [ { at: [-20, -20.6], guards: { grunt: 2, blaster: 1 } },
+                    { at: [20, -20.6], guards: { grunt: 2, lancer: 1, blaster: 1 } },
+                    { at: [0, -24.2], guards: { phalanx: 1, grunt: 2, officer: 1 } } ],
+        time: 4.5, r: 2.4, hitLoss: 1.2,
+        trickle: { every: 15, cap: 6, group: { grunt: 1, blaster: 1 } }, from: [-Math.PI + 0.3, -0.3] },
+
+      { kind: 'hold', title: 'HOLD THE GATE', music: 'defend', start: [0, -7, 0],
+        say: { jedi: 'The children are running for the ship. Hold the gate until the last of them is past you.',
+               mando: 'The kids are running for the ship. Hold the gate till the last one\'s past you.' },
+        task: { jedi: 'Hold the gate until every child is out', mando: 'Hold the gate until every child is out' },
+        at: [0, -8], r: 7, time: 45, awayRate: 0.35, squadRate: 0.55,
+        evacuees: { kind: 'youngling', count: 14, spacing: 1.5, speed: 2.6, ramp: false, verb: 'OUT', name: { jedi: 'CHILDREN', mando: 'CHILDREN' },
+                    path: [[0, -23], [0, -16], [0, -9], [-4, -2], [-8, 4]] },   // (out through the gate, toward the ship on the pad)
+        overrun: 'CLEAR THE GATE', unguarded: 'GATE UNGUARDED', doneLine: 'EVERY CELL IS EMPTY', doneSub: 'The last of them is running for the ship.',
+        pulses: [ { grunt: 2, blaster: 2 }, { grunt: 2, officer: 1, blaster: 1 }, { grunt: 2, lancer: 1, grenadier: 1 },
+                  { grunt: 2, flyer: 1, blaster: 1 }, { grunt: 2, phalanx: 1, sniper: 1 } ],
+        every: [8, 12], cap: 9, from: [Math.PI * 0.75, Math.PI * 1.15], aggro: 8 },
+
+      { kind: 'duel', title: 'DEFEAT THE WARDEN', start: [0, -8, Math.PI],
+        say: { jedi: 'The Warden of the pens. An Inquisitor who never hunted: it only kept what the others caught. It will not let them go easily.',
+               mando: 'The Warden. Red blade, and it thinks those kids are its property. Show it otherwise.' },
+        task: { jedi: 'Win the duel while the squad holds', mando: 'Win the duel while the clan holds' },
+        enter: { jedi: 'The Warden walks out of the gate, its blade already lit.', mando: 'The Warden comes out of the gate.' },
+        line: { jedi: 'Every one of them is on my list. I will have them back.', mando: 'Those are mine.' },
+        foe: 'acolyte', form: 'djemso', name: 'THE WARDEN', hp: 4, dmg: 1.1, scale: 1.12, tint: 0x8a2a30, at: [0, -16],
+        duel: { posture: 150, feint: 0.3, chain: 2, counter: 0.45 },
+        rage: 0.5, rageDuel: { feint: 0.45, delay: 0.4, chain: 3 },
+        trickle: { every: 14, cap: 3, group: { grunt: 2 } }, from: [-Math.PI + 0.4, -0.4] },
+    ],
+    done: { jedi: 'The cells on Tessaril are empty, and the ship is full of children. Sera Quill walked out last.',
+            mando: 'The cells are empty and the ship is full. This is the Way.' },
+  },
+  // THE TRIAL OF SERA QUILL (the Jedi's Act II): the trial of the Acrobat, in the yard of the prison moon she was freed from
+  'trial-sera': {
+    id: 'trial-sera', trial: true, heroes: ['jedi'],
+    title: 'TRIAL OF SERA QUILL',
+    blurb: 'the master you freed wants to see what you are',
+    level: { name: 'TRIAL — THE PENS ON TESSARIL', sub: 'Sera Quill is free, and restless.',
+             arena: 64, floor: 0x3a3c44, fog: 0x2a3042, sky: 0x05070e, layout: 'pens', waves: [], hazards: {} },
+    start: [0, 6, Math.PI],   // outside the prison wall, in the open ground before the gate
+    kit: 5,
+    grant: { jedi: ['throw', 'slam'], mando: ['grapple', 'birds'] },
+    objectives: [
+      { kind: 'duel', title: 'KEEP UP WITH SERA', music: 'duel',
+        say: 'She strikes from the air and is gone before you answer. Catch the landing, then punish her while she breathes.',
+        task: 'Win the trial',
+        enter: 'Sera drops off the prison wall and lands without a sound.', kicker: 'TRIAL',
+        line: 'Too slow. Again.',
+        foe: 'acolyte', form: 'ataru', name: 'SERA QUILL', hp: 4, dmg: 1.0, scale: 1.0, tint: 0x3ad28a, at: [0, -5],
+        duel: { feint: 0.4, chain: 3, counter: 0.4 },
+        rage: 0.5, rageDuel: { chain: 4, delay: 0.3 } },
+    ],
+    done: 'Sera laughs for the first time in a year. She will come.',
   },
   // THE MUSTAFAR FORGE: the forge floor of the second campaign level, broken for good. Charges on its three feeds,
   // hold the lane out while they burn, then the forge's master comes for whoever lit them.
