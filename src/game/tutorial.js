@@ -16,7 +16,7 @@ import { switchWeapon } from '../player/mando/weapons.js';
 import { toggleHolster } from '../player/holster.js';
 import { spawnEnemy } from '../enemies/spawn.js';
 import { removeEnemy } from '../enemies/cleanup.js';
-import { startLevel, queueSpawn } from './flow.js';
+import { startLevel, queueSpawn, syncMandoChips, syncJediChips } from './flow.js';
 import { applyJetTier } from './progression.js';
 import { upToast } from './upgrades.js';
 import { storyReached, refreshSandboxScope } from './sandbox-unlocks.js';
@@ -173,6 +173,13 @@ function beginStep(i){
   if (s.give){
     if (s.give.unlocked) G.unlocked = { ...(G.unlocked || {}), ...s.give.unlocked };
     if (s.give.up) Object.assign(player.up, s.give.up);
+    if (s.give.unlocked){ if (G.hero === 'mando') syncMandoChips(); else syncJediChips(); }   // show the HUD tile for what was just handed over
+  }
+  // a heal lesson needs something to heal: chip vitality (and top up Force) so the self-heal isn't refused as UNHURT
+  if (s.hurt){
+    player.hp = Math.min(player.hp, Math.round(maxHp() * s.hurt));
+    player.force = CFG.player.maxForce;
+    floater(playerPos(), 'WOUNDED', '#ff8a7a');
   }
   if (s.grant === 'jet1' && !(player.up.jetTier >= 1)){ player.up.jetTier = 1; applyJetTier(); player.jet = player.jetMax; }
   if (s.grant === 'dual') G.unlocked = { ...(G.unlocked || {}), dual: true };
