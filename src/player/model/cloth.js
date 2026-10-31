@@ -38,6 +38,9 @@ export function makeCloth({ anchor, W, Hn, rest, thick, capsules, root, material
     if (c < W - 1 && r < Hn - 1){ link(i, i + W + 1, 0.5); link(i + 1, i + W, 0.5); }
     if (r < Hn - 2) link(i, i + 2 * W, 0.3);   // bend: a little body, so it folds rather than crumples
   }
+  // flat copies for the solver (step runs a few thousand times a second: no arrays unpacked, nothing allocated)
+  const lk = new Int32Array(links.length * 2), ll = new Float32Array(links.length), lw = new Float32Array(links.length);
+  links.forEach(([a, b, len, k], j) => { lk[j*2] = a; lk[j*2+1] = b; ll[j] = len; lw[j] = k; });
   const tether = local.map((p, i) => p.distanceTo(local[i % W]));
   // how far each particle may stray from where the animated body would carry it: a little at the belt, more at the
   // hem. A heavy robe swings and flares but never flies out flat like a flag.
@@ -69,12 +72,18 @@ export function makeCloth({ anchor, W, Hn, rest, thick, capsules, root, material
   root.add(mesh);
   if (outlineMaterial){ const hull = new THREE.Mesh(geo, outlineMaterial); hull.frustumCulled = false; mesh.add(hull); }
 
-  const C = { mesh, anchor, root, W, Hn, n, local, pos, prev, links, tether, reach, pull, thick, capsules, acc: 0, live: false, wound: null, scale: 1 };
+  const C = { mesh, anchor, root, W, Hn, n, local, pos, prev, links, lk, ll, lw, tether, reach, pull, thick, capsules, acc: 0, live: false, wound: null, scale: 1,
+              pin: new Float32Array(n * 3), segs: new Float32Array(capsules.length * 7) };
   resetCloth(C);
   return C;
 }
 
 function pinned(C, i, out){ return out.copy(C.local[i]).applyMatrix4(C.anchor.matrixWorld); }
+// where the animated body carries every particle this frame (the anchor doesn't move between the frame's steps)
+function pinAll(C){
+  const T = C.pin;
+  for (let i = 0; i < C.n; i++){ pinned(C, i, _p); T[i*3] = _p.x; T[i*3+1] = _p.y; T[i*3+2] = _p.z; }
+}
 
 // put every particle back on its rest shape, at rest (spawn, hero switch, a teleport)
 export function resetCloth(C){
@@ -88,51 +97,53 @@ export function resetCloth(C){
   writeMesh(C);
 }
 
+// push each particle out of the capsules (segs: ax, ay, az, bx, by, bz, r per capsule)
 function collide(C, segs){
   const P = C.pos;
   for (let i = C.W; i < C.n; i++){
-    _p.set(P[i*3], P[i*3+1], P[i*3+2]);
-    for (const [a, b, r] of segs){
+    let px = P[i*3], py = P[i*3+1], pz = P[i*3+2];
+    for (let s = 0; s < segs.length; s += 7){
       // closest point on the capsule's bone
-      _b.subVectors(b, a);
-      const t = Math.max(0, Math.min(1, _p.clone().sub(a).dot(_b) / Math.max(1e-6, _b.lengthSq())));
-      _a.copy(a).addScaledVector(_b, t);
-      const dx = _p.x - _a.x, dy = _p.y - _a.y, dz = _p.z - _a.z, d = Math.hypot(dx, dy, dz);
-      if (d < r && d > 1e-6){ const k = r / d; _p.set(_a.x + dx * k, _a.y + dy * k, _a.z + dz * k); }
+      const ax = segs[s], ay = segs[s+1], az = segs[s+2], ex = segs[s+3] - ax, ey = segs[s+4] - ay, ez = segs[s+5] - az, r = segs[s+6];
+      const t = Math.max(0, Math.min(1, ((px - ax) * ex + (py - ay) * ey + (pz - az) * ez) / Math.max(1e-6, ex*ex + ey*ey + ez*ez)));
+      const cx = ax + ex * t, cy = ay + ey * t, cz = az + ez * t;
+      const dx = px - cx, dy = py - cy, dz = pz - cz, d = Math.sqrt(dx*dx + dy*dy + dz*dz);
+      if (d < r && d > 1e-6){ const k = r / d; px = cx + dx * k; py = cy + dy * k; pz = cz + dz * k; }
     }
-    P[i*3] = _p.x; P[i*3+1] = _p.y; P[i*3+2] = _p.z;
+    P[i*3] = px; P[i*3+1] = py; P[i*3+2] = pz;
   }
 }
 
 function step(C, segs, floor){
-  const P = C.pos, Q = C.prev, W = C.W;
+  const P = C.pos, Q = C.prev, W = C.W, T = C.pin;
   for (let i = 0; i < C.n; i++){
-    if (i < W){ pinned(C, i, _p); Q[i*3] = P[i*3]; Q[i*3+1] = P[i*3+1]; Q[i*3+2] = P[i*3+2]; P[i*3] = _p.x; P[i*3+1] = _p.y; P[i*3+2] = _p.z; continue; }
+    if (i < W){ Q[i*3] = P[i*3]; Q[i*3+1] = P[i*3+1]; Q[i*3+2] = P[i*3+2]; P[i*3] = T[i*3]; P[i*3+1] = T[i*3+1]; P[i*3+2] = T[i*3+2]; continue; }
     for (let k = 0; k < 3; k++){
       const v = (P[i*3+k] - Q[i*3+k]) * DAMP;
       Q[i*3+k] = P[i*3+k];
       P[i*3+k] += v + (k === 1 ? GRAVITY * H * H : 0);
     }
   }
-  const s = C.scale;
+  const s = C.scale, lk = C.lk, ll = C.ll, lw = C.lw, L = ll.length;
   for (let it = 0; it < ITER; it++){
-    for (const [a, b, len, k] of C.links){
+    for (let j = 0; j < L; j++){
+      const a = lk[j*2], b = lk[j*2+1];
       const dx = P[b*3] - P[a*3], dy = P[b*3+1] - P[a*3+1], dz = P[b*3+2] - P[a*3+2];
-      const d = Math.hypot(dx, dy, dz) || 1e-6, diff = (d - len * s) / d * k;
+      const d = Math.sqrt(dx*dx + dy*dy + dz*dz) || 1e-6, diff = (d - ll[j] * s) / d * lw[j];
       const wa = a < W ? 0 : (b < W ? 1 : 0.5), wb = b < W ? 0 : (a < W ? 1 : 0.5);
       P[a*3] += dx * diff * wa; P[a*3+1] += dy * diff * wa; P[a*3+2] += dz * diff * wa;
       P[b*3] -= dx * diff * wb; P[b*3+1] -= dy * diff * wb; P[b*3+2] -= dz * diff * wb;
     }
     for (let i = W; i < C.n; i++){
       const t = i % W, max = C.tether[i] * s * 1.03;
-      const dx = P[i*3] - P[t*3], dy = P[i*3+1] - P[t*3+1], dz = P[i*3+2] - P[t*3+2], d = Math.hypot(dx, dy, dz);
+      const dx = P[i*3] - P[t*3], dy = P[i*3+1] - P[t*3+1], dz = P[i*3+2] - P[t*3+2], d = Math.sqrt(dx*dx + dy*dy + dz*dz);
       if (d > max){ const k = max / d; P[i*3] = P[t*3] + dx * k; P[i*3+1] = P[t*3+1] + dy * k; P[i*3+2] = P[t*3+2] + dz * k; }
     }
     for (let i = W; i < C.n; i++){
-      pinned(C, i, _a);
-      if (it === 0){ const k = C.pull; P[i*3] += (_a.x - P[i*3]) * k; P[i*3+1] += (_a.y - P[i*3+1]) * k; P[i*3+2] += (_a.z - P[i*3+2]) * k; }
-      const dx = P[i*3] - _a.x, dy = P[i*3+1] - _a.y, dz = P[i*3+2] - _a.z, d = Math.hypot(dx, dy, dz), max = C.reach[i] * s;
-      if (d > max){ const k = max / d; P[i*3] = _a.x + dx * k; P[i*3+1] = _a.y + dy * k; P[i*3+2] = _a.z + dz * k; }
+      const ax = T[i*3], ay = T[i*3+1], az = T[i*3+2];
+      if (it === 0){ const k = C.pull; P[i*3] += (ax - P[i*3]) * k; P[i*3+1] += (ay - P[i*3+1]) * k; P[i*3+2] += (az - P[i*3+2]) * k; }
+      const dx = P[i*3] - ax, dy = P[i*3+1] - ay, dz = P[i*3+2] - az, d = Math.sqrt(dx*dx + dy*dy + dz*dz), max = C.reach[i] * s;
+      if (d > max){ const k = max / d; P[i*3] = ax + dx * k; P[i*3+1] = ay + dy * k; P[i*3+2] = az + dz * k; }
     }
     collide(C, segs);
   }
@@ -184,12 +195,14 @@ function shown(C){
   return true;
 }
 
+// the legs and hips this frame, in world space (into the cloth's own buffer)
 function capsules(C){
-  return C.capsules.map(([a, b, r]) => [
-    new THREE.Vector3().setFromMatrixPosition(a.matrixWorld),
-    new THREE.Vector3().setFromMatrixPosition(b.matrixWorld),
-    r * C.scale,
-  ]);
+  const S = C.segs;
+  C.capsules.forEach(([a, b, r], j) => {
+    const e = a.matrixWorld.elements, f = b.matrixWorld.elements;
+    S[j*7] = e[12]; S[j*7+1] = e[13]; S[j*7+2] = e[14]; S[j*7+3] = f[12]; S[j*7+4] = f[13]; S[j*7+5] = f[14]; S[j*7+6] = r * C.scale;
+  });
+  return S;
 }
 
 /* advance every visible cloth on `target` (player) by dt; `floor` = world height the hem can't sink under */
@@ -203,6 +216,7 @@ export function stepCloth(target, dt, floor = -Infinity){
     const jump = Math.hypot(_p.x - C.pos[0], _p.y - C.pos[1], _p.z - C.pos[2]);
     if (!C.live || jump > 1.5){ resetCloth(C); C.live = true; continue; }   // shown again, or teleported
     const segs = capsules(C);
+    pinAll(C);
     C.acc = Math.min(C.acc + dt, 4 * H);
     while (C.acc >= H){ step(C, segs, floor); C.acc -= H; }
     writeMesh(C);
@@ -217,6 +231,7 @@ export function settleCloth(target, seconds = 1.5){
     if (!shown(C)) continue;
     resetCloth(C);
     const segs = capsules(C);
+    pinAll(C);
     for (let t = 0; t < seconds; t += H) step(C, segs, -Infinity);
     writeMesh(C);
     C.live = true;

@@ -6,6 +6,12 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'Steadier frames in big fights', status: 'done',
+    items: ['Enemy pathfinding only maps the ground as far as the foes actually are, instead of the whole arena several times a second: up close in a duel it costs a sliver of what it did',
+            'The heroes\' robes and capes no longer throw off a stream of garbage every frame (about two thirds of all the game made), so the browser stops pausing mid-fight to clean it up',
+            'Enemy and boss models are never built in the middle of a fight: whatever the menus didn\'t get to is finished during the load',
+            'The battle music builds its big chords a note at a time, so the top of each bar no longer stalls a frame in boss fights',
+            'Every mode: story, missions, training, survival, sandbox and co-op'] },
   { title: 'Stance unlock screen', status: 'done',
     items: ['Each lightsaber stance you earn (after a trial in the campaign, and as survival waves climb) opens an unlock screen: its name, what it is good and bad at, and the hero performing it live on the stand, looping its guard, three-cut string and block',
             'TRAIN IN [STANCE] saves your run and opens that stance\'s lesson in Training; leaving training puts CONTINUE CAMPAIGN back where you were. CONTINUE goes on to choose your three forms',

@@ -12,7 +12,7 @@ import { inkProbe } from '../fx/ink.js';
 import { ensureBossLight } from '../boss/light.js';
 import { ensureBarrierMesh } from '../player/jedi/force.js';
 import { ensureJudgeLines } from '../player/jedi/judgement-fx.js';
-import { shared } from '../state.js';
+import { shared, G } from '../state.js';
 import { holdLightCount } from '../fx/lights.js';
 
 /* ---------- 1. SHADERS ----------
@@ -62,17 +62,22 @@ export function prewarmShaders(){
 arenaBuilt.push(prewarmShaders);
 
 /* ---------- 2. MODELS ----------
-   A model is built (lofted, merged, skinned) the first time its type spawns. Do them all up front, one per idle
-   slice, while the menu is up, so no spawn pays for it. */
+   A model is built (lofted, merged, skinned) the first time its type spawns, at 15-40 ms a model. Do them all up
+   front instead: one per idle slice while the menus are up, never during play (a slice that overruns its frame is a
+   hitch), and whatever is still left when an arena is built gets built right there, under the load, so no spawn mid-
+   fight pays for it. */
 const jobs = [];
 for (const t of Object.values(ENEMY_TYPES)) for (const variant of variantsOf(t)) jobs.push(() => buildEnemyMesh(t, { variant }));   // every marking
 for (const roster of Object.values(SQUAD.roster)) for (const d of roster) jobs.push(() => buildEnemyMesh({ model: d.model, color: d.color, eye: d.eye, cloth: d.cloth, scale: d.scale || 1, ranged: true }));
 jobs.push(() => buildBoss('sith'), () => buildBoss('mando'));
+const run = job => { try { job(); } catch(e){} };
 const idle = window.requestIdleCallback ? f => requestIdleCallback(f, { timeout: 1500 }) : f => setTimeout(f, 60);
 function next(){
-  const job = jobs.shift();
-  if (!job) return;
-  try { job(); } catch(e){}
+  if (!jobs.length) return;
+  if (G.mode === 'play' && !G.paused){ setTimeout(next, 500); return; }   // in a fight: wait for a menu, a pause or the next load
+  run(jobs.shift());
   idle(next);
 }
 idle(next);
+// (first in line, ahead of the shader warm-up above)
+arenaBuilt.unshift(() => { while (jobs.length) run(jobs.shift()); });
