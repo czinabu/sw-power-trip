@@ -6,6 +6,8 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'Lesson board keeps your cursor', status: 'done',
+    items: ['Opening the training lesson board now frees the mouse and holds the camera still behind it, in solo and co-op, and hands both back when you pick a lesson'] },
   { title: 'Co-op: duellist guards for the guest', status: 'done',
     items: ['The joining player now sees a duellist\'s guard crescent, posture bar and breath, exactly as the host does',
             'Their cuts and punches meet the same guard: inside the crescent they are always turned, with the BLOCKED spark and clash; off-line they are turned by the foe\'s usual odds',

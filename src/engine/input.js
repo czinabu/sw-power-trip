@@ -42,7 +42,7 @@ import { strikePress, strikeRelease, holsteredKick } from '../player/jedi/palm.j
 import { wheelKeyDown, wheelKeyUp, wheelLook, wheelPickMate, wheelCancel, wheelOpen } from '../allies/wheel.js';
 import { noteFlick } from '../player/jedi/cutaim.js';
 
-const inputActive = () => !G.cutscene && (document.pointerLockElement === renderer.domElement || (shared.lockFallback && G.mode === 'play'));   // (a cutscene takes no fight input)
+const inputActive = () => !G.cutscene && !G.cardUp && (document.pointerLockElement === renderer.domElement || (shared.lockFallback && G.mode === 'play'));   // (a cutscene takes no fight input)
 document.addEventListener('mousemove', (e) => {
   if (!inputActive()) return;
   if (wheelLook(e.movementX, e.movementY)) return;   // the squad's command wheel is up: the mouse points at an order (allies/wheel.js)
