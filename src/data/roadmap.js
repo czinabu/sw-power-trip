@@ -6,6 +6,9 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'Flamethrower stands alone', status: 'done',
+    items: ['While the Mandalorian\'s flamethrower burns he can\'t shoot, fire rockets, scope or guard: pressing F cancels any shot, scope or brace already up, and those stay locked until the flame ends',
+            'Same in every mode: story, training, survival, sandbox, missions and co-op'] },
   { title: 'Shots land on the crosshair', status: 'done',
     items: ['Aiming at open air (a far wall, the sky) used to converge the shot only 40 metres out, so every bolt crossed the reticle and flew on past it, off to the right; the shot now aims at the arena wall it will really hit, or far out, so it lands on the crosshair',
             'Blaster, dual, disruptor (rings too, scoped as well), rockets and missiles share that aim, as do the squad\'s orders',
