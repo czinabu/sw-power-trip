@@ -33,7 +33,7 @@ const clone = (v) => v == null ? v : JSON.parse(JSON.stringify(v));
 export function inCampaignRun(){ return G.mode === 'play' && (G.chapter >= 0 || (!G.endless && !G.training && !G.mission && !G.sandbox)); }
 function snapshotRun(){
   return {
-    idx: G.levelIdx, chapter: G.chapter, actTwo: G.actTwo, prologue: !!G.prologue, checkpoint: clone(G.checkpoint), stance: G.stance, loadout: [...G.loadout], mandoKit: { ...(G.mandoKit || RUN_KIT) }, weapon: player.weapon, rifleMod: player.rifleMod || 'burst',
+    idx: G.levelIdx, chapter: G.chapter, actTwo: G.actTwo, story: clone(G.story) || {}, checkpoint: clone(G.checkpoint), stance: G.stance, loadout: [...G.loadout], mandoKit: { ...(G.mandoKit || RUN_KIT) }, weapon: player.weapon, rifleMod: player.rifleMod || 'burst',
     unlocked: clone(G.unlocked), stanceUnlocked: clone(G.stanceUnlocked), formFork: G.formFork || null, mandoChoiceShown: G.mandoChoiceShown,
     xp: G.xp, xpEarned: G.xpEarned, skillPoints: G.skillPoints, skillSpent: G.skillSpent,
     powerLv: clone(G.powerLv), mastery: clone(G.mastery), masteryUse: clone(G.masteryUse), xpPoints: G.xpPoints, seenTypes: clone(G.seenTypes),
@@ -57,6 +57,7 @@ export function restoreRun(run){
   // hands out the primaries again as it goes on: game/flow.js checkUnlocks)
   G.mandoKit = cleanKit(run.mandoKit || { sidearm: run.weapon === 'dual' ? 'dual' : 'single', primary: null });
   { const W = MANDO_WEAPONS[player.weapon]; if (W && W.slot && G.mandoKit[W.slot] !== player.weapon) player.weapon = G.mandoKit.sidearm; }
+  G.story = clone(run.story) || {};   // the story's choices so far (game/choices.js)
   G.formFork = run.formFork || null; clearMeditation();   // (forms the saved chapter has passed are taught again as it starts)
   G.xp = run.xp || 0; G.xpEarned = run.xpEarned || 0; G.skillPoints = run.skillPoints || 0; G.skillSpent = run.skillSpent || 0;
   G.powerLv = clone(run.powerLv) || {}; G.mastery = clone(run.mastery) || {}; G.seenTypes = clone(run.seenTypes) || {};
@@ -82,7 +83,7 @@ export const resumeLabel = () => savedChapter(G.resumeRun, G.hero);
 // 'ACT II · CH 6' for the saved run the menu would continue (the campaign tile)
 export function resumeProgress(){
   const run = G.resumeRun; if (!run) return '';
-  const pos = run.chapter != null && run.chapter >= 0 ? run.chapter : CHAPTER_OF_LEVEL[run.idx] || 0, list = chapterOrder(run.actTwo, !!run.prologue), c = list[pos];
+  const pos = run.chapter != null && run.chapter >= 0 ? run.chapter : CHAPTER_OF_LEVEL[run.idx] || 0, list = chapterOrder(run.actTwo, run.hero), c = list[pos];
   return c ? 'ACT ' + ['I', 'II', 'III'][c.act] + ' · ' + chapterNo(pos, list).replace('CHAPTER', 'CH') : '';
 }
 export const hasSaves = () => { for (const i of [0, 1, 2, AUTO]) if (readSlot(i)) return true; return false; };
@@ -94,7 +95,7 @@ export function resumeRun(){
 }
 // 'CHAPTER 3 · THE LAST EVACUATION' for a saved run, without starting it
 function savedChapter(run, hero){
-  const pos = run.chapter != null && run.chapter >= 0 ? run.chapter : CHAPTER_OF_LEVEL[run.idx] || 0, list = chapterOrder(run.actTwo, !!run.prologue), c = list[pos];
+  const pos = run.chapter != null && run.chapter >= 0 ? run.chapter : CHAPTER_OF_LEVEL[run.idx] || 0, list = chapterOrder(run.actTwo, hero), c = list[pos];
   return c ? chapterNo(pos, list) + ' · ' + forHero(c.title, hero) : 'LEVEL ' + (run.idx + 1) + ' · ' + placeOf(LEVELS[run.idx]);
 }
 

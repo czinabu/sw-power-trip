@@ -10,7 +10,10 @@
 import * as THREE from 'three';
 import { camera, scene } from '../engine/renderer.js';
 import { G, shared, player, isGunner } from '../state.js';
-import { VOICE } from '../data/campaign.js';
+import { VOICE, storyHero } from '../data/campaign.js';
+import { MANDO_BOSS } from '../data/campaign-mando.js';
+import { JEDI_BOSS, JEDI_DUELS, JEDI_CAST } from '../data/campaign-jedi.js';
+import { storyWords } from './choices.js';
 import { playerPos, stance, fwd, rightV } from '../player/helpers.js';
 import { animatePlayer } from '../player/animation.js';
 import { cameraClearance, sightClear, updatePropFade } from '../world/camblock.js';
@@ -219,7 +222,7 @@ function showShot(){
   // the speaker works its jaw (or nods under its helmet) while its line is up (enemies/upper.js talking)
   C.actors.forEach((a, i) => { if (a.g) a.g.userData.talk = !!(s.line && s.on === 'actor' && i === 0); });
   // the hero speaks a line of its own (not the voice in its ear): the Jedi's jaw works (player/model/life.js express)
-  player.talking = !!(s.line && s.on === 'hero' && s.line[0] && !Object.values(VOICE).includes(s.line[0]));
+  player.talking = !!(s.line && s.on === 'hero' && s.line[0] && !Object.values(VOICE).includes(s.line[0]) && !JEDI_CAST.includes(s.line[0]));   // (a voice or the story's cast isn't the hero)
   pickSide(s);
 }
 
@@ -292,9 +295,11 @@ function watchSpot(pp){
   return { ...c, yaw: G.yaw };
 }
 
-// a chapter's opening (game/campaign.js, when its card closes): the place, its title, then the hero and the voice
-export function playOpening(id, title){
-  const o = OPENINGS[id];
+// a chapter's opening (game/campaign.js, when its card closes): the place, its title, then the hero and the voice.
+// own: a story's own opening for the chapter (data/campaign-mando.js `opening`: plain lines, whoever is playing)
+const everyHero = (v) => ({ jedi: v, mando: v });
+export function playOpening(id, title, own){
+  const o = own ? { ...everyHero(own.lines), rival: own.rival && { ...everyHero(own.rival), line: own.rival.line }, quarry: own.quarry } : OPENINGS[id];
   if (!o) return false;
   let lines = (pick(o) || []).slice();
   const shots = [wide(3.4, title)], actors = [];
@@ -323,7 +328,8 @@ export function playOpening(id, title){
 // a mission duel's entrance (game/mission.js, before its foe steps in). spec: { mid, foe, name, kicker, tint, scale,
 // at: [x, z], line, quarry } as the host's hero sees the foe. Returns false when no scene plays (seen, or one is up).
 export function playDuelIntro(spec, share = true){
-  const lines = ((DUELS[spec.mid] && pick(DUELS[spec.mid])) || (spec.line ? [[null, spec.line]] : [])).slice();
+  const jedi = G.chapter >= 0 && storyHero() === 'jedi' && JEDI_DUELS[spec.mid];   // (the Jedi's story has its own words for some)
+  const lines = ((jedi && storyWords(jedi)) || (DUELS[spec.mid] && pick(DUELS[spec.mid])) || (spec.line ? [[null, spec.line]] : [])).slice();
   const actors = [];
   let at = spec.at;
   if (spec.quarry){
@@ -351,7 +357,9 @@ export function playBossIntro(share = true){
   const b = boundActor('boss');
   if (!b) return false;
   b.scale = 1.4;
-  const lines = pick(BOSS).slice(), [name, epithet] = (isGunner() ? BOSS_MANDO.name : BOSS_CFG.name).split(' — ');
+  const own = G.chapter >= 0 && { mando: MANDO_BOSS, jedi: storyWords(JEDI_BOSS) }[storyHero()];
+  const lines = (own || pick(BOSS)).slice(),   // (a story's own: data/campaign-mando.js, data/campaign-jedi.js)
+        [name, epithet] = (isGunner() ? BOSS_MANDO.name : BOSS_CFG.name).split(' — ');
   const first = shot('actor', [0.6, 5, 0.9], [0.4, 4.4, 1.3], lineTime(lines[0]), { on: 'actor', h: 2.2 },
                      { line: lines[0], title: { k: 'EXEGOL', h: name, p: epithet || '' }, mirror: true });
   const g = b.g.position;
@@ -363,7 +371,7 @@ export function playBossIntro(share = true){
 export function playScene(id, opts = {}){
   const d = SCENES[id];
   if (!d) return false;
-  const lines = (pick(d) || []).slice(), actors = [];
+  const lines = (opts.lines || pick(d) || []).slice(), actors = [];   // (opts.lines: a story's own words for the scene)
   let shots;
   if (d.shots === 'mark' && opts.mark){
     const [mx, mz] = opts.mark;

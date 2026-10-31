@@ -108,6 +108,9 @@ export const DUELS = {
     jedi:  [[null, 'You broke my forge. I will make your blade from what is left of it.']],
     mando: [[null, 'Beskar melts like anything else. So will you.']] },
   order66: [[null, 'Good soldiers follow orders, brother. Step aside.'], [VOICE.trooper, 'He means it. So do we.']],
+  covert: {   // the Mando's story: VX-7 in the covert's hangar, with a foundling still unaccounted for
+    jedi:  [[null, 'Jedi. Irrelevant. Foundling count aboard the ship: ten. One unaccounted for.']],
+    mando: [[null, 'Foundling count aboard: ten. One unaccounted for. You will not prevent the count.'], ['THE ARMORER', 'One missing. Rook. Break that droid.']] },
   breakout: {
     jedi:  [[null, 'Those were my prisoners, Jedi. I will have every one of them back.']],
     mando: [[null, 'You emptied my cells. I\'ll fill one with you.']] },
@@ -130,6 +133,10 @@ export const SCENES = {
   // the ARC trooper's prologue (data/missions.js order66): the Marshal breaks off into the jungle
   'marshal-escape': { shots: 'mark', actor: { jedi: MARSHAL, mando: MARSHAL },
     jedi: MARSHAL_LEAVES, mando: MARSHAL_LEAVES },
+  // the Mando's story: VX-7 breaks off in the covert's hangar, and takes Rook with it (data/missions.js covert)
+  'vx-escape': { shots: 'mark', actor: { jedi: INQ.mando, mando: INQ.mando },
+    jedi:  [['VX-7', 'Foundling acquired. Count complete. Withdrawing.'], ['ROOK', 'Let go of me!']],
+    mando: [['VX-7', 'Foundling acquired. Count complete. Withdrawing.'], ['ROOK', 'Let go of me! I said LET GO!']] },
   // (the epilogue's card says the rest: game/campaign.js showEpilogue)
   epilogue: { shots: 'hero',
     jedi:  [[VOICE.jedi, 'It is over.']],

@@ -38,6 +38,8 @@ import { overlay, setOverlayState } from '../ui/menus.js';
 import { showPanel, hidePanel, makeBeacon, makeConsole, setMarkerColor, pulseMarker, removeMarker,
          heroIn, nearHero, hostilesIn, hostilesAlive, setObjectiveHud, objectiveHud, mmss } from './objectives.js';
 import { MISSIONS, MISSION_VOICE, MISSION_COLOR } from '../data/missions.js';
+import { storyVoice } from '../data/campaign.js';
+import { chapterAt } from './campaign.js';
 import { ALLY_COLOR, addFriendRing, updateFriendRing, makeFriendTag } from '../fx/friend.js';
 import { spawnSquad, squadIn, squadStanding, allies } from '../allies/squad.js';
 import { collideSolids } from '../world/collision.js';
@@ -69,7 +71,7 @@ export function startMission(id = 'refuge', fromObjective = 0, guest = false, op
   if (!opts.retry) resetScenes();   // a fresh start plays the mission's scenes again (a retry after a death or an escape doesn't)
   const sub = def.level.sub && typeof def.level.sub === 'object' ? heroKey(def.level.sub) : def.level.sub;
   if (ch){
-    startLevel(G.levelIdx, { level: { ...def.level, ...ch.arena, name: ch.name, sub: ch.sub || sub }, mission: true, resume: !ch.fresh, chapter: true, foeLook: def.foeLook, squadCap: def.squadCap });   // (fresh: a new run that opens on a mission, the trooper's prologue: a new build)   // the run's hero and build, on the mission's arena (or the chapter's own)
+    startLevel(G.levelIdx, { level: { ...def.level, ...ch.arena, name: ch.name, sub: ch.sub || sub }, mission: true, resume: !ch.fresh, chapter: true, foeLook: def.foeLook, squadCap: def.squadCap });   // the run's hero and build, on the mission's arena (or the chapter's own; fresh: a new run that opens on a mission, a story's prologue, starts a new build)
   } else {
     startLevel(0, { level: { ...def.level, sub }, mission: true, foeLook: def.foeLook, squadCap: def.squadCap });   // fresh hero, kit and stats, on the mission's arena
     for (const k of (def.grant && heroKey(def.grant)) || []) G.unlocked[k] = true;
@@ -115,7 +117,15 @@ function clearMission(){
 }
 export function endMission(){ if (M.on || M.markers.length) clearMission(); }
 
-function say(o, opts){ showPanel(heroKey(MISSION_VOICE), heroKey(o.say), '', heroKey(o.task), { drill: true, ...opts }); M.panelT = 7; }
+// who speaks a mission's lines: in the campaign, the story's voice for the chapter (Master Vael, then General Kast, in
+// the Jedi's); in the Missions list, the hero's own
+const missionVoice = () => { const c = G.chapter >= 0 && chapterAt(G.chapter); return c ? storyVoice(undefined, c) : heroKey(MISSION_VOICE); };
+// an objective's line: a campaign chapter's story can say it its own way (its `says`, by objective: data/campaign-jedi.js)
+function sayLine(o){
+  const c = G.chapter >= 0 && chapterAt(G.chapter), i = M.def ? M.def.objectives.indexOf(o) : -1;
+  return (c && c.says && i >= 0 && c.says[i]) || heroKey(o.say);
+}
+function say(o, opts){ showPanel(missionVoice(), sayLine(o), '', heroKey(o.task), { drill: true, ...opts }); M.panelT = 7; }
 function fieldSpawn(type, x, z){
   const s = findClearSpawn(x, z, 1.0);
   spawnEnemy(type, V3(s.x, 0, s.z));
@@ -726,7 +736,8 @@ function escapeDuel(o, e){
   G.shake = Math.max(G.shake, 0.8);
   S.roar(p);
   showBanner(o.name + ' ESCAPES', heroText(o.escapeLine) || '', 3.0);
-  playScene(o.escapeScene || 'inq-escape', { mark: [p.x, p.z] });   // its parting words, where it stood (game/cutscene.js)
+  const c = G.chapter >= 0 && chapterAt(G.chapter);
+  playScene(o.escapeScene || 'inq-escape', { mark: [p.x, p.z], lines: (c && c.escapeLines) || undefined });   // its parting words (a story's own, if it has them), where it stood (game/cutscene.js)
   storyBeat('escape', { name: o.name });
 }
 function quarryEscaped(){
@@ -867,7 +878,7 @@ function missionComplete(){
   if (!M.chapter) autosave('mission');   // (a chapter's win is saved as the next chapter starts)
   // a campaign chapter's card carries the chapter's clear lines (what the mission taught, who joins), not a second voice line on the comms strip
   const clearLines = M.chapter && M.chapter.clear;
-  showPanel(heroKey(MISSION_VOICE), clearLines && clearLines.length ? clearLines.join(' ') : heroKey(def.done), '', M.chapter ? 'Chapter complete' : 'Mission complete', { drill: true, done: true });
+  showPanel(missionVoice(), clearLines && clearLines.length ? clearLines.join(' ') : heroKey(def.done), '', M.chapter ? 'Chapter complete' : 'Mission complete', { drill: true, done: true });
   if (!M.guest && hooks.missionDone) hooks.missionDone();   // co-op: the guest's mission ends with it
   if (M.chapter){   // a campaign chapter: no victory screen, the run carries on into the next chapter (game/campaign.js)
     M.panelT = 6; M.o = null;

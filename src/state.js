@@ -57,7 +57,7 @@ export const G = {
   fovPreview: false,     // the FOV slider is being adjusted: settings fade away to show the live in-game view
   levelIdx: 0, wave: 0, waveTotal: -1,   // waveTotal = cumulative waves started (drives Mando ability unlocks)
   waveFrom: 0, waveEnd: null,            // the stretch of the level's waves being played (a campaign chapter's, game/flow.js)
-  chapter: -1, actTwo: null, prologue: false, cardUp: false,   // the campaign's chapter (-1: not in one), Act II's pick, the chapter card is up (game/campaign.js)
+  chapter: -1, actTwo: null, cardUp: false,   // the campaign's chapter (-1: not in one), Act II's pick, the chapter card is up (game/campaign.js)
   yaw: 0, pitch: 0.08,
   hitstop: 0, shake: 0, slowmo: 1, slowmoT: 0,
   gt: 0,
@@ -70,6 +70,8 @@ export const G = {
   hero: 'jedi',          // 'jedi' (saber/Force), 'mando' (jetpack/blasters) or 'trooper' (clone ARC trooper, testing only) — chosen on the menu
   // SURVIVAL / ENDLESS mode
   modeSel: 'campaign',   // menu pick: 'campaign' | 'endless' | 'training' | 'mission' | 'sandbox'
+  story: {},             // the campaign story's choices so far, { choice id: answer } (game/choices.js), saved with the run
+  storyHero: null,      // whose story a campaign run tells (data/campaign.js storyHero): null is the hero's own; a co-op guest takes the host's
   missionId: 'refuge',   // which story mission (data/missions.js) the menu's MISSIONS list has picked
   endless: false,        // true while a survival run is active
   training: false,       // true while the tutorial runs (game/tutorial.js)

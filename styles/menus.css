@@ -449,6 +449,14 @@ body.fovpreview #fovpill{background:rgba(1,4,10,.82)}
 :is(#chapcard,#meditate,#lessonboard) .cc-voice{margin:22px 0 0;padding:12px 16px;border-left:2px solid var(--cc);background:var(--panel)}
 :is(#chapcard,#meditate,#lessonboard) .cc-who{font-size:12px;letter-spacing:2.2px;color:var(--cc);margin-bottom:6px}
 :is(#chapcard,#meditate,#lessonboard) .cc-voice p{margin:6px 0 0;font:500 17px/1.45 var(--font-body);color:var(--ink)}
+/* the scene between chapters (game/campaign.js talk): where it happens, then each speaker's line, fading in one after another */
+#chapcard .cc-talk{margin:20px 0 0;padding:12px 16px 14px;border:1px solid var(--edge-mid);border-radius:var(--r);background:rgba(4,8,16,.55)}
+#chapcard .cc-where{font-size:11px;letter-spacing:2.4px;color:var(--ink-faint);margin-bottom:4px}
+#chapcard .cc-talk p{margin:8px 0 0;font:500 16px/1.45 var(--font-body);color:var(--ink-soft);opacity:0;animation:rise .4s var(--ease) forwards;animation-delay:calc(.25s + var(--i) * .45s)}
+#chapcard .cc-talk p b{display:block;font:600 11px/1.2 var(--font-ui);letter-spacing:2px;color:var(--ink-dim);margin-bottom:2px}
+#chapcard .cc-talk p.you b{color:var(--cc)}
+#chapcard .cc-talk p.you{color:var(--ink)}
+@media (prefers-reduced-motion:reduce){#chapcard .cc-talk p{animation:none;opacity:1}}
 :is(#chapcard,#meditate,#lessonboard) .cc-roster{list-style:none;margin:20px 0 0;padding:0;display:grid;gap:4px}
 :is(#chapcard,#meditate,#lessonboard) .cc-roster li{display:flex;align-items:center;gap:10px;padding:6px 10px;font-size:15px;letter-spacing:1.4px;color:var(--ink-dim);
   border:1px solid transparent;border-radius:var(--r-chip)}

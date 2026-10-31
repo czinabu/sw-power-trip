@@ -71,7 +71,7 @@ import { LEVELS } from './levels.js';
 import { JUNGLE_SPOTS } from '../world/arenas/jungle.js';
 import { TURNED } from './allies.js';
 
-export const MISSION_VOICE = { jedi: 'THE BATTLEMASTER', mando: 'THE ARMORER', trooper: 'THE CAPTAIN' };
+export const MISSION_VOICE = { jedi: 'MASTER VAEL', mando: 'THE ARMORER', trooper: 'THE CAPTAIN' };
 export const MISSION_COLOR = { jedi: 0x5ad2ff, mando: 0xffa040, trooper: 0x4aa8ff };
 // the same words (or value) for every hero: a mission with one story whoever plays it
 const all = (v) => ({ jedi: v, mando: v, trooper: v });

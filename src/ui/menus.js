@@ -104,7 +104,7 @@ function beginPlay(){
   if (G.mode === 'menu' || G.mode === 'victory'){
     G.mode = 'play'; G.slowmo = 1;
     if (G.coopJoin && G.modeSel === 'mission') startCoopMission(G.missionId);
-    else if (G.coopJoin && G.modeSel === 'campaign'){ if (coopRun.ch >= 0) joinCampaign(coopRun.ch, coopRun.a2, coopRun.w, coopRun.wt, coopRun.pr); else startCoopCampaign(coopRun.lv, coopRun.w, coopRun.wt); }
+    else if (G.coopJoin && G.modeSel === 'campaign'){ if (coopRun.ch >= 0){ G.storyHero = coopRun.sh || null; joinCampaign(coopRun.ch, coopRun.a2, coopRun.w, coopRun.wt); } else startCoopCampaign(coopRun.lv, coopRun.w, coopRun.wt); }
     else if (G.modeSel === 'endless') startEndless(); else if (G.modeSel === 'training') startTutorial(); else if (G.modeSel === 'mission') startMission(G.missionId); else if (G.modeSel === 'sandbox') startSandbox(); else if (canResume()) resumeRun(); else startCampaign();
   } else if (G.mode === 'dead'){
     G.mode = 'play'; G.slowmo = 1;
