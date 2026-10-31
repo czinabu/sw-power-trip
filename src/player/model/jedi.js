@@ -9,6 +9,7 @@
 import * as THREE from 'three';
 import { loft, limb, plate, block, shard, chamfer, ngon, KEEL, SHIELD, HEAD } from './shapes.js';
 import { seg, rounded } from './skin.js';
+import { DIM } from './rig.js';
 
 // smooth sections for cloth and skin: the chiselled profiles with their corners rounded off once, so robes and
 // skulls shade as soft forms (the ink outline and cel bands keep the low-poly read)
@@ -54,10 +55,10 @@ export const JEDI_PARTS = {
       for (const L of [R.legL, R.legR]){
         // trousers: one surface over hip and knee that bends with the leg, tucked into the boot top
         k.skin('robe', [
-          ...seg(0.45, [[-0.06,0.205,0.2],[0.2,0.19,0.19],[0.75,0.145,0.155],[1,0.125,0.13]]),
-          ...seg(0.41, [[0.12,0.115,0.12]], 0.45),
-        ], { bones: [L.hip, L.knee], at: [0.45] });
-        k.add(limb(0.41, [[0.05,0.125,0.135],[0.12,0.145,0.155],[0.4,0.13,0.14,-0.005],[0.82,0.1,0.11],[1,0.1,0.11]], KEEL), 'boot', L.knee);
+          ...seg(DIM.thigh, [[-0.06,0.205,0.2],[0.2,0.19,0.19],[0.75,0.145,0.155],[1,0.125,0.13]]),
+          ...seg(DIM.shin, [[0.12,0.115,0.12]], DIM.thigh),
+        ], { bones: [L.hip, L.knee], at: [DIM.thigh] });
+        k.add(limb(DIM.shin, [[0.05,0.125,0.135],[0.12,0.145,0.155],[0.4,0.13,0.14,-0.005],[0.82,0.1,0.11],[1,0.1,0.11]], KEEL), 'boot', L.knee);
         k.add(block(0.155, 0.05, 0.165, 0.4), 'boot', L.knee, [0, -0.07, 0]);   // boot cuff
         // foot: a side-profile wedge with a pointed toe, extruded across the width
         k.add(plate([[-0.07,0.03],[-0.085,-0.075],[0.15,-0.085],[0.2,-0.055],[0.09,-0.005],[0.03,0.035]], 0.1, 0.012),
@@ -93,7 +94,7 @@ export const JEDI_PARTS = {
       // the tunic is one surface from waist to collar that bends and twists between the torso and chest joints
       k.skin('tunic', [
         { t:0, w:0.32, d:0.21 }, { t:0.2, w:0.3, d:0.2 },
-        ...seg(1, [[0,0.34,0.225],[0.14,0.46,0.27],[0.25,0.5,0.26],[0.31,0.45,0.235],[0.36,0.33,0.19],[0.41,0.19,0.145]], 0.3),
+        ...seg(1, [[0,0.34,0.225],[0.14,0.45,0.265],[0.25,0.485,0.255],[0.31,0.44,0.232],[0.36,0.33,0.19],[0.41,0.19,0.145]], 0.3),
       ], { bones: [R.torso, R.chest], at: [0.3], blend: 0.08, profile: SHIELD, dir: 1 });
       // the obi: a wide sash in the tabard's cloth, a narrow leather belt cinched over it, a metal buckle. Three values
       // stacked at the waist (light tunic, mid sash, dark belt) so the costume reads in layers, not as one mass

@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { loft, limb, plate, block, shard, chamfer, ngon, KEEL, SHIELD, HEAD } from './shapes.js';
 import { hand } from './jedi.js';
 import { seg, rounded } from './skin.js';
+import { DIM } from './rig.js';
 
 // rounded-off sections: the bucket, pauldrons and gorget shade as pressed metal, not cut blocks
 const SOFT = rounded(chamfer(0.42)), SOFT_HEAD = rounded(HEAD);
@@ -21,12 +22,12 @@ export const MANDO_PARTS = {
       for (const L of [R.legL, R.legR]){
         // the flight suit: one surface over hip and knee, down into the boot
         k.skin('suit', [
-          ...seg(0.45, [[-0.06,0.18,0.18],[0.2,0.17,0.17],[0.75,0.13,0.14],[1,0.11,0.12]]),
-          ...seg(0.41, [[0.1,0.14,0.15],[0.45,0.135,0.145],[0.8,0.115,0.125],[1,0.115,0.125]], 0.45),
-        ], { bones: [L.hip, L.knee], at: [0.45] });
+          ...seg(DIM.thigh, [[-0.06,0.18,0.18],[0.2,0.17,0.17],[0.75,0.13,0.14],[1,0.11,0.12]]),
+          ...seg(DIM.shin, [[0.1,0.14,0.15],[0.45,0.135,0.145],[0.8,0.115,0.125],[1,0.115,0.125]], DIM.thigh),
+        ], { bones: [L.hip, L.knee], at: [DIM.thigh] });
         k.add(plate([[-0.07,0],[0.07,0],[0.078,-0.2],[0,-0.25],[-0.078,-0.2]], 0.03, 0.01), 'beskar2', L.hip, [0, -0.07, 0.085], [-0.06, 0, 0]);
         k.add(plate([[-0.055,0.04],[0.055,0.04],[0.065,-0.02],[0,-0.07],[-0.065,-0.02]], 0.03, 0.01), 'beskar', L.knee, [0, 0, 0.07]);
-        k.add(limb(0.32, [[0,0.125,0.11,0.02],[0.3,0.15,0.13,0.02],[1,0.12,0.1,0.02]], KEEL), 'beskar2', L.knee, [0, -0.08, 0]);
+        k.add(limb(DIM.shin - 0.09, [[0,0.125,0.11,0.02],[0.3,0.15,0.13,0.02],[1,0.12,0.1,0.02]], KEEL), 'beskar2', L.knee, [0, -0.08, 0]);
         k.add(plate([[-0.075,0.035],[-0.09,-0.075],[0.16,-0.085],[0.21,-0.05],[0.1,0.0],[0.03,0.04]], 0.115, 0.014),
           'strap', L.ank, [0, 0, 0], [0, -Math.PI/2, 0]);
         k.seam(new THREE.BoxGeometry(0.008, 0.2, 0.008), SEAM_COOL, L.knee, [0, -0.2, 0.085]);   // greave line
@@ -40,9 +41,9 @@ export const MANDO_PARTS = {
     cuirass(R, k){
       // the suit from pelvis to collar is one surface that bends and twists through the hips, torso and chest joints
       k.skin('suit', [
-        { t:-0.12, w:0.3, d:0.2 }, { t:0, w:0.34, d:0.22 }, { t:0.16, w:0.31, d:0.2 }, { t:0.36, w:0.29, d:0.19 },
-        ...seg(1, [[0,0.33,0.22],[0.14,0.46,0.27],[0.27,0.52,0.26],[0.35,0.36,0.2],[0.4,0.2,0.15]], 0.46),
-      ], { bones: [R.hips, R.torso, R.chest], at: [0.16, 0.46], blend: 0.07, profile: SHIELD, dir: 1 });
+        { t:-0.12, w:0.3, d:0.2 }, { t:0, w:0.34, d:0.22 }, { t:DIM.torsoY, w:0.31, d:0.2 }, { t:DIM.torsoY + DIM.chestY - 0.1, w:0.29, d:0.19 },
+        ...seg(1, [[0,0.33,0.22],[0.14,0.45,0.265],[0.27,0.505,0.255],[0.35,0.36,0.2],[0.4,0.2,0.15]], DIM.torsoY + DIM.chestY),
+      ], { bones: [R.hips, R.torso, R.chest], at: [DIM.torsoY, DIM.torsoY + DIM.chestY], blend: 0.07, profile: SHIELD, dir: 1 });
       k.add(loft([{ y:0.04, w:0.38, d:0.26 }, { y:0.17, w:0.37, d:0.255 }], SHIELD), 'strap', R.torso);
       for (const bx of [-0.12, 0.12]) k.add(block(0.085, 0.1, 0.06, 0.3), 'beskar2', R.torso, [bx, 0.08, 0.14]);
       const abPlate = plate([[-0.115,-0.035],[0.115,-0.035],[0.125,0.03],[-0.125,0.03]], 0.028, 0.008);
