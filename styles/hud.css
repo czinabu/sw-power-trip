@@ -31,6 +31,7 @@ body.in-menu #hud,body.in-menu #boonstrip{opacity:0;transition:none}
 .uptoast span{font-size:12.5px;color:var(--ink-soft)}
 .uptoast.sp{border-color:rgba(255,210,90,.5)} .uptoast.sp b{color:var(--gold)}
 .uptoast.mast{border-color:rgba(255,210,90,.5)} .uptoast.mast b{color:#ffe9a8}
+.uptoast.foe{border-color:rgba(255,120,100,.45)} .uptoast.foe b{color:#ff9a8a}
 .uptoast.out{opacity:0;transform:translateX(-10px)}
 #xphud .xpk{font-size:10px;letter-spacing:2.5px;color:#5fae84;margin-right:6px;vertical-align:1px}
 #streak{position:fixed;top:96px;left:20px;font:700 26px/1 var(--font-display);letter-spacing:2px;color:var(--gold);
