@@ -20,7 +20,12 @@ const RING0 = 22;   // radius of the cover pods (at the authored size; see S bel
      · two climbable RUIN PLATFORMS in the north-west and south-east diagonal lanes;
      · the ALTAR at the far south: the boss rises in front of it, and its pulse punishes anyone who chases him back;
        two FUEL DRUMS on its approach catch him as he advances;
-     · broken COLUMNS at r 26 in the lanes (wall-kicks), and low rubble you step over. */
+     · broken COLUMNS at r 26 in the lanes (wall-kicks), and low rubble you step over;
+     · the MIDDLE RING (r 17–19, level-design pass): the duelling ground's edge used to be 20 m of bare floor from any
+       cover. Now each ruin platform has a broken wall on its inner face, the NE and SW diagonals get a wall and step of
+       their own, and two wall stubs split the altar lane (a gap left in the middle for the boss's walk), so the long
+       spawn-to-altar sightline is broken and a fight that spills off the duelling ground has somewhere to go;
+     · a BASTION in each corner (kit.js): steps up to a raised fall-back spot behind a wall, past the edge ring. */
 export function buildPlainsArena(L){
   const pal = L.pal || {};   // the world theme's colours (data/worlds.js); the defaults are the original look
   const stone  = new THREE.MeshStandardMaterial({ color: pal.stone ?? 0x4a3b3f, roughness: 0.92, metalness: 0.06 });
@@ -74,6 +79,27 @@ export function buildPlainsArena(L){
     K.box(x, z, 2.4, 2.4, 0.5, stoneD, { climbable: true });
     K.box(x, z, 1.6, 1.6, 1.0, stone, { climbable: true });
   }
+
+  // ---- the MIDDLE RING — cover round the duelling ground, which itself stays open (r < 11 authored) ----
+  // the ruin platforms' inner faces (toward the duelling ground)
+  for (const a of [3*Math.PI/4, -Math.PI/4]){
+    const [x, z] = at(a, 17 * S), sx = Math.sign(Math.cos(a)), sz = Math.sign(Math.sin(a));
+    K.box(x, z - sz*2.7, 2.0, 0.3, 1.6, stoneD);                 // along x, on the side toward the centre
+    K.box(x - sx*2.7, z + sz*0.4, 0.3, 1.4, 1.6, stone);          // and a short return along z
+  }
+  // the NE and SW diagonals: a broken wall square to the centre's line, a step block behind it
+  for (const a of [Math.PI/4, -3*Math.PI/4]){
+    const [x, z] = at(a, 18 * S), sx = Math.sign(Math.cos(a)), sz = Math.sign(Math.sin(a));
+    K.box(x - sx*1.0, z - sz*1.0, 2.2, 0.3, 1.7, stone);
+    K.deco(new THREE.BoxGeometry(1.0, 0.3, 0.7), stoneD, x - sx*1.6, 1.85, z - sz*1.0, 0, 0.3, 0);   // a fallen cap stone
+    K.box(x + sx*1.2, z + sz*0.6, 0.7, 0.7, 1.1, stoneD);       // the step behind: up and over
+  }
+  // two stubs across the altar lane, a gap between them for the boss's walk out
+  for (const sx of [-1, 1]) K.box(sx * 4.6, -19 * S, 1.6, 0.3, 1.6, sx > 0 ? stone : stoneD);   // (a 6 m gap: the boss is big)
+
+  // ---- a BASTION in each corner, past the edge ring ----
+  { const c = shared.arenaHalf - 7;
+    for (const [sx, sz] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) K.bastion(sx*c, sz*c, sx, sz, { a: stoneD, b: stone }); }
 
   // ---- broken COLUMNS at r 26 in the lanes (wall-kicks); the north lane and the altar lane stay open ----
   for (let k = 0; k < 8; k++){

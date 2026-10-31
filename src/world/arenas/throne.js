@@ -119,4 +119,24 @@ export function buildThroneArena(L){
     for (let k = 0; k < 3; k++) K.deco(new THREE.BoxGeometry(along ? 0.18 : 0.06, 0.02, along ? 0.06 : 0.18), amber,
       x + (along ? k*0.3 : 0), 0.012, z + (along ? 0 : k*0.3));
   }
+
+  // ---- the PALACE PLANTERS (level-design pass): the room is the Mandalorian's test floor, and a gunslinger needs
+  // something to test against. Along the west wall, three planters at the cover heights every map uses: a step you walk
+  // up (0.75), waist cover that stops a bolt and can still be vaulted (1.6) and a wall (2.6). Along the east wall, a
+  // climb of three plinths (1.2 / 2.2 / 3.2) for jumps and the jetpack. All of it 3 m off the walls and well clear of
+  // the middle, which stays open. ----
+  { const planter = (x, z, hx, hz, h, o) => {
+      K.box(x, z, hx, hz, h, greenD, o);
+      K.deco(new THREE.BoxGeometry(hx*2 + 0.16, 0.14, hz*2 + 0.16), frame, x, h + 0.05, z);                  // the rim
+      const sx = -Math.sign(x);   // the face toward the middle of the room carries a lit band, so the heights read
+      K.deco(new THREE.BoxGeometry(0.04, 0.08, hz*2 - 0.3), amber, x + sx*(hx + 0.02), h - 0.22, z);
+      K.deco(new THREE.BoxGeometry(0.04, 0.08, hz*2 - 0.3), amber, x + sx*(hx + 0.02), 0.22, z);
+    };
+    planter(-19, -10, 1.0, 1.6, 0.75, { climbable: true });
+    planter(-19, 0, 0.5, 2.2, 1.6);
+    planter(-19, 10, 0.5, 2.2, 2.6);
+    planter(19, -8, 1.2, 1.2, 1.2);
+    planter(19.6, -4.2, 1.0, 1.0, 2.2);
+    planter(20.2, -0.8, 1.0, 1.0, 3.2);
+  }
 }
