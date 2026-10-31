@@ -11,6 +11,13 @@ ink outline, and a white-hot core that the bloom pass catches. The kit lives in 
   (white, yellow, orange, ember, smoke). That is what reads as hand-drawn animation rather than a tween.
 - **Shapes over particles.** Stars for impacts and muzzle flashes, rings for shock fronts, lumpy shaded puffs for
   fire, smoke and dust. Small debris uses `sparks()`, pooled particles stretched along their velocity.
+- **Effects leave their source.** Force powers come out of the palm: the free (left) hand with the saber drawn, both
+  hands with it holstered (`src/fx/palms.js`: `castHands`, `palmPoints`, `castFrom`, which waits for the arm to get out
+  before reading the palm). The Mando's flamethrower, wrist rocket and birds leave his left gauntlet (`gauntletPoint`),
+  blaster bolts the barrel of the gun that fired them. A co-op partner's powers use their puppet's palms.
+- **Contact stays small.** Blade hits, parries, deflects, blocks and clashes are a small hot flash and a few short sparks
+  right on the contact point (`hitSpark`, `clashFlash`, `clashSparks`): no wide rings, no big sprays, and any screen
+  flash is faint and tight. Area powers (repulse rings, slams, explosions) may still fill space; contact may not.
 - **Colour carries meaning.** Blade colour for saber and Force effects (`stance().blade`), green for healing and
   Judgement, gold for parries and ripostes, orange for explosives, blue-white for the jetpack and disruptor.
 
@@ -21,7 +28,7 @@ ink outline, and a white-hot core that the bloom pass catches. The kit lives in 
 | `inkSprite(opts)` | One pooled sprite: `shape` disc / star / ring / puff, size over life, velocity, stepped fade, colour ramp, flat (`normal`) or camera-facing |
 | `sparks(pos, color, n, speed, opts)` | Streak sparks (pooled particles) |
 | `muzzleFlash(pos, dir, color, size)` | Two-frame star + barrel spike |
-| `hitSpark` / `boltImpact` / `clashFlash` | Blade hits, bolt hits, parries and deflects |
+| `hitSpark` / `boltImpact` / `clashFlash` / `clashSparks` | Blade hits, bolt hits, parries and deflects: small, at the contact point |
 | `groundRing(pos, color, r, dur, op)` | Flat shock front along the floor |
 | `puff(pos, color, size, life, vel, opts)` | Toon fire / smoke / dust ball (pass `ramp` for fire) |
 | `explosion(pos, radius, big)` | Rockets, missile, detonator, whistling birds |

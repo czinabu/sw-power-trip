@@ -163,7 +163,7 @@ export function updateBolts(dt){
           G.hitstop = Math.max(G.hitstop, 0.05);
           G.shake = Math.max(G.shake, 0.15);
           spawnParryFlash(V3(b.mesh.position.x, b.mesh.position.y, b.mesh.position.z), 0xffd24a);
-          screenFlash('radial-gradient(ellipse at center, rgba(255,230,150,.2), transparent 60%)', 0.4, 0.16);
+          screenFlash('radial-gradient(ellipse at center, rgba(255,230,150,.1), transparent 40%)', 0.3, 0.12);
           S.parry(b.mesh.position); floater(pp, 'PARRY!', '#ffe27a'); if (G.stats) G.stats.parries++; noteDefense('parries', null, { src: b.src }); masteryXp('boltParry');
         } else { clashFlash(b.mesh.position.clone(), stance().blade, false); S.deflect(b.mesh.position); floater(pp, 'DEFLECT', '#7fd4ff'); if (G.stats) G.stats.deflects++; noteDefense('deflects', null, { src: b.src }); }
         tutEvent('deflect');
@@ -203,7 +203,7 @@ export function updateBolts(dt){
       let foe = null, hit = null;
       for (const e of enemies){
         if (e.dead || e.converted) continue;
-        if (b.ally && !isFodder(e)) continue;   // a squadmate's fire leaves the duellists to you (data/allies.js)
+        if (b.ally && !isFodder(e) && b.mark !== e) continue;   // a squadmate's fire leaves the duellists to you, unless you ordered it on one (data/allies.js)
         const h = sweepHit(e, PREV, b.mesh.position, BOLT_R);
         if (h && (!hit || h.t < hit.t)){ hit = h; foe = e; }
       }

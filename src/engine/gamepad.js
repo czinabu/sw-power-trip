@@ -10,6 +10,7 @@ import { clamp } from '../utils.js';
 import { noteFlick } from '../player/jedi/cutaim.js';
 import { audioInit } from '../audio/sfx.js';
 import { skipScene } from '../game/cutscene.js';
+import { wheelStick } from '../allies/wheel.js';
 
 /* the left stick as a camera-relative move: x = right, y = forward (player/locomotion.js reads it for a smooth
    direction; the W A S D keys are pressed too, for everything that reads those) */
@@ -164,8 +165,9 @@ function fight(btn, down, up, lx, ly, rx, ry, dt){
   else padMove.on = false;
   setStickKeys(padMove.on ? lx : 0, padMove.on ? -ly : 0);
 
-  // RIGHT STICK — look, on a curve: fine near the centre, fast at full tilt
+  // RIGHT STICK — look, on a curve: fine near the centre, fast at full tilt (or, with the squad's command wheel up, pick an order)
   const r = Math.hypot(rx, ry);
+  if (wheelStick(rx, ry)) return;
   if (r > PAD_TUNE.lookDead){
     const mag = Math.pow(Math.min(1, (r - PAD_TUNE.lookDead) / (1 - PAD_TUNE.lookDead)), PAD_TUNE.lookCurve);
     const sens = G.padSens * (G.hero === 'mando' && player.zoom ? G.adsSens : 1);

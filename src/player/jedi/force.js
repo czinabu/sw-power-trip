@@ -23,6 +23,7 @@ import { cancelSwing } from './combat.js';
 import { rushFlip } from '../anim/agility.js';
 import { spawnPushWave, spawnGroundShock } from '../../fx/vfx.js';
 import { inkSprite, sparks, motes, dustRing, barrierMaterial, bindBarrier } from '../../fx/ink.js';
+import { castFrom, castHands } from '../../fx/palms.js';
 import { hooks } from '../../net/run.js';
 import { tutEvent } from '../../game/tutor-bus.js';
 import { pushGrenades } from '../../enemies/grenades.js';
@@ -59,7 +60,7 @@ export function forcePush(){
   S.push();
   G.shake = Math.max(G.shake, 0.3);
   castGesture('push', 0.28);                       // off-hand palm-thrust
-  spawnPushWave(pp.clone(), aim.dir.clone(), col, 0.6);  // a modest shove — basic ability, not a grand blast
+  spawnPushWave(pp.clone(), aim.dir.clone(), col, 0.6);  // a modest shove out of the palm (both palms, holstered)
   const cosLim = Math.cos(A.angle);
   let pushed = 0;
   for (const e of enemies){
@@ -336,13 +337,21 @@ export function forcePull(){
     }
     n++;
   }
-  // the Force reaching out and closing: ripple rings collapsing back toward the hand
-  for (let i = 0; i < 3; i++){
-    const at = A.range * (0.75 - i*0.15), ad = aim.dir;
-    inkSprite({ pos: alongAim(aim, at), normal: ad, shape: 'ring', inner: 0.86, color: stance().blade,
-                size: [4.2 - i*0.5, 0.7], ease: 2, life: 0.3, delay: i*0.05, op: 0.9 - i*0.2, fadeAt: 0.5, coreW: 0.2, inkW: 0.22,
-                vel: ad.clone().multiplyScalar(-at / 0.3) });
-  }
+  // the Force reaching out and closing: ripple rings collapsing back into the reaching palm (both, holstered), which
+  // flares as the pull lands in it
+  const ad = aim.dir.clone(), pcol = stance().blade;
+  castFrom(castHands(), 0.04, pts => {
+    const n = pts.length;
+    for (const hand of pts){
+      for (let i = 0; i < 3; i++){
+        const at = A.range * (0.6 - i*0.12), life = 0.3;
+        inkSprite({ pos: hand.clone().addScaledVector(ad, at), normal: ad, shape: 'ring', inner: 0.86, color: pcol,
+                    size: [(3 - i*0.4) / (n > 1 ? 1.4 : 1), 0.15], ease: 2, life, delay: i*0.05, op: 0.9 - i*0.2, fadeAt: 0.5, coreW: 0.2, inkW: 0.22,
+                    vel: ad.clone().multiplyScalar(-at / life) });
+      }
+      inkSprite({ pos: hand, shape: 'star', points: 6, sharp: 0.3, color: pcol, size: [0.12, 0.42], life: 0.12, delay: 0.26, steps: 2, coreW: 0.45 });
+    }
+  });
   if (n && flow){ queuePullStrike(); floater(pp, 'PULL-IN', '#7fd4ff'); tutEvent('pullStrike'); }
   else if (n) floater(pp, 'PULL', '#7fd4ff');
 }
@@ -362,10 +371,13 @@ export function forceRepulse(){
   spawnPlayerRing(pp.clone(), radius, col);
   spawnGroundShock(pp.clone().setY(0.1), col, radius + 1, 0.4, 0.7);
   spawnGroundShock(pp.clone().setY(0.1), 0xffffff, radius + (up ? 6 : 3), up ? 0.7 : 0.5, 0.4);
-  // the cast: a big cel starburst off the body, a hard radial spray of streaks and dust thrown out along the floor
-  inkSprite({ pos: V3(pp.x, pp.y + 1.3, pp.z), shape: 'star', points: 10, sharp: 0.15, color: col, size: [2, up ? 7 : 5.5], life: 0.2, steps: 2, coreW: 0.38, spin: 1.5 });
-  inkSprite({ pos: V3(pp.x, pp.y + 1.3, pp.z), shape: 'disc', color: col, size: [1.2, 2.6], life: 0.1, steps: 2, coreW: 0.7 });
-  sparks(V3(pp.x, pp.y + 1.3, pp.z), col, up ? 28 : 20, 24, { up: 0.1, life: 0.32, grav: 2, stretch: 4 });
+  // the cast: a hot starburst in the thrown palm(s), a radial spray of streaks off them and dust thrown out along the floor
+  castFrom(castHands(), 0.05, pts => {
+    for (const at of pts){
+      inkSprite({ pos: at, shape: 'star', points: 10, sharp: 0.15, color: col, size: [0.25, up ? 1.3 : 1.0], life: 0.16, steps: 2, coreW: 0.4, spin: 1.5 });
+      sparks(at, col, Math.round((up ? 24 : 18) / pts.length), 22, { up: 0.1, life: 0.3, grav: 2, stretch: 4, size: 0.45 });
+    }
+  });
   dustRing(pp, radius * 0.8);
   screenFlash('radial-gradient(ellipse at center, rgba(150,210,255,'+(up?0.55:0.4)+'), transparent 60%)', up ? 0.9 : 0.6, 0.32);
   G.shake = Math.max(G.shake, up ? 1.5 : 1.1); G.hitstop = Math.max(G.hitstop, 0.1);
@@ -422,8 +434,12 @@ export function forceBarrier(){
   castGesture('push', 0.3);
   const pp = playerPos(), col = 0x6fd0ff;
   spawnGroundShock(pp.clone().setY(0.1), col, A.radius, 0.4, 0.6);
-  inkSprite({ pos: V3(pp.x, pp.y + 1.4, pp.z), shape: 'star', points: 6, sharp: 0.22, color: col, size: [1.4, 4.2], life: 0.18, steps: 2, coreW: 0.4 });
-  sparks(V3(pp.x, pp.y + 1.4, pp.z), col, 14, 12, { life: 0.3, size: 0.5 });
+  castFrom(castHands(), 0.05, pts => {   // the bubble is thrown up out of the palm(s)
+    for (const at of pts){
+      inkSprite({ pos: at, shape: 'star', points: 6, sharp: 0.22, color: col, size: [0.2, 0.8], life: 0.14, steps: 2, coreW: 0.4 });
+      sparks(at, col, 7, 10, { life: 0.26, size: 0.42 });
+    }
+  });
   screenFlash('radial-gradient(ellipse at center, rgba(120,210,255,.35), transparent 60%)', 0.5, 0.3);
   G.shake = Math.max(G.shake, 0.4);
   barrierShove(0.7, A.castKnock);   // CAST — a firm shove clears space around you as the bubble snaps up
