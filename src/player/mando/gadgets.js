@@ -40,7 +40,7 @@ export function bactaStim(){
 }
 export function mandoRocket(){
   const A = abil('rocket');
-  if (!G.unlocked.rocket || player.cds.rocket > 0 || player.force < aCost(A.cost)) return;
+  if (!G.unlocked.rocket || player.flaming || player.cds.rocket > 0 || player.force < aCost(A.cost)) return;
   player.force -= aCost(A.cost); player.cds.rocket = A.cd; player.aiming = 0.6; trainAbility('rocket');
   const pp = playerPos();
   const f = fwd();

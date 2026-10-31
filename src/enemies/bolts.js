@@ -103,6 +103,16 @@ export function updateBolts(dt){
           break;
         }
       }
+      // a walled room (the sandbox rooms): a bolt stops on the wall it reaches, never flies on through it
+      if (!kill && shared.arenaWalled){
+        const wx = shared.arenaHalf + 0.6, wz = (shared.arenaHalfZ || shared.arenaHalf) + 0.6;
+        if (Math.abs(bx) > wx || Math.abs(bz) > wz){
+          kill = true;
+          const ix = clamp(bx, -wx, wx), iz = clamp(bz, -wz, wz);
+          spawnHitSpark(V3(ix, by, iz), b.friendly ? 0x6fd0ff : 0xff5a3a, 0.8);
+          S.boltImpact(V3(ix, by, iz));
+        }
+      }
     }
     // a hostile bolt that meets one of the hero's squadmates on the way stops in it (allies/squad.js)
     if (!kill && !b.friendly){

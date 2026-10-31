@@ -156,7 +156,7 @@ export function firePistols(){
 }
 // a trigger pull — dispatches by the equipped weapon's mode
 export function fireTrigger(){
-  if (G.mode !== 'play' || player.darkT > 0) return;
+  if (G.mode !== 'play' || player.darkT > 0 || player.flaming) return;   // the flamethrower is used by itself: no shooting while it burns
   const W = mandoWeapon();
   if (W.fire === 'saber'){                                              // DARKSABER — full saber combo (Jedi medium-stance rig)
     if (shared.darkProj){   // thrown: nothing to swing until the grappling line brings it home
@@ -232,7 +232,10 @@ function fireRifle(W){
   const aim = mandoAimPoint();
   const o = muzzleOrigin(0.06);
   spawnBlasterBolt(o, V3(aim.x-o.x, aim.y-o.y, aim.z-o.z).normalize(), W.dmg * player.up.dmg, 0x7fe0ff, 2.0, W, { to: aim });
-  disruptorWake(gunMuzzle(o).clone(), V3(aim.x-o.x, aim.y-o.y, aim.z-o.z).normalize());
+  // the wake hangs along the bolt's real line: from the rifle's barrel tip (where the bolt now leaves) to the aimed point,
+  // not from the shoulder origin (that skewed the rings off the crosshair, worst on near targets)
+  const mz = gunMuzzle(o).clone();
+  disruptorWake(mz, V3(aim.x-mz.x, aim.y-mz.y, aim.z-mz.z).normalize(), mz.distanceTo(aim));
   player.recoil = 0.5; player.recoilKick = 0.5;
   G.shake = Math.max(G.shake, 0.4); G.hitstop = Math.max(G.hitstop, 0.05);
   screenFlash('radial-gradient(ellipse at center, rgba(120,210,255,.2), transparent 60%)', 0.35, 0.2);
@@ -241,9 +244,10 @@ function fireRifle(W){
   addHeat(W);   // a heavy charge — overheats after a couple of shots
 }
 // the disruptor's ionised wake — a corkscrew of ink rings left hanging along the first stretch of the shot
-function disruptorWake(from, dir){
+function disruptorWake(from, dir, reach = 99){
   for (let i = 0; i < 9; i++){
     const t = 0.8 + i * 1.5;
+    if (t > reach) break;   // the trail stops at the point under the crosshair, never runs on past it
     inkSprite({ pos: V3(from.x + dir.x*t, from.y + dir.y*t, from.z + dir.z*t), normal: dir, shape: 'ring', inner: 0.7, color: 0x7fe0ff,
                 size: [0.35, 0.75 + i*0.05], life: 0.32, delay: i * 0.012, fadeAt: 0.25, coreW: 0.25, inkW: 0.24, op: 0.9 });
   }
@@ -306,6 +310,8 @@ export function updateFlame(dt){
   const fl = player.flameLight || (player.flameLight = flameLight);
   fl.intensity += ((active ? 5.5 + Math.random()*1.5 : 0) - fl.intensity) * Math.min(1, dt*14);   // faded, never toggled: a light count change recompiles every shader (the first-flame hitch)
   if (!active) return;
+  // the flame owns both hands: it cancels any shot, scope or guard already up, and those stay locked out until it ends
+  player.firing = false; player.trigHeld = false; player.zoom = false; player.blockHeld = false; player.parryT = 0; player.stabQ = false;
   player.force = Math.max(0, player.force - A.fuel * (player.up.abilityCostMul || 1) * dt);
   trainHeld('flame', dt);   // each second of fire teaches the flamethrower (game/upgrades.js)
   const pp = playerPos();

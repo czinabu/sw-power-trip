@@ -2,6 +2,7 @@
 // Sandbox arena (Mandalorian): the throne room of the palace at Sundari, a wide dark-green hall walled in tall windows.
 
 import * as THREE from 'three';
+import { shared } from '../../state.js';
 import { arenaKit, seeded } from './kit.js';
 
 /* THE THRONE ROOM (half-size 24). The Mandalorian's sandbox floor (game/sandbox.js), after the Clone Wars throne room
@@ -72,6 +73,7 @@ export function buildThroneArena(L){
     }
   };
   for (const s of ['n', 's', 'e', 'w']) wallAt(s);
+  shared.arenaWalled = true;   // the walls are only a picture to the movement clamp; bolts stop on them (enemies/bolts.js)
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) K.deco(new THREE.BoxGeometry(1.8, W, 1.8), greenD, sx*(H + 0.9), W/2, sz*(H + 0.9));
   // ceiling girders, high over the floor
   for (const z of [-15, -5, 5, 15]){ K.deco(new THREE.BoxGeometry(H*2 + 2.4, 1.0, 0.8), frame, 0, W + 0.3, z); K.slab(0, z, H, 0.4, W - 0.2, W + 0.8); }
