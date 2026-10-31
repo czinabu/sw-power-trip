@@ -21,7 +21,7 @@ export const SHIPYARD_SPOTS = { start: [0, -22, 0] };
 const CONTAINERS = [   // [x, z, alongX, stacked]
   [-22, -9, 1, 1], [-15, -18, 0, 0], [16, -19, 1, 1], [25, 3, 0, 1], [-26, 8, 0, 0], [21, 22, 1, 0], [-8, 25, 1, 1], [5, 26, 1, 0],
 ];
-const LOW = [[9, -8, 1], [-9, -7, 1], [-17, 1, 0], [15, 12, 0]];   // short containers (1.6: still stops a bolt): [x, z, alongX]
+const LOW = [[9, -8, 1], [-9, -7, 1], [-17, 1, 0], [15, 12, 0], [-5, -26, 1], [9, -27, 0], [-24, -24, 0]];   // short containers (1.6: still stops a bolt): [x, z, alongX]
 const COLORS = [0x8a4a2a, 0x2a5a7a, 0x6a6a3a, 0x7a2a2a, 0x3a6a4a];
 
 export function buildShipyardArena(L){

@@ -11,7 +11,7 @@ import * as THREE from 'three';
 import { camera, scene } from '../engine/renderer.js';
 import { G, shared, player, isGunner } from '../state.js';
 import { VOICE, storyHero } from '../data/campaign.js';
-import { MANDO_BOSS } from '../data/campaign-mando.js';
+import { MANDO_BOSS, MANDO_CAST } from '../data/campaign-mando.js';
 import { JEDI_BOSS, JEDI_DUELS, JEDI_CAST } from '../data/campaign-jedi.js';
 import { storyWords } from './choices.js';
 import { playerPos, stance, fwd, rightV } from '../player/helpers.js';
@@ -222,7 +222,7 @@ function showShot(){
   // the speaker works its jaw (or nods under its helmet) while its line is up (enemies/upper.js talking)
   C.actors.forEach((a, i) => { if (a.g) a.g.userData.talk = !!(s.line && s.on === 'actor' && i === 0); });
   // the hero speaks a line of its own (not the voice in its ear): the Jedi's jaw works (player/model/life.js express)
-  player.talking = !!(s.line && s.on === 'hero' && s.line[0] && !Object.values(VOICE).includes(s.line[0]) && !JEDI_CAST.includes(s.line[0]));   // (a voice or the story's cast isn't the hero)
+  player.talking = !!(s.line && s.on === 'hero' && s.line[0] && !Object.values(VOICE).includes(s.line[0]) && !JEDI_CAST.includes(s.line[0]) && !MANDO_CAST.has(s.line[0]));   // (a voice or the story's cast isn't the hero)
   pickSide(s);
 }
 

@@ -14,6 +14,7 @@ import { startEndless } from '../game/survival.js';
 import { startTutorial, retryTutorial, skipStep, setTrainingExit, trainingDone, openLessonBoard, trainOnForm } from '../game/tutorial.js';
 import { setTrainHook } from '../game/meditation.js';
 import { startMission, startCoopMission, retryMission, missionTitle } from '../game/mission.js';
+import { isArcadeId, randomArcadeId } from '../data/arcade.js';
 import { startSandbox, sandboxUnlocked } from '../game/sandbox.js';
 import { battleArmed, leaveSetup } from '../game/battlesim.js';
 import { sandboxFull, sandboxProgress } from '../game/sandbox-unlocks.js';
@@ -54,7 +55,7 @@ export function setOverlayState(state){
   overlay.classList.remove('asktrain');
   if (state !== 'pause') document.getElementById('ovctx').textContent = '';
   document.getElementById('restartBtn').style.display = state === 'menu' ? 'none' : 'inline-flex';
-  document.getElementById('restartBtn').textContent = G.training ? '↻ RESTART TRAINING' : G.mission && G.chapter < 0 ? '↻ RESTART MISSION' : '↻ RESTART RUN';
+  document.getElementById('restartBtn').textContent = G.training ? '↻ RESTART TRAINING' : G.mission && G.chapter < 0 ? (isArcadeId(G.missionId) && state === 'victory' ? '↻ PLAY IT AGAIN' : '↻ RESTART MISSION') : '↻ RESTART RUN';
   document.getElementById('skipBtn').style.display = state === 'pause' && G.training ? 'inline-flex' : 'none';
   document.getElementById('lessonsBtn').style.display = state === 'pause' && G.training ? 'inline-flex' : 'none';
   document.getElementById('formsBtn').style.display = isTrooper() ? 'none' : '';   // (the trooper has neither yet)
@@ -67,13 +68,13 @@ export function setOverlayState(state){
     sub.textContent = G.modeSel === 'endless' ? 'HOW LONG CAN YOU HOLD?' : G.modeSel === 'training' ? 'LEARN THE CONTROLS AND POWERS' : G.modeSel === 'mission' ? (missionOpen(G.missionId) ? missionTitle(G.missionId) : 'LOCKED MISSION') : G.modeSel === 'sandbox' ? (sandboxFull() ? 'ANY FOE, ANY POWER' : 'THE STORY SO FAR') : 'CHOOSE YOUR LEGEND';
   } else if (state === 'pause'){
     go.textContent = 'RESUME'; sub.textContent = 'PAUSED';
-    const where = G.chapter >= 0 ? 'CAMPAIGN · ' + chapterLabel() : G.training ? 'TRAINING' : G.sandbox ? 'SANDBOX' : G.mission ? missionTitle(G.missionId) : G.endless ? 'SURVIVAL' : 'CAMPAIGN';
+    const where = G.chapter >= 0 ? 'CAMPAIGN · ' + chapterLabel() : G.training ? 'TRAINING' : G.sandbox ? 'SANDBOX' : G.mission ? (isArcadeId(G.missionId) ? 'ARCADE · ' : '') + missionTitle(G.missionId) : G.endless ? 'SURVIVAL' : 'CAMPAIGN';
     document.getElementById('ovctx').textContent = where + ' · ' + (isGunner() ? 'MANDALORIAN' : 'JEDI');
   } else if (state === 'dead'){
     go.textContent = G.endless ? 'NEW SURVIVAL RUN' : G.mission ? 'RETRY THIS OBJECTIVE' : G.sandbox ? (battleArmed() ? 'REPLAY THE BATTLE' : 'BACK TO THE SANDBOX') : retryIsBoss() ? 'RETRY THE BOSS' : G.chapter >= 0 ? 'RETRY THIS CHAPTER' : 'RETRY THIS LEVEL';
     sub.textContent = '';   // the run summary's own title carries the moment
   } else if (state === 'victory'){
-    go.textContent = 'PLAY AGAIN';
+    go.textContent = G.mission && G.chapter < 0 && isArcadeId(G.missionId) && !G.coopWasGuest ? 'NEXT RANDOM MISSION' : 'PLAY AGAIN';   // the arcade deals another (beginPlay)
   }
   queueFit();
 }
@@ -104,6 +105,7 @@ function beginPlay(){
   setHowTo(false); setSettings(false);
   if (G.modeSel === 'mission' && !G.coopJoin && !missionOpen(G.missionId)) G.modeSel = 'campaign';   // a locked mission never launches
   if ((G.modeSel === 'endless' && !survivalUnlocked() && !G.coopJoin) || (G.modeSel === 'sandbox' && !sandboxUnlocked())) G.modeSel = 'campaign';   // safety — never launch a locked mode
+  if (G.mode === 'victory' && G.modeSel === 'mission' && isArcadeId(G.missionId) && !G.coopJoin && !G.coopWasGuest) setMission(randomArcadeId());   // ARCADE: a won contract's PLAY AGAIN is the next random one
   if (G.mode === 'menu' || G.mode === 'victory'){
     G.mode = 'play'; G.slowmo = 1;
     if (G.coopJoin && G.modeSel === 'mission') startCoopMission(G.missionId);

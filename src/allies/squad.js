@@ -64,14 +64,15 @@ export const squadIn = (x, z, r) => allies.filter(a => standing(a) && Math.hypot
    ============================================================ */
 // add the next squadmate on the hero's roster (up to SQUAD.max), at `at` or just behind the hero.
 // opts (the sandbox's battle setup, game/battlesim.js): `role` asks for one of that role (any specialist, earned or not),
-// `cap` lets the squad grow past SQUAD.max
+// `cap` lets the squad grow past SQUAD.max; `def` is a story's guest fighter instead of the next from the hero's roster
+// (a chapter's `guests`: game/mission.js)
 export function addSquadmate(at, opts){
   if (allies.length >= ((opts && opts.cap) || SQUAD.max)) return null;
   if (guest()){ squadLink.add(); return null; }   // co-op guest: the host's browser runs the squad
   const full = heroKey(SQUAD.roster) || SQUAD.roster.jedi, askRole = opts && opts.role;
   const roster = askRole && full.some(d => d.role === askRole) ? full.filter(d => d.role === askRole)
     : full.filter(d => !d.need || G.unlocked[d.need]);   // (a specialist the run hasn't earned yet waits)
-  const def = roster.find(d => !allies.some(a => a.def === d)) || roster[allies.length % roster.length];
+  const def = (opts && opts.def) || roster.find(d => !allies.some(a => a.def === d)) || roster[allies.length % roster.length];
   const role = SQUAD.roles[def.role];
   const t = { model: def.model, color: def.color, eye: def.eye, cloth: def.cloth, scale: def.scale || 1, ranged: true };
   const g = buildEnemyMesh(t);

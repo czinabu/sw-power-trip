@@ -3,7 +3,8 @@
 
 import { V3, clamp } from '../utils.js';
 import { burst } from '../fx/particles.js';
-import { shared, solids, hazardZones, vents, player } from '../state.js';
+import { shared, solids, hazardZones, vents, player, G } from '../state.js';
+import { players } from '../player/players.js';
 import { damageEnemy } from '../enemies/damage.js';
 
 /* SOLID SHAPES (the `solids` list). Every one is a footprint standing on the floor up to its top `h`:
@@ -168,8 +169,7 @@ export function findClearSpawn(x0, z0, margin){
   return { x: x0, z: z0 };   // shouldn't happen — cover is sparse relative to arena size
 }
 
-/* EDGE SPAWN — a random point on the arena's edge ring (r = arenaHalf × [lo, hi]) that is clear of every solid, vent
-   and hazard zone, so a foe never pops in inside a girder or onto a live vent. radius = the body's radius. */
+/* is a body of radius `pad` at (x, z) on a vent or inside a hazard zone? (so a foe never pops in onto a live vent) */
 function spotInHazard(x, z, pad){
   for (const v of vents) if (Math.hypot(x - v.group.position.x, z - v.group.position.z) < 2.6 + pad) return true;
   for (const hz of hazardZones){
@@ -179,26 +179,88 @@ function spotInHazard(x, z, pad){
   }
   return false;
 }
+/* SPAWN DIRECTOR — where reinforcements come in. Level-design rules it follows (docs/level-design.md):
+     · never on top of a hero: a foe arrives at least SAFE_GAP (or half the arena) away from every hero in the fight;
+     · from a FRONT: each surge (a burst of spawns after a quiet spell) picks one side of the ring to come in from,
+       so an attack reads as a direction instead of foes leaking in from everywhere at once;
+     · from a NEW angle each surge, away from where the heroes stand, with the odd FLANKER off to one side, so the
+       player has to turn to face each one rather than hold one corner all fight;
+     · on a battle map, from the enemy's side of the field (south), never out of the allied lines behind the hero. */
+const SAFE_GAP = 9;              // metres: the nearest a foe may arrive to any hero
+const SURGE_QUIET = 1.5;         // seconds without a spawn before the next one starts a new surge (a new front)
+const FRONT_SPREAD = 0.45;       // radians either side of the front's centre a surge spreads over
+const FLANK = 0.25;              // share of a surge that comes in on a flank instead
+const front = { a: null, prev: null, lastT: -1e9, arena: null };
+const now = () => G.gt;   // world time: a pause or a slow frame never splits a surge in two
+const angDiff = (a, b) => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
+function heroesNear(x, z, gap){
+  for (const p of players){ if (!p.here || !p.pos) continue; if (Math.hypot(x - p.pos.x, z - p.pos.z) < gap) return true; }
+  return false;
+}
+/* the side the next surge comes in from: well away from the heroes, and turned at least ~70° from the last front */
+function pickFront(){
+  const big = shared.arenaBig, hx = shared.arenaHalf;
+  let best = null, bestScore = -1e9;
+  for (let k = 0; k < 16; k++){
+    // a battle map's waves come from the enemy's half (south, sin a < 0); an arena's from anywhere on the ring
+    const a = big ? -Math.PI/2 + (Math.random() - 0.5) * 1.6 : Math.random() * Math.PI * 2;
+    const r = big ? 34 : 0.84;
+    const px = big ? player.group.position.x + Math.cos(a) * r : Math.cos(a) * hx * r;
+    const pz = big ? player.group.position.z + Math.sin(a) * r : Math.sin(a) * hx * r;
+    let near = 1e9;
+    for (const p of players) if (p.here && p.pos) near = Math.min(near, Math.hypot(px - p.pos.x, pz - p.pos.z));
+    let score = Math.min(near, hx * 1.2) + Math.random() * hx * 0.35;
+    if (front.prev != null && angDiff(a, front.prev) < 1.2) score -= hx;   // turn the pressure: not the same side twice
+    if (score > bestScore){ bestScore = score; best = a; }
+  }
+  return best;
+}
+/* the angle the next foe of this surge comes in on */
+function surgeAngle(){
+  const t = now();
+  if (front.a == null || front.arena !== shared.arenaLevel || t - front.lastT > SURGE_QUIET || t < front.lastT){
+    if (front.arena !== shared.arenaLevel) front.prev = null;
+    front.a = pickFront(); front.prev = front.a; front.arena = shared.arenaLevel;
+    front.flank = Math.random() < 0.5 ? 1 : -1;
+  }
+  front.lastT = t;
+  // a flank comes in off to one side: square to the front in an arena, on a battle map only as far round as the
+  // enemy's own half of the field (never out of the allied lines)
+  let a = Math.random() < FLANK ? front.a + front.flank * (shared.arenaBig ? 0.8 + Math.random() * 0.3 : 1.5 + Math.random() * 0.5) + (Math.random() - 0.5) * 0.4
+    : front.a + (Math.random() - 0.5) * 2 * FRONT_SPREAD;
+  if (shared.arenaBig && Math.sin(a) > 0.15) a = -a;   // (folded back onto the enemy's half)
+  return a;
+}
+/* EDGE SPAWN — a point on the arena's edge ring (r = arenaHalf × [lo, hi]) clear of every solid, vent and hazard zone
+   and of every hero, on this surge's front. When the front has no room (a hero stands on it, cover fills it) the
+   ring is tried all round, and only then is the hero gap let go: a foe always arrives somewhere. */
 export function edgeSpawn(lo = 0.75, hi = 0.92, radius = 0.8){
   if (shared.arenaBig) return nearSpawn(radius);
+  const hx = shared.arenaHalf, gap = Math.max(SAFE_GAP, hx * 0.5);   // (the ring is round, as it always was: a long route's too)
+  const base = surgeAngle();
   let x = 0, z = 0;
-  for (let t = 0; t < 24; t++){
-    const a = Math.random()*Math.PI*2, r = shared.arenaHalf * (lo + Math.random()*(hi - lo));
-    x = Math.cos(a)*r; z = Math.sin(a)*r;
+  for (let t = 0; t < 48; t++){
+    const a = t < 16 ? base + (t ? (Math.random() - 0.5) * 0.5 : 0) : Math.random()*Math.PI*2;   // the front first, then anywhere
+    const f = lo + Math.random()*(hi - lo);
+    x = Math.cos(a)*hx*f; z = Math.sin(a)*hx*f;
+    if (t < 40 && heroesNear(x, z, gap)) continue;
     if (!spotBlocked(x, z, radius) && !spotInHazard(x, z, radius)) break;
   }
   return V3(x, 0, z);
 }
 /* a BATTLE MAP's edge is a minute's run away, so a wave arrives on a ring round the hero instead (NEAR_SPAWN m out,
-   kept inside the arena): close enough to reach the fight, far enough to come in from the fog */
+   kept inside the arena): close enough to reach the fight, far enough to come in from the fog. The surge's front
+   lies on the enemy's side of the field, so a wave rolls in from the Imperial lines, not out of the allies' backs */
 const NEAR_SPAWN = [28, 40];
 function nearSpawn(radius){
   const p = player.group.position, lim = shared.arenaHalf - 3, limZ = shared.arenaHalfZ - 3;
+  const base = surgeAngle();
   let x = 0, z = 0;
-  for (let t = 0; t < 24; t++){
-    const a = Math.random()*Math.PI*2, r = NEAR_SPAWN[0] + Math.random()*(NEAR_SPAWN[1] - NEAR_SPAWN[0]);
+  for (let t = 0; t < 32; t++){
+    const a = t < 16 ? base + (t ? (Math.random() - 0.5) * 0.6 : 0) : Math.random()*Math.PI*2;
+    const r = NEAR_SPAWN[0] + Math.random()*(NEAR_SPAWN[1] - NEAR_SPAWN[0]);
     x = clamp(p.x + Math.cos(a)*r, -lim, lim); z = clamp(p.z + Math.sin(a)*r, -limZ, limZ);
-    if (Math.hypot(x - p.x, z - p.z) < NEAR_SPAWN[0] * 0.6) continue;   // clamped up against the hero at the arena edge
+    if (heroesNear(x, z, NEAR_SPAWN[0] * 0.6)) continue;   // clamped up against a hero at the arena edge
     if (!spotBlocked(x, z, radius) && !spotInHazard(x, z, radius)) break;
   }
   return V3(x, 0, z);

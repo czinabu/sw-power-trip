@@ -60,6 +60,7 @@ export function spawnEnemy(typeName, pos){
     elite: null,
     shieldHp: t.shield ? t.shieldHp : 0, shieldBroken: false,   // SENTINEL frontal guard
     aimLine: null,                                              // MARKSMAN laser sight (lazily built)
+    born: G.gt,                             // when it arrived (ui/threats.js marks where a surge comes in)
   };
   applyElite(e, g);
   attachHitboxDebug(e);   // ?hitbox draws it

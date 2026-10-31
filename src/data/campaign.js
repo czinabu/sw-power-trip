@@ -59,6 +59,11 @@ export const CHAPTERS = [
     lines: { duel: { jedi: [{ who: 'THE MARSHAL', rival: true, say: 'Step aside.' }], mando: [{ who: 'THE MARSHAL', rival: true, say: 'Step aside.' }] },
              escape: { jedi: ['Let him go. The General first.'], mando: ['Let him go. The General first.'] },
              clear: { jedi: ['The ship lifts over the canopy.'], mando: ['The ship lifts over the canopy.'] } } },
+  // ---------------- PROLOGUE (the Jedi's: data/campaign-jedi.js has its words) ----------------
+  { id: 'last-lesson', act: 0, kind: 'mission', mission: 'last-lesson', world: 'JEDHA, THE NIGHT BEFORE', story: 'jedi', prologue: true, steps: 0,
+    title: 'THE LAST LESSON',
+    brief: { jedi: ['Jedha, the night before the siege.', 'One more round with Ilsa before lights out.'], mando: ['Jedha, the night before the siege.', 'One more round with Ilsa before lights out.'] },
+    lines: { clear: { jedi: ['Lights out.'], mando: ['Lights out.'] } } },
   // ---------------- ACT I ----------------
   { id: 'siege', act: 0, kind: 'waves', level: 0, waves: [0, 2], world: 'JEDHA',
     title: 'SIEGE OF THE TEMPLE',
@@ -151,6 +156,11 @@ export const CHAPTERS = [
     lines: {
     duel: { jedi: [{ who: 'THE INQUISITOR', rival: true, say: 'Enough running. Come and take your coordinates, Knight.' }], mando: [{ who: 'VX-7', rival: true, say: 'ESCAPE VECTOR DENIED. ENGAGING.' }] },
     clear: { jedi: ['The coordinates never reach him.', 'Now we go to him.'], mando: ['The trail dies with the droid.', 'Now we go to him.'] } } },
+  // the Jedi's own (data/campaign-jedi.js has its words): back to the burned temple, to open the Sith gate under it
+  { id: 'return', act: 2, kind: 'mission', mission: 'jedha-night', world: 'JEDHA, THE TEMPLE AT NIGHT', story: 'jedi',
+    title: 'RETURN TO JEDHA',
+    brief: { jedi: ['The way to Exegol is under the temple.', 'Open it.'], mando: ['The way to Exegol is under the temple.', 'Open it.'] },
+    lines: { clear: { jedi: ['The gate is open.'], mando: ['The gate is open.'] } } },
   { id: 'spearhead', act: 2, kind: 'mission', mission: 'strike-exegol', opens: ['strike'], world: 'THE ROAD TO EXEGOL',
     title: 'SPEARHEAD',
     brief: { jedi: ['The masters you found are with you now, and so are the troopers who held Hoth.', 'Break the line before the gate. Vexis is waiting behind it.'],
@@ -211,7 +221,7 @@ export function chapterNo(pos, list = chapterOrder()){
 export const jediEnding = () => (answer('ilsa') || 'spared') + '-' + (answer('vexis') || 'ended');
 const OWN_WORDS = {
   mando: { voice: MANDO_VOICE, acts: MANDO_ACTS, actTwo: MANDO_ACT_TWO, epilogue: () => MANDO_EPILOGUE },
-  jedi:  { voice: JEDI_VOICE, acts: JEDI_ACTS, actTwo: JEDI_ACT_TWO, epilogue: () => JEDI_ENDINGS[jediEnding()] },
+  jedi:  { voice: JEDI_VOICE, acts: JEDI_ACTS, actTwo: JEDI_ACT_TWO, actTwoLabel: { lothal: 'THE PENS FIRST' }, epilogue: () => JEDI_ENDINGS[jediEnding()] },
   trooper: { voice: TROOPER_VOICE, acts: TROOPER_ACTS, actTwo: TROOPER_ACT_TWO, epilogue: () => TROOPER_EPILOGUE },
 };
 const own = (story) => OWN_WORDS[story];
@@ -220,6 +230,8 @@ export const storyVoice = (story = storyHero(), c = null) => (c && c.voice) || (
 export const actTitle = (i, story = storyHero()) => own(story) ? storyWords(own(story).acts[i].title) : forHero(ACTS[i].title, G.hero);
 export const actOpen = (i, story = storyHero()) => own(story) ? storyWords(own(story).acts[i].open) : forHero(ACTS[i].open, G.hero);
 export const actTwoLine = (k, story = storyHero()) => own(story) ? own(story).actTwo[k] : forHero(ACT_TWO[k].line, G.hero);
+// the pick's button: a story can rename a pair whose first world it moved (the Jedi's pens are on Tessaril, not Lothal)
+export const actTwoLabel = (k, story = storyHero()) => (own(story) && own(story).actTwoLabel && own(story).actTwoLabel[k]) || ACT_TWO[k].label;
 export const epilogueText = (key, story = storyHero()) => own(story) ? storyWords(own(story).epilogue()[key]) : forHero(EPILOGUE[key], G.hero);
 // where the pick is made: the first chapter of Act II, in this story's order (a story's own prologue comes before it)
 export const actTwoAt = (story = storyHero()) => chapterOrder(null, story).findIndex(c => c.pair);

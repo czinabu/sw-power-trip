@@ -39,10 +39,11 @@ import { overlay, setOverlayState } from '../ui/menus.js';
 import { showPanel, hidePanel, makeBeacon, makeConsole, setMarkerColor, pulseMarker, removeMarker,
          heroIn, nearHero, hostilesIn, hostilesAlive, setObjectiveHud, objectiveHud, mmss } from './objectives.js';
 import { MISSIONS, MISSION_VOICE, MISSION_COLOR } from '../data/missions.js';
+import { missionById, noteArcadeWin } from '../data/arcade.js';
 import { storyVoice } from '../data/campaign.js';
 import { chapterAt } from './campaign.js';
 import { ALLY_COLOR, addFriendRing, updateFriendRing, makeFriendTag } from '../fx/friend.js';
-import { spawnSquad, squadIn, squadStanding, allies } from '../allies/squad.js';
+import { spawnSquad, addSquadmate, squadIn, squadStanding, allies } from '../allies/squad.js';
 import { SQUAD } from '../data/allies.js';
 import { collideSolids } from '../world/collision.js';
 import { players, targetable } from '../player/players.js';
@@ -68,7 +69,7 @@ export function missionDone(id, hero){ try { return localStorage.getItem('sw_mis
 // start a mission from the top, or (retry) from the objective you fell on. opts.chapter: a campaign chapter (game/campaign.js)
 // plays it with the run's own build (no fixed kit, no grants, foes as tough as the run has got) and its chapter's name
 export function startMission(id = 'refuge', fromObjective = 0, guest = false, opts = {}){
-  const def = MISSIONS[id] || MISSIONS.refuge, ch = opts.chapter || null;
+  const def = missionById(id) || MISSIONS.refuge, ch = opts.chapter || null;   // a story mission, or an arcade contract (data/arcade.js)
   clearMission();
   if (!opts.retry) resetScenes();   // a fresh start plays the mission's scenes again (a retry after a death or an escape doesn't)
   const sub = def.level.sub && typeof def.level.sub === 'object' ? heroKey(def.level.sub) : def.level.sub;
@@ -78,11 +79,12 @@ export function startMission(id = 'refuge', fromObjective = 0, guest = false, op
     startLevel(0, { level: { ...def.level, sub }, mission: true, foeLook: def.foeLook, squadCap: def.squadCap });   // fresh hero, kit and stats, on the mission's arena
     for (const k of (def.grant && heroKey(def.grant)) || []) G.unlocked[k] = true;
     G.waveTotal = def.kit; checkUnlocks();                 // a mid-run kit: forms, Force jump / jetpack boosters, dual blasters
-    G.waveTotal = 0;   // ...but foes as tough as the first wave (HP and elite odds climb with waveTotal)
+    G.waveTotal = def.foeTier || 0;   // ...but foes as tough as the first wave (HP and elite odds climb with waveTotal); an arcade contract's threat sets its own
   }
   const title = typeof def.title === 'object' ? heroKey(def.title) : def.title;
+  G.arcadeDmg = def.dmgMul || 1;   // an arcade twist can make foes hit harder (game/survival.js enemyDmgScale)
   Object.assign(M, { on: true, def, i: fromObjective, o: null, s: null, fx: [], panelT: 0, endT: 0, won: false, failT: 0, quarry: null, qHp: 0, vip: null, run: M.run + 1, guest, begun: -1, net: null,
-                     chapter: ch, title, kick: ch ? ch.kicker : 'MISSION · ' + title });
+                     chapter: ch, title, kick: ch ? ch.kicker : (def.arcade ? 'ARCADE · ' : 'MISSION · ') + title });
   const st = (fromObjective && def.objectives[fromObjective].start) || def.start;   // a retry may begin further along
   if (st){ playerPos().set(st[0], 0, st[1]); G.yaw = player.faceYaw = st[2] || 0; }
   if (guest){   // co-op guest: the host runs the objectives; this browser shows them (coopMissionSync)
@@ -96,6 +98,8 @@ export function startMission(id = 'refuge', fromObjective = 0, guest = false, op
   if (def.escort) placeVip(fromObjective);
   // a STRIKE TEAM mission: the squad forms up beside the hero (allies/squad.js), and the wider battle rages past the walls
   if (def.squad) spawnSquad(def.squadCap ? Math.max(0, def.squadCap - allies.length) : def.squad, st);   // (a capped squad counts the trooper's own, already called in)
+  // a story's guest fighters for the chapter (the Jedi's Jakku: the Mandalorian after the same cores), beside the squad
+  if (ch && ch.guests) ch.guests.forEach((d, i) => addSquadmate(st && { x: st[0] + (i % 2 ? 2.2 : -2.2), z: st[1] - 1.5 }, { def: d, cap: 99 }));
   if (def.battle) startBattleFx(isMando() ? 0xffa040 : 0x4aa8ff);
   // retrying past the evacuation: the transport has already gone
   if (def.objectives.slice(0, fromObjective).some(o => o.kind === 'hold' && o.evacuees)) shipGone();
@@ -105,7 +109,7 @@ export function startMission(id = 'refuge', fromObjective = 0, guest = false, op
 }
 export function startCoopMission(id){ startMission(id, 0, true); }
 export function retryMission(){ startMission(M.def ? M.def.id : (G.missionId || 'refuge'), M.def ? M.i : 0, false, { chapter: M.chapter, retry: true }); }
-export function missionTitle(id, hero = G.hero){ const t = (MISSIONS[id] || MISSIONS.refuge).title; return typeof t === 'object' ? heroKey(t, hero) : t; }   // (a hero with no title of its own takes heroKey's fallback)
+export function missionTitle(id, hero = G.hero){ const t = (missionById(id) || MISSIONS.refuge).title; return typeof t === 'object' ? heroKey(t, hero) : t; }   // (a hero with no title of its own takes heroKey's fallback)
 function clearMission(){
   for (const m of M.markers) removeMarker(m);
   M.markers = [];
@@ -121,12 +125,14 @@ export function endMission(){ if (M.on || M.markers.length) clearMission(); }
 
 // who speaks a mission's lines: in the campaign, the story's voice for the chapter (Master Vael, then General Kast, in
 // the Jedi's); in the Missions list, the hero's own
-const missionVoice = () => { const c = G.chapter >= 0 && chapterAt(G.chapter); return c ? storyVoice(undefined, c) : heroKey(MISSION_VOICE); };
+const missionVoice = () => { const c = G.chapter >= 0 && chapterAt(G.chapter); return c ? storyVoice(undefined, c) : (M.def && M.def.voice) || heroKey(MISSION_VOICE); };   // (an arcade contract: DISPATCH)
 // an objective's line: a campaign chapter's story can say it its own way (its `says`, by objective: data/campaign-jedi.js)
 function sayLine(o){
-  const c = G.chapter >= 0 && chapterAt(G.chapter), i = M.def ? M.def.objectives.indexOf(o) : -1;
+  const c = G.chapter >= 0 && chapterAt(G.chapter), i = o === M.o ? M.i : M.def ? M.def.objectives.indexOf(o) : -1;   // (M.o is this run's copy of the objective: forHero)
   return (c && c.says && i >= 0 && c.says[i]) || heroKey(o.say);
 }
+// a hold's evacuees, as the campaign chapter's story has them (the Jedi's Lothal: the pens' children, not prisoners)
+const evac = (o) => M.chapter && M.chapter.evacuees ? { ...o.evacuees, ...M.chapter.evacuees } : o.evacuees;
 function say(o, opts){ showPanel(missionVoice(), sayLine(o), '', heroKey(o.task), { drill: true, ...opts }); M.panelT = 7; }
 function fieldSpawn(type, x, z){
   const s = findClearSpawn(x, z, 1.0);
@@ -176,7 +182,7 @@ const KINDS = {
     begin(o, s){
       s.prog = 0; s.pulse = 0; s.pulseT = 2.5;
       M.markers.push(s.zone = makeBeacon(o.at[0], o.at[1], 0, heroKey(MISSION_COLOR), o.r / 0.9));
-      if (o.evacuees) beginEvacuees(o.evacuees, s);
+      if (o.evacuees) beginEvacuees(evac(o), s);
     },
     update(o, s, dt){
       const officers = enemies.some(e => !e.dead && !e.converted && e.type === 'officer');
@@ -194,12 +200,12 @@ const KINDS = {
       const mates = o.squadRate ? squadIn(o.at[0], o.at[1], o.r) : 0;
       const rate = inZone ? 1 : mates ? o.squadRate * (foes ? 0.5 : 1) : foes ? 0 : o.awayRate;
       s.prog += dt * rate; s.rate = rate; s.inZone = inZone;
-      if (s.kids) updateEvacuees(o.evacuees, s, dt, Math.min(1, s.prog / o.time), rate);
+      if (s.kids) updateEvacuees(evac(o), s, dt, Math.min(1, s.prog / o.time), rate);
       setMarkerColor(s.zone, rate === 0 ? RED : heroKey(MISSION_COLOR));
       s.zone.userData.beam.visible = !inZone;   // the column guides you back; standing in it, it would only fill the screen
       pulseMarker(s.zone, dt, G.gt);
       const total = alive ? ' · ' + alive + ' HOSTILE' + (alive === 1 ? '' : 'S') : '';
-      const who = o.evacuees ? heroKey(o.evacuees.name) + ' ' + (o.evacuees.verb || 'ABOARD') + ' ' + s.aboard + ' / ' + o.evacuees.count : (o.holding || 'HOLDING');
+      const who = o.evacuees ? heroKey(evac(o).name) + ' ' + (evac(o).verb || 'ABOARD') + ' ' + s.aboard + ' / ' + evac(o).count : (o.holding || 'HOLDING');
       setObjectiveHud({ kicker: M.kick, title: o.title, frac: s.prog / o.time,
         status: (rate === 0 ? 'OVERRUN: ' + (o.overrun || 'RETAKE THE RAMP') : inZone ? who + ' · ' + mmss(o.time - s.prog)
                : mates ? 'SQUAD HOLDING ' + mmss(o.time - s.prog) : (o.unguarded || 'RAMP UNGUARDED') + ' ' + mmss(o.time - s.prog)) + total,
@@ -956,11 +962,15 @@ function completeObjective(){
 }
 function missionComplete(){
   const def = M.def;
-  try { localStorage.setItem('sw_mission_' + def.id + '_' + G.hero, '1'); } catch(e){}
-  if (!M.chapter) autosave('mission');   // (a chapter's win is saved as the next chapter starts)
+  if (def.arcade) noteArcadeWin(G.hero);   // an arcade contract counts toward the hero's tally (and saves nothing: it's a one-off)
+  else try { localStorage.setItem('sw_mission_' + def.id + '_' + G.hero, '1'); } catch(e){}
+  if (!M.chapter && !def.arcade) autosave('mission');   // (a chapter's win is saved as the next chapter starts)
   // a campaign chapter's card carries the chapter's clear lines (what the mission taught, who joins), not a second voice line on the comms strip
-  const clearLines = M.chapter && M.chapter.clear;
-  showPanel(missionVoice(), clearLines && clearLines.length ? clearLines.join(' ') : heroKey(def.done), '', M.chapter ? 'Chapter complete' : 'Mission complete', { drill: true, done: true });
+  // (the voice's own lines; when it has none, the last cast member who speaks ({ who, say }), under their own name)
+  const said = (M.chapter && M.chapter.clear) || [], own = said.filter(x => typeof x === 'string'), cast = said.filter(x => x && x.who);
+  const by = own.length || !cast.length ? null : cast[cast.length - 1].who;
+  const clearText = own.length ? own.join(' ') : by ? cast.filter(x => x.who === by).map(x => x.say).join(' ') : heroKey(def.done);
+  showPanel(by || missionVoice(), clearText, '', M.chapter ? 'Chapter complete' : 'Mission complete', { drill: true, done: true });
   if (!M.guest && hooks.missionDone) hooks.missionDone();   // co-op: the guest's mission ends with it
   if (M.chapter){   // a campaign chapter: no victory screen, the run carries on into the next chapter (game/campaign.js)
     M.panelT = 6; M.o = null;
@@ -976,7 +986,7 @@ function missionComplete(){
     document.exitPointerLock();
     overlay.style.display = 'flex';
     setOverlayState('victory');
-    document.getElementById('ovsub').textContent = 'MISSION COMPLETE · ' + M.title;
+    document.getElementById('ovsub').textContent = (def.arcade ? 'ARCADE · ' : 'MISSION COMPLETE · ') + M.title;
   }, 1600);
 }
 
