@@ -25,6 +25,7 @@ export const FOOTWORK = {
   juyo:      { crouch: -0.26, splay: 0.3,  lead: 0.44, lean: 0.2,  width: 1.15 },   // pitched forward and low, a predator about to spring
   vaapad:    { crouch: -0.18, splay: 0.38, lead: 0.3,  lean: 0.08, width: 1.2 },    // Mace Windu's: upright, balanced, utterly still
   darksaber: { crouch: -0.2,  splay: 0.46, lead: 0.2,  lean: 0.18, width: 1.25 },    // braced against a blade that pulls
+  forceReady:{ crouch: -0.3,  splay: 0.66, lead: 0.04, lean: 0.1,  width: 1.35 },    // the holstered Jedi: feet set wide, knees bent, a low Force-ready guard
   brawler:   { crouch: -0.15, splay: 0.24, lead: 0.36, lean: 0.12, width: 1.1 },    // the holstered Mando: knees bent, left foot leading
 };
 
