@@ -6,6 +6,9 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'Shien: the old Kylo Ren reverse grip', status: 'done',
+    items: ['Form V Shien\'s reverse-grip ready pose is the earlier trailing guard again: saber arm hanging long and low at the weapon side, blade raked down and back, hunched forward with the free hand raised ahead',
+            'Pose only: Shien\'s cuts, block, footwork and deflects are unchanged. Same in every mode, co-op included'] },
   { title: 'Co-op: duellist guards for the guest', status: 'done',
     items: ['The joining player now sees a duellist\'s guard crescent, posture bar and breath, exactly as the host does',
             'Their cuts and punches meet the same guard: inside the crescent they are always turned, with the BLOCKED spark and clash; off-line they are turned by the foe\'s usual odds',
