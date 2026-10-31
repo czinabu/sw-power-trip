@@ -665,7 +665,10 @@ function decide(e, line, kind, rhyN){
     const A = DUEL.arc, d = angDist(ang, GUARD_ANG[e.guard] ?? 90);
     cover = 1 - THREE.MathUtils.smoothstep(d, A.cover, A.cover + A.feather);
   }
+  // SEALED ARC — a cut that arrives inside the glowing crescent (the side it is guarding) never gets through: flank it to the
+  // open side, or break its guard (kick, parry, saber lock, posture) / wait out its shift. Winded or caught open it has no arc.
   const onLine = cover > 0.5;
+  if (onLine && has(DUEL.breath.block)) return 'block';
   let chance = p.block * (DUEL.offLine + (1 - DUEL.offLine) * cover);
   if (onLine && e.lineStreak >= DUEL.adaptAfter) chance = 0.95;   // it has your rhythm: same cut, same answer
   if (kind === 'finisher') chance *= 0.75;

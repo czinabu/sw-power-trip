@@ -21,7 +21,7 @@
 //   sabotage  reach each console and stay on it to slice it
 //               consoles: [{ at: [x, z], guards: { type: count } }] · time: seconds of slicing each · r: how close
 //               hitLoss: seconds of slicing lost when you're hit · trickle: { every, cap, group } light reinforcements
-//   capture   take a line of posts in turn: stand in one (or put the squad on it with H) with no foe inside
+//   capture   take a line of posts in turn: stand in one (or send the squad onto it with H) with no foe inside
 //               posts: [{ at: [x, z], guards: { type: count } }] · r · time: seconds to take each · squadRate: speed with
 //               only squadmates in it · perMate: extra speed per squadmate in it · trickle: { every, cap, group } troops
 //               marching on the post being taken · from: the arc they come from · aggro (see hold)
@@ -133,7 +133,7 @@ export const MISSIONS = {
       { kind: 'capture', title: 'BREAK THEIR LINE',
         say: { jedi: 'Your troopers are with you, General. Take their forward posts one by one. Leave the troopers to the squad, and the blades to yourself.',
                mando: 'Your clan rides with you. Take their posts one by one. They\'ll handle the troopers. The blades are yours.' },
-        task: { jedi: 'Take the three posts (H sends the squad to hold one)', mando: 'Take the three posts (H sends the squad to hold one)' },
+        task: { jedi: 'Take the three posts (tap H on one to send the squad there)', mando: 'Take the three posts (tap H on one to send the squad there)' },
         r: 5, time: 9, squadRate: 0.55, perMate: 0.15, postName: 'POST', doneLine: 'THEIR LINE BREAKS', aggro: 9,
         posts: [ { at: GRASSLAND_SPOTS.points.ridge, guards: { grunt: 3, blaster: 2 } },                        // the first ridge
                  { at: GRASSLAND_SPOTS.points.walker, guards: { grunt: 3, blaster: 2, officer: 1, lancer: 1 } },   // under the downed walker

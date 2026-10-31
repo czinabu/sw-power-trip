@@ -47,7 +47,7 @@ export const PAD_BINDS = {
       R3: { key: 't', label: 'Lock on', note: 'Again to release' },
       ...SLOTS,
       DOWN: { key: '4', label: 'Holster saber' },
-      VIEW: { key: 'h', label: 'Squad order', note: 'In the sandbox, opens the sandbox panel (LB + VIEW gives the order there)', sandbox: 'b' },
+      VIEW: { key: 'h', label: 'Squad orders', note: 'Tap for the smart order · hold for the command wheel: the right stick picks, the D-pad picks one squadmate, let go to give it · in the sandbox, opens the sandbox panel (LB + VIEW gives orders there)', sandbox: 'b' },
     },
     lb: {
       Y:  { key: 'r', label: 'Judgement / Repulse', note: 'Whichever you earned' },
@@ -55,7 +55,7 @@ export const PAD_BINDS = {
       RB: { key: 'v', label: 'Barrier' },
       L3: { key: 'q', label: 'Run / walk' },
       DOWN: { key: 'g', label: 'Switch grip', note: 'Regular or reverse' },
-      VIEW: { key: 'h', label: 'Squad order' },
+      VIEW: { key: 'h', label: 'Squad orders' },
     },
   },
   mando: {
@@ -72,14 +72,14 @@ export const PAD_BINDS = {
       R3: { key: 'e', label: 'Close quarters', note: 'Forward + R3 jet charges, in the air a dive kick, on a floored foe a takedown' },
       ...SLOTS,
       DOWN: { key: '4', label: 'Holster' },
-      VIEW: { key: 'h', label: 'Squad order', note: 'In the sandbox, opens the sandbox panel (LB + VIEW gives the order there)', sandbox: 'b' },
+      VIEW: { key: 'h', label: 'Squad orders', note: 'Tap for the smart order · hold for the command wheel: the right stick picks, the D-pad picks one squadmate, let go to give it · in the sandbox, opens the sandbox panel (LB + VIEW gives orders there)', sandbox: 'b' },
     },
     lb: {
       Y:  { key: 'v', label: 'Whistling Birds / Detonator', note: 'Whichever you earned' },
       X:  { key: 'x', label: 'Grapple / Jetpack Slam', note: 'Whichever you earned' },
       RB: { key: 'z', label: 'Jetpack missile' },
       DOWN: { key: 'g', label: 'Bacta stim' },
-      VIEW: { key: 'h', label: 'Squad order' },
+      VIEW: { key: 'h', label: 'Squad orders' },
     },
   },
 };
