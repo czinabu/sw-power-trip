@@ -12,6 +12,11 @@ import { DIM } from './rig.js';
 // rounded-off sections: the bucket, pauldrons and gorget shade as pressed metal, not cut blocks
 const SOFT = rounded(chamfer(0.42)), SOFT_HEAD = rounded(HEAD);
 
+// a domed rivet head flat against a plate (+z out of it)
+let _rivet = null;
+const rivetGeo = () => _rivet || (_rivet = loft([{ y:0, w:0.02, d:0.02 }, { y:0.005, w:0.016, d:0.016 }, { y:0.009, w:0.007, d:0.007 }], ngon(6)).rotateX(Math.PI/2));
+function rivets(k, parent, pts, r = [0, 0, 0]){ for (const p of pts) k.add(rivetGeo(), 'beskar', parent, p, r, { outline: false }); }
+
 const mirror = pts => pts.map(([x, y]) => [-x, y]).reverse();
 const SEAM_COOL = 0x5fd8ff, SEAM_WARM = 0xff7a3d;
 
@@ -26,6 +31,7 @@ export const MANDO_PARTS = {
           ...seg(DIM.shin, [[0.1,0.14,0.15],[0.45,0.135,0.145],[0.8,0.115,0.125],[1,0.115,0.125]], DIM.thigh),
         ], { bones: [L.hip, L.knee], at: [DIM.thigh] });
         k.add(plate([[-0.07,0],[0.07,0],[0.078,-0.2],[0,-0.25],[-0.078,-0.2]], 0.03, 0.01), 'beskar2', L.hip, [0, -0.07, 0.085], [-0.06, 0, 0]);
+        rivets(k, L.hip, [[0.055, -0.085, 0.107], [-0.055, -0.085, 0.107]], [-0.06, 0, 0]);
         k.add(plate([[-0.055,0.04],[0.055,0.04],[0.065,-0.02],[0,-0.07],[-0.065,-0.02]], 0.03, 0.01), 'beskar', L.knee, [0, 0, 0.07]);
         k.add(limb(DIM.shin - 0.09, [[0,0.125,0.11,0.02],[0.3,0.15,0.13,0.02],[1,0.12,0.1,0.02]], KEEL), 'beskar2', L.knee, [0, -0.08, 0]);
         k.add(plate([[-0.075,0.035],[-0.09,-0.075],[0.16,-0.085],[0.21,-0.05],[0.1,0.0],[0.03,0.04]], 0.115, 0.014),
@@ -59,6 +65,27 @@ export const MANDO_PARTS = {
       k.add(loft([{ y:0.33, w:0.24, d:0.2 }, { y:0.45, w:0.165, d:0.155 }], SOFT), 'suit', R.chest);   // gorget
       k.add(plate([[-0.17,0],[0.17,0],[0.15,0.24],[-0.15,0.24]], 0.03, 0.01), 'beskar2', R.chest, [0, 0.06, -0.125]);
       for (const sx of [-1, 1]) k.add(block(0.05, 0.42, 0.03, 0.2), 'strap', R.chest, [0.13*sx, 0.18, 0.13], [-0.25, 0, 0]);
+      // PLATE LAYERING: rivets at the pec plates' corners and the back plate's, a dark gap line where each pec meets the
+      // suit, so the beskar reads as separate plates strapped over the flight suit
+      rivets(k, R.chest, [[0.05, 0.155, 0.152], [0.17, 0.165, 0.142], [-0.05, 0.155, 0.152], [-0.17, 0.165, 0.142]]);
+      rivets(k, R.chest, [[0.13, 0.27, -0.142], [-0.13, 0.27, -0.142]], [0, Math.PI, 0]);
+      for (const sx of [-1, 1]) k.add(block(0.006, 0.17, 0.006, 0.2), 'suit', R.chest, [0.205*sx, 0.2, 0.118], [0, 0, 0.25*sx], { outline: false });
+      // GEAR THAT MOVES: two pouches and a cable coil on the belt, each on a pivot that bounces and lags with the stride
+      // (model/life.js gearSway)
+      const gear = (x, z, ry) => { const g = k.group(R.hips, [x, 0.08, z], [0, ry, 0]); g.userData.rest = g.rotation.clone(); (R.hips.userData.gear || (R.hips.userData.gear = [])).push(g); return g; };
+      for (const sx of [-1, 1]){
+        const p = gear(0.17*sx, 0.11, 0.35*sx);
+        k.add(block(0.07, 0.085, 0.055, 0.3), 'strap', p, [0, -0.045, 0.012]);
+        k.add(block(0.074, 0.025, 0.06, 0.3), 'suit', p, [0, -0.002, 0.014], [0, 0, 0], { outline: false });
+      }
+      const coil = gear(-0.2, -0.06, -1.2);
+      k.add(new THREE.TorusGeometry(0.045, 0.012, 5, 10), 'suit', coil, [0, -0.06, -0.01], [0, Math.PI/2, 0]);
+      // JETPACK HOSES: from the belt up into the pack's underside, skinned over the hips, waist and chest so they bend
+      // and twist with the body instead of cutting through it
+      for (const sx of [-1, 1]) k.skin('suit', [
+        { t:0.0, w:0.03, d:0.03, x:0.15*sx, z:-0.16 }, { t:0.1, w:0.03, d:0.03, x:0.16*sx, z:-0.2 },
+        { t:0.22, w:0.03, d:0.03, x:0.15*sx, z:-0.24 }, { t:0.32, w:0.03, d:0.03, x:0.13*sx, z:-0.27 },
+      ], { bones: [R.hips, R.torso, R.chest], at: [DIM.torsoY, DIM.torsoY + DIM.chestY], blend: 0.07, profile: ngon(6), dir: 1 });
     },
   },
 
