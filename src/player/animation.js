@@ -620,9 +620,11 @@ const easeInOut = t => t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t + 2, 2) / 2;
 /* A THROWN BLOW in four beats, over seconds since the press: a short CHAMBER that loads it (→ -1), a SNAP that
    accelerates into the target and arrives at full extension exactly on the contact frame (→ +1, when melee.js lands
    the hit), a HOLD on the impact, then the RECOVERY home (→ 0). Real strikes are fast out and slower back. */
-const BLOW_CONTACT = { ...Object.fromEntries([...MANDO_MELEE.string, ...MANDO_MELEE.fists, ...MANDO_MELEE.guard.string].map(b => [b.name, b.contact])), takedown: 0.12, catch: 0.04, charge: 0, dive: 0 };
+const BLOW_CONTACT = { ...Object.fromEntries([...MANDO_MELEE.string, ...MANDO_MELEE.fists, ...MANDO_MELEE.guard.string].map(b => [b.name, b.contact])),
+  takedown: MANDO_MELEE.takedown.contact, takedownLow: MANDO_MELEE.takedown.floorContact, headbutt: MANDO_MELEE.headbutt.contact, throw: MANDO_MELEE.throw.contact,
+  grab: 0.08, clinch: 0, catch: 0.04, charge: 0, dive: 0 };
 const HACK_T = new THREE.Vector3(), HACK_POLE = new THREE.Vector3(0.6, -0.8, -0.1).normalize();
-const BLADE_OUT = { blade: 1, takedown: 1, hackA: 1, hackB: 1 };   // the beats that spring the wrist vibroblade
+const BLADE_OUT = { blade: 1, takedown: 1, takedownLow: 1, hackA: 1, hackB: 1 };   // the beats that spring the wrist vibroblade
 function blowCurve(age, c, dur){
   const w = c * 0.55, hold = 0.05;
   if (age < w) return -Math.sin((age / w) * Math.PI / 2);
@@ -908,7 +910,69 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
       R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -1.45 + ld * 0.35, 26); R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -1.3 - ld * 0.35, 26);
       R.torso.rotation.x = dr(R.torso.rotation.x, -0.12 * ch + 0.3 * ld, snap);   // lean back to load, fold over the knee
       vis.position.y = dr(vis.position.y, -0.06 * ch + 0.07 * ld, 30);
-    } else if (kind === 'blade' || kind === 'takedown'){
+    } else if (kind === 'grab' || kind === 'clinch'){
+      // THE CLINCH: the lead hand out at arm's length with the foe's collar in the fist, the rear one cocked by the chin,
+      // left shoulder leading, chin down (the grab itself is the hand shooting out to it)
+      const reach = kind === 'grab' ? Math.max(0, v) : 1;
+      R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -1.3 - reach * 0.12, kind === 'grab' ? snap : 18);
+      R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, 0.12, 18);
+      R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -1.5 + reach * 1.05, kind === 'grab' ? snap : 18);
+      R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -1.05, 18); R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, 0.25, 18);
+      R.armR.el.rotation.x = dr(R.armR.el.rotation.x, -1.95, 18);
+      R.torso.rotation.y = dr(R.torso.rotation.y, 0.28, 14);
+      R.torso.rotation.x = dr(R.torso.rotation.x, 0.1, 14);
+      R.torso.position.z = dr(R.torso.position.z, 0.06, 14);
+      vis.position.y = dr(vis.position.y, -0.05, 14);
+    } else if (kind === 'headbutt'){
+      // BESKAR HEADBUTT: the collar hand hauls the foe in as the head and shoulders rock back, then the whole upper body
+      // snaps forward and down through the helmet, the knees giving into it
+      R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -1.35 + ld * 0.15, snap);
+      R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, 0.15, 18);
+      R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -0.5 - ld * 0.9 - ch * 0.1, snap);   // pulls in through the blow
+      R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -1.05 + ch * 0.2, 20); R.armR.el.rotation.x = dr(R.armR.el.rotation.x, -1.95, 20);
+      R.torso.rotation.x = dr(R.torso.rotation.x, -0.32 * ch + 0.5 * ld, snap);
+      R.torso.position.z = dr(R.torso.position.z, -0.08 * ch + 0.26 * ld, snap);
+      R.torso.rotation.y = dr(R.torso.rotation.y, 0.22 - 0.12 * ld, snap);
+      R.head.rotation.x = dr(R.head.rotation.x, -0.2 * ch + 0.38 * ld, snap);   // the brow leads
+      vis.position.y = dr(vis.position.y, -0.03 * ch - 0.1 * ld, 30);
+    } else if (kind === 'throw'){
+      // THE THROW: both hands on the body, hips wound away from the throw, then the whole frame turns through and the
+      // arms hurl it out ahead and up, the weight landing on the lead leg
+      const sweep = clamp(v >= 0 && age > c ? 1 + (1 - v) * 0.2 : (v + 1) / 2, 0, 1.2);
+      R.torso.rotation.y = dr(R.torso.rotation.y, 0.65 - sweep * 1.1, snap);
+      R.torso.rotation.x = dr(R.torso.rotation.x, -0.15 * ch + 0.2 * ld, snap);
+      R.torso.position.z = dr(R.torso.position.z, ld * 0.3 - ch * 0.08, snap);
+      for (const A of [R.armL, R.armR]){
+        A.sh.rotation.x = dr(A.sh.rotation.x, -1.0 - sweep * 0.75, snap);
+        A.el.rotation.x = dr(A.el.rotation.x, -1.4 + Math.min(1, sweep) * 1.25, snap);
+      }
+      R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, 0.2, 20); R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, -0.2, 20);
+      vis.position.y = dr(vis.position.y, -0.1 * ch - 0.04 * ld, 26);
+    } else if (kind === 'takedown'){
+      // KNIFE TAKEDOWN (on its feet): the lead hand takes the collar and holds it there, the blade hand drops to the
+      // hip, then drives up and in under the chest plate with the shoulder behind it, and holds the knife in
+      R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -1.4, 22); R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, 0.12, 22);
+      R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -0.55 - ld * 0.45, 22);   // pulls it onto the blade
+      R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -0.15 * ch - ld * 1.25 + (1 - ld - ch) * -0.6, snap);
+      R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, 0.35 * ch - 0.05 * ld, snap);
+      R.armR.el.rotation.x = dr(R.armR.el.rotation.x, -1.95 * ch - 0.35 * ld - (1 - ld - ch) * 1.2, snap);
+      R.torso.rotation.y = dr(R.torso.rotation.y, 0.35 * ch - 0.25 * ld, snap);
+      R.torso.rotation.x = dr(R.torso.rotation.x, 0.15 * ld, 24);
+      R.torso.position.z = dr(R.torso.position.z, ld * 0.38, snap);
+      vis.position.y = dr(vis.position.y, -0.08 * ld - 0.04 * ch, 26);
+    } else if (kind === 'takedownLow'){
+      // KNIFE TAKEDOWN (floored): he drops onto the rear knee over it, the blade wound up over the shoulder, and drives
+      // it straight down, then rises out of it
+      const kn = smooth01(age / 0.12) * smooth01((dur - age) / 0.22);
+      R.legL.hip.rotation.x = -1.35 * kn; R.legL.knee.rotation.x = 1.5 * kn;    // lead foot planted, thigh level
+      R.legR.hip.rotation.x = 0.25 * kn;  R.legR.knee.rotation.x = 1.85 * kn;   // rear knee to the deck
+      vis.position.y = dr(vis.position.y, -0.5 * kn, 40);
+      R.torso.rotation.x = dr(R.torso.rotation.x, 0.5 * kn + 0.15 * ld, snap);
+      R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -2.7 * ch - 0.75 * ld - (1 - ld - ch) * 2.0, snap);
+      R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, 0.1, 20);
+      R.armR.el.rotation.x = dr(R.armR.el.rotation.x, -1.5 * ch - 0.2 * ld - (1 - ld - ch) * 1.2, snap);
+      R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -0.9, 20); R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -0.5, 20);   // pinning it down
+    } else if (kind === 'blade'){
       // the wrist blade carves across: wound high over the right shoulder, ripped through to the left hip, the torso
       // unwinding behind it and the follow-through carrying past the target
       const sweep = clamp(v >= 0 && age > c ? 1 + (1 - v) * 0.25 : (v + 1) / 2, 0, 1.25);
@@ -918,7 +982,7 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
       R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -1.1 + sweep * 0.5, 20); R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -1.5, 20);
       R.torso.rotation.y = dr(R.torso.rotation.y, 0.45 - sweep * 0.9, snap);
       R.torso.rotation.x = dr(R.torso.rotation.x, ld * 0.12, 24);
-      R.torso.position.z = dr(R.torso.position.z, ld * (kind === 'takedown' ? 0.42 : 0.3), snap);
+      R.torso.position.z = dr(R.torso.position.z, ld * 0.3, snap);
       vis.position.y = dr(vis.position.y, -0.08 * ld, 26);   // sinks into the cut
     } else if (kind === 'hackA' || kind === 'hackB'){
       // SHIELD AND BLADE: the gun hand carves a flat cut out from behind the disc while the shield arm holds its

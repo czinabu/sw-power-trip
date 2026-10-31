@@ -70,7 +70,7 @@ export const PAD_BINDS = {
       LT: { mouse: 2, label: 'Brace / shield / scope', note: 'Tap LT as a bolt arrives: a beskar parry sends it back · Darksaber in hand: hold LT and pull RT to throw it · in the air, hover' },
       LB: { key: 'alt', label: 'Strafe (hold)', note: 'Stay square to the crosshair · also opens the LB gadgets' },
       L3: { key: 'c', label: 'Slide', note: 'Out of any run' },
-      R3: { key: 'e', label: 'Close quarters', note: 'Forward + R3 jet charges, in the air a dive kick, on a floored foe a takedown' },
+      R3: { key: 'e', label: 'Close quarters', note: 'Forward + R3 jet charges, in the air a dive kick, on a floored foe a takedown · hold R3 through a blow to grab: R3 headbutts, RT throws' },
       ...SLOTS,
       DOWN: { key: '4', label: 'Holster' },
       VIEW: { key: 'h', label: 'Squad orders', note: 'Tap for the smart order · hold for the command wheel: the right stick picks, the D-pad picks one squadmate, let go to give it · in the sandbox, opens the sandbox panel (LB + VIEW gives orders there)', sandbox: 'b' },
