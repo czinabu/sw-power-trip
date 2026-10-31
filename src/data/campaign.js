@@ -1,6 +1,9 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
-import { heroKey } from '../state.js';
+import { G, heroKey } from '../state.js';
 import { mergeTrooperStory } from './campaign-trooper.js';
+import { MANDO_VOICE, MANDO_ACTS, MANDO_ACT_TWO, MANDO_CHAPTERS, MANDO_EPILOGUE } from './campaign-mando.js';
+import { JEDI_VOICE, JEDI_ACTS, JEDI_ACT_TWO, JEDI_CHAPTERS, JEDI_ENDINGS } from './campaign-jedi.js';
+import { storyWords, answer } from '../game/choices.js';
 // THE CAMPAIGN, as data: three acts of chapters, played in order (game/campaign.js runs them). Edit the words freely.
 //
 // A chapter is one of
@@ -18,8 +21,13 @@ import { mergeTrooperStory } from './campaign-trooper.js';
 // `lines` is what's said during the chapter, on the comms strip (game/story.js), per hero. `wave` has one entry per wave
 // of the chapter; the rest are story beats: duel (a mission's duel foe steps in) · escape (it breaks off) · boss · clear.
 // A line is a string (the voice: VOICE) or { who, say } for anyone else; `rival: true` marks the enemy talking.
+//
+// EACH HERO'S OWN STORY: a run plays the story of the hero who began it (G.storyHero: in co-op, the host's). The Mando's
+// story lays its own version of a chapter over these slots (data/campaign-mando.js: its own worlds, missions, cast and
+// the scenes between chapters); chapterOrder hands out the chapters as that story tells them. The `mando` words in the
+// chapters below are what a Mando hears playing alongside a Jedi host.
 
-export const VOICE = { jedi: 'THE BATTLEMASTER', mando: 'THE ARMORER', trooper: 'THE CAPTAIN' };
+export const VOICE = { jedi: 'MASTER VAEL', mando: 'THE ARMORER', trooper: 'THE CAPTAIN' };
 
 export const ACTS = [
   { title: { jedi: 'THE FALL OF JEDHA', mando: 'THE BROKEN COVERT' },
@@ -166,13 +174,39 @@ export const EPILOGUE = {
 // the clone trooper's own words (testing, a first draft) laid over the chapters above: data/campaign-trooper.js
 mergeTrooperStory(ACTS, ACT_TWO, CHAPTERS, EPILOGUE);
 
+// whose story this run tells: the hero who began it, or (a co-op guest) the host's
+export const storyHero = () => G.storyHero || G.hero;
+const OWN = { mando: MANDO_CHAPTERS, jedi: JEDI_CHAPTERS };
+// a chapter as a story tells it: the story's own version laid over the shared slot (its `story` names whose it is), with
+// the run's choices filled into its words (game/choices.js: the Jedi's story changes with what you chose)
+export function storyChapter(c, story = storyHero()){
+  const o = OWN[story] && OWN[story][c.id];
+  return o ? { ...c, ...storyWords(o), story } : c;
+}
+// every mission a chapter can play, in any hero's story (the Missions list and the sandbox follow them all)
+export const storyMissions = (c) => [c.mission, ...Object.values(OWN).map(s => s[c.id] && s[c.id].mission)].filter(Boolean);
 // the order a run plays them in: Act II's pairs follow the player's pick (default Lothal first, before the pick is made)
-export function chapterOrder(first){
+export function chapterOrder(first, story = storyHero()){
   const lothal = CHAPTERS.filter(c => c.pair === 'lothal'), hoth = CHAPTERS.filter(c => c.pair === 'hoth');
   const pairs = first === 'hoth' ? [...hoth, ...lothal] : [...lothal, ...hoth];
   const at = CHAPTERS.findIndex(c => c.pair);
-  return [...CHAPTERS.slice(0, at), ...pairs, ...CHAPTERS.slice(at).filter(c => !c.pair)];
+  return [...CHAPTERS.slice(0, at), ...pairs, ...CHAPTERS.slice(at).filter(c => !c.pair)].map(c => storyChapter(c, story));
 }
+// the story's words that aren't a chapter's: its voice, its acts, Act II's pick and the epilogue. A story of its own
+// has them as plain words (whoever plays it hears them); the shared story's are per hero.
+// The Jedi's epilogue is one of four, by what became of Ilsa and of Vexis (data/campaign-jedi.js JEDI_ENDINGS).
+export const jediEnding = () => (answer('ilsa') || 'spared') + '-' + (answer('vexis') || 'ended');
+const OWN_WORDS = {
+  mando: { voice: MANDO_VOICE, acts: MANDO_ACTS, actTwo: MANDO_ACT_TWO, epilogue: () => MANDO_EPILOGUE },
+  jedi:  { voice: JEDI_VOICE, acts: JEDI_ACTS, actTwo: JEDI_ACT_TWO, epilogue: () => JEDI_ENDINGS[jediEnding()] },
+};
+const own = (story) => OWN_WORDS[story];
+// (a chapter's own `voice` speaks for it instead: a story can hand the comms to someone else partway through)
+export const storyVoice = (story = storyHero(), c = null) => (c && c.voice) || (own(story) ? own(story).voice : heroKey(VOICE));
+export const actTitle = (i, story = storyHero()) => own(story) ? storyWords(own(story).acts[i].title) : forHero(ACTS[i].title, G.hero);
+export const actOpen = (i, story = storyHero()) => own(story) ? storyWords(own(story).acts[i].open) : forHero(ACTS[i].open, G.hero);
+export const actTwoLine = (k, story = storyHero()) => own(story) ? own(story).actTwo[k] : forHero(ACT_TWO[k].line, G.hero);
+export const epilogueText = (key, story = storyHero()) => own(story) ? storyWords(own(story).epilogue()[key]) : forHero(EPILOGUE[key], G.hero);
 // where the pick is made: the first chapter of Act II
 export const ACT_TWO_AT = CHAPTERS.findIndex(c => c.pair);
 // a save from before the chapters (data/levels.js index) picks up on the chapter that opens that level
