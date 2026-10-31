@@ -81,6 +81,9 @@ export const DUELS = {
   strike: {
     jedi:  [[null, 'Vexis said a Knight would come. He did not say you would come with so few.']],
     mando: [[null, 'The Magistrate sends his regards. And his beskar.']] },
+  'strike-exegol': {
+    jedi:  [[null, 'Vexis said a Knight would come. He did not say you would bring an army.']],
+    mando: [[null, 'The Magistrate sends his regards. And his beskar.']] },
   pursuit: {
     jedi:  [[null, 'He taught me the seventh form, Knight. Let me show you what your master never could.']],
     mando: [[null, 'Bounty located. Termination authorised.']] },
@@ -93,6 +96,12 @@ export const DUELS = {
   grassland: {
     jedi:  [[null, 'This pad is closed, Jedi.']],
     mando: [[null, 'Nothing lands on my pad.']] },
+  forge: {
+    jedi:  [[null, 'You broke my forge. I will make your blade from what is left of it.']],
+    mando: [[null, 'Beskar melts like anything else. So will you.']] },
+  breakout: {
+    jedi:  [[null, 'Those were my prisoners, Jedi. I will have every one of them back.']],
+    mando: [[null, 'You emptied my cells. I\'ll fill one with you.']] },
 };
 
 // the last boss arrives (campaign only)

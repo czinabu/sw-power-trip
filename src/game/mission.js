@@ -185,7 +185,7 @@ const KINDS = {
       s.zone.userData.beam.visible = !inZone;   // the column guides you back; standing in it, it would only fill the screen
       pulseMarker(s.zone, dt, G.gt);
       const total = alive ? ' · ' + alive + ' HOSTILE' + (alive === 1 ? '' : 'S') : '';
-      const who = o.evacuees ? o.evacuees.name[G.hero] + ' ABOARD ' + s.aboard + ' / ' + o.evacuees.count : (o.holding || 'HOLDING');
+      const who = o.evacuees ? o.evacuees.name[G.hero] + ' ' + (o.evacuees.verb || 'ABOARD') + ' ' + s.aboard + ' / ' + o.evacuees.count : (o.holding || 'HOLDING');
       setObjectiveHud({ kicker: M.kick, title: o.title, frac: s.prog / o.time,
         status: (rate === 0 ? 'OVERRUN: ' + (o.overrun || 'RETAKE THE RAMP') : inZone ? who + ' · ' + mmss(o.time - s.prog)
                : mates ? 'SQUAD HOLDING ' + mmss(o.time - s.prog) : (o.unguarded || 'RAMP UNGUARDED') + ' ' + mmss(o.time - s.prog)) + total,
@@ -210,7 +210,7 @@ const KINDS = {
         M.markers.push(m);
         for (const t in c.guards) for (let n = 0; n < c.guards[t]; n++)
           fieldSpawn(t, spot.x + (Math.random() - 0.5) * 5, spot.z + (Math.random() - 0.5) * 5);
-        return { x: spot.x, z: spot.z, m, prog: 0, done: false };
+        return { x: spot.x, z: spot.z, m, prog: 0, done: false, def: c };
       });
       s.trickT = o.trickle.every; s.hurtAt = player.lastHurt;
     },
@@ -234,7 +234,10 @@ const KINDS = {
           c.done = true; left--; at = null;
           setMarkerColor(c.m, GREEN); c.m.userData.beam.visible = false;
           burst(V3(c.x, 1.2, c.z), GREEN, 16, 6, 4, 0.8); S.reward(1);
-          floater(V3(c.x, 1.8, c.z), o.consoleName ? o.consoleName + (o.consoleName === 'CHARGE' ? ' SET' : ' SECURED') : 'UPLINK DOWN', '#7bffae');
+          floater(V3(c.x, 1.8, c.z), o.consoleName ? o.consoleName + ' ' + (o.consoleDone || (o.consoleName === 'CHARGE' ? 'SET' : 'SECURED')) : 'UPLINK DOWN', '#7bffae');
+          // a console can hold something more than its objective (the Jakku cruiser's holocron): its own banner
+          const found = c.def.found && (c.def.found[G.hero] !== undefined ? c.def.found[G.hero] : c.def.found);
+          if (found) showBanner(found[0], found[1] || '', 2.6, { kicker: 'FOUND' });
         }
       }
       const n = s.cons.length; s.at = at;
@@ -496,7 +499,7 @@ function beginEvacuees(ev, s){
   s.aboard = 0;
   s.kids = [];
   for (let i = 0; i < ev.count; i++){
-    const m = makeEvacuee(G.hero === 'mando' ? 'foundling' : 'youngling', i);
+    const m = makeEvacuee(ev.kind || (G.hero === 'mando' ? 'foundling' : 'youngling'), i);
     scene.add(m); M.props.push(m);
     // the head of the line is already at the ramp; the rest queue back toward the shelter door
     s.kids.push({ m, d: s.len - i * ev.spacing - ev.spacing, ph: Math.random() * 6 });
@@ -515,7 +518,7 @@ function updateEvacuees(ev, s, dt, frac, rate){
     const [x, z, yaw] = pathPoint(s.path, k.d);
     const walking = step > dt * 0.1;
     k.ph += dt * (walking ? 11 : rate === 0 ? 20 : 2);
-    k.m.position.set(x, (walking ? Math.abs(Math.sin(k.ph)) * 0.06 : 0) + (k.d > s.len - 3 ? (k.d - (s.len - 3)) * 0.33 : 0), z);
+    k.m.position.set(x, (walking ? Math.abs(Math.sin(k.ph)) * 0.06 : 0) + (ev.ramp !== false && k.d > s.len - 3 ? (k.d - (s.len - 3)) * 0.33 : 0), z);   // (up the ramp at the end)
     k.m.rotation.set(rate === 0 && !walking ? 0.25 : 0, yaw, rate === 0 && !walking ? Math.sin(k.ph) * 0.05 : 0);   // huddled and trembling while the ramp is overrun
   });
 }

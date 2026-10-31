@@ -8,8 +8,11 @@
 //             fixed kit, and ends on the next chapter's card instead of the victory screen.
 // `title` and `world` can differ per hero ({ jedi, mando }); `brief` is the voice's lines on the chapter's card, per hero.
 // `pair` puts a chapter in one of Act II's two pairs, which the player plays in the order they pick (ACT_TWO).
+// `steps` (a mission chapter): how many steps deeper into the run it counts (default 1; Mustafar stands for a level's 4 waves,
+// and its `level` and `waves` say which, for the sandbox's gates).
+// `opens` names Missions-list missions that clearing the chapter opens besides its own (the Extraction with the breakout,
+// the Grass Sea battle with its Exegol copy).
 // `arena` stages the chapter on its own map: { layout, arena } laid over the level or mission's own (world/arena.js).
-// `standIn` notes what the chapter borrows until its own arena or fighter lands (the plan's later phases).
 // `lines` is what's said during the chapter, on the comms strip (game/story.js), per hero. `wave` has one entry per wave
 // of the chapter; the rest are story beats: duel (a mission's duel foe steps in) · escape (it breaks off) · boss · clear.
 // A line is a string (the voice: VOICE) or { who, say } for anyone else; `rival: true` marks the enemy talking.
@@ -70,12 +73,15 @@ export const CHAPTERS = [
     clear: { jedi: ['The Wall stands aside. It says you hold a door the way it does.', 'It will take the younglings on, and it has shown you Soresu, the form that holds. It has heard where the other masters are, too.'], mando: ['The challenger yields, and the clan has one more blade.', 'It knows where the others went.'] } } },
 
   // ---------------- ACT II ----------------
-  { id: 'lothal', act: 1, kind: 'mission', mission: 'grassland', pair: 'lothal', world: 'LOTHAL',
-    title: 'THE LOTHAL BREAKOUT', standIn: 'today\'s Extraction, until the breakout rework',
-    brief: { jedi: ['The Acrobat is held in the outpost on Lothal. A slicer droid carries the codes to its cell.', 'Get the droid and its codes to the shuttle. Hold the pad until it lands.'],
-             mando: ['Our ace is caged in the Lothal outpost. The droid knows the cell codes.', 'Get it to the shuttle. Keep it breathing.'] },
+  { id: 'lothal', act: 1, kind: 'mission', mission: 'breakout', opens: ['grassland'], pair: 'lothal', world: 'LOTHAL',
+    title: 'THE LOTHAL BREAKOUT',
+    brief: { jedi: ['The Acrobat is held in the outpost on Lothal. A slicer droid carries the codes to its cell.', 'Walk the droid in through the gate, open the cells, and hold the way out until every prisoner is through it.'],
+             mando: ['Our ace is caged in the Lothal outpost. The droid knows the cell codes.', 'Walk it in, open the cells, get everyone out. Keep it breathing.'] },
     lines: {
-    clear: { jedi: ['The codes are on the shuttle. The Acrobat is free, and furious.'], mando: ['The ace is out. It has a temper.'] } } },
+    chapter: { jedi: ['The droid is RX-4. It has sliced the outpost\'s cell codes. Walk it to the gate and it opens every door.'],
+               mando: ['The droid\'s called Scrap. It has the cell codes in its head. Walk it in and the doors open.'] },
+    duel: { jedi: ['The captain who held the keys. Finish this, and the Acrobat walks free.'], mando: ['The jailer. Put it down and the ace walks.'] },
+    clear: { jedi: ['The cells are empty. The Acrobat is free, and furious.'], mando: ['The ace is out. It has a temper.'] } } },
   { id: 'trial-acrobat', act: 1, kind: 'mission', mission: 'trial-acrobat', pair: 'lothal', world: 'LOTHAL',
     title: { jedi: 'TRIAL OF THE ACROBAT', mando: 'THE JET ACE' }, trial: true,
     brief: { jedi: ['You freed the Acrobat. Now the Acrobat wants to see what you are.', 'It will not stand still. Neither should you.'],
@@ -87,7 +93,12 @@ export const CHAPTERS = [
     brief: { jedi: ['The Knight is holding Hoth\'s trenches with what is left of a rebel company.', 'Fight beside them. A general judges you by the line you hold.'],
              mando: ['Our champion holds the trenches on Hoth with the rebels.', 'Fight at its side, and it will hear you out.'] },
     lines: {
-    clear: { jedi: ['The line held. The Knight saw it.'], mando: ['The trenches held. The champion watched you hold them.'] } } },
+    chapter: { jedi: [{ who: 'THE KNIGHT', say: 'You are the one who has been gathering the masters? Then hold the forward trench beside me, and we will talk after.' }],
+               mando: [{ who: 'THE CHAMPION', say: 'So you are the one gathering the clan. Hold the forward trench with me. We talk after.' }] },
+    duel: { jedi: [{ who: 'THE KNIGHT', say: 'Their siege trooper. I have the left. Take it, Knight, and I will see how you fight.' }],
+            mando: [{ who: 'THE CHAMPION', say: 'Siege trooper. I hold the left. Show me what that armour does.' }] },
+    clear: { jedi: ['The line held. The Knight saw it.', { who: 'THE KNIGHT', say: 'Meet me in the hangar when the last transport is loading. Bring your blade.' }],
+             mando: ['The trenches held. The champion watched you hold them.', { who: 'THE CHAMPION', say: 'The hangar, when the ships are loading. Bring your beskar.' }] } } },
   { id: 'trial-knight', act: 1, kind: 'mission', mission: 'trial-knight', pair: 'hoth', world: 'HOTH',
     title: { jedi: 'TRIAL OF THE KNIGHT', mando: 'THE CLAN CHAMPION' }, trial: true,
     brief: { jedi: ['The line held. The Knight will meet you between the last transports.', 'It fights blade to blade, and punishes a careless block.'],
@@ -101,16 +112,14 @@ export const CHAPTERS = [
              mando: ['The Magistrate\'s beskar is forged somewhere. Jakku\'s wrecks remember the route.', 'Take the cores. Get out on the freighter.'] },
     lines: {
     clear: { jedi: ['The cores are clean. Every route ends in the same place: Mustafar.', 'And you found the captain\'s holocron. Makashi: the duellist\'s form. Precision over power, the point before the edge. Study it on the way.'], mando: ['The cores give up the route. Mustafar.'] } } },
-  { id: 'mustafar', act: 1, kind: 'waves', level: 1, waves: [0, 4], world: 'MUSTAFAR',
-    title: 'THE MUSTAFAR FORGE', standIn: 'the foundry waves, until the forge mission',
+  { id: 'mustafar', act: 1, kind: 'mission', mission: 'forge', level: 1, waves: [0, 4], steps: 4, world: 'MUSTAFAR',
+    title: 'THE MUSTAFAR FORGE',
     brief: { jedi: ['The cores point to Mustafar. His war machines are forged here.', 'Break the forge, and the army breaks with it.'],
              mando: ['Mustafar. Our beskar, melted down for his machines.', 'Tear the forge down.'] },
     lines: {
-    wave: [
-      { jedi: ['The forge is guarded by its own workers. Do not let the heat drive you into the vents.'], mando: ['They pour beskar into the moulds here. Our beskar. Burn it down.'] },
-      { jedi: ['Good. Keep moving. Stand still on this rock and it will cook you.'], mando: ['Keep moving. The ground here is not your friend.'] },
-      { jedi: [{ who: 'THE INQUISITOR', rival: true, say: 'Still following, Knight? You are walking into a trap he built for you.' }], mando: [{ who: 'VX-7', rival: true, say: 'TARGET CONFIRMED. MANDALORIAN. BOUNTY: DOUBLED.' }] },
-      { jedi: ['The last of the foundry guard. Then the forge falls.'], mando: ['Last of them. Then we bring the roof down.'] } ],
+    chapter: { jedi: ['The forge is guarded by its own workers. Do not let the heat drive you into the channels.'], mando: ['They pour beskar into the moulds here. Our beskar. Burn it down.'] },
+    duel: { jedi: [{ who: 'THE INQUISITOR', rival: true, say: 'Still following, Knight? You are walking into a trap he built for you.' }, 'Ignore it. Finish the forge\'s master first.'],
+            mando: [{ who: 'VX-7', rival: true, say: 'TARGET CONFIRMED. MANDALORIAN. BOUNTY: DOUBLED.' }, 'Let it count. Finish the forgemaster.'] },
     clear: { jedi: ['The forge is ash. But it was too easy.', 'This was never his army. It was a lure.', 'Sit with what you carry before we move. The forms you have learned are becoming one: Niman.'], mando: ['The forge is ash, and it was too easy.', 'This was bait.'] } } },
 
   // ---------------- ACT III ----------------
@@ -121,8 +130,8 @@ export const CHAPTERS = [
     lines: {
     duel: { jedi: [{ who: 'THE INQUISITOR', rival: true, say: 'Enough running. Come and take your coordinates, Knight.' }], mando: [{ who: 'VX-7', rival: true, say: 'ESCAPE VECTOR DENIED. ENGAGING.' }] },
     clear: { jedi: ['The coordinates never reach him.', 'Now we go to him.'], mando: ['The trail dies with the droid.', 'Now we go to him.'] } } },
-  { id: 'spearhead', act: 2, kind: 'mission', mission: 'strike', world: 'THE ROAD TO EXEGOL',
-    title: 'SPEARHEAD', arena: { layout: 'approach', arena: 150 },
+  { id: 'spearhead', act: 2, kind: 'mission', mission: 'strike-exegol', opens: ['strike'], world: 'THE ROAD TO EXEGOL',
+    title: 'SPEARHEAD',
     brief: { jedi: ['The masters you found are with you now, and so are the troopers who held Hoth.', 'Break the line before the gate. Vexis is waiting behind it.'],
              mando: ['The clan rides together again.', 'Take their line, take their gate. The Magistrate is behind it.'] },
     lines: {

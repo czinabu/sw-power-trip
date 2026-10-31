@@ -158,7 +158,7 @@ document.getElementById('mode-sandbox').addEventListener('click', (e) => { e.sto
 // CO-OP is a tile but not a mode: it opens the room panel (ui/coop-ui.js)
 // MISSIONS: one card per story mission (data/missions.js) under the mode row; pick one, then BEGIN (or double-click it)
 const placeOf = (m) => m.level.name.replace(/^(MISSION|TRIAL)\s*—\s*/, '');
-document.getElementById('msnlist').innerHTML = Object.values(MISSIONS).map(m =>
+document.getElementById('msnlist').innerHTML = Object.values(MISSIONS).filter(m => !m.campaignOnly).map(m =>   // (a campaign-only copy stays off the list)
   `<div class="msn brk" id="msn-${m.id}" data-mission="${m.id}">
     <span class="mt"><span class="mtn">${missionTitle(m.id)}</span>${m.squad ? '<span class="msn-tag">SQUAD</span>' : ''}${m.trial ? '<span class="msn-tag">TRIAL</span>' : ''}<span class="won"></span></span><span class="mw">${placeOf(m)}</span>
   </div>`).join('');
