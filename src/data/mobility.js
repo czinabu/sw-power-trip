@@ -15,9 +15,10 @@ export const MOBILITY = {
     linger: 3,       // ...and you stay in one this many seconds after the last blow you took or landed
   },
   roll: {
-    speed: 14,       // m/s impulse along the roll
+    speed: 20,       // m/s impulse along the roll: a hard burst off the mark...
+    drag: 5.5,       // ...that eases out fast (was a flat 2.6 glide at 14: the same ~3.4 m, but no burst and no plant)
     time: 0.42,      // the whole roll (the body move); the feet are yours again after it
-    iframes: 0.24,   // invulnerable from the start for this long: a perfect dodge counts from the roll's start too
+    iframes: 0.3,    // (was 0.24) covers the burst, ~80% of the distance;  invulnerable from the start for this long: a perfect dodge counts from the roll's start too
     cd: 0.3,         // gap after a roll before the next one
     redash: 0.3,     // a second SHIFT this soon into a roll turns it into a Force dash
     swingLock: 0.08, // the blade is slow to swing out of the roll's last beat
@@ -127,7 +128,8 @@ export const MANDO_MOBILITY = {
     range: 30,       // a gunfighter's fight starts farther out than a swordsman's (the linger is MOBILITY.combat's)
   },
   dive: {
-    speed: 8.5,      // m/s impulse along the dive (legs only: no jets unless you tap SHIFT again, see jet below)
+    speed: 11,       // m/s impulse along the dive (legs only: no jets unless you tap SHIFT again, see jet below)
+    airDrag: 3.6,    // how fast the throw eases out in the air (was a flat 2.6 glide at 8.5)
     pop: 5.0,        // m/s up off the ground: a real leap (≈0.37 s in the air, the boots ≈0.45 m up at the top)
     skidDrag: 7,     // how fast the slide along the deck dies once the plate is down (the air glides at 2.6)
     turn: 12,        // how fast the lay-out follows the reticle mid-dive (turn onto your back by looking away)
@@ -141,7 +143,7 @@ export const MANDO_MOBILITY = {
     maxTime: 1.8,    // ...and the longest it can last (a dive off a ledge still ends)
     hips: 0.3,       // hip height lying flat (m)
     tilt: { fwd: 1.45, back: 1.3, side: 1.35, sideUp: 0.3 },   // lay-out angles (rad): face-down, on the back, on the side
-    iframes: 0.32,   // invulnerable from the start for this long (a perfect dodge counts from the start)
+    iframes: 0.36,   // (was 0.32) invulnerable through the throw until touchdown (~0.37 s airborne)
     cd: 0.25,        // gap after a dive before the next one
     redash: 0.3,     // a second SHIFT this soon into a dive fires the rocket boost instead
   },
