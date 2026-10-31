@@ -142,12 +142,12 @@ export function tryAutoMantle(pp){
   const ledge = findLedge(pp, moveDir(), STEP_UP, MOVE.reach);
   if (!ledge) return false;
   // a high lip (the Jedi): catch it and HANG; anything lower is pulled straight up onto
-  if (!isGunner() && ledge.top - pp.y > MOVE.hangFrom) startHang(ledge);
+  if (ledge.top - pp.y > MOVE.hangFrom) startHang(ledge);
   else startMantle(pp, ledge, false);
   return true;
 }
 
-/* LEDGE HANG (Jedi) — hands on the lip, feet against the face. A/D shimmy along it, W (held) or SPACE pulls up,
+/* LEDGE HANG (every hero) — hands on the lip, feet against the face. A/D shimmy along it, W (held) or SPACE pulls up,
    S lets go. The hang owns the body until one of those. */
 function startHang(ledge){
   player.hang = { c: ledge.c, nx: ledge.nx, nz: ledge.nz, held: 0 };
@@ -289,16 +289,17 @@ export function wallBeside(pp, range){
   return null;
 }
 
-/* WALL-RUN (Jedi) — jump alongside a wall at speed with W held and the feet catch it: a short run along the face
+/* WALL-RUN (every hero; the Mando only off a plain hop or fall, never under thrust) — jump alongside a wall at speed with W held and the feet catch it: a short run along the face
    that barely loses height. SPACE kicks off it (movement.js), letting go of W or running out of time drops you. */
 export function updateWallRun(dt, pp){
-  if (isGunner()) return;
+  const gunner = isGunner(), jets = gunner && (player.jetActive || player.hovering || player.boosting);   // the Mando's jets own the air: no wall-run under thrust
+  if (jets && !player.wallRun) return;
   const wr = player.wallRun;
   if (wr){
     wr.t += dt;
     const n = wallBeside(pp, 1.5);
     // the face must stay the same one: rounding a corner or the wall ending drops you off
-    if (player.grounded || !keys['w'] || !n || n.x * wr.nx + n.z * wr.nz < 0.9 || wr.t > MOVE.wallRunTime || player.mantle || player.slamming){
+    if (player.grounded || !keys['w'] || !n || n.x * wr.nx + n.z * wr.nz < 0.9 || wr.t > MOVE.wallRunTime || player.mantle || player.slamming || jets){
       if (!player.grounded && !player.mantle && !player.slamming){ player.vel.x += wr.nx * MOVE.wallRunPeel; player.vel.z += wr.nz * MOVE.wallRunPeel; }   // peel off the face, carrying the run's speed
       player.wallRun = null;
       return;

@@ -63,7 +63,7 @@ export function updateMovement(dt, pp, st, f, r){
     }
   }
   if (player.slideT > 0) player.slideT -= dt;
-  const mandoAir = isGunner() && !player.grounded;
+  const mandoAir = isGunner() && !player.grounded && !player.wallRun && !player.hang;
   if (mandoAir){
     // MOMENTUM FLIGHT — WASD ADDS horizontal thrust; release and the speed CARRIES (low drag). Pressing against the
     // momentum counter-thrusts, so he turns on a dime. A soft cap keeps top speed sane; HOVERING (RMB) is a firing

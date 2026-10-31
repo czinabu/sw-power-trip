@@ -97,6 +97,15 @@ export function doJump(){
   const onGround = player.grounded || coyote;
   if (onGround && !player.blockHeld && tryVault(playerPos())) return;   // running at low cover: up and over it
   if (isGunner()){
+    // SPACE on a wall-run kicks off the face (free, no Force: the gunners don't have it): out and up, a fresh run on the opposite wall
+    if (!onGround && player.wallRun){
+      const wn = V3(player.wallRun.nx, 0, player.wallRun.nz);
+      player.vy = CFG.player.jumpVel * 1.0;
+      offWall(wn.x, wn.z); player.vel.addScaledVector(wn, 11);
+      player.airLeft = CFG.player.airJumps; player.wallRun = null; player.wallRunUsed = false; player.lastJumpT = G.gt;
+      burst(playerPos().clone().setY(playerPos().y + 0.6), 0x9a9288, 8, 5, 3); S.jump();
+      return;
+    }
     // a ground hop to kick off the ground; sustained flight is HOLD SPACE (jetpack in updatePlayer)
     if (onGround){
       // out of a slide: a long, low hop that keeps the slide's speed (data/mobility.js MANDO_MOBILITY.slide.hop)
