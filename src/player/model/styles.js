@@ -38,9 +38,9 @@ export const MATERIALS = {
   cloth:   { c: 0x7b6b52, r: 0.96, side: THREE.DoubleSide },
   strap:   { c: 0x3a2e22, r: 0.8 },
   // Clone trooper (its own style: model/trooper.js)
-  plate:   { c: 0xe8e8e3, r: 0.42, m: 0.12 },
-  grey:    { c: 0x26282c, r: 0.6,  m: 0.2 },
-  mark:    { c: 0x2f7fd6, r: 0.5,  m: 0.1 },
+  plate:   { c: 0xd3d5d3, r: 0.38, m: 0.45 },    // plastoid: glossy, so it catches the arena's sky and a sun glint like beskar does, not flat white
+  grey:    { c: 0x26282c, r: 0.5,  m: 0.4 },
+  mark:    { c: 0x2f7fd6, r: 0.4,  m: 0.45 },
   // weapons
   gunDark: { c: 0x16191e, r: 0.4, m: 0.6 },
   gunMetal:{ c: 0x8a929c, r: 0.3, m: 0.85 },

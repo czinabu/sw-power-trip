@@ -10,7 +10,7 @@ import { acquireParticle, burst } from '../../fx/particles.js';
 import { floater, screenFlash } from '../../fx/floaters.js';
 import { shared, G, enemies, bolts, vfx, keys, player, isGunner, isMando, isTrooper } from '../../state.js';
 import { MANDO, MANDO_WEAPONS, weaponUnlocked, BESKAR_PARRY } from '../../data/mando.js';
-import { setLongGun, longMuzzle } from '../model/weapons.js';
+import { setLongGun, longMuzzle, OWN_MODEL } from '../model/weapons.js';
 import { diffWindow } from '../../data/difficulty.js';
 import { abil } from '../../data/mastery.js';
 import { fwd, rightV, playerPos, maxStam } from '../helpers.js';
@@ -53,10 +53,10 @@ export function mandoAimPoint(){
 export function aCost(base){ return base * (player.up.abilityCostMul || 1); }   // abilities start steep; upgrades drop the multiplier
 export function mandoWeapon(){ return MANDO_WEAPONS[player.weapon] || MANDO_WEAPONS.dual; }
 export function syncWeaponMesh(){   // show only the equipped weapon's mesh (or none, off-hero); holstered, the one put away
-  const m = isGunner(), w = gunLook(player.weapon === 'fists' ? player.drawnWeapon : player.weapon);   // (the trooper's guns wear the Mando's models: data/trooper.js GUN_LOOK)
+  const m = isGunner(), raw = player.weapon === 'fists' ? player.drawnWeapon : player.weapon, w = gunLook(raw);   // (the trooper's guns are held like the Mando's: data/trooper.js GUN_LOOK)
   if (player.pistols){ player.pistols.R.visible = m && (w === 'single' || w === 'dual'); player.pistols.L.visible = m && w === 'dual'; }
   const LW = MANDO_WEAPONS[w];
-  if (player.rifleMesh){ player.rifleMesh.visible = m && !!(LW && LW.twoHand); if (LW && LW.twoHand) setLongGun(player, w); }   // one long-gun mount, the drawn gun's model on it
+  if (player.rifleMesh){ player.rifleMesh.visible = m && !!(LW && LW.twoHand); if (LW && LW.twoHand) setLongGun(player, OWN_MODEL[raw] || w); }   // one long-gun mount, the drawn gun's model on it (the DC-15 its own)
   if (player.darksaberMesh) player.darksaberMesh.visible = (m && w === 'darksaber') || !!shared.darkProj;   // a thrown blade stays seen until it's caught
   syncHolster();   // in the hand, or on the belt / thighs / pack (player/holster.js)
 }

@@ -13,11 +13,13 @@ import { applySaberGrip } from '../src/player/model/weapons.js';
 import { settleCloth } from '../src/player/model/cloth.js';
 import { gripHands } from '../src/player/model/life.js';
 import { curlHand } from '../src/player/model/jedi.js';
+import { rexRest, riflePose } from '../src/player/anim/guns.js';
+import { setLongGun } from '../src/player/model/weapons.js';
 
 const q = new URLSearchParams(location.search);
 const STYLE = q.get('style') || 'ink';
 const LOOK_NAME = q.get('look') || '';
-const LOOK = { ...(SAMPLE_LOOKS[LOOK_NAME] || {}), style: STYLE };
+const LOOK = { ...(SAMPLE_LOOKS[LOOK_NAME] || {}), style: STYLE, withTrooper: true };   // (the ARC trooper is built for the lab whatever the URL)
 const GRIP = q.get('grip') || 'regular';   // &grip=reverse
 const VIEW = q.get('view') || 'front';
 
@@ -68,6 +70,20 @@ const POSES = {
     torso: [0.4, -0.4, 0],
     legL: { hip: [-1.3, 0, -0.15], knee: [1.9, 0, 0] }, legR: { hip: [-0.45, 0, 0.2], knee: [1.5, 0, 0] }, drop: -0.36,
   },
+  trooper_rest: {
+    label: 'DC-17s at rest', hero: 'trooper', weapon: 'dual', rex: true,
+    torso: [0, 0.06, 0], head: [0.02, -0.08, 0],
+    legL: { hip: [0.04, 0, -0.18], knee: [0.06, 0, 0] }, legR: { hip: [-0.04, 0, 0.18], knee: [0.06, 0, 0] },
+  },
+  trooper_rifle: {
+    label: 'DC-15 aim', hero: 'trooper', weapon: 'dc15', grip: { L: 0.8, R: 1 }, shoulder: true,
+    torso: [0, 0, 0], legL: { hip: [-0.25, 0, -0.1], knee: [0.15, 0, 0] }, legR: { hip: [0.2, 0, 0.1], knee: [0.25, 0, 0] },
+  },
+  trooper_run: {
+    label: 'Stride', hero: 'trooper', weapon: 'dual', rex: true,
+    torso: [0.12, 0, 0],
+    legL: { hip: [-0.7, 0, -0.04], knee: [0.5, 0, 0] }, legR: { hip: [0.45, 0, 0.04], knee: [1.1, 0, 0] }, drop: -0.04,
+  },
   mando_fly: {
     label: 'Jetpack flight', hero: 'mando', fly: true, yaw: 1.25,
     armR: { sh: [-2.26, -0.14, 0.16], el: [-0.22, 0, 0] }, armL: { sh: [-2.26, 0.14, -0.16], el: [-0.22, 0, 0] },
@@ -81,20 +97,24 @@ function figure(poseName){
   const t = { group: new THREE.Group() };
   t.group.add(buildHeroModel(t, LOOK));
   applySaberGrip(t, GRIP, true);
-  const R = t.rig, mando = P.hero === 'mando';
-  for (const m of t.mandoParts) m.visible = mando;
+  const R = t.rig, trooper = P.hero === 'trooper', mando = P.hero === 'mando' || trooper;   // (mando: either gunner)
+  for (const m of t.mandoParts) m.visible = P.hero === 'mando';
+  for (const m of t.trooperParts) m.visible = trooper;
   for (const m of t.headBare) m.visible = !mando;
   R.skirt.visible = !mando;
   t.saberHand.visible = !mando;
   t.pistols.L.visible = mando && P.weapon === 'dual';
   t.pistols.R.visible = mando && (P.weapon === 'dual' || P.weapon === 'single');
-  t.rifleMesh.visible = mando && P.weapon === 'disruptor';
+  t.rifleMesh.visible = mando && (P.weapon === 'disruptor' || P.weapon === 'dc15');
+  if (P.weapon === 'dc15') setLongGun(t, 'dc15');
   const set = (o, v) => v && o.rotation.set(v[0], v[1], v[2]);
-  for (const s of ['armL', 'armR']){ set(R[s].sh, P[s].sh); set(R[s].el, P[s].el); }
+  for (const s of ['armL', 'armR']) if (P[s]){ set(R[s].sh, P[s].sh); set(R[s].el, P[s].el); }   // (an IK pose like the trooper's rest leaves them out)
   for (const s of ['legL', 'legR']){ set(R[s].hip, P[s].hip); set(R[s].knee, P[s].knee); }
   set(R.torso, P.torso); set(R.head, P.head); set(t.saberHand, P.saber);
   if (P.torsoZ) R.torso.position.z = P.torsoZ;
   if (P.drop) R.hips.position.y += P.drop;
+  if (P.rex) rexRest(R, t.pistols);
+  if (P.shoulder){ t.vis.updateMatrixWorld(true); riflePose(1, R, { rifleMesh: t.rifleMesh, recoil: 0 }, t.vis.localToWorld(new THREE.Vector3(0, 1.4, 12))); }   // the game's own rifle IK
   t.vis.rotation.set(P.visX || 0, P.visY || 0, 0);
   if (P.lift) t.vis.position.y = P.lift;
   if (P.fly){ for (const g of t.jetGlow) g.material.opacity = 0.9; }
@@ -105,7 +125,7 @@ function figure(poseName){
   return t;
 }
 
-const HERO = q.get('hero');   // jedi | mando | (both)
+const HERO = q.get('hero');   // jedi | mando | trooper | (all)
 const ORDER = Object.keys(POSES).filter(n => !HERO || POSES[n].hero === HERO);
 const figs = ORDER.map((name, i) => {
   const f = figure(name);

@@ -15,6 +15,7 @@ import { STANCES, SWING_PATTERNS, stanceUnlocked } from '../data/stances.js';
 import { FORM_OF, FOOTWORK, FOOTWORK_GRIP } from '../data/poses.js';
 import { FORMS, formGrip, forkClosed } from '../data/forms.js';
 import { guardPose, swingPose, applySaberPose, releaseSaberPose, saberPose } from '../player/anim/saber.js';
+import { rexRest } from '../player/anim/guns.js';
 
 const HERO_X = 0.72;     // where the figure stands across the screen (0 = left edge, 1 = right)
 const TURN = 0.32;       // turntable speed, rad/s
@@ -241,6 +242,7 @@ function dress(hero){
   set(R.torso, P.torso); set(R.head, P.head);
   if (P.saber) set(fig.saberHand, P.saber);
   R.hips.position.y = hipsY + (P.drop || 0);
+  if (trooper) rexRest(R, fig.pistols);   // the DC-17s Rex's way, as he carries them in the fight: one up, one down
   settleCloth(fig);
 }
 

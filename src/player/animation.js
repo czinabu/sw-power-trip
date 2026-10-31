@@ -7,7 +7,7 @@ import { CFG } from '../data/config.js';
 import { clamp, dampAngle, wrapAngle, V3 } from '../utils.js';
 import { chargeFrac } from './jedi/palm.js';
 import { burst } from '../fx/particles.js';
-import { G, keys, player, isGunner } from '../state.js';
+import { G, keys, player, isGunner, isTrooper } from '../state.js';
 import { MANDO, MANDO_WEAPONS } from '../data/mando.js';
 import { gunLook } from '../data/trooper.js';
 import { MANDO_MELEE } from '../data/duel.js';
@@ -772,7 +772,7 @@ function animateMandoPose(dt, dr, vis, R, pp, f, r){
     // GUNSLINGER — blasters at the hip until he shoots, then up one-handed down the aim line; the disruptor shouldered
     const aimPt = mandoAimPoint();   // also refreshes the reticle lock state (player.lockOn)
     if (twoH) riflePose(dt, R, player, aimPt);
-    else pistolPose(dt, R, player, aimPt, w === 'dual', { braced: player.blockHeld, backRun: player.backRun });
+    else pistolPose(dt, R, player, aimPt, w === 'dual', { braced: player.blockHeld, backRun: player.backRun, rex: isTrooper() });   // (the trooper's DC-17s rest Rex's way: one up, one down)
   } else {
     mandoAimPoint();
   }
