@@ -17,7 +17,7 @@ import { damageBoss, bossStagger } from '../../boss/boss.js';
 import { spawnHitSpark } from '../../fx/vfx.js';
 import { clashFlash } from '../../fx/ink.js';
 import { aCost, mandoAimPoint } from './weapons.js';
-import { scarBody, severArm } from '../../enemies/scars.js';
+import { scarBody, severLimbs } from '../../enemies/scars.js';
 
 /* THE DARKSABER — the Mando's earned melee: a heavy arc-slash that cleaves the front, deflects bolts,
    and shatters a boss wind-up. Drawn only for the swing. */
@@ -64,9 +64,9 @@ export function updateDark(dt){
       const d = TMP.length();
       if (!inReach(e, pp, A.range, d > 0.4 ? f : null, cosLim)) continue;   // the slash reaches any of the body in its arc
       TMP.normalize();
-      damageEnemy(e, A.dmg * player.up.dmg, TMP.clone(), A.knock); flinchEnemy(e, f, 0.9);
+      damageEnemy(e, A.dmg * player.up.dmg, TMP.clone(), A.knock, false, false, { blade: true }); flinchEnemy(e, f, 0.9);
       scarBody(e.group, f, 'left', true);   // a darksaber sweep burns its line across the plates (enemies/scars.js)
-      if (e.dead) severArm(e, f, 0.4);
+      if (e.dead) severLimbs(e, f, 0.55);
     }
     if (shared.boss && shared.boss.hp > 0){
       TMP.subVectors(shared.boss.group.position, pp); TMP.y = 0;

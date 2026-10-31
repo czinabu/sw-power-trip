@@ -7,7 +7,7 @@
 //
 // The hooks the game drives (ai.js, damage.js, elites.js) are the same as before:
 //   bodyMat (armour: hit flash, windup glow, elite tint) · eye + eyeBase (swells on windup) · weaponArm (sword/maul
-//   swing, pivots at the shoulder) · staff · shield + shieldMat · bombCore · thrusters[]
+//   swing, pivots at the shoulder) · offArm / offArmR (the static arms, their own slots so a cut can sever them) · staff · shield + shieldMat · bombCore · thrusters[]
 // plus the legs (thighL/R, shinL/R, footL/R) and the inner body group (vis) that enemies/gait.js drives
 
 import * as THREE from 'three';
@@ -95,7 +95,8 @@ export function arm(k, parent, w, o = {}){
 // a static arm from the left (-x) or right (+x) shoulder; rot = [forward lift (negative = forward), twist, outward splay
 // (negative = across the body)], mirrored for the side
 export function sideArm(k, w, s, rot = [0, 0, 0], o){
-  const sh = k.group(k.root, [0.42*w*s, 1.74, 0], [rot[0], rot[1]*s, (0.12 + rot[2])*s]);
+  // a slot of its own so a killing saber cut can take it off (enemies/scars.js severLimbs): 'offArm' on the left, 'offArmR' the right
+  const sh = k.slot(s < 0 ? 'offArm' : 'offArmR', k.root, [0.42*w*s, 1.74, 0], [rot[0], rot[1]*s, (0.12 + rot[2])*s]);
   return arm(k, sh, w, o);
 }
 
