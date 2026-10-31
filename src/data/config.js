@@ -73,9 +73,9 @@ export const CFG = {
   },
   abilities: {
     // BASIC powers — cheap, available from the start
-    push:   { cost: 20, cd: 1.4,  range: 15, angle: 1.15, dmg: 2,  knock: 24 },   // pure UTILITY — a hard interrupting SHOVE, near-zero damage. cd 0.9→1.4: it also reflects every bolt in the cone, so it was a near-constant shield from wave 1
+    push:   { cost: 20, cd: 1.4,  range: 15, angle: 1.15, dmg: 2,  knock: 12 },   // pure UTILITY — a hard interrupting SHOVE, near-zero damage. cd 0.9→1.4: it also reflects every bolt in the cone, so it was a near-constant shield from wave 1
     dash:   { speed: 30, time: 0.34 },  // dash grants i-frames + a flip · its Force cost, charges and roll live in data/mobility.js
-    pull:   { cost: 30, cd: 3.0,  range: 18, angle: 1.2 },
+    pull:   { cost: 30, cd: 3.0,  range: 18, angle: 1.2, pwr: 0.4 },   // pwr: how hard the yank hauls them in (a short tug at first; mastery raises it to 1)
     // ADVANCED powers — expensive, earned as the legend grows. The mightiest eat most of the bar.
     throw:  { cost: 38, cd: 5.0,  range: 16, dmg: 22, speed: 24 },
     slam:   { cost: 64, cd: 5.5,  radius: 10, dmg: 7, knock: 21,      // JUMP ATTACK — the wave is an AOE knockdown for breathing room…

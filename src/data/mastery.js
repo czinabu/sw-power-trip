@@ -18,11 +18,11 @@ import { G } from '../state.js';
    ============================================================ */
 export const MASTERY_JEDI = [
   { id:'push', nm:'FORCE PUSH', ico:'➤', cost:[250, 500], uses:[20, 45], r2:3, base:()=>CFG.abilities.push, owned:()=>!!G.unlocked.push,
-    ranks:[ { ds:'+40% knockback · wider cone', mul:{ knock:1.4, angle:1.2 } },
-            { ds:'−35% cooldown · +25% reach', mul:{ cd:0.65, range:1.25 } } ] },
+    ranks:[ { ds:'Shoves 60% harder · wider cone', mul:{ knock:1.6, angle:1.2 } },
+            { ds:'Full-power LAUNCH (+75% shove) · −35% cooldown · +25% reach', mul:{ knock:1.75, cd:0.65, range:1.25 } } ] },
   { id:'pull', nm:'FORCE PULL', ico:'⟲', cost:[300, 550], uses:[14, 32], r2:4, base:()=>CFG.abilities.pull, owned:()=>!!G.unlocked.pull,
-    ranks:[ { ds:'+30% reach · wider grasp', mul:{ range:1.3, angle:1.2 } },
-            { ds:'−40% cooldown · −30% Force cost', mul:{ cd:0.6, cost:0.7 } } ] },
+    ranks:[ { ds:'Hauls them in much harder · +30% reach · wider grasp', add:{ pwr:0.3 }, mul:{ range:1.3, angle:1.2 } },
+            { ds:'Full-power YANK · −40% cooldown · −30% Force cost', add:{ pwr:0.3 }, mul:{ cd:0.6, cost:0.7 } } ] },
   { id:'throw', nm:'SABER THROW', ico:'✦', cost:[350, 650], uses:[12, 28], r2:5, base:()=>CFG.abilities.throw, owned:()=>!!G.unlocked.throw,
     ranks:[ { ds:'+60% blade damage', mul:{ dmg:1.6 } },
             { ds:'Flies 30% further &amp; faster · −35% cooldown', mul:{ range:1.3, speed:1.25, cd:0.65 } } ] },
