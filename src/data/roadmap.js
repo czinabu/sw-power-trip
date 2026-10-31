@@ -6,6 +6,9 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'Darksaber finisher: no shockwave', status: 'done',
+    items: ['The Darksaber\'s third combo swing no longer sends out a ground shockwave ring (it did not fit the lore): it is a plain heavy overhead blow that hits only what the blade reaches, with a little more knockback and hitstop so the finisher still lands with weight',
+            'Same in every mode: story, training, survival, sandbox, missions and co-op'] },
   { title: 'Tutorial heal lessons work', status: 'done',
     items: ['The Mandalorian\'s "Use a bacta stim" step (and the Jedi\'s Force Mend step) refused to work at full health; those steps now start with you wounded and Force topped up, with a WOUNDED cue',
             'Gear handed out mid-lesson now shows its HUD tile straight away (the bacta tile was missing)',
