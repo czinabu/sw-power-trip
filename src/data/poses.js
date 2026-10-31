@@ -58,11 +58,11 @@ export const SABER_GUARDS = {
     makashi: {
       ready: { hand: [0.3, -0.2, 0.6], blade: [-0.1, -0.62, 0.78], twist: 0.12, torso: 0.04, lean: 0.0, pole: [0.8, -0.6, -0.2], palm: 1,
                off: { hand: [-0.52, -0.08, -0.14], pole: [-0.5, -0.85, -0.3] },
-               offAlt: { hand: [-0.1, -0.3, -0.28], pole: [-0.8, -0.35, -0.45] },
-               offMove: { hand: [-0.1, -0.3, -0.28], pole: [-0.8, -0.35, -0.45] } },
+               offAlt: { hand: [-0.1, -0.3, -0.32], pole: [-1, -0.05, -0.1] },
+               offMove: { hand: [-0.1, -0.3, -0.32], pole: [-1, -0.05, -0.1] } },
       // a small turn of the wrist: a fencer's parry, the blade angled up and across the line, the arm still out low
       block: { hand: [0.3, 0.0, 0.5], blade: [-0.3, 0.8, 0.5], twist: 0.1, lean: 0.02, pole: [0.8, -0.5, -0.3],
-               off: { hand: [-0.1, -0.3, -0.28], pole: [-0.8, -0.35, -0.45] } },
+               off: { hand: [-0.1, -0.3, -0.32], pole: [-1, -0.05, -0.1] } },
     },
     // FORM III SORESU — Obi-Wan's signature guard: sunk into a deep, wide stance and turned side-on, the saber raised high
     // over and behind the head with the blade laid level and pointing on at the foe, the off arm thrown out long toward
@@ -327,7 +327,7 @@ export const SWING_STYLE = {
                load: 0.1, accel: 2.3, lag: 0.3, recover: 0.5, weight: 0.07 },   // broad two-handed sweeps that carry round the body
     // Shii-Cho finishes with the SARLACC SWEEP: a full turn with the blade held out, through everything around you
   makashi:   { tc: 0.18, ts: 0.39, tf: 0.62, reach: 0.8, two: false, spinHop: 0, drop: 0.02, offFlare: 1, overshoot: 0,
-               offKeys: [[-0.2, -0.3, -0.3], [-0.72, 0.0, -0.46], [-0.62, 0.04, -0.4]],   // the free hand comes out of the small of the back and sweeps behind as the blade goes in
+               offKeys: [[-0.2, -0.3, -0.32], [-0.72, 0.0, -0.46], [-0.62, 0.04, -0.4]],   // the free hand comes out of the small of the back and sweeps behind as the blade goes in
                twist: 0.3, finisher: { pattern: 'thrust', spin: 0, hop: 0 },
                load: 0.04, accel: 2.6, lag: 0.65, recover: 0.75, weight: 0.08 },   // small, exact, wrist-led cuts that snap back on the line
     // Makashi finishes with a full lunge: the thrust, all the body behind the point
