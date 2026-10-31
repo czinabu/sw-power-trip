@@ -11,6 +11,7 @@ import { NET } from '../data/coop.js';
 import { buildHeroModel } from '../player/model/index.js';
 import { stepCloth } from '../player/model/cloth.js';
 import { blink } from '../player/model/life.js';
+import { footDust } from '../fx/footdust.js';
 import { lookOf, loadPicks, disposeTree } from '../player/mesh.js';
 import { playerPos } from '../player/helpers.js';
 import { heroAim } from '../player/aim.js';
@@ -137,6 +138,23 @@ export function updateCoop(dt){
   for (const P of partners.values()) stepPartner(P, dt);
 }
 
+/* the partner's footfalls, read off their posed ankles (their gait runs on their own screen): a foot that was moving
+   and now stands still near the floor has just come down */
+const _ank = new THREE.Vector3();
+function partnerSteps(P, dt){
+  const R = P.puppet.rig, g = P.puppet.group;
+  if (!R || !(dt > 0)) return;
+  const F = P.feet || (P.feet = { prev: [new THREE.Vector3(), new THREE.Vector3()], v: [0, 0], init: false, gp: g.position.clone() });
+  const speed = Math.hypot(g.position.x - F.gp.x, g.position.z - F.gp.z) / dt; F.gp.copy(g.position);
+  [R.legL, R.legR].forEach((L, i) => {
+    L.ank.getWorldPosition(_ank);
+    const v = F.init ? _ank.distanceTo(F.prev[i]) / dt : 0;
+    if (F.init && F.v[i] > 2 && v < 0.8 && _ank.y < g.position.y + 0.25) footDust(_ank.clone().setY(g.position.y), speed);
+    F.v[i] = v; F.prev[i].copy(_ank);
+  });
+  F.init = true;
+}
+
 function stepPartner(P, dt){
   const { puppet, mate, want, track } = P;
   const show = P.built && connected() && P.playing && G.mode !== 'menu';
@@ -154,6 +172,7 @@ function stepPartner(P, dt){
   stepPose(track, puppet, performance.now());
   stepCloth(puppet, dt, g.position.y + 0.02);   // their robe and cape swing here too, after the pose
   blink(puppet, dt);   // and they blink (model/life.js); their hands keep the grip they were built with
+  partnerSteps(P, dt);   // and their feet kick up dust at a run (fx/footdust.js)
   // the name tag follows the head on screen
   const t = nameTag(P);
   if (P.chip && P.chip.style.display !== 'none'){ t.style.display = 'none'; return; }   // down: the chip says it instead

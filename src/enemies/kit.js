@@ -41,6 +41,7 @@ export const NPC_MATERIALS = {
 
 const _inv = new THREE.Matrix4();
 export const SCARS = 6;   // saber cuts a unit's armour keeps (the oldest is reused)
+export const HITS = 8;    // other marks it keeps: blaster scorches, dents, cracks, torn-off plates (enemies/scars.js markHit)
 
 // the builder a design function receives
 function makeBuilder(colors){
@@ -217,7 +218,11 @@ function makeWear(o){
     // saber cuts (enemies/scars.js): each a short burnt line in the body's rest pose (xyz, when it was cut; direction,
     // half its length). Fresh, the line glows; it cools to a black char that stays
     uScar: { value: Array.from({ length: SCARS }, () => new THREE.Vector4(0, 0, 0, 0)) },
-    uScarDir: { value: Array.from({ length: SCARS }, () => new THREE.Vector4(0, 0, 0, 0)) }, uNow: { value: 0 } };
+    uScarDir: { value: Array.from({ length: SCARS }, () => new THREE.Vector4(0, 0, 0, 0)) }, uNow: { value: 0 },
+    // HIT MARKS (enemies/scars.js markHit): xyz in the rest pose, when; then size, kind (1 scorch · 2 dent · 3 crack ·
+    // 4 a plate torn off, the suit showing), a per-mark seed
+    uHit: { value: Array.from({ length: HITS }, () => new THREE.Vector4(0, 0, 0, 0)) },
+    uHitK: { value: Array.from({ length: HITS }, () => new THREE.Vector4(0, 0, 0, 0)) } };
 }
 // both of a unit's plate materials (the armour and its darker trim) share one set of wear uniforms, so a cut runs on
 // across the seam between them
@@ -233,7 +238,7 @@ function wearArmor(m, src, W){
     sh.fragmentShader = `varying vec3 vRest;
       varying float vWY;
       uniform float uSeed, uWear, uBase, uScale, uNow;
-      uniform vec4 uScar[${SCARS}], uScarDir[${SCARS}];
+      uniform vec4 uScar[${SCARS}], uScarDir[${SCARS}], uHit[${HITS}], uHitK[${HITS}];
       float wHash(vec3 p){ return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
       float wNoise(vec3 p){
         vec3 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
@@ -264,6 +269,39 @@ function wearArmor(m, src, W){
           scarHot = max(scarHot, core * exp(-(uNow - s.w) * 1.3));
         }
         diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.05, 0.035, 0.03), scarChar);
+      }
+      {
+        // HIT MARKS, drawn in hard Ink steps: a sooty blaster scorch with a hot core that cools, a dent (a dark crease
+        // ring round a bright pushed-in face, the paint knocked off), a starburst crack across a helm, a torn-off plate
+        for (int i = 0; i < ${HITS}; i++){
+          vec4 h = uHit[i], hk = uHitK[i];
+          if (hk.x <= 0.0) continue;
+          vec3 r = vRest - h.xyz;
+          float n = wNoise(vRest * 40.0 + hk.z), d = length(r) / hk.x + (n - 0.5) * 0.35;
+          if (d > 1.3) continue;
+          float age = uNow - h.w;
+          if (hk.y < 1.5){        // scorch
+            diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.06, 0.05, 0.045), 1.0 - step(0.75, d));
+            diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * 0.55, (1.0 - step(1.15, d)) * step(0.75, d));
+            scarHot = max(scarHot, (1.0 - step(0.28, d)) * exp(-age * 3.0) * 0.5);   // glows a moment, then cools
+          } else if (hk.y < 2.5){ // dent
+            float ring = step(0.62, d) * (1.0 - step(0.86, d));
+            float face = 1.0 - step(0.62, d);
+            diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.4, 0.42, 0.45), face * step(0.45, n) * 0.85);   // bare metal where the paint came off
+            diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * 1.25, face * (1.0 - step(0.45, n)) * 0.6);
+            diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.04, 0.04, 0.05), ring * 0.9);
+          } else if (hk.y < 3.5){ // crack
+            float a = atan(r.y, r.x + r.z * 0.6) * 5.0 + hk.z * 6.0 + wNoise(vRest * 18.0 + hk.z) * 3.0;
+            float ray = step(0.9, abs(sin(a))) * (1.0 - step(1.0, d));
+            float pit = 1.0 - step(0.18, d);
+            diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.03, 0.03, 0.035), max(ray, pit));
+            diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * 1.3, (1.0 - step(0.4, d)) * (1.0 - max(ray, pit)) * 0.5);
+          } else {                // a plate torn off: the dark suit under it, a ragged bright metal edge
+            float hole = 1.0 - step(0.85, d), lip = step(0.85, d) * (1.0 - step(1.02, d));
+            diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.1, 0.11, 0.13), hole);
+            diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.55, 0.57, 0.6), lip);
+          }
+        }
       }`)
       .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
       totalEmissiveRadiance += vec3(2.6, 0.8, 0.2) * scarHot;   // over 1: the bloom catches a fresh cut`);

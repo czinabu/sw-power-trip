@@ -108,6 +108,11 @@ export const JEDI_PARTS = {
         k.add(strip, 'tabard', R.chest, [0.105*sx, 0, -0.133], [-0.02, 0, 0]);
       }
       k.add(loft([{ y:0.32, w:0.3, d:0.225 }, { y:0.41, w:0.215, d:0.175 }, { y:0.455, w:0.175, d:0.15 }], SOFT), 'robe', R.chest);   // collar wrap
+      // LAYERS: the under-tunic's lighter cross-over showing in the V of the neck, the tunic's own wrap edge folded over
+      // it, and a sash end hanging from the obi knot, so the costume reads as cloth over cloth
+      k.add(plate([[-0.06,0.37],[0.06,0.37],[0,0.21]], 0.012, 0.003), k.mat('tunic', { shade: 1.12 }), R.chest, [0, 0, 0.129], [0.08, 0, 0], { outline: false });
+      for (const sx of [-1, 1]) k.add(plate([[0,0.4],[0.022*sx,0.4],[0.085*sx,0.17],[0.066*sx,0.165]], 0.014, 0.003), k.mat('tunic', { shade: 0.8 }), R.chest, [0.012*sx, 0, 0.131], [0.08, 0, 0], { outline: false });
+      k.add(plate([[-0.025,0],[0.025,0],[0.03,-0.2],[0,-0.23],[-0.03,-0.2]], 0.012, 0.003), 'tabard', R.torso, [0.11, 0.1, 0.165], [0.05, 0, 0.12]);
     },
   },
 
@@ -134,22 +139,28 @@ export const JEDI_PARTS = {
     // short sides with a knot tied on the crown
     topknot(R, k){
       cap(R, k, 0.008);
-      k.add(loft([{ y:-0.035, w:0.07, d:0.07 }, { y:0.0, w:0.095, d:0.095 }, { y:0.04, w:0.08, d:0.08 }, { y:0.06, w:0.03, d:0.03 }], ngon(8, Math.PI/8)), 'hair', R.head, [0, 0.37, -0.05], [-0.35, 0, 0]);
+      const knot = k.group(R.head, [0, 0.34, -0.04], [-0.35, 0, 0]);
+      hair(R, knot, 0.25);
+      k.add(loft([{ y:-0.035, w:0.07, d:0.07 }, { y:0.0, w:0.095, d:0.095 }, { y:0.04, w:0.08, d:0.08 }, { y:0.06, w:0.03, d:0.03 }], ngon(8, Math.PI/8)), 'hair', knot, [0, 0.03, -0.01]);
       k.add(block(0.08, 0.02, 0.05, 0.3), k.mat('leather'), R.head, [0, 0.345, -0.04], [-0.35, 0, 0]);   // the tie
     },
     // shoulder-length, falling behind the ears to the nape
     long(R, k){
       cap(R, k, 0.016);
+      // the fall behind: hung from a pivot at the crown so it sways and lags the head (model/life.js hairSway)
+      const fall = k.group(R.head, [0, 0.26, -0.05]);
+      hair(R, fall, 0.6);
       k.add(loft([
         { y:-0.1, w:0.2, d:0.07, z:-0.085 }, { y:0.02, w:0.235, d:0.1, z:-0.08 },
         { y:0.16, w:0.25, d:0.15, z:-0.06 }, { y:0.26, w:0.23, d:0.17, z:-0.05 },
-      ], chamfer(0.45)), 'hair', R.head);
+      ], chamfer(0.45)), 'hair', fall, [0, -0.26, 0.05]);
       for (const sx of [-1, 1]) k.add(loft([{ y:0.02, w:0.03, d:0.07 }, { y:0.24, w:0.04, d:0.12 }], chamfer(0.4)), 'hair', R.head, [0.112*sx, 0, -0.03]);
     },
     // a Padawan's crop with the learner's braid hanging behind the right ear
     braid(R, k){
       cap(R, k, 0.004, { outline: false });
       const b = k.group(R.head, [0.1, 0.2, -0.05], [0, 0, 0.12]);
+      hair(R, b, 1.2);   // it swings (model/life.js hairSway)
       for (let i = 0; i < 6; i++) k.add(block(0.026, 0.045, 0.026, 0.45), 'hair', b, [0, -i * 0.04, 0.003 * i], [0.1 * (i % 2 ? 1 : -1), 0, 0]);
       k.add(shard(0.022, 0.04, 0.022), 'hair', b, [0, -0.25, 0.02], [Math.PI, 0, 0]);
     },
@@ -223,7 +234,7 @@ function face(R, k){
   // the nose: a bridge down from the brow, the tip, and a wing either side
   k.add(loft([{ y:-0.035, w:0.044, d:0.05, z:0.014 }, { y:-0.02, w:0.038, d:0.046, z:0.012 }, { y:0.02, w:0.024, d:0.028, z:0.004 }, { y:0.05, w:0.02, d:0.016 }], ngon(3, Math.PI/2)),
     'skin', R.head, [0, 0.15, 0.106], [-0.08, 0, 0], flat);
-  const lids = [];
+  const lids = [], brows = [];
   for (const sx of [-1, 1]){
     k.add(block(0.03, 0.055, 0.045, 0.4), 'skin', R.head, [0.105*sx, 0.15, -0.005]);   // ears
     k.add(block(0.016, 0.016, 0.02, 0.4), dark, R.head, [0.017*sx, 0.118, 0.115], [0, 0, 0], flat);   // nostril wing
@@ -234,17 +245,27 @@ function face(R, k){
     const lid = k.group(R.head, [0.046*sx, 0.178, 0.115], [0, 0.22*sx, 0]);
     k.add(plate([[-0.028,0.002],[0.028,0.002],[0.026,-0.02],[0,-0.024],[-0.026,-0.02]], 0.008, 0.002), dark, lid, [0, 0, 0], [0, 0, 0], flat);
     lid.scale.y = 0.3; lids.push(lid);
-    // brows: hair, low at the inner end (a Jedi's level frown)
-    k.add(block(0.046, 0.009, 0.012, 0.4), 'hair', R.head, [0.048*sx, 0.194, 0.114], [0, 0.22*sx, 0.14*sx], flat);
+    // brows: hair, low at the inner end (a Jedi's level frown). Each on its own pivot so it can knit, lift and frown
+    // (model/life.js express)
+    const brow = k.group(R.head, [0.048*sx, 0.194, 0.114], [0, 0.22*sx, 0.14*sx]);
+    k.add(block(0.046, 0.009, 0.012, 0.4), 'hair', brow, [0, 0, 0], [0, 0, 0], flat);
+    brow.userData.rest = { y: brow.position.y, z: brow.rotation.z, side: sx }; brows.push(brow);
     k.add(block(0.04, 0.022, 0.03, 0.45), 'skin', R.head, [0.068*sx, 0.128, 0.088], [0, 0.55*sx, 0], flat);   // cheekbone
   }
-  R.head.userData.lids = lids;
-  // the mouth: a dark line between an upper lip and a fuller lower one, over a squared chin
+  R.head.userData.lids = lids; R.head.userData.brows = brows;
+  // the mouth: a dark line between an upper lip and a fuller lower one, over a squared chin. The lower lip and chin hang
+  // from a JAW hinge under the ears, so the mouth opens to talk, shout on a heavy blow or grit through a hit
   k.add(block(0.056, 0.012, 0.012, 0.4), dark, R.head, [0, 0.094, 0.108], [0, 0, 0], flat);
-  k.add(block(0.054, 0.006, 0.01, 0.2), deep, R.head, [0, 0.087, 0.111], [0, 0, 0], flat);
-  k.add(block(0.046, 0.014, 0.014, 0.45), k.mat('skin', { shade: 0.85 }), R.head, [0, 0.078, 0.105], [0, 0, 0], flat);
-  k.add(block(0.07, 0.036, 0.04, 0.45), 'skin', R.head, [0, 0.046, 0.085], [-0.2, 0, 0], flat);
+  const jaw = k.group(R.head, [0, 0.11, 0.02]);
+  k.add(block(0.05, 0.03, 0.02, 0.3), deep, jaw, [0, -0.02, 0.083], [0, 0, 0], flat);   // the dark inside, seen as it opens
+  k.add(block(0.054, 0.006, 0.01, 0.2), deep, jaw, [0, -0.023, 0.091], [0, 0, 0], flat);
+  k.add(block(0.046, 0.014, 0.014, 0.45), k.mat('skin', { shade: 0.85 }), jaw, [0, -0.032, 0.085], [0, 0, 0], flat);
+  k.add(block(0.07, 0.036, 0.04, 0.45), 'skin', jaw, [0, -0.064, 0.065], [-0.2, 0, 0], flat);
+  R.head.userData.jaw = jaw;
 }
+
+// a lock of hair that swings: recorded on the head for model/life.js (give: how loose it hangs)
+function hair(R, g, give){ g.userData.rest = g.rotation.clone(); g.userData.give = give; (R.head.userData.hairs || (R.head.userData.hairs = [])).push(g); }
 
 /* hair over the crown and back of the skull, `lift` proud of it. The low rings sit back on the head so the hairline
    rises at the forehead and the face stays clear; the ears and brow stay bare */

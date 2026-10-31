@@ -15,6 +15,7 @@ import { chainGeo, chainWeights, rounded } from './skin.js';
 import { makeCloth } from './cloth.js';
 import { KEEL } from './shapes.js';
 import { mountLoadout } from './weapons.js';
+import { heroWear } from './wear.js';
 
 export function buildHeroModel(target, lookIn = {}){
   const look = resolveLook(lookIn);
@@ -30,6 +31,8 @@ export function buildHeroModel(target, lookIn = {}){
   const trooper = (TROOPER_TEST || lookIn.withTrooper) ? dress(R, makeStyle(look.style, look.trooper.palette), look.trooper, TROOPER_PARTS, target) : { parts: [] };
   for (const p of trooper.parts) p.visible = false;
   mountLoadout(R, S, target);
+  // dust, scuffs and the fight's soot (model/wear.js): each hero worn as much as its look says
+  target.wearU = [heroWear(jedi.parts, look.jedi.wear ?? 0.4), heroWear(mando.parts, look.mando.wear ?? 0.4), heroWear(trooper.parts, look.trooper.wear ?? 0.4)];
 
   target.vis = R.vis;
   target.rig = {

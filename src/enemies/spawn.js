@@ -46,12 +46,13 @@ function maybeTip(typeName){
 let nextNid = 0;   // every foe's number, the same on both screens in co-op (net/foes.js)
 export function spawnEnemy(typeName, pos){
   const t = ENEMY_TYPES[typeName];
-  const g = buildEnemyMesh(t);
+  const nid = ++nextNid;
+  const g = buildEnemyMesh(t, { seed: nid });   // (its marking and face follow its number: the same on both co-op screens)
   g.position.copy(pos);
   scene.add(g);
   const hp = Math.round(t.hp * enemyHpScale());
   const e = {
-    nid: ++nextNid, type: typeName, t, group: g, hp, maxHp: hp, state: 'spawn', st: 0.5,
+    nid, type: typeName, t, group: g, hp, maxHp: hp, state: 'spawn', st: 0.5,
     vel: V3(0,0,0), flash: 0, hitCd: 0, dead: false,
     converted: false, convT: 0, struck: false, stumble: 0, burn: 0, flinch: 0,
     spd: t.speed * rand(0.88, 1.14),   // per-unit variance so crowds move organically
