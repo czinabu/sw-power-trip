@@ -6,6 +6,9 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'Save from the main menu', status: 'done',
+    items: ['SAVE GAME now sits beside NEW GAME and LOAD GAME on the main menu (it was pause-only), so you can save your progress without starting a run',
+            'A save keeps every mode\'s wins, unlocks, bests and training ticks plus your look, and a campaign waiting on CONTINUE comes with it'] },
   { title: 'Sealed guard arcs', status: 'done',
     items: ['A duellist\'s glowing guard crescent is now a wall: any cut that arrives inside it is always turned, with the usual BLOCKED spark and clash sound',
             'Attack from the open side (read the crescent, step round, or aim your cut A / D / W past its edge) or break the guard with a kick, a parry or a saber lock',
