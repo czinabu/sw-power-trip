@@ -19,6 +19,7 @@ import { addPosture, drainBreath, netGuardHit } from '../enemies/duel.js';
 import { DUEL } from '../data/duel.js';
 import { gainXp } from '../game/progression.js';
 import { hurtPlayer } from '../player/damage.js';
+import { players } from '../player/players.js';
 import { bossBlowResult, spawnBossRing } from '../boss/boss.js';
 import { victory } from '../game/summary.js';
 import { coopMissionDone } from '../game/mission.js';
