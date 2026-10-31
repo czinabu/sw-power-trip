@@ -12,6 +12,7 @@ import { updateWarfront } from '../world/warfront.js';
 /* L.ambient (from the world theme): { kind: 'embers' (rise) | 'ash' | 'snow' (fall) | 'dust' (drift), color, count, size } */
 export function buildAmbient(L){
   const am = L.ambient || {};
+  shared.ambientKind = am.kind || '';   // the audio director layers a matching wind / grit bed (audio/director.js)
   const fall = am.kind === 'snow' || am.kind === 'ash';
   const N = am.count || 170;   // denser drifting embers/dust → thicker, more immersive air
   const pos = new Float32Array(N*3);
