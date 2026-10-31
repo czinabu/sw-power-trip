@@ -212,7 +212,7 @@ export function fireTrigger(){
     return;
   }
   if (player.overheat){ if ((player.dryT || 0) <= 0){ player.dryT = 0.25; sfx(120, 0.04, 'square', 0.04, 80); } return; }   // dry-fire CLICK while overheated
-  if (W.fire === 'twin'){ firePistol(W, 1); return; }   // the trooper's twin DC-17s: LMB is the right-hand pistol
+  if (W.fire === 'twin'){ fireTwin(W); return; }   // the trooper's twin DC-17s: each click, the other pistol
   if (W.fire === 'launcher'){   // the trooper's AT launcher (the Commando's): one heavy rocket a pull
     if (player.fireCd > 0) return;
     player.aiming = 0.8;
@@ -229,8 +229,18 @@ export function fireTrigger(){
   if (W.fire === 'burst'){ player.burstLeft = W.burst; player.burstT = 0; burstRound(W); return; }   // the rest of the burst: updateMandoCombat
   fireBlaster(W);
 }
-// THE TWIN DC-17s (the trooper) — each mouse button fires one pistol (side 1 = right on LMB, -1 = left on RMB), each
-// on its own cooldown, both into the one heat bar. They fire straight out of a roll or a slide.
+// THE TWIN DC-17s (the trooper) — semi-automatic: each click of LMB fires the other pistol (right, left, right…), each
+// on its own cooldown, both into the one heat bar, so a quick finger fires twice as fast as one gun. RMB aims (the
+// tighter cone). They fire straight out of a roll or a slide.
+function fireTwin(W){
+  if ((player.twinGapT || 0) > G.gt) return;   // the fastest two clicks can land: data/trooper.js `twinGap`
+  const side = player.twinNext || 1;
+  const ready = s => (s > 0 ? player.fireCd : (player.fireCdL || 0)) <= 0;
+  const s = ready(side) ? side : ready(-side) ? -side : 0;
+  if (!s) return;
+  firePistol(W, s);
+  player.twinNext = -s; player.twinGapT = G.gt + (W.twinGap || 0);
+}
 export function firePistol(W, side){
   if (G.mode !== 'play' || player.overheat) return;
   if (side > 0 ? player.fireCd > 0 : (player.fireCdL || 0) > 0) return;

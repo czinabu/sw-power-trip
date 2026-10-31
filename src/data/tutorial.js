@@ -481,10 +481,10 @@ export const LESSONS = {
         { say: 'Run it hot. When it locks, wait for the beat and hit R: do it right and the coils clear at once.',
           keys: 'LMB · R', do: 'Overheat the rifle, then vent it with R (on the beat clears it at once)', ev: 'vent', need: 1 },
       ] },
-    { id: 'pistols', group: 'basics', name: 'TWIN DC-17s', sub: 'A pistol in each hand, a gun on each button',
-      done: 'Two guns, two targets. Rex would be proud.',
+    { id: 'pistols', group: 'basics', name: 'TWIN DC-17s', sub: 'A pistol in each hand, firing in turn',
+      done: 'Fast hands. Rex would be proud.',
       steps: [
-        { sec: 'TWIN DC-17s', say: 'Sidearms. Left button, right pistol. Right button, left pistol. Work them both.',
+        { sec: 'TWIN DC-17s', say: 'Sidearms. Every pull of the trigger fires the other pistol, so the faster you click, the faster they talk. Right button to aim.',
           keys: '2 · LMB · RMB', do: 'Switch to the twin DC-17s and drop 3 targets', ev: 'kill', need: 3, respawn: true,
           spawn: dummies([[-5, -10], [5, -10], [0, -12]]) },
         { say: 'They fire out of a roll. Never stop shooting.',
