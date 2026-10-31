@@ -56,9 +56,12 @@ for (const [hero, full, lessons] of RUNS){
     check(!(await page.evaluate(() => document.getElementById('forms').classList.contains('open'))), `${label}: training skips Before the Fight`);
     await page.waitForFunction(() => GAME.G.mode === 'play' && GAME.G.training, null, { timeout: 20000 });
     if (!full){
+      // the lesson board opens before the first lesson; pick the first basic from it
+      await page.waitForFunction(() => document.getElementById('lessonboard').classList.contains('open'), null, { timeout: 60000 });
+      await page.click('#lessonboard [data-go]');
       await page.waitForFunction(() => GAME.trainingProgress().total > 0, null, { timeout: 60000 });
       const first = await page.evaluate(() => GAME.trainingProgress().name);
-      check(first === (hero === 'jedi' ? 'FIRST STEPS' : 'THE YARD'), `${label}: a first visit opens on the first basic lesson (${first})`);
+      check(first === (hero === 'jedi' ? 'FIRST STEPS' : 'THE YARD'), `${label}: a first visit opens the board, and its first card is the first basic lesson (${first})`);
       if (hero === 'jedi'){
         const forms = await page.evaluate(() => ({ loadout: GAME.G.loadout.filter(Boolean), known: Object.keys(GAME.G.stanceUnlocked).filter(k => GAME.G.stanceUnlocked[k]) }));
         check(forms.loadout.join() === 'shiicho' && !forms.known.some(k => k !== 'shiicho'), `${label}: trains in Shii-Cho alone (${forms.loadout.join()})`);

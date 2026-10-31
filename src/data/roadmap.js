@@ -26,6 +26,7 @@ export const ROADMAP = [
             'Every mode: duels, missions, bosses, survival, sandbox and co-op'] },
   { title: 'Training rebuilt', status: 'done',
     items: ['Training is short lessons picked from a lesson board between them: the basics first, in Shii-Cho alone',
+            'The lesson board opens before every training visit, and a New Game wipes every lesson tick so training starts over',
             'Every form the story teaches opens its own lesson: Soresu, Ataru, Djem So and Shien, Makashi, Niman, Form VII',
             'Lessons for reverse grip (Shien always, Niman on G), fighting holstered with the Force, and how powers grow by use',
             'The Mando\'s matching arsenal lessons: two blasters, the flamethrower, forged gear, the disruptor and the Darksaber',

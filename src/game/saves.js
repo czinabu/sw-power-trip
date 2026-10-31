@@ -15,7 +15,7 @@ import { clearMeditation } from './meditation.js';
    Settings (volume, sensitivity, FOV, graphics, fullscreen) are the player's, not the save's, and stay as they are. */
 export const SLOTS = 3;
 const slotKey = (i) => 'sw_save_' + i;
-const PROGRESS = /^sw_(camp_|trained_|best_|sandbox_|mission_.+_(jedi|mando)$)|^sw_(asktrain|look)$/;
+const PROGRESS = /^sw_(camp_|trained_|lesson_|best_|sandbox_|mission_.+_(jedi|mando)$)|^sw_(asktrain|look)$/;
 // what NEW GAME clears: everything above but the hero's look and the sandbox's map/kit picks
 const FRESH_KEEP = /^sw_(look|sandbox_)/;
 
