@@ -31,7 +31,7 @@ import { damageBoss, bossStagger, bossStun, makeBossPuppet, dropBossPuppet } fro
 import { net, on, send, connected } from './session.js';
 import { coopRun, hitQueue } from './run.js';
 import { STANCES } from '../data/stances.js';
-import { duelRec, updatePuppetDuel } from '../enemies/duel.js';
+import { duelRec, updatePuppetDuel, netProfile, updateSaberLock, LOCK } from '../enemies/duel.js';
 
 const DEAD = 1, WALKING = 2, WARBRINGER = 4;
 let sentAt = 0, hostSent = false, runListeners = [];
@@ -114,7 +114,7 @@ on('bctl', (m) => {
 on('gp', (m) => {
   if (net.role !== 'host') return;
   const e = enemies.find(o => o.nid === m.n);
-  if (!e || e.dead || e.state !== 'grasped') return;
+  if (!e || e.dead || !HELD[e.state]) return;
   e.group.position.set(m.p[0], m.p[1], m.p[2]); e.group.rotation.set(m.r[0], m.r[1], m.r[2]);
   e.vel.set(0, 0, 0); e.heldAt = performance.now();
 });
@@ -147,7 +147,7 @@ function applyRec(e, rec){
   e.group.scale.setScalar(sc);
   sendCtl(e);   // a control state put on it here since the last frame goes out before the snapshot overwrites it
   e.hp = hp; e.maxHp = maxHp; e.walking = !!(flags & WALKING);
-  if (!e.held){   // a foe this player has in the Force grasp is theirs to place and pose until they let go
+  if (!e.held && LOCK.foe !== e){   // a foe this player has in the Force grasp, or blade to blade in a saber lock, is theirs to place and pose until they let go
     e.want.pos.set(x, y, z); e.want.rx = rx; e.want.ry = ry; e.want.rz = rz;
     e.state = e.netState = state;
   }
@@ -159,6 +159,7 @@ function applyRec(e, rec){
   if (cut) applyCuts(e, cut);   // limbs the host's saber (or the partner's) took: lift them off here too
   e.cutDrop = drop || 0; e.cutTwist = twist ?? null;
   e.ng = duel || null;   // its guard as the host holds it: the crescent, the posture bar, and whether it turns this player's cuts (duel.js)
+  netProfile(e);         // ...and its profile, as e.dp: bolt deflection, the saber lock, the forms' bonuses against duellists
   if (u.staff){ u.staff.rotation.z = sZ; if (sX != null) u.staff.rotation.x = sX; }
   if (u.bodyMat){ u.bodyMat.emissive.setHex(em); u.bodyMat.emissiveIntensity = ei; }
 }
@@ -254,7 +255,8 @@ on('e', (m) => {
   }
 });
 
-const CTL = { knockdown: 1, ragdoll: 1, stagger: 1, recover: 1, stasis: 1, grasped: 1 };   // the states a guest's powers put a foe in
+const CTL = { knockdown: 1, ragdoll: 1, stagger: 1, recover: 1, stasis: 1, grasped: 1, lock: 1 };   // the states a guest's powers (or a saber lock) put a foe in
+const HELD = { grasped: 1, lock: 1 };   // ...and the ones where the guest places the body itself
 const NO_FEET = { ragdoll: 1, knockdown: 1, getup: 1, fade: 1, spawn: 1, grasped: 1 };   // the states the legs don't stand in (enemies/ai.js)
 const damp = (a, b, k, dt) => a + (b - a) * (1 - Math.exp(-k * dt));
 const angDiff = (a, b) => Math.atan2(Math.sin(b - a), Math.cos(b - a));
@@ -262,10 +264,11 @@ const angDiff = (a, b) => Math.atan2(Math.sin(b - a), Math.cos(b - a));
 // a Force power or a blow here put the puppet into a control state (floored, thrown, stunned, frozen): tell the host,
 // which applies it to the real foe. The next snapshot then carries the result back.
 function sendCtl(e){
-  // held in this player's grasp: they move the body (player/jedi/grasp.js), and the host is told where it is
-  if (e.state === 'grasped' && e.netState !== 'grasped') e.held = true;
+  // held in this player's grasp or bound in their saber lock: they move the body (player/jedi/grasp.js, enemies/duel.js),
+  // and the host is told where it is
+  if (HELD[e.state] && !HELD[e.netState]) e.held = true;
   if (e.held){
-    if (e.state !== 'grasped') e.held = false;
+    if (!HELD[e.state]) e.held = false;
     else if (connected() && performance.now() - (e.heldSent || 0) >= NET.sendMs){
       e.heldSent = performance.now();
       const gp = e.group.position, gr = e.group.rotation;
@@ -278,6 +281,7 @@ function sendCtl(e){
 }
 /* the guest's stand-in for updateEnemies: follow the snapshot, and walk the legs on the motion that results */
 export function updatePuppets(dt){
+  if (LOCK.foe && LOCK.foe.net) updateSaberLock(dt);   // a bind with one of the host's duellists runs here, as ai.js runs it for its own
   for (const e of enemies){
     if (!e.net) continue;
     sendCtl(e);   // a power or a blow here put it in a control state: the host applies it to the real foe
@@ -288,7 +292,7 @@ export function updatePuppets(dt){
       e.lungeLine.material.opacity = Math.max(0, e.lungeLine.material.opacity - dt * 3);
       if (e.lungeLine.material.opacity <= 0) e.lungeLine.visible = false;
     }
-    if (e.held){ updateLegs(e, g, dt, 'off'); continue; }   // the grasp moves it
+    if (e.held){ updateLegs(e, g, dt, e.state === 'lock' ? 'ground' : 'off'); continue; }   // the grasp (or the bind) moves it
     g.position.x = damp(g.position.x, w.pos.x, 20, dt);
     g.position.y = damp(g.position.y, w.pos.y, 20, dt);
     g.position.z = damp(g.position.z, w.pos.z, 20, dt);
@@ -325,8 +329,8 @@ export function updateFoes(){
   if (net.role === 'host'){
     // a grasp whose holder went quiet (left, froze) lets go
     for (const e of enemies){
-      if (e.state !== 'grasped'){ e.heldAt = null; continue; }   // (this host's own grasps carry no stamp: they are never let go here)
-      if (e.heldAt != null && !e.dead && performance.now() - e.heldAt > 1500){ e.state = 'knockdown'; e.st = 0.5; e.heldAt = null; }
+      if (!HELD[e.state]){ e.heldAt = null; continue; }   // (this host's own grasps and locks carry no stamp: they are never let go here)
+      if (e.heldAt != null && !e.dead && performance.now() - e.heldAt > 1500){ e.state = e.state === 'lock' ? 'recover' : 'knockdown'; e.st = 0.5; e.heldAt = null; }
     }
     const waiting = coopRun.live && coopRun.guestPicking && shared.levelPhase === 'between' && !G.skillSelect;
     if (waiting && !waitShown) showBanner('', 'WAITING FOR YOUR PARTNER\'S UPGRADES', 2.4);

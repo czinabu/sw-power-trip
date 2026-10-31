@@ -109,6 +109,22 @@ try {
   }, dn);
   if (turned !== 'block') throw new Error('the guest\'s blow on the duellist\'s guarded line was not turned: ' + turned);
   await host.waitForFunction(([n, p0]) => { const e = GAME.enemies.find(o => o.nid === n); return !e || e.dead || e.posture > p0 || e.state === 'stagger'; }, [dn, post0], poll);
+  // ...a cut it slips on the guest's screen is a real step back on the host
+  const slipped = await guest.evaluate((n) => {
+    const e = GAME.enemies.find(o => o.nid === n), p = GAME.player.group.position, g = e.group;
+    e.ng[1] = 1; e.ng[7] = 0; e.dp.dodge = 1; g.rotation.y = Math.atan2(p.x - g.position.x, p.z - g.position.z);
+    const r = GAME.duel.duelDefend(e, 'L', 'cut', false); e.dpKey = ''; return r;
+  }, dn);
+  if (slipped !== 'dodge') throw new Error('the duellist did not slip the guest\'s cut: ' + slipped);
+  await host.waitForFunction((n) => { const e = GAME.enemies.find(o => o.nid === n); return !e || e.dead || e.dodgeT > 0 || e.state === 'recover'; }, dn, poll);
+  // ...and blade to blade: a saber lock the guest starts binds the host's foe, and won on the guest it reels there
+  await host.waitForFunction((n) => { const e = GAME.enemies.find(o => o.nid === n); return !e || e.dead || e.state === 'chase'; }, dn, poll);
+  const bound = await guest.evaluate((n) => { const e = GAME.enemies.find(o => o.nid === n); return e.dp && e.dp.lock ? GAME.duel.startLock(e, 'mid') : 'no lock in its profile'; }, dn);
+  if (bound !== true) throw new Error('the guest could not lock blades with the duellist: ' + bound);
+  await host.waitForFunction((n) => { const e = GAME.enemies.find(o => o.nid === n); return !e || e.dead || e.state === 'lock'; }, dn, poll);
+  await guest.evaluate(() => { GAME.duel.LOCK.bal = 1; });
+  await guest.waitForFunction(() => !GAME.duel.LOCK.foe, null, poll);
+  await host.waitForFunction((n) => { const e = GAME.enemies.find(o => o.nid === n); return !e || e.dead || e.state === 'stagger' || e.state === 'recover'; }, dn, poll);
   // a kill on the host pays the guest XP too
   const xp0 = await guest.evaluate(() => GAME.G.xp || 0);
   await host.evaluate((n) => { const e = GAME.enemies.find(o => o.nid === n); if (e) GAME.damageEnemy(e, 99999, null, 0, false, false); }, t2);

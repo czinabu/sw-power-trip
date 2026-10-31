@@ -896,6 +896,7 @@ function winLock(label, knock){
   const e = LOCK.foe, pp = playerPos(), g = e.group, K = lockKind();
   const dx = g.position.x - pp.x, dz = g.position.z - pp.z, dl = Math.hypot(dx, dz) || 1;
   endLock();
+  if (e.net && hooks.guard) hooks.guard(e, 'lockwin', 0, '');   // co-op guest: the host's foe loses its wind (net/foefire.js)
   e.state = 'recover';
   // a low bind won throws it aside, off its feet's line, with its knees giving; the others drive it straight back
   const sd = K.side ? (Math.random() < 0.5 ? 1 : -1) : 0;
@@ -919,6 +920,7 @@ function winLock(label, knock){
 function loseLock(){
   const e = LOCK.foe, g = e.group, K = lockKind();
   endLock();
+  if (e.net && hooks.guard) hooks.guard(e, 'lockloss', 0, '');   // co-op guest: the host's foe answers
   e.state = 'recover'; e.st = 0.25; e.counterQueued = true;
   player.parryT = 0;
   hurtPlayer(DUEL.lock.loseDmg * enemyDmgScale(), g.position, false, true, false, { unblockable: true, noClash: true });
@@ -949,7 +951,8 @@ export function endLock(){
    foe's guard as `duelRec`; the guest keeps it on the puppet (e.ng) to draw the crescent and the posture bar, and to
    meet its own cuts with the same rules a solo fight has (the sealed arc, the off-line odds). A cut the guest's screen
    turns is sent back (hooks.guard), and the host puts the posture and breath it costs on the real foe. */
-const NG = { line: 0, up: 1, posture: 2, breath: 3, read: 4, block: 5, brace: 6, winded: 7 };
+const NG = { line: 0, up: 1, posture: 2, breath: 3, read: 4, block: 5, brace: 6, winded: 7,
+  lock: 8, push: 9, deflect: 10, dodge: 11, parry: 12, flip: 13, side: 14, max: 15, elite: 16 };   // (8 on: its profile, for the puppet's e.dp)
 const line0 = e => LINES[e.ng ? e.ng[NG.line] : 2] || 'H';
 // host: a duellist's guard as the snapshot sends it, or 0
 export function duelRec(e){
@@ -958,7 +961,20 @@ export function duelRec(e){
   const up = !p.brace && GUARDING[e.state] && !e.converted && !(e.stunT > 0) && !(e.dodgeT > 0) && !(G.gt < (e.openUntil || 0)) && !e.winded;
   return [Math.max(0, LINES.indexOf(e.guard)), up ? 1 : 0, Math.round(clamp(e.posture / p.posture, 0, 1) * 100),
     e.breath != null ? Math.round(clamp(e.breath / e.breathMax, 0, 1) * 100) : -1, e.lineStreak >= DUEL.adaptAfter ? 1 : 0,
-    Math.round((p.block || 0) * 100), p.brace ? 1 : 0, e.winded ? 1 : 0];
+    Math.round((p.block || 0) * 100), p.brace ? 1 : 0, e.winded ? 1 : 0,
+    p.lock ? 1 : 0, Math.round((p.push || 0) * 100), Math.round((p.deflect || 0) * 100), Math.round((p.dodge || 0) * 100),
+    Math.round((p.parry || 0) * 100), Math.round((p.flip || 0) * 100), Math.round((p.side || 0) * 100), p.posture || 0, p.elite ? 1 : 0];
+}
+// guest: the puppet's own copy of the profile, from the snapshot (what its bolt deflection, the saber lock and the
+// Makashi bonus read), rebuilt only when it changes
+export function netProfile(e){
+  const n = e.ng;
+  if (!n || n.length <= NG.elite){ e.dp = null; e.dpKey = ''; return; }
+  const key = n.slice(NG.block).join();
+  if (key === e.dpKey) return;
+  e.dpKey = key;
+  e.dp = { block: n[NG.block] / 100, brace: !!n[NG.brace], lock: !!n[NG.lock], push: n[NG.push] / 100, deflect: n[NG.deflect] / 100,
+    dodge: n[NG.dodge] / 100, parry: n[NG.parry] / 100, flip: n[NG.flip] / 100, side: n[NG.side] / 100, posture: n[NG.max], elite: !!n[NG.elite] };
 }
 // guest: does the host's duellist turn this blow? Same rules as duelDefend, read off the snapshot
 function netDefend(e, line, kind, heavy, at){
@@ -966,17 +982,35 @@ function netDefend(e, line, kind, heavy, at){
   if (!n || e.dead) return null;
   const g = e.group, pp = playerPos();
   const dx = pp.x - g.position.x, dz = pp.z - g.position.z, dl = Math.hypot(dx, dz) || 1;
+  const R = DUEL.rhythm;   // your rhythm at it, kept here: a mash builds a streak it can read
+  e.rhyN = G.gt - (e.rhyAt ?? -9) < R.gap ? (e.rhyN || 0) + 1 : 1; e.rhyAt = G.gt;
   if ((Math.sin(g.rotation.y) * dx + Math.cos(g.rotation.y) * dz) / dl < 0.35) return null;   // the flank or the back always lands
   const P = DUEL.posture;
   const mul = G.hero !== 'mando' ? stance().postureMul || 1 : heavy ? P.heavyMul : 1;
   if (n[NG.brace]){ if (hooks.guard) hooks.guard(e, kind, mul, line); return null; }   // the Warbringer braces: the strain builds on the host
   if (!n[NG.up]) return null;
+  const p = e.dp || {}, m = diffMul() * (p.elite ? eliteRamp() : 1), fresh = !n[NG.winded];
+  // a light blow seen coming: the agile ones slip it (the host moves the foe: the next snapshot shows the step or the flip)
+  if (p.dodge && (kind === 'cut' || kind === 'punch') && fresh && Math.random() < p.dodge * m){
+    if (hooks.guard) hooks.guard(e, 'dodge', 0, line);
+    floater(V3(g.position.x, g.position.y + 1.2, g.position.z), p.flip ? 'FLIPPED CLEAR' : 'SLIPPED', '#c8d4e0');
+    S.dash();
+    return 'dodge';
+  }
+  // a mash is read and thrown off, whatever line it comes in on
+  if (p.parry && e.rhyN > R.after && kind !== 'finisher' && fresh && Math.random() < p.parry * m){
+    if (hooks.guard) hooks.guard(e, 'parry', 0, line);
+    e.rhyN = 0;
+    punishMash(at || V3(g.position.x + dx / dl * 0.7, g.position.y + 1.5, g.position.z + dz / dl * 0.7), e.form);
+    floater(V3(g.position.x, g.position.y + 1.3, g.position.z), 'PARRIED', '#ff8a5a');
+    return 'block';
+  }
   const ang = kind === 'cut' || kind === 'finisher' ? arrival(player.swing) : null;
   const guard = LINES[n[NG.line]] || 'H';
   let cover = line === guard ? 1 : 0;
   if (ang != null){ const A = DUEL.arc, d = angDist(ang, GUARD_ANG[guard] ?? 90); cover = 1 - THREE.MathUtils.smoothstep(d, A.cover, A.cover + A.feather); }
   const onLine = cover > 0.5;   // the SEALED ARC: inside the crescent it is always turned
-  let chance = n[NG.block] / 100 * (DUEL.offLine + (1 - DUEL.offLine) * cover) * diffMul() * eliteRamp();
+  let chance = n[NG.block] / 100 * (DUEL.offLine + (1 - DUEL.offLine) * cover) * m;
   if (kind === 'finisher') chance *= 0.75;
   if (G.hero !== 'mando') chance *= stance().duelBlockMul || 1;
   if (!onLine && !(Math.random() < Math.min(0.95, chance))) return null;
@@ -990,13 +1024,26 @@ function netDefend(e, line, kind, heavy, at){
   floater(V3(g.position.x, g.position.y + 1.3, g.position.z), n[NG.read] ? 'READ YOU' : 'BLOCKED', n[NG.read] ? '#ffb35a' : '#c8d4e0');
   return 'block';
 }
-// host: the guest's blow met this duellist's guard (kind 'impact': a kick, a shove or a fall into it, amt its posture).
-// (ax, az): away from the guest's hero
+// host: the guest's blow met this duellist's guard (kind 'impact': a kick, a shove or a fall into it, amt its posture;
+// 'dodge' / 'parry': the guest's screen saw it slip or throw off the blow; 'lockwin' / 'lockloss': a saber lock with the
+// guest ended). (ax, az): away from the guest's hero
 export function netGuardHit(e, kind, amt, line, ax, az){
   const p = e.dp;
   if (!p || e.dead) return;
   const P = DUEL.posture;
   if (kind === 'impact'){ if (GUARDING[e.state]) addPosture(e, amt, ax, az); return; }
+  if (kind === 'dodge'){
+    if (!spend(e, DUEL.breath.dodge)) return;
+    e.dodgeT = p.flip ? DUEL.flipTime : 0.3; e.dodgeX = ax; e.dodgeZ = az;
+    e.dodgeSide = !p.flip && Math.random() < (p.side || 0) ? (Math.random() < 0.5 ? 1 : -1) : 0;
+    if (e.dodgeSide){ const sx = az * e.dodgeSide + ax * 0.35, sz = -ax * e.dodgeSide + az * 0.35, sl = Math.hypot(sx, sz) || 1; e.dodgeX = sx / sl; e.dodgeZ = sz / sl; }
+    e.state = 'recover'; e.st = Math.max(e.st, e.dodgeT + 0.05);
+    if (Math.random() < p.counter * diffMul() * skill(e)) e.counterQueued = true;
+    return;
+  }
+  if (kind === 'parry'){ if (spend(e, DUEL.breath.block)){ e.rhyN = 0; e.counterQueued = true; if (LINES.includes(line)) e.guard = line; } return; }
+  if (kind === 'lockwin'){ e.posture = 0; drainBreath(e, DUEL.breath.lock); e.flourishNext = G.gt + DUEL.flourish.after + 0.6; return; }
+  if (kind === 'lockloss'){ e.counterQueued = true; e.flourishNext = G.gt + DUEL.flourish.after + 0.6; return; }
   const base = kind === 'finisher' ? P.finisher : kind === 'punchHeavy' ? P.punchHeavy : kind === 'punch' ? P.punch : P.cut;
   if (p.brace){
     const W = WARBRINGER, light = kind === 'cut' || kind === 'punch';
