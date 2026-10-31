@@ -20,7 +20,7 @@ const vecOff = o => o && { hand: V(o.hand), pole: V(o.pole || [-0.55, -0.8, -0.2
 const vecPose = p => p && ({ ...p, hand: V(p.hand), blade: V(p.blade).normalize(), pole: V(p.pole || [0.55, -0.8, -0.25]).normalize(),
   off: vecOff(p.off), offAlt: vecOff(p.offAlt), offMove: vecOff(p.offMove) });
 const GUARDS = {}, SWINGS = {};
-for (const g in SABER_GUARDS){ GUARDS[g] = {}; for (const f in SABER_GUARDS[g]) GUARDS[g][f] = { ready: vecPose(SABER_GUARDS[g][f].ready), block: vecPose(SABER_GUARDS[g][f].block) }; }
+for (const g in SABER_GUARDS){ GUARDS[g] = {}; for (const f in SABER_GUARDS[g]) GUARDS[g][f] = { ready: vecPose(SABER_GUARDS[g][f].ready), block: vecPose(SABER_GUARDS[g][f].block), block2: vecPose(SABER_GUARDS[g][f].block2) }; }
 const AIR = {};
 for (const g in AIR_GUARDS){ AIR[g] = {}; for (const f in AIR_GUARDS[g]){ AIR[g][f] = {}; for (const k in AIR_GUARDS[g][f]) AIR[g][f][k] = vecPose(AIR_GUARDS[g][f][k]); } }
 /* an agility guard (data/agility.js AIR_GUARDS) for this grip and form, or null to keep the form's ready guard. A form
@@ -115,7 +115,10 @@ function seed(R, held){
 export function guardPose(dt, R, held, grip, form, blocking, sway, over = null, rate = 1){
   if (!saberPose.live) seed(R, held);
   const G0 = (GUARDS[grip] && (GUARDS[grip][form] || GUARDS[grip].niman)) || GUARDS.regular.niman;
-  const g = (!blocking && over) || (blocking ? G0.block : G0.ready);
+  // a form with a second block (Makashi) alternates between the two each time the guard goes up
+  if (blocking && !wasBlocking && G0.block2) blockAlt = !blockAlt;
+  wasBlocking = blocking;
+  const g = (!blocking && over) || (blocking ? (blockAlt && G0.block2) || G0.block : G0.ready);
   switchT = Math.max(0, switchT - dt);
   const k = Math.min(1, dt * (blocking ? 18 : switchT > 0 ? SWITCH_RATE : 9) * rate);
   _t.copy(g.hand); _t.y += sway.y; _t.z += sway.z;
@@ -145,7 +148,7 @@ const GRIP_TURN = Math.PI / 0.16;   // rad/s the hilt turns over in the fingers 
 const SWITCH_OUT = 1.1, OUTX = new THREE.Vector3(1, 0, 0);   // how far out to the weapon side the blade swings mid-switch
 let switchT = 0;
 /* a guard with an offAlt (Makashi) alternates its free hand between off and offAlt: every cut flips it */
-let altOff = false;
+let altOff = false, blockAlt = false, wasBlocking = false;
 const freeOff = g => (altOff && g.offAlt) || g.off;
 export function startSwitch(){ switchT = SWITCH_TIME; }
 
