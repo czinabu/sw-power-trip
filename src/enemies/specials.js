@@ -73,6 +73,7 @@ export function warbringerSlam(e, pos){
   flashLight(0xff6a3a, 7, R*2, V3(pos.x, 1, pos.z), 0.32);
   G.shake = Math.max(G.shake, 1.1); G.hitstop = Math.max(G.hitstop, 0.06); S.boom(pos, 1.6);
   for (const o of enemies){ if (o === e || o.dead) continue; if (o.group.position.distanceTo(pos) < R) flinchEnemy(o, o.group.position.clone().sub(pos), 0.6); }
+  blastAllies(pos, R, e.t.dmg * 1.3 * enemyDmgScale());   // the squad is caught in the quake
   if (hooks.blast) hooks.blast(pos, R, e.t.dmg * 1.3 * enemyDmgScale(), 's');
   const pp = playerPos();
   if (pp.distanceTo(pos) < R && player.dashT <= 0){
