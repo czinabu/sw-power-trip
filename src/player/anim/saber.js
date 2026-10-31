@@ -69,6 +69,8 @@ const WRAP_BLADE = { regular: new THREE.Vector3(0, 0.78, -0.62).normalize(), rev
 
 const TWIRL_AXIS = new THREE.Vector3(0.25, 0, 1).normalize();   // a wheel in front of the chest, just canted
 const easeOut = t => 1 - (1 - t) * (1 - t);
+const DEF_POLE = new THREE.Vector3(0.55, -0.8, -0.25).normalize();
+const REV_ROUND = -0.2;   // a reverse stroke whose blade turns further than this (dot of chamber and strike) goes round level
 const COIL_HOLD = 0.22;   // the share of the stroke's time the blade hangs at the top of the chamber before it goes
 /* A CUT IS ONE MOTION, not a bat swung at a ball (data/poses.js SWING_STYLE: load, accel, lag, recover):
    the wind-up eases into a chamber loaded a little deeper than its key, so the hang at the top is a slow settle, never a
@@ -193,7 +195,7 @@ export function swingPose(R, held, grip, form, sw){
     sw.anim = {
       keys: scaled, fin, spin: fin ? style.finisher.spin : 0, hop: fin ? style.finisher.hop : style.spinHop,
       tc: style.tc * (sw.riposte ? 0.45 : sw.flowCut ? CUT_ANGLE.flow.chamber : 1), ts: style.ts, tf: style.tf,
-      start: { hand: saberPose.hand.clone(), blade: saberPose.blade.clone(), twist: saberPose.twist },
+      start: { hand: saberPose.hand.clone(), blade: saberPose.blade.clone(), twist: saberPose.twist, pole: saberPose.pole.clone() },
     };
     // FLOW: the blade carries on from wherever the last cut left it. Finishing on the far side from this cut's
     // chamber, it wraps over the top to get there (the films' twirl between strokes) instead of dragging back
@@ -207,11 +209,12 @@ export function swingPose(R, held, grip, form, sw){
     // that runs straight down the middle has none of its own and turns toward the weapon side.
     const dx = scaled[2].hand.x - scaled[0].hand.x;
     sw.anim.side = Math.abs(dx) > 0.15 ? Math.sign(dx) : 1;
+    sw.anim.lateral = Math.abs(dx) > 0.15;
     // the LOADED chamber: the hang at the top keeps drawing back a touch past the key (a riposte is already moving)
     const A0 = sw.anim, [C0, S0, F0] = scaled, ld = sw.riposte ? 0 : (style.load ?? 0.08);
     A0.hold = sw.riposte ? 0 : COIL_HOLD * (A0.ts - A0.tc);
     A0.wind = A0.tc + A0.hold;
-    A0.load = { hand: arcLerp(S0.hand, C0.hand, 1 + ld, PIVOT, new THREE.Vector3()), blade: slerpDir(S0.blade, C0.blade, 1 + ld, new THREE.Vector3()), twist: C0.twist };
+    A0.load = { hand: arcLerp(S0.hand, C0.hand, 1 + ld, PIVOT, new THREE.Vector3()), blade: slerpDir(S0.blade, C0.blade, 1 + ld, new THREE.Vector3()), twist: C0.twist, pole: C0.pole };
     // CARRY THROUGH: the strike accelerates as x^a and the follow-through decelerates as 1-(1-y)^b, with a and b picked
     // so the tip leaves contact at the speed it arrived (a long arc after contact = a long, controlled glide out)
     const tin = Math.max(0.02, A0.ts - A0.wind), tout = Math.max(0.02, A0.tf - A0.ts);
@@ -253,6 +256,13 @@ export function swingPose(R, held, grip, form, sw){
     saberPose.hand.addScaledVector(WRAP_LIFT, Math.sin(Math.PI * t));
     if (tb < 0.5) slerpDir(a.blade, wb, tb * 2, saberPose.blade);
     else slerpDir(wb, b.blade, tb * 2 - 1, saberPose.blade);
+  } else if (grip === 'reverse' && ph === 1 && A.lateral && a.blade.dot(b.blade) < REV_ROUND){
+    // REVERSE-GRIP STROKE: the blade comes from laid back along the arm to out in front, near a half turn. Left to the
+    // shortest way round it drops through the floor and the legs; instead the fist leads across and the blade trails
+    // level behind it (out on the side the cut comes from), then whips round through the front onto the strike
+    _w.set(-A.side, -0.12, 0.3).normalize();
+    if (tb < 0.5) slerpDir(a.blade, _w, tb * 2, saberPose.blade);
+    else slerpDir(_w, b.blade, tb * 2 - 1, saberPose.blade);
   } else slerpDir(a.blade, b.blade, tb, saberPose.blade);
   // a heavy blade drags PAST the follow-through, then gets hauled back (overshoot), with a wobble
   if (style.overshoot && k > A.ts){
@@ -271,7 +281,10 @@ export function swingPose(R, held, grip, form, sw){
     const p = k / A.ts;
     saberPose.blade.applyAxisAngle(TWIRL_AXIS, -Math.PI * 2 * sp.twirl * A.side * (p - Math.sin(Math.PI * 2 * p) / (Math.PI * 2))).normalize();
   }
-  saberPose.pole.set(0.55, -0.8, -0.25).normalize();
+  // the elbow: a reverse-grip cut raises and swings it with the key (data/poses.js pole), so the forearm can carry the
+  // blade square off the fist; a regular-grip cut keeps it down and out
+  if (grip === 'reverse') saberPose.pole.copy(a.pole || b.pole || DEF_POLE).lerp(b.pole || DEF_POLE, t).normalize();
+  else saberPose.pole.copy(DEF_POLE);
   saberPose.twist = (ta + (tw - ta) * t) * style.twist;
   saberPose.two = style.two ? 1 : 0;
   saberPose.lean = (style.drop || 0) * Math.sin(Math.PI * k) * 1.6;
@@ -423,6 +436,12 @@ export function applySaberPose(R, held, offFree = true, dt = 1 / 60){
   keepClear(_ch.copy(saberPose.hand), _cd.copy(saberPose.blade));
   solveArm(R.armR, _ch, saberPose.pole);
   R.armR.wr.updateWorldMatrix(true, false);
+  // REVERSE-GRIP WRIST: the blade leaves the pinky side of the fist, so it can lie back along the forearm or stand
+  // square off it, but never run on out past the knuckles (that reads as a punch-dagger). Whatever the pose asked for,
+  // the part of the blade pointing on along the forearm is taken off, so every reverse cut, catch, flip and blend
+  // between them hooks the blade out from the fist with the fist leading. Scaled by how far the hilt has turned over.
+  const rev = r ? 1 - Math.abs(r.rotation.x) / Math.PI : 0;
+  if (rev > 0.01 && reverseWrist(R, _cd, rev)) keepClear(_ch, _cd);
   aimHeld(R.chest, R.armR.wr, held.node, bladeAxis(held, _ax), _cd, 0.4);
   if (!offFree) return;
   // off hand: blend between its own target and the pommel end of the hilt
@@ -435,6 +454,25 @@ export function applySaberPose(R, held, offFree = true, dt = 1 / 60){
   if (saberPose.two > 0.5) _p.set(-0.85, -0.5, -0.15).normalize();
   solveArm(R.armL, _t, _p);
   R.armL.wr.quaternion.identity();
+}
+
+const REV_ALONG = 0.12;   // the most the reverse blade may point on along the forearm (dot of blade and elbow → wrist)
+const _el = new THREE.Vector3(), _wr = new THREE.Vector3(), _fa = new THREE.Vector3(), _mi = new THREE.Matrix4();
+function reverseWrist(R, d, rev){
+  R.chest.updateWorldMatrix(true, false);
+  _mi.copy(R.chest.matrixWorld).invert();
+  _el.setFromMatrixPosition(R.armR.el.matrixWorld).applyMatrix4(_mi);
+  _wr.setFromMatrixPosition(R.armR.wr.matrixWorld).applyMatrix4(_mi);
+  const f = _fa.subVectors(_wr, _el);
+  if (f.lengthSq() < 1e-6) return false;
+  f.normalize();
+  const along = d.dot(f);
+  if (along <= REV_ALONG) return false;
+  d.addScaledVector(f, -(along - REV_ALONG) * rev);
+  // a blade asked to point dead along the forearm has no side left to stand out on: hook it out to the weapon side
+  if (d.lengthSq() < 0.04){ d.set(1, -0.2, 0.3); d.addScaledVector(f, -d.dot(f)); }
+  d.normalize();
+  return true;
 }
 
 /* hand the arms back to plain joint animation (Force casts, flight…); the next guard re-seeds from there */

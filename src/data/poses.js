@@ -143,6 +143,10 @@ export const SABER_GUARDS = {
       // forearm raised across the centre line, blade hanging straight down to cover the body
       block: { hand: [0.06, 0.2, 0.42], blade: [0.25, -0.96, 0.12], twist: 0, lean: 0.05, pole: [0.9, -0.2, -0.3],
                off: { hand: [-0.16, 0.0, 0.38], pole: OFF_POLE } },
+      // (every other raise) Starkiller's slanted bar: fist up by the weapon temple, elbow high, the blade raked down
+      // across the front to the off hip, the free hand out behind it ready to push
+      block2: { hand: [0.24, 0.46, 0.38], blade: [-0.62, -0.7, 0.3], twist: 0.05, lean: 0.08, pole: [0.9, 0.2, -0.4],
+               off: { hand: [-0.34, 0.12, 0.44], pole: [-0.5, -0.85, 0.15] } },
     },
     // Kylo Ren's trailing guard: saber arm hanging long and low out at the weapon side, blade raked down and back so
     // the tip drags near the floor behind him; hunched forward, off hand raised out ahead, clawed
@@ -159,6 +163,10 @@ export const SABER_GUARDS = {
       // the forearm up across the body, blade hanging down in front: a wall the bolts glance off back down the line
       block: { hand: [0.1, 0.24, 0.42], blade: [0.3, -0.94, 0.14], twist: 0.05, lean: 0.08, pole: [0.9, -0.2, -0.3],
                off: { hand: [-0.2, 0.0, 0.36], pole: OFF_POLE } },
+      // (every other raise) Ahsoka's high shield: the forearm thrown up over the brow, the blade laid out level past the
+      // weapon side and tipped down, the free hand low behind it
+      block2: { hand: [0.04, 0.52, 0.38], blade: [0.85, -0.35, 0.35], twist: 0.1, lean: 0.06, pole: [0.9, 0.2, -0.4],
+               off: { hand: [-0.28, -0.04, 0.34], pole: OFF_POLE } },
     },
     darksaber: {   // the darksaber always uses the regular hold (it's a sword, not a duelist's saber)
       ready: { hand: [0.22, 0.08, 0.24], blade: [0.1, 0.85, -0.3], two: true, twist: 0.2, lean: 0.08, pole: [0.7, -0.6, -0.2] },
@@ -243,24 +251,27 @@ export const SABER_SWINGS = {
       { hand: [0.08, 0.08, 0.72],  blade: [-0.04, 0.0, 1],     twist: -0.2 },
     ],
   },
-  // REVERSE GRIP: the cut starts with the blade laid back along the forearm, then the elbow and a hard body turn
-  // whip it round so the TIP sweeps the way the cut travels (a strafe-right cut carries the tip to the right);
-  // the back cut is a stab driven straight back past the hip.
+  // REVERSE GRIP (Ahsoka, Starkiller): the blade leaves the PINKY side of the fist, so it can lie back along the forearm
+  // or stand square off it, never run on out past the knuckles (anim/saber.js holds the wrist to that). Every cut
+  // starts with the blade laid back along the arm; the elbow comes up and out (pole) so the forearm swings level, the
+  // FIST LEADS across and the blade trails level behind it (never through the legs), whips round through the front at
+  // contact, and carries on round to lie back along the arm on the far side. The overhead is a hammer-fist: the blade
+  // hangs down from the fist and is driven down through the front; the back cut is a stab driven past the hip.
   reverse: {
     left:  [
-      { hand: [0.4, 0.24, 0.08],   blade: [0.35, -0.2, -0.9],   twist: 0.55 },
-      { hand: [0.1, 0.08, 0.46],   blade: [-0.1, -0.15, 1],     twist: 0 },
-      { hand: [-0.3, 0.02, 0.32],  blade: [-0.92, -0.12, 0.25], twist: -0.65 },
+      { hand: [0.42, 0.24, 0.06],  blade: [0.35, -0.2, -0.9],   twist: 0.55, pole: [0.8, 0.1, -0.6] },
+      { hand: [0.1, 0.12, 0.46],   blade: [-0.1, -0.15, 1],     twist: 0,    pole: [0.9, 0.35, -0.25] },
+      { hand: [-0.26, 0.06, 0.34], blade: [-0.45, -0.15, -0.88], twist: -0.7, pole: [0.5, 0.5, -0.7] },
     ],
     right: [
-      { hand: [-0.24, 0.2, 0.3],   blade: [-0.4, -0.2, -0.88],  twist: -0.6 },
-      { hand: [0.08, 0.08, 0.48],  blade: [0.1, -0.15, 1],      twist: 0.05 },
-      { hand: [0.46, 0.04, 0.14],  blade: [0.92, -0.12, 0.25],  twist: 0.6 },
+      { hand: [-0.22, 0.2, 0.3],   blade: [-0.4, -0.2, -0.88],  twist: -0.6, pole: [0.6, 0.55, -0.6] },
+      { hand: [0.1, 0.12, 0.48],   blade: [0.1, -0.15, 1],      twist: 0.05, pole: [0.9, 0.35, -0.25] },
+      { hand: [0.48, 0.06, 0.16],  blade: [0.5, -0.15, -0.85],  twist: 0.65, pole: [0.7, 0.2, -0.7] },
     ],
-    forward: [   // hammer-fist stab: fist high, blade hanging back, then driven down and forward
-      { hand: [0.18, 0.6, 0.12],   blade: [0, -0.5, -0.86],    twist: 0.1 },
-      { hand: [0.08, 0.04, 0.54],  blade: [0, -0.62, 0.78],    twist: 0 },
-      { hand: [0.06, -0.24, 0.48], blade: [0, -0.86, 0.5],     twist: -0.05 },
+    forward: [   // hammer-fist: fist high, the blade hanging back behind it, then driven down through the front
+      { hand: [0.18, 0.6, 0.12],   blade: [0, -0.5, -0.86],    twist: 0.1,  pole: [0.8, 0.1, -0.6] },
+      { hand: [0.1, 0.24, 0.5],    blade: [0, -0.94, 0.34],    twist: 0,    pole: [0.9, 0.3, -0.3] },
+      { hand: [0.08, -0.08, 0.44], blade: [0.05, -0.62, -0.78], twist: -0.05, pole: [0.8, 0, -0.6] },
     ],
     back: [      // the Shien back-stab past the hip
       { hand: [0.3, -0.18, 0.34],  blade: [0.05, -0.32, -0.95], twist: -0.1 },
@@ -268,51 +279,52 @@ export const SABER_SWINGS = {
       { hand: [0.32, -0.28, -0.2], blade: [0.14, -0.2, -0.97],  twist: 0.45 },
     ],
     diagL: [
-      { hand: [0.38, 0.46, 0.08],  blade: [0.4, -0.3, -0.85],   twist: 0.45 },
-      { hand: [0.1, 0.12, 0.48],   blade: [-0.2, -0.35, 0.9],   twist: 0 },
-      { hand: [-0.28, -0.24, 0.3], blade: [-0.7, -0.55, 0.4],   twist: -0.5 },
+      { hand: [0.38, 0.48, 0.08],  blade: [0.4, -0.3, -0.85],   twist: 0.45, pole: [0.8, 0.2, -0.6] },
+      { hand: [0.1, 0.16, 0.48],   blade: [-0.2, -0.4, 0.9],    twist: 0,    pole: [0.9, 0.3, -0.3] },
+      { hand: [-0.24, -0.18, 0.34], blade: [-0.4, -0.5, -0.76], twist: -0.55, pole: [0.5, 0.4, -0.75] },
     ],
     diagR: [
-      { hand: [-0.22, 0.4, 0.26],  blade: [-0.45, -0.3, -0.85], twist: -0.5 },
-      { hand: [0.1, 0.12, 0.48],   blade: [0.2, -0.35, 0.9],    twist: 0 },
-      { hand: [0.44, -0.24, 0.18], blade: [0.7, -0.55, 0.4],    twist: 0.5 },
+      { hand: [-0.2, 0.44, 0.26],  blade: [-0.45, -0.3, -0.85], twist: -0.5, pole: [0.6, 0.6, -0.5] },
+      { hand: [0.1, 0.16, 0.48],   blade: [0.2, -0.4, 0.9],     twist: 0,    pole: [0.9, 0.3, -0.3] },
+      { hand: [0.44, -0.18, 0.2],  blade: [0.45, -0.5, -0.74],  twist: 0.55, pole: [0.7, 0.1, -0.7] },
     ],
-    // AIMED CUTS: the strafe cuts lifted to the head or dropped to the knees, the tip still trailing the fist; the rising
-    // cuts lead with the knuckles up from the hip; the thrust is the Shien stab driven forward past the fist
+    // AIMED CUTS: the flat cuts lifted to the head or dropped to the knees on the same round path; the rising cuts come
+    // up off the hip with the blade laid back and finish it laid back over the far shoulder; the thrust drives the fist
+    // out with the elbow held wide, so the blade stands straight out in front of it
     leftHigh:  [
-      { hand: [0.38, 0.54, 0.08],  blade: [0.35, 0.05, -0.94],  twist: 0.55 },
-      { hand: [0.1, 0.4, 0.46],    blade: [-0.1, 0.05, 1],      twist: 0 },
-      { hand: [-0.3, 0.34, 0.3],   blade: [-0.92, 0.1, 0.25],   twist: -0.65 },
+      { hand: [0.38, 0.54, 0.08],  blade: [0.35, 0.05, -0.94],  twist: 0.55, pole: [0.8, 0.2, -0.6] },
+      { hand: [0.1, 0.4, 0.44],    blade: [-0.1, 0.05, 1],      twist: 0,    pole: [0.9, 0.4, -0.2] },
+      { hand: [-0.26, 0.36, 0.3],  blade: [-0.45, 0.05, -0.9],  twist: -0.7, pole: [0.5, 0.5, -0.7] },
     ],
     rightHigh: [
-      { hand: [-0.24, 0.5, 0.28],  blade: [-0.4, 0.05, -0.9],   twist: -0.6 },
-      { hand: [0.08, 0.4, 0.46],   blade: [0.1, 0.05, 1],       twist: 0.05 },
-      { hand: [0.46, 0.34, 0.14],  blade: [0.92, 0.1, 0.25],    twist: 0.6 },
+      { hand: [-0.22, 0.5, 0.28],  blade: [-0.4, 0.05, -0.9],   twist: -0.6, pole: [0.6, 0.6, -0.5] },
+      { hand: [0.08, 0.4, 0.44],   blade: [0.1, 0.05, 1],       twist: 0.05, pole: [0.9, 0.4, -0.2] },
+      { hand: [0.46, 0.36, 0.14],  blade: [0.55, 0.05, -0.83],  twist: 0.65, pole: [0.7, 0.3, -0.6] },
     ],
     leftLow:   [
-      { hand: [0.4, -0.04, 0.1],   blade: [0.35, -0.3, -0.88],  twist: 0.5 },
-      { hand: [0.1, -0.18, 0.46],  blade: [-0.1, -0.3, 0.95],   twist: 0 },
-      { hand: [-0.3, -0.18, 0.3],  blade: [-0.92, -0.3, 0.2],   twist: -0.6 },
+      { hand: [0.4, -0.04, 0.1],   blade: [0.35, -0.3, -0.88],  twist: 0.5,  pole: [0.8, 0, -0.6] },
+      { hand: [0.1, -0.12, 0.46],  blade: [-0.1, -0.35, 0.93],  twist: 0,    pole: [0.95, 0.2, -0.25] },
+      { hand: [-0.26, -0.14, 0.32], blade: [-0.4, -0.35, -0.85], twist: -0.6, pole: [0.5, 0.4, -0.75] },
     ],
     rightLow:  [
-      { hand: [-0.24, -0.04, 0.3], blade: [-0.4, -0.3, -0.86],  twist: -0.55 },
-      { hand: [0.08, -0.18, 0.46], blade: [0.1, -0.3, 0.95],    twist: 0.05 },
-      { hand: [0.46, -0.18, 0.14], blade: [0.92, -0.3, 0.2],    twist: 0.55 },
+      { hand: [-0.22, -0.02, 0.3], blade: [-0.4, -0.3, -0.86],  twist: -0.55, pole: [0.6, 0.5, -0.6] },
+      { hand: [0.08, -0.12, 0.46], blade: [0.1, -0.35, 0.93],   twist: 0.05, pole: [0.95, 0.2, -0.25] },
+      { hand: [0.46, -0.16, 0.14], blade: [0.55, -0.35, -0.76], twist: 0.55, pole: [0.7, 0.1, -0.7] },
     ],
     riseL:     [
-      { hand: [0.36, -0.3, 0.2],   blade: [0.3, -0.85, 0.42],   twist: 0.45 },
-      { hand: [0.1, 0.02, 0.48],   blade: [-0.2, -0.2, 0.95],   twist: 0 },
-      { hand: [-0.26, 0.36, 0.28], blade: [-0.7, 0.2, 0.5],     twist: -0.5 },
+      { hand: [0.38, -0.28, 0.18], blade: [0.3, -0.4, -0.87],   twist: 0.45, pole: [0.8, -0.2, -0.55] },
+      { hand: [0.1, 0.06, 0.48],   blade: [-0.2, 0.15, 0.97],   twist: 0,    pole: [0.9, 0.3, -0.3] },
+      { hand: [-0.22, 0.42, 0.28], blade: [-0.35, 0.3, -0.89],  twist: -0.5, pole: [0.5, 0.2, -0.85] },
     ],
     riseR:     [
-      { hand: [-0.2, -0.28, 0.3],  blade: [-0.3, -0.85, 0.42],  twist: -0.45 },
-      { hand: [0.1, 0.02, 0.48],   blade: [0.2, -0.2, 0.95],    twist: 0 },
-      { hand: [0.44, 0.34, 0.16],  blade: [0.7, 0.2, 0.5],      twist: 0.5 },
+      { hand: [-0.18, -0.26, 0.3], blade: [-0.3, -0.4, -0.87],  twist: -0.45, pole: [0.6, 0.3, -0.75] },
+      { hand: [0.1, 0.06, 0.48],   blade: [0.2, 0.15, 0.97],    twist: 0,    pole: [0.9, 0.3, -0.3] },
+      { hand: [0.44, 0.4, 0.16],   blade: [0.4, 0.3, -0.87],    twist: 0.5,  pole: [0.7, 0.4, -0.6] },
     ],
     thrust:    [
-      { hand: [0.32, 0.0, -0.08],  blade: [0.05, -0.3, -0.95],  twist: 0.4 },
-      { hand: [0.1, 0.06, 0.62],   blade: [0, -0.35, 0.94],     twist: -0.1 },
-      { hand: [0.08, 0.04, 0.7],   blade: [0, -0.4, 0.92],      twist: -0.15 },
+      { hand: [-0.1, 0.1, 0.24],   blade: [0.1, -0.1, 0.99],    twist: -0.35, pole: [1, 0.3, -0.2] },
+      { hand: [0.06, 0.1, 0.48],   blade: [0, -0.06, 1],        twist: 0.1,  pole: [1, 0.25, 0.05] },
+      { hand: [0.08, 0.08, 0.52],  blade: [0, -0.08, 1],        twist: 0.15, pole: [1, 0.25, 0.05] },
     ],
   },
 };
@@ -488,14 +500,14 @@ export const SABER_DEFLECTS = {
     ],
     midL: [
       { hand: [-0.1, 0.16, 0.42], blade: [-0.2, -0.95, 0.24], twist: -0.35, flick: [-0.1, 0, 0.04], pole: [0.9, -0.1, -0.4] },
-      { hand: [-0.04, 0.1, 0.46], blade: [-0.85, -0.25, 0.45], twist: -0.3, flick: [-0.1, 0, 0.06], pole: [0.8, -0.3, -0.4] },
+      { hand: [-0.06, 0.14, 0.46], blade: [-0.3, -0.45, 0.84], twist: -0.3, flick: [-0.1, 0, 0.06], pole: [0.9, 0.3, -0.3] },   // elbow up, the blade hooked out in front
     ],
     lowR: [
       { hand: [0.34, -0.06, 0.38], blade: [0.4, -0.8, 0.45], twist: 0.2,   flick: [0.1, -0.04, 0.04], pole: [0.8, -0.4, -0.3] },
       { hand: [0.3, 0.04, 0.44],  blade: [0.1, -0.7, 0.7],    twist: 0.15,  flick: [0.08, -0.04, 0.06], pole: [0.9, -0.3, -0.3] },
     ],
     lowL: [
-      { hand: [-0.06, -0.02, 0.42], blade: [-0.45, -0.78, 0.45], twist: -0.3, flick: [-0.1, -0.04, 0.04], pole: [0.8, -0.2, -0.4] },
+      { hand: [-0.06, 0.04, 0.42], blade: [-0.15, -0.85, 0.5], twist: -0.3, flick: [-0.1, -0.04, 0.04], pole: [0.9, 0.2, -0.4] },
       { hand: [0.0, 0.06, 0.46],  blade: [-0.12, -0.72, 0.68], twist: -0.25, flick: [-0.08, -0.04, 0.06], pole: [0.9, -0.2, -0.4] },
     ],
   },
