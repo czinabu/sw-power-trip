@@ -38,7 +38,7 @@ import { queueHit, hooks } from '../net/run.js';
    BOSS — DARTH VEXIS
    ============================================================ */
 export function spawnBoss(){
-  const half = LEVELS[G.levelIdx].arena/2;
+  const half = shared.arenaHalfZ || LEVELS[G.levelIdx].arena/2;   // (the arena built: a chapter can stage a level on its own map)
   const mando = G.hero === 'mando';
   const kind = mando ? 'mando' : 'sith';
   const hp = Math.round((mando ? BOSS_MANDO.hp : BOSS_CFG.hp) * diffHpMul() * heroScale(SCALE.bossHp, heroesHere()));   // DIFFICULTY scales the boss too

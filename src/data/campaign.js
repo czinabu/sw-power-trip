@@ -8,6 +8,7 @@
 //             fixed kit, and ends on the next chapter's card instead of the victory screen.
 // `title` and `world` can differ per hero ({ jedi, mando }); `brief` is the voice's lines on the chapter's card, per hero.
 // `pair` puts a chapter in one of Act II's two pairs, which the player plays in the order they pick (ACT_TWO).
+// `arena` stages the chapter on its own map: { layout, arena } laid over the level or mission's own (world/arena.js).
 // `standIn` notes what the chapter borrows until its own arena or fighter lands (the plan's later phases).
 // `lines` is what's said during the chapter, on the comms strip (game/story.js), per hero. `wave` has one entry per wave
 // of the chapter; the rest are story beats: duel (a mission's duel foe steps in) · escape (it breaks off) · boss · clear.
@@ -45,7 +46,7 @@ export const CHAPTERS = [
       { jedi: ['Heavier troops behind the first line. Do not let them reach the doors.', 'The archivists have begun to move the oldest texts. Keep the steps clear.'], mando: ['They brought shields. Go around them, or go through them.', 'The clan is carrying the forge tools down. Buy them the time.'] } ],
     clear: { jedi: ['The steps are ours, for now.', 'Smoke over the east wing. The archive is burning.'], mando: ['The stair holds.', 'They\'ve set the upper halls alight. Fall back to the forge level.'] } } },
   { id: 'archive', act: 0, kind: 'waves', level: 0, waves: [2, 4], world: 'JEDHA',
-    title: { jedi: 'THE BURNING ARCHIVE', mando: 'SMOKE AND STONE' }, standIn: 'the temple steps, until the archive arena',
+    title: { jedi: 'THE BURNING ARCHIVE', mando: 'SMOKE AND STONE' }, arena: { layout: 'archive', arena: 48 },
     brief: { jedi: ['The archive is burning. The archivists are carrying out what they can.', 'Buy them time. And be careful: something came with this army that is not a soldier.'],
              mando: ['They\'re burning the temple to smoke us out. The forge is still below.', 'Hold them while the clan carries out what it can.'] },
     lines: {
@@ -121,13 +122,13 @@ export const CHAPTERS = [
     duel: { jedi: [{ who: 'THE INQUISITOR', rival: true, say: 'Enough running. Come and take your coordinates, Knight.' }], mando: [{ who: 'VX-7', rival: true, say: 'ESCAPE VECTOR DENIED. ENGAGING.' }] },
     clear: { jedi: ['The coordinates never reach him.', 'Now we go to him.'], mando: ['The trail dies with the droid.', 'Now we go to him.'] } } },
   { id: 'spearhead', act: 2, kind: 'mission', mission: 'strike', world: 'THE ROAD TO EXEGOL',
-    title: 'SPEARHEAD', standIn: 'the Lothal grass sea, until the Exegol approach map',
+    title: 'SPEARHEAD', arena: { layout: 'approach', arena: 150 },
     brief: { jedi: ['The masters you found are with you now, and so are the troopers who held Hoth.', 'Break the line before the gate. Vexis is waiting behind it.'],
              mando: ['The clan rides together again.', 'Take their line, take their gate. The Magistrate is behind it.'] },
     lines: {
     clear: { jedi: ['The gate is open. Gather the masters.'], mando: ['The gate is down. The clan rides in together.'] } } },
   { id: 'exegol', act: 2, kind: 'waves', level: 2, waves: [0, 4], world: 'EXEGOL',
-    title: 'THRONE OF EXEGOL',
+    title: 'THRONE OF EXEGOL', arena: { layout: 'sith', arena: 64 },
     brief: { jedi: ['An army stands before you, and Vexis stands behind it.', 'Whatever waits on that throne, you are not facing it alone.'],
              mando: ['The Magistrate holds Exegol with everything he has left.', 'Through the army, then through him. This is the Way.'] },
     lines: {

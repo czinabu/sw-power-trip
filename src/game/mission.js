@@ -67,7 +67,7 @@ export function startMission(id = 'refuge', fromObjective = 0, guest = false, op
   if (!opts.retry) resetScenes();   // a fresh start plays the mission's scenes again (a retry after a death or an escape doesn't)
   const sub = def.level.sub && typeof def.level.sub === 'object' ? def.level.sub[G.hero] : def.level.sub;
   if (ch){
-    startLevel(G.levelIdx, { level: { ...def.level, name: ch.name, sub: ch.sub || sub }, mission: true, resume: true, chapter: true });   // the run's hero and build, on the mission's arena
+    startLevel(G.levelIdx, { level: { ...def.level, ...ch.arena, name: ch.name, sub: ch.sub || sub }, mission: true, resume: true, chapter: true });   // the run's hero and build, on the mission's arena (or the chapter's own)
   } else {
     startLevel(0, { level: { ...def.level, sub }, mission: true });   // fresh hero, kit and stats, on the mission's arena
     for (const k of (def.grant && def.grant[G.hero]) || []) G.unlocked[k] = true;
