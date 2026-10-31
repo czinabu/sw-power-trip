@@ -12,48 +12,18 @@ import * as THREE from 'three';
 import { scene } from '../engine/renderer.js';
 import { rand, clamp } from '../utils.js';
 import { SCARS } from './kit.js';
+import { toRest, restJoints, boneAt, markHit, scarClock, updatePlates, clearPlates } from './marks.js';
+export { markHit, scarClock };
 import { bladePointNear } from '../player/jedi/clash.js';
 import { groundAt } from '../world/collision.js';
 import { burst } from '../fx/particles.js';
+import { enemies } from '../state.js';
+import { chestPos, bodyRadius } from './bodyshape.js';
 
-export const scarClock = () => performance.now() / 1000;
 
 const _m = new THREE.Matrix4(), _inv = new THREE.Matrix4(), _p = new THREE.Vector3(), _q = new THREE.Vector3();
 const _c = new THREE.Vector3(), _b = new THREE.Vector3(), _w = new THREE.Vector3(), _dir = new THREE.Vector3();
 const UP = new THREE.Vector3(0, 1, 0);
-
-// world → the body's rest pose, through bone bi of skinned mesh sm (a direction when dir is set)
-function toRest(sm, bi, v, out, dir){
-  const sk = sm.skeleton;
-  _m.copy(sk.bones[bi].matrixWorld).multiply(sk.boneInverses[bi]).multiply(sm.bindMatrix);
-  _inv.copy(_m).invert();
-  return dir ? out.copy(v).transformDirection(_inv) : out.copy(v).applyMatrix4(_inv);
-}
-// each named bone's joint in the rest pose (cached on the mesh)
-function restJoints(sm){
-  if (sm.userData.joints) return sm.userData.joints;
-  const J = {};
-  sm.skeleton.bones.forEach((b, i) => {
-    if (!b.name) return;
-    J[b.name] = { i, o: new THREE.Vector3().applyMatrix4(_m.copy(sm.skeleton.boneInverses[i]).invert()).applyMatrix4(sm.bindMatrixInverse) };
-  });
-  return (sm.userData.joints = J);
-}
-// which bone carries the skin at world point v: the helmet, the chest, a foot, shin or thigh, else the pelvis
-function boneAt(sm, v){
-  const J = restJoints(sm), S = J.thighL ? J.thighL.o.y / 0.94 : 1;   // the bosses' body is the trooper kit scaled up
-  const at = j => toRest(sm, j.i, v, _q);
-  if (J.head && at(J.head).y >= J.head.o.y - 0.05 * S) return J.head.i;
-  if (J.chest && at(J.chest).y >= J.chest.o.y) return J.chest.i;
-  for (const n of ['L', 'R']){
-    for (const part of ['foot', 'shin', 'thigh']){
-      const j = J[part + n]; if (!j) continue;
-      const p = at(j);
-      if (Math.sign(p.x) === Math.sign(j.o.x) && Math.abs(p.x - j.o.x) < 0.2 * S && p.y <= j.o.y + 0.04 * S) return j.i;
-    }
-  }
-  return 0;
-}
 
 /* burn a cut where the hero's blade crossed `group`'s body. f: the blow's direction (the hero's facing); dirKey: the
    cut's line ('left' / 'right' sweep across, else a diagonal); heavy: a finisher or a heavy form, more upright.
@@ -88,6 +58,21 @@ export function scarBody(group, f, dirKey, heavy, hit){
   const k = (W.scarNext || 0) % SCARS; W.scarNext = k + 1;
   W.uScar.value[k].set(rp.x, rp.y, rp.z, scarClock());
   W.uScarDir.value[k].set(rd.x, rd.y, rd.z, rand(0.15, 0.22) * (u.legScale || 1) * (heavy ? 1.2 : 1));
+}
+
+/* a blast at `pos` scorches every foe in reach on the side facing it, and the nearer ones lose a plate */
+const _bp = new THREE.Vector3(), _bd = new THREE.Vector3();
+export function blastMarks(pos, radius){
+  for (const e of enemies){
+    if (!e.group || e.converted) continue;
+    chestPos(e, _bp); _bd.subVectors(_bp, pos); _bd.y = 0;
+    const d = _bd.length();
+    if (d > radius * 1.15) continue;
+    if (d > 1e-3) _bd.divideScalar(d); else _bd.set(1, 0, 0);
+    _bp.addScaledVector(_bd, -bodyRadius(e) * 0.8);   // the near side of the body
+    markHit(e.group, _bp, _bd, 'scorch', { size: 1.6 });
+    if (d < radius * 0.75) markHit(e.group, _bp.addScaledVector(new THREE.Vector3(0, 1, 0), rand(-0.3, 0.2) * e.group.scale.x), _bd, 'tear', { heavy: true });
+  }
 }
 
 /* ---------- severed limbs ---------- */
@@ -220,6 +205,7 @@ export function applyCuts(e, mask, f){
 
 const HOLD = 7, SINK = 1.2;   // seconds an arm lies there, then how long it takes to sink away
 export function updateSevered(dt){
+  updatePlates(dt);   // the torn-off plates (enemies/marks.js)
   for (let i = pieces.length - 1; i >= 0; i--){
     const P = pieces[i], o = P.o;
     P.t += dt;
@@ -246,4 +232,4 @@ function dropPiece(P){
   if (P.o.parent) P.o.parent.remove(P.o);
 }
 /* a new arena: clear them all */
-export function clearSevered(){ for (const P of pieces) dropPiece(P); pieces.length = 0; }
+export function clearSevered(){ for (const P of pieces) dropPiece(P); pieces.length = 0; clearPlates(); }

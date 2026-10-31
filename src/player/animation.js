@@ -26,7 +26,7 @@ import { advanceGait, gaitLegs, gaitHipOffset, releaseGait } from './anim/gait.j
 import { MOCAP_ON, MOCAP_LAND_T, mocapLand, mocapAirLegs, airPhase, mocapCut } from './anim/mocap.js';
 import { footingLegs, releaseFooting } from './anim/footing.js';
 import { stepCloth } from './model/cloth.js';
-import { blink, gripHands } from './model/life.js';
+import { blink, gripHands, express } from './model/life.js';
 import { jediAirLegs, jediAgilityArms, jediAgilityPost, mandoAgilityPost, landingStyle, slamPitch, headToReticle } from './anim/agility.js';
 
 const smooth01 = k => { k = clamp(k, 0, 1); return k * k * (3 - 2 * k); };
@@ -53,6 +53,9 @@ export function animatePlayer(dt, pp, st, f, r, moving){
   secondaryMotion(dt, vis, R);
   stepCloth(player, dt, player.group.position.y + 0.02);   // the robe panels and cape hem (model/cloth.js), after the pose
   blink(player, dt); gripHands(player, dt, handGrip());   // the eyes blink, the fingers close on what they hold (model/life.js)
+  // the face works with the fight: brows knit through a swing or a cast, jump on a hit; the jaw talks in a cutscene line
+  express(player, dt, { effort: player.atkT > 0 || player.castT > 0 || player.palmT > 0 || player.judgeT > 0 ? 1 : 0,
+    hurt: player.flinchT > 0 ? clamp(player.flinchT / (player.flinchMax || 0.3), 0, 1) : 0, talk: !!player.talking });
   player.arcMesh.material.opacity = Math.max(0, player.arcMesh.material.opacity - dt*4);
 
   // (the saber hum is driven from audio/director.js)

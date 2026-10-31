@@ -14,6 +14,7 @@ import { stamDelay } from '../stamina.js';
 import { fwd, playerPos } from '../helpers.js';
 import { noteDefense } from '../../game/readout.js';
 import { damageEnemy, flinchEnemy, staggerEnemy } from '../../enemies/damage.js';
+import { markHit } from '../../enemies/marks.js';
 import { duelDefend, guardImpact, isGuarding, lockKick } from '../../enemies/duel.js';
 import { bodyRadius } from '../jedi/bladehit.js';
 import { damageBoss } from '../../boss/boss.js';
@@ -159,6 +160,7 @@ function landStrike(B){
     const dres = duelDefend(e, B.line, cut ? 'cut' : B.heavy ? 'punchHeavy' : 'punch', B.heavy);
     if (dres === 'block' || dres === 'dodge'){ turned++; continue; }
     damageEnemy(e, dmg, away, B.knock, B.heavy, false, blowOpts(B, e, f));   // fists rock a foe, they don't launch it
+    if (!cut) markHit(e.group, contactAt(e, B.zone), f, 'dent', { heavy: B.heavy });   // the fist dents the plate, a heavy blow can tear it off (enemies/scars.js)
     if (!e.dead){
       // the bash staggers light foes for a takedown; a brute only gets rocked
       if (B.stagger && !(B.name === 'bash' && e.t.heavy)) staggerEnemy(e, away.x, away.z, B.name === 'bash' ? 'BASHED' : B.name === 'haymaker' ? 'HAYMAKER' : 'VIBROBLADE');

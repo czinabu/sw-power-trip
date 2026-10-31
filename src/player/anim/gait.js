@@ -12,6 +12,7 @@ import { GAIT } from '../../data/movement.js';
 import { DIM } from '../model/rig.js';
 import { groundAt, STEP_UP } from '../../world/collision.js';
 import { MOCAP_ON, LEG, mocapStride, mocapFoot, mocapBody } from './mocap.js';
+import { footDust } from '../../fx/footdust.js';
 
 const TAU = Math.PI * 2;
 const _inv = new THREE.Matrix4(), _hinv = new THREE.Matrix4(), _p = new THREE.Vector3(), _q = new THREE.Vector3(), _h = new THREE.Vector3();
@@ -120,7 +121,7 @@ export function gaitLegs(g, fwd, right, R, vis){
     _p.set(DIM.hipX * side + gx, gy * cl - gz * sl - vis.position.y, gy * sl + gz * cl);
     if (!swing){
       // touch down: lock this spot in the world and hold it for the whole stance
-      if (!locks[i]){ locks[i] = _p.clone().applyMatrix4(vis.matrixWorld); locks[i].y = floorAt(locks[i].x, locks[i].z, i); }
+      if (!locks[i]){ locks[i] = _p.clone().applyMatrix4(vis.matrixWorld); locks[i].y = floorAt(locks[i].x, locks[i].z, i); footDust(locks[i], Math.hypot(player.moveVel.x, player.moveVel.z)); }   // a puff of the floor's dust (fx/footdust.js)
       else floorAt(locks[i].x, locks[i].z, i);
       _p.copy(locks[i]).applyMatrix4(_inv);
       _p.y += lift;   // the heel rising off the ground toward toe-off (the captured stride; 0 for the procedural one)

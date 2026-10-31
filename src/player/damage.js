@@ -288,6 +288,7 @@ export function hurtPlayer(dmg, fromPos, silent, melee, chip, opts){
   dmg *= airDamageMul();   // caught MID-AIR in a fight: the blow lands harder (player/mobility.js)
   dmg *= diffDmgMul();   // DIFFICULTY scales all incoming damage (enemies, boss, blasts)
   player.hp -= dmg;
+  player.grime = Math.min(1, (player.grime || 0) + 0.04 + dmg * 0.004);   // soot builds on the hero as it takes hits (model/wear.js)
   if (G.stats) G.stats.dmgTaken += dmg;
   noteDamage(dmg, fromPos, opts, chip, silent);
   G.waveDmg = (G.waveDmg || 0) + dmg; if (!chip) G.waveHits = (G.waveHits || 0) + 1;   // a blocked blow's chip doesn't spoil a flawless wave
