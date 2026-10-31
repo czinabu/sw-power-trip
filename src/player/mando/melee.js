@@ -8,7 +8,7 @@ import { sfx, S } from '../../audio/sfx.js';
 import { V3, rand, clamp, TMP } from '../../utils.js';
 import { burst } from '../../fx/particles.js';
 import { floater, screenFlash } from '../../fx/floaters.js';
-import { shared, G, enemies, keys, player } from '../../state.js';
+import { shared, G, enemies, keys, player, isGunner, isMando } from '../../state.js';
 import { CFG } from '../../data/config.js';
 import { stamDelay } from '../stamina.js';
 import { fwd, playerPos } from '../helpers.js';
@@ -31,7 +31,7 @@ const live = e => !e.dead && !e.converted && e.state !== 'spawn';
 
 // E: what the Mando does depends on the moment — finish a reeling foe, dive from the air, charge in with W, or strike
 export function mandoMelee(){
-  if (G.mode !== 'play' || G.hero !== 'mando' || player.darkT > 0 || player.mendT > 0) return;
+  if (G.mode !== 'play' || !isMando() || player.darkT > 0 || player.mendT > 0) return;
   if (player.saberLock){ lockKick(); return; }
   if (player.clinch){ headbutt(); return; }   // a foe by the collar: E is the helmet
   if (player.charge || player.dive) return;

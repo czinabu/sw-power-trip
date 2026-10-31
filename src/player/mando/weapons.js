@@ -8,7 +8,7 @@ import { sfx, S } from '../../audio/sfx.js';
 import { V3, rand, clamp, TMP } from '../../utils.js';
 import { acquireParticle, burst } from '../../fx/particles.js';
 import { floater, screenFlash } from '../../fx/floaters.js';
-import { shared, G, enemies, bolts, vfx, keys, player } from '../../state.js';
+import { shared, G, enemies, bolts, vfx, keys, player, isGunner, isMando, isTrooper } from '../../state.js';
 import { MANDO, MANDO_WEAPONS, weaponUnlocked, BESKAR_PARRY } from '../../data/mando.js';
 import { setLongGun, longMuzzle } from '../model/weapons.js';
 import { diffWindow } from '../../data/difficulty.js';
@@ -30,6 +30,7 @@ import { momentumShot } from '../parkour.js';
 import { mandoMelee } from './melee.js';
 import { syncHolster } from '../holster.js';
 import { trainHeld } from '../../game/upgrades.js';
+import { gunLook, TROOPER } from '../../data/trooper.js';
 
 /* ============================================================
    MANDALORIAN — jetpack, dual blasters, flamethrower, wrist rockets
@@ -50,7 +51,7 @@ export function mandoAimPoint(){
 export function aCost(base){ return base * (player.up.abilityCostMul || 1); }   // abilities start steep; upgrades drop the multiplier
 export function mandoWeapon(){ return MANDO_WEAPONS[player.weapon] || MANDO_WEAPONS.dual; }
 export function syncWeaponMesh(){   // show only the equipped weapon's mesh (or none, off-hero); holstered, the one put away
-  const m = G.hero === 'mando', w = player.weapon === 'fists' ? player.drawnWeapon : player.weapon;
+  const m = isGunner(), w = gunLook(player.weapon === 'fists' ? player.drawnWeapon : player.weapon);   // (the trooper's guns wear the Mando's models: data/trooper.js GUN_LOOK)
   if (player.pistols){ player.pistols.R.visible = m && (w === 'single' || w === 'dual'); player.pistols.L.visible = m && w === 'dual'; }
   const LW = MANDO_WEAPONS[w];
   if (player.rifleMesh){ player.rifleMesh.visible = m && !!(LW && LW.twoHand); if (LW && LW.twoHand) setLongGun(player, w); }   // one long-gun mount, the drawn gun's model on it
@@ -62,7 +63,7 @@ export function switchWeapon(name){
   if (!weaponUnlocked(name)){ floater(playerPos(), 'LOCKED', '#ff9a66'); sfx(120, 0.1, 'square', 0.05, 70); return; }
   const W = MANDO_WEAPONS[name];
   player.weapon = name; player.zoom = false;
-  player.heat = 0; player.overheat = false; player.ventT = 0; player.fireCd = 0.12;
+  player.heat = 0; player.overheat = false; player.ventT = 0; player.fireCd = 0.12; player.fireCdL = 0;
   player.spin = 0; player.burstLeft = 0; player.burstQ = false; player.gunSlow = 1;
   syncWeaponMesh();
   floater(playerPos(), W.name, '#bfe8ff');
@@ -70,6 +71,7 @@ export function switchWeapon(name){
 }
 // MANUAL VENT (R) — dump heat fast for a clean weapon, at the cost of a short fire lockout (a BF2 active-cooldown beat)
 export function startReload(){
+  if (isTrooper() && player.overheat && !mandoWeapon().melee){ activeVent(); return; }   // the trooper's active vent
   const W = mandoWeapon();
   if (W.melee || player.heat <= 0.02 || player.overheat) return;
   // each gun vents in its own time (W.vent): the pistol flicks its heat off, the repeater dumps a cloud of coolant
@@ -83,6 +85,21 @@ export function startReload(){
     for (let i = 0; i < 6; i++) puff(V3(g.x, g.y, g.z), 0xdfe8f0, rand(0.5, 0.9), rand(0.5, 0.8), V3(rand(-1.2, 1.2), rand(1, 2.4), rand(-1.2, 1.2)), { drag: 2.5, grav: -1.5, grow0: 0.3 });
   }
 }
+// THE TROOPER'S ACTIVE VENT — overheated, R inside the window (data/trooper.js TROOPER.vent) clears the gun at once;
+// a press outside it jams the coils for a moment longer. One try per overheat.
+function activeVent(){
+  if (player.ventTried) return;
+  player.ventTried = true;
+  const V = TROOPER.vent, t = G.gt - (player.overheatAt || 0);
+  if (t >= V.window[0] && t <= V.window[1]){
+    player.heat = 0; player.overheat = false; player.ventT = 0.12; player.fireCd = Math.min(player.fireCd, 0.12);
+    tutEvent('vent');
+    sfx(880, 0.06, 'square', 0.05, 1320); sfx(1320, 0.08, 'triangle', 0.04, 1760); floater(playerPos(), 'PERFECT VENT', '#9fe6ff');
+  } else {
+    player.jamT = V.jam;
+    sfx(110, 0.16, 'sawtooth', 0.06, 60); floater(playerPos(), 'JAMMED', '#ff9a66');
+  }
+}
 // HEAT — fired shots add heat; it only starts bleeding off after a short COOL-DELAY (so spraying climbs
 // fast and you must pace your fire). Cap it → OVERHEAT lock until fully vented.
 const HEAT_COOL_DELAY = 0.32;   // seconds after the last shot before the coils start to vent
@@ -93,7 +110,8 @@ export function updateReload(dt){
   if (!W || W.melee){ player.heat = Math.max(0, player.heat - (W && W.cool || 0.6) * dt); player.overheat = false; return; }
   if (player.heatDelay <= 0 || player.overheat){           // overheated coils always bleed; otherwise wait out the delay
     const rate = (player.overheat ? (W.overCool || 0.42) : (W.cool || 0.6)) * (player.up.heatCool || 1);
-    player.heat = Math.max(0, player.heat - rate * dt);
+    if (player.jamT > 0) player.jamT -= dt;   // (a missed active vent holds the coils hot a moment longer)
+    else player.heat = Math.max(0, player.heat - rate * dt);
   }
   if (player.overheat && player.heat <= 0.02){ player.overheat = false; sfx(620, 0.06, 'square', 0.05, 320); sfx(820, 0.05, 'triangle', 0.04, 400); floater(playerPos(), 'READY', '#bfe8ff'); }
 }
@@ -101,7 +119,8 @@ export function updateReload(dt){
 function addHeat(W){
   player.heat = Math.min(1, player.heat + (W.heat || 0.1) / (player.up.heatCap || 1));   // POWER CELLS hold more (game/progression.js)
   player.heatDelay = HEAT_COOL_DELAY;   // restart the cool-delay every shot
-  if (player.heat >= 0.999){ player.overheat = true; player.heat = 1; sfx(90, 0.22, 'sawtooth', 0.08, 40); sfx(160, 0.16, 'square', 0.06, 70); floater(playerPos(), 'OVERHEAT!', '#ff7a3a'); G.shake = Math.max(G.shake, 0.2); return true; }
+  if (player.heat >= 0.999){ player.overheat = true; player.heat = 1; player.overheatAt = G.gt; player.ventTried = false; player.burstLeft = 0;
+    if (isTrooper()) floater(playerPos().clone().setY(playerPos().y + 2.6), 'R IN THE BEAT: VENT', '#bfe8ff'); sfx(90, 0.22, 'sawtooth', 0.08, 40); sfx(160, 0.16, 'square', 0.06, 70); floater(playerPos(), 'OVERHEAT!', '#ff7a3a'); G.shake = Math.max(G.shake, 0.2); return true; }
   return false;
 }
 function muzzleOrigin(side){
@@ -157,7 +176,7 @@ export function boltDamage(b){
 // HIT MARKER — flash an X at the crosshair the instant a blaster bolt (or spear) connects. kind: 'hit'|'head'|'kill'.
 // Confirms the shot AT YOUR EYES (the center), the core of good shooter feel; a stronger kind wins while one's active.
 export function hitMarker(kind){
-  if (G.hero !== 'mando') return;
+  if (!isGunner()) return;
   const rank = { hit:1, head:2, kill:3 }[kind] || 1;
   if ((player.hitMarkT || 0) <= 0 || rank >= (player._hmRank || 0)){ player.hitMarkKind = kind; player._hmRank = rank; }
   player.hitMarkT = 1;
@@ -191,6 +210,7 @@ export function fireTrigger(){
     return;
   }
   if (player.overheat){ if ((player.dryT || 0) <= 0){ player.dryT = 0.25; sfx(120, 0.04, 'square', 0.04, 80); } return; }   // dry-fire CLICK while overheated
+  if (W.fire === 'twin'){ firePistol(W, 1); return; }   // the trooper's twin DC-17s: LMB is the right-hand pistol
   if (player.fireCd > 0 || player.burstLeft > 0){   // not ready yet (or a burst still firing)
     if (W.fire === 'burst' && player.ventT <= 0 && player.fireCd + player.burstLeft * (W.burstGap || 0) < 0.16) player.burstQ = true;   // a click just early queues the next burst
     return;
@@ -199,7 +219,16 @@ export function fireTrigger(){
   if (W.fire === 'burst'){ player.burstLeft = W.burst; player.burstT = 0; burstRound(W); return; }   // the rest of the burst: updateMandoCombat
   fireBlaster(W);
 }
-// one round of a CARBINE burst; the burst stops early if the gun overheats or the hero stops being able to shoot
+// THE TWIN DC-17s (the trooper) — each mouse button fires one pistol (side 1 = right on LMB, -1 = left on RMB), each
+// on its own cooldown, both into the one heat bar. They fire straight out of a roll or a slide.
+export function firePistol(W, side){
+  if (G.mode !== 'play' || player.overheat) return;
+  if (side > 0 ? player.fireCd > 0 : (player.fireCdL || 0) > 0) return;
+  fireBlaster(W, side);
+  if (side > 0) player.fireCd = shotGap(W);
+  else player.fireCdL = shotGap(W);
+}
+// one round of a burst (the CARBINE, the trooper's DC-15); the burst stops early if the gun overheats or the hero stops being able to shoot
 function burstRound(W){
   player.burstLeft--;
   fireBlaster(W);
@@ -208,7 +237,7 @@ function burstRound(W){
   else player.fireCd = shotGap(W);
 }
 // is the Mando BRACING (hold RMB) — the stance that tightens the cone & boosts blaster damage
-function mandoBraced(){ return G.hero === 'mando' && player.blockHeld; }
+function mandoBraced(){ return isGunner() && player.blockHeld; }
 // The SINGLE-blaster GAUNTLET SHIELD — the one source of truth for "is the beskar energy shield up". Single + RMB
 // only (Dual bracing is offensive, Darksaber uses the saber guard). Computed fresh so it's valid in the air too.
 // SHIELD OR FIRE — aiming in raises the shield, but pulling the trigger drops it for blaster ADS: it stays down while
@@ -216,12 +245,12 @@ function mandoBraced(){ return G.hero === 'mando' && player.blockHeld; }
 // can't fire, so holding the trigger then doesn't lower it (shield up while the coils vent).
 export const SHIELD_RETURN = 0.5;   // seconds after the last shot before the shield comes back up
 export function mandoShielding(){
-  if (G.hero !== 'mando' || !player.blockHeld) return false;
+  if (!isMando() || !player.blockHeld) return false;
   if (player.weapon === 'fists') return true;   // holstered: the gauntlet's shield stays up while he fights with his hands
   if (player.weapon !== 'single' || mandoWeapon().melee) return false;
   return !(player.shieldDropT > 0) && !(player.trigHeld && !player.overheat);
 }
-function fireBlaster(W){
+function fireBlaster(W, hand){
   player.aiming = 0.7;
   const aim = mandoAimPoint();
   // You are only truly STEADY when bracing/scoping while NOT boosting — boosting (jetpack) is never steady, so
@@ -237,8 +266,11 @@ function fireBlaster(W){
   const baseSpread = steadyAim ? W.braceSpread : W.hipSpread;
   const spread = baseSpread + (steadyAim ? inacc * 0.003 : inacc * 0.028);   // boosting blooms the cone hard
   const opts = { spread, foMin, to: aim };
-  const col = W.col || (steadyAim ? 0xffd24a : 0xffb84a);   // braced bolts glint hotter (a long gun fires its own colour)
-  if (W.dual && player.backRun){
+  const col = W.col || (steadyAim ? 0xffd24a : 0xffb84a);   // braced bolts glint hotter (a long gun, or the trooper's guns, fire their own colour)
+  if (hand){   // one named pistol (the trooper's twin DC-17s)
+    const o = muzzleOrigin(hand);
+    spawnBlasterBolt(o, V3(aim.x-o.x, aim.y-o.y, aim.z-o.z).normalize(), dmg, col, 1.15, W, opts);
+  } else if (W.dual && player.backRun){
     // running away: one hand fires back over his shoulder (he faces the camera, so his gun hand is on screen-left;
     // anim/guns.js switches to the left hand, screen-right, when the target is round on that side)
     const o = muzzleOrigin(player.backHand === 'L' ? 1 : -1);
@@ -260,7 +292,7 @@ function fireBlaster(W){
   if (W.dual) S.blasterDual();
   else if (W.slow){ S.blasterDual(); sfx(70, 0.07, 'square', 0.05, 40); }   // the repeater: a heavier chug under each shot
   else S.blaster();
-  player.fireCd = shotGap(W);
+  if (!hand) player.fireCd = shotGap(W);   // (a named pistol keeps its own cooldown: firePistol)
   if (player.weapon === 'single') player.shieldDropT = SHIELD_RETURN;   // a shot drops the shield (see mandoShielding)
   addHeat(W);   // energy cap — overheats if you don't pace your fire
 }
@@ -342,7 +374,7 @@ const flameLight = new THREE.PointLight(0xff7a2a, 0, 11);
 scene.add(flameLight);
 export function updateFlame(dt){
   const A = abil('flame');
-  const active = G.hero === 'mando' && G.unlocked.flame && !!keys['f'] && player.force > 4 && G.mode === 'play' && player.darkT <= 0;
+  const active = isMando() && G.unlocked.flame && !!keys['f'] && player.force > 4 && G.mode === 'play' && player.darkT <= 0;
   player.flaming = active;
   const fl = player.flameLight || (player.flameLight = flameLight);
   fl.intensity += ((active ? 5.5 + Math.random()*1.5 : 0) - fl.intensity) * Math.min(1, dt*14);   // faded, never toggled: a light count change recompiles every shader (the first-flame hitch)
@@ -392,8 +424,9 @@ export function updateFlame(dt){
 // Mando per-frame weapon upkeep: timers, free-aim drift + sway, reload, held auto-fire, flamethrower, darksaber.
 export function updateMandoCombat(dt, f, r){
   if (player.fireCd > 0) player.fireCd -= dt;
+  if (player.fireCdL > 0) player.fireCdL -= dt;   // the trooper's left-hand DC-17
   const CW = mandoWeapon();
-  // a CARBINE burst: the next round when its gap is up
+  // a burst (the CARBINE, the trooper's DC-15): the next round when its gap is up
   if (player.burstLeft > 0){
     player.burstT -= dt;
     if (CW.fire !== 'burst' || G.mode !== 'play' || player.flaming || player.overheat) player.burstLeft = 0;

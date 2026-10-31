@@ -12,7 +12,7 @@ import { burst } from '../fx/particles.js';
 import { floater, screenFlash } from '../fx/floaters.js';
 import { sparks, clashFlash, clashSparks } from '../fx/ink.js';
 import { spawnHitSpark, spawnGroundShock } from '../fx/vfx.js';
-import { G, enemies, player } from '../state.js';
+import { G, enemies, player, isGunner } from '../state.js';
 import { fwd, playerPos, stance } from '../player/helpers.js';
 import { staggerEnemy, damageEnemy, flinchEnemy } from './damage.js';
 import { hurtPlayer } from '../player/damage.js';
@@ -122,7 +122,7 @@ export function rallyParry(e, sw, at){
   e.guard = e.blockLine = line; e.blockAt = G.gt;
   const g = e.group, pp = playerPos(), dx = pp.x - g.position.x, dz = pp.z - g.position.z, dl = Math.hypot(dx, dz) || 1;
   const cp = at || V3(g.position.x + dx / dl * 0.7, g.position.y + 1.5, g.position.z + dz / dl * 0.7);
-  clashFlash(cp, G.hero === 'mando' ? 0xffd28a : stance().blade, true);
+  clashFlash(cp, isGunner() ? 0xffd28a : stance().blade, true);
   clashSparks(cp, 0xffe9b0, 5);
   S.clash(cp, true, e.form);
   sfx(1700 + n * 220, 0.08, 'triangle', 0.035, 1200);   // each beat rings a little higher
@@ -459,7 +459,7 @@ export function planAttack(e, quick){
     e.measT = null;   // its next turn measures the distance afresh (FOOTWORK)
     plan.thrust = Math.random() < p.thrust * m;
     const r = p.ramp ? tacticsRamp() : 1;   // the rank and file pick up their tricks as the run deepens (tactics.js)
-    const rd = G.hero !== 'mando' ? stance().readMul || 1 : 1;   // Makashi reads intent: fewer feints and held strikes get through
+    const rd = !isGunner() ? stance().readMul || 1 : 1;   // Makashi reads intent: fewer feints and held strikes get through
     plan.feint = !plan.thrust && Math.random() < p.feint * m * r * rd;
     plan.hold = Math.random() < p.delay * m * r * rd ? rand(DUEL.delayHold[0], DUEL.delayHold[1]) : 0;
     plan.chain = stringLen(e);
@@ -591,7 +591,7 @@ export function duelDefend(e, line, kind, heavy, at){
     const P = DUEL.posture, W = WARBRINGER, light = kind === 'cut' || kind === 'punch';
     const base = kind === 'finisher' ? P.finisher : kind === 'punchHeavy' ? P.punchHeavy : kind === 'punch' ? P.punch : P.cut;
     drainBreath(e, kind === 'finisher' ? W.drain.finisher : W.drain.cut);
-    addPosture(e, base * (light ? W.cut : 1) * (G.hero !== 'mando' ? stance().postureMul || 1 : heavy ? P.heavyMul : 1), dx / dl, dz / dl);
+    addPosture(e, base * (light ? W.cut : 1) * (!isGunner() ? stance().postureMul || 1 : heavy ? P.heavyMul : 1), dx / dl, dz / dl);
     return null;
   }
   if (G.gt < (e.openUntil || 0)) return null;           // caught recovering from its own swing: the guard isn't up yet
@@ -634,16 +634,16 @@ export function duelDefend(e, line, kind, heavy, at){
   e.lineStreak = same ? e.lineStreak + 1 : 1;
   e.lastLine = line; e.lastAng = ang; e.guard = line;
   const P = DUEL.posture;
-  const cost = (kind === 'finisher' ? P.finisher : kind === 'punchHeavy' ? P.punchHeavy : kind === 'punch' ? P.punch : P.cut) * (G.hero !== 'mando' ? stance().postureMul || 1 : heavy ? P.heavyMul : 1);   // saber forms set their own strain (Ataru 0.8, Niman 1, Djem So 1.5); fists and the darksaber keep the heavy multiplier
+  const cost = (kind === 'finisher' ? P.finisher : kind === 'punchHeavy' ? P.punchHeavy : kind === 'punch' ? P.punch : P.cut) * (!isGunner() ? stance().postureMul || 1 : heavy ? P.heavyMul : 1);   // saber forms set their own strain (Ataru 0.8, Niman 1, Djem So 1.5); fists and the darksaber keep the heavy multiplier
   // the flash goes where the blades cross (`at`, from player/jedi/clash.js), else just in front of the foe
   const cp = at || V3(g.position.x + dx / dl * 0.7, g.position.y + 1.5, g.position.z + dz / dl * 0.7);
   if (addPosture(e, cost, dx / dl, dz / dl)) return 'break';
   e.arcFlash = 0.6;
-  clashFlash(cp, G.hero === 'mando' ? 0xffd28a : stance().blade, false);
+  clashFlash(cp, isGunner() ? 0xffd28a : stance().blade, false);
   clashSparks(cp, 0xffe9b0, 4);
   S.clash(cp, false, e.form);
   G.hitstop = Math.max(G.hitstop, 0.05); G.shake = Math.max(G.shake, 0.2);
-  if (p.tire && G.hero !== 'mando'){ player.stam = Math.max(0, player.stam - p.tire); player.stamDelay = stamDelay(); }   // SORESU: the wall wears you out
+  if (p.tire && !isGunner()){ player.stam = Math.max(0, player.stam - p.tire); player.stamDelay = stamDelay(); }   // SORESU: the wall wears you out
   if (e.lineStreak >= DUEL.adaptAfter) floater(V3(g.position.x, g.position.y + 1.3, g.position.z), 'READ YOU', '#ffb35a');
   else floater(V3(g.position.x, g.position.y + 1.3, g.position.z), 'BLOCKED', '#c8d4e0');
   // and the answer: a fast riposte, if it has the skill and the breath
@@ -674,7 +674,7 @@ function decide(e, line, kind, rhyN){
   let chance = p.block * (DUEL.offLine + (1 - DUEL.offLine) * cover);
   if (onLine && e.lineStreak >= DUEL.adaptAfter) chance = 0.95;   // it has your rhythm: same cut, same answer
   if (kind === 'finisher') chance *= 0.75;
-  if (G.hero !== 'mando') chance *= stance().duelBlockMul || 1;   // Shii-Cho's broad cuts are easy to read
+  if (!isGunner()) chance *= stance().duelBlockMul || 1;   // Shii-Cho's broad cuts are easy to read
   return Math.random() < Math.min(0.95, chance * m) && has(DUEL.breath.block) ? 'block' : null;
 }
 // can it answer a blow from you at all right now (facing you, guard up, not caught open or winded, not a brace)?
@@ -841,7 +841,7 @@ export function updateSaberLock(dt){
   g.userData.bodyMat.emissive.setHex(flare ? 0xffd0a0 : 0xff3a1a); g.userData.bodyMat.emissiveIntensity = 0.3 + Math.max(0, -b) * 0.8 + flare + (surging ? 0.5 : 0);
   // your blade braced against it (the catch pose, held at the bind): pressed down toward you as you lose, up and over it
   // as you win
-  if (G.hero !== 'mando' || player.weapon === 'darksaber'){
+  if (!isGunner() || player.weapon === 'darksaber'){
     const fy = player.faceYaw;
     if (!player.deflectAnim) player.deflectAnim = { t: 0, dur: 0.3, pose: null, side: (ax * -Math.cos(fy) + az * Math.sin(fy)) / ad * 0.3, h: K.h };
     player.deflectAnim.t = Math.min(player.deflectAnim.t, 0.07);
@@ -862,7 +862,7 @@ export function updateSaberLock(dt){
 export function lockPress(){
   if (!LOCK.foe) return;
   const L = DUEL.lock;
-  const formMul = G.hero === 'mando' ? 1.1 : G.stance === 'djemso' ? L.heavyPress : G.stance === 'ataru' ? L.fastPress : 1;
+  const formMul = isGunner() ? 1.1 : G.stance === 'djemso' ? L.heavyPress : G.stance === 'ataru' ? L.fastPress : 1;
   const dry = player.stam < L.stam;
   player.stam = Math.max(0, player.stam - L.stam); player.stamDelay = stamDelay();
   // a press into its surge MEETS it: worth more, and the first few say so
@@ -878,13 +878,13 @@ export function lockKick(){
   if (!LOCK.foe) return;
   if (player.stam < DUEL.lock.kickStam){ floater(playerPos(), 'WINDED', '#ffaa66'); return; }
   player.stam -= DUEL.lock.kickStam; player.stamDelay = stamDelay();
-  if (G.hero !== 'mando'){ player.kickT = player.kickMax = 0.4; }
+  if (!isGunner()){ player.kickT = player.kickMax = 0.4; }
   else { player.meleeT = player.meleeMax = 0.4; player.meleeKind = 'knee'; }
   winLock('KICKED LOOSE', 22);
 }
 // F in a lock: a Force shove at point-blank range
 export function lockPush(){
-  if (!LOCK.foe || G.hero === 'mando') return false;
+  if (!LOCK.foe || isGunner()) return false;
   if (player.force < DUEL.lock.pushCost) return false;
   player.force -= DUEL.lock.pushCost;
   player.castT = player.castMax = 0.3; player.castKind = 'push';
@@ -986,7 +986,7 @@ function netDefend(e, line, kind, heavy, at){
   e.rhyN = G.gt - (e.rhyAt ?? -9) < R.gap ? (e.rhyN || 0) + 1 : 1; e.rhyAt = G.gt;
   if ((Math.sin(g.rotation.y) * dx + Math.cos(g.rotation.y) * dz) / dl < 0.35) return null;   // the flank or the back always lands
   const P = DUEL.posture;
-  const mul = G.hero !== 'mando' ? stance().postureMul || 1 : heavy ? P.heavyMul : 1;
+  const mul = !isGunner() ? stance().postureMul || 1 : heavy ? P.heavyMul : 1;
   if (n[NG.brace]){ if (hooks.guard) hooks.guard(e, kind, mul, line); return null; }   // the Warbringer braces: the strain builds on the host
   if (!n[NG.up]) return null;
   const p = e.dp || {}, m = diffMul() * (p.elite ? eliteRamp() : 1), fresh = !n[NG.winded];
@@ -1012,12 +1012,12 @@ function netDefend(e, line, kind, heavy, at){
   const onLine = cover > 0.5;   // the SEALED ARC: inside the crescent it is always turned
   let chance = n[NG.block] / 100 * (DUEL.offLine + (1 - DUEL.offLine) * cover) * m;
   if (kind === 'finisher') chance *= 0.75;
-  if (G.hero !== 'mando') chance *= stance().duelBlockMul || 1;
+  if (!isGunner()) chance *= stance().duelBlockMul || 1;
   if (!onLine && !(Math.random() < Math.min(0.95, chance))) return null;
   if (hooks.guard) hooks.guard(e, kind, mul, line);
   e.arcFlash = 0.6;
   const cp = at || V3(g.position.x + dx / dl * 0.7, g.position.y + 1.5, g.position.z + dz / dl * 0.7);
-  clashFlash(cp, G.hero === 'mando' ? 0xffd28a : stance().blade, false);
+  clashFlash(cp, isGunner() ? 0xffd28a : stance().blade, false);
   clashSparks(cp, 0xffe9b0, 4);
   S.clash(cp, false, e.form);
   G.hitstop = Math.max(G.hitstop, 0.05); G.shake = Math.max(G.shake, 0.2);

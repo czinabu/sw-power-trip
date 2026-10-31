@@ -4,7 +4,7 @@
 
 import { GUARD_LINE } from '../../data/duel.js';
 import { SWING_PATTERNS } from '../../data/stances.js';
-import { G, enemies, player } from '../../state.js';
+import { G, enemies, player, isGunner } from '../../state.js';
 import { playerPos, fwd } from '../helpers.js';
 import { localPlayer } from '../players.js';
 
@@ -21,7 +21,7 @@ export function lineCatch(line){
 export function updateGuardLine(){
   const d = player.deflectAnim;
   const held = d && d.hold;
-  const want = G.hero !== 'mando' && player.blockHeld && player.atkT <= 0 && !player.saberLock ? threatLine() : null;
+  const want = !isGunner() && player.blockHeld && player.atkT <= 0 && !player.saberLock ? threatLine() : null;
   if (!want){ if (held) player.deflectAnim = null; return; }
   if (d && !held) return;   // a real catch (a bolt, a blow) is playing out: it hands back to the held line after
   if (held && d.line === want) return;

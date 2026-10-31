@@ -3,7 +3,7 @@
 
 import { camera } from './renderer.js';
 import { clamp, TMP } from '../utils.js';
-import { shared, G, player, enemies } from '../state.js';
+import { shared, G, player, enemies, isGunner } from '../state.js';
 import { fwd, rightV, playerPos, stance } from '../player/helpers.js';
 import { cameraClearance, updatePropFade } from '../world/camblock.js';
 import { CFG } from '../data/config.js';
@@ -107,7 +107,7 @@ export function updateCamera(dt){
   // ----- MANDO camera: HIGH + ALWAYS over a shoulder (helmet never under the crosshair) — the shoulder follows the
   //       way you last strafed, with situational distance & offset strength -----
   let camHi = 0, distMul = 1, ots = 0;
-  const jedi = G.hero !== 'mando';
+  const jedi = !isGunner();
   if (jedi) player.camOts = 0;   // (the Jedi rig below carries its own small offset)
   else {
     const aiming = player.blockHeld || player.zoom || player.aiming > 0;
@@ -123,7 +123,7 @@ export function updateCamera(dt){
     distMul = aiming ? 0.88 : flying ? 1.25 : 1;          // aiming tucks in over the shoulder; flight backs off for the room
   }
   // camera breathes with the action: pulls back HARD at high flight speed (Mando), softer otherwise, + for the boss
-  const adsFly = G.hero === 'mando' && (player.blockHeld || player.zoom);   // aiming → steadier, tighter camera
+  const adsFly = isGunner() && (player.blockHeld || player.zoom);   // aiming → steadier, tighter camera
   const pullback = jedi ? 0 : clamp(speed * 0.14, 0, 4);   // (JA's range doesn't stretch with speed)
   // COMBAT FRAMING — a pack closing in pushes the lens back and up so the whole brawl stays on screen; a quiet
   // arena (between waves, nothing near) tucks it in closer for a grounded, over-the-shoulder feel
@@ -207,7 +207,7 @@ export function updateCamera(dt){
   TMP.y += camRise;
   clear(TMP);
   // INERTIA — the camera lags when you boost / fly fast (a weighty swoop), but snaps tight when you're AIMING
-  const lagBase = (adsFly) ? 0.000004 : (G.hero === 'mando' && (player.boosting || speed > 14)) ? 0.02 : 0.000008;
+  const lagBase = (adsFly) ? 0.000004 : (isGunner() && (player.boosting || speed > 14)) ? 0.02 : 0.000008;
   // (frozen sim: dt = 0 would leave the lens stuck on the last pause cut, so the FOV preview snaps straight to the gameplay spot)
   // (the Jedi rig has already done its own easing)
   if (jedi) camera.position.copy(TMP);
@@ -246,7 +246,7 @@ export function updateCamera(dt){
   // SEE-THROUGH — a prop standing between the lens and the hero turns slightly see-through (world/camblock.js, ink.js)
   updatePropFade(camera.position, pp.x, pp.y, pp.z, dt);
   // Mando aims a bit ABOVE its own head height; while DIVING the look target drops so the camera follows the dive angle
-  const diveLook = (G.hero === 'mando' && player.boosting) ? clamp(player.vy * 0.06, -2.0, 0) : 0;
+  const diveLook = (isGunner() && player.boosting) ? clamp(player.vy * 0.06, -2.0, 0) : 0;
   // LOOKING DOWN — the lens climbs overhead, and aiming far past the hero from up there drops them off the bottom of the
   // screen. As the view tips over, draw the aim point back in toward the hero and down toward the waist, so they stay
   // in frame
@@ -258,14 +258,14 @@ export function updateCamera(dt){
   // camera ROLL into a strafe — subtle for the Jedi; a pronounced Max-Payne bank for the boosting Mando, but
   // damped right down while AIMING so the shot stays readable.
   const strafe = vx * (-f.z) + vz * f.x;
-  let rollGain = (G.hero === 'mando') ? (player.boosting ? 0.013 : !player.grounded ? 0.009 : 0.006) : 0.0035;
-  let rollMax  = (G.hero === 'mando') ? (player.boosting ? 0.13 : 0.08) : 0.045;
+  let rollGain = (isGunner()) ? (player.boosting ? 0.013 : !player.grounded ? 0.009 : 0.006) : 0.0035;
+  let rollMax  = (isGunner()) ? (player.boosting ? 0.13 : 0.08) : 0.045;
   if (adsFly){ rollGain *= 0.35; rollMax *= 0.45; }
   camera.rotateZ(clamp(-strafe * rollGain, -rollMax, rollMax) + shakeRoll);
   // FOV kick on dashes and at speed; disruptor ZOOM (ADS) pulls the view in tight for precision
   // blasters get a SLIGHT aim zoom only while BRACING (hold RMB) for precision — single pulls in more than dual
-  const BRACE_ZOOM = { single: 14, dual: 9, carbine: 12, repeater: 7 };   // (the carbine shoulders in nearly as tight as the pistol; the repeater is a hip gun)
-  const blasterAim = (G.hero === 'mando' && !player.zoom && player.blockHeld) ? (BRACE_ZOOM[player.weapon] || 0) : 0;    // bracing zooms in — the payoff for steadying (the lens is close already)
+  const BRACE_ZOOM = { single: 14, dual: 9, carbine: 12, repeater: 7, rifle: 12 };   // (the carbine shoulders in nearly as tight as the pistol; the repeater is a hip gun; the trooper's DC-15 like the carbine)
+  const blasterAim = (isGunner() && !player.zoom && player.blockHeld) ? (BRACE_ZOOM[player.weapon] || 0) : 0;    // bracing zooms in — the payoff for steadying (the lens is close already)
   // IMPACT PUNCH — heavy hitstop snaps the view in a touch (instantly, the sim is frozen) and slow-mo holds it there,
   // so the big moments feel close; it releases once the beat is over
   if (G.mode === 'play' && !player.zoom && (G.hitstop > 0.04 || G.slowmo < 0.9)) fovPunch = C.impactFov;

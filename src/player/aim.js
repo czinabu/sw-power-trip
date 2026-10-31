@@ -4,7 +4,7 @@
 
 import * as THREE from 'three';
 import { camera } from '../engine/renderer.js';
-import { shared, G, enemies, player } from '../state.js';
+import { shared, G, enemies, player, isGunner } from '../state.js';
 import { sweepHit, bodyRadius, bodyHeight, chestPos } from '../enemies/bodyshape.js';
 import { groundAt, solidAt } from '../world/collision.js';
 
@@ -65,11 +65,11 @@ export function crosshairPoint(ox = 0, oy = 0){
    the foe he's locked onto (the lock frames it, so that's where he means) */
 export function aimPoint(){
   const lt = player.lockTarget;
-  if (G.hero !== 'mando' && lt && lt.group && (lt === shared.boss ? lt.hp > 0 : !lt.dead)){
+  if (!isGunner() && lt && lt.group && (lt === shared.boss ? lt.hp > 0 : !lt.dead)){
     lastAim.target = lt; lastAim.floor = false;
     return lt.t ? chestPos(lt) : lt.group.position.clone().setY(lt.group.position.y + 1.8);
   }
-  return G.hero === 'mando' ? crosshairPoint(player.aimOff.x, player.aimOff.y) : crosshairPoint(0, 0);
+  return isGunner() ? crosshairPoint(player.aimOff.x, player.aimOff.y) : crosshairPoint(0, 0);
 }
 
 /* the aim from a point on the hero (a hand, the chest): the unit direction toward what the crosshair is over, plus

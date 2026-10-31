@@ -11,7 +11,7 @@ import { MUSIC } from '../audio/music.js';
 import { V3, rand } from '../utils.js';
 import { burst } from '../fx/particles.js';
 import { floater } from '../fx/floaters.js';
-import { shared, G, enemies, bolts, player } from '../state.js';
+import { shared, G, enemies, bolts, player, isGunner } from '../state.js';
 import { playerPos, maxHp } from '../player/helpers.js';
 import { SCALE, heroScale } from '../data/coop.js';
 import { heroesHere } from '../player/players.js';
@@ -171,7 +171,7 @@ export function endlessWaveCleared(){
     floater(V3(pp0.x,1.0,pp0.z), '+'+healed, '#7bffae'); burst(V3(pp0.x,1.2,pp0.z), 0x7bffae, 12, 5, 4);
   }
   player.force = CFG.player.maxForce;
-  if (G.hero === 'mando') player.jet = Math.min(player.jetMax, player.jet + player.jetMax*0.6);
+  if (isGunner()) player.jet = Math.min(player.jetMax, player.jet + player.jetMax*0.6);
   G.mut = null; G.eliteSurge = false;   // the mutator / surge ends with the wave
   shared.levelPhase = 'between'; shared.phaseT = 2.2;
   earnWavePoint();

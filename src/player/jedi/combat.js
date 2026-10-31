@@ -9,7 +9,7 @@ import { sfx, S } from '../../audio/sfx.js';
 import { V3, rand, clamp, TMP } from '../../utils.js';
 import { burst } from '../../fx/particles.js';
 import { floater, screenFlash } from '../../fx/floaters.js';
-import { shared, G, enemies, barrels, keys, player } from '../../state.js';
+import { shared, G, enemies, barrels, keys, player, isGunner } from '../../state.js';
 import { fwd, rightV, playerPos, stance } from '../helpers.js';
 import { damageEnemy, flinchEnemy, nearestEnemyInCone, staggerEnemy, interruptEnemy } from '../../enemies/damage.js';
 import { damageBoss } from '../../boss/boss.js';
@@ -58,10 +58,10 @@ export function tryAttack(flow = false){
   const st = stance();
   const step = (G.gt - player.lastAtkEnd < 0.9 * (st.comboGap || 1)) ? (player.comboStep + 1) % 3 : 0;
   // both the Jedi saber and the Mando DARKSABER spend stamina per swing (medium-high for the heavy darksaber)
-  if (G.hero !== 'mando' || player.weapon === 'darksaber'){
+  if (!isGunner() || player.weapon === 'darksaber'){
     let cost = (player.riposteT > 0 && freeRiposte()) ? 0 : st.stamina * (step === 2 ? 1.4 : 1);   // UNLEASHED: the riposte is free
     // JUYO burns Force with every swing; with too little Force left the swing takes it out of the body instead (×2 stamina)
-    const fs = G.hero !== 'mando' && st.forceSwing && cost > 0 ? st.forceSwing : 0;
+    const fs = !isGunner() && st.forceSwing && cost > 0 ? st.forceSwing : 0;
     if (fs && player.force < fs) cost *= 2;
     if (player.stam < cost){
       if (G.gt - player.lastWinded > 0.6){ player.lastWinded = G.gt; floater(playerPos(), 'WINDED', '#ffaa66'); }
@@ -73,7 +73,7 @@ export function tryAttack(flow = false){
   }
   player.comboStep = step;
   // a cut out of a SLIDE ends the skid in a low sweep (parkour.js); any cut struck out of a parkour move carries its momentum
-  if (player.slideT > 0){ player.slideT = 0; if (G.hero !== 'mando') player.flip = null; }
+  if (player.slideT > 0){ player.slideT = 0; if (!isGunner()) player.flip = null; }
   const mom = momentumStrike();
   // slightly longer arcs read as deliberate sword strokes rather than a twitchy flurry
   const dur = (step === 2 ? 0.52 : 0.4) / (st.speed * (player.up.atkSpeed || 1));
@@ -131,14 +131,14 @@ export function tryAttack(flow = false){
   }
   if (spin) spinTravel(spin, dirKey);
   else if (ang != null && !backStrike) cutFootwork(ang);
-  S.swing(G.hero === 'mando' ? 'dark' : G.stance);   // the blade's whoosh, voiced by form
-  if (flow && G.hero !== 'mando') sfx(1250, 0.06, 'sine', 0.022, 1900);   // a faint ring: the link landed in rhythm
+  S.swing(isGunner() ? 'dark' : G.stance);   // the blade's whoosh, voiced by form
+  if (flow && !isGunner()) sfx(1250, 0.06, 'sine', 0.022, 1900);   // a faint ring: the link landed in rhythm
 }
 /* SPINS (data/poses.js SWING_SPINS) — which flourish, if any, this cut carries. Jedi only, on the ground, and never on a
    finisher (it has its own spin), a riposte, a back strike or a momentum strike. It must be a rhythm (flow) link, off
    cooldown, with the stamina to pay its surcharge. */
 function pickSpin(form, step, dirKey, o){
-  if (G.hero === 'mando' || !player.grounded || player.flip || step === 2 || o.ripNow || o.backStrike || o.mom) return null;
+  if (isGunner() || !player.grounded || player.flip || step === 2 || o.ripNow || o.backStrike || o.mom) return null;
   const S = SWING_SPINS[form];
   if (!S || !o.flow) return null;
   const sp = (step === 1 && S.mid) || ((dirKey === 'left' || dirKey === 'right') ? S.move : null);
@@ -211,7 +211,7 @@ export function applySwingDamage(step, only){
   const st = stance();
   const sw0 = player.swing;
   const fxPass = !only || only.length === 0;
-  const isDark = G.hero === 'mando' && player.weapon === 'darksaber';
+  const isDark = isGunner() && player.weapon === 'darksaber';
   let dmg = CFG.player.comboDamage[step] * st.dmg * player.up.dmg * focusDmgMul() * furyMul();   // FORCE FOCUS ramps saber damage; Form VII's FURY too
   const finisher = step === 2;
   let knock = (finisher ? 15 : 6) * st.knock * player.up.knock;
@@ -335,7 +335,7 @@ export function applySwingDamage(step, only){
     G.shake = Math.max(G.shake, finisher ? 0.5 : 0.2);
     addFocus(finisher ? FOCUS.gainFin : FOCUS.gainHit);   // FORCE FOCUS — clean bladework builds the flow
     // UNLEASHED (max focus): every cut releases a Force shockwave that cleaves & knocks the surrounding crowd
-    if (G.hero !== 'mando' && focusTier() >= 3){
+    if (!isGunner() && focusTier() >= 3){
       const pp1 = playerPos(), wp = V3(pp1.x + f.x*1.4, 0.6, pp1.z + f.z*1.4);
       spawnGroundShock(V3(wp.x, 0.1, wp.z), 0xffe27a, 4.2, 0.3, 0.45);
       burst(V3(wp.x, 1.2, wp.z), 0xffe27a, 8, 8, 4, 0.8);
@@ -375,7 +375,7 @@ export function applySwingDamage(step, only){
   const turn = sw && sw.pat ? Math.sign(sw.pat.yT - sw.pat.yF) : 0;
   player.arcMesh.rotation.z = (sw && sw.back ? Math.PI : 0) + turn * 0.55;
   player.arcMesh.material.opacity = 0.7;
-  player.arcMesh.material.color.setHex((G.hero === 'mando' && player.weapon === 'darksaber') ? 0xc9a6ff : st.blade);
+  player.arcMesh.material.color.setHex((isGunner() && player.weapon === 'darksaber') ? 0xc9a6ff : st.blade);
 }
 
 // JEDI FRONT KICK (E) — the Jedi's hands are full of saber, so the free melee is a leg: a snapping Force-assisted
@@ -383,7 +383,7 @@ export function applySwingDamage(step, only){
 // space-maker (the Mando's gauntlet-punch counterpart). The short recovery (kickT) keeps it from being mashed.
 const JEDI_KICK = { reach: 1.75, arc: 0.62, dmg: 10, knock: CFG.player.kickStagger.knock, recover: 0.4 };   // a stagger, not a launch (config kickStagger)
 export function forceKick(){
-  if (G.mode !== 'play' || G.hero === 'mando' || player.kickT > 0 || player.judgeT > 0 || player.mendT > 0 || player.flip || player.slamming || player.hang || player.flinchT > 0) return;
+  if (G.mode !== 'play' || isGunner() || player.kickT > 0 || player.judgeT > 0 || player.mendT > 0 || player.flip || player.slamming || player.hang || player.flinchT > 0) return;
   const A = JEDI_KICK;
   player.kickT = player.kickMax = A.recover; player.kickKind = 'front';
   const f = fwd(), pp = playerPos();
@@ -414,7 +414,7 @@ export function forceKick(){
 /* DEFLECT ANIMATION — start a blade catch toward something arriving at `from` (a bolt, or a blocked blow). The
    catch itself (which cover, which side) is picked in anim/saber.js. A swing already in flight keeps the blade. */
 export function deflectAnim(from, line, contact){
-  if (G.hero === 'mando' || player.atkT > 0 || !from) return;
+  if (isGunner() || player.atkT > 0 || !from) return;
   const cur = player.deflectAnim;
   if (cur && cur.spin && cur.t < cur.dur) return;   // a spin already sweeping the blade round covers the next bolt too
   // a duellist's blow on the line the guard was already waiting on (jedi/guardline.js): that catch flicks it away
@@ -440,7 +440,7 @@ const catchState = (from) => {
    the wheel (anim/saber.js deflectPose). */
 export function anticipateDeflect(from, eta){
   const S = DEFLECT_SPINS[stance().form];
-  if (!S || !S.anticipate || G.hero === 'mando' || player.atkT > 0 || player.deflectAnim || !player.grounded || player.flip) return;
+  if (!S || !S.anticipate || isGunner() || player.atkT > 0 || player.deflectAnim || !player.grounded || player.flip) return;
   if (eta < 0.04 || G.gt - (player._dflSpinT || -9) < S.cd || Math.random() > S.anticipate) return;
   if (!(player.parryT >= eta || (player.blockHeld && player.stam > 0))) return;
   const d = catchState(from);

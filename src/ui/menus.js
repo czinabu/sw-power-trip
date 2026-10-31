@@ -5,7 +5,7 @@ import { renderer } from '../engine/renderer.js';
 import { cycleQuality } from '../engine/quality.js';
 import { audioInit, setMasterVol, setMusicVol, setSfxVol, S } from '../audio/sfx.js';
 import { AE } from '../audio/engine.js';
-import { shared, G, player } from '../state.js';
+import { shared, G, player, isGunner, isTrooper, TROOPER_TEST } from '../state.js';
 import { applySaberGrip } from '../player/model/weapons.js';
 import { setHero } from '../player/hero.js';
 import { startLevel, retryLevel, retryIsBoss, startCoopCampaign } from '../game/flow.js';
@@ -54,6 +54,7 @@ export function setOverlayState(state){
   document.getElementById('restartBtn').textContent = G.training ? '↻ RESTART TRAINING' : G.mission && G.chapter < 0 ? '↻ RESTART MISSION' : '↻ RESTART RUN';
   document.getElementById('skipBtn').style.display = state === 'pause' && G.training ? 'inline-flex' : 'none';
   document.getElementById('lessonsBtn').style.display = state === 'pause' && G.training ? 'inline-flex' : 'none';
+  document.getElementById('formsBtn').style.display = isTrooper() ? 'none' : '';   // (the trooper has neither yet)
   document.getElementById('formsBtn').textContent = G.hero === 'mando' ? 'ARMORY' : 'LIGHTSABER FORMS';   // the Jedi's forms page (ui/forms-ui.js), the Mando's guns (ui/armory-ui.js)
   const go = document.getElementById('goText'), sub = document.getElementById('ovsub');
   if (state === 'menu' && G.modeSel === 'campaign' && canResume()){   // a loaded save picks the campaign up where it was
@@ -64,7 +65,7 @@ export function setOverlayState(state){
   } else if (state === 'pause'){
     go.textContent = 'RESUME'; sub.textContent = 'PAUSED';
     const where = G.chapter >= 0 ? 'CAMPAIGN · ' + chapterLabel() : G.training ? 'TRAINING' : G.sandbox ? 'SANDBOX' : G.mission ? missionTitle(G.missionId) : G.endless ? 'SURVIVAL' : 'CAMPAIGN';
-    document.getElementById('ovctx').textContent = where + ' · ' + (G.hero === 'mando' ? 'MANDALORIAN' : 'JEDI');
+    document.getElementById('ovctx').textContent = where + ' · ' + (isGunner() ? 'MANDALORIAN' : 'JEDI');
   } else if (state === 'dead'){
     go.textContent = G.endless ? 'NEW SURVIVAL RUN' : G.mission ? 'RETRY THIS OBJECTIVE' : G.sandbox ? 'BACK TO THE SANDBOX' : retryIsBoss() ? 'RETRY THE BOSS' : G.chapter >= 0 ? 'RETRY THIS CHAPTER' : 'RETRY THIS LEVEL';
     sub.textContent = '';   // the run summary's own title carries the moment
@@ -116,6 +117,9 @@ function beginPlay(){
 // hero picker — select only (don't ignite); the player clicks elsewhere / GO to launch
 document.getElementById('hero-jedi').addEventListener('click', (e) => { e.stopPropagation(); setHero('jedi'); refreshMissionMark(); });
 document.getElementById('hero-mando').addEventListener('click', (e) => { e.stopPropagation(); setHero('mando'); refreshMissionMark(); });
+// the clone trooper is in testing: its card only shows with ?trooper in the page URL (state.js TROOPER_TEST)
+{ const ht = document.getElementById('hero-trooper');
+  if (ht && TROOPER_TEST){ ht.style.display = ''; ht.addEventListener('click', (e) => { e.stopPropagation(); setHero('trooper'); refreshMissionMark(); }); } }
 // mode picker — campaign vs survival
 // SURVIVAL is LOCKED until the campaign has been cleared as BOTH heroes (any difficulty).
 export function survivalUnlocked(){ try { return localStorage.getItem('sw_camp_jedi') === '1' && localStorage.getItem('sw_camp_mando') === '1'; } catch(e){ return false; } }
@@ -416,7 +420,7 @@ export function beginFromMenu(){
 // three to carry; its FIGHT launches. A Mando starting a mission sees the armory: the sidearm and primary to carry
 // (ui/armory-ui.js). RESUME, a retry and PLAY AGAIN go straight back in
 function launchFromMenu(){
-  if (G.mode === 'menu' && G.hero !== 'mando' && !G.coopJoin) openPrefight(launch);
+  if (G.mode === 'menu' && !isGunner() && !G.coopJoin) openPrefight(launch);
   else if (G.mode === 'menu' && G.hero === 'mando' && G.modeSel === 'mission' && !G.coopJoin) openArmoryPrefight(launch);
   else { if (G.mode === 'menu') G.missionKit = null; launch(); }
 }

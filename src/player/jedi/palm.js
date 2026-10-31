@@ -11,7 +11,7 @@ import { stamDelay } from '../stamina.js';
 import { sfx, S } from '../../audio/sfx.js';
 import { V3, TMP, clamp } from '../../utils.js';
 import { floater } from '../../fx/floaters.js';
-import { shared, G, enemies, bolts, barrels, keys, player } from '../../state.js';
+import { shared, G, enemies, bolts, barrels, keys, player, isGunner } from '../../state.js';
 import { forcePower, fwd, rightV, playerPos, stance } from '../helpers.js';
 import { damageEnemy, flinchEnemy, staggerEnemy } from '../../enemies/damage.js';
 import { damageBoss, bossStagger } from '../../boss/boss.js';
@@ -247,7 +247,7 @@ function landed(hit, finisher, stop, shake){
 /* ---------------- STRIKE INTO POWER (force.js) ---------------- */
 // is a Push / Pull thrown now flowing out of an unarmed blow?
 export function flowReady(){
-  return G.hero !== 'mando' && player.holstered && G.gt - player.lastPalmHit < H().flow.window;
+  return !isGunner() && player.holstered && G.gt - player.lastPalmHit < H().flow.window;
 }
 // the Pull that flowed out of a strike: the next strike goes in as they land in front of you
 export function queuePullStrike(){
@@ -281,7 +281,7 @@ export function setFistGlow(hero, level, color){
 }
 let glowLevel = 0;
 function updateFistGlow(dt){
-  const on = G.hero !== 'mando' && player.holstered;
+  const on = !isGunner() && player.holstered;
   const ch = chargeFrac();
   const want = !on ? 0 : ch >= 0 ? 0.55 + 0.45 * ch : player.palmT > 0 || (player.kickT > 0 && player.kickKind === 'spin') || player.stomp ? 0.75 : 0.22;
   glowLevel += (want - glowLevel) * Math.min(1, dt * (want > glowLevel ? 18 : 6));

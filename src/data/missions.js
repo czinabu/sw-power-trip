@@ -67,8 +67,8 @@ import { PURSUIT_SPOTS } from '../world/arenas/pursuit.js';
 import { BATTLE_MAPS, GRASSLAND_SPOTS, ICEFRONT_SPOTS, GRAVEYARD_SPOTS } from './battlemaps.js';
 import { LEVELS } from './levels.js';
 
-export const MISSION_VOICE = { jedi: 'THE BATTLEMASTER', mando: 'THE ARMORER' };
-export const MISSION_COLOR = { jedi: 0x5ad2ff, mando: 0xffa040 };
+export const MISSION_VOICE = { jedi: 'THE BATTLEMASTER', mando: 'THE ARMORER', trooper: 'THE CAPTAIN' };
+export const MISSION_COLOR = { jedi: 0x5ad2ff, mando: 0xffa040, trooper: 0x4aa8ff };
 
 export const MISSIONS = {
   refuge: {

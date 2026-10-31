@@ -27,6 +27,12 @@ export const DEFAULT_LOOK = {
     build: { bulk: 1, shoulders: 1, head: 1 },
     seams: true,
   },
+  // the clone ARC trooper (testing only): Phase II plastoid with ARC gear, in the 501st's blue (model/trooper.js)
+  trooper: {
+    parts: { legs: 'arc', torso: 'arc', arms: 'arc', helmet: 'arc', kama: 'long' },
+    palette: { plate: 0xe8e8e3, grey: 0x26282c, mark: 0x2f7fd6, suit: 0x17191d, visor: 0x07090c, cloth: 0x141518, strap: 0x1d1f23 },
+    build: { bulk: 1, shoulders: 1, head: 1 },
+  },
 };
 
 // sample looks: proof that the slots, palette and build all swap cleanly (the model lab can show them)

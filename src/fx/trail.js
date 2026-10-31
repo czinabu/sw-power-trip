@@ -3,7 +3,7 @@
 
 import * as THREE from 'three';
 import { scene } from '../engine/renderer.js';
-import { G, player } from '../state.js';
+import { G, player, isGunner } from '../state.js';
 import { stance, bladeColor } from '../player/helpers.js';
 import { FORM_OF } from '../data/poses.js';
 
@@ -132,7 +132,7 @@ function updateBladeFX(dt){
     const ext = k < 0.35 ? 1 - k / 0.35 : (k - 0.35) / 0.65;          // retract, then extend (eased)
     const e = Math.max(0.02, ext < 1 ? 1 - Math.pow(1 - ext, 3) : 1);
     setBladeLen(B, len * e);
-  } else if (B.blade.scale.y !== len && G.hero !== 'mando') setBladeLen(B, len);
+  } else if (B.blade.scale.y !== len && !isGunner()) setBladeLen(B, len);
   const smear = 1 + Math.min(0.9, tipSpeed * 0.025);
   const sx = B.glow.scale.x + (smear - B.glow.scale.x) * Math.min(1, dt * 18);
   B.glow.scale.x = B.glow.scale.z = sx;

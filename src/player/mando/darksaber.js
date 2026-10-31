@@ -6,7 +6,7 @@ import { scene } from '../../engine/renderer.js';
 import { sfx, S } from '../../audio/sfx.js';
 import { V3, TMP } from '../../utils.js';
 import { floater, screenFlash } from '../../fx/floaters.js';
-import { shared, G, enemies, bolts, player } from '../../state.js';
+import { shared, G, enemies, bolts, player, isGunner, isMando } from '../../state.js';
 import { collideSolids, groundAt } from '../../world/collision.js';
 import { MANDO } from '../../data/mando.js';
 import { fwd, playerPos } from '../helpers.js';
@@ -22,7 +22,7 @@ import { scarBody, severLimbs } from '../../enemies/scars.js';
    and shatters a boss wind-up. Drawn only for the swing. */
 export const DARK_DUR = 0.42;
 function darksaberSlash(){
-  if (G.mode !== 'play' || G.hero !== 'mando' || !player.up.darksaber) return;
+  if (G.mode !== 'play' || !isMando() || !player.up.darksaber) return;
   if (player.cds.dark > 0 || player.darkT > 0 || player.force < aCost(MANDO.dark.cost)) return;
   player.force -= aCost(MANDO.dark.cost); player.cds.dark = MANDO.dark.cd;
   player.darkT = DARK_DUR; player.darkApplied = false; player.aiming = 0.6;
@@ -94,7 +94,7 @@ function darkLine(){
 }
 export function darksaberThrow(){
   const A = MANDO.darkThrow, m = player.darksaberMesh;
-  if (G.mode !== 'play' || G.hero !== 'mando' || !player.up.darksaber || player.weapon !== 'darksaber' || !m) return;
+  if (G.mode !== 'play' || !isMando() || !player.up.darksaber || player.weapon !== 'darksaber' || !m) return;
   if (shared.darkProj || player.cds.darkThrow > 0 || player.darkT > 0 || player.atkT > 0) return;
   if (player.force < aCost(A.cost)){ if (G.gt - (player.lastWinded || -9) > 0.5){ player.lastWinded = G.gt; floater(playerPos(), 'NO POWER', '#ff9a66'); } return; }
   player.force -= aCost(A.cost); player.cds.darkThrow = A.cd; player.aiming = 0.6;
@@ -115,7 +115,7 @@ export function catchDarksaber(quiet){
   const dp = shared.darkProj; if (!dp) return;
   const m = dp.mesh, h = dp.home;
   if (h.parent){ h.parent.add(m); m.position.copy(h.pos); m.quaternion.copy(h.quat); m.scale.copy(h.scale); }
-  m.visible = G.hero === 'mando' && player.weapon === 'darksaber';
+  m.visible = isMando() && player.weapon === 'darksaber';
   shared.darkProj = null;
   if (shared._darkLine) shared._darkLine.visible = false;
   if (!quiet){ sfx(900, 0.05, 'square', 0.04, 420); sfx(60, 0.18, 'sine', 0.08, 40); G.shake = Math.max(G.shake, 0.2); }
@@ -139,7 +139,7 @@ function darkCut(dp){
 }
 function updateDarkThrow(dt){
   const dp = shared.darkProj; if (!dp) return;
-  if (G.hero !== 'mando'){ catchDarksaber(true); return; }
+  if (!isMando()){ catchDarksaber(true); return; }
   const A = MANDO.darkThrow, line = darkLine(), hand = darkHand();
   dp.t += dt;
   if (dp.phase === 'out'){

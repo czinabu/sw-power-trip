@@ -5,7 +5,7 @@
 
 import * as THREE from 'three';
 import { clamp } from '../../utils.js';
-import { G, player } from '../../state.js';
+import { G, player, isGunner } from '../../state.js';
 import { AGILITY, MANDO_AGILITY } from '../../data/agility.js';
 import { FORM_OF } from '../../data/poses.js';
 import { MOCAP_ON, mocapAirLegs, airPhase, mocapFlip, flipTurn, flipLegs } from './mocap.js';
@@ -356,12 +356,12 @@ export const SLAM_LAND_T = 0.62;
 
 /* how far the body pitches over in a slam dive (about the feet, as before: the dive is short and straight down) */
 export function slamPitch(){
-  return G.hero === 'mando' ? MANDO_AGILITY.slam.pitch : agilityOf().slam.pitch;
+  return isGunner() ? MANDO_AGILITY.slam.pitch : agilityOf().slam.pitch;
 }
 
 /* landing depth/recovery multipliers for the current hero/form (locomotion's touchdown curve reads these) */
 export function landingStyle(){
-  if (G.hero === 'mando') return MANDO_AGILITY.land;
+  if (isGunner()) return MANDO_AGILITY.land;
   return agilityOf().land;
 }
 

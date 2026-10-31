@@ -48,7 +48,7 @@ export const captureRun = () => ({ ...snapshotRun(), hero: G.hero });
 export function restoreRun(run){
   G.levelIdx = run.idx; G.checkpoint = clone(run.checkpoint) || { idx: run.idx, waveTotal: -1, boss: false };
   G.waveTotal = G.checkpoint.waveTotal;
-  player.weapon = run.weapon || 'single';
+  player.weapon = run.weapon || (run.hero === 'trooper' ? 'rifle' : 'single');
   G.unlocked = clone(run.unlocked) || {}; G.stanceUnlocked = migrateUnlocked(run.stanceUnlocked);
   if ((run.loadout || []).includes('niman') || run.stance === 'niman') G.stanceUnlocked.niman = true;   // a run saved when every hero started on Niman keeps it
   G.loadout = cleanLoadout(run.loadout || DEFAULT_LOADOUT); G.mandoChoiceShown = !!run.mandoChoiceShown;

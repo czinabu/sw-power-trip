@@ -1,7 +1,7 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
 // Holstering (4): the Jedi clips his saber to his belt and fights with the Force alone; the Mando holsters his weapon and fights with his fists and gadgets.
 
-import { G, shared, player } from '../state.js';
+import { G, shared, player, isGunner, isMando, isTrooper } from '../state.js';
 import { sfx } from '../audio/sfx.js';
 import { floater } from '../fx/floaters.js';
 import { reigniteBlade } from '../fx/trail.js';
@@ -40,17 +40,17 @@ function place(mesh, key){
 }
 
 // is the current hero fighting without the weapon in hand?
-export function holstered(){ return G.hero === 'mando' ? player.weapon === 'fists' : !!player.holstered; }
+export function holstered(){ return isMando() ? player.weapon === 'fists' : !!player.holstered; }
 
 /* hang every weapon where the current state says: the Jedi saber in hand or on the belt (blade out or off), the
    Mando's last-drawn weapon in hand or stowed. Visibility (which weapon is the Mando's) is syncWeaponMesh's job. */
 export function syncHolster(){
   if (!player.rig || !player.rig.sockets) return;
-  const jediAway = G.hero !== 'mando' && !!player.holstered;
+  const jediAway = !isGunner() && !!player.holstered;
   place(player.saberHand, jediAway ? 'saber' : null);
   const B = player.blade;
   if (B){ B.blade.visible = B.glow.visible = !jediAway; B.light.intensity = jediAway ? 0 : SABER_LIGHT * glow.light; }   // dimmed to 0 rather than hidden: no shader recompiles
-  const away = G.hero === 'mando' && player.weapon === 'fists', w = player.drawnWeapon;
+  const away = isMando() && player.weapon === 'fists', w = player.drawnWeapon;
   if (player.pistols){
     place(player.pistols.R, away && (w === 'single' || w === 'dual') ? 'pistolR' : null);
     place(player.pistols.L, away && w === 'dual' ? 'pistolL' : null);
@@ -61,8 +61,8 @@ export function syncHolster(){
 }
 
 export function toggleHolster(){
-  if (G.mode !== 'play') return;
-  if (G.hero === 'mando'){
+  if (G.mode !== 'play' || isTrooper()) return;   // (the trooper keeps its guns in hand: no holster yet)
+  if (isGunner()){
     if (shared.darkProj) return;   // the darksaber is out on the grappling line: catch it first
     if (player.weapon === 'fists') switchWeapon(weaponUnlocked(player.drawnWeapon) ? player.drawnWeapon : 'single');
     else {

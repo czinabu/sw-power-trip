@@ -14,7 +14,8 @@ import { MUSIC } from '../audio/music.js';
 import { V3 } from '../utils.js';
 import { burst } from '../fx/particles.js';
 import { floater } from '../fx/floaters.js';
-import { shared, G, rockets, birds, detos, enemies, bolts, orbs, rings, vfx, player } from '../state.js';
+import { resetTrooperKit } from '../player/trooper/kit.js';
+import { shared, G, rockets, birds, detos, enemies, bolts, orbs, rings, vfx, player, isGunner } from '../state.js';
 import { weaponUnlocked, RUN_KIT } from '../data/mando.js';
 import { missionKit } from './armory.js';
 import { tickArmory, clearArmory } from '../ui/armory-ui.js';
@@ -41,7 +42,7 @@ import { catchDarksaber } from '../player/mando/darksaber.js';
 import { resetGrasp } from '../player/jedi/grasp.js';
 import { resetAirCut } from '../player/jedi/aerial.js';
 import { hideThrownSaber, stowHandSaber } from '../player/jedi/force.js';
-import { clearSquad } from '../allies/squad.js';
+import { clearSquad, trooperSquad } from '../allies/squad.js';
 import { clearDowned } from './revive.js';
 import { playBossIntro } from './cutscene.js';
 import { coopRun } from '../net/run.js';
@@ -116,7 +117,8 @@ export function startLevel(idx, opts){
   player.spin = 0; player.burstLeft = 0; player.burstQ = false; player.gunSlow = 1; player.beskarT = 0; player.beskarLockT = 0; player.beskarPose = 0;   // the repeater's spin, a carbine burst, the beskar parry
   player.jet = player.jetMax;
   // a fresh campaign starts with the basic blasters; mid-campaign keep the equipped (if still unlocked)
-  if (fresh || !weaponUnlocked(player.weapon)) player.weapon = 'single';
+  if (fresh || !weaponUnlocked(player.weapon)) player.weapon = G.hero === 'trooper' ? 'rifle' : 'single';
+  resetTrooperKit();   // the trooper's frag charges (player/trooper/kit.js)
   player.grappleActive = null;
   for (const bd of birds) scene.remove(bd.mesh); birds.length = 0;
   for (const dt2 of detos) scene.remove(dt2.mesh); detos.length = 0;
@@ -164,7 +166,7 @@ export function startLevel(idx, opts){
     // fresh campaign — STARTING KIT only; the rest auto-unlocks or is bought with XP.
     //  Jedi: Saber + Block + Push + Dash (Pull auto-unlocks after wave 2).  Mando: Single blaster + weak jetpack +
     //  Brace (RMB) + Rocket (Dual auto-unlocks after wave 1, Flame after wave 2).
-    G.unlocked = G.hero === 'jedi' ? { push: true, dash: true } : { rocket: true };
+    G.unlocked = G.hero === 'jedi' ? { push: true, dash: true } : G.hero === 'trooper' ? {} : { rocket: true };
     G.stanceUnlocked = {};   // SHII-CHO is known from the start; the rest is learned (data/forms.js FORM_PATH). The training grounds add what the story has taught (game/tutorial.js)
     G.formFork = null; clearMeditation(); clearAbilityCards(); clearArmory();
     G.mandoKit = { ...RUN_KIT };   // the Mando's guns on 1 / 2: the blaster pistol alone, until the run hands out more (data/mando.js ARMORY_PATH)   // the run's Form VII choice; nothing left waiting from the last run
@@ -203,6 +205,7 @@ export function startLevel(idx, opts){
     G.wave = G.waveEnd; shared.levelPhase = 'bossfight';
     spawnBossWhenReady(() => G.mode === 'play' && G.levelIdx === idx && shared.levelPhase === 'bossfight' && !shared.boss, 2600);
   }
+  trooperSquad();   // the ARC trooper's clones (allies/squad.js)
 }
 // after a death: restart this level from its checkpoint (the boss itself, if that's what killed you)
 export function retryLevel(){ if (G.chapter >= 0) retryChapter(); else startLevel(G.levelIdx, { retry: true }); }
@@ -234,7 +237,7 @@ export function checkUnlocks(bannerDelay){
   // level0/wave2; Mando's FLAMETHROWER + WRIST ROCKET both land at stage0) and the old single-`announce` version
   // only ever showed the FIRST one found, leaving the other granted but silently un-announced — no banner, ever.
   const announce = [];
-  if (G.hero === 'mando'){
+  if (isGunner()){
     for (const u of MANDO_AUTO){
       const reached = (u.chapter && G.chapter >= 0) ? chapterCleared(u.chapter) : (G.waveTotal || 0) >= u.stage;   // the campaign: the chapter that hands it over (data/store.js)
       if (reached && !u.has()){ u.grant(); announce.push(u); }
@@ -256,7 +259,7 @@ export function checkUnlocks(bannerDelay){
   // a Mando mission: the guns picked before the fight, else the best of what its kit hands out (game/armory.js)
   if (G.hero === 'mando' && G.mission && G.chapter < 0) missionKit();
   // a mission's forms come with its kit, already in hand: slot the best of them (no meditation, no fanfare)
-  if (G.hero !== 'mando' && G.mission && G.chapter < 0){
+  if (!isGunner() && G.mission && G.chapter < 0){
     if (G.missionForms){   // chosen before the fight (ui/forms-ui.js): the mission hands them over
       G.stanceUnlocked = G.stanceUnlocked || {};
       for (const id of G.missionForms) if (id) G.stanceUnlocked[id] = true;
@@ -348,7 +351,7 @@ function campaignWaveRewards(){
     burst(V3(pp0.x, 1.2, pp0.z), 0x7bffae, 12, 5, 4);
   }
   player.force = CFG.player.maxForce;                                       // top off the Force
-  if (G.hero === 'mando') player.jet = Math.min(player.jetMax, player.jet + player.jetMax * 0.6);   // refuel the jetpack
+  if (isGunner()) player.jet = Math.min(player.jetMax, player.jet + player.jetMax * 0.6);   // refuel the jetpack
 }
 
 /* CO-OP CAMPAIGN (net/foes.js) — the host runs the level's waves; a guest follows. Joining puts the guest on the host's

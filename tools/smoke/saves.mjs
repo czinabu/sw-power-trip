@@ -29,6 +29,7 @@ await page.goto(pathToFileURL(path.join(root, 'dist/index.html')).href);
 await page.waitForFunction(() => window.GAME && window.GAME.G, null, { timeout: 30000 });
 await shot('01-menu');
 // fit: the title column never scrolls
+await page.waitForTimeout(1500);   // past the panels' rise-in (it lifts the column a few px while it plays)
 check(await page.evaluate(() => { const r = document.querySelector('.ov-inner').getBoundingClientRect(); return r.bottom <= innerHeight + 1; }), 'menu fits the window');
 
 // CAMPAIGN as the Mando, skipped to level 2 with a build

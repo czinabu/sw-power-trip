@@ -2,6 +2,7 @@
 // Mandalorian kit tuning (MANDO, MANDO_WEAPONS) plus Jedi Force-jump tuning.
 
 import { G, player } from '../state.js';
+import { TROOPER_WEAPONS } from './trooper.js';
 
 /* ---------- MANDALORIAN loadout ---------- */
 export const HEADSHOT_MULT = 2.4;   // a blaster bolt to the head zone hits this much harder
@@ -88,6 +89,7 @@ export const MANDO_WEAPONS = {
                stabTime: 0.34, stabHit: 0.3, stabCd: 0.38, stabQueue: 0.14, stabLunge: 9 },
   darksaber: { name: 'DARKSABER', short: 'DARKSABER', fire: 'saber', melee: true },                              // LMB slash; unlocked at the wave-5 fork
   fists:     { name: 'HOLSTERED', short: 'HOLSTER', fire: 'fists', melee: true },                              // 4: weapon holstered, LMB throws the close-quarters string (not in the wheel)
+  ...TROOPER_WEAPONS,                                                                       // the clone trooper's DC-15 and twin DC-17s (data/trooper.js)
 };
 
 /* THE LOADOUT (the Mando's answer to the Jedi's three forms) — two slots: a SIDEARM on 1 and a PRIMARY on 2. Key 3
@@ -170,8 +172,11 @@ export function forceJumpPow(){   // scales with the auto-leveled Force-jump tie
            holdCost: [9, 7.5, 6][t]    || 9,       // slow drain/sec while still rising
            glideCost:[4, 3.5, 3][t]    || 4 };     // even slower drain/sec while gliding down
 }
-// the hero can draw this gun right now: owned, and (for a sidearm or primary) carried in the loadout
+// the hero can draw this gun right now: owned, and (for a sidearm or primary) carried in the loadout. Each gunner holds
+// only its own guns: the trooper's are its two, always drawn (data/trooper.js)
 export function weaponUnlocked(name){
+  const tw = !!TROOPER_WEAPONS[name];
+  if (tw || G.hero === 'trooper') return tw && G.hero === 'trooper';
   if (!weaponOwned(name)) return false;
   const W = MANDO_WEAPONS[name];
   return !W || !W.slot || kitOf()[W.slot] === name;

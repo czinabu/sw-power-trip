@@ -7,7 +7,7 @@ import { scene } from '../engine/renderer.js';
 import { V3 } from '../utils.js';
 import { burst } from '../fx/particles.js';
 import { floater } from '../fx/floaters.js';
-import { shared, G, enemies, player, bolts } from '../state.js';
+import { shared, G, enemies, player, bolts, isGunner, heroKey } from '../state.js';
 import { CFG } from '../data/config.js';
 import { playerPos, maxHp, maxStam } from '../player/helpers.js';
 import { spawnEnemy } from '../enemies/spawn.js';
@@ -41,7 +41,7 @@ export function startSandbox(){
   placeHero();
   const kit = savedKit();
   if (kit) applyKit(kit); else sandboxKitAll(true);   // the first visit: everything (the first of each key-sharing pair)
-  if (G.hero !== 'mando') applyForms(savedForms());
+  if (!isGunner()) applyForms(savedForms());
 }
 
 /* ---------- the forms loadout ---------- */
@@ -78,7 +78,7 @@ export function cycleSandboxSlot(i){
 }
 
 /* ---------- the arena ---------- */
-function sandboxLevel(){ const m = BATTLE_MAPS[SB.map]; return m ? m.level : (SANDBOX_LEVELS[G.hero] || SANDBOX_LEVELS.jedi); }
+function sandboxLevel(){ const m = BATTLE_MAPS[SB.map]; return m ? m.level : (heroKey(SANDBOX_LEVELS) || SANDBOX_LEVELS.jedi); }
 // the room: south of centre, facing the north wall (the crest, or the throne) · a battle map: where the allies start
 function placeHero(){
   const m = BATTLE_MAPS[SB.map], [x, z, yaw] = m ? m.spots.allyStart : [0, -10, 0];
@@ -104,7 +104,7 @@ export function setSandboxMap(id){
 
 /* ---------- the kit ---------- */
 // only the rows the story has reached (game/sandbox-unlocks.js)
-const kitRows = () => (SANDBOX_KIT[G.hero] || []).filter(kitOffered);
+const kitRows = () => (heroKey(SANDBOX_KIT) || []).filter(kitOffered);
 // the last kit this hero used here, or null the first time
 function savedKit(){
   try { const v = JSON.parse(localStorage.getItem('sw_sandbox_kit_' + G.hero)); if (Array.isArray(v)) return v.map(migrateForm); } catch(e){}   // older kits named the forms fast / strong
@@ -113,7 +113,7 @@ function savedKit(){
 function saveKit(){
   try { localStorage.setItem('sw_sandbox_kit_' + G.hero, JSON.stringify(kitRows().filter(r => r.has()).map(r => r.id))); } catch(e){}
 }
-function syncChips(){ if (G.hero === 'mando') syncMandoChips(); else syncJediChips(); }
+function syncChips(){ if (isGunner()) syncMandoChips(); else syncJediChips(); }
 function applyKit(ids){
   const on = new Set(ids);
   for (const r of kitRows()) if (r.has() !== on.has(r.id)) r.set(on.has(r.id));
@@ -187,7 +187,7 @@ export function sandboxClear(){
 }
 export function sandboxHeal(){
   player.hp = maxHp(); player.force = CFG.player.maxForce; player.stam = maxStam();
-  if (G.hero === 'mando') player.jet = player.jetMax;
+  if (isGunner()) player.jet = player.jetMax;
   floater(V3(playerPos().x, 1.2, playerPos().z), 'RESTORED', '#7bffae');
 }
 

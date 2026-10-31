@@ -4,7 +4,7 @@
 
 import * as THREE from 'three';
 import { renderer, composer, renderPass, scene, camera, bloomPass, compileLive, standPost } from '../engine/renderer.js';
-import { G } from '../state.js';
+import { G, TROOPER_TEST } from '../state.js';
 import { prewarmJudgeFX } from '../player/jedi/judgement-fx.js';
 import { buildHeroModel } from '../player/model/index.js';
 import { applySaberGrip } from '../player/model/weapons.js';
@@ -35,6 +35,13 @@ const THEMES = {
     halo: '#fff0c2', ink: '#1c0608', far: '#4b1212', glow: 0xff8a3a, rim: 0xff5a2a, key: 0xfff0dc,
     stars: false, planet: { c: '#ffe2b0', shade: '#a33a1c', ring: false }, skyline: 'mesas', suns: 2,
   },
+  // the clone ARC trooper (testing only): a stormy dusk over a city of spires, in the legion's blue
+  trooper: {
+    word: 'ARC TROOPER',
+    sky: ['#05101c', '#123a5c', '#2f7fd6', '#c8e6ff'],
+    halo: '#e8f4ff', ink: '#040a12', far: '#0e2236', glow: 0x4aa8ff, rim: 0x2f7fd6, key: 0xf2f6ff,
+    stars: true, planet: { c: '#cfe0f0', shade: '#2a4a6a', ring: false }, skyline: 'spires', suns: 0,
+  },
 };
 
 const POSES = {
@@ -49,6 +56,12 @@ const POSES = {
     armR: { sh: [-0.3, -0.05, -0.22], el: [-0.55, 0, 0] }, armL: { sh: [0.05, 0.1, 0.22], el: [-0.35, 0, 0] },
     torso: [0, -0.08, 0], head: [0.02, 0.12, 0],
     legL: { hip: [0.06, 0, -0.14], knee: [0.08, 0, 0] }, legR: { hip: [-0.06, 0, 0.16], knee: [0.12, 0, 0] },
+  },
+  // Rex at ease: a DC-17 in each hand, held low, feet planted wide
+  trooper: {
+    armR: { sh: [-0.2, -0.05, -0.3], el: [-0.5, 0, 0] }, armL: { sh: [-0.15, 0.05, 0.3], el: [-0.5, 0, 0] },
+    torso: [0, 0.06, 0], head: [0.02, -0.08, 0],
+    legL: { hip: [0.04, 0, -0.18], knee: [0.06, 0, 0] }, legR: { hip: [-0.04, 0, 0.18], knee: [0.06, 0, 0] },
   },
 };
 
@@ -209,14 +222,16 @@ export function restyleShowcase(picks){
 
 let shown = null;   // hero currently on the stand
 function dress(hero){
+  if (hero === 'trooper' && !(fig.trooperParts && fig.trooperParts.length)) hero = 'mando';
   shown = hero;
-  const mando = hero === 'mando', P = POSES[hero];
+  const mando = hero === 'mando', trooper = hero === 'trooper', gunner = mando || trooper, P = POSES[hero];
   for (const m of fig.mandoParts) m.visible = mando;
-  for (const m of fig.headBare) m.visible = !mando;
-  R.skirt.visible = !mando;
-  fig.saberHand.visible = !mando;
-  fig.pistols.L.visible = false;
-  fig.pistols.R.visible = mando;
+  for (const m of fig.trooperParts || []) m.visible = trooper;
+  for (const m of fig.headBare) m.visible = !gunner;
+  R.skirt.visible = !gunner;
+  fig.saberHand.visible = !gunner;
+  fig.pistols.L.visible = trooper;
+  fig.pistols.R.visible = gunner;
   fig.rifleMesh.visible = false;
   fig.darksaberMesh.visible = false;
   applySaberGrip(fig, G.saberGrip, true);
@@ -231,7 +246,7 @@ function dress(hero){
 
 /* ---------- painted backdrops ---------- */
 const BG_W = 1600;
-const canvases = { jedi: document.createElement('canvas'), mando: document.createElement('canvas') };
+const canvases = { jedi: document.createElement('canvas'), mando: document.createElement('canvas'), trooper: document.createElement('canvas') };
 const textures = {};
 for (const k in canvases){ textures[k] = new THREE.CanvasTexture(canvases[k]); textures[k].colorSpace = THREE.SRGBColorSpace; }
 
@@ -320,7 +335,7 @@ function paint(k){
   x.fillStyle = T.ink; x.fillRect(0, hz + H * 0.07, W, H);
   textures[k].needsUpdate = true;
 }
-function paintAll(){ paint('jedi'); paint('mando'); }
+function paintAll(){ paint('jedi'); paint('mando'); if (TROOPER_TEST) paint('trooper'); }
 paintAll();
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(paintAll);   // the hero name needs the display font
 

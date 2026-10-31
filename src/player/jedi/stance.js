@@ -7,7 +7,7 @@ import { sfx } from '../../audio/sfx.js';
 import { V3 } from '../../utils.js';
 import { burst } from '../../fx/particles.js';
 import { floater } from '../../fx/floaters.js';
-import { G, player } from '../../state.js';
+import { G, player, isGunner } from '../../state.js';
 import { reigniteBlade } from '../../fx/trail.js';
 import { startSwitch } from '../anim/saber.js';
 import { playerPos, stance, bladeColor, heldGrip } from '../helpers.js';
@@ -41,7 +41,7 @@ export function setStanceHud(){
 // earned form still in it.
 export function setLoadout(list){
   G.loadout = cleanLoadout(list);
-  if (G.hero !== 'mando' && !G.loadout.includes(G.stance)){
+  if (!isGunner() && !G.loadout.includes(G.stance)){
     const next = G.loadout.find(id => id && stanceUnlocked(id));
     if (next) switchStance(next, true);
   }
@@ -62,7 +62,7 @@ export function cycleSlot(dir){
 // Djem So ⇄ Shien share Form V's slot: G swaps the one in hand for the other (if it's known) in place. Returns false
 // when there's nothing to swap to, so G falls back to the grip preference.
 export function swapVariant(){
-  if (G.hero === 'mando') return false;
+  if (isGunner()) return false;
   const other = otherVariant(G.stance, stanceUnlocked);
   if (!other) return false;
   const next = G.loadout.slice(); next[next.indexOf(G.stance)] = other;

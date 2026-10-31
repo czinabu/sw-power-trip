@@ -14,7 +14,7 @@ import { initDuel } from '../enemies/duel.js';
 import { STANCES } from '../data/stances.js';
 import { burst } from '../fx/particles.js';
 import { floater } from '../fx/floaters.js';
-import { shared, G, enemies, player, solids } from '../state.js';
+import { shared, G, enemies, player, solids, isGunner, isMando, heroKey } from '../state.js';
 import { CFG } from '../data/config.js';
 import { playerPos, maxHp } from '../player/helpers.js';
 import { SCALE, heroScale } from '../data/coop.js';
@@ -52,10 +52,10 @@ const M = { on: false, def: null, i: 0, o: null, s: null, markers: [], props: []
             run: 0, guest: false, begun: -1, net: null };   // run counts restarts (a co-op guest follows it); guest: following the host's mission
 
 // an objective as this hero plays it: its `hero` overrides laid over it, and per-hero words picked
-const heroText = (v) => v && typeof v === 'object' ? v[G.hero] : v;
+const heroText = (v) => v && typeof v === 'object' ? heroKey(v) : v;
 function forHero(o){
-  const h = o.hero && o.hero[G.hero], r = h ? { ...o, ...h } : { ...o };
-  if (r.title && typeof r.title === 'object') r.title = r.title[G.hero];
+  const h = o.hero && heroKey(o.hero), r = h ? { ...o, ...h } : { ...o };
+  if (r.title && typeof r.title === 'object') r.title = heroKey(r.title);
   return r;
 }
 
@@ -67,16 +67,16 @@ export function startMission(id = 'refuge', fromObjective = 0, guest = false, op
   const def = MISSIONS[id] || MISSIONS.refuge, ch = opts.chapter || null;
   clearMission();
   if (!opts.retry) resetScenes();   // a fresh start plays the mission's scenes again (a retry after a death or an escape doesn't)
-  const sub = def.level.sub && typeof def.level.sub === 'object' ? def.level.sub[G.hero] : def.level.sub;
+  const sub = def.level.sub && typeof def.level.sub === 'object' ? heroKey(def.level.sub) : def.level.sub;
   if (ch){
     startLevel(G.levelIdx, { level: { ...def.level, ...ch.arena, name: ch.name, sub: ch.sub || sub }, mission: true, resume: true, chapter: true });   // the run's hero and build, on the mission's arena (or the chapter's own)
   } else {
     startLevel(0, { level: { ...def.level, sub }, mission: true });   // fresh hero, kit and stats, on the mission's arena
-    for (const k of (def.grant && def.grant[G.hero]) || []) G.unlocked[k] = true;
+    for (const k of (def.grant && heroKey(def.grant)) || []) G.unlocked[k] = true;
     G.waveTotal = def.kit; checkUnlocks();                 // a mid-run kit: forms, Force jump / jetpack boosters, dual blasters
     G.waveTotal = 0;   // ...but foes as tough as the first wave (HP and elite odds climb with waveTotal)
   }
-  const title = typeof def.title === 'object' ? def.title[G.hero] : def.title;
+  const title = typeof def.title === 'object' ? heroKey(def.title) : def.title;
   Object.assign(M, { on: true, def, i: fromObjective, o: null, s: null, fx: [], panelT: 0, endT: 0, won: false, failT: 0, quarry: null, qHp: 0, vip: null, run: M.run + 1, guest, begun: -1, net: null,
                      chapter: ch, title, kick: ch ? ch.kicker : 'MISSION · ' + title });
   const st = (fromObjective && def.objectives[fromObjective].start) || def.start;   // a retry may begin further along
@@ -84,7 +84,7 @@ export function startMission(id = 'refuge', fromObjective = 0, guest = false, op
   if (guest){   // co-op guest: the host runs the objectives; this browser shows them (coopMissionSync)
     G.coopGuest = true; G.coopWasGuest = true; G.coopJoin = false;
     M.i = -1; M.run = -1;
-    if (def.battle) startBattleFx(G.hero === 'mando' ? 0xffa040 : 0x4aa8ff);
+    if (def.battle) startBattleFx(isMando() ? 0xffa040 : 0x4aa8ff);
     showBanner('CO-OP MISSION', 'Fighting alongside the host.', 3.0);
     return;
   }
@@ -92,7 +92,7 @@ export function startMission(id = 'refuge', fromObjective = 0, guest = false, op
   if (def.escort) placeVip(fromObjective);
   // a STRIKE TEAM mission: the squad forms up beside the hero (allies/squad.js), and the wider battle rages past the walls
   if (def.squad) spawnSquad(def.squad, st);
-  if (def.battle) startBattleFx(G.hero === 'mando' ? 0xffa040 : 0x4aa8ff);
+  if (def.battle) startBattleFx(isMando() ? 0xffa040 : 0x4aa8ff);
   // retrying past the evacuation: the transport has already gone
   if (def.objectives.slice(0, fromObjective).some(o => o.kind === 'hold' && o.evacuees)) shipGone();
   // the opening banner (startLevel's) gets its moment before the first objective begins
@@ -115,7 +115,7 @@ function clearMission(){
 }
 export function endMission(){ if (M.on || M.markers.length) clearMission(); }
 
-function say(o, opts){ showPanel(MISSION_VOICE[G.hero], o.say[G.hero], '', o.task[G.hero], { drill: true, ...opts }); M.panelT = 7; }
+function say(o, opts){ showPanel(heroKey(MISSION_VOICE), heroKey(o.say), '', heroKey(o.task), { drill: true, ...opts }); M.panelT = 7; }
 function fieldSpawn(type, x, z){
   const s = findClearSpawn(x, z, 1.0);
   spawnEnemy(type, V3(s.x, 0, s.z));
@@ -149,7 +149,7 @@ function patchUp(){
     floater(V3(playerPos().x, 1.0, playerPos().z), '+' + healed, '#7bffae');
   }
   player.force = CFG.player.maxForce;
-  if (G.hero === 'mando') player.jet = player.jetMax;
+  if (isGunner()) player.jet = player.jetMax;
 }
 
 /* ============================================================
@@ -163,7 +163,7 @@ const KINDS = {
     music: (o, s) => ({ urgency: s.prog / o.time, danger: s.rate === 0, focus: s.inZone }),
     begin(o, s){
       s.prog = 0; s.pulse = 0; s.pulseT = 2.5;
-      M.markers.push(s.zone = makeBeacon(o.at[0], o.at[1], 0, MISSION_COLOR[G.hero], o.r / 0.9));
+      M.markers.push(s.zone = makeBeacon(o.at[0], o.at[1], 0, heroKey(MISSION_COLOR), o.r / 0.9));
       if (o.evacuees) beginEvacuees(o.evacuees, s);
     },
     update(o, s, dt){
@@ -183,11 +183,11 @@ const KINDS = {
       const rate = inZone ? 1 : mates ? o.squadRate * (foes ? 0.5 : 1) : foes ? 0 : o.awayRate;
       s.prog += dt * rate; s.rate = rate; s.inZone = inZone;
       if (s.kids) updateEvacuees(o.evacuees, s, dt, Math.min(1, s.prog / o.time), rate);
-      setMarkerColor(s.zone, rate === 0 ? RED : MISSION_COLOR[G.hero]);
+      setMarkerColor(s.zone, rate === 0 ? RED : heroKey(MISSION_COLOR));
       s.zone.userData.beam.visible = !inZone;   // the column guides you back; standing in it, it would only fill the screen
       pulseMarker(s.zone, dt, G.gt);
       const total = alive ? ' · ' + alive + ' HOSTILE' + (alive === 1 ? '' : 'S') : '';
-      const who = o.evacuees ? o.evacuees.name[G.hero] + ' ' + (o.evacuees.verb || 'ABOARD') + ' ' + s.aboard + ' / ' + o.evacuees.count : (o.holding || 'HOLDING');
+      const who = o.evacuees ? heroKey(o.evacuees.name) + ' ' + (o.evacuees.verb || 'ABOARD') + ' ' + s.aboard + ' / ' + o.evacuees.count : (o.holding || 'HOLDING');
       setObjectiveHud({ kicker: M.kick, title: o.title, frac: s.prog / o.time,
         status: (rate === 0 ? 'OVERRUN: ' + (o.overrun || 'RETAKE THE RAMP') : inZone ? who + ' · ' + mmss(o.time - s.prog)
                : mates ? 'SQUAD HOLDING ' + mmss(o.time - s.prog) : (o.unguarded || 'RAMP UNGUARDED') + ' ' + mmss(o.time - s.prog)) + total,
@@ -238,7 +238,7 @@ const KINDS = {
           burst(V3(c.x, 1.2, c.z), GREEN, 16, 6, 4, 0.8); S.reward(1);
           floater(V3(c.x, 1.8, c.z), o.consoleName ? o.consoleName + ' ' + (o.consoleDone || (o.consoleName === 'CHARGE' ? 'SET' : 'SECURED')) : 'UPLINK DOWN', '#7bffae');
           // a console can hold something more than its objective (the Jakku cruiser's holocron): its own banner
-          const found = c.def.found && (c.def.found[G.hero] !== undefined ? c.def.found[G.hero] : c.def.found);
+          const found = c.def.found && (heroKey(c.def.found) !== undefined ? heroKey(c.def.found) : c.def.found);
           if (found) showBanner(found[0], found[1] || '', 2.6, { kicker: 'FOUND' });
         }
       }
@@ -271,7 +271,7 @@ const KINDS = {
       const rate = foes ? 0 : (inZone ? 1 : mates ? o.squadRate : 0) * (1 + (o.perMate || 0) * mates);
       P.prog = Math.min(o.time, P.prog + dt * rate);
       s.inZone = inZone; s.contested = foes > 0 && (inZone || mates > 0);
-      setMarkerColor(P.m, foes ? RED : MISSION_COLOR[G.hero]);
+      setMarkerColor(P.m, foes ? RED : heroKey(MISSION_COLOR));
       P.m.userData.beam.visible = !inZone;
       pulseMarker(P.m, dt, G.gt);
       const alive = hostilesAlive() + G.spawnQueue.length, n = o.posts.length;
@@ -302,7 +302,7 @@ const KINDS = {
       s.amb = (o.ambush || []).map(a => ({ ...a, d: projectPath(s.P, a.at[0], a.at[1]), fired: false }));
       s.goal = { pos: M.vip.g.position, aggro: o.aggro || 7 };   // the foes sent at it march on it (the live position)
       const [ex, ez] = o.path[o.path.length - 1];
-      M.markers.push(s.dest = makeBeacon(ex, ez, 0, MISSION_COLOR[G.hero], 1.6));   // where it's going
+      M.markers.push(s.dest = makeBeacon(ex, ez, 0, heroKey(MISSION_COLOR), 1.6));   // where it's going
       walkVip(s, 0);
     },
     update(o, s, dt){
@@ -448,9 +448,9 @@ const KINDS = {
     music: (o, s) => { const e = s.foe, u = e ? 1 - Math.max(0, e.hp) / e.maxHp : 0; return { urgency: u, danger: s.raged && u < 0.75, focus: !!e }; },
     begin(o, s){
       sweepField();
-      if (o.quarry) o.name = M.def.quarry[G.hero].name;   // (o is this run's copy: forHero)
+      if (o.quarry) o.name = heroKey(M.def.quarry).name;   // (o is this run's copy: forHero)
       s.foe = null; s.dropT = o.quarry ? 1.6 : 2.4; s.raged = false;
-      if (o.quarry){ const q = M.def.quarry[G.hero]; showBanner(q.name, 'Nowhere left to run.', 2.0, { kicker: 'CORNERED' }); }
+      if (o.quarry){ const q = heroKey(M.def.quarry); showBanner(q.name, 'Nowhere left to run.', 2.0, { kicker: 'CORNERED' }); }
       else showBanner('', heroText(o.enter) || 'The troops fall back. Something walks through them.', 2.4);
     },
     update(o, s, dt){
@@ -458,7 +458,7 @@ const KINDS = {
         if ((s.dropT -= dt) > 0) return;
         if (!s.intro){   // its entrance first (game/cutscene.js): the sim holds while it plays, so the foe steps in right after
           s.intro = true;
-          const q = o.quarry && M.def.quarry[G.hero];
+          const q = o.quarry && heroKey(M.def.quarry);
           if (playDuelIntro(q ? { mid: M.def.id, quarry: true, name: q.name, kicker: q.kicker, scale: q.scale, line: heroText(o.line) }
                               : { mid: M.def.id, foe: o.foe, name: o.name, kicker: o.kicker, tint: o.tint, blade: o.form ? STANCES[o.form].blade : null, scale: o.scale, at: o.at, line: heroText(o.line) })) return;
         }
@@ -502,7 +502,7 @@ function beginEvacuees(ev, s){
   s.aboard = 0;
   s.kids = [];
   for (let i = 0; i < ev.count; i++){
-    const m = makeEvacuee(ev.kind || (G.hero === 'mando' ? 'foundling' : 'youngling'), i);
+    const m = makeEvacuee(ev.kind || (isMando() ? 'foundling' : 'youngling'), i);
     scene.add(m); M.props.push(m);
     // the head of the line is already at the ramp; the rest queue back toward the shelter door
     s.kids.push({ m, d: s.len - i * ev.spacing - ev.spacing, ph: Math.random() * 6 });
@@ -613,7 +613,7 @@ function sightBlocked(ax, ay, az, bx, by, bz){
   }
   return false;
 }
-function makeQuarry(q = M.def.quarry[G.hero]){
+function makeQuarry(q = heroKey(M.def.quarry)){
   const g = buildEnemyMesh(ENEMY_TYPES[q.foe]);
   g.scale.multiplyScalar(q.scale || 1);
   g.userData.bodyMat.color.lerp(new THREE.Color(q.tint), 0.5);
@@ -670,7 +670,7 @@ function shove(q, s){
   }
   burst(V3(qp.x, 1.2, qp.z), q.def.tint, 18, 9, 3, 0.9);
   G.shake = Math.max(G.shake, 0.5);
-  floater(V3(pp.x, 1.8, pp.z), G.hero === 'mando' ? 'SHOCK BLAST' : 'FORCE SHOVE', '#ff9a8a');
+  floater(V3(pp.x, 1.8, pp.z), isGunner() ? 'SHOCK BLAST' : 'FORCE SHOVE', '#ff9a8a');
   s.burstT = 1.4; s.shoveCd = 4;
 }
 // a standoff: the quarry stops at a sealed way and its guard steps out between you
@@ -687,7 +687,7 @@ function endStandoff(s, line){
 // a running fight: the quarry turns on you, and breaks away once you've hurt it enough (or held it too long)
 function beginClash(o, s){
   const duel = forHero(M.def.objectives.find(x => x.kind === 'duel' && x.quarry));
-  const e = spawnQuarryFoe(duel, G.hero === 'mando' ? 'It turns on you.' : 'It turns to fight.', 'CAUGHT');
+  const e = spawnQuarryFoe(duel, isGunner() ? 'It turns on you.' : 'It turns to fight.', 'CAUGHT');
   e.hpFloor = Math.max(1, e.hp - e.maxHp * o.clash.dmg);
   s.clash = e; s.clashT = 0;
 }
@@ -696,7 +696,7 @@ function clashUpdate(o, s, dt){
   s.clashT += dt;
   if (!enemies.includes(e) || e.dead || e.hp <= e.hpFloor + 0.01 || s.clashT > o.clash.time){ breakAway(o, s); return; }
   setObjectiveHud({ kicker: M.kick, title: o.title, frac: e.hp / e.maxHp,
-    status: M.def.quarry[G.hero].name + ' FIGHTS BACK · HURT IT', warn: true });
+    status: heroKey(M.def.quarry).name + ' FIGHTS BACK · HURT IT', warn: true });
 }
 function breakAway(o, s){
   const e = s.clash, p = e.group.position.clone(), i = enemies.indexOf(e);
@@ -738,9 +738,9 @@ function quarryEscaped(){
 function dropFoe(e){ removeEnemy(e); }
 // the quarry stops running and fights: a champion of its type, standing where it stopped
 function spawnQuarryFoe(o, line, kicker){
-  const q = M.def.quarry[G.hero], p = M.quarry.g.position;
+  const q = heroKey(M.def.quarry), p = M.quarry.g.position;
   const e = spawnInquisitor({ ...o, foe: q.foe, name: q.name, scale: q.scale, tint: q.tint }, [p.x, p.z],
-    { kicker: kicker || q.kicker, line: line || (G.hero === 'mando' ? 'The hunt ends here.' : 'One blade. No one else.') });
+    { kicker: kicker || q.kicker, line: line || (isGunner() ? 'The hunt ends here.' : 'One blade. No one else.') });
   if (M.qHp) e.hp = Math.round(e.maxHp * M.qHp);   // still carrying what you did to it on the run
   e.state = 'chase'; e.st = 0; e.group.position.y = 0; e.group.rotation.y = M.quarry.g.rotation.y;   // no rise from the ground: it was already here
   scene.remove(M.quarry.g, M.quarry.tag);
@@ -775,7 +775,7 @@ function buildVip(d){
   return M.vip = { g, tag, def: d, hp: d.hp, maxHp: d.hp };
 }
 function placeVip(fromObjective){
-  const d = M.def.escort[G.hero], { g, tag } = buildVip(d);
+  const d = heroKey(M.def.escort), { g, tag } = buildVip(d);
   // it stands where its walk picks up: the start of the first escort leg from here on, or the end of the last one before
   const objs = M.def.objectives, next = objs.slice(fromObjective).find(o => o.kind === 'escort');
   const prev = objs.slice(0, fromObjective).reverse().find(o => o.kind === 'escort');
@@ -845,7 +845,7 @@ function startPost(o, s){
 function beginObjective(){
   const o = forHero(M.def.objectives[M.i]);
   M.o = o; M.s = {};
-  showBanner(o.title, (o.task && o.task[G.hero]) || '', 4.5, { kicker: 'OBJECTIVE ' + (M.i + 1) + ' / ' + M.def.objectives.length });   // long enough to read mid-fight; the checklist flashes with it (ui/hud.js)
+  showBanner(o.title, (o.task && heroKey(o.task)) || '', 4.5, { kicker: 'OBJECTIVE ' + (M.i + 1) + ' / ' + M.def.objectives.length });   // long enough to read mid-fight; the checklist flashes with it (ui/hud.js)
   say(o);
   KINDS[o.kind].begin(o, M.s);
 }
@@ -866,7 +866,7 @@ function missionComplete(){
   if (!M.chapter) autosave('mission');   // (a chapter's win is saved as the next chapter starts)
   // a campaign chapter's card carries the chapter's clear lines (what the mission taught, who joins), not a second voice line on the comms strip
   const clearLines = M.chapter && M.chapter.clear;
-  showPanel(MISSION_VOICE[G.hero], clearLines && clearLines.length ? clearLines.join(' ') : def.done[G.hero], '', M.chapter ? 'Chapter complete' : 'Mission complete', { drill: true, done: true });
+  showPanel(heroKey(MISSION_VOICE), clearLines && clearLines.length ? clearLines.join(' ') : heroKey(def.done), '', M.chapter ? 'Chapter complete' : 'Mission complete', { drill: true, done: true });
   if (!M.guest && hooks.missionDone) hooks.missionDone();   // co-op: the guest's mission ends with it
   if (M.chapter){   // a campaign chapter: no victory screen, the run carries on into the next chapter (game/campaign.js)
     M.panelT = 6; M.o = null;
@@ -957,7 +957,7 @@ export function missionChecklist(){
     const same = objs.filter(x => x.title === o.title);
     const now = k === M.i && !M.won;
     return { text: o.title + (same.length > 1 ? ' (' + (same.indexOf(o) + 1) + '/' + same.length + ')' : ''), done: k < M.i || M.won, now,
-             sub: now ? [o.task && o.task[G.hero], live && live.status].filter(Boolean) : null, frac: now && live ? live.frac : null };
+             sub: now ? [o.task && heroKey(o.task), live && live.status].filter(Boolean) : null, frac: now && live ? live.frac : null };
   });
   return { title: 'MISSION OBJECTIVES', items };
 }

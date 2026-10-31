@@ -5,7 +5,7 @@
 // things you can click.
 
 import { PAD_BUTTONS, PAD_TUNE, PAD_BINDS, PAD_GLYPHS, padFamily } from '../data/gamepad.js';
-import { shared, G, player } from '../state.js';
+import { shared, G, player, isGunner } from '../state.js';
 import { clamp } from '../utils.js';
 import { noteFlick } from '../player/jedi/cutaim.js';
 import { audioInit } from '../audio/sfx.js';
@@ -61,7 +61,7 @@ function padKey(tok, hero){
   return tok;
 }
 // a whole label: groups split on ' · ', keys on spaces, '/' '+' and words like HOLD / TAP kept as they are
-export function padKeys(text, hero = G.hero === 'mando' ? 'mando' : 'jedi'){
+export function padKeys(text, hero = isGunner() ? 'mando' : 'jedi'){
   return text.split(' · ').map(g => g.replace(/W A S D/g, 'LS').split(' ').map(k => k === 'LS' ? PAD_GLYPHS[pad.family].LS :
     /^(\/|\+|HOLD|TAP|x2|\(air\))$/i.test(k) ? k : padKey(k, hero)).join(' ')).join(' · ');
 }
@@ -69,7 +69,7 @@ export function padKeys(text, hero = G.hero === 'mando' ? 'mando' : 'jedi'){
 function relabelHud(){
   for (const el of document.querySelectorAll('#actionbar .key, #stances .num, #wslots .kc, #lockbar .lb-hint b')){
     if (el.dataset.kb == null) el.dataset.kb = el.textContent;
-    const hero = el.closest('.j-ab') ? 'jedi' : el.closest('.m-ab') ? 'mando' : G.hero === 'mando' ? 'mando' : 'jedi';
+    const hero = el.closest('.j-ab') ? 'jedi' : el.closest('.m-ab') ? 'mando' : isGunner() ? 'mando' : 'jedi';
     const v = pad.active ? padKeys(el.dataset.kb, hero) : el.dataset.kb;
     if (el.textContent !== v) el.textContent = v;
   }
@@ -148,7 +148,7 @@ requestAnimationFrame(poll);
 
 /* ---------- THE FIGHT ---------- */
 function fight(btn, down, up, lx, ly, rx, ry, dt){
-  const binds = PAD_BINDS[G.hero === 'mando' ? 'mando' : 'jedi'];
+  const binds = PAD_BINDS[isGunner() ? 'mando' : 'jedi'];
   const lbHeld = btn[4];
   // releases first (a bind lets go of what it pressed), then LB, then the rest, so LB + Y opens the layer at once
   PAD_BUTTONS.forEach((name, i) => { if (up(i)) release(name); });
@@ -170,7 +170,7 @@ function fight(btn, down, up, lx, ly, rx, ry, dt){
   if (wheelStick(rx, ry)) return;
   if (r > PAD_TUNE.lookDead){
     const mag = Math.pow(Math.min(1, (r - PAD_TUNE.lookDead) / (1 - PAD_TUNE.lookDead)), PAD_TUNE.lookCurve);
-    const sens = G.padSens * (G.hero === 'mando' && player.zoom ? G.adsSens : 1);
+    const sens = G.padSens * (isGunner() && player.zoom ? G.adsSens : 1);
     const dyaw = -(rx / r) * mag * PAD_TUNE.yawRate * sens * dt;
     const dpitch = (ry / r) * mag * PAD_TUNE.pitchRate * sens * dt * (G.padInvert ? -1 : 1);
     G.yaw += dyaw;

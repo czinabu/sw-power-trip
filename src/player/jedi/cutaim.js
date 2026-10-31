@@ -3,7 +3,7 @@
 // flick, the movement keys or the form's string pick the angle; where you aim picks the height.
 
 import { CUT_AIM, CUT_ANGLE, SWING_PATTERNS } from '../../data/stances.js';
-import { G, keys, player } from '../../state.js';
+import { G, keys, player, isGunner } from '../../state.js';
 
 const D2R = Math.PI / 180;
 
@@ -53,7 +53,7 @@ function dirOf(ang){
 }
 // the form's string: the next angle in it, picked up where it left off unless you stopped cutting a while
 function stringAngle(advance){
-  const S = CUT_ANGLE.strings[G.hero === 'mando' ? 'djemso' : G.stance] || CUT_ANGLE.strings.niman;
+  const S = CUT_ANGLE.strings[isGunner() ? 'djemso' : G.stance] || CUT_ANGLE.strings.niman;
   const st = player.cutStr || (player.cutStr = { i: 0, at: -9 });
   if (G.gt - st.at > CUT_ANGLE.reset) st.i = 0;
   const ang = S[st.i % S.length];

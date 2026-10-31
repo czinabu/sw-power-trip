@@ -4,7 +4,7 @@
 // It holds the game still while it's open and frees the cursor, the same way the upgrade screen does.
 
 import { renderer } from '../engine/renderer.js';
-import { G, shared } from '../state.js';
+import { G, shared, isGunner, heroKey } from '../state.js';
 import { SANDBOX_FOES, SANDBOX_COUNTS, SANDBOX_KIT, SANDBOX_MAPS } from '../data/sandbox.js';
 import { addSquadmate, dismissSquadmate, squadSize } from '../allies/squad.js';
 import { SQUAD } from '../data/allies.js';
@@ -40,21 +40,21 @@ function render(){
   $('sbstory').style.display = full ? 'none' : '';
   $('sbstory').textContent = 'THE STORY SO FAR · ' + prog.n + ' OF ' + prog.of + ' CHAPTERS · beat the campaign to open everything';
   $('sbmap').innerHTML = SANDBOX_MAPS.map(m => { const ok = mapOffered(m.id);
-    return `<span data-map="${m.id}" class="${m.id === SB.map ? 'on' : ''}${ok ? '' : ' locked'}"${ok ? '' : ` title="${LATER}"`}>${typeof m.nm === 'object' ? m.nm[G.hero] : m.nm}</span>`; }).join('');
+    return `<span data-map="${m.id}" class="${m.id === SB.map ? 'on' : ''}${ok ? '' : ' locked'}"${ok ? '' : ` title="${LATER}"`}>${typeof m.nm === 'object' ? heroKey(m.nm) : m.nm}</span>`; }).join('');
   $('sbcount').innerHTML = SANDBOX_COUNTS.map(n => `<span data-n="${n}" class="${n === SB.count ? 'on' : ''}">×${n}</span>`).join('');
   pill('sbelite', SB.elite); pill('sbdummy', SB.dummy); pill('sbgod', !!G.sandboxGod); pill('sbreadout', readoutOn());
   $('sbsquadn').textContent = squadSize() + ' / ' + SQUAD.max;
   $('sbfoes').innerHTML = SANDBOX_FOES.map(f => {
-    const ok = foeOffered(f.id), nm = !ok && f.special ? '? ? ?' : typeof f.nm === 'object' ? f.nm[G.hero] : f.nm;   // a boss not met yet keeps its name
+    const ok = foeOffered(f.id), nm = !ok && f.special ? '? ? ?' : typeof f.nm === 'object' ? heroKey(f.nm) : f.nm;   // a boss not met yet keeps its name
     return `<div class="sb-chip${f.special ? ' special' : ''}${ok ? '' : ' locked'}" data-foe="${f.id}"${ok ? '' : ` title="${LATER}"`}>${nm}<span class="k">${!ok ? 'LATER' : f.id === 'boss' ? 'BOSS' : f.special ? 'MID-BOSS' : ''}</span></div>`;
   }).join('');
-  const jedi = G.hero !== 'mando';
+  const jedi = !isGunner();
   $('sbformslbl').style.display = $('sbforms').style.display = jedi ? '' : 'none';
   if (jedi) $('sbforms').innerHTML = Array.from({ length: LOADOUT_SLOTS }, (_, i) => {
     const id = G.loadout[i], f = id && FORMS[id];
     return `<div class="sb-chip${f ? ' on' : ''}" data-slot="${i}">${f ? 'FORM ' + f.no + ' · ' + f.name : 'EMPTY'}<span class="k">${i + 1}</span></div>`;
   }).join('');
-  $('sbkit').innerHTML = (SANDBOX_KIT[G.hero] || []).map(r => {
+  $('sbkit').innerHTML = (heroKey(SANDBOX_KIT) || []).map(r => {
     const nm = typeof r.nm === 'function' ? r.nm() : r.nm;
     if (!kitOffered(r)) return `<div class="sb-chip locked" title="${LATER}">${nm}<span class="k">LATER</span></div>`;
     const can = kitAvailable(r);

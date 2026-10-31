@@ -7,8 +7,9 @@ import { CFG } from '../data/config.js';
 import { clamp, dampAngle, wrapAngle, V3 } from '../utils.js';
 import { chargeFrac } from './jedi/palm.js';
 import { burst } from '../fx/particles.js';
-import { G, keys, player } from '../state.js';
+import { G, keys, player, isGunner } from '../state.js';
 import { MANDO, MANDO_WEAPONS } from '../data/mando.js';
+import { gunLook } from '../data/trooper.js';
 import { MANDO_MELEE } from '../data/duel.js';
 import { MOVE, GAIT } from '../data/movement.js';
 import { stance, maxStam, heldGrip } from './helpers.js';
@@ -46,8 +47,8 @@ export function animatePlayer(dt, pp, st, f, r, moving){
   animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait);
   animateForceCast(dt, dr, R);
   // agility (anim/agility.js) poses flips, dives and landings after the arms, so the guard's damping can't blunt them
-  if (G.hero !== 'mando') jediAgilityPost(dt, dr, vis, R, { ph, inten, planted });
-  if (G.hero === 'mando'){ animateMandoPose(dt, dr, vis, R, pp, f, r); mandoAgilityPost(dt, dr, vis, R, f, r); }
+  if (!isGunner()) jediAgilityPost(dt, dr, vis, R, { ph, inten, planted });
+  if (isGunner()){ animateMandoPose(dt, dr, vis, R, pp, f, r); mandoAgilityPost(dt, dr, vis, R, f, r); }
   mocapUpper(R, player._gait);
   secondaryMotion(dt, vis, R);
   stepCloth(player, dt, player.group.position.y + 0.02);   // the robe panels and cape hem (model/cloth.js), after the pose
@@ -61,8 +62,8 @@ export function animatePlayer(dt, pp, st, f, r, moving){
    free hand rests half open, opens flat to push, claws as it pulls and hooks to pour out lightning; with the saber
    holstered both hands are his weapon. The Mando's are always on a weapon, the off hand on the rifle's foregrip */
 function handGrip(){
-  if (G.hero === 'mando'){
-    const w = player.weapon;
+  if (isGunner()){
+    const w = gunLook(player.weapon);   // (the trooper's guns are held like the Mando's: data/trooper.js)
     return { R: 1, L: w === 'dual' || w === 'fists' ? 1 : MANDO_WEAPONS[w] && MANDO_WEAPONS[w].twoHand ? 0.8 : 0.45 };
   }
   const bare = player.holstered, pulling = player.castKind === 'pull';
@@ -82,7 +83,7 @@ function poseBody(dt, dr, vis, planted, POSE, moving){
   // turns to face his movement direction when roaming free (and squares up only in combat).
   // The one exception: running AWAY from the reticle he turns and runs like the Jedi does (backRun), shooting back
   // over his shoulder one-handed (anim/guns.js) instead of backpedalling square to the camera.
-  const mandoAimLock = G.hero === 'mando' && (player.aiming > 0 || player.zoom || player.firing);
+  const mandoAimLock = isGunner() && (player.aiming > 0 || player.zoom || player.firing);
   const strafing = !!keys['alt'];   // HOLD ALT: squared to the crosshair whatever you do, Force Unleashed style
   const inCombatPose = strafing || player.atkT > 0 || player.dashT > 0 || player.blockHeld || player.judgeT > 0 || player.castT > 0 || player.palmT > 0 || mandoAimLock;
   const wasBackRun = player.backRun;
@@ -90,14 +91,14 @@ function poseBody(dt, dr, vis, planted, POSE, moving){
   if (wasBackRun && !player.backRun) player._unwindT = 0.35;   // turning back to the reticle: ease round, don't whip
   if (player._unwindT > 0) player._unwindT -= dt;
   let face = G.yaw;
-  if ((G.hero !== 'mando' && !inCombatPose && moving) || player.backRun)
+  if ((!isGunner() && !inCombatPose && moving) || player.backRun)
     face = Math.atan2(player.moveVel.x, player.moveVel.z);
   // SABER LOCK — squared to the blade he's bound with for the whole bind, whatever the camera does (enemies/duel.js)
   const bound = player.saberLock && player.lockFace != null;
   if (bound) face = player.lockFace;
   // (the dive and the slide turn him the way they go: anim/agility.js mandoBody)
   if (bound) player.faceYaw += wrapAngle(dampAngle(player.faceYaw, face, 30, dt) - player.faceYaw);
-  else if (G.hero === 'mando') player.faceYaw = mandoTurn(player.flip && player.flip.face != null ? player.flip.face : face, player.flip ? 30 : player.backRun ? 11 : player._unwindT > 0 ? 12 : 26, dt);
+  else if (isGunner()) player.faceYaw = mandoTurn(player.flip && player.flip.face != null ? player.flip.face : face, player.flip ? 30 : player.backRun ? 11 : player._unwindT > 0 ? 12 : 26, dt);
   else {
     // TURNING WEIGHT — the Jedi eases round at a capped rate (slower still at a sprint) instead of snapping; on a
     // ledge he faces the wall
@@ -121,7 +122,7 @@ function poseBody(dt, dr, vis, planted, POSE, moving){
     vis.position.y = dr(vis.position.y, 0, 10);
   } else if (player.flip){
     // acrobatic flips, twirls and slides: posed per form in anim/agility.js (flipBody), after the arms
-  } else if (G.hero !== 'mando') {
+  } else if (!isGunner()) {
     // --- lean into velocity (relative to body facing) --- JEDI ONLY.
     // (The Mando's body rotation is fully driven by the flight/ground pose block below; running this too would
     //  fight it each frame and the two damped writes settle at a half-lean instead of the intended flat prone.)
@@ -156,7 +157,7 @@ function poseBody(dt, dr, vis, planted, POSE, moving){
 // swing, dash, stab, punch, flame); it kicks in past ~120° off the aim line and lets go near a pure strafe, so
 // circling the reticle doesn't flicker between the two.
 function mandoBackRun(){
-  if (G.hero !== 'mando' || !player.grounded || player.flip || player.slamming) return false;
+  if (!isGunner() || !player.grounded || player.flip || player.slamming) return false;
   if (player.blockHeld || player.zoom || player.atkT > 0 || player.dashT > 0 || player.stabT > 0 || player.meleeT > 0 || player.darkT > 0 || player.flaming) return false;
   if (MANDO_WEAPONS[player.weapon] && MANDO_WEAPONS[player.weapon].twoHand && player.aiming > 0) return false;   // a shouldered rifle can't point back over the shoulder: he squares up to fire it
   const vx = player.moveVel.x, vz = player.moveVel.z, sp = Math.hypot(vx, vz);
@@ -184,7 +185,7 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
   const tvx = player.moveVel.x + player.vel.x * shoved, tvz = player.moveVel.z + player.vel.z * shoved;
   const hSpeed = Math.hypot(tvx, tvz);
   // PER-STANCE GAIT — same skeleton, different run: FAST is light & high-kneed, STRONG is long & planted, the Mando heavy
-  const gait = (G.hero === 'mando' || !stance().gait) ? MANDO_GAIT : stance().gait;
+  const gait = (isGunner() || !stance().gait) ? MANDO_GAIT : stance().gait;
   // the stride clock runs on distance travelled (anim/gait.js); it also sets player.runPhase for the arms and twist
   const GS = advanceGait(dt, hSpeed, gait);
   const ph = player.runPhase;
@@ -237,7 +238,7 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
   if (GS.body) R.hips.rotation.y = dr(R.hips.rotation.y, B ? B.yaw * bw * along : 0, 20);   // (else anim/agility.js turns the Jedi's)
   player._legIK = null;   // set below while the feet are solved onto the floor (ankle angles per leg)
   // legs: stride + knee lift (+ knee = the shin folds back, a real knee bend); the Jedi's air, flip and dive legs come from anim/agility.js
-  if (G.hero !== 'mando' && jediAirLegs(dt, dr, R)){
+  if (!isGunner() && jediAirLegs(dt, dr, R)){
     // posed: jump phases, Force leap and glide, flip tuck/pike/layout, slam dive
   } else if (player.grounded && !player.flip){
     const lead = planted ? POSE.lead : 0;   // bladed/staggered footing when planted, neutral when moving
@@ -283,12 +284,12 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
     R.legR.hip.rotation.z  = dr(R.legR.hip.rotation.z, -0.04, 10);
     R.legL.knee.rotation.x = dr(R.legL.knee.rotation.x, 0.04, 10);
     R.legR.knee.rotation.x = dr(R.legR.knee.rotation.x, 0.04, 10);
-  } else if (G.hero === 'mando' && !player.grounded && MOCAP_ON && !player.jetActive && !player.hovering && !player.boosting){
+  } else if (isGunner() && !player.grounded && MOCAP_ON && !player.jetActive && !player.hovering && !player.boosting){
     // a plain jump or fall, jets off: the captured jump's legs (anim/mocap.js)
     const [lh, lk, rh, rk] = mocapAirLegs(airPhase(player._vy0, player.vy), player._vy0);
     R.legL.hip.rotation.x = dr(R.legL.hip.rotation.x, lh, 16); R.legL.knee.rotation.x = dr(R.legL.knee.rotation.x, lk, 16);
     R.legR.hip.rotation.x = dr(R.legR.hip.rotation.x, rh, 16); R.legR.knee.rotation.x = dr(R.legR.knee.rotation.x, rk, 16);
-  } else if (G.hero === 'mando' && !player.grounded){
+  } else if (isGunner() && !player.grounded){
     // UPRIGHT JETPACK — legs hang loose under the pack, one a touch ahead of the other, trailing as you lean
     const trail = (player._airLean || 0) * 0.6;
     R.legL.hip.rotation.x  = dr(R.legL.hip.rotation.x,  -0.06 + trail + Math.sin(G.gt * 1.3) * 0.04, 6);
@@ -304,7 +305,7 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
   if (!player._legIK){
     releaseFooting(); releaseGait(GS); GS.inT = 0;
     R.legL.ank.rotation.y = dr(R.legL.ank.rotation.y, 0, 12); R.legR.ank.rotation.y = dr(R.legR.ank.rotation.y, 0, 12);
-    if (G.hero === 'mando' && !player.airDive){
+    if (isGunner() && !player.airDive){
       R.legL.hip.rotation.z = dr(R.legL.hip.rotation.z, 0, 9);
       R.legR.hip.rotation.z = dr(R.legR.hip.rotation.z, 0, 9);
     }
@@ -317,7 +318,7 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
   });
   // JEDI FRONT KICK — the right leg SNAPS forward (hard-set, overriding the stride pose above) and the torso leans
   // back to counterweight it. `ext` is a 0→1→0 envelope so the leg shoots out and recovers within kickT.
-  if (G.hero !== 'mando' && player.kickT > 0 && player.kickKind === 'spin'){
+  if (!isGunner() && player.kickT > 0 && player.kickKind === 'spin'){
     // the holstered SPIN KICK: the right leg swings out wide at hip height as the body turns (forceHands spins it)
     const ext = Math.sin((1 - clamp(player.kickT / (player.kickMax || 0.5), 0, 1)) * Math.PI);
     R.legR.hip.rotation.x  = -1.1 * ext;
@@ -325,13 +326,13 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
     R.legR.knee.rotation.x = 0.15 + (1 - ext) * 0.6;
     R.legL.knee.rotation.x = 0.3 * ext;
     R.torso.rotation.x = -0.12 * ext;
-  } else if (G.hero !== 'mando' && player.kickT > 0){
+  } else if (!isGunner() && player.kickT > 0){
     const ext = Math.sin((1 - clamp(player.kickT / (player.kickMax || 0.4), 0, 1)) * Math.PI);
     R.legR.hip.rotation.x  = -1.55 * ext;
     R.legR.knee.rotation.x = 0.1 + (1 - ext) * 0.7;
     R.legL.knee.rotation.x = 0.28 * ext;
     R.torso.rotation.x = -0.22 * ext;
-  } else if (G.hero !== 'mando' && !(player.atkT > 0)) R.torso.rotation.x = dr(R.torso.rotation.x, 0, 12);   // settle a swing's lean
+  } else if (!isGunner() && !(player.atkT > 0)) R.torso.rotation.x = dr(R.torso.rotation.x, 0, 12);   // settle a swing's lean
   // robe flare with speed
   R.skirt.rotation.x = dr(R.skirt.rotation.x, 0.13 * inten, 8);   // Jedi-only robe (hidden for the Mando)
   R.skirt.rotation.z = dr(R.skirt.rotation.z, Math.sin(ph) * 0.05 * inten, 8);
@@ -347,9 +348,9 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
   // the master's gaze tracks the camera even when the body doesn't
   const lookDiff = wrapAngle(G.yaw - player.faceYaw);
   // a side-on guard (saberPose.gaze, data/poses.js) turns the head back against the chest and hips so the eyes stay on the foe
-  const gaze = G.hero !== 'mando' && saberPose.live && !(player.atkT > 0) ? saberPose.gaze * (R.chest.rotation.y + R.torso.rotation.y) : 0;
+  const gaze = !isGunner() && saberPose.live && !(player.atkT > 0) ? saberPose.gaze * (R.chest.rotation.y + R.torso.rotation.y) : 0;
   if (!player.backRun) R.head.rotation.y = dr(R.head.rotation.y, clamp(lookDiff, -0.7, 0.7) * MIRROR - gaze, 10);   // (running away: anim/guns.js turns it to the target)
-  if (G.hero !== 'mando') R.head.rotation.x = dr(R.head.rotation.x, 0, 9);   // JEDI level head; the Mando pose drives its own head pitch (don't fight it)
+  if (!isGunner()) R.head.rotation.x = dr(R.head.rotation.x, 0, 9);   // JEDI level head; the Mando pose drives its own head pitch (don't fight it)
   return { ph, inten, gait };
 }
 
@@ -358,7 +359,7 @@ function animateLegsAndTorso(dt, dr, R, planted, POSE){
 // and swing keyframes in data/poses.js; Force gestures, Mend and Judgement stay plain joint poses here.
 function animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait){
   const held = heldBlade();
-  const form = FORM_OF[G.hero === 'mando' ? 'darksaber' : G.stance] || 'niman';
+  const form = FORM_OF[isGunner() ? 'darksaber' : G.stance] || 'niman';
   const grip = form === 'darksaber' ? 'regular' : heldGrip();
   const dfl = player.deflectAnim;
   if (dfl){ dfl.t += dt; if (dfl.t >= dfl.dur || !held) player.deflectAnim = null; }
@@ -428,7 +429,7 @@ function animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait){
     }
     if (!sw.applied && cue.k > 0.35){ sw.applied = true; applySwingDamage(sw.step, held || sw.cutSet || sw.noHit ? [] : undefined); }   // (noHit: the aerial cut struck on contact, jedi/aerial.js)
     // IN-RHYTHM LINK (Jedi): one well-timed press this swing → the next cut leaves from the follow-through
-    if (player.queuedAtk && !sw.rushed && !sw.recoil && G.hero !== 'mando' && sw.applied && cue.k >= FLOW.at){
+    if (player.queuedAtk && !sw.rushed && !sw.recoil && !isGunner() && sw.applied && cue.k >= FLOW.at){
       player.atkT = 0; player.queuedAtk = false; player.lastAtkEnd = G.gt;
       tryAttack(true);
       if (player.atkT <= 0){ vis.rotation.y = 0; player._swingDrop = 0; }   // the link failed (winded…): settle as normal
@@ -438,7 +439,7 @@ function animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait){
       player.lastAtkEnd = G.gt;
       if (!sw.recoil) vis.rotation.y = 0;   // (a recoil ends partway round: the guard eases the body back square, no pop)
       player._swingDrop = 0;
-      if (G.hero !== 'mando' && sw.step === 2 && !sw.recoil && stance().finisherRecover) player.swingLock = Math.max(player.swingLock || 0, stance().finisherRecover);   // the heavy finisher hangs a beat (its guard break's cost)
+      if (!isGunner() && sw.step === 2 && !sw.recoil && stance().finisherRecover) player.swingLock = Math.max(player.swingLock || 0, stance().finisherRecover);   // the heavy finisher hangs a beat (its guard break's cost)
       if (player.queuedAtk){ player.queuedAtk = false; tryAttack(); }   // buffered combo
     }
     return;
@@ -456,7 +457,7 @@ function animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait){
     R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -1.25, 16);
     vis.rotation.x = dr(vis.rotation.x, 0.12 - k*0.04, 12);   // hunch in, then straighten as it releases
     vis.rotation.y = dr(vis.rotation.y, 0, 12);
-  } else if (G.hero !== 'mando' && player.judgeT > 0 && !player.blockHeld){
+  } else if (!isGunner() && player.judgeT > 0 && !player.blockHeld){
     // left palm forward, lightning pouring from the fingers; the saber drops to a low trailing guard. Holstered, both
     // hands pour it out together, arms thrust forward and the fingers hooked (the Emperor's way)
     // with the saber out it stays in the hand, carried in the form's own run guard (Makashi: close and upright)
@@ -491,12 +492,12 @@ function animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait){
                    fight: !blocking && inCombat() };   // a guard can carry its free hand differently in a fight (offFight)
     // AGILITY guards: flips hug the hilt in or open the arms, the dive cocks or plunges the blade, the run carries it
     // the form's way with the free hand pumping against the stride (data/agility.js AIR_GUARDS)
-    const running = G.hero !== 'mando' && moving && !planted && player.grounded && inten > 0.5;
-    const ag = G.hero !== 'mando' ? jediAgilityArms(running) : null;
+    const running = !isGunner() && moving && !planted && player.grounded && inten > 0.5;
+    const ag = !isGunner() ? jediAgilityArms(running) : null;
     const over = ag && airGuard(grip, form, ag.key);
     if (running && over){ sway.z = -Math.sin(ph) * 0.05 * inten; sway.off = Math.sin(ph) * 0.17 * inten * ((stance().gait && stance().gait.amp) || 1); }
     // a bolt (or blow) just met the blade: the catch for where it arrived, then back into the guard
-    const body = player.deflectAnim && G.hero !== 'mando'
+    const body = player.deflectAnim && !isGunner()
       ? deflectPose(dt, R, held, grip, form, player.deflectAnim)
       : guardPose(dt, R, held, grip, form, blocking, sway, over, ag ? ag.rate : 1);
     // a free off hand swings with the stride when running (two-handed guards keep it on the hilt)
@@ -511,7 +512,7 @@ function animateArms(dt, dr, vis, R, st, planted, moving, ph, inten, gait){
     } else vis.rotation.y = dr(vis.rotation.y, 0, 12);
   } else {
     releaseSaberPose(R, dt);
-    if (G.hero !== 'mando' && player.holstered) forceHands(dr, vis, R, planted, moving, ph, inten);
+    if (!isGunner() && player.holstered) forceHands(dr, vis, R, planted, moving, ph, inten);
   }
 }
 
@@ -598,15 +599,15 @@ function forceHands(dr, vis, R, planted, moving, ph, inten){
 
 // the bladed weapon in hand right now (or null): the Jedi saber, or the Mando's darksaber when it's equipped
 function heldBlade(){
-  if (G.hero !== 'mando') return player.saberHand && !player.holstered ? { node: player.saberHand, root: player.saberBladeRoot } : null;
+  if (!isGunner()) return player.saberHand && !player.holstered ? { node: player.saberHand, root: player.saberBladeRoot } : null;
   if (player.weapon === 'darksaber' && player.darksaberMesh) return { node: player.darksaberMesh, root: null };
   return null;
 }
 export function footwork(){
-  if (G.hero === 'mando' && player.weapon === 'fists') return FOOTWORK.brawler;
-  if (G.hero === 'mando' && player.weapon === 'darksaber') return FOOTWORK.darksaber;
-  if (G.hero !== 'mando' && player.holstered) return FOOTWORK.forceReady;   // saber on the belt: the wide, low Force-ready base
-  const form = FORM_OF[G.stance] || 'niman', alt = G.hero !== 'mando' && heldGrip() === 'reverse' && FOOTWORK_GRIP.reverse[form];
+  if (isGunner() && player.weapon === 'fists') return FOOTWORK.brawler;
+  if (isGunner() && player.weapon === 'darksaber') return FOOTWORK.darksaber;
+  if (!isGunner() && player.holstered) return FOOTWORK.forceReady;   // saber on the belt: the wide, low Force-ready base
+  const form = FORM_OF[G.stance] || 'niman', alt = !isGunner() && heldGrip() === 'reverse' && FOOTWORK_GRIP.reverse[form];
   return FOOTWORK[alt || form];
 }
 const _IDQ = new THREE.Quaternion();
@@ -668,7 +669,7 @@ function animateForceCast(dt, dr, R){
     R.armL.sh.rotation.x = dr(R.armL.sh.rotation.x, -1.55 - ap, 20);
     R.armL.sh.rotation.y = dr(R.armL.sh.rotation.y, pulling ? -0.05 : 0.12, 20);
     R.armL.el.rotation.x = dr(R.armL.el.rotation.x, -0.12 - (1 - out) * (pulling ? 1.35 : 0.18), 20);
-    if (G.hero !== 'mando' && player.holstered){
+    if (!isGunner() && player.holstered){
       // saber holstered: no hilt to hold, so BOTH hands throw the power (Yoda's two open palms), a touch wider apart
       R.armR.sh.rotation.x = dr(R.armR.sh.rotation.x, -1.5 - ap, 20);
       R.armR.sh.rotation.y = dr(R.armR.sh.rotation.y, pulling ? 0.05 : -0.08, 20);
@@ -683,7 +684,7 @@ function animateForceCast(dt, dr, R){
 function animateMandoPose(dt, dr, vis, R, pp, f, r){
   // --- MANDO pose: hold the weapon out toward the reticle; weapon-specific poses ---
   player.recoil = Math.max(0, (player.recoil || 0) - dt*1.2);
-  const w = player.weapon, twoH = !!(MANDO_WEAPONS[w] && MANDO_WEAPONS[w].twoHand);   // the long guns: disruptor, carbine, repeater
+  const w = gunLook(player.weapon), twoH = !!(MANDO_WEAPONS[w] && MANDO_WEAPONS[w].twoHand);   // the long guns: disruptor, carbine, repeater (and the trooper's DC-15, held like the carbine)
   // RE-CENTER the body twist when idle. The swing block owns vis.rotation.y while atkT>0; the Jedi auto-recenters
   // each frame but the Mando didn't, so a CANCELED darksaber swing (RMB-guard / dash / push out of a stroke) left
   // the body twisted off-axis. Damp it back to square whenever we're not mid-swing / slam / flip.
@@ -1138,7 +1139,7 @@ function mocapUpper(R, g){
   const B = g && g.body;
   if (!B || !player.grounded || player.flip) return;
   const w = g.w * (player._mcAlong ?? 1);
-  const free = G.hero !== 'mando' && player.atkT <= 0 && !player.blockHeld && player.castT <= 0 && player.judgeT <= 0 ? 1 : 0;
+  const free = !isGunner() && player.atkT <= 0 && !player.blockHeld && player.castT <= 0 && player.judgeT <= 0 ? 1 : 0;
   const yaw = lerp(-B.yaw, B.cyaw, free) * w, roll = lerp(-B.roll, B.croll, free) * g.w * (player._mcCalm ?? 1);
   A.ty = yaw; A.tz = -roll; A.hy = -(B.yaw * w + yaw) * 0.8;
   R.torso.rotation.y += A.ty; R.torso.rotation.z += A.tz; R.head.rotation.y += A.hy;

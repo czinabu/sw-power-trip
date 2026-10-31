@@ -5,7 +5,7 @@
 // Act II the card asks which pair of chapters comes first.
 
 import { autosave } from './autosave.js';
-import { G, shared } from '../state.js';
+import { G, shared, heroKey } from '../state.js';
 import { renderer } from '../engine/renderer.js';
 import { audioInit, S } from '../audio/sfx.js';
 import { MUSIC } from '../audio/music.js';
@@ -140,7 +140,7 @@ function head(c, pos){
     '<h1 class="cc-title">' + esc(chapterTitle(c)) + '</h1><div class="cc-world">' + esc(c.world) + '</div>';
 }
 function voice(lines){
-  return '<div class="cc-voice"><div class="cc-who">' + VOICE[G.hero] + '</div>' + lines.map(l => '<p>' + esc(l) + '</p>').join('') + '</div>';
+  return '<div class="cc-voice"><div class="cc-who">' + heroKey(VOICE) + '</div>' + lines.map(l => '<p>' + esc(l) + '</p>').join('') + '</div>';
 }
 export function showCard(pos){
   const c = chapterAt(pos), list = chapters();

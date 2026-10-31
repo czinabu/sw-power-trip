@@ -5,7 +5,7 @@
 // the palm, so a push leaves the outstretched hand rather than the spot the hand was in when the key went down.
 
 import * as THREE from 'three';
-import { G, player } from '../state.js';
+import { G, player, isGunner } from '../state.js';
 
 const PALM = new THREE.Vector3(0, -0.085, 0);   // the middle of the palm in the wrist socket's frame (model/rig.js)
 const GAUNTLET = new THREE.Vector3(0, 0.08, 0);   // the Mando's vambrace launcher, on the forearm just above the wrist
@@ -20,7 +20,7 @@ export function palmAnchors(hero){
 }
 
 // which hands throw this hero's Force right now: both with the saber holstered, else the free hand
-export const castHands = (hero = player, holstered = hero.holstered) => G.hero !== 'mando' && holstered ? ['L', 'R'] : ['L'];
+export const castHands = (hero = player, holstered = hero.holstered) => !isGunner() && holstered ? ['L', 'R'] : ['L'];
 // a strike's hand ('L' / 'R' / 'both', jedi/palm.js) as a list
 export const handList = (h) => h === 'both' ? ['L', 'R'] : [h];
 

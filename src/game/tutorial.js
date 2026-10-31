@@ -7,7 +7,7 @@ import { sfx, S, audioInit } from '../audio/sfx.js';
 import { MUSIC } from '../audio/music.js';
 import { V3 } from '../utils.js';
 import { burst } from '../fx/particles.js';
-import { shared, G, enemies, player, keys } from '../state.js';
+import { shared, G, enemies, player, keys, isGunner, heroKey } from '../state.js';
 import { playerPos, maxHp, maxStam, heldGrip } from '../player/helpers.js';
 import { CFG } from '../data/config.js';
 import { floater } from '../fx/floaters.js';
@@ -80,6 +80,9 @@ function baseKit(){
     player.up.darksaber = false;
     setKit({ sidearm: 'single', primary: storyReached('carbine') ? 'carbine' : null });   // the pistol, and the first primary once the story has handed it out
     if (player.weapon !== 'single' && player.weapon !== 'fists') switchWeapon('single');
+  } else if (T.hero === 'trooper'){   // the trooper's kit is whole from the start: its two guns, frags and the bash
+    G.unlocked = {}; player.up.darksaber = false;
+    if (player.weapon !== 'rifle' && player.weapon !== 'pistols') switchWeapon('rifle');
   } else {
     G.unlocked = { push: true, dash: true, pull: storyReached('pull') };
     G.stanceUnlocked = Object.fromEntries(storyForms().map(id => [id, true]));
@@ -91,10 +94,10 @@ function baseKit(){
    ============================================================ */
 export function startTutorial(){
   endTutorial();
-  startLevel(0, { level: TRAINING_LEVELS[G.hero], training: true });
+  startLevel(0, { level: heroKey(TRAINING_LEVELS), training: true });
   Object.assign(T, { on: true, hero: G.hero, lesson: null, steps: [], i: 0, count: 0, done: false, finished: false, exitT: 0 });
   baseKit();
-  if (G.hero !== 'mando'){ setLoadout(trainingLoadout()); switchStance('shiicho', true); setStanceHud(); }
+  if (!isGunner()){ setLoadout(trainingLoadout()); switchStance('shiicho', true); setStanceHud(); }
   setTutListener(onEvent);
   hidePanel();
   // a lesson to go back to after a fall, else the lesson board (it opens before every visit, new saves included)
@@ -138,10 +141,10 @@ function beginLesson(L){
   }
   player.hp = maxHp(); player.force = CFG.player.maxForce; player.stam = maxStam();
   // every lesson starts at its station, facing the circle (the forge): the first steps from the entry, the rest from its edge
-  const [sx, sz] = L.start || (L.group === 'basics' && LESSONS[T.hero][0] === L ? [0, 12] : [0, 7]);
+  const [sx, sz] = L.start || (L.group === 'basics' && heroKey(LESSONS, T.hero)[0] === L ? [0, 12] : [0, 7]);
   playerPos().set(sx, 0, sz); if (player.vel) player.vel.set(0, 0, 0); player.vy = 0;
   G.yaw = Math.PI; player.faceYaw = Math.PI;
-  burst(V3(sx, 1.2, sz), BEACON[T.hero], 12, 4, 3, 0.8);
+  burst(V3(sx, 1.2, sz), heroKey(BEACON, T.hero), 12, 4, 3, 0.8);
   showBanner(L.name, L.sub, 2.4, { kicker: 'LESSON' });
   beginStep(0);
 }
@@ -149,7 +152,7 @@ function beginLesson(L){
 function step(){ return T.steps[T.i]; }
 // the HUD's run line: where you are and which lesson
 export function trainingProgress(){
-  const L = TRAINING_LEVELS[T.hero];
+  const L = heroKey(TRAINING_LEVELS, T.hero);
   return { place: (L.name.split('—')[1] || L.name).trim(), name: T.lesson ? T.lesson.name : 'BETWEEN LESSONS',
            lesson: Math.min(T.i + 1, T.steps.length), total: T.steps.length };
 }
@@ -176,7 +179,7 @@ function beginStep(i){
   if (s.give){
     if (s.give.unlocked) G.unlocked = { ...(G.unlocked || {}), ...s.give.unlocked };
     if (s.give.up) Object.assign(player.up, s.give.up);
-    if (s.give.unlocked){ if (G.hero === 'mando') syncMandoChips(); else syncJediChips(); }   // show the HUD tile for what was just handed over
+    if (s.give.unlocked){ if (isGunner()) syncMandoChips(); else syncJediChips(); }   // show the HUD tile for what was just handed over
   }
   // a heal lesson needs something to heal: chip vitality (and top up Force) so the self-heal isn't refused as UNHURT
   if (s.hurt){
@@ -191,9 +194,9 @@ function beginStep(i){
     setKit({ ...kitOf(), ...s.kit });
   }
   // a fresh start for the trial: full health, Force and fuel
-  if (s.heal){ player.hp = maxHp(); player.force = CFG.player.maxForce; player.stam = maxStam(); if (G.hero === 'mando') player.jet = player.jetMax; }
+  if (s.heal){ player.hp = maxHp(); player.force = CFG.player.maxForce; player.stam = maxStam(); if (isGunner()) player.jet = player.jetMax; }
   if (s.use){ for (const k in player.cds) if (s.use[0] === 'cd' && k === s.use[1]) player.cds[k] = 0; T.was = used(s.use); }
-  const col = BEACON[T.hero];
+  const col = heroKey(BEACON, T.hero);
   if (s.reach) T.beacons.push(makeBeacon(s.reach[0], s.reach[1], s.reach[2] || 0, col));
   if (s.mark) T.beacons.push(makeBeacon(s.mark[0], s.mark[1], s.mark[2] || 0, col));
   if (s.course){ const c = s.course[0].at; T.beacons.push(makeBeacon(c[0], c[1], c[2] || 0, col)); }
@@ -201,7 +204,7 @@ function beginStep(i){
     for (const type in s.wave) for (let n = 0; n < s.wave[type]; n++) queueSpawn(type);
     T.waveOut = true;
   } else if (s.spawn) for (const spec of s.spawn) placeFoe(spec);
-  showPanel(TEACHER[T.hero], s.say, s.course ? s.course[0].keys : s.keys, s.course ? s.course[0].do : s.do,
+  showPanel(heroKey(TEACHER, T.hero), s.say, s.course ? s.course[0].keys : s.keys, s.course ? s.course[0].do : s.do,
     { count: countText(s), step: stepText() });
   sfx(660, 0.08, 'sine', 0.04, 880);
 }
@@ -217,7 +220,7 @@ function clearSpawned(){
   for (const sp of T.spawned){
     const e = sp.e, i = enemies.indexOf(e);
     if (i < 0) continue;
-    if (!e.dead) burst(V3(e.group.position.x, 1.2, e.group.position.z), BEACON[T.hero], 10, 4, 3, 0.8);
+    if (!e.dead) burst(V3(e.group.position.x, 1.2, e.group.position.z), heroKey(BEACON, T.hero), 10, 4, 3, 0.8);
     removeEnemy(e);
     enemies.splice(i, 1);
   }
@@ -261,7 +264,7 @@ function completeStep(skipped){
   const s = step();
   T.done = true;
   setCount(skipped ? 'SKIPPED' : '✓', true);
-  if (!skipped){ S.reward(1); burst(V3(playerPos().x, 1.4, playerPos().z), BEACON[T.hero], 14, 6, 4, 0.8); }
+  if (!skipped){ S.reward(1); burst(V3(playerPos().x, 1.4, playerPos().z), heroKey(BEACON, T.hero), 14, 6, 4, 0.8); }
   if (!skipped && s.toast){
     const m = [...MASTERY_JEDI, ...MASTERY_MANDO].find(x => x.id === s.toast);
     if (m) upToast(m.nm + ' MASTERED I', m.ranks[0].ds.replace(/&amp;/g, '&') + ' · in a real fight, this comes from use', 'mast');
@@ -275,14 +278,14 @@ function finishLesson(skipped){
   T.finished = true; T.exitT = 4.2;
   if (!skipped || T.steps.some((s, k) => k < T.i)){
     try { localStorage.setItem(lessonKey(T.hero, L.id), '1'); } catch(e){}
-    if (LESSONS[T.hero].filter(x => x.group === 'basics').every(x => lessonDone(T.hero, x.id))){ try { localStorage.setItem('sw_trained_' + T.hero, '1'); } catch(e){} }
+    if (heroKey(LESSONS, T.hero).filter(x => x.group === 'basics').every(x => lessonDone(T.hero, x.id))){ try { localStorage.setItem('sw_trained_' + T.hero, '1'); } catch(e){} }
   }
   autosave('lesson');
   setTimeout(() => {
     if (!T.on || T.lesson !== L) return;
     clearBeacons();
-    showPanel(TEACHER[T.hero], L.done || '', '', 'Lesson complete', { done: true, step: L.name });
-    showBanner('LESSON COMPLETE', L.name, 2.6, { kicker: T.hero === 'mando' ? 'THE ARMORER\'S FORGE' : 'THE TRAINING HALL' });
+    showPanel(heroKey(TEACHER, T.hero), L.done || '', '', 'Lesson complete', { done: true, step: L.name });
+    showBanner('LESSON COMPLETE', L.name, 2.6, { kicker: T.hero === 'mando' ? 'THE ARMORER\'S FORGE' : T.hero === 'trooper' ? 'THE HIDDEN RANGE' : 'THE TRAINING HALL' });
     MUSIC.clearSting();
   }, 900);
 }
@@ -303,8 +306,8 @@ function updateCourse(s, pp){
   if (T.cp >= s.course.length){ completeStep(false); return; }
   sfx(880 + T.cp * 90, 0.06, 'triangle', 0.035, 1100);
   const nx = s.course[T.cp];
-  T.beacons.push(makeBeacon(nx.at[0], nx.at[1], nx.at[2] || 0, BEACON[T.hero]));
-  showPanel(TEACHER[T.hero], s.say, nx.keys, nx.do, { count: countText(s), step: stepText() });
+  T.beacons.push(makeBeacon(nx.at[0], nx.at[1], nx.at[2] || 0, heroKey(BEACON, T.hero)));
+  showPanel(heroKey(TEACHER, T.hero), s.say, nx.keys, nx.do, { count: countText(s), step: stepText() });
 }
 
 const POLL = {
@@ -313,7 +316,7 @@ const POLL = {
   strafe: () => !!keys['alt'] && player.grounded && !!(keys['a'] || keys['d'] || keys['s']),   // ALT held (LB on a pad) while stepping sideways or back
   boost: () => player.boosting && !player.grounded,
   single: () => player.weapon === 'single',
-  holstered: () => G.hero === 'mando' ? player.weapon === 'fists' : !!player.holstered,
+  holstered: () => isGunner() ? player.weapon === 'fists' : !!player.holstered,
   drawn: () => !player.holstered,
   stance: (s) => G.stance === s.stance,
   grip: (s) => inForm(s),
@@ -381,7 +384,7 @@ const esc = (t) => String(t).replace(/[&<>]/g, (ch) => ({ '&': '&amp;', '<': '&l
 export const boardUp = () => !!board && board.classList.contains('open');
 function openBoard(){
   if (!board || !T.on) return;
-  const list = lessonList(T.hero), pick = suggested(list), N = LESSON_GROUPS[T.hero];
+  const list = lessonList(T.hero), pick = suggested(list), N = heroKey(LESSON_GROUPS, T.hero);
   const card = (x) => {
     const L = x.L;
     if (!x.open) return '<div class="lb-card sealed"><b>' + (L.form ? N.sealed : N.sealedPower) + '</b><span>Opens when the story teaches it</span></div>';
@@ -392,13 +395,15 @@ function openBoard(){
   };
   const basics = list.filter(x => x.L.group === 'basics'), more = list.filter(x => x.L.group !== 'basics');
   const nb = basics.filter(x => x.done).length;
-  const line = nb < basics.length
+  const line = T.hero === 'trooper'   // (the trooper's lessons, in the Captain's words)
+    ? (nb < basics.length ? 'Basics first, trooper. Same as Kamino.' : 'Run it again until you stop thinking about it.')
+    : nb < basics.length
     ? (T.hero === 'mando' ? 'The basics first, foundling. Then the forge has more for you.' : 'The basics first, my young Padawan. Every form begins with them.')
     : more.some(x => x.open && !x.done)
       ? (T.hero === 'mando' ? 'The forge has made you something new. Learn it here before you take it into a fight.' : 'You have learned something new out there. Come, practise it here, where the cost of a mistake is small.')
       : (T.hero === 'mando' ? 'Train what you like. When the forge makes you more, I will teach it here.' : 'Train what you wish. Each form the masters teach you opens its own lesson here.');
   board.innerHTML = '<div class="cc-inner hero-' + T.hero + '"><div class="cc-act">TRAINING</div><h1 class="cc-title">THE LESSONS</h1>' +
-    '<div class="cc-voice"><div class="cc-who">' + TEACHER[T.hero] + '</div><p>' + line + '</p></div>' +
+    '<div class="cc-voice"><div class="cc-who">' + heroKey(TEACHER, T.hero) + '</div><p>' + line + '</p></div>' +
     '<div class="lb-sec">' + N.basics + '<span>' + nb + ' / ' + basics.length + '</span></div><div class="lb-grid">' + basics.map(card).join('') + '</div>' +
     '<div class="lb-sec">' + N.more + '<span>' + more.filter(x => x.open).length + ' open</span></div><div class="lb-grid">' + more.map(card).join('') + '</div>' +
     '<div class="cc-btns"><div class="btn" data-leave="1">LEAVE TRAINING</div>' +
@@ -419,7 +424,7 @@ function closeBoard(quiet){
   if (!shared.lockFallback){ try { const p = renderer.domElement.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch(e){} }
 }
 function choose(id){
-  const L = LESSONS[T.hero].find(x => x.id === id);
+  const L = heroKey(LESSONS, T.hero).find(x => x.id === id);
   if (!L || !lessonOpen(L)) return;
   closeBoard();
   clearSpawned(); clearBeacons();
@@ -457,7 +462,7 @@ function ownedNow(){
   const su = G.stanceUnlocked || {};
   if (su.ataru) o.add('ataru'); if (su.djemso) o.add('djemso');
   const up = player.up || {};
-  if (G.hero === 'mando'){ if (up.jetTier >= 1) o.add('jet1'); if (up.jetTier >= 2) o.add('jet2'); if (up.darksaber) o.add('darksaber'); }
+  if (isGunner()){ if (up.jetTier >= 1) o.add('jet1'); if (up.jetTier >= 2) o.add('jet2'); if (up.darksaber) o.add('darksaber'); }
   else { if (up.fjTier >= 1) o.add('fj1'); if (up.fjTier >= 2) o.add('fj2'); }
   return o;
 }
@@ -474,14 +479,14 @@ function updateDrills(dt){
   const run = G.hero + ':' + (G.stats ? G.stats.startGt : 0);
   if (D.run !== run){ D.run = run; D.owned = ownedNow(); D.queue = []; if (D.cur){ D.cur = null; hidePanel(); } return; }
   const now = ownedNow();
-  for (const k of now) if (!D.owned.has(k) && DRILLS[G.hero][k]) D.queue.push(k);
+  for (const k of now) if (!D.owned.has(k) && heroKey(DRILLS)[k]) D.queue.push(k);
   D.owned = now;
   if (G.skillSelect || dt <= 0) return;
   if (!D.cur && D.queue.length){
-    const k = D.queue.shift(), d = DRILLS[G.hero][k];
+    const k = D.queue.shift(), d = heroKey(DRILLS)[k];
     // already in use (e.g. dual blasters equip themselves): count it as tried from the next use, not this one
     D.cur = { d, t: d.use ? 14 : 6, was: used(d.use), ok: false, okT: 0 };
-    showPanel(TEACHER[G.hero], d.say, d.key, d.use ? 'Try it now' : '', { drill: true });
+    showPanel(heroKey(TEACHER), d.say, d.key, d.use ? 'Try it now' : '', { drill: true });
   }
   if (!D.cur) return;
   const c = D.cur;

@@ -10,7 +10,7 @@
 import { AE, loop, play, place, setRoom, setMuffle } from './engine.js';
 import { MUSIC } from './music.js';
 import { S } from './sfx.js';
-import { shared, G, player } from '../state.js';
+import { shared, G, player, isGunner } from '../state.js';
 import { maxHp } from '../player/helpers.js';
 import { clamp, rand } from '../utils.js';
 
@@ -112,7 +112,7 @@ export function updateAudio(dt){
   MUSIC.setPalette(inWorld ? layout : 'menu');
 
   // ── saber hums ──
-  const jedi = G.hero === 'jedi' && (!player.holstered || shared.saberProj), darkOn = G.hero === 'mando' && player.weapon === 'darksaber';
+  const jedi = G.hero === 'jedi' && (!player.holstered || shared.saberProj), darkOn = isGunner() && player.weapon === 'darksaber';
   const swinging = player.atkT > 0 || player.darkT > 0;
   const motion = clamp(Math.hypot(player.moveVel.x, player.moveVel.z) / 12, 0, 1);
   const thrown = jedi && shared.saberProj;
@@ -128,11 +128,11 @@ export function updateAudio(dt){
 
   // ── jetpack + flamethrower ──
   if (L.jet){
-    const k = !playing || G.hero !== 'mando' ? 0 : player.boosting ? 1.25 : player.jetActive ? 1 : player.hovering ? 0.45 : 0;
+    const k = !playing || !isGunner() ? 0 : player.boosting ? 1.25 : player.jetActive ? 1 : player.hovering ? 0.45 : 0;
     L.jet.set(k * 0.16, 400 + k * 1300, 0, k > 0 ? 0.05 : 0.12);
   }
   if (L.flame){
-    const on = playing && G.hero === 'mando' && !!player.flaming;
+    const on = playing && isGunner() && !!player.flaming;
     L.flame.set(on ? 0.2 : 0, on ? 900 : 500, 0, on ? 0.04 : 0.1);
   }
 

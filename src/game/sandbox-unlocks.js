@@ -7,7 +7,7 @@
 // Progress is the set of chapter ids cleared, per hero (localStorage sw_camp_ch_<hero>, kept by the save slots like
 // the other sw_camp_ keys). The sandbox offers what either hero has reached.
 
-import { G } from '../state.js';
+import { G, isGunner } from '../state.js';
 import { CHAPTERS, chapterOrder } from '../data/campaign.js';
 import { LEVELS } from '../data/levels.js';
 import { MISSIONS } from '../data/missions.js';
@@ -101,7 +101,7 @@ export function refreshSandboxScope(){
     }
   }
   const autoReached = (u) => u.chapter ? done.has(u.chapter)   // a form or a power: the chapter that hands it out (data/forms.js FORM_PATH, data/store.js)
-    : u.level != null && G.hero !== 'mando'
+    : u.level != null && !isGunner()
     ? reachedWaves.some(([lv, w]) => lv > u.level || (lv === u.level && w >= u.wave))   // the campaign gates the Jedi's by level and wave (game/flow.js)
     : depth >= (u.stage || 0);
   const storeReached = (n) => n.chapter ? done.has(n.chapter) : depth >= (n.stage != null ? n.stage : (STORE_TIER_STAGE[n.tier] || 0));
@@ -118,7 +118,7 @@ export const mapOffered = (id) => S().full || S().maps.has(id);
 // POWERS: a kit row (data/sandbox.js) names where the campaign hands it out with `from` (an auto-unlock key or a store
 // id; its own id by default), or `tiers` (auto keys, lowest first). A row with no match anywhere stays open.
 function source(id){
-  const hero = G.hero === 'mando' ? 'mando' : 'jedi';
+  const hero = isGunner() ? 'mando' : 'jedi';
   const a = (hero === 'mando' ? MANDO_AUTO : JEDI_AUTO).find(u => u.key === id);
   if (a) return { reached: () => S().autoReached(a) };
   const s = (hero === 'mando' ? MANDO_STORE : JEDI_STORE).find(n => n.id === id);

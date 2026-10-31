@@ -9,7 +9,7 @@
 
 import * as THREE from 'three';
 import { camera, scene } from '../engine/renderer.js';
-import { G, shared, player } from '../state.js';
+import { G, shared, player, isGunner } from '../state.js';
 import { playerPos, stance, fwd, rightV } from '../player/helpers.js';
 import { animatePlayer } from '../player/animation.js';
 import { cameraClearance, sightClear, updatePropFade } from '../world/camblock.js';
@@ -25,7 +25,7 @@ import { CUT, OPENINGS, DUELS, BOSS, SCENES } from '../data/cutscenes.js';
 import { BOSS_CFG, BOSS_MANDO } from '../data/bosses.js';
 import { missionState } from './mission.js';
 
-const hero = () => G.hero === 'mando' ? 'mando' : 'jedi';
+const hero = () => isGunner() ? 'mando' : 'jedi';
 const pick = (v) => v && typeof v === 'object' && !Array.isArray(v) ? v[hero()] : v;
 const ease = (t) => t * t * (3 - 2 * t);
 const yawTo = (ax, az, bx, bz) => Math.atan2(bx - ax, bz - az);
@@ -170,7 +170,7 @@ function start(opts){
   player.firing = false; player.trigHeld = false; player.blockHeld = false;
   stillHero();
   document.body.classList.add('cutscene');
-  el.classList.add('on'); el.classList.toggle('mando', G.hero === 'mando');
+  el.classList.add('on'); el.classList.toggle('mando', isGunner());
   $('.cs-skip').innerHTML = '<b>' + (padUsed() ? 'A' : 'ENTER') + '</b> skip';
   if (opts.share && net.role === 'host' && connected()) send({ t: 'csp', s: opts.share });
   if (net.role === 'guest' && connected()) send({ t: 'cso', o: 1 });
@@ -344,7 +344,7 @@ export function playBossIntro(share = true){
   const b = boundActor('boss');
   if (!b) return false;
   b.scale = 1.4;
-  const lines = pick(BOSS).slice(), [name, epithet] = (G.hero === 'mando' ? BOSS_MANDO.name : BOSS_CFG.name).split(' — ');
+  const lines = pick(BOSS).slice(), [name, epithet] = (isGunner() ? BOSS_MANDO.name : BOSS_CFG.name).split(' — ');
   const first = shot('actor', [0.6, 5, 0.9], [0.4, 4.4, 1.3], lineTime(lines[0]), { on: 'actor', h: 2.2 },
                      { line: lines[0], title: { k: 'EXEGOL', h: name, p: epithet || '' }, mirror: true });
   const g = b.g.position;
