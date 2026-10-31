@@ -26,11 +26,11 @@ export function tickAbilityCards(){
 export function clearAbilityCards(){ pending.length = 0; if (abilityCardUp()) close(true); }
 
 function open(u){
-  const C = ABILITY_CARDS[u.key];
+  const C = ABILITY_CARDS[u.key], name = u.name || C.name, hud = u.hud != null ? u.hud : C.hud;
   el.innerHTML = '<div class="ac-inner hero-' + (G.hero === 'mando' ? 'mando' : 'jedi') + '">' +
     '<div class="ac-clip"><img src="' + C.clip + '" alt=""></div>' +
-    '<div class="ac-body"><div class="cc-act">ABILITY UNLOCKED</div><h2 class="ac-title">' + esc(u.name) + '</h2>' +
-    (u.hud ? '<div class="ac-key">' + esc(u.hud) + '</div>' : '') +
+    '<div class="ac-body"><div class="cc-act">ABILITY UNLOCKED</div><h2 class="ac-title">' + esc(name) + '</h2>' +
+    (hud ? '<div class="ac-key">' + esc(hud) + '</div>' : '') +
     C.lines.map(t => '<p>' + esc(t) + '</p>').join('') +
     '<div class="cc-btns"><div class="btn primary go" data-next="1">CONTINUE</div></div></div></div>';
   el.classList.add('open');
@@ -55,3 +55,6 @@ document.addEventListener('keydown', (e) => {
   if (!abilityCardUp() || (e.key !== 'Enter' && e.key !== ' ')) return;
   e.preventDefault(); e.stopPropagation(); close();
 }, true);
+
+// the store hands over an ability (a pick, or a chapter's gift): its card waits for the store page to close
+export const storeAbilityCard = (n) => queueAbilityCards([{ key: n.id }]);
