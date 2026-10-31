@@ -67,7 +67,7 @@ function snapshot(){
     bu.bodyMat ? bu.bodyMat.emissive.getHex() : 0, bu.bodyMat ? r2(bu.bodyMat.emissiveIntensity) : 0,
     bs.hero && !bs.hero.local ? [r2(bs.hero.pos.x), r2(bs.hero.pos.z)] : [r2(playerPos().x), r2(playerPos().z)],
     bu.pivot ? r2(bu.pivot.rotation.x) : 0, bu.pivot ? r2(bu.pivot.rotation.z) : 0] : null;   // (his shoulder: the cut he's swinging, boss/boss.js bossCut)
-  return { t: 'e', run: 1, boss, k: runKind(), ms: G.mission ? missionSnap() : undefined, lv: G.levelIdx, ch: G.chapter, a2: G.actTwo, sh: G.chapter >= 0 ? (G.storyHero || G.hero) : undefined, wf: G.waveFrom, ar: G.arenaRot, w: G.endless ? G.endlessWave : G.wave, wt: G.waveTotal, ph: shared.levelPhase, mut: G.mut, list };
+  return { t: 'e', run: 1, boss, k: runKind(), ms: G.mission ? missionSnap() : undefined, lv: G.levelIdx, ch: G.chapter, a2: G.actTwo, sh: G.chapter >= 0 ? (G.storyHero || G.hero) : undefined, st: G.chapter >= 0 ? G.story : undefined, wf: G.waveFrom, ar: G.arenaRot, w: G.endless ? G.endlessWave : G.wave, wt: G.waveTotal, ph: shared.levelPhase, mut: G.mut, list };
 }
 
 function hostTick(){
@@ -198,6 +198,7 @@ on('e', (m) => {
     showBanner('', 'BACK IN THE HOST\'S FIGHT', 2.0);
   }
   if (!G.coopGuest || G.mode === 'menu') return;
+  if (m.st) G.story = m.st;   // the host's story choices (game/choices.js): the guest's words follow them
 
   if (m.k === 'm'){   // a story mission: the host runs its objectives, this browser is shown them
     if (!G.mission || !m.ms || G.missionId !== m.ms.id){ endGuest(); return; }

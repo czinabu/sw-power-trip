@@ -2,6 +2,8 @@
 import { G, heroKey } from '../state.js';
 import { mergeTrooperStory } from './campaign-trooper.js';
 import { MANDO_VOICE, MANDO_ACTS, MANDO_ACT_TWO, MANDO_CHAPTERS, MANDO_EPILOGUE } from './campaign-mando.js';
+import { JEDI_VOICE, JEDI_ACTS, JEDI_ACT_TWO, JEDI_CHAPTERS, JEDI_ENDINGS } from './campaign-jedi.js';
+import { storyWords, answer } from '../game/choices.js';
 // THE CAMPAIGN, as data: three acts of chapters, played in order (game/campaign.js runs them). Edit the words freely.
 //
 // A chapter is one of
@@ -25,7 +27,7 @@ import { MANDO_VOICE, MANDO_ACTS, MANDO_ACT_TWO, MANDO_CHAPTERS, MANDO_EPILOGUE 
 // the scenes between chapters); chapterOrder hands out the chapters as that story tells them. The `mando` words in the
 // chapters below are what a Mando hears playing alongside a Jedi host.
 
-export const VOICE = { jedi: 'THE BATTLEMASTER', mando: 'THE ARMORER', trooper: 'THE CAPTAIN' };
+export const VOICE = { jedi: 'MASTER VAEL', mando: 'THE ARMORER', trooper: 'THE CAPTAIN' };
 
 export const ACTS = [
   { title: { jedi: 'THE FALL OF JEDHA', mando: 'THE BROKEN COVERT' },
@@ -174,11 +176,12 @@ mergeTrooperStory(ACTS, ACT_TWO, CHAPTERS, EPILOGUE);
 
 // whose story this run tells: the hero who began it, or (a co-op guest) the host's
 export const storyHero = () => G.storyHero || G.hero;
-const OWN = { mando: MANDO_CHAPTERS };
-// a chapter as a story tells it: the story's own version laid over the shared slot (its `story` names whose it is)
+const OWN = { mando: MANDO_CHAPTERS, jedi: JEDI_CHAPTERS };
+// a chapter as a story tells it: the story's own version laid over the shared slot (its `story` names whose it is), with
+// the run's choices filled into its words (game/choices.js: the Jedi's story changes with what you chose)
 export function storyChapter(c, story = storyHero()){
   const o = OWN[story] && OWN[story][c.id];
-  return o ? { ...c, ...o, story } : c;
+  return o ? { ...c, ...storyWords(o), story } : c;
 }
 // every mission a chapter can play, in any hero's story (the Missions list and the sandbox follow them all)
 export const storyMissions = (c) => [c.mission, ...Object.values(OWN).map(s => s[c.id] && s[c.id].mission)].filter(Boolean);
@@ -191,13 +194,19 @@ export function chapterOrder(first, story = storyHero()){
 }
 // the story's words that aren't a chapter's: its voice, its acts, Act II's pick and the epilogue. A story of its own
 // has them as plain words (whoever plays it hears them); the shared story's are per hero.
-const own = (story) => story === 'mando';
+// The Jedi's epilogue is one of four, by what became of Ilsa and of Vexis (data/campaign-jedi.js JEDI_ENDINGS).
+export const jediEnding = () => (answer('ilsa') || 'spared') + '-' + (answer('vexis') || 'ended');
+const OWN_WORDS = {
+  mando: { voice: MANDO_VOICE, acts: MANDO_ACTS, actTwo: MANDO_ACT_TWO, epilogue: () => MANDO_EPILOGUE },
+  jedi:  { voice: JEDI_VOICE, acts: JEDI_ACTS, actTwo: JEDI_ACT_TWO, epilogue: () => JEDI_ENDINGS[jediEnding()] },
+};
+const own = (story) => OWN_WORDS[story];
 // (a chapter's own `voice` speaks for it instead: a story can hand the comms to someone else partway through)
-export const storyVoice = (story = storyHero(), c = null) => (c && c.voice) || (own(story) ? MANDO_VOICE : heroKey(VOICE));
-export const actTitle = (i, story = storyHero()) => own(story) ? MANDO_ACTS[i].title : forHero(ACTS[i].title, G.hero);
-export const actOpen = (i, story = storyHero()) => own(story) ? MANDO_ACTS[i].open : forHero(ACTS[i].open, G.hero);
-export const actTwoLine = (k, story = storyHero()) => own(story) ? MANDO_ACT_TWO[k] : forHero(ACT_TWO[k].line, G.hero);
-export const epilogueText = (key, story = storyHero()) => own(story) ? MANDO_EPILOGUE[key] : forHero(EPILOGUE[key], G.hero);
+export const storyVoice = (story = storyHero(), c = null) => (c && c.voice) || (own(story) ? own(story).voice : heroKey(VOICE));
+export const actTitle = (i, story = storyHero()) => own(story) ? storyWords(own(story).acts[i].title) : forHero(ACTS[i].title, G.hero);
+export const actOpen = (i, story = storyHero()) => own(story) ? storyWords(own(story).acts[i].open) : forHero(ACTS[i].open, G.hero);
+export const actTwoLine = (k, story = storyHero()) => own(story) ? own(story).actTwo[k] : forHero(ACT_TWO[k].line, G.hero);
+export const epilogueText = (key, story = storyHero()) => own(story) ? storyWords(own(story).epilogue()[key]) : forHero(EPILOGUE[key], G.hero);
 // where the pick is made: the first chapter of Act II
 export const ACT_TWO_AT = CHAPTERS.findIndex(c => c.pair);
 // a save from before the chapters (data/levels.js index) picks up on the chapter that opens that level
