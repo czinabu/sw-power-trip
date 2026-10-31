@@ -87,7 +87,7 @@ export const CFG = {
               throwSpeed: 30, throwDmg: 18, yankDmg: 4, bumpDmg: 8, bumpKnock: 20, bumpSpeed: 4.5 },
     // the late ULTIMATES are deliberately TAXING — big Force cost + long cooldown so they're a deliberate beat, never spam
     judge:  { cost: 72, cd: 12.0, range: 14, angle: 0.9, targets: 4, time: 1.3, tick: 0.12, dmg: 7 },  // chain lightning channel
-    repulse:{ cost: 82, cd: 11.0, radius: 13, dmg: 30, knock: 36 },   // FORCE REPULSE — a 360° concussive blast
+    repulse:{ cost: 82, cd: 11.0, radius: 13, dmg: 30, knock: 18 },   // FORCE REPULSE — a 360° concussive blast
     // FORCE BARRIER — the kit's lone DEFENSIVE power: a brief bubble that soaks damage and auto-deflects bolts.
     // `cd` starts when the bubble DROPS (see forceBarrier), so a cast comes back every cd + dur = 11s, as before.
     barrier:{ cost: 35, cd: 8.0, dur: 3.0, dr: 0.7, radius: 2.4, knockR: 6.5, castKnock: 20, expireKnock: 11 },
