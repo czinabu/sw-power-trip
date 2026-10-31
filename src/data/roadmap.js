@@ -6,6 +6,10 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'Squadmates feel every hit', status: 'done',
+    items: ['A hurt squadmate shows a health bar over their head (green, then amber, then red) so you can see who is in trouble and go cover them',
+            'Brute and boss blows, shockwaves, Warbringer quakes, lancer lunges, barrel and vent blasts now hurt the squad as well as you, not only trooper shots and swings',
+            'The host runs the damage and guests see the same bars on their squad. Same in every mode: story, missions, survival, sandbox and co-op'] },
   { title: 'Flamethrower stands alone', status: 'done',
     items: ['While the Mandalorian\'s flamethrower burns he can\'t shoot, fire rockets, scope or guard: pressing F cancels any shot, scope or brace already up, and those stay locked until the flame ends',
             'Same in every mode: story, training, survival, sandbox, missions and co-op'] },
