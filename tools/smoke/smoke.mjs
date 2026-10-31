@@ -118,10 +118,24 @@ for (const [hero, mode, mission] of [['jedi', 'campaign'], ['mando', 'campaign']
         for (const e of enemies){
           if (e.dead || e.converted) continue;
           const d = Math.hypot(e.group.position.x - p.x, e.group.position.z - p.z);
-          if (d < bd){ bd = d; best = e; }
+          if (d < bd && e.state !== 'spawn'){ bd = d; best = e; }   // (a foe still arriving can't be hit yet)
+          bd = Math.min(bd, d);
         }
-        if (best) G.yaw = Math.atan2(best.group.position.x - p.x, best.group.position.z - p.z);
-        G.pitch = 0.1;
+        // and put the real crosshair on its chest: the shot flies along the ray from the lens through the reticle (the
+        // Mando's drifts, player.aimOff), not from the hero's feet, so steer that ray's heading and pitch onto the target.
+        // A yaw from the hero and a fixed pitch could leave the reticle beside or over a lean foe (the grassland duel's
+        // Outrider) for the whole run.
+        if (best){
+          const q = best.group.position, cam = GAME.camera.position, off = (G.hero !== 'jedi' && player.aimOff) || { x: 0, y: 0 };
+          const pt = GAME.aim.crosshairPoint(off.x, off.y);
+          const dx = pt.x - cam.x, dy = pt.y - cam.y, dz = pt.z - cam.z;
+          const tx = q.x - cam.x, ty = q.y + 1.3 - cam.y, tz = q.z - cam.z;
+          let dYaw = Math.atan2(tx, tz) - Math.atan2(dx, dz);
+          dYaw = Math.atan2(Math.sin(dYaw), Math.cos(dYaw));
+          const dEl = Math.atan2(ty, Math.hypot(tx, tz)) - Math.atan2(dy, Math.hypot(dx, dz));
+          G.yaw += dYaw;
+          G.pitch = Math.max(-0.62, Math.min(1.2, G.pitch - dEl));   // (+ pitch looks down)
+        }
         return { gt: G.gt, mode: G.mode, near: bd, enemies: enemies.length,
                  hit: (G.stats && G.stats.kills) > 0 || enemies.some(e => e.maxHp && e.hp < e.maxHp) };
       });
