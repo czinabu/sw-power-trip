@@ -370,7 +370,10 @@ export function foeAllyTarget(e, pp){
       if (d < bd){ bd = d; best = a; }
     }
     const dp = Math.hypot(pp.x - g.x, pp.z - g.z);
-    let ok = !!best && (player.downed || (bd + SQUAD.aggroBy < dp && bd < e.t.range + 6));
+    // payback: a trooper a squadmate just shot turns on the shooter, even if you are closer
+    const av = e.avenge && G.gt < (e.avengeT || 0) && standing(e.avenge) ? e.avenge : null;
+    if (av) best = av;
+    let ok = !!best && (player.downed || !!av || (bd + SQUAD.aggroBy < dp && bd < e.t.range + SQUAD.aggroReach));
     if (ok && !player.downed && e.allyTgt !== best){
       let fodder = 0, on = 0;
       for (const o of enemies){ if (o.dead || !isFodder(o)) continue; fodder++; if (o !== e && o.allyTgt) on++; }

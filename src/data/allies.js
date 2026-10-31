@@ -43,8 +43,10 @@ export const SQUAD = {
   takeDmg: 0.8,              // how hard foes hit a squadmate, against how they hit you
   regen: 5, regenDelay: 5,   // hp a second, once it's gone this long without a hit
   killXp: 0.5,               // share of a kill's XP when a squadmate lands the last blow
-  aggroShare: 0.5,           // most of the living fodder that may be on the squad at once
-  aggroBy: 3,                // a trooper turns on a squadmate only when it's this much closer than you (m)
+  aggroShare: 0.65,          // most of the living fodder that may be on the squad at once
+  aggroBy: 1.5,              // a trooper turns on a squadmate only when it's this much closer than you (m)
+  aggroReach: 10,            // ...and only if the squadmate is within its weapon's range plus this (m)
+  avengeFor: 4,              // a trooper hit by a squadmate's bolt wants that squadmate for this long (s), nearer or not
   focusFor: 4,               // the squad prefers the trooper you last hit, for this long (s)
   // FOLLOW: each squadmate's spot around you (right, forward), in metres, by its place in the squad. Out to the
   // flanks, not behind you: behind you is where the camera is
