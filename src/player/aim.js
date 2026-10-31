@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { camera } from '../engine/renderer.js';
 import { shared, G, enemies, player } from '../state.js';
 import { sweepHit, bodyRadius, bodyHeight, chestPos } from '../enemies/bodyshape.js';
-import { groundAt } from '../world/collision.js';
+import { groundAt, solidAt } from '../world/collision.js';
 
 /* The crosshair ray, cast from the lens through the reticle (`ox`, `oy`: its pixel offset from the screen centre). It
    stops at the first thing it meets: a foe's body (its real hitbox, bodyshape.js), the boss, or the floor / a solid
@@ -45,7 +45,7 @@ export function crosshairPoint(ox = 0, oy = 0){
   let floor = false;
   for (let t = 1; t < Math.min(bestT, FLOOR_FAR); t += FLOOR_STEP){
     _p.copy(o).addScaledVector(d, t);
-    if (_p.y <= groundAt(_p.x, _p.z, Infinity)){ bestT = t; target = null; floor = true; break; }
+    if (solidAt(_p.x, _p.y, _p.z)){ bestT = t; target = null; floor = true; break; }
   }
   lastAim.target = target; lastAim.floor = floor;
   // open air: the ray ends at the arena's wall (what the bolt will really hit), else far out along it. A short fallback
