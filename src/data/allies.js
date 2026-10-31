@@ -86,6 +86,14 @@ const TURNED_CLONE = { model: 'clone', color: 0xdcdcd6, eye: 0xff3a2a, cloth: 0x
 export const TURNED = { blaster: TURNED_CLONE, grenadier: TURNED_CLONE, sniper: TURNED_CLONE,
                         officer: { ...TURNED_CLONE, cloth: 0x8a5a1a } };
 
+// THE PURGE COMPANIES: the Empire's clone hunters in the ARC trooper's own story (data/campaign-trooper.js, the
+// missions it plays). Clone armour painted black, visors lit red; the baton troopers are the purge model already.
+const PURGE_CLONE = { model: 'clone', color: 0x2c2e34, eye: 0xff2a2a, cloth: 0x5a1a1a };
+export const PURGE = { blaster: PURGE_CLONE, grenadier: PURGE_CLONE, sniper: PURGE_CLONE, officer: { ...PURGE_CLONE, cloth: 0x8a1a1a } };
+// THE CAPTAIN'S DRILL (BROTHERS IN ARMS): the band's old training droids, on stun settings
+const DRILL_DROID = { model: 'b1', color: 0x9a9284, eye: 0x7ad8ff };
+export const DRILL = { blaster: DRILL_DROID, grenadier: DRILL_DROID, sniper: DRILL_DROID, officer: { ...DRILL_DROID, color: 0xb0a070 } };
+
 export const ORDERS = [
   { id: 'follow',    name: 'ON ME',          note: 'Form up on you',                              icon: '◎' },
   { id: 'move',      name: 'MOVE THERE',     note: 'Go to the crosshair and hold it',             icon: '➤' },

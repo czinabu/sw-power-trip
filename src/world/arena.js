@@ -31,6 +31,10 @@ import { buildPrisonArena } from './arenas/prison.js';
 import { buildHangarArena } from './arenas/hangar.js';
 import { buildSithArena } from './arenas/sith.js';
 import { buildJungleArena } from './arenas/jungle.js';
+import { buildShipyardArena } from './arenas/shipyard.js';
+import { buildGarrisonArena } from './arenas/garrison.js';
+import { buildFrigateArena } from './arenas/frigate.js';
+import { resetDoors } from './doors.js';
 import { buildNav } from '../enemies/nav.js';
 import { clearScorch } from '../fx/scorch.js';
 import { clearSevered } from '../enemies/scars.js';
@@ -117,6 +121,7 @@ export function buildArena(L){
   hazardZones.length = 0;
   // AUTHORED per-level layouts get their own builder; everything else uses the scattered procedural cover below.
   const LP = { ...L, pal: (T && T.pal) || {} };   // builders read their colours from the world's palette
+  resetDoors();   // (an arena with breachable doors registers them as it builds: world/doors.js)
   if (L.layout === 'temple'){ buildTempleArena(LP); }
   else if (L.layout === 'foundry'){ buildFoundryArena(LP); }
   else if (L.layout === 'plains'){ buildPlainsArena(LP); }
@@ -135,6 +140,9 @@ export function buildArena(L){
   else if (L.layout === 'hangar'){ buildHangarArena(LP); }
   else if (L.layout === 'sith'){ buildSithArena(LP); }
   else if (L.layout === 'jungle'){ buildJungleArena(LP); }
+  else if (L.layout === 'shipyard'){ buildShipyardArena(LP); }
+  else if (L.layout === 'garrison'){ buildGarrisonArena(LP); }
+  else if (L.layout === 'frigate'){ buildFrigateArena(LP); }
   else {
   // pick a spot at least `gap` clear of every other obstacle so cover stays SPREAD OUT — clustered obstacles
   // form walls that trap the enemy AI. Returns null if no open spot is found (so we just place fewer).

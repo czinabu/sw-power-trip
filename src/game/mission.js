@@ -28,6 +28,7 @@ import { spawnEnemy, makeBossBar } from '../enemies/spawn.js';
 import { removeEnemy } from '../enemies/cleanup.js';
 import { findClearSpawn } from '../world/collision.js';
 import { buildNav } from '../enemies/nav.js';
+import { setDoorsOpen, doorsOpen, doorAt } from '../world/doors.js';
 import { makeEvacuee } from '../world/arenas/refuge.js';
 import { startLevel, queueSpawn, checkUnlocks } from './flow.js';
 import { endRun } from './summary.js';
@@ -42,6 +43,7 @@ import { storyVoice } from '../data/campaign.js';
 import { chapterAt } from './campaign.js';
 import { ALLY_COLOR, addFriendRing, updateFriendRing, makeFriendTag } from '../fx/friend.js';
 import { spawnSquad, squadIn, squadStanding, allies } from '../allies/squad.js';
+import { SQUAD } from '../data/allies.js';
 import { collideSolids } from '../world/collision.js';
 import { players, targetable } from '../player/players.js';
 import { diffDmgMul } from '../data/difficulty.js';
@@ -465,6 +467,68 @@ const KINDS = {
     },
   },
 
+  /* BREACH: stack up on a door, set the charge, and clear the room behind it before they recover. The door blows on a
+     fuse (the squad stacked with you sets it faster), the world slows for a beat, and the room's guards are caught
+     reeling. Doors are the arena's, in order (world/doors.js): this objective's `door` and every one before it. */
+  breach: {
+    cue: 'infiltrate',
+    music: (o, s) => ({ urgency: s.phase === 'clear' ? 1 - s.left / Math.max(1, s.n) : s.prog / o.time, danger: s.phase === 'clear', focus: s.phase !== 'clear' || s.left > 0 }),
+    begin(o, s){
+      setDoorsOpen(o.door);
+      s.phase = 'stack'; s.prog = 0; s.fuse = 0; s.foes = []; s.n = 0; s.left = 0;
+      M.markers.push(s.mark = makeBeacon(o.stack[0], o.stack[1], 0, heroKey(MISSION_COLOR), 1.6));
+    },
+    update(o, s, dt){
+      if (s.phase === 'stack'){
+        const inZone = heroIn(o.stack[0], o.stack[1], 2.0), mates = squadIn(o.stack[0], o.stack[1], 4.5);
+        s.prog = inZone ? s.prog + dt * (1 + 0.35 * mates) : Math.max(0, s.prog - dt * 0.5);   // stacked up, the squad works the charge with you
+        if (inZone && Math.floor(s.prog * 3) !== Math.floor((s.prog - dt) * 3)) sfx(520 + s.prog * 120, 0.04, 'square', 0.02, 620);
+        pulseMarker(s.mark, dt, G.gt); s.mark.userData.beam.visible = !inZone;
+        setObjectiveHud({ kicker: M.kick, title: o.title, frac: s.prog / o.time,
+          status: inZone ? 'SETTING THE CHARGE' + (mates ? ' · SQUAD STACKED ×' + mates : ' · STACK THE SQUAD UP (H)') : 'STACK UP ON THE DOOR' });
+        if (s.prog >= o.time){
+          s.phase = 'fuse'; s.fuse = o.fuse ?? 1.1;
+          s.mark.visible = false;
+          showBanner('', o.fuseLine || 'CHARGE SET · BREACHING', 1.1);
+        }
+        return;
+      }
+      if (s.phase === 'fuse'){
+        if (Math.floor(s.fuse * 6) !== Math.floor((s.fuse - dt) * 6)) sfx(1200, 0.03, 'square', 0.03, 1200);
+        if ((s.fuse -= dt) > 0) return;
+        const d = doorAt(o.door), [dx, dz] = d ? d.at : o.stack;
+        setDoorsOpen(o.door + 1);
+        burst(V3(dx, 1.4, dz), 0xffb050, 40, 12, 7, 1.0); burst(V3(dx, 1.0, dz), 0x9a9a9a, 24, 6, 4, 1.4);
+        S.boom(V3(dx, 1, dz), 1.2);
+        G.shake = Math.max(G.shake, 0.9);
+        G.slowmo = 0.4; G.slowmoT = o.slow ?? 1.2;   // the beat after the door goes: the room, frozen
+        // the room's guards, caught reeling by the blast
+        let k = 0;
+        for (const t in o.guards) for (let n = 0; n < o.guards[t]; n++){
+          const [x, z] = o.spots[k++ % o.spots.length];
+          const e = fieldSpawn(t, x + (Math.random() - 0.5) * 0.8, z + (Math.random() - 0.5) * 0.8);
+          if (e){ e.stunT = Math.max(e.stunT || 0, o.stun ?? 1.4); e.state = 'chase'; s.foes.push(e); }
+        }
+        s.n = s.foes.length; s.phase = 'clear';
+        showBanner(o.breachLine || 'BREACH', o.breachSub || '', 1.2);
+        storyBeat('breach', { door: o.door });
+        return;
+      }
+      s.left = s.foes.filter(e => !e.dead && enemies.includes(e)).length;
+      setObjectiveHud({ kicker: M.kick, title: o.title, frac: 1 - s.left / Math.max(1, s.n), status: 'CLEAR THE ROOM · ' + s.left + ' LEFT', warn: s.left > 0 });
+      if (!s.left){
+        if (o.opens != null) setDoorsOpen(o.opens);   // (the last room can open more: a cell, the way back out)
+        if (o.joins){   // someone freed in there takes their place in the squad
+          G.squadCap = Math.min(SQUAD.max, Math.max(G.squadCap || 0, allies.length + o.joins));
+          spawnSquad(o.joins, o.joinAt);
+        }
+        showBanner(o.doneLine || 'ROOM CLEAR', o.doneSub || '', 1.8);
+        S.reward(1);
+        return true;
+      }
+    },
+  },
+
   duel: {
     cue: 'duel',
     // the rage is tense until the foe is nearly beaten; then the hero's theme takes over
@@ -872,6 +936,11 @@ function beginObjective(){
   M.o = o; M.s = {};
   showBanner(o.title, (o.task && heroKey(o.task)) || '', 4.5, { kicker: 'OBJECTIVE ' + (M.i + 1) + ' / ' + M.def.objectives.length });   // long enough to read mid-fight; the checklist flashes with it (ui/hud.js)
   say(o);
+  if (o.doors != null) setDoorsOpen(o.doors);   // the arena's doors as this objective finds them (a retry rebuilds them shut)
+  if (o.squad != null && !M.guest){   // the squad as it stands by now (someone freed on the way joined it)
+    G.squadCap = Math.min(SQUAD.max, Math.max(G.squadCap || 0, o.squad));
+    if (allies.length < o.squad) spawnSquad(o.squad - allies.length, o.start);
+  }
   KINDS[o.kind].begin(o, M.s);
 }
 function completeObjective(){
@@ -1011,7 +1080,7 @@ export function missionSnap(){
     mk: M.markers.map(m => [m.userData.con ? 1 : 0, r2(m.position.x), r2(m.position.z), r2(m.userData.r || 1), m.userData.ring.material.color.getHex(),
                             m.userData.beam.visible ? 1 : 0, m.visible ? 1 : 0, r2(m.userData.yaw || 0)]),
     q: q ? [r2(q.g.position.x), r2(q.g.position.y), r2(q.g.position.z), r2(q.g.rotation.y), q.tag.visible ? 1 : 0] : null,
-    v: v ? [r2(v.g.position.x), r2(v.g.position.z), r2(v.g.rotation.y)] : null };
+    v: v ? [r2(v.g.position.x), r2(v.g.position.z), r2(v.g.rotation.y)] : null, dr: doorsOpen() };
 }
 // guest: follow the host's mission
 export function coopMissionSync(ms){
@@ -1032,6 +1101,7 @@ export function coopMissionSync(ms){
     say(M.o);
   }
   M.net = ms;
+  if (ms.dr != null) setDoorsOpen(ms.dr);   // the doors the host has breached
   while (M.markers.length > ms.mk.length) removeMarker(M.markers.pop());
   ms.mk.forEach((r, k) => {
     let m = M.markers[k];
