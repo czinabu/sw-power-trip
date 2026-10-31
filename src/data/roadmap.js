@@ -6,6 +6,8 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'Friends read at a glance', status: 'done',
+    items: ['Squadmates and escorts wear an ally-blue ring on the ground and a bigger, ink-rimmed diamond overhead, so they never blend in with white-armoured foes on snow', 'Same blue for both heroes and every mode; the marks turn red while an ally is down or an escort is under fire'] },
   { title: 'Upgrades without the menus', status: 'done',
     items: ['No upgrade screen between waves: a clear earns a skill point and a small note in the corner, and the fight goes on',
             'Powers master themselves as you use them: Push that you lean on grows into rank I and II, no XP spent',
