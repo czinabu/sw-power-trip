@@ -13,7 +13,7 @@ import { burst } from '../../fx/particles.js';
 import { spawnHitSpark } from '../../fx/vfx.js';
 import { palmPoints } from '../../fx/palms.js';
 import { fwd, playerPos } from '../helpers.js';
-import { mandoWeapon, mandoAimPoint, mandoAimRay, switchWeapon, fireTrigger, firePistol, startReload } from '../mando/weapons.js';
+import { mandoWeapon, mandoAimPoint, mandoAimRay, switchWeapon, fireTrigger, startReload } from '../mando/weapons.js';
 import { mandoDive } from '../mando/mobility.js';
 import { trySlide } from '../parkour.js';
 import { throwGrenade } from '../../enemies/grenades.js';
@@ -28,14 +28,10 @@ import { battlefieldCall, updateCalls, resetCalls } from '../../allies/calls.js'
 import { resetCommand } from './command.js';
 
 /* ---------- INPUT (engine/input.js hands the trooper's presses here) ---------- */
-// LMB: the rifle's burst, or the right-hand pistol. RMB: aim the rifle (the steady stance), or fire the left pistol.
+// LMB: the rifle's burst, or the next pistol. RMB: aim (the steady stance): a tighter cone, a steadier reticle.
 export function trooperMouseDown(button){
-  const W = mandoWeapon();
   if (button === 0){ player.trigHeld = true; fireTrigger(); }
-  if (button === 2){
-    if (W.fire === 'twin') firePistol(W, -1);
-    else if (!(player.gbT > 0)) player.blockHeld = true;   // the rifle comes up to the eye: a tighter cone, a steadier reticle
-  }
+  if (button === 2 && !(player.gbT > 0)) player.blockHeld = true;
 }
 export function trooperKey(k, repeat){
   if (k === 'shift' && !repeat) trooperRoll();

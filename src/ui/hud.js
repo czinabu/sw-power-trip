@@ -280,7 +280,7 @@ export function updateHud(){
     if (isTrooper()){   // the trooper's hint chips say what its keys do
       setText($('ab-boost').querySelector('.an'), 'ROLL');
       if (meleeEl) setText(meleeEl.querySelector('.an'), 'BASH');
-      if (braceEl) setText(braceEl.querySelector('.an'), W.fire === 'twin' ? 'LEFT GUN' : 'AIM');
+      if (braceEl) setText(braceEl.querySelector('.an'), 'AIM');
     }
     document.getElementById('ab-mslam').classList.toggle('nofp', player.grounded || player.jet < abil('mslam').cost);   // air-only, jet fuel
     // DYNAMIC CROSSHAIR — line gap / colour / ring react to the situation

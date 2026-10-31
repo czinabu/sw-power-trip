@@ -8,14 +8,15 @@
 
 /* WEAPONS — the same fields as data/mando.js MANDO_WEAPONS (heat, cool, spreads, falloff), plus:
      fire 'burst'  the DC-15 rifle: one click fires `burst` bolts `burstGap` apart. RMB aims (the steady stance)
-     fire 'twin'   the twin DC-17s: LMB fires the right pistol, RMB the left, each on its own cooldown, one heat bar
+     fire 'twin'   the twin DC-17s, semi-auto: each LMB click fires the other pistol (each on its own `fireCd`, no two
+                   shots closer than `twinGap`), one heat bar; RMB aims
      col           the bolt colour (clone blue, where the Mando's run orange) */
 export const TROOPER_WEAPONS = {
   rifle:   { name: 'DC-15 RIFLE', short: 'DC-15', fire: 'burst', burst: 3, burstGap: 0.075, fireCd: 0.36, dmg: 15, dual: false, col: 0x4aa8ff,
              heat: 0.075, cool: 0.62, overCool: 0.45, hipSpread: 0.012, braceSpread: 0.003, braceDmg: 1.1, foStart: 20, foEnd: 46, foMin: 0.55,
              twoHand: true, vent: 0.5, trooper: true },
-  pistols: { name: 'TWIN DC-17s', short: 'DC-17s', fire: 'twin', fireCd: 0.2, dmg: 21, dual: true, col: 0x6ab8ff,
-             heat: 0.085, cool: 0.7, overCool: 0.52, hipSpread: 0.014, braceSpread: 0.014, braceDmg: 1, foStart: 10, foEnd: 26, foMin: 0.4,
+  pistols: { name: 'TWIN DC-17s', short: 'DC-17s', fire: 'twin', fireCd: 0.15, twinGap: 0.07, dmg: 21, dual: true, col: 0x6ab8ff,
+             heat: 0.07, cool: 0.8, overCool: 0.52, hipSpread: 0.014, braceSpread: 0.006, braceDmg: 1, foStart: 10, foEnd: 26, foMin: 0.4,
              vent: 0.5, trooper: true },
   // the Commando's anti-armour module (key 3): one heavy rocket a pull, a long reload between, and it cooks the gun
   launcher: { name: 'AT LAUNCHER', short: 'LAUNCHER', fire: 'launcher', fireCd: 1.6, dmg: 130, radius: 4.6, knock: 26, speed: 30, dual: false, col: 0xffa04a,
@@ -38,6 +39,9 @@ export const TROOPER = {
     // SUPPRESS: for `time` the squad fires `fire` × as often on the foes within `radius` of the point; a foe its bolts
     // hit is PINNED for `pin` s: it moves at `slow` × and coils its shots `windup` × as long
     suppress: { time: 8, radius: 8, fire: 0.5, pin: 2.5, slow: 0.35, windup: 1.6, prefer: 8 },
+    // FLANK: ATTACK TARGET sends the first two standing squadmates round the mark, `wide` m to its sides and `back` m
+    // beyond it (seen from the hero); off the hero's line, their bolts on it hit `dmg` × as hard
+    flank: { wide: 6.5, back: 1.5, dmg: 1.5 },
     // BATTLEFIELD CALLS (T): REINFORCE when someone is down (everyone up now), otherwise a SUPPLY DROP that lands beside
     // you after `delay`: grenades topped up, the guns cooled, `heal` of your health back
     supply: { cost: 30, delay: 1.2, heal: 0.15, cd: 5 },
