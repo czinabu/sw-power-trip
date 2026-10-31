@@ -171,9 +171,9 @@ export const MANDO_MOBILITY = {
     steer: 1.6,      // rad/s the keys can bend the slide
     cd: 0.5,         // gap after a slide ends
     hop: 1.15,       // a jump out of the slide keeps its speed × this into the air
-    lean: 0.9,       // how far back he lies into it (rad): feet first along the skid
-    roll: 0.25,      // a touch of roll onto the hip (rad)
+    lean: 0.55,      // how far back he lies into it (rad): feet first along the skid
+    roll: 0.12,      // a touch of roll onto the hip (rad)
     twist: 1.15,     // how far the torso turns to face sideways (rad): a baseball slide, chest square to the skid's side
-    hips: 0.4,       // hip height off the floor while sliding (m)
+    hips: 0.3,       // hip height off the floor while sliding (m)
   },
 };

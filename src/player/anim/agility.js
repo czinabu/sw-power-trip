@@ -131,7 +131,7 @@ const LEGS = {
   hurdle: [-1.45, 1.35, 0.5, 0.95, 0.04],
   reach:  [-0.42, 0.5, -0.12, 0.28, 0.08],
   kneel:  [-1.25, 1.45, 0.25, 2.25, 0.18],   // the R (back) knee goes down: a superhero landing
-  kneeslide: [-0.8, 2.1, -0.15, 0.04, 0.25],   // a sprint slide: the right leg straight out along the ground, the left knee out and its shin folded under the lead leg, a baseball slide
+  kneeslide: [-0.95, 2.15, -0.7, 0.04, 0.25],   // a sprint slide: the right leg straight out along the ground, the left knee out and its shin folded under the lead leg, a baseball slide
 };
 function poseLegs(R, dr, shape, w, rate){
   const [lh, lk, rh, rk, sp] = shape;
@@ -344,7 +344,7 @@ const smooth = k => { k = clamp(k, 0, 1); return k * k * (3 - 2 * k); };
 const DIVE_LEGS = [0.12, 0.28, 0.06, 0.45, 0.14];     // laid out behind in the throw, knees soft
 const DIVE_LEGS_BACK = [-0.55, 0.85, -0.3, 0.55, 0.16];   // on his back: knees up, boots toward the target
 const GETUP_LEGS = [-1.2, 1.9, 0.15, 1.5, 0.18];      // one knee planted, pushing up
-const BASE_LEGS = [-0.8, 2.1, -0.15, 0.04, 0.25];      // the right leg out, the left folded under (the body leans back on top)
+const BASE_LEGS = [-0.95, 2.15, -0.7, 0.04, 0.25];      // the right leg out, the left folded under (the body leans back on top)
 function mandoBody(dt, dr, vis, R, fl){
   fl.t += dt;
   const p = clamp(fl.t / fl.dur, 0, 1);
