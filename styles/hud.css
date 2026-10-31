@@ -275,7 +275,9 @@ body.mando #stancebox,body.mando #xh,body.mando #fcmeter{display:none!important}
   border:1px solid var(--edge-mid);border-left:3px solid var(--gold);border-radius:var(--r-lg);background:linear-gradient(90deg,rgba(6,14,26,.86),rgba(6,14,26,.7));
   box-shadow:0 8px 28px rgba(0,0,0,.45);opacity:0;transition:opacity .3s,transform .3s;pointer-events:none}
 #tutor.on{opacity:1;transform:translate(-50%,0)}
-#tutor .tt-who{font:700 12px/1 var(--font-ui);letter-spacing:2.6px;color:var(--gold);margin-bottom:6px}
+#tutor .tt-head{display:flex;align-items:baseline;gap:12px;margin-bottom:6px}
+#tutor .tt-who{font:700 12px/1 var(--font-ui);letter-spacing:2.6px;color:var(--gold)}
+#tutor .tt-step{margin-left:auto;font:600 11px/1 var(--font-ui);letter-spacing:1.8px;color:var(--ink-dim)}
 #tutor .tt-say{font:italic 500 17px/1.35 var(--font-body);color:var(--ink);text-shadow:0 1px 6px rgba(0,0,0,.8)}
 #tutor .tt-say::before{content:'\201C'}
 #tutor .tt-say::after{content:'\201D'}
@@ -292,7 +294,7 @@ body.mando #stancebox,body.mando #xh,body.mando #fcmeter{display:none!important}
 #tutor.done .tt-count{color:var(--xp)}
 #tutor.drill{top:auto;bottom:86px}
 @media (max-width:700px){ #tutor{top:10%} #tutor .tt-say{font-size:15px} }
-body.training #xpmeter{display:none !important}   /* nothing to buy in training */
+body.training #xpmeter,body.training #xphud{display:none !important}   /* nothing to buy in training */
 body.sandbox #xpmeter,body.sandbox #xphud{display:none !important}   /* the sandbox hands everything out */
 
 /* ---------- online co-op: partner name tag + connection ping ---------- */

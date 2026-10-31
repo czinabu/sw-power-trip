@@ -147,7 +147,7 @@ export function startLevel(idx, opts){
   player.mendT = 0;
   player.cancelDR = 0; player.swingLock = 0; player.dashCharges = null; player.dashRecharge = 0; player.cancelRiposte = false;
   player.cds.mend = 0;
-  if (fresh) switchStance(G.training || G.mission || G.sandbox ? 'niman' : STARTING_FORMS[0], true);   // a run starts on Form I; the training grounds teach from Niman
+  if (fresh) switchStance(G.mission || G.sandbox ? 'niman' : STARTING_FORMS[0], true);   // a run and the training grounds start on Form I
   setStanceHud();
   G.yaw = Math.PI;  // face arena center
   player.faceYaw = Math.PI;
@@ -160,11 +160,11 @@ export function startLevel(idx, opts){
     //  Jedi: Saber + Block + Push + Dash (Pull auto-unlocks after wave 2).  Mando: Single blaster + weak jetpack +
     //  Brace (RMB) + Rocket (Dual auto-unlocks after wave 1, Flame after wave 2).
     G.unlocked = G.hero === 'jedi' ? { push: true, dash: true } : { rocket: true };
-    G.stanceUnlocked = G.training ? { niman: true } : {};   // SHII-CHO is known from the start; the rest is learned (data/forms.js FORM_PATH). The training grounds teach from Niman
+    G.stanceUnlocked = {};   // SHII-CHO is known from the start; the rest is learned (data/forms.js FORM_PATH). The training grounds add what the story has taught (game/tutorial.js)
     G.formFork = null; clearMeditation();   // the run's Form VII choice; nothing left waiting from the last run
-    // a run (campaign or survival) starts on the forms the hero knows and grows; the training grounds and the missions
-    // keep the old three (a mission then slots what its kit teaches)
-    G.loadout = [...(G.training || G.mission || G.sandbox ? DEFAULT_LOADOUT : RUN_LOADOUT)];
+    // a run (campaign or survival) and the training grounds start on the forms the hero knows and grow (each lesson slots
+    // its own: game/tutorial.js); the missions keep the old three (a mission then slots what its kit teaches)
+    G.loadout = [...(G.mission || G.sandbox ? DEFAULT_LOADOUT : RUN_LOADOUT)];
     G.waveTotal = -1; G.mandoChoiceShown = false;
     G.xp = 0; G.xpEarned = 0; G.skillPoints = 0; G.powerLv = {}; G.mastery = {}; G.seenTypes = {}; resetUpgrades();
     G.boonOffer = null; G.boonPicked = false;

@@ -146,3 +146,10 @@ export function formOffered(id){
   const u = JEDI_AUTO.find(a => a.key === id);
   return !u || S().autoReached(u);
 }
+
+// TRAINING (game/tutorial.js): has the story reached this form, power or piece of gear yet, for the hero picked? A form
+// goes by formOffered; anything else by where the campaign hands it out (an auto-unlock key or a store id)
+export function storyReached(id){
+  if (FORMS[id]) return formOffered(id);
+  return S().full || reached(id);
+}
