@@ -12,11 +12,11 @@ import { sparks } from './ink.js';
 import { gust } from '../audio/director.js';
 import { V3 } from '../utils.js';
 
-/* L.ambient (from the world theme): { kind: 'embers' (rise) | 'ash' | 'snow' (fall) | 'dust' (drift), color, count, size } */
+/* L.ambient (from the world theme): { kind: 'embers' (rise) | 'ash' | 'snow' (fall) | 'rain' (falls fast) | 'dust' (drift), color, count, size } */
 export function buildAmbient(L){
   const am = L.ambient || {};
   shared.ambientKind = am.kind || '';   // the audio director layers a matching wind / grit bed (audio/director.js)
-  const fall = am.kind === 'snow' || am.kind === 'ash';
+  const fall = am.kind === 'snow' || am.kind === 'ash' || am.kind === 'rain';
   const N = am.count || 170;   // denser drifting embers/dust → thicker, more immersive air
   const pos = new Float32Array(N*3);
   const vel = new Float32Array(N);
@@ -25,7 +25,7 @@ export function buildAmbient(L){
     pos[i*3]   = rand(b.x - b.hx, b.x + b.hx);
     pos[i*3+1] = rand(0.2, 11);
     pos[i*3+2] = rand(b.z - b.hz, b.z + b.hz);
-    vel[i] = (fall ? -1 : 1) * rand(0.2, 0.9) * (am.kind === 'dust' ? 0.3 : 1);
+    vel[i] = am.kind === 'rain' ? -rand(11, 16) : (fall ? -1 : 1) * rand(0.2, 0.9) * (am.kind === 'dust' ? 0.3 : 1);
   }
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
@@ -113,7 +113,7 @@ export function updateAmbient(dt){
     if (y < 0.1) y = 9;   // falling snow / ash wraps back to the top
     if (y > 9){ y = 0.2; a.setX(i, rand(b.x - b.hx, b.x + b.hx)); a.setZ(i, rand(b.z - b.hz, b.z + b.hz)); }
     a.setY(i, y);
-    let x = a.getX(i) + Math.sin(shared.ambient.t*0.8 + i)*dt*0.3;
+    let x = a.getX(i) + (shared.ambientKind === 'rain' ? 0 : Math.sin(shared.ambient.t*0.8 + i)*dt*0.3);
     if (big){   // wrap round the hero's box as they move
       if (x < b.x - b.hx) x += b.hx*2; else if (x > b.x + b.hx) x -= b.hx*2;
       const z = a.getZ(i);

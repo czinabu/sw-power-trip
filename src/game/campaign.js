@@ -10,7 +10,7 @@ import { renderer } from '../engine/renderer.js';
 import { audioInit, S } from '../audio/sfx.js';
 import { MUSIC } from '../audio/music.js';
 import { LEVELS } from '../data/levels.js';
-import { ACT_TWO, actTwoAt, CHAPTER_OF_LEVEL, chapterOrder, chapterNo, forHero, storyVoice, actTitle, actOpen, actTwoLine, epilogueText, storyHero } from '../data/campaign.js';
+import { ACT_TWO, actTwoAt, CHAPTER_OF_LEVEL, chapterOrder, chapterNo, forHero, storyVoice, actTitle, actOpen, actTwoLine, actTwoLabel, epilogueText, storyHero } from '../data/campaign.js';
 import { startLevel, checkUnlocks, chapterRewards, releaseUnlockBanners } from './flow.js';
 import { startMission } from './mission.js';
 import { openSkillTree } from '../ui/store-ui.js';
@@ -176,7 +176,7 @@ function showPick(pos, sandboxOpened){
     '<div class="cc-act">ACT ' + ROMAN[c.act] + '</div><h1 class="cc-title">' + esc(actTitle(c.act)) + '</h1>' +
     voice([actOpen(c.act), ...(storyHero() === 'jedi' ? [JEDI_ACT_TWO_WARN] : []), 'Which first is yours to choose.']) +
     (sandboxOpened ? '<div class="cc-unlock">★ SANDBOX UNLOCKED · try the foes and powers you have met so far, from the main menu</div>' : '') +
-    '<div class="cc-pick">' + Object.keys(ACT_TWO).map(k => '<div class="cc-opt brk" data-go="' + k + '"><b>' + ACT_TWO[k].label + '</b><span>' + esc(actTwoLine(k)) + '</span></div>').join('') + '</div>' +
+    '<div class="cc-pick">' + Object.keys(ACT_TWO).map(k => '<div class="cc-opt brk" data-go="' + k + '"><b>' + esc(actTwoLabel(k)) + '</b><span>' + esc(actTwoLine(k)) + '</span></div>').join('') + '</div>' +
     '</div>', (k) => { if (!ACT_TWO[k]) return; G.actTwo = k; S.reward(1); startChapter(pos); });
   MUSIC.unlockSting();
 }

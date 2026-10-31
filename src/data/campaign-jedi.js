@@ -29,18 +29,18 @@ export const JEDI_ACTS = [
     open: 'The temple has kept the Ledger of Names for twenty years. Tonight the Empire comes for it, and someone has opened the gate.' },
   { title: 'THE SCATTERED MASTERS',
     open: { by: 'ledger',
-      saved: 'The Ledger knows where the last masters went: Sera Quill to a cell on Lothal, Rhenna Kast to the trenches of Hoth. Find them before Vexis reads it too.',
-      burned: 'The Ledger is ash, and so is every road it knew. Tarn has heard rumours: a Jedi in a cell on Lothal, a Jedi general on Hoth. Find them.' } },
+      saved: 'The Ledger knows where the last masters went: Sera Quill to the Inquisitors\' prison moon, Tessaril, Rhenna Kast to the trenches of Hoth. Find them before Vexis reads it too.',
+      burned: 'The Ledger is ash, and so is every road it knew. Tarn has heard rumours: a Jedi in a cell on some Imperial prison moon, a Jedi general on Hoth. Find them.' } },
   { title: 'THE SEVENTH BLADE',
     open: 'Vexis has Master Vael. Ilsa is running to him with the last thing he needs. This is Rhenna Kast. I have the comms now. Let us end this together.' },
 ];
 export const JEDI_ACT_TWO = {
-  lothal: 'Free Sera Quill from the outpost prison. Hoth will have to hold without you for a while',
-  hoth: 'Join Rhenna Kast in the trenches. Lothal will have to wait for you',
+  lothal: 'Empty the pens on Tessaril and free Sera Quill. Hoth will have to hold without you for a while',
+  hoth: 'Join Rhenna Kast in the trenches. The pens will have to wait for you',
 };
 
 // before the act's pick: the voice's line under the choice (the consequence, said plainly)
-export const JEDI_ACT_TWO_WARN = 'Whichever you leave for second will not wait well. Lothal will move its prisoners. Hoth will lose its forward trench.';
+export const JEDI_ACT_TWO_WARN = 'Whichever you leave for second will not wait well. The pens will ship their children off. Hoth will lose its forward trench.';
 
 // per chapter id, laid over the shared slot (data/campaign.js storyChapter; the fields are listed in data/campaign-mando.js).
 // Besides those: `guests` fight beside you for the chapter (squadmates of the story's own: allies/squad.js addSquadmate),
@@ -105,26 +105,26 @@ export const JEDI_CHAPTERS = {
 
   // ---------------- ACT II: THE SCATTERED MASTERS ----------------
   lothal: {
-    title: 'THE LOTHAL PENS', world: 'LOTHAL, AN IMPERIAL HOLDING CAMP',
-    evacuees: { kind: 'youngling', name: { jedi: 'CHILDREN', mando: 'CHILDREN' }, speed: 2.6 },   // (the breakout's prisoners are the pens' children here)
+    title: 'THE PENS', world: 'TESSARIL, THE INQUISITORS\' PRISON MOON', mission: 'pens',
     brief: { by: 'actTwo',
-      lothal: [{ by: 'ledger', saved: 'The Ledger marks a camp on Lothal: the pens, where the Inquisitors keep the children they catch until the ships come for them.', burned: 'Tarn has heard of a camp on Lothal: the pens, where the Inquisitors keep the children they catch until the ships come for them.' },
+      lothal: [{ by: 'ledger', saved: 'The Ledger marks a moon called Tessaril: the pens, where the Inquisitors keep the children they catch until the ships come for them.', burned: 'Tarn has heard of a moon called Tessaril: the pens, where the Inquisitors keep the children they catch until the ships come for them.' },
                'A year ago Sera Quill tried to empty it, and they caught her. RX-4 has the cell codes. Walk it in, open the pens, and finish what she started.'],
       hoth: ['We are late. A ship came for half the children while we were on Hoth. The rest are still in the pens, and so is Sera.', 'Walk RX-4 in, open what is left of the cells, and get every one of them out.'] },
-    opening: { lines: [[VAEL, 'Lothal. Grass to the horizon, and in the middle of it, a camp full of children who were hidden until somebody found them.']] },
-    says: [null, null, 'The children are running for the middle gate. Hold it until the last of them is out. Sera is with them. She will not leave until they are clear.'],
+    opening: { lines: [[VAEL, 'Tessaril. No sun, no grass, rain that never stops. They chose a moon where nobody would hear the children cry.']] },
+    says: [null, null, 'The children are running for the ship. Hold the gate until the last of them is past you. Sera is with them. She will not leave until they are clear.',
+           'The Warden of the pens. It never hunted a Jedi in its life: it only kept what the others caught. It wants its list back.'],
     lines: {
-      chapter: ['RX-4 has sliced the camp\'s cell codes. Walk it to the gate and every pen opens.'],
-      duel: ['The captain who keeps the keys. Finish this, and the children walk free.'],
+      chapter: ['RX-4 has sliced the prison\'s cell codes. Walk it to the gate and every pen opens.'],
+      duel: ['The Warden who keeps the keys. Finish this, and the children walk free.'],
       clear: [say(SERA, 'A year in that cell, listening to them cry at night. A whole year, and the Order sends one Knight and a droid.'), 'She is free, and furious. Let her be furious at you for a while. It will pass.'] } },
   'trial-acrobat': {
-    title: 'TRIAL OF SERA QUILL',
+    title: 'TRIAL OF SERA QUILL', mission: 'trial-sera',
     brief: { by: 'actTwo',
       lothal: ['Sera wants to know who came for her before she follows anyone anywhere.', 'She will not stand still. Neither should you.'],
       hoth: ['Sera is hurt, and angrier for every child that ship took. She still wants to see what you are.', 'She will not stand still. Neither should you.'] },
     opening: { lines: [[VAEL, 'She has been caged a long time. Expect her to want to stretch.']] },
     says: ['Sera strikes from the air and is gone before you answer. Catch the landing, then punish her while she breathes.'],
-    talk: { where: 'LOTHAL, OUTSIDE THE CAMP WALLS',
+    talk: { where: 'TESSARIL, IN THE RAIN BY THE SHIP',
       lines: [[SERA, 'Vael sent you? Vael, who told us all to hide and wait? Those children waited too. Look where it got them.'],
            [HERO, 'Ilsa did not wait. She opened the temple gate for the Empire.'],
            [SERA, 'Ilsa did? Then the Order is worse off than I thought. Come on. Show me you can keep up.']] },

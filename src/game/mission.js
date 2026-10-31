@@ -124,7 +124,7 @@ export function endMission(){ if (M.on || M.markers.length) clearMission(); }
 const missionVoice = () => { const c = G.chapter >= 0 && chapterAt(G.chapter); return c ? storyVoice(undefined, c) : heroKey(MISSION_VOICE); };
 // an objective's line: a campaign chapter's story can say it its own way (its `says`, by objective: data/campaign-jedi.js)
 function sayLine(o){
-  const c = G.chapter >= 0 && chapterAt(G.chapter), i = M.def ? M.def.objectives.indexOf(o) : -1;
+  const c = G.chapter >= 0 && chapterAt(G.chapter), i = o === M.o ? M.i : M.def ? M.def.objectives.indexOf(o) : -1;   // (M.o is this run's copy of the objective: forHero)
   return (c && c.says && i >= 0 && c.says[i]) || heroKey(o.say);
 }
 // a hold's evacuees, as the campaign chapter's story has them (the Jedi's Lothal: the pens' children, not prisoners)
