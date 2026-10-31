@@ -37,7 +37,7 @@ const CONTROLS = {
       ['HOLSTERED LMB', 'Force-imbued strikes', 'Jab, cross, then a finisher the key you hold picks: nothing a two-palm burst that turns bolts, W a driving lunge palm, A / D a wide backhand sweep, S a rising palm that throws light foes up · HOLD LMB to gather a charged palm and let go to fire it: a full charge breaks guards, staggers elites and bosses and turns grenades back', 1],
       ['HOLSTERED E', 'Force kicks', 'Mid-string: a spin kick that clears the ring round you · in the air: a Force stomp straight down · otherwise the front kick', 1],
       ['HOLSTERED F / C', 'Strike into power', 'Push or Pull right after a blow lands flows out of it for less Force: Push becomes a Palm Push that hits the nearest hard, Pull drags them onto your next strike', 1],
-      ['H', 'Squad order', 'With a squad: hold the spot under the crosshair, H again to bring them back on you · stand by a downed squadmate to get them up · while you have one standing, a killing blow downs you instead and they come to get you up', 1],
+      ['H', 'Squad orders', 'With a squad · TAP: on a trooper, the squad attacks it · on open ground, they move there · tap again to bring them back on you · HOLD: the command wheel (the world slows): on me, hold here, move there, attack target, take cover, grenade, spread / stack, get them up · point and let go · 1-4 while it is open orders one squadmate · stand by a downed squadmate to get them up · while one stands, a killing blow downs you instead and they come to get you up', 1],
       ['RMB + SPACE', 'Evasive leap', 'Jump while blocking to vault clear · in a fight it spends a dash charge and is only safe at its start', 1],
     ]},
     { title: 'FORCE POWERS', rows: [
@@ -75,7 +75,7 @@ const CONTROLS = {
       ['E', 'Takedown', 'On a staggered or floored foe: finish it', 1],
       ['1 / 2 / 3', 'Switch weapon', 'Or the mouse wheel'],
       ['RMB + LMB', 'Darksaber throw', 'Darksaber in hand: hurl it, and the grappling line reels it back through anything in its path', 1],
-      ['H', 'Squad order', 'With a squad: hold the spot under the crosshair, H again to bring them back on you · stand by a downed squadmate to get them up · while you have one standing, a killing blow downs you instead and they come to get you up', 1],
+      ['H', 'Squad orders', 'With a squad · TAP: on a trooper, the squad attacks it · on open ground, they move there · tap again to bring them back on you · HOLD: the command wheel (the world slows): on me, hold here, move there, attack target, take cover, grenade, spread / stack, get them up · point and let go · 1-4 while it is open orders one squadmate · stand by a downed squadmate to get them up · while one stands, a killing blow downs you instead and they come to get you up', 1],
       ['4', 'Holster', 'Take a fighting stance with fists and gadgets: LMB / E swing hook, hook, uppercut, haymaker, hold RMB for the gauntlet shield (LMB behind it cuts shield and blade), and gadget power refills faster · 4 or 1 / 2 / 3 draws', 1],
     ]},
     { title: 'GADGETS', rows: [
