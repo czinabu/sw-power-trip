@@ -27,6 +27,8 @@ import { buildGrasslandArena } from './arenas/grassland.js';
 import { buildIcefrontArena } from './arenas/icefront.js';
 import { buildGraveyardArena } from './arenas/graveyard.js';
 import { buildArchiveArena } from './arenas/archive.js';
+import { buildOutpostArena } from './arenas/outpost.js';
+import { buildCovertArena } from './arenas/covert.js';
 import { buildPensArena } from './arenas/pens.js';
 import { buildPrisonArena } from './arenas/prison.js';
 import { buildHangarArena } from './arenas/hangar.js';
@@ -132,6 +134,8 @@ export function buildArena(L){
   else if (L.layout === 'graveyard'){ buildGraveyardArena(LP); }
   else if (L.layout === 'approach'){ buildGrasslandArena(LP); }   // the Grass Sea's plan, in Exegol's ash (the spearhead chapter)
   else if (L.layout === 'archive'){ buildArchiveArena(LP); }
+  else if (L.layout === 'outpost'){ buildOutpostArena(LP); }   // the Mando's story: Salt Hollow on Orvane
+  else if (L.layout === 'covert'){ buildCovertArena(LP); }     // the Mando's story: the clan's covert
   else if (L.layout === 'prison'){ buildPrisonArena(LP); }
   else if (L.layout === 'pens'){ buildPensArena(LP); }
   else if (L.layout === 'hangar'){ buildHangarArena(LP); }

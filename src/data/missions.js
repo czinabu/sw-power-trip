@@ -69,6 +69,7 @@
 
 import { REFUGE_SPOTS } from '../world/arenas/refuge.js';
 import { PURSUIT_SPOTS } from '../world/arenas/pursuit.js';
+import { COVERT_SPOTS } from '../world/arenas/covert.js';
 import { BATTLE_MAPS, GRASSLAND_SPOTS, ICEFRONT_SPOTS, GRAVEYARD_SPOTS } from './battlemaps.js';
 import { LEVELS } from './levels.js';
 import { JUNGLE_SPOTS } from '../world/arenas/jungle.js';
@@ -124,6 +125,54 @@ export const MISSIONS = {
     ],
     done: { jedi: 'The younglings are safe and the refuge still stands. But the Inquisitor lives, and it will be back.',
             mando: 'The foundlings are safe. The hunter got away. We will see it again.' },
+  },
+
+  // THE MANDALORIAN'S STORY (data/campaign-mando.js): the covert's last ship, on the clan's own canyon (world/arenas/covert.js)
+  covert: {
+    id: 'covert',
+    title: 'THE LAST SHIP',
+    heroes: ['mando'],   // (the Mandalorian's own story: the covert, its foundlings, VX-7)
+    blurb: 'hold the ramp, kill the jammers, duel VX-7',
+    level: { name: 'MISSION — THE COVERT', sub: 'The Magistrate has found the covert. One ship is left to carry the foundlings out.',
+             arena: 60, floor: 0x8a5a44, fog: 0x6a3428, sky: 0x1a1830, layout: 'covert', waves: [], hazards: {} },
+    start: [0, 3, 0],   // in the yard south of the blast wall, looking up at the ship and the line filing aboard
+    kit: 4,
+    grant: { jedi: ['throw', 'slam'], mando: ['grapple', 'birds'] },
+    objectives: [
+      { kind: 'hold', title: 'HOLD THE RAMP',
+        say: { jedi: 'The clan\'s foundlings are boarding their last ship. Nothing reaches that ramp until it is sealed.',
+               mando: 'The foundlings are coming up from the tunnels. Hold the ramp until every one of them is aboard.' },
+        task: { jedi: 'Guard the ramp while the foundlings board', mando: 'Guard the ramp while the foundlings board' },
+        at: COVERT_SPOTS.hold, r: 6, time: 72, awayRate: 0.5,
+        evacuees: { kind: 'foundling', count: 10, spacing: 1.3, speed: 2.2, name: { jedi: 'FOUNDLINGS', mando: 'FOUNDLINGS' },
+                    path: [...COVERT_SPOTS.path, ...COVERT_SPOTS.ramp] },
+        pulses: [ { grunt: 2, blaster: 1 }, { grunt: 2, officer: 1 }, { grunt: 2, blaster: 1, grenadier: 1 },
+                  { grunt: 2, lancer: 1 }, { grunt: 2, blaster: 1, officer: 1 }, { grunt: 1, duelist: 1, blaster: 1 } ],
+        every: [9, 14], cap: 7, from: [-Math.PI + 0.35, -0.35], aggro: 8 },
+
+      { kind: 'sabotage', title: 'KILL THE JAMMERS', consoleName: 'JAMMER', doneLine: 'THE JAMMERS ARE DOWN', doneSub: 'The ship can call the clan.', start: [0, 3, Math.PI],
+        say: { jedi: 'Three jammers on the canyon floor are keeping the ship from calling for help. Silence them.',
+               mando: 'Three jammers on the canyon floor. While they stand, the ship can\'t call the rest of the clan. Kill them.' },
+        task: { jedi: 'Stand at each jammer\'s console to slice it', mando: 'Stand at each jammer\'s console to slice it' },
+        consoles: [ { at: COVERT_SPOTS.jammers[0], guards: { grunt: 2, blaster: 1 } },
+                    { at: COVERT_SPOTS.jammers[1], guards: { lancer: 1, grunt: 2 } },
+                    { at: COVERT_SPOTS.jammers[2], guards: { grenadier: 1, blaster: 1, officer: 1 } } ],
+        time: 4, r: 2.2, hitLoss: 1.2,
+        trickle: { every: 16, cap: 5, group: { grunt: 2, blaster: 1 } } },
+
+      { kind: 'duel', title: 'DEFEAT VX-7', start: [0, 3, Math.PI],
+        say: { jedi: 'The Magistrate\'s hunter droid. It is fast, and it reads a blade. Make it commit.',
+               mando: 'VX-7. It turns blaster fire and it doesn\'t tire. Get inside its guard and break it.' },
+        task: { jedi: 'Win the duel', mando: 'Win the duel' },
+        foe: 'duelist', name: 'VX-7', kicker: 'BOUNTY · ASSASSIN DROID', hp: 5, dmg: 1.2, scale: 1.12, tint: 0x4a5a6a, at: [0, -6],
+        duel: { block: 0.72, posture: 160, feint: 0.3, chain: 2, counter: 0.55 },
+        rage: 0.5, rageDuel: { feint: 0.45, delay: 0.4, chain: 3, thrust: 0.25 },
+        // it breaks off at this much health instead of falling, and takes a foundling with it (the Long Chase finishes it)
+        escape: 0.22, escapeScene: 'vx-escape',
+        escapeLine: { jedi: 'It is gone, and it has taken a child with it.', mando: 'Gone. And it took Rook.' } },
+    ],
+    done: { jedi: 'The ship is away with ten foundlings aboard. The droid got away with the eleventh.',
+            mando: 'Ten foundlings are safe. VX-7 has Rook. We will get him back.' },
   },
 
   // THE BURNING ARCHIVE (the Jedi's story, chapter 2): the archive under the temple on fire. Get the archivists out
