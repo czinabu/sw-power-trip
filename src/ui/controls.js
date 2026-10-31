@@ -162,27 +162,38 @@ const TIPS = {
 
 import { TELLS, tellCss } from '../fx/tells.js';
 import { formOffered, refreshSandboxScope } from '../game/sandbox-unlocks.js';
-import { PAD_BINDS, PAD_GLYPHS, PAD_MENU } from '../data/gamepad.js';
-import { pad } from '../engine/gamepad.js';
-import { TROOPER_TEST } from '../state.js';
+import { PAD_GLYPHS, PAD_MENU } from '../data/gamepad.js';
+import { PAD_CONTROLS } from '../data/controls-pad.js';
+import { pad, padKey } from '../engine/gamepad.js';
+import { TROOPER_TEST, isGunner } from '../state.js';
 
 let showAll = false, device = 'kb';
 export function toggleControlsDetail(hero){ showAll = !showAll; renderControls(hero); }
 export function setControlsDevice(d){ device = d; }
 
-/* the controller layout, straight from the binds (data/gamepad.js), so it can't drift from what the pad does */
-const PAD_ORDER = ['RT', 'LT', 'A', 'B', 'X', 'Y', 'RB', 'LB', 'L3', 'R3', 'LEFT', 'UP', 'RIGHT', 'DOWN', 'VIEW'];
+/* the controller page: the keyboard page's panels (data/controls-pad.js), every {key} looked up in the pad binds
+   (data/gamepad.js) so it says the button that really sends it, in this pad's glyphs */
+const bindsFor = (hero) => isGunner(hero) ? 'mando' : 'jedi';   // the ARC trooper plays on the Mandalorian's binds
+function padTok(k, hero){
+  const gl = PAD_GLYPHS[pad.family];
+  if (gl[k]) return gl[k];                    // {LS} {RS} {MENU}: a stick or button by name
+  if (k === 'b') return gl.VIEW;              // the sandbox panel (the VIEW button's sandbox key)
+  return padKey(k, bindsFor(hero)).replace('+', ' + ');
+}
+const padText = (s, hero) => s && s.replace(/\{([^}]+)\}/g, (_, k) => padTok(k, hero));
 function padGroups(hero){
-  const B = PAD_BINDS[hero] || (hero === 'trooper' ? PAD_BINDS.mando : PAD_BINDS.jedi), gl = PAD_GLYPHS[pad.family];
-  const row = (name, b) => [gl[name], b.label, b.note];
-  return [
-    { title: 'STICKS', rows: [[gl.LS, 'Move', 'Steers any way, at the stick\'s angle'], [gl.RS, hero === 'mando' ? 'Aim' : 'Look',
-      'Speed: Settings · STICK SENS' + (hero === 'jedi' ? ' · with CUT AIM: MOUSE, a flick just before RT aims the cut' : '')],
-      [gl.MENU, 'Pause']] },
-    { title: 'BUTTONS', rows: PAD_ORDER.filter(n => B.base[n]).map(n => row(n, B.base[n])) },
-    { title: hero === 'mando' ? 'HOLD LB: GADGETS' : 'HOLD LB: POWERS', rows: PAD_ORDER.filter(n => B.lb[n]).map(n => [gl.LB + ' + ' + gl[n], B.lb[n].label, B.lb[n].note]) },
-    { title: 'MENUS', rows: PAD_MENU.map(([k, a, n]) => [k.split(' / ').map(x => gl[x] || x).join(' / '), a, n]) },
-  ];
+  const gl = PAD_GLYPHS[pad.family];
+  const groups = (PAD_CONTROLS[hero] || PAD_CONTROLS.jedi).map(g => ({ title: g.title,
+    rows: g.rows.map(([keys, action, note, adv, forms]) => [padText(keys, hero), padText(action, hero), padText(note, hero), adv, forms]) }));
+  // the menus: under SHOW ALL MOVES
+  groups.push({ title: 'MENUS', adv: 1, rows: PAD_MENU.map(([k, a, n]) => [k.split(' / ').map(x => gl[x] || x).join(' / '), a, n, 1]) });
+  return groups;
+}
+// the tips name keyboard keys; on the controller page they name the buttons (the pause tip has its own)
+function padTip(t, hero){
+  const gl = PAD_GLYPHS[pad.family];
+  if (t.startsWith('<b>Pause</b>')) return '<b>Pause</b> with ' + gl.MENU + '; ' + gl.MENU + ' (or ' + gl.B + ') resumes.';
+  return t.replace(/\b(RMB|LMB|W \+ E|[ERHTGB123])\b/g, (m) => m === 'W + E' ? padTok('w', hero) + ' + ' + padTok('e', hero) : padTok(m.toLowerCase(), hero));
 }
 function keycaps(keys){
   return keys.split(' ').map(k => (k === '/' || k === '+') ? '<span>' + k + '</span>' : '<kbd>' + k + '</kbd>').join('');
@@ -194,10 +205,11 @@ export function renderControls(hero){
   // a tip's `forms`: all of them)
   refreshSandboxScope();
   const knows = (ids, any) => !ids || (any ? ids.some(formOffered) : ids.every(formOffered));
-  const tips = (TIPS[hero] || TIPS.jedi).filter(t => typeof t === 'string' || knows(t.forms)).map(t => typeof t === 'string' ? t : t.t);
+  const tips = (TIPS[hero] || TIPS.jedi).filter(t => typeof t === 'string' || knows(t.forms)).map(t => typeof t === 'string' ? t : t.t)
+    .map(t => device === 'pad' ? padTip(t, hero) : t);
   let html = '';
   for (const g of groups){
-    html += '<div class="cg"><h4>' + g.title + '</h4>';
+    html += '<div class="cg' + (g.adv ? ' adv' : '') + '"><h4>' + g.title + '</h4>';
     for (const [keys, action, note, adv, forms] of g.rows) if (knows(forms, true))
       html += '<div class="cr' + (adv ? ' adv' : '') + '" tabindex="0"><div class="ck">' + keycaps(keys) + '</div><div class="ca">' + action + (note ? '<small>' + note + '</small>' : '') + '</div></div>';
     html += '</div>';
@@ -209,7 +221,7 @@ export function renderControls(hero){
   el.classList.toggle('all', showAll);
   el.classList.toggle('padview', device === 'pad');
   const more = document.getElementById('howtomore');
-  if (more){ more.textContent = showAll ? 'SHOW LESS' : 'SHOW ALL MOVES'; more.style.display = device === 'pad' ? 'none' : ''; }   // the pad page shows everything
+  if (more) more.textContent = showAll ? 'SHOW LESS' : 'SHOW ALL MOVES';
   const tabs = document.getElementById('howtohero');
   if (tabs){
     tabs.innerHTML = '<span data-h="jedi" class="' + (hero === 'jedi' ? 'on' : '') + '">JEDI</span>' +

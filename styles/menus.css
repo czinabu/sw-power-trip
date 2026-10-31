@@ -540,9 +540,8 @@ body.fovpreview #fovpill{background:rgba(1,4,10,.82)}
 .padonly{display:none}
 body.pad .padonly{display:inline}
 body.pad .kbonly{display:none}
-.ctl.padview .cr .ca small{display:block!important}
-.ctl.padview .cr .ca::after{content:none!important}
-.ctl.padview .ck kbd{min-width:30px}
+.ctl.padview .ck kbd{min-width:26px}
+.ctl.padview .cr{grid-template-columns:140px 1fr}   /* pad combos (D← / D↑ / D→, HOLSTERED Y / X) sit on one line */
 #chapcard .cc-done{margin-top:8px;font-size:14px;letter-spacing:1.8px;color:var(--ink-soft)}
 #chapcard .cc-acts{margin-top:20px}
 #chapcard .cc-acts .cc-done:first-child{margin-top:0}

@@ -46,7 +46,7 @@ window.addEventListener('gamepaddisconnected', () => {
 
 /* ---------- PROMPTS: keyboard key labels said the pad's way ('LMB' → RT, 'F' → Y, 'W A S D' → LS) ---------- */
 const KB_ALIAS = { space: ' ', lmb: 0, rmb: 2 };
-function padKey(tok, hero){
+export function padKey(tok, hero){
   const gl = PAD_GLYPHS[pad.family], B = PAD_BINDS[hero];
   const t = tok.toLowerCase();
   if (t === 'mouse' || t === 'aim') return gl.RS;
