@@ -506,7 +506,7 @@ export const MISSIONS = {
     grant: all([]),
     squad: 2, squadCap: 2,       // VANT and BRISK: the two who refused it with you (and no more: the trooper's run tops up to its own size)
     foeLook: TURNED,
-    escort: all({ model: 'officer', name: 'THE GENERAL', kicker: 'JEDI · WOUNDED', color: 0x8a7458, eye: 0x5ad2ff, cloth: 0x5a4030, hp: 360 }),
+    escort: all({ model: 'officer', name: 'GENERAL KAST', kicker: 'JEDI · WOUNDED', color: 0x8a7458, eye: 0x5ad2ff, cloth: 0x5a4030, hp: 360 }),   // General Rhenna Kast: the Knight of the Jedi's Hoth chapter, years later
     objectives: [
       { kind: 'sabotage', title: 'CUT THE COMPANY\'S COMMS', consoleName: 'RELAY', consoleDone: 'CUT',
         doneLine: 'THE RELAYS ARE DOWN', doneSub: 'No gunship will find the General tonight.', music: 'battle',
