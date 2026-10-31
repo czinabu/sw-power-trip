@@ -10,6 +10,7 @@ import { sfx, S } from '../audio/sfx.js';
 import { V3, clamp, TMP } from '../utils.js';
 import { floater, screenFlash } from '../fx/floaters.js';
 import { shared, G, enemies, bolts, solids, player } from '../state.js';
+import { SQUAD } from '../data/allies.js';
 import { HEADSHOT_MULT } from '../data/mando.js';
 import { fwd, playerPos, stance } from '../player/helpers.js';
 import { damageEnemy, flinchEnemy, nearestEnemyInCone } from './damage.js';
@@ -225,6 +226,7 @@ export function updateBolts(dt){
         if (b.ally){
           // a squadmate's bolt: plain damage, a small rock, nothing for the hero's streak or Focus (enemies/damage.js)
           damageEnemy(e, b.dmg, b.dir, 3, false, false, { ally: true }); kill = true;
+          if (b.src && b.src.group && !e.dead){ e.avenge = b.src; e.avengeT = G.gt + SQUAD.avengeFor; e.allyCheck = 0; }   // the trooper it hit may turn on whoever shot it (allies/squad.js foeAllyTarget)
           boltImpact(b.mesh.position, b.mesh.material.color.getHex(), b.dir);
         } else if (!deflectPlayerBolt(e, b)){   // a saber duellist bats it straight back at you (duel.js)
           let dmg = boltDamage(b);   // range falloff
