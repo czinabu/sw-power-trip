@@ -6,6 +6,8 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'Ghostly Exegol', status: 'done',
+    items: ['Exegol (the road to the Citadel, the Sith amphitheatre and the wastes) is now a cold blue-grey haze: nearer fog, dimmer light, less neon', 'Mist drifts along the ground, and each lightning bolt lights up the fog'] },
   { title: 'Upgrades without the menus', status: 'done',
     items: ['No upgrade screen between waves: a clear earns a skill point and a small note in the corner, and the fight goes on',
             'Powers master themselves as you use them: Push that you lean on grows into rank I and II, no XP spent',
