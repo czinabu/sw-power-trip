@@ -6,6 +6,13 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'Powers that follow the story', status: 'done',
+    items: ['In the campaign, new powers open at the chapter that fits them, not by wave count',
+            'Jedi: Barrier or Throw with Soresu\'s trial, Jump Attack or Mend with Ataru\'s, Judgement or Repulse once Niman joins the forms at Mustafar, the Dark Lord\'s Grip with Form VII',
+            'Mando: gear arrives with the clan\'s trials, the Disruptor or Darksaber at the Mustafar forge, the Jetpack Missile before Exegol',
+            'The story hands powers over for free: a pair is a free pick. Skill points are the one thing you spend, one per 500 XP',
+            'Master capstones wait for Act III; the Chapter Complete page names the form you just learned, and Mastery is a slim strip',
+            'Survival keeps its wave pacing and XP prices; the sandbox follows the same chapters'] },
   { title: 'Ghostly Exegol', status: 'done',
     items: ['Exegol (the road to the Citadel, the Sith amphitheatre and the wastes) is now a cold blue-grey haze: nearer fog, dimmer light, less neon', 'Mist drifts along the ground, and each lightning bolt lights up the fog'] },
   { title: 'Friends read at a glance', status: 'done',
@@ -15,7 +22,6 @@ export const ROADMAP = [
   { title: 'Upgrades without the menus', status: 'done',
     items: ['No upgrade screen between waves: a clear earns a skill point and a small note in the corner, and the fight goes on',
             'Powers master themselves as you use them: Push that you lean on grows into rank I and II, no XP spent',
-            'Skilled defence (parries, perfect dodges, clashes, catches, ripostes) adds up to bonus skill points',
             'One page at a chapter\'s close (every 3 waves in Survival): training, new powers and mastery on one list, no tabs, named for the chapter'] },
   { title: 'Quieter new-foe tips', status: 'done',
     items: ['The first-sighting tip for a new enemy type is now a short note in the corner instead of a banner across the middle of the screen', 'Tips queue one at a time, so a mixed wave never stacks them'] },
