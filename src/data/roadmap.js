@@ -6,6 +6,10 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'Makashi: Dooku\'s fencing poise', status: 'done',
+    items: ['Form II Makashi\'s free hand now alternates with every cut between open and swept out behind (the film Dooku) and clasped at the small of the back (the Clone Wars Dooku)',
+            'Walking and blocking keep the hand behind the back; a cut brings it out of the back and sweeps it behind for balance, so the stance reads as a duellist\'s',
+            'Same in every mode: story, training, survival, sandbox, missions, the stance unlock screen and co-op'] },
   { title: 'Steadier frames in big fights', status: 'done',
     items: ['Enemy pathfinding only maps the ground as far as the foes actually are, instead of the whole arena several times a second: up close in a duel it costs a sliver of what it did',
             'The heroes\' robes and capes no longer throw off a stream of garbage every frame (about two thirds of all the game made), so the browser stops pausing mid-fight to clean it up',
