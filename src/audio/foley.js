@@ -43,8 +43,8 @@ function gear(w, run){
   }
 }
 
-let slideSnd = 0, wallSnd = 0, acc = 0, prevX = 0, prevZ = 0, prevInit = false;
-const seen = new WeakMap();   // foe → { x, z, acc }
+let heroHalf = null, slideSnd = 0, wallSnd = 0, prevX = 0, prevZ = 0, prevInit = false;
+const seen = new WeakMap();   // foe → { half } (its last stride half-cycle)
 
 export function updateFoley(dt){
   const playing = G.mode === 'play' && !G.paused && !G.skillSelect && !G.cutscene;
@@ -56,15 +56,17 @@ export function updateFoley(dt){
   // ── the hero ──
   const step = Math.hypot(dx, dz), speed = step / dt;
   const rooted = player.grounded && !player.hang && !player.mantle && !player.wallRun && !(player.slideT > 0) && !(player.dashT > 0) && !player.jetActive;
-  if (rooted && speed > 1.2 && step < 3){
-    acc += step;
-    const run = speed > 6.5, len = run ? 1.55 : 1.05;   // metres per footfall
-    if (acc >= len){
-      acc -= len;
-      const w = (isGunner() ? 0.95 : 0.7) * (run ? 1.15 : 0.8);
-      if (!tooSoon('hstep', 0.12)){ floor()(w); gear(w, run); }
+  // the footfall lands when the gait's own stride clock passes each half cycle (anim/gait.js), so it is in step with
+  // the feet on screen at any speed; without a gait yet, nothing sounds
+  const gt = player._gait, half = gt ? Math.floor(gt.cyc * 2) : 0;
+  if (heroHalf === null || !gt) heroHalf = half;
+  if (half !== heroHalf){
+    heroHalf = half;
+    if (rooted && speed > 1.2 && step < 3 && !tooSoon('hstep', 0.18)){
+      const run = speed > 6.5, w = (isGunner() ? 0.95 : 0.7) * (run ? 1.15 : 0.8);
+      floor()(w); gear(w, run);
     }
-  } else if (!rooted || speed < 1.2) acc = Math.min(acc, 0.6);
+  }
 
   // ── slide: a dragging scrape with a gritty tail; wall-run: quick scuffs of boots on the wall ──
   if (player.slideT > 0 && player.grounded){
@@ -74,26 +76,22 @@ export function updateFoley(dt){
     if ((wallSnd -= dt) <= 0){ wallSnd = 0.2; N({ g: 0.035, a: 0.002, d: 0.06, filt: { type: 'bandpass', f: rand(1800, 2800), q: 1 } }); T({ type: 'sine', f: 110, f2: 60, g: 0.04, d: 0.07 }); }
   } else wallSnd = 0;
 
-  // ── nearby foes ──
+  // ── nearby foes: on their own stride clock (enemies/gait.js), nearest few only ──
   let budget = 3;
   for (const e of enemies){
-    if (e.dead || !e.group || budget <= 0) continue;
-    const q = e.group.position;
+    const lg = e.legs;
+    if (e.dead || !e.group || !lg || budget <= 0) continue;
+    const q = e.group.position, half = Math.floor(lg.cyc * 2);
     let s = seen.get(e);
-    if (!s){ seen.set(e, { x: q.x, z: q.z, acc: rand(0, 1) }); continue; }
-    const ex = q.x - s.x, ez = q.z - s.z; s.x = q.x; s.z = q.z;
-    const es = Math.hypot(ex, ez);
-    if (es > 2 || es / dt < 1.2) continue;
+    if (!s){ seen.set(e, { half }); continue; }
+    if (half === s.half) continue;
+    s.half = half;
     if (Math.hypot(q.x - p.x, q.z - p.z) > 26) continue;
-    s.acc += es;
-    const heavy = e.type === 'brute' || e.type === 'phalanx' || (e.t && e.t.scale > 1.2);
-    const len = heavy ? 1.7 : 1.35;
-    if (s.acc >= len){
-      s.acc -= len; budget--;
-      if (tooSoon('fstep', 0.05)) continue;
-      const w = heavy ? 1.5 : 0.8;
-      floor()(w, q);
-      if (!/jedi|sith|acolyte|duelist/.test(e.type)) N({ pos: q, color: 'pink', g: 0.012 * w, a: 0.004, d: 0.09, filt: { type: 'bandpass', f: 3800, q: 1.4 } });   // armour plates
-    }
+    const es = Math.hypot(lg.vx || 0, lg.vz || 0);
+    if (es < 1.2 || tooSoon('fstep', 0.05)) continue;
+    budget--;
+    const heavy = e.type === 'brute' || e.type === 'phalanx' || (e.t && e.t.scale > 1.2), w = heavy ? 1.5 : 0.8;
+    floor()(w, q);
+    if (!/jedi|sith|acolyte|duelist/.test(e.type)) N({ pos: q, color: 'pink', g: 0.012 * w, a: 0.004, d: 0.09, filt: { type: 'bandpass', f: 3800, q: 1.4 } });   // armour plates
   }
 }
