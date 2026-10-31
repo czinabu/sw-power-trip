@@ -165,6 +165,9 @@ body.mando .j-ab{display:none!important}
 body.mando .ab.hint.m-ab{display:flex}
 body.mando .ab.slot.m-ab{display:flex}
 body.mando .weaponbox{display:flex}
+.ab.t-ab{display:none}
+body.trooper .ab.slot.m-ab,body.trooper #ab-jet{display:none!important}   /* the ARC trooper: its own chips, no jetpack */
+body.trooper .ab.slot.t-ab{display:flex}
 body.mando #stancebox,body.mando #xh,body.mando #fcmeter,body.mando #fymeter{display:none!important}
 
 /* ---------- centre banners ---------- */

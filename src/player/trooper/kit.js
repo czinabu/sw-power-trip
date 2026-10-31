@@ -23,6 +23,7 @@ import { isGuarding, guardImpact } from '../../enemies/duel.js';
 import { DUEL } from '../../data/duel.js';
 import { damageBoss } from '../../boss/boss.js';
 import { tutEvent } from '../../game/tutor-bus.js';
+import { trooperPowerKey, updateTrooperPowers, resetTrooperPowers } from './abilities.js';
 
 /* ---------- INPUT (engine/input.js hands the trooper's presses here) ---------- */
 // LMB: the rifle's burst, or the right-hand pistol. RMB: aim the rifle (the steady stance), or fire the left pistol.
@@ -43,11 +44,14 @@ export function trooperKey(k, repeat){
   if (k === 'r' && !repeat) startReload();   // overheated: the active vent (mando/weapons.js activeVent)
   if (k === '1') switchWeapon('rifle');
   if (k === '2') switchWeapon('pistols');
+  if (k === '3' && G.unlocked.launcher) switchWeapon('launcher');
+  trooperPowerKey(k, repeat);   // the powers: player/trooper/abilities.js
 }
 // the mouse wheel: the other gun
 export function trooperCycle(dir){
-  const i = TROOPER_WEAPON_ORDER.indexOf(player.weapon), n = TROOPER_WEAPON_ORDER.length;
-  switchWeapon(TROOPER_WEAPON_ORDER[((i < 0 ? 0 : i) + dir + n) % n]);
+  const order = TROOPER_WEAPON_ORDER.filter(w => w !== 'launcher' || G.unlocked.launcher);
+  const i = order.indexOf(player.weapon), n = order.length;
+  switchWeapon(order[((i < 0 ? 0 : i) + dir + n) % n]);
 }
 
 /* ---------- COMBAT ROLL (SHIFT) — the Mando's combat dive, on the ground only: no pack to light ---------- */
@@ -60,18 +64,20 @@ export function trooperRoll(){
 /* ---------- FRAG GRENADE (G) — charges that refill one at a time, lobbed onto the crosshair ---------- */
 export function fragCharges(){
   const F = TROOPER.frag;
-  if (player.fragCharges == null){ player.fragCharges = F.charges; player.fragT = 0; }
+  if (player.fragCharges == null){ player.fragCharges = fragMax(); player.fragT = 0; }
   return player.fragCharges;
 }
 export function updateTrooperKit(dt){
   const F = TROOPER.frag;
-  if (fragCharges() < F.charges){
+  if (fragCharges() < fragMax()){
     player.fragT += dt;
     if (player.fragT >= F.recharge){ player.fragT = 0; player.fragCharges++; }
   } else player.fragT = 0;
   if (player.bashCd > 0) player.bashCd -= dt;
+  updateTrooperPowers(dt);
 }
-export function resetTrooperKit(){ player.fragCharges = TROOPER.frag.charges; player.fragT = 0; player.bashCd = 0; }
+export const fragMax = () => TROOPER.frag.charges + (player.up.fragExtra || 0);   // FRAG POUCH (data/trooper-progression.js) adds one
+export function resetTrooperKit(){ player.fragCharges = fragMax(); player.fragT = 0; player.bashCd = 0; resetTrooperPowers(); }
 function fragTarget(F, from){
   const aim = mandoAimPoint(), ray = mandoAimRay();
   const o = ray.origin, d = ray.direction;

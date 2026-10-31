@@ -1,6 +1,7 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
 // Blaster bolts (enemy and player) in flight.
 
+import { domeStops } from '../player/trooper/abilities.js';
 import * as THREE from 'three';
 import { CFG } from '../data/config.js';
 import { stamDelay } from '../player/stamina.js';
@@ -117,6 +118,7 @@ export function updateBolts(dt){
       }
     }
     // a hostile bolt that meets one of the hero's squadmates on the way stops in it (allies/squad.js)
+    if (!kill && !b.friendly && domeStops(b.mesh.position)) kill = true;   // the ARC trooper's bubble shield (player/trooper/abilities.js)
     if (!kill && !b.friendly){
       const ah = allySweep(PREV, b.mesh.position, BOLT_R);
       if (ah){

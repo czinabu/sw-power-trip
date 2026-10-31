@@ -46,7 +46,7 @@ export function throwGrenade(e, from, at, friendly){
   const d = Math.hypot(at.x - from.x, at.z - from.z);
   const T = clamp(d / 16, GRENADE.flight[0], GRENADE.flight[1]);
   grenades.push({ ball, core, ring, fill, from: from.clone(), to: V3(at.x, 0.16, at.z), T, t: 0, fuse: e.t.fuse, fuseMax: e.t.fuse + T,
-    R, dmg: e.t.dmg, friendly: !!friendly, landed: false, vel: null, beep: 0 });
+    R, dmg: e.t.dmg, friendly: !!friendly, landed: false, vel: null, beep: 0, foeDmg: e.t.foeDmg, foeKnock: e.t.foeKnock, onBlast: e.t.onBlast });
   if (!friendly && hooks.gren) hooks.gren(e, from, at);   // co-op: thrown on the other screen too
   if (friendly) sfx(320, 0.12, 'triangle', 0.05, 180); else tellSound('area');
 }
@@ -94,7 +94,9 @@ function explode(n){
   flashLight(0xffae2a, 5, n.R * 2.4, V3(pos.x, 1.2, pos.z), 0.25);
   G.shake = Math.max(G.shake, 0.55); S.boom(pos, 1);
   if (n.vis) return;   // co-op guest: only the picture; the host's blast event does the damage
-  const turned = n.vel || n.friendly, foeDmg = turned ? GRENADE.pushedDmg : GRENADE.foeDmg, knock = turned ? GRENADE.pushedKnock : GRENADE.foeKnock;
+  const turned = n.vel || n.friendly;
+  const foeDmg = n.foeDmg ?? (turned ? GRENADE.pushedDmg : GRENADE.foeDmg), knock = n.foeKnock ?? (turned ? GRENADE.pushedKnock : GRENADE.foeKnock);   // (a thrower can set its own: the trooper's ion grenade)
+  if (n.onBlast) n.onBlast(pos, n.R);
   for (const o of enemies){
     if (o.dead || o.converted) continue;
     const d = o.group.position.distanceTo(pos);

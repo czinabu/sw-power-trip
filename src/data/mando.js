@@ -176,7 +176,7 @@ export function forceJumpPow(){   // scales with the auto-leveled Force-jump tie
 // only its own guns: the trooper's are its two, always drawn (data/trooper.js)
 export function weaponUnlocked(name){
   const tw = !!TROOPER_WEAPONS[name];
-  if (tw || G.hero === 'trooper') return tw && G.hero === 'trooper';
+  if (tw || G.hero === 'trooper') return tw && G.hero === 'trooper' && (name !== 'launcher' || !!G.unlocked.launcher);   // (the launcher is the Commando's)
   if (!weaponOwned(name)) return false;
   const W = MANDO_WEAPONS[name];
   return !W || !W.slot || kitOf()[W.slot] === name;
