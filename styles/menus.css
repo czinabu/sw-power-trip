@@ -107,6 +107,14 @@
 #mpinfo .mpi-meta .mthreat{margin-left:4px}
 #mpinfo .mpi-won{margin-left:auto;font:500 12.5px/1 var(--font-body);letter-spacing:.3px;color:var(--ink-soft)}
 #mpinfo .ok{color:var(--xp)} #mpinfo .no{color:var(--ink-dim)}
+/* the ARCADE shelf (ui/missions-ui.js): random contracts, SHUFFLE and SURPRISE ME */
+.mp-arcade .sec-label .mp-sub{margin-left:8px;font-weight:600;letter-spacing:1.5px;color:var(--ink-dim);text-transform:none}
+.mp-arcbtns{display:flex;gap:6px}
+.mp-arcbtns .btn{flex:1 1 0;padding:7px 10px;font-size:12px;letter-spacing:2px;background:rgba(8,18,33,.6);pointer-events:auto}
+.msn.arc{--bc:var(--accent)}
+.msn.arc.sel{border-color:rgba(90,210,255,.7);background:linear-gradient(90deg,rgba(10,40,60,.85),rgba(8,20,32,.7))}
+.msn.arc .mk{display:flex;gap:4px;margin-top:5px}
+.msn-tag.tw{color:var(--gold);border-color:rgba(255,210,74,.5)}
 .msn-tag{font:700 9px/1 var(--font-ui);letter-spacing:1.5px;color:var(--ink-dim);border:1px solid var(--edge-mid);border-radius:4px;padding:2px 4px}
 .modeopt .md .ok{color:var(--xp)}
 .modeopt{--bc:var(--gold);flex:1;padding:10px 12px;border:1px solid var(--edge);border-radius:var(--r);background:rgba(8,18,33,.7);cursor:pointer;
