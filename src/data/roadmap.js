@@ -6,6 +6,10 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'Tutorial heal lessons work', status: 'done',
+    items: ['The Mandalorian\'s "Use a bacta stim" step (and the Jedi\'s Force Mend step) refused to work at full health; those steps now start with you wounded and Force topped up, with a WOUNDED cue',
+            'Gear handed out mid-lesson now shows its HUD tile straight away (the bacta tile was missing)',
+            'Training only; the game modes already needed real damage to heal'] },
   { title: 'Squadmates feel every hit', status: 'done',
     items: ['A hurt squadmate shows a health bar over their head (green, then amber, then red) so you can see who is in trouble and go cover them',
             'Brute and boss blows, shockwaves, Warbringer quakes, lancer lunges, barrel and vent blasts now hurt the squad as well as you, not only trooper shots and swings',
