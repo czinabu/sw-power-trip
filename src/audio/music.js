@@ -347,6 +347,7 @@ export const MUSIC = (function(){
     if (sec !== section){ section = sec; step = 0; entered = true; }
     bpmMul = C ? (C.bpm || 1) * (section === 'tense' && C.dangerBpm ? C.dangerBpm : 1) : 1;
   }
+  const soon = f => setTimeout(f, 0);
   function scheduleStep(t){
     const I = intensity; if (I < 0.04) return;   // faded out (death / muted): let the reverb ring, schedule nothing
     const ls = step % 64, bar = (ls / 16) | 0, inBar = ls % 16, sd = stepDur();
@@ -355,11 +356,14 @@ export const MUSIC = (function(){
     if (inBar === 0){
       const bd = barDur() * 1.04;
       const withChoir = pal.pad === 'choir' || (C && C.choir) || (heroic && I > 0.7);
-      for (const c of P.chord){
+      // the chord's pads are the heaviest thing the score builds (a dozen voices, filters and vibratos at the top of a
+      // big fight's bar): one task per note, so a frame can be drawn between them instead of waiting on all of them
+      // (the step is scheduled ~0.1s ahead, so they're all built long before t)
+      for (const c of P.chord) soon(() => {
         strings(t, nf(c), bd, 0.014 + I * 0.024, 800 + I * 2200);
         if (I > 0.7 || heroic) strings(t, nf(c + 12), bd, 0.004 + I * 0.012, 1600 + I * 2600, true);   // the violins an octave up
         if (withChoir) choir(t, nf(c), bd, 0.008 + I * 0.016);
-      }
+      });
       voice(t, nf(P.bass - 12), bd, { type: 'sine', gain: 0.05 + I * 0.05, attack: 0.3, filter: 380 });   // sub drone
       if (I > 0.4 || (heroic && I > 0.12)) timpani(t, nf(P.bass + 12), 0.06 + I * 0.2);
       if ((ls === 0 && I > 0.68) || (entered && I > 0.4)) crash(t, 0.04 + I * 0.05);   // the top of each phrase, and a new section
@@ -385,7 +389,7 @@ export const MUSIC = (function(){
       if (inBar === 12) timpRoll(t, nf(P.bass + 12), sd * 4, 0.05 + I * 0.08); }
     // boss: low brass stabs on the chord
     if (I > 0.9 && (bar === 0 || bar === 2) && (inBar === 0 || inBar === 6 || inBar === 12))
-      for (const c of P.chord) lowBrass(t, nf(c), sd * (inBar === 12 ? 3 : 2), 0.02);
+      for (const c of P.chord) soon(() => lowBrass(t, nf(c), sd * (inBar === 12 ? 3 : 2), 0.02));
     // going wrong: a minor-second brass alarm on the half bars, and the high strings trembling
     if (tense && I > 0.35){
       if (inBar === 0 || inBar === 8){ horn(t, nf(P.chord[0]), sd * 3, 0.026, 1.5); horn(t, nf(P.chord[0] + 1), sd * 3, 0.02, 1.5); }

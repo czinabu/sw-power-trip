@@ -7,11 +7,15 @@
 //     nearest real solid; shallow climbable steps don't count, foes walk up those);
 //   · updateNav() runs a Dijkstra out from the player several times a second, once per body size (a brute needs a wider
 //     gap than a trooper), so every cell knows its walking distance to the player. Hazard zones and vents cost extra
-//     while they're about to fire, warning or firing, so foes walk around a lava surge instead of through it;
+//     while they're about to fire, warning or firing, so foes walk around a lava surge instead of through it. A fill
+//     stops a few metres past the farthest body that walks by it (the rest of the map is never asked), and a size
+//     nobody on the field has isn't filled at all: a duel up close costs a sliver of a whole-map fill. A big fill (a
+//     wave spread over a battle map) runs a slice per frame into a spare buffer and swaps in when it's done;
 //   · navSteer() is what the AI asks each frame: straight at the player when the way is open, otherwise toward the
 //     farthest cell down the field it can walk to in a straight line (smooth, not grid-zigzag).
 
-import { shared, solids, hazardZones, vents } from '../state.js';
+import { shared, solids, hazardZones, vents, enemies } from '../state.js';
+import { allies } from '../allies/squad.js';
 import { clamp } from '../utils.js';
 import { hazardContains } from '../world/hazards.js';
 
@@ -25,15 +29,22 @@ const IDLE_COST = 0.25;                 // a resting hazard is only mildly disli
 const LINE_PAD = 0.12;                  // straight-line moves keep this much more room than the grid needs
 const INF = 1e9;
 const BIG_RANGE = 46;                   // a battle map's flow field reaches this far (walking metres) from the hero
+const BUDGET = 1.5;                     // ms of a frame a fill may take; a bigger one carries on next frame
+const MARGIN = 6;                       // a fill reaches this far (walking metres) past the last body that reads it
+const REACH = 3;                        // cells: navSteer's search round a body standing on a closed cell
 
 const nav = {
   n: 0, nz: 0, half: 0, halfZ: 0, ox: 0, oz: 0,   // cells across (x) and along (z), arena half-sizes, grid origin (−half)
   clear: null,                          // Float32Array clearance per cell
   hz: null,                             // Int16Array: hazard index + 1 per cell (0 = none); vents come after zones
   dist: [null, null],                   // Float32Array walking distance to the player, per class
+  back: [null, null],                   // the spare per class, which a fill under way writes
   t: 0, flip: 0,
   heap: null, heapN: 0,
+  near: null, stamp: 0,                 // Uint16Array: cells within REACH of a body, stamped per fill
+  fresh: [false, false],                // was this size's field filled for where the hero is now?
 };
+const wants = [[], []];                 // per size: the cells (x, z pairs) of the bodies that walk by its field
 
 const cellOf = v => Math.floor((v - nav.ox) / CS);
 const cellOfZ = v => Math.floor((v - nav.oz) / CS);
@@ -65,8 +76,11 @@ export function buildNav(){
   nav.clear = new Float32Array(N);
   nav.hz = new Int16Array(N);
   nav.dist = [new Float32Array(N).fill(INF), new Float32Array(N).fill(INF)];
+  nav.back = [new Float32Array(N), new Float32Array(N)];   // the field a fill is writing (swapped in when it's done)
+  job.on = false;
   nav.done = new Uint8Array(N);
   nav.heap = new Int32Array(N * 9 + 64);   // room for every relaxation (stale entries stay queued)
+  nav.near = new Uint16Array(N); nav.stamp = 0;
   const edge = nav.half - 1, edgeZ = nav.halfZ - 1;   // clampToArena keeps bodies inside this rectangle
   for (let iz = 0; iz < nav.nz; iz++) for (let ix = 0; ix < nav.n; ix++){
     const x = centre(ix), z = centreZ(iz), k = iz * nav.n + ix;
@@ -83,7 +97,7 @@ export function buildNav(){
   // and so is a battle map (shared.arenaBig): only the fight around the hero needs routing; foes further out walk
   // straight in until they reach the filled stretch
   nav.range = nav.halfZ > nav.half * 1.5 ? 70 : shared.arenaBig ? BIG_RANGE : INF;
-  nav.t = 0; nav.primed = false;
+  nav.t = 0; nav.primed = false; nav.fresh = [false, false];
 }
 
 /* is hazard h (index + 1) about to warn, warning or firing? The lead time stops a foe stepping onto a vent or
@@ -123,8 +137,12 @@ function pop(d){
 const NBX = [1, -1, 0, 0, 1, 1, -1, -1], NBZ = [0, 0, 1, -1, 1, -1, 1, -1];   // 4 straight, then 4 diagonal
 const NB = [[1,0,1],[-1,0,1],[0,1,1],[0,-1,1],[1,1,Math.SQRT2],[1,-1,Math.SQRT2],[-1,1,Math.SQRT2],[-1,-1,Math.SQRT2]];
 
-function fillField(cls, px, pz, hot){
-  const d = nav.dist[cls], need = CLASSES[cls], n = nav.n, C = nav.clear;
+/* A fill runs as a JOB: it writes into a spare buffer a slice per frame (BUDGET ms), and the finished field swaps in
+   whole, so what the foes read is always a complete field and no frame pays for a whole one. */
+const job = { on: false, cls: 0, d: null, W: [], hot: new Uint8Array(64), left: 0, limit: 0 };
+let gotScratch = new Uint8Array(64);
+function beginFill(cls, px, pz, hot){
+  const d = nav.back[cls], need = CLASSES[cls], n = nav.n, C = nav.clear;
   d.fill(INF);
   nav.heapN = 0;
   // seed every open cell near the player (they may be on a crate or the gantry, whose own cells are closed)
@@ -142,14 +160,47 @@ function fillField(cls, px, pz, hot){
     }
     if (nav.heapN) break;
   }
-  const done = nav.done; done.fill(0);
-  const hzc = nav.hz, D1 = CS, D2 = CS * Math.SQRT2;
+  nav.done.fill(0);
+  // the bodies that will read this field (copied: the live list is gathered afresh while the job runs): once the
+  // fill has reached every one, it goes MARGIN further and stops
+  const W = job.W; W.length = 0; for (const v of wants[cls]) W.push(v);
+  if (gotScratch.length < W.length / 2) gotScratch = new Uint8Array(W.length);
+  if (job.hot.length < hot.length) job.hot = new Uint8Array(hot.length);
+  job.hot.set(hot);
+  const near = nav.near;
+  if (++nav.stamp > 65000){ nav.stamp = 1; near.fill(0); }
+  // a body is reached when its own cell is; one on a closed cell (pressed into cover) when a cell navSteer would
+  // look to from there is
+  for (let w = 0; w < W.length; w += 2){
+    gotScratch[w >> 1] = 0;
+    if (C[W[w+1]*n + W[w]] >= need){ near[W[w+1]*n + W[w]] = nav.stamp; continue; }
+    for (let jz = Math.max(0, W[w+1] - REACH); jz <= Math.min(nav.nz - 1, W[w+1] + REACH); jz++)
+      for (let jx = Math.max(0, W[w] - REACH); jx <= Math.min(n - 1, W[w] + REACH); jx++) near[jz*n + jx] = nav.stamp;
+  }
+  job.on = true; job.cls = cls; job.d = d;
+  job.left = W.length >> 1; job.limit = job.left ? nav.range : -1;
+}
+// work the job for up to `budget` ms; true once the field is finished and in use
+function runFill(budget){
+  const cls = job.cls, d = job.d, need = CLASSES[cls], n = nav.n, C = nav.clear, W = job.W, got = gotScratch, hot = job.hot;
+  const done = nav.done, near = nav.near, stamp = nav.stamp, hzc = nav.hz, D1 = CS, D2 = CS * Math.SQRT2;
+  const closed = w => C[W[w+1]*n + W[w]] < need;
+  const t0 = performance.now();
+  let pops = 0;
   while (nav.heapN){
+    if ((++pops & 255) === 0 && performance.now() - t0 > budget) return false;   // the rest next frame
     const k = pop(d);
     if (done[k]) continue;   // a stale queue entry
     done[k] = 1;
     const ix = k % n, iz = (k - ix) / n, dk = d[k];
-    if (dk > nav.range) continue;   // a long arena only fills the stretch around the player
+    if (dk > job.limit) break;   // past everyone who walks by it, or (a long arena) past the stretch around the player
+    if (job.left && near[k] === stamp){
+      for (let w = 0; w < W.length; w += 2){
+        if (got[w >> 1]) continue;
+        if (closed(w) ? Math.abs(W[w] - ix) <= REACH && Math.abs(W[w+1] - iz) <= REACH : W[w] === ix && W[w+1] === iz){ got[w >> 1] = 1; job.left--; }
+      }
+      if (!job.left) job.limit = Math.min(nav.range, dk + MARGIN);
+    }
     for (let q = 0; q < 8; q++){
       const ox = NBX[q], oz = NBZ[q], jx = ix + ox, jz = iz + oz;
       if (jx < 0 || jz < 0 || jx >= n || jz >= nav.nz) continue;
@@ -163,6 +214,32 @@ function fillField(cls, px, pz, hot){
       if (nd < d[j]){ d[j] = nd; push(d, j); }
     }
   }
+  nav.back[cls] = nav.dist[cls]; nav.dist[cls] = d;   // swap the finished field in
+  job.on = false; nav.fresh[cls] = true;
+  return true;
+}
+
+// who walks by which field: the grounded foes (by body size, as ai.js and director.js ask) and the squad (troopers' size)
+function gatherWants(){
+  wants[0].length = 0; wants[1].length = 0;
+  for (const e of enemies){
+    if (e.dead || e.t.fly || !e.group) continue;
+    const p = e.group.position;
+    wants[navClass(0.7 * (e.t.scale || 1))].push(clamp(cellOf(p.x), 0, nav.n - 1), clamp(cellOfZ(p.z), 0, nav.nz - 1));
+  }
+  for (const a of allies) if (a.group){ const p = a.group.position; wants[0].push(clamp(cellOf(p.x), 0, nav.n - 1), clamp(cellOfZ(p.z), 0, nav.nz - 1)); }
+}
+// does this size's field still reach everyone who reads it? (a body on a closed cell, pressed into cover, is never reached)
+function covers(cls){
+  const W = wants[cls], d = nav.dist[cls], need = CLASSES[cls];
+  for (let w = 0; w < W.length; w += 2){ const k = W[w+1]*nav.n + W[w]; if (d[k] >= INF && nav.clear[k] >= need) return false; }
+  return true;
+}
+// start a size's fill (and its first slice); `now`: finish it on the spot (the first fills, under the load)
+function fill(cls, pp, now){
+  if (!wants[cls].length){ nav.fresh[cls] = false; return; }   // nobody this size on the field: skip it
+  beginFill(cls, pp.x, pp.z, nav.hotNow);
+  runFill(now ? Infinity : BUDGET);
 }
 
 const hotSig = a => { let h = 0; for (let i = 1; i < a.length; i++) h = (h * 3 + a[i]) | 0; return h; };   // which hazards are hot, as one number
@@ -175,26 +252,32 @@ function hotTable(){
   return a;
 }
 
-/* once per frame from updateEnemies: refresh one size's field on a short timer (the two sizes take turns, so each
-   is at most ~0.25s old and no frame pays for both) */
+/* once per frame from updateEnemies: a fill under way gets its slice; otherwise refresh one size's field on a short
+   timer (the two sizes take turns, so each is at most ~0.25s old, plus the few frames a big fill is spread over) */
 export function updateNav(dt, pp){
   if (!nav.n || nav.half !== shared.arenaHalf || nav.halfZ !== (shared.arenaHalfZ || shared.arenaHalf)) buildNav();
   nav.t -= dt;
+  if (job.on){ runFill(BUDGET); return; }
   if (nav.t > 0) return;
   nav.t = shared.arenaBig ? REBUILD_BIG : REBUILD;
   nav.hotNow = hotTable();
-  if (!nav.primed){ fillField(0, pp.x, pp.z, nav.hotNow); fillField(1, pp.x, pp.z, nav.hotNow); nav.primed = true; nav.at = [cellOf(pp.x), cellOfZ(pp.z)]; nav.hotSig = hotSig(nav.hotNow); nav.still = 0; nav.pending = -1; return; }
-  // standing still with no hazard changing: the field is already right, so don't pay for a re-fill (up to 2 s, to be safe)
+  gatherWants();
+  if (!nav.primed){ fill(0, pp, true); fill(1, pp, true); nav.primed = true; nav.at = [cellOf(pp.x), cellOfZ(pp.z)]; nav.hotSig = hotSig(nav.hotNow); nav.still = 0; nav.pending = -1; return; }
+  // standing still with no hazard changing: the field is already right, so don't pay for a re-fill (up to 2 s, to be
+  // safe), unless a body has walked (or spawned) past where the last fill stopped
   const cx = cellOf(pp.x), cz = cellOfZ(pp.z), sig = hotSig(nav.hotNow);
   if (cx === nav.at[0] && cz === nav.at[1] && sig === nav.hotSig && nav.still < 16){
     nav.still++;
-    if (nav.pending >= 0){ fillField(nav.pending, pp.x, pp.z, nav.hotNow); nav.pending = -1; }   // the other size catches up with where we stopped
+    if (nav.pending >= 0){ fill(nav.pending, pp); nav.pending = -1; }   // the other size catches up with where we stopped
+    else for (let c = 0; c < 2; c++) if (wants[c].length && (!nav.fresh[c] || !covers(c))){ fill(c, pp); break; }
     return;
   }
   nav.at[0] = cx; nav.at[1] = cz; nav.hotSig = sig; nav.still = 0;
   nav.flip ^= 1;
-  fillField(nav.flip, pp.x, pp.z, nav.hotNow);
-  nav.pending = nav.flip ^ 1;
+  if (!wants[nav.flip].length) nav.flip ^= 1;   // a size nobody has: the other one refreshes in its turn
+  fill(nav.flip, pp);
+  nav.pending = wants[nav.flip ^ 1].length ? nav.flip ^ 1 : -1;
+  if (nav.pending < 0) nav.fresh[nav.flip ^ 1] = false;
 }
 
 export const navClass = radius => radius > BIG_RADIUS ? 1 : 0;
