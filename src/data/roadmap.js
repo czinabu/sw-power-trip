@@ -6,6 +6,9 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'A wide Force-ready stance', status: 'done',
+    items: ['Fighting with the saber holstered, the Jedi now stands in a wide, low guard: feet set well apart, knees bent, a slight hunch, both arms out to the sides with the palms open toward the foe',
+            'Same stance in every mode: story, training, survival, sandbox, missions and co-op'] },
   { title: 'Duellists fight with real saber moves', status: 'done',
     items: ['Enemy duellists swing the hero\'s own cuts: flat cuts, diagonals, the overhead, rising cuts, a sweep at the knees and the thrust, each with its own wind-up you can read',
             'Each walks its own string (acolytes round the clock, magnaguards spinning the staff, the form masters in their form), and a long string can end in an amber-lit finisher: a spinning cut or a Djem So slam',
