@@ -274,27 +274,47 @@ export const GUARD_LINE = {
    TAKEDOWN on anything staggered or floored. */
 export const MANDO_MELEE = {
   string: [
-    { name: 'jab',   dmg: 13, knock: 8,  line: 'L', recover: 0.3,  lunge: 4.5, shove: 0.3, contact: 0.07 },
-    { name: 'cross', dmg: 16, knock: 12, line: 'R', recover: 0.34, lunge: 5,   shove: 0.45, contact: 0.1 },
-    { name: 'knee',  dmg: 18, knock: 14, line: 'H', recover: 0.4,  lunge: 5.5, shove: 0.9, contact: 0.12, heavy: true },
-    { name: 'blade', dmg: 30, knock: 22, line: 'R', recover: 0.52, lunge: 6.5, shove: 0.5, contact: 0.13, heavy: true, stagger: true },
+    { name: 'jab',   dmg: 13, knock: 8,  line: 'L', recover: 0.3,  lunge: 4.5, shove: 0.3, contact: 0.07, zone: 2, react: [1, 0, 0.1], stop: 0.03 },
+    { name: 'cross', dmg: 16, knock: 12, line: 'R', recover: 0.34, lunge: 5,   shove: 0.45, contact: 0.1, zone: 2, react: [1, -0.4, 0], stop: 0.045 },
+    { name: 'knee',  dmg: 18, knock: 14, line: 'H', recover: 0.4,  lunge: 5.5, shove: 0.9, contact: 0.12, heavy: true, fold: 1, stop: 0.07 },
+    { name: 'blade', dmg: 30, knock: 22, line: 'R', recover: 0.52, lunge: 6.5, shove: 0.5, contact: 0.13, heavy: true, stagger: true, zone: 1, react: [0.3, -1, 0], stop: 0.08 },
   ],
   /* HOLSTERED (4): with his weapon put away the string becomes a brawler's — real swings, not quick shots: a lead
      hook, a rear hook, a rising uppercut, then a wound-up overhand haymaker that staggers. Each one sweeps a wider arc
      and reaches a little further than the armed string (`reach`, `arc`), and hits harder. */
   fists: [
-    { name: 'hookL',    dmg: 17, knock: 10, line: 'L', recover: 0.36, lunge: 4.5, shove: 0.45, contact: 0.11, reach: 1.7, arc: 1.0 },
-    { name: 'hookR',    dmg: 19, knock: 12, line: 'R', recover: 0.38, lunge: 5,   shove: 0.55, contact: 0.12, reach: 1.7, arc: 1.0 },
-    { name: 'upper',    dmg: 22, knock: 14, line: 'H', recover: 0.42, lunge: 5,   shove: 0.9,  contact: 0.13, reach: 1.6, arc: 0.8, heavy: true },
-    { name: 'haymaker', dmg: 36, knock: 24, line: 'R', recover: 0.58, lunge: 7,   shove: 0.6,  contact: 0.17, reach: 1.85, arc: 1.05, heavy: true, stagger: true },
+    { name: 'hookL',    dmg: 17, knock: 10, line: 'L', recover: 0.36, lunge: 4.5, shove: 0.45, contact: 0.11, reach: 1.7, arc: 1.0, zone: 2, react: [0.3, 1, 0], stop: 0.05 },
+    { name: 'hookR',    dmg: 19, knock: 12, line: 'R', recover: 0.38, lunge: 5,   shove: 0.55, contact: 0.12, reach: 1.7, arc: 1.0, zone: 2, react: [0.3, -1, 0], stop: 0.055 },
+    { name: 'upper',    dmg: 22, knock: 14, line: 'H', recover: 0.42, lunge: 5,   shove: 0.9,  contact: 0.13, reach: 1.6, arc: 0.8, heavy: true, zone: 2, react: [0.4, 0, 1.2], stop: 0.075 },
+    { name: 'haymaker', dmg: 36, knock: 24, line: 'R', recover: 0.58, lunge: 7,   shove: 0.6,  contact: 0.17, reach: 1.85, arc: 1.05, heavy: true, stagger: true, zone: 2, react: [0.6, -0.9, -0.6], stop: 0.1 },
   ],
+  /* HOW A BLOW LANDS ON THE BODY (melee.js landStrike): `zone` is where it hits (2 head · 1 torso), `react` the way the
+     fist travels through it in his own frame [ahead, toward his right, up], so a jab snaps the head straight back, a
+     hook whips it round, an uppercut tips it up and the haymaker drives it down and across (enemies/damage.js
+     zoneReact); a knee `fold`s the foe over it. `stop` is the beat of hit-stop the blow freezes on when it connects. */
   combo: 0.55,            // seconds after a strike's recovery the next press still continues the string
+  /* CLOSING THE GAP: each blow steps him in toward the foe it's thrown at (the nearest one within `range` m and `cone`
+     rad of where he faces), far enough that the fist lands at arm's length and never further: he stops `stand` m
+     outside its body instead of walking into it, and a step is never longer than `maxStep` m. */
+  magnet: { range: 3.6, cone: 0.75, stand: 0.62, maxStep: 1.7 },
+  /* THE CLINCH: keep E (or, holstered, LMB) held through the first blow and the free hand takes the foe by the collar.
+     Held at arm's length he can't fight back; E drives the beskar helmet into its face (each `headbutt` rocks it; the
+     `max`th drops it at his feet for a takedown), LMB throws it the way he faces: it flies `speed` m/s and bowls over
+     anyone it hits (`bowl`), then lands floored. Let go of nothing for `hold` s and he shoves it off, staggered.
+     Brutes, the jet troopers, duellists with their guard up and the big ones can't be held: the hand just shoves. */
+  grab: { press: 0.2, reach: 1.25, hold: 2.6, stand: 0.42, moveMul: 0.45 },
+  headbutt: { dmg: 22, knock: 10, recover: 0.42, contact: 0.13, max: 3, react: [1, 0, -0.25] },
+  throw: { dmg: 14, speed: 13, lift: 6.5, recover: 0.5, contact: 0.15, bowl: { dmg: 18, knock: 20, radius: 1.35 }, floor: 1.1 },
+
   reach: 1.45, arc: 0.75,   // a fist lands within arm's length (+ the step it carries) of the body, in front
   catchWindow: 0.2,       // a blow landing this soon after E is caught on the vambrace
   catchWhiff: 0.55,       // a catch window that caught nothing can't reopen for this long
   charge: { minD: 3.2, maxD: 9, fuel: 18, cd: 1.4, dmg: 22, knock: 26, speed: 26 },
   dive: { fuel: 14, cd: 1.0, dmg: 26, radius: 3.2, knock: 20, speed: 30 },
-  takedown: { range: 2.0, dmg: 70, maxFrac: 0.6 },   // + this fraction of a light foe's max health (not heavies/bosses)
+  /* TAKEDOWN — the vibroblade finisher on anything reeling or floored: a standing foe gets the collar and a knife
+     driven up under the chest plate, a floored one a drop to one knee and the blade driven down. The blow lands
+     `contact` s in, when the knife does (the foe is held still until then). */
+  takedown: { range: 2.6, dmg: 70, maxFrac: 0.6, contact: 0.2, recover: 0.6, floorContact: 0.26, floorRecover: 0.72 },   // + this fraction of a light foe's max health (not heavies/bosses)
   /* SHIELD AND BLADE — E while the single blaster's shield is up (RMB). The wrist vibroblade cuts from behind the
      disc and the shield STAYS UP (firing drops it, cutting doesn't), so this is the crowd tool: a wide hack, a
      backhand, then a shield BASH that staggers the light foes in front of you for takedowns. Every beat spends the

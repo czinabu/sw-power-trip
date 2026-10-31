@@ -27,7 +27,7 @@ import {
 } from '../player/mando/gadgets.js';
 import { mandoShift } from '../player/mando/mobility.js';
 import { darksaberThrow } from '../player/mando/darksaber.js';
-import { mandoMelee } from '../player/mando/melee.js';
+import { mandoMelee, clinchThrow } from '../player/mando/melee.js';
 import { lockPress, lockKick, lockPush } from '../enemies/duel.js';
 import { mandoWeapon, switchWeapon, startReload, fireTrigger, mandoFlame, beskarPress } from '../player/mando/weapons.js';
 import { startLevel, retryLevel } from '../game/flow.js';
@@ -61,6 +61,7 @@ document.addEventListener('mousedown', (e) => {
   if (player.saberLock){ if (e.button === 0) lockPress(); return; }   // blades bound: LMB drives (enemies/duel.js)
   if (e.button === 2 && (player.judgeT > 0 || player.flaming || player.mendT > 0)) return;   // mid-channel (lightning / flame / mend): no bracing
   if (G.hero === 'mando'){
+    if (e.button === 0 && player.clinch){ clinchThrow(); return; }   // a foe held by the collar: LMB throws it (mando/melee.js)
     if (e.button === 0){
       // LMB while guarding with the Darksaber hurls it; the grappling line reels it back (player/mando/darksaber.js)
       if (player.weapon === 'darksaber' && player.blockHeld){ darksaberThrow(); return; }
