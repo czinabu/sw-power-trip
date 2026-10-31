@@ -131,7 +131,7 @@ const LEGS = {
   hurdle: [-1.45, 1.35, 0.5, 0.95, 0.04],
   reach:  [-0.42, 0.5, -0.12, 0.28, 0.08],
   kneel:  [-1.25, 1.45, 0.25, 2.25, 0.18],   // the R (back) knee goes down: a superhero landing
-  kneeslide: [-0.4, 2.1, -0.6, 0.06, 0.14],   // a sprint slide: the right leg out along the ground, the left shin folded under the hips
+  kneeslide: [-0.95, 2.15, -0.3, 0.04, 0.3],   // a sprint slide: the right leg straight out along the ground, the left knee out and its shin folded under the lead leg, a baseball slide
 };
 function poseLegs(R, dr, shape, w, rate){
   const [lh, lk, rh, rk, sp] = shape;
@@ -151,7 +151,7 @@ function slideLegs(R, dr, p, w, shape = LEGS.kneeslide){
   const lead = w;
   poseLegs(R, dr, [shape[0] * fold, shape[1] * fold, shape[2] * lead, shape[3] * lead, shape[4]], 1, 20);
   // the lead foot flexes, toes up, the heel skimming the floor (set after the ankles' own pass: jediAgilityPost)
-  player._ankPose = [0.9 * fold, -0.55 * lead];
+  player._ankPose = [0.9 * fold, -0.7 * lead];
 }
 const smoothK = k => k * k * (3 - 2 * k);
 
@@ -296,8 +296,8 @@ function bareArms(dr, R){
   const W = player._wall, sl = player.flip && player.flip.legs === 'kneeslide';
   const arm = (A, x, y, e) => { A.sh.rotation.x = dr(A.sh.rotation.x, x, 16); A.sh.rotation.y = dr(A.sh.rotation.y, y, 16); A.el.rotation.x = dr(A.el.rotation.x, e, 16); };
   if (sl){
-    arm(R.armR, -0.75, 0.5, -0.5);    // out in front for balance
-    arm(R.armL, 0.7, -0.35, -0.2);    // the free hand trailing low behind
+    arm(R.armR, -1.0, 0.45, -0.7);    // up and out in front for balance
+    arm(R.armL, 1.15, -0.45, -0.1);   // the free hand propped behind on the ground
   } else if (W && W.w > 0.3){
     const wallLeft = W.wx > 0;
     arm(R.armL, wallLeft ? -1.0 : -0.3, wallLeft ? 0.2 : -1.15, wallLeft ? -0.9 : -0.3);   // wall side: in and forward; far side: thrown wide
@@ -339,7 +339,7 @@ const smooth = k => { k = clamp(k, 0, 1); return k * k * (3 - 2 * k); };
 const DIVE_LEGS = [0.12, 0.28, 0.06, 0.45, 0.14];     // laid out behind in the throw, knees soft
 const DIVE_LEGS_BACK = [-0.55, 0.85, -0.3, 0.55, 0.16];   // on his back: knees up, boots toward the target
 const GETUP_LEGS = [-1.2, 1.9, 0.15, 1.5, 0.18];      // one knee planted, pushing up
-const BASE_LEGS = [-0.4, 2.0, -0.62, 0.06, 0.2];      // the right leg out, the left folded under (the body leans back on top)
+const BASE_LEGS = [-0.95, 2.1, -0.3, 0.04, 0.3];      // the right leg out, the left folded under (the body leans back on top)
 function mandoBody(dt, dr, vis, R, fl){
   fl.t += dt;
   const p = clamp(fl.t / fl.dur, 0, 1);

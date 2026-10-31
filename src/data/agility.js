@@ -332,8 +332,8 @@ export const AIR_GUARDS = {
    side the wall can be on: the arm away from the wall thrown wide for balance, the arm on the wall side held in and
    forward, fingers toward the face. The blade always points away from the wall. */
 const SLIDE_GUARD = {
-  regular: { hand: [0.42, -0.1, 0.34], blade: [0.28, 0.78, -0.56], twist: -0.1, off: { hand: [-0.5, -0.78, -0.42], pole: OFF } },
-  reverse: { hand: [0.4, -0.12, 0.3], blade: [0.2, 0.3, -0.93], twist: -0.1, pole: [0.8, -0.3, -0.5], off: { hand: [-0.5, -0.78, -0.42], pole: OFF } },
+  regular: { hand: [0.42, 0.12, 0.38], blade: [0.28, 0.78, -0.56], twist: -0.1, off: { hand: [-0.45, -0.85, -0.62], pole: OFF } },
+  reverse: { hand: [0.4, 0.08, 0.34], blade: [0.2, 0.3, -0.93], twist: -0.1, pole: [0.8, -0.3, -0.5], off: { hand: [-0.45, -0.85, -0.62], pole: OFF } },
 };
 const WALL_GUARD = {   // wallW: the wall is on the weapon side; wallO: on the free-hand side
   regular: {

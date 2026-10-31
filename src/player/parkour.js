@@ -214,7 +214,7 @@ export function trySlide(){
   flowLink('slide');
   player.moveVel.multiplyScalar((jedi ? hs + MOVE.forceSlideBoost : Math.max(SL.speed, hs + SL.boost)) / hs);
   player.sprinting = false;
-  if (jedi) player.flip = { t: 0, dur: MOVE.forceSlideTime, pitch: -0.5, drop: 0.5, legs: 'kneeslide', arms: 'slide', side: 1, ease: 'twirl' };
+  if (jedi) player.flip = { t: 0, dur: MOVE.forceSlideTime, pitch: -0.7, drop: 0.65, legs: 'kneeslide', arms: 'slide', side: 1, ease: 'twirl' };
   // the Mando's goes in feet first, like sliding into base, facing the way he skids (anim/agility.js mandoBody)
   else player.flip = { kind: 'slide', t: 0, dur: SL.time, face: Math.atan2(player.moveVel.x, player.moveVel.z) };
   const pp = playerPos();
