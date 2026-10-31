@@ -65,6 +65,7 @@
 import { REFUGE_SPOTS } from '../world/arenas/refuge.js';
 import { PURSUIT_SPOTS } from '../world/arenas/pursuit.js';
 import { BATTLE_MAPS, GRASSLAND_SPOTS, ICEFRONT_SPOTS, GRAVEYARD_SPOTS } from './battlemaps.js';
+import { LEVELS } from './levels.js';
 
 export const MISSION_VOICE = { jedi: 'THE BATTLEMASTER', mando: 'THE ARMORER' };
 export const MISSION_COLOR = { jedi: 0x5ad2ff, mando: 0xffa040 };
@@ -146,7 +147,8 @@ export const MISSIONS = {
         at: GRASSLAND_SPOTS.points.gate, r: 7, time: 60, awayRate: 0.25, squadRate: 0.6, overrun: 'RETAKE THE GATE', unguarded: 'GATE UNGUARDED',
         pulses: [ { grunt: 3, blaster: 2 }, { grunt: 2, blaster: 2, officer: 1 }, { grunt: 3, blaster: 1, phalanx: 1 },
                   { grunt: 2, blaster: 2, grenadier: 1 }, { grunt: 2, blaster: 1, acolyte: 1 }, { grunt: 3, blaster: 2, flyer: 1 } ],
-        every: [8, 11], cap: 11, from: [-Math.PI + 0.35, -0.35], aggro: 9 },
+        every: [8, 11], cap: 11, from: [-Math.PI + 0.35, -0.35], aggro: 9,
+        doneLine: 'THE GUNSHIPS ARE HERE', doneSub: 'The gate is ours. Its warden is coming out.' },
 
       { kind: 'duel', title: 'DEFEAT THE WARDEN',
         say: { jedi: 'Their commander takes the field himself. Your men will keep his troops off you. He is yours.',
@@ -277,19 +279,20 @@ export const MISSIONS = {
     title: 'SALVAGE RIGHTS',
     blurb: 'raid the wrecks for their cores, hold the freighter',
     level: { ...BATTLE_MAPS.graveyard.level, name: 'MISSION — THE STARSHIP GRAVEYARD OF JAKKU',
-             sub: { jedi: 'Somewhere in these wrecks are the cores that still remember the old war.',
-                    mando: 'The cores in these wrecks are worth a fortune. The Empire wants them first.' } },
+             sub: { jedi: 'The cores in these wrecks remember where his ships have been.',
+                    mando: 'The cores in these wrecks remember where the beskar went. The Empire wants them first.' } },
     start: GRAVEYARD_SPOTS.allyStart,
     kit: 4,
     grant: { jedi: ['throw', 'slam'], mando: ['grapple', 'birds'] },
     objectives: [
       { kind: 'sabotage', title: 'SALVAGE THE CORES', consoleName: 'CORE', doneLine: 'EVERY CORE RECOVERED', doneSub: 'They know you have them.',
-        say: { jedi: 'Four wrecks still hold their navigation cores. Pull each one before the salvage crews burn them. Mind the snipers on the hulls.',
-               mando: 'Four cores, four wrecks. Pull them before the Empire does. Snipers on the high plates: take the high ground or stay low.' },
+        say: { jedi: 'Four wrecks still hold their navigation cores, and they remember where Vexis\'s ships go. Pull each one before the salvage crews burn them. Mind the snipers on the hulls.',
+               mando: 'Four cores, four wrecks, and every one remembers where the Magistrate\'s beskar goes. Pull them before his crews do. Snipers on the high plates: take the high ground or stay low.' },
         task: { jedi: 'Stand at each wreck to pull its core', mando: 'Stand at each wreck to pull its core' },
         consoles: [ { at: GRAVEYARD_SPOTS.points.engine, guards: { grunt: 2, blaster: 1, sniper: 1 } },
                     { at: [42, 20], guards: { grunt: 2, lancer: 1, blaster: 1 } },
-                    { at: [-10, -31], guards: { grunt: 1, grenadier: 1, blaster: 1, officer: 1 } },
+                    { at: [-10, -31], guards: { grunt: 1, grenadier: 1, blaster: 1, officer: 1 },
+                      found: { jedi: ['THE CAPTAIN\'S HOLOCRON', 'The Republic cruiser kept more than its route.'], mando: null } },
                     { at: [26, -54], guards: { phalanx: 1, grunt: 2, sniper: 1 } } ],
         time: 4.5, r: 2.4, hitLoss: 1.2,
         trickle: { every: 15, cap: 6, group: { grunt: 1, blaster: 1, flyer: 1 } } },
@@ -312,8 +315,8 @@ export const MISSIONS = {
         duel: { block: 0.7, posture: 150, feint: 0.4, chain: 2, counter: 0.5 },
         rage: 0.5, rageDuel: { feint: 0.5, delay: 0.4, chain: 3, thrust: 0.25 } },
     ],
-    done: { jedi: 'The cores are aboard and the old war keeps its secrets. Well done.',
-            mando: 'The cores are aboard and the bounty is ours. This is the Way.' },
+    done: { jedi: 'The cores are aboard, and a holocron with them. Every route they remember ends on Mustafar.',
+            mando: 'The cores are aboard. Every route ends at the Magistrate\'s forge on Mustafar. This is the Way.' },
   },
 
   // LOTHAL: an escort, on the far side of the Grass Sea from SPEARHEAD's push. The slicer droid has what it came for
@@ -325,7 +328,7 @@ export const MISSIONS = {
     blurb: 'walk a slicer droid out under fire, hold the landing pad',
     level: { ...BATTLE_MAPS.grassland.level, name: 'MISSION — THE EAST FLANK OF LOTHAL',
              sub: { jedi: 'The droid carries the outpost\'s prison codes. Get it to the shuttle.',
-                    mando: 'The droid has the bounty\'s location in its memory. Get it to the ship.' } },
+                    mando: 'The droid carries the outpost\'s cell codes. Get it to the ship.' } },
     start: [52, -42, 0],   // outside the outpost's east wall, just behind the droid, looking north up the flank
     kit: 4,
     grant: { jedi: ['throw', 'slam'], mando: ['grapple', 'birds'] },
@@ -335,8 +338,8 @@ export const MISSIONS = {
               mando: { model: 'b1', name: 'SCRAP', kicker: 'SLICER DROID', color: 0x9a7a4e, eye: 0xffa040, scale: 0.9, hp: 320 } },
     objectives: [
       { kind: 'escort', title: { jedi: 'ESCORT RX-4', mando: 'ESCORT SCRAP' },
-        say: { jedi: 'The droid will not walk into blaster fire on its own. Stay close and keep the troops off it. Clear them and it walks on.',
-               mando: 'The droid won\'t move if you\'re not with it, and it won\'t move under fire. Keep them off it.' },
+        say: { jedi: 'RX-4 carries the outpost\'s cell codes: no droid, no breakout. It will not walk into blaster fire on its own. Stay close and keep the troops off it. Clear them and it walks on.',
+               mando: 'Scrap has the cell codes. No droid, no breakout. It won\'t move if you\'re not with it, and it won\'t move under fire. Keep them off it.' },
         task: { jedi: 'Stay near the droid and keep foes off it', mando: 'Stay near the droid and keep foes off it' },
         path: [[51, -36], [49, -24], [49, -10], [49, 4]],
         speed: 2.6, leash: 15, threat: 6, dps: 4, regen: 3, aggro: 7,
@@ -357,8 +360,8 @@ export const MISSIONS = {
         trickle: { every: 15, cap: 7, group: { grunt: 1, blaster: 1 } }, from: [-Math.PI + 0.4, -0.4] },
 
       { kind: 'hold', title: 'HOLD THE LANDING PAD', music: 'defend', start: [10, 46, Math.PI],
-        say: { jedi: 'The shuttle is inbound. Hold the pad until it is down. They will come over the sandbags.',
-               mando: 'Ship\'s inbound. Hold the pad till it lands. They\'re coming over the sandbags.' },
+        say: { jedi: 'The shuttle is inbound to fly the codes to the breakout team. Hold the pad until it is down. They will come over the sandbags.',
+               mando: 'Ship\'s inbound for the codes. Hold the pad till it lands. They\'re coming over the sandbags.' },
         task: { jedi: 'Hold the landing pad until the shuttle lands', mando: 'Hold the landing pad until the ship lands' },
         at: [8, 52], r: 7, time: 45, awayRate: 0.35, squadRate: 0.55, holding: 'SHUTTLE INBOUND',
         overrun: 'CLEAR THE PAD', unguarded: 'PAD UNGUARDED', doneLine: 'THE SHUTTLE IS DOWN', doneSub: 'Someone followed you out.',
@@ -367,8 +370,8 @@ export const MISSIONS = {
         every: [8, 12], cap: 9, from: [-Math.PI + 0.3, -0.3], aggro: 8 },
 
       { kind: 'duel', title: 'DEFEAT THE SHIELD CAPTAIN', start: [8, 50, Math.PI],
-        say: { jedi: 'The outpost\'s captain fights behind a riot shield. Go around it, or break it with the Force.',
-               mando: 'Riot shield, stun baton. Blasters won\'t get through the front. Get behind it, or blow it off its feet.' },
+        say: { jedi: 'The outpost\'s captain has come to take the codes back. It fights behind a riot shield. Go around it, or break it with the Force.',
+               mando: 'The captain wants its codes back. Riot shield, stun baton. Blasters won\'t get through the front. Get behind it, or blow it off its feet.' },
         task: { jedi: 'Win the duel while the squad holds', mando: 'Win the duel while the clan holds' },
         foe: 'phalanx', name: 'THE SHIELD CAPTAIN', hp: 4, dmg: 1.2, scale: 1.22, tint: 0x5a6472, at: [6, 36],
         duel: { posture: 130, feint: 0.3, chain: 2, counter: 0.45 },
@@ -376,7 +379,110 @@ export const MISSIONS = {
         trickle: { every: 14, cap: 3, group: { grunt: 2 } }, from: [-Math.PI + 0.4, -0.4] },
     ],
     done: { jedi: 'The droid is aboard and the codes with it. The prisoners will walk free. Well done.',
-            mando: 'The droid is aboard and the trail is ours. Good droid. This is the Way.' },
+            mando: 'The droid is aboard and the codes with it. The cells open tonight. This is the Way.' },
+  },
+  // THE LOTHAL BREAKOUT: the same field and droid as the Extraction, the other way round. Walk the slicer droid in to
+  // the outpost, open its cell blocks, hold the gate while the prisoners run, and meet the captain who held the keys.
+  breakout: {
+    id: 'breakout',
+    title: 'THE LOTHAL BREAKOUT',
+    blurb: 'walk a slicer droid into the outpost, open the cells, hold the gate',
+    level: { ...BATTLE_MAPS.grassland.level, name: 'MISSION — THE OUTPOST ON LOTHAL',
+             sub: { jedi: 'The Acrobat is in a cell behind that wall. The droid has the codes.',
+                    mando: 'The ace is in a cell behind that wall. The droid has the codes.' } },
+    start: [49, 14, Math.PI],   // up the east flank, behind the droid, looking south at the outpost
+    kit: 4,
+    grant: { jedi: ['throw', 'slam'], mando: ['grapple', 'birds'] },
+    squad: 2,
+    escort: { jedi: { model: 'b1', name: 'RX-4', kicker: 'SLICER DROID', color: 0x7f93ae, eye: 0x5ad2ff, scale: 0.9, hp: 320 },
+              mando: { model: 'b1', name: 'SCRAP', kicker: 'SLICER DROID', color: 0x9a7a4e, eye: 0xffa040, scale: 0.9, hp: 320 } },
+    objectives: [
+      { kind: 'escort', title: { jedi: 'GET RX-4 TO THE GATE', mando: 'GET SCRAP TO THE GATE' },
+        say: { jedi: 'RX-4 carries the outpost\'s cell codes. It will not walk into blaster fire on its own: stay close, clear the troops, and it walks on. The east gate first.',
+               mando: 'Scrap has the cell codes. It won\'t move under fire, so keep them off it. East gate.' },
+        task: { jedi: 'Stay near the droid and keep foes off it', mando: 'Stay near the droid and keep foes off it' },
+        path: [[49, 10], [49, -6], [48, -20], [47, -36], [22, -38], [20, -46]],
+        speed: 2.6, leash: 15, threat: 6, dps: 4, regen: 3, aggro: 7,
+        ambush: [ { at: [49, -4], group: { grunt: 2, blaster: 2 }, from: [-Math.PI + 0.4, -0.4] },
+                  { at: [48, -22], group: { grunt: 2, lancer: 1, grenadier: 1, phalanx: 1 }, from: [-Math.PI + 0.4, -0.4] },
+                  { at: [30, -37], group: { grunt: 2, blaster: 1, officer: 1, flyer: 1 }, from: [-Math.PI + 0.4, -0.4] } ],
+        trickle: { every: 16, cap: 7, group: { grunt: 1, blaster: 1 } }, from: [-Math.PI + 0.4, -0.4] },
+
+      { kind: 'sabotage', title: 'OPEN THE CELL BLOCKS', consoleName: 'CELL BLOCK', consoleDone: 'OPEN', doneLine: 'THE CELLS ARE OPEN', doneSub: 'The prisoners are running for the gate.', start: [20, -44, Math.PI],
+        say: { jedi: 'We are in. Three cell blocks, three door panels. Stand at each while RX-4 feeds it the codes.',
+               mando: 'Three cell blocks. Stand at each panel while Scrap feeds it the codes. Don\'t let them pull you off it.' },
+        task: { jedi: 'Stand at each cell block\'s panel to open it', mando: 'Stand at each cell block\'s panel to open it' },
+        consoles: [ { at: [30, -58], guards: { grunt: 2, blaster: 1 } },
+                    { at: [-32, -52], guards: { grunt: 2, lancer: 1, blaster: 1 } },
+                    { at: [0, -64], guards: { phalanx: 1, grunt: 2, officer: 1 } } ],
+        time: 4.5, r: 2.4, hitLoss: 1.2,
+        trickle: { every: 15, cap: 6, group: { grunt: 1, blaster: 1 } } },
+
+      { kind: 'hold', title: 'HOLD THE GATE', music: 'defend', start: [0, -42, 0],
+        say: { jedi: 'The prisoners are running for the middle gate. Hold it until the last of them is out. The Acrobat is among them.',
+               mando: 'They\'re running for the middle gate. Hold it till the last one\'s out. The ace is in there somewhere.' },
+        task: { jedi: 'Hold the gate until every prisoner is out', mando: 'Hold the gate until every prisoner is out' },
+        at: [0, -40], r: 7, time: 45, awayRate: 0.35, squadRate: 0.55,
+        evacuees: { kind: 'prisoner', count: 14, spacing: 1.5, speed: 3, ramp: false, verb: 'OUT', name: { jedi: 'PRISONERS', mando: 'PRISONERS' },
+                    path: [[6, -51], [5, -45], [1, -40], [0, -30], [-2, -16]] },
+        overrun: 'CLEAR THE GATE', unguarded: 'GATE UNGUARDED', doneLine: 'EVERY CELL IS EMPTY', doneSub: 'The last one out walked, not ran.',
+        pulses: [ { grunt: 2, blaster: 2 }, { grunt: 2, officer: 1, blaster: 1 }, { grunt: 2, lancer: 1, grenadier: 1 },
+                  { grunt: 2, flyer: 1, blaster: 1 }, { grunt: 2, phalanx: 1, sniper: 1 } ],
+        every: [8, 12], cap: 9, from: [-Math.PI + 0.3, -0.3], aggro: 8 },
+
+      { kind: 'duel', title: 'DEFEAT THE SHIELD CAPTAIN', start: [0, -38, Math.PI],
+        say: { jedi: 'The outpost\'s captain held the keys to those cells, and it wants its prisoners back. It fights behind a riot shield. Go around it, or break it with the Force.',
+               mando: 'The captain wants its prisoners back. Riot shield, stun baton. Get behind it, or blow it off its feet.' },
+        task: { jedi: 'Win the duel while the squad holds', mando: 'Win the duel while the clan holds' },
+        foe: 'phalanx', name: 'THE SHIELD CAPTAIN', hp: 4, dmg: 1.2, scale: 1.22, tint: 0x5a6472, at: [8, -47],
+        duel: { posture: 130, feint: 0.3, chain: 2, counter: 0.45 },
+        rage: 0.5, rageDuel: { feint: 0.45, delay: 0.4, chain: 3 },
+        trickle: { every: 14, cap: 3, group: { grunt: 2 } }, from: [-Math.PI + 0.4, -0.4] },
+    ],
+    done: { jedi: 'The cells are empty and the Acrobat is free. It has not said thank you. It will want to test you instead.',
+            mando: 'The cells are empty and the ace is out. It wants a word with whoever came for it. This is the Way.' },
+  },
+  // THE MUSTAFAR FORGE: the forge floor of the second campaign level, broken for good. Charges on its three feeds,
+  // hold the lane out while they burn, then the forge's master comes for whoever lit them.
+  forge: {
+    id: 'forge',
+    title: 'THE MUSTAFAR FORGE',
+    blurb: 'charge the forge\'s feeds, hold while they burn, face its master',
+    level: { ...LEVELS[1], name: 'MISSION — THE MUSTAFAR FORGE', sub: { jedi: 'His war machines are forged here. Break the forge.', mando: 'Our beskar, melted down for his machines. Tear it down.' },
+             waves: [], hazards: {} },
+    start: [0, 17, Math.PI],   // the north lane, looking down the forge floor at the smelter
+    kit: 6,
+    grant: { jedi: ['throw', 'slam'], mando: ['grapple', 'birds'] },
+    objectives: [
+      { kind: 'sabotage', title: 'CHARGE THE FORGE', consoleName: 'CHARGE', doneLine: 'CHARGES SET', doneSub: 'Now get clear of it.',
+        say: { jedi: 'Three feeds carry the ore into the forge: the smelter\'s and the two catwalks\'. Set a charge on each. Mind the channels: the lava rises on a cycle.',
+               mando: 'Three feeds into the forge. Charge every one. Keep off the channels when they glow.' },
+        task: { jedi: 'Stand at each feed to set a charge', mando: 'Stand at each feed to set a charge' },
+        consoles: [ { at: [-13.8, 4.2], guards: { grunt: 2, blaster: 2, duelist: 1 } },
+                    { at: [13.8, -4.2], guards: { grunt: 2, lancer: 1, grenadier: 1 } },
+                    { at: [0, -5], guards: { phalanx: 1, grunt: 2, officer: 1, bomber: 1 } } ],
+        time: 4.5, r: 2.4, hitLoss: 1.2,
+        trickle: { every: 14, cap: 7, group: { grunt: 1, blaster: 1, flyer: 1 } } },
+
+      { kind: 'hold', title: 'HOLD THE WAY OUT', music: 'battle', start: [0, 12, Math.PI],
+        say: { jedi: 'The charges are burning. Hold the north lane until they blow, and do not let the guard reach them.',
+               mando: 'Charges are lit. Hold the lane till they go. Nobody gets near them.' },
+        task: { jedi: 'Hold the north lane until the charges blow', mando: 'Hold the north lane until the charges blow' },
+        at: [0, 14], r: 6, time: 40, awayRate: 0.35, holding: 'CHARGES BURNING',
+        overrun: 'CLEAR THE LANE', unguarded: 'LANE UNGUARDED', doneLine: 'THE FORGE GOES UP', doneSub: 'Every mould on Mustafar is slag.',
+        pulses: [ { grunt: 2, blaster: 2 }, { grunt: 2, brute: 1 }, { grunt: 2, sniper: 1, blaster: 1 },
+                  { grunt: 2, lancer: 1, bomber: 1 }, { grunt: 2, duelist: 1, officer: 1 } ],
+        every: [8, 12], cap: 9, from: [-Math.PI + 0.3, -0.3], aggro: 8 },
+
+      { kind: 'duel', title: 'DEFEAT THE FORGEMASTER', start: [0, 12, Math.PI],
+        say: { jedi: 'The forge\'s master comes out of the smoke. It is built like the machines it made. Read the swing, then punish it.',
+               mando: 'The forgemaster. It melted our beskar with its own hands. Don\'t trade blows. Make it miss, then hit it.' },
+        task: { jedi: 'Win the duel', mando: 'Win the duel' },
+        foe: 'brute', name: 'THE FORGEMASTER', hp: 3.6, dmg: 1.2, scale: 1.35, tint: 0xff7a1e, at: [0, -12],
+        rage: 0.45, trickle: { every: 14, cap: 3, group: { grunt: 2 } }, from: [-Math.PI + 0.4, -0.4] },
+    ],
+    done: { jedi: 'The forge is ash. But it fell too easily. This was never his army.',
+            mando: 'The forge is ash, and it was too easy. This was bait.' },
   },
   // TRIALS: the campaign's quiet one-on-ones between the battles (data/campaign.js). A master tests the hero before
   // teaching its form; for the Mando, a rival of the old clans. Stand-ins for now: built from today's duellists until the
@@ -458,3 +564,23 @@ export const MISSIONS = {
             mando: 'The champion stands with you. The clan is whole again. This is the Way.' },
   },
 };
+
+// SPEARHEAD ON THE ROAD TO THE CITADEL (the campaign's chapter 12): the Grass Sea battle's plan and fight, laid on
+// Exegol's ash (BATTLE_WORLDS.approach) and told in the last act's words. Campaign only: the Missions list keeps the
+// Grass Sea one.
+{
+  const S = MISSIONS.strike, sayAt = (i, say) => ({ ...S.objectives[i], say });
+  MISSIONS['strike-exegol'] = { ...S, id: 'strike-exegol', campaignOnly: true,
+    level: { ...S.level, layout: 'approach', name: 'MISSION — THE ROAD TO THE CITADEL',
+             sub: 'His last army holds the road to the Citadel. Break its line and take the gate.' },
+    objectives: [
+      sayAt(0, { jedi: 'Every master you found is with you, and the troopers who held Hoth. Take their forward posts one by one. Leave the troopers to the squad, and the blades to yourself.',
+                 mando: 'The whole clan rides with you. Take their posts one by one. They\'ll handle the troopers. The blades are yours.' }),
+      sayAt(1, { jedi: 'The Citadel\'s gate is open and his army is pouring out of it. Hold it until the gunships come. If a blade comes for you, put the squad on the gate (H) and meet it.',
+                 mando: 'The Citadel gate\'s ours if we can keep it. Hold it till the gunships come. Put your clan on it (H) when you have to go hunting.' }),
+      sayAt(2, { jedi: 'The gate\'s warden comes out to meet you. Your men will keep its troops off you. It is yours. Vexis is behind it.',
+                 mando: 'The warden of the gate wants you himself. The clan will keep his troops busy. The Magistrate is behind him.' }),
+    ],
+    done: { jedi: 'The road is open and the gate is ours. Vexis is waiting inside.',
+            mando: 'The gate is down. The Magistrate is inside. This is the Way.' } };
+}

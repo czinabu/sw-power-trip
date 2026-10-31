@@ -154,9 +154,18 @@ function buildTransport(){
   shared.refugeShip = { group: g, ramp, glow: glowM, hatch, solids: list };
 }
 
-/* an EVACUEE — a small robed figure (a youngling) or a little cloaked foundling in a helmet. Live, not baked. */
+/* an EVACUEE — a small robed figure (a youngling) or a little cloaked foundling in a helmet, or a grown PRISONER in a
+   jumpsuit (the Lothal breakout). Live, not baked. */
 export function makeEvacuee(kind, seed){
   const g = new THREE.Group();
+  if (kind === 'prisoner'){
+    const suit = toon([0xc86a2a, 0x8a8a84, 0xb05a24][seed % 3]), skin = toon([0xe8c0a0, 0xb07a58, 0x7a5038, 0xd8a888, 0x8ab070][seed % 5]);
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.3, 1.0, 10), suit); body.position.y = 1.0;
+    const legs = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.2, 0.55, 8), suit); legs.position.y = 0.28;
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.17, 12, 10), skin); head.position.y = 1.68;
+    for (const m of [body, legs, head]){ m.castShadow = true; inkify(m, 0.025); g.add(m); }
+    return g;
+  }
   const robe = kind === 'foundling' ? [0x6a5a4a, 0x5a5048][seed % 2] : [0xc8b48e, 0x9a7a56, 0xb8a080][seed % 3];
   const skin = [0xe8c0a0, 0xb07a58, 0x7a5038, 0xd8a888][seed % 4];
   const body = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.75, 10), toon(robe)); body.position.y = 0.42;

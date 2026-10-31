@@ -83,7 +83,10 @@ export function followChapter(pos, actTwo){
 // a mission chapter's last objective fell (a wave chapter's last wave is game/flow.js's): the clear's XP and second
 // wind, the upgrade screen, then the next chapter. A co-op guest waits for the host to move the run on.
 function chapterCleared(){
-  G.waveTotal++;   // a mission counts as a step deeper into the run (foes, store tiers and the Mando's gear follow it)
+  const c = chapterAt(G.chapter);
+  G.waveTotal += c?.steps || 1;   // a mission counts as a step deeper into the run (foes, store tiers and the Mando's gear follow it); `steps` when it stands for a level's waves
+  // a mission standing in for a level's waves (Mustafar): the run is as far into that level as its waves would have taken it
+  if (c && c.level != null && c.waves){ G.levelIdx = c.level; G.wave = c.waves[1]; checkUnlocks(1600); }
   G.chapterClosed = G.chapter;   // its closing page offers the powers it hands out (game/flow.js chapterClosed)
   chapterRewards();
   earnWavePoint();   // a mission chapter's skill point (game/upgrades.js), spent on the page that opens next

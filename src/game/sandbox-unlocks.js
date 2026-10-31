@@ -47,15 +47,17 @@ export function recordChapters(pos, onlyLast){
 
 // the Missions list keeps a mission locked (and unspoiled) until a hero has cleared it in the campaign: its chapter is
 // in the cleared set, or either hero has won it (the campaign marks that, game/mission.js), or the campaign is beaten
+// the chapter that opens a mission on the Missions list: the one that plays it, or one that plays its story version (`opens`)
+const playsMission = (c, id) => c.mission === id || (c.opens || []).includes(id);
 export function missionUnlocked(id){
   const m = MISSIONS[id]; if (!m) return false;
   if (sandboxFull()) return true;
-  const done = cleared(), ch = CHAPTERS.find(c => c.mission === id);
+  const done = cleared(), ch = CHAPTERS.find(c => playsMission(c, id));
   return (!!ch && done.has(ch.id)) || HEROES.some(h => { try { return localStorage.getItem('sw_mission_' + id + '_' + h) === '1'; } catch(e){ return false; } });
 }
 // 'CHAPTER 3' for the card of a locked mission: where the campaign reaches it ('' when no chapter does)
 export function missionChapterNo(id){
-  const i = chapterOrder(G.actTwo).findIndex(c => c.mission === id);
+  const i = chapterOrder(G.actTwo).findIndex(c => playsMission(c, id));
   return i < 0 ? '' : 'CHAPTER ' + (i + 1);
 }
 
@@ -94,7 +96,8 @@ export function refreshSandboxScope(){
       const m = MISSIONS[c.mission]; if (!m) continue;
       missionFoes(m.objectives, foes);
       for (const id in BATTLE_MAPS) if (m.level && m.level.layout === BATTLE_MAPS[id].level.layout) maps.add(id);
-      depth += 1;
+      depth += c.steps || 1;
+      if (c.level != null && c.waves) reachedWaves.push([c.level, c.waves[1] - 1]);   // a mission standing in for a level's waves
     }
   }
   const autoReached = (u) => u.chapter ? done.has(u.chapter)   // a form or a power: the chapter that hands it out (data/forms.js FORM_PATH, data/store.js)

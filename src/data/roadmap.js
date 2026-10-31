@@ -47,6 +47,7 @@ export const ROADMAP = [
             'Done: cutscenes: every chapter opens on a short in-engine scene, the Inquisitor (or VX-7) watches from across the archive, every duel foe gets an entrance, Vexis and the Magistrate get an arrival. Skippable, and shared in co-op',
             'Done: easier-to-read subtitles: bigger text over a soft dark backing, lifted off the letterbox bar onto the picture, for cutscenes and the in-mission voice',
             'Done: new arenas: the burning archive on Jedha, the prison yard on Lothal, the last hangar on Hoth, the road to the Citadel and the Sith amphitheatre on Exegol',
+            'Done: missions reworked to match the story: a real breakout on Lothal (walk the droid in, open the cells, hold the gate while the prisoners run), a forge raid on Mustafar, Spearhead fought on the road to the Citadel, the Knight (or champion) beside you on Hoth, and the route (and a holocron) found on Jakku',
             'Next: new foes and mini-bosses, the trials\' masters from the seven forms, the Mando\'s rival hunters'] },
   { title: 'Sandbox opens after Act I', status: 'done',
     items: ['Clear Act I with either hero and the sandbox opens, with the foes, powers, forms and worlds the story has shown so far',
