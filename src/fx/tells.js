@@ -1,6 +1,6 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
 // ATTACK TELLS: one colour and one sound per kind of danger, shared by every foe, boss and hazard, so a glance says what
-// to do. Add a new attack by picking a kind here, never by inventing a colour. The How to Play legend reads this table.
+// to do. Add a new attack by picking a kind here, never by inventing a colour. The Controls legend reads this table.
 //   parry  white and red: a thrust or lunge. A held block fails; parry it or dodge it.
 //   dodge  red: unblockable. Roll, dash or jump; nothing else helps.
 //   area   amber: a blast or zone on the ground. Move out of the ring.
