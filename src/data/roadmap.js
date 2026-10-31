@@ -6,6 +6,9 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'Makashi stance like Dooku\'s', status: 'done',
+    items: ['Form II Makashi\'s ready guard now follows Count Dooku\'s: upright and side-on, the saber one-handed out low and forward with the blade angled down at the foe, the off arm swept back and out with the palm open, feet narrow and close',
+            'Pose only, the hero\'s look is unchanged. Same guard in every mode: story, training, survival, sandbox, missions, the stance unlock screen and co-op'] },
   { title: 'Co-op: duellist guards for the guest', status: 'done',
     items: ['The joining player now sees a duellist\'s guard crescent, posture bar and breath, exactly as the host does',
             'Their cuts and punches meet the same guard: inside the crescent they are always turned, with the BLOCKED spark and clash; off-line they are turned by the foe\'s usual odds',
