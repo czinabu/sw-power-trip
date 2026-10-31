@@ -1,6 +1,7 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
 // Level and wave flow: startLevel, startWave, updateFlow, ability unlock gates.
 
+import { autosave } from './autosave.js';
 import { endLock } from '../enemies/duel.js';
 import { removeEnemy } from '../enemies/cleanup.js';
 import { clearGrenades } from '../enemies/grenades.js';
@@ -186,7 +187,7 @@ export function startLevel(idx, opts){
   const cp = G.checkpoint, retry = !!(opts && opts.retry) && !G.training && !G.mission && !G.sandbox && cp && cp.idx === idx && (cp.ch == null || cp.ch === G.chapter);
   const bossRetry = retry && cp.boss;
   if (retry) G.waveTotal = bossRetry ? cp.bossWaveTotal : cp.waveTotal;
-  else if (!G.training && !G.mission && !G.sandbox) G.checkpoint = { idx, ch: G.chapter, waveTotal: G.waveTotal, boss: false };
+  else if (!G.training && !G.mission && !G.sandbox){ G.checkpoint = { idx, ch: G.chapter, waveTotal: G.waveTotal, boss: false }; if (!G.endless) autosave('level'); }
   applyJetTier();   // size the jetpack to the current booster tier
   document.getElementById('xpval').textContent = (G.xp || 0);
   checkUnlocks();
@@ -430,7 +431,7 @@ export function updateFlow(dt){
       } else if (bossDue(L)){
         noteWavePoint();
         shared.levelPhase = 'bossfight';
-        if (G.checkpoint){ G.checkpoint.boss = diffBossCheckpoint(); G.checkpoint.bossWaveTotal = G.waveTotal; }
+        if (G.checkpoint){ G.checkpoint.boss = diffBossCheckpoint(); G.checkpoint.bossWaveTotal = G.waveTotal; if (!G.endless) autosave('boss checkpoint'); }
         showBanner('', '...something approaches.', 2.4);
         storyBeat('boss');
         spawnBossWhenReady(() => G.mode === 'play' && !shared.boss, 2400);
