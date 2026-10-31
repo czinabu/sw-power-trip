@@ -136,6 +136,7 @@ export function makeStyle(name = 'ink', colors = {}){
     }
     if (d.e){ m.emissive = new THREE.Color(d.e); m.emissiveIntensity = d.ei ?? 1; }
     if (d.side) m.side = d.side;
+    if (d.o != null){ m.transparent = true; m.opacity = d.o; m.depthWrite = false; }   // see-through parts (light stubble)
     mats.set(id, m);
     return m;
   }

@@ -138,8 +138,8 @@ export const JEDI_PARTS = {
 
   beard: {
     none(){},
-    // a few days' growth: a thin shadow along the jaw and over the lip, no ink line
-    stubble(R, k){ const o = { outline: false, mat: k.mat('skin', { shade: 0.62 }), noBurns: true }; jaw(R, k, 0.002, o); moustache(R, k, 0.004, o); },
+    // a few days' growth: a faint translucent shadow on the chin, lower jaw and upper lip, no ink line
+    stubble(R, k){ const o = { outline: false, mat: k.mat('skin', { shade: 0.45, o: 0.34 }), noBurns: true, low: true }; jaw(R, k, 0.001, o); moustache(R, k, 0.003, o); },
     // a pointed tuft on the chin under a moustache
     goatee(R, k){
       k.add(loft([{ y:-0.035, w:0.03, d:0.03, z:0.1 }, { y:0.0, w:0.06, d:0.05, z:0.098 }, { y:0.06, w:0.07, d:0.045, z:0.092 }], chamfer(0.4)), 'hair', R.head);
@@ -248,7 +248,7 @@ function jaw(R, k, lift, o){
     { y:-0.03 - lift, w:0.06 + L, d:0.05 + L, z:0.085 },
     { y:0.02, w:0.12 + L, d:0.14 + L, z:0.045 },
     { y:0.07, w:0.17 + L, d:0.19 + L, z:0.018 },
-    { y:0.1,  w:0.2 + L, d:0.215 + L, z:0.004 },
+    ...(o?.low ? [] : [{ y:0.1,  w:0.2 + L, d:0.215 + L, z:0.004 }]),   // low: stop below the cheeks
   ], JAW, { capTop: false, capBottom: false }), o?.mat || 'hair', R.head, [0, 0, 0], [0, 0, 0], o);
   if (!o?.noBurns) for (const sx of [-1, 1]) k.add(block(0.016 + lift, 0.07, 0.05, 0.4), 'hair', R.head, [0.098*sx, 0.13, 0.01], [0, 0, 0], { outline: false });   // sideburns
   if (lift > 0.01) k.add(block(0.05, 0.006, 0.01, 0.2), k.mat('skin', { shade: 0.42 }), R.head, [0, 0.087, 0.114 + lift], [0, 0, 0], { outline: false });
