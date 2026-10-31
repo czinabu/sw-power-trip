@@ -152,6 +152,11 @@ function wide(t, title){
 
 /* ---------- starting and ending ---------- */
 // opts: key (seen once a visit) · shots · actors · mark {x, z} · face [x, z] (the hero turns to it) · onDone · share (sent to a co-op partner)
+// the sim stands still but the gait reads player.moveVel/vel: a hero caught mid-run would keep striding in place, so stop them dead
+function stillHero(){
+  player.moveVel.set(0, 0, 0); player.vel.set(0, 0, 0);
+  player.backRun = false;
+}
 function start(opts){
   if (C.on || G.mode !== 'play') return false;
   if (opts.key && seen.has(opts.key)) return false;
@@ -163,6 +168,7 @@ function start(opts){
   if (C.mark && C.mark.yaw == null) C.mark.yaw = yawTo(C.mark.x, C.mark.z, pp.x, pp.z);
   G.cutscene = true;
   player.firing = false; player.trigHeld = false; player.blockHeld = false;
+  stillHero();
   document.body.classList.add('cutscene');
   el.classList.add('on'); el.classList.toggle('mando', G.hero === 'mando');
   $('.cs-skip').innerHTML = '<b>' + (padUsed() ? 'A' : 'ENTER') + '</b> skip';
@@ -246,6 +252,7 @@ export function updateCutscene(){
   for (const a of C.actors) updateActor(a, dt);
   // the hero idles (and turns to whatever the scene faced them toward) while the sim stands still
   const pp = playerPos();
+  stillHero();   // (nothing else may push the hero's velocity back up while the scene plays)
   if (dt > 0) animatePlayer(dt, pp, stance(), fwd(), rightV(), false);
   // the lens: eased from `from` to `to` around the shot's anchor, kept out of props like the play camera
   const k = ease(Math.min(1, C.t / s.t)), A = anchor(s.on), sc = s.on === 'actor' ? Math.max(1, A.scale || 1) : 1;
