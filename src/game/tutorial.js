@@ -93,11 +93,10 @@ export function startTutorial(){
   if (G.hero !== 'mando'){ setLoadout(trainingLoadout()); switchStance('shiicho', true); setStanceHud(); }
   setTutListener(onEvent);
   hidePanel();
-  // a lesson to go back to after a fall, else the next basic (a first visit plays them straight through), else the board
-  const list = lessonList(), back = retryId && list.find(x => x.L.id === retryId && x.open);
+  // a lesson to go back to after a fall, else the lesson board (it opens before every visit, new saves included)
+  const back = retryId && lessonList().find(x => x.L.id === retryId && x.open);
   retryId = null;
-  const b = list.find(x => x.L.group === 'basics' && !x.done);
-  T.next = back ? back.L : b ? b.L : 'board';
+  T.next = back ? back.L : 'board';
   T.wait = 2.8;   // the arrival banner first
 }
 // RETRY after a fall: the same lesson again, from its start
