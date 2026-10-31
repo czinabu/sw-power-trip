@@ -143,6 +143,8 @@ export function openPrefight(go){
   ctx = { prefight: true, slot: 0, onGo: go, ...prefightContext() };
   if (ctx.edit){ const e = ctx.loadout.indexOf(null); ctx.slot = e >= 0 ? e : 0; }
   ctx.focus = ctx.loadout.find(Boolean) || null;
+  // nothing to choose or learn about: training (its lessons pick the form between lessons) or a single learned form
+  if (G.modeSel === 'training' || ctx.known.length <= 1){ fight(); return; }
   render(); panel.classList.add('open');
 }
 export function openCodex(){

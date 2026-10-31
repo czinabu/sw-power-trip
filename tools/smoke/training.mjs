@@ -1,6 +1,6 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
 // TRAINING SMOKE TEST — boots the BUILT game (dist/index.html) and walks the training grounds for each hero:
-//   · a fresh profile: Before the Fight names only Shii-Cho (no spoilers), training opens straight on the first basic
+//   · a fresh profile: training skips Before the Fight and opens straight on the first basic
 //     lesson, and skipping through it lands on the lesson board, where every form and gear lesson is still sealed;
 //   · a beaten campaign: the board opens every lesson, and a few of them run through to the end (each step set up:
 //     its foes, its loadout, its gear) and back to the board.
@@ -52,13 +52,8 @@ for (const [hero, full, lessons] of RUNS){
     await page.click('#hero-' + hero);
     await page.click('#mode-training');
     await page.click('#goText');
-    if (hero === 'jedi'){
-      await page.waitForSelector('#forms.open', { timeout: 5000 });
-      const named = await page.$$eval('#forms .fm-tile:not(.locked) b', els => els.map(e => e.textContent));
-      if (!full) check(named.length === 1 && named[0] === 'SHII-CHO', `${label}: Before the Fight names only what's learned (${named.join(', ')})`);
-      else check(named.length >= 8, `${label}: Before the Fight shows the forms the story taught (${named.length})`);
-      await page.click('#forms [data-go]');
-    }
+    // training never opens Before the Fight: its lessons pick the form between lessons
+    check(!(await page.evaluate(() => document.getElementById('forms').classList.contains('open'))), `${label}: training skips Before the Fight`);
     await page.waitForFunction(() => GAME.G.mode === 'play' && GAME.G.training, null, { timeout: 20000 });
     if (!full){
       await page.waitForFunction(() => GAME.trainingProgress().total > 0, null, { timeout: 60000 });
