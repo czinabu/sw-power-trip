@@ -15,7 +15,7 @@ import { V3 } from '../utils.js';
 import { burst } from '../fx/particles.js';
 import { floater } from '../fx/floaters.js';
 import { resetTrooperKit } from '../player/trooper/kit.js';
-import { shared, G, rockets, birds, detos, enemies, bolts, orbs, rings, vfx, player, isGunner } from '../state.js';
+import { shared, G, rockets, birds, detos, enemies, bolts, orbs, rings, vfx, player, isGunner, isTrooper } from '../state.js';
 import { weaponUnlocked, RUN_KIT } from '../data/mando.js';
 import { missionKit } from './armory.js';
 import { tickArmory, clearArmory } from '../ui/armory-ui.js';
@@ -30,6 +30,7 @@ import { buildArena } from '../world/arena.js';
 import { spawnChampion, startEndlessWave, endlessWaveCleared } from './survival.js';
 import { applyJetTier, payWaveClear } from './progression.js';
 import { MANDO_AUTO, JEDI_AUTO } from '../data/store.js';
+import { TROOPER_AUTO } from '../data/trooper-progression.js';
 import { DEFAULT_LOADOUT, RUN_LOADOUT, STARTING_FORMS } from '../data/forms.js';
 import { queueAbilityCards, tickAbilityCards, clearAbilityCards, hasAbilityCard } from '../ui/ability-card.js';
 import { queueMeditation, formsTaught, autoLoadout, tickMeditation, clearMeditation } from './meditation.js';
@@ -218,7 +219,13 @@ const MANDO_GATED = [['grapple','ab-grapple'],['flame','ab-flame'],['rocket','ab
                      ['deto','ab-deto'],['slam','ab-mslam'],['dark','ab-dark'],['dark','ab-dthrow'],['jetmissile','ab-missile'],['bacta','ab-bacta']];
 const JEDI_GATED  = [['slam','ab-slam'],['throw','ab-throw'],['pull','ab-pull'],['judge','ab-judge'],
                      ['repulse','ab-repulse'],['barrier','ab-barrier'],['mend','ab-mend']];
+// the ARC trooper's chips (player/trooper/abilities.js): only what it owns; the Mando's stay hidden (styles/hud.css)
+const TROOPER_GATED = [['scan','ab-scan'],['bshield','ab-bshield'],['ion','ab-ion'],['breach','ab-breach'],['artillery','ab-artillery'],['strafe','ab-strafe']];
+export function syncTrooperChips(){
+  for (const [key, id] of TROOPER_GATED){ const chip = document.getElementById(id); if (chip) chip.style.display = G.unlocked[key] ? '' : 'none'; }
+}
 export function syncMandoChips(){   // reveal exactly the ability chips the Mando owns
+  if (isTrooper()){ syncTrooperChips(); return; }   // (the trooper's own: its Mando chips are hidden by styles/hud.css)
   for (const [key, id] of MANDO_GATED){
     const chip = document.getElementById(id);
     if (chip) chip.style.display = (key === 'dark' ? player.up.darksaber : G.unlocked[key]) ? '' : 'none';
@@ -237,7 +244,13 @@ export function checkUnlocks(bannerDelay){
   // level0/wave2; Mando's FLAMETHROWER + WRIST ROCKET both land at stage0) and the old single-`announce` version
   // only ever showed the FIRST one found, leaving the other granted but silently un-announced — no banner, ever.
   const announce = [];
-  if (isGunner()){
+  if (isTrooper()){
+    for (const u of TROOPER_AUTO){
+      const reached = (u.chapter && G.chapter >= 0) ? chapterCleared(u.chapter) : (G.waveTotal || 0) >= u.stage;
+      if (reached && !u.has()){ u.grant(); announce.push(u); }
+    }
+    syncTrooperChips();
+  } else if (isGunner()){
     for (const u of MANDO_AUTO){
       const reached = (u.chapter && G.chapter >= 0) ? chapterCleared(u.chapter) : (G.waveTotal || 0) >= u.stage;   // the campaign: the chapter that hands it over (data/store.js)
       if (reached && !u.has()){ u.grant(); announce.push(u); }

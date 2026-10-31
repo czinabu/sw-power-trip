@@ -3,7 +3,8 @@
 
 import { CFG } from './config.js';
 import { MANDO } from './mando.js';
-import { G, isGunner } from '../state.js';
+import { TROOPER } from './trooper.js';
+import { G, isGunner, isTrooper } from '../state.js';
 
 /* ============================================================
    POWER MASTERY — every ability you own can be mastered twice, by USING it in a fight (game/upgrades.js trainAbility).
@@ -68,8 +69,29 @@ export const MASTERY_MANDO = [
     ranks:[ { ds:'+40% damage · +20% blast radius', mul:{ dmg:1.4, radius:1.2 } },
             { ds:'−35% cooldown · −20% Force cost', mul:{ cd:0.65, cost:0.8 } } ] },
 ];
-const BY_ID = Object.fromEntries([...MASTERY_JEDI, ...MASTERY_MANDO].map(m => [m.id, m]));
-export function masterySet(){ return isGunner() ? MASTERY_MANDO : MASTERY_JEDI; }
+// the ARC trooper's powers (testing only: player/trooper/abilities.js)
+export const MASTERY_TROOPER = [
+  { id:'scan', nm:'RECON SCAN', ico:'◎', cost:[250, 500], uses:[12, 28], r2:3, base:()=>TROOPER.scan, owned:()=>!!G.unlocked.scan,
+    ranks:[ { ds:'Marks foes 40% further away · lasts 3s longer', mul:{ range:1.4 }, add:{ time:3 } },
+            { ds:'Marked foes take 35% more (was 20%) · −35% cooldown', add:{ mark:0.15 }, mul:{ cd:0.65 } } ] },
+  { id:'bshield', nm:'BUBBLE SHIELD', ico:'⛨', cost:[350, 650], uses:[6, 14], r2:5, base:()=>TROOPER.shield, owned:()=>!!G.unlocked.bshield,
+    ranks:[ { ds:'+30% wider · lasts 3s longer', mul:{ radius:1.3 }, add:{ time:3 } },
+            { ds:'−35% cooldown · −25% energy', mul:{ cd:0.65, cost:0.75 } } ] },
+  { id:'ion', nm:'ION GRENADE', ico:'ϟ', cost:[350, 650], uses:[8, 18], r2:6, base:()=>TROOPER.ion, owned:()=>!!G.unlocked.ion,
+    ranks:[ { ds:'Stuns 50% longer · +20% radius', mul:{ stun:1.5, radius:1.2 } },
+            { ds:'−35% cooldown · −25% energy', mul:{ cd:0.65, cost:0.75 } } ] },
+  { id:'breach', nm:'BREACH CHARGE', ico:'▣', cost:[350, 650], uses:[8, 18], r2:6, base:()=>TROOPER.breach, owned:()=>!!G.unlocked.breach,
+    ranks:[ { ds:'+40% damage · +25% reach', mul:{ dmg:1.4, range:1.25 } },
+            { ds:'−35% cooldown · a shorter fuse', mul:{ cd:0.65, fuse:0.6 } } ] },
+  { id:'artillery', nm:'ARTILLERY BARRAGE', ico:'✸', cost:[500, 850], uses:[5, 12], r2:9, base:()=>TROOPER.artillery, owned:()=>!!G.unlocked.artillery,
+    ranks:[ { ds:'+3 shells · +20% blast radius', add:{ shells:3 }, mul:{ radius:1.2 } },
+            { ds:'−35% cooldown · lands faster', mul:{ cd:0.65, delay:0.6 } } ] },
+  { id:'strafe', nm:'GUNSHIP STRAFE', ico:'✈', cost:[650, 1000], uses:[4, 10], r2:10, base:()=>TROOPER.strafe, owned:()=>!!G.unlocked.strafe,
+    ranks:[ { ds:'+40% damage · +4 blasts', mul:{ dmg:1.4 }, add:{ blasts:4 } },
+            { ds:'−35% cooldown · −20% energy', mul:{ cd:0.65, cost:0.8 } } ] },
+];
+const BY_ID = Object.fromEntries([...MASTERY_JEDI, ...MASTERY_MANDO, ...MASTERY_TROOPER].map(m => [m.id, m]));
+export function masterySet(){ return isTrooper() ? MASTERY_TROOPER : isGunner() ? MASTERY_MANDO : MASTERY_JEDI; }
 export function masteryRank(id){ return (G.mastery && G.mastery[id]) || 0; }
 
 // the ability's tuning with its mastery ranks applied. Built fresh on each call (a small copy), so live edits to

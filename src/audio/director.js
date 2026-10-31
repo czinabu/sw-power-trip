@@ -10,6 +10,7 @@
 import { AE, loop, play, place, setRoom, setMuffle } from './engine.js';
 import { MUSIC } from './music.js';
 import { S } from './sfx.js';
+import { updateFoley } from './foley.js';
 import { shared, G, player, isGunner } from '../state.js';
 import { maxHp } from '../player/helpers.js';
 import { clamp, rand } from '../utils.js';
@@ -68,13 +69,22 @@ const AMB = {
   },
 };
 
-function setAmbience(key){
+/* extra beds by what drifts through the air (the world's ambient kind), on top of the arena's own: a frozen front gets
+   a thin whistling wind, dusty ground a faint gritty hiss, falling ash a hollow low breath. Quiet by design. */
+const KIND_BEDS = {
+  snow: [{ base: 1, layers: [{ noise: 'pink' }], filt: { type: 'bandpass', f: 900, q: 2.2 }, lfo: { r: 0.11, d: 380 }, lvl: 0.035 },
+         { base: 1, layers: [{ noise: 'brown' }], filt: { f: 220 }, lfo: { r: 0.08, d: 80 }, lvl: 0.05 }],
+  dust: [{ base: 1, layers: [{ noise: 'white' }], filt: { type: 'highpass', f: 4200 }, lfo: { r: 0.15, d: 1200 }, lvl: 0.006 }],
+  ash:  [{ base: 1, layers: [{ noise: 'brown' }], filt: { f: 300 }, lfo: { r: 0.07, d: 100 }, lvl: 0.04 }],
+};
+function setAmbience(layout, kind){
+  const key = layout + ':' + (kind || '');
   if (key === L.ambKey) return;
   L.ambKey = key;
   for (const b of L.amb) b.h.stop();
   L.amb = [];
-  const A = AMB[key]; if (!A) return;
-  for (const spec of A.beds){ const h = loop(Object.assign({ bus: 'amb' }, spec)); if (h){ h.set(spec.lvl, 0, 0, 1.5); L.amb.push({ h, lvl: spec.lvl }); } }
+  const A = AMB[layout]; if (!A) return;
+  for (const spec of A.beds.concat(KIND_BEDS[kind] || [])){ const h = loop(Object.assign({ bus: 'amb' }, spec)); if (h){ h.set(spec.lvl, 0, 0, 1.5); L.amb.push({ h, lvl: spec.lvl }); } }
   nextEvt = rand(A.every[0], A.every[1]) * 0.5;
 }
 
@@ -100,6 +110,7 @@ export function distantBoom(dist){
 export function updateAudio(dt){
   if (!AE.ready || !shared.AC || shared.AC.state !== 'running') return;
   ensureLoops();
+  updateFoley(dt);
   const t = shared.AC.currentTime;
   const playing = G.mode === 'play' && !G.paused && !G.skillSelect;
   const inWorld = G.mode === 'play' || G.mode === 'dead' || G.mode === 'victory';
@@ -108,7 +119,7 @@ export function updateAudio(dt){
 
   // room, ambience, music palette follow the arena
   setRoom(inWorld ? layout : 'menu');
-  setAmbience(inWorld ? layout : 'menu');
+  setAmbience(inWorld ? layout : 'menu', inWorld ? shared.ambientKind : '');
   MUSIC.setPalette(inWorld ? layout : 'menu');
 
   // ── saber hums ──
@@ -137,7 +148,7 @@ export function updateAudio(dt){
   }
 
   // ── ambience events ──
-  const A = AMB[L.ambKey];
+  const A = AMB[L.ambKey.split(':')[0]];
   if (A && !G.paused){
     A.tick(dt);
     nextEvt -= dt;

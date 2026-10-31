@@ -30,6 +30,8 @@ import { momentumShot } from '../parkour.js';
 import { mandoMelee } from './melee.js';
 import { syncHolster } from '../holster.js';
 import { trainHeld } from '../../game/upgrades.js';
+import { squadStanding } from '../../allies/squad.js';
+import { launchAtRocket } from './gadgets.js';
 import { gunLook, TROOPER } from '../../data/trooper.js';
 
 /* ============================================================
@@ -117,7 +119,7 @@ export function updateReload(dt){
 }
 // add heat for one shot; returns true if that shot just tripped the overheat lock
 function addHeat(W){
-  player.heat = Math.min(1, player.heat + (W.heat || 0.1) / (player.up.heatCap || 1));   // POWER CELLS hold more (game/progression.js)
+  player.heat = Math.min(1, player.heat + (W.heat || 0.1) * (player.up.heatMul || 1) / (player.up.heatCap || 1));   // POWER CELLS hold more (game/progression.js)
   player.heatDelay = HEAT_COOL_DELAY;   // restart the cool-delay every shot
   if (player.heat >= 0.999){ player.overheat = true; player.heat = 1; player.overheatAt = G.gt; player.ventTried = false; player.burstLeft = 0;
     if (isTrooper()) floater(playerPos().clone().setY(playerPos().y + 2.6), 'R IN THE BEAT: VENT', '#bfe8ff'); sfx(90, 0.22, 'sawtooth', 0.08, 40); sfx(160, 0.16, 'square', 0.06, 70); floater(playerPos(), 'OVERHEAT!', '#ff7a3a'); G.shake = Math.max(G.shake, 0.2); return true; }
@@ -211,6 +213,14 @@ export function fireTrigger(){
   }
   if (player.overheat){ if ((player.dryT || 0) <= 0){ player.dryT = 0.25; sfx(120, 0.04, 'square', 0.04, 80); } return; }   // dry-fire CLICK while overheated
   if (W.fire === 'twin'){ firePistol(W, 1); return; }   // the trooper's twin DC-17s: LMB is the right-hand pistol
+  if (W.fire === 'launcher'){   // the trooper's AT launcher (the Commando's): one heavy rocket a pull
+    if (player.fireCd > 0) return;
+    player.aiming = 0.8;
+    const aim = mandoAimPoint(), o = muzzleOrigin(0.06);
+    launchAtRocket(o, V3(aim.x-o.x, aim.y-o.y, aim.z-o.z).normalize(), W);
+    player.fireCd = shotGap(W); addHeat(W);
+    return;
+  }
   if (player.fireCd > 0 || player.burstLeft > 0){   // not ready yet (or a burst still firing)
     if (W.fire === 'burst' && player.ventT <= 0 && player.fireCd + player.burstLeft * (W.burstGap || 0) < 0.16) player.burstQ = true;   // a click just early queues the next burst
     return;
@@ -261,7 +271,7 @@ function fireBlaster(W, hand){
   const spd01 = clamp(hsp / (MANDO.airSpeedMax || 22), 0, 1);
   // a SLIDE is a steady firing line (parkour.js): no speed bloom, and shots out of any parkour move hit harder
   const inacc = player.slideT > 0 ? 0 : spd01 * 0.7 + (player.boosting ? 1.0 : (!player.grounded && !player.hovering ? 0.35 : 0));
-  const dmg = W.dmg * (steadyAim ? (W.braceDmg || 1) : 1) * player.up.dmg * momentumShot();
+  const dmg = W.dmg * (steadyAim ? (W.braceDmg || 1) : 1) * player.up.dmg * momentumShot() * (player.up.brothers ? 1 + 0.04 * squadStanding() : 1);   // (the trooper's BAND OF BROTHERS)
   const foMin = steadyAim ? Math.min(1, (W.foMin || 1) + 0.25) : W.foMin;   // bracing stretches effective range
   const baseSpread = steadyAim ? W.braceSpread : W.hipSpread;
   const spread = baseSpread + (steadyAim ? inacc * 0.003 : inacc * 0.028);   // boosting blooms the cone hard

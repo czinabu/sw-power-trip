@@ -44,6 +44,7 @@ export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick, opts){
     return;
   }
   const byAlly = !!(opts && opts.ally);
+  if (e.scanT > G.gt && dmg > 0) dmg *= e.scanMul || 1;   // marked by the ARC trooper's recon scan (player/trooper/abilities.js)
   if (dmg > 0 && !byAlly){
     player.lastStrikeT = G.gt;   // a blow landed keeps you in the fight (player/mobility.js)
     if (!tick){ G.squadFocus = e; G.squadFocusT = G.gt; }   // the squad prefers the trooper you're fighting

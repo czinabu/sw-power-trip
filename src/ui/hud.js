@@ -1,6 +1,8 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
 // updateHud(): per-frame HUD refresh.
 
+import { fragCharges, fragMax } from '../player/trooper/kit.js';
+import { TROOPER } from '../data/trooper.js';
 import * as THREE from 'three';
 import { CFG } from '../data/config.js';
 import { LEVELS } from '../data/levels.js';
@@ -94,7 +96,7 @@ function cdSlot(id, key, cost){
 // Darksaber, whichever you took) · 4 holstered
 function renderWeaponSlots(){
   const sig = signatureWeapon(), kit = kitOf();
-  const slots = isTrooper() ? [['1', 'rifle', ''], ['2', 'pistols', '']]   // (the trooper: DC-15 and twin DC-17s)
+  const slots = isTrooper() ? [['1', 'rifle', ''], ['2', 'pistols', ''], ...(G.unlocked.launcher ? [['3', 'launcher', '']] : [])]   // (the trooper: DC-15, twin DC-17s, the Commando's launcher)
     : [['1', kit.sidearm, 'SIDEARM'], ['2', kit.primary, 'PRIMARY'], ['3', sig, ''], ['4', 'fists', '']];
   let key = player.weapon + sig;
   for (const [, w] of slots) key += (w || '-') + (w && weaponUnlocked(w) ? '1' : '0');
@@ -259,11 +261,27 @@ export function updateHud(){
                   ['ab-missile','missile',abil('jetmissile').cost],['ab-bacta','bacta',abil('bacta').cost],
                   ['ab-dthrow','darkThrow',MANDO.darkThrow.cost]];
     for (const [id, key, cost] of cdab) cdSlot(id, key, cost);
+    if (isTrooper()){   // the ARC trooper's powers (player/trooper/abilities.js) and its frag charges
+      for (const id of ['scan', 'bshield', 'ion', 'breach', 'artillery', 'strafe']) cdSlot('ab-' + id, id, abil(id).cost);
+      const fr = $('ab-frag');
+      if (fr){
+        const n = fragCharges(), max = fragMax();
+        if (!fr._chg){ fr.insertAdjacentHTML('beforeend', '<span class="chg"></span>'); fr._chg = fr.querySelector('.chg'); }
+        setHtml(fr._chg, '<i class="on"></i>'.repeat(n) + '<i></i>'.repeat(Math.max(0, max - n)));
+        fr.style.setProperty('--cd', n < 1 ? (1 - (player.fragT || 0) / TROOPER.frag.recharge).toFixed(3) : '0');
+        fr.classList.toggle('cool', n < 1);
+      }
+    }
     document.getElementById('ab-flame').classList.toggle('nofp', player.force < 5);
     document.getElementById('ab-flame').classList.toggle('cool', !!player.flaming);
     document.getElementById('ab-jet').classList.toggle('nofp', player.jet < 12);    // jet FUEL low
     document.getElementById('ab-jet').classList.toggle('cool', !!player.jetActive);
     mandoShiftSlot();
+    if (isTrooper()){   // the trooper's hint chips say what its keys do
+      setText($('ab-boost').querySelector('.an'), 'ROLL');
+      if (meleeEl) setText(meleeEl.querySelector('.an'), 'BASH');
+      if (braceEl) setText(braceEl.querySelector('.an'), W.fire === 'twin' ? 'LEFT GUN' : 'AIM');
+    }
     document.getElementById('ab-mslam').classList.toggle('nofp', player.grounded || player.jet < abil('mslam').cost);   // air-only, jet fuel
     // DYNAMIC CROSSHAIR — line gap / colour / ring react to the situation
     const rt = document.getElementById('reticle');

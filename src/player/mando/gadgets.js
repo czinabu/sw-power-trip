@@ -63,9 +63,9 @@ export function mandoRocket(){
   S.rocket(); sfx(70, 0.3, 'sawtooth', 0.08, 48);
   floater(pp, 'ROCKET', '#ffd24a');
 }
-function rocketExplode(pos, big){
-  const A = big ? abil('jetmissile') : abil('rocket');
-  const dmgMul = player.up.dmg * (player.up.rocketDmg || 1), radius = A.radius * (player.up.rocketR || 1);
+function rocketExplode(pos, big, at){
+  const A = at || (big ? abil('jetmissile') : abil('rocket'));   // `at`: a rocket fired with its own stats (the trooper's AT launcher)
+  const dmgMul = player.up.dmg * (at ? (player.up.ordnance || 1) : (player.up.rocketDmg || 1)), radius = A.radius * (at ? 1 : (player.up.rocketR || 1));
   const scale = big ? 1.9 : 1;
   S.boom(pos, big ? 1.8 : 1.1);
   G.shake = Math.max(G.shake, big ? 1.7 : 1.0); G.hitstop = Math.max(G.hitstop, big ? 0.1 : 0.05);
@@ -78,7 +78,7 @@ function rocketExplode(pos, big){
   for (const e of enemies){
     if (e.dead || e.converted || e.state === 'spawn') continue;
     const d = distToBody(e, pos);   // the blast reaches the body, not just the feet
-    if (d < radius){ const kd = TMP.subVectors(e.group.position, pos).setY(0).normalize().clone(); damageEnemy(e, A.dmg * (1 - d/radius*0.4) * dmgMul, kd, A.knock); flinchEnemy(e, kd, big ? 0.9 : 0.6); if (!big) tutEvent('rocketHit', e); }
+    if (d < radius){ const kd = TMP.subVectors(e.group.position, pos).setY(0).normalize().clone(); damageEnemy(e, A.dmg * (1 - d/radius*0.4) * dmgMul, kd, A.knock); flinchEnemy(e, kd, big ? 0.9 : 0.6); if (!big && !at) tutEvent('rocketHit', e); }
   }
   if (shared.boss && shared.boss.hp > 0 && shared.boss.group.position.distanceTo(pos) < radius + 1){
     damageBoss(A.dmg * dmgMul);
@@ -86,6 +86,18 @@ function rocketExplode(pos, big){
     if (shared.boss.hp > 0 && (shared.boss.state === 'windup' || shared.boss.state === 'lightning' || shared.boss.state === 'chase')) bossStagger();
   }
   for (const b of barrels){ if (b.mesh.position.distanceTo(pos) < radius && b.fuse < 0) b.fuse = 0.15; }
+}
+// the ARC trooper's AT launcher (key 3, the Commando's): a heavy rocket off the rifle, its stats on the weapon
+export function launchAtRocket(origin, dir, W){
+  const m = new THREE.Mesh(new THREE.CapsuleGeometry(0.1, 0.34, 4, 6), new THREE.MeshStandardMaterial({ color: 0x9aa6a0, metalness: 0.5, roughness: 0.5 }));
+  m.position.copy(origin); m.quaternion.setFromUnitVectors(V3(0,1,0), dir);
+  scene.add(m);
+  rockets.push({ mesh: m, dir: dir.clone(), speed: W.speed, life: 3, at: W });
+  if (hooks.pbolt) hooks.pbolt({ mesh: m, dir, speed: W.speed }, 0xff8a2a, 2.6);
+  muzzleFlash(origin, dir, 0xffb04a, 1.1);
+  for (let n = 0; n < 3; n++) puff(origin.clone().addScaledVector(dir, -0.4 - n*0.3), 0x8a8580, 0.45, 0.4, V3(rand(-1,1), rand(0.5,1.5), rand(-1,1)), { delay: n*0.03, op: 0.8 });
+  player.recoil = 0.5; player.recoilKick = 0.5; G.shake = Math.max(G.shake, 0.4);
+  S.rocket(); sfx(64, 0.3, 'sawtooth', 0.08, 44);
 }
 /* ===== JETPACK MISSILE (Z) — Boba Fett back-launcher: a slow heavy missile with a HUGE blast ===== */
 export function mandoJetMissile(){
@@ -131,7 +143,7 @@ export function updateRockets(dt){
     // contact fuse: it goes off the moment its path touches a body (swept, so a fast rocket can't pass through one)
     if (!hit) for (const e of enemies){ if (e.dead || e.converted) continue; const h = sweepHit(e, rk.prev || p, p, rk.big ? 0.45 : 0.3); if (h){ p.lerpVectors(rk.prev || p, p, h.t); hit = true; break; } }
     if (!hit && shared.boss && shared.boss.hp > 0 && p.distanceTo(shared.boss.group.position.clone().setY(p.y)) < (rk.big ? 2.4 : 1.8) && p.y < shared.boss.group.position.y + 4.2) hit = true;   // (a rocket aimed over his head flies on)
-    if (hit){ rocketExplode(p.clone(), rk.big); scene.remove(rk.mesh); rockets.splice(i,1); }
+    if (hit){ rocketExplode(p.clone(), rk.big, rk.at); scene.remove(rk.mesh); rockets.splice(i,1); }
   }
 }
 

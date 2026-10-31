@@ -10,7 +10,7 @@ await page.addInitScript(() => { try { localStorage.setItem('sw_fullscreen', '0'
 page.on('pageerror', e => console.log('page error', e.message));
 await page.goto(pathToFileURL(process.env.DIST || path.join(root, 'dist/index.html')).href + '?trooper');
 await page.waitForFunction(() => window.GAME && window.GAME.G, null, { timeout: 30000 });
-await page.click('#hero-trooper');
+await page.evaluate(() => document.getElementById('hero-trooper').click());   // (a DOM click: the title's intro can sit over the card)
 await page.waitForTimeout(4000);
 // hide the menu panel so the stand shows clear
 await page.evaluate(() => { const o = document.getElementById('overlay'); if (o) o.style.visibility = 'hidden'; });

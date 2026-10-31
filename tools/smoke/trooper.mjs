@@ -14,7 +14,9 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const page_url = pathToFileURL(path.join(root, 'dist/index.html')).href + '?trooper';
 const GAME_SECONDS = +(process.env.SMOKE_SECONDS || 16);
 const SHOTS = !!process.env.SHOTS;
-const MOVES = ['g', 'shift', ' ', '2', 'Right', 'e', 'r', '1', 'c', 'h', 'Right', 'g'];   // Right = a right click (aim / the left pistol)
+const MOVES = ['g', 'q', 'shift', ' ', '2', 'Right', 'v', 'e', 'f', 'r', '1', 'z', 'c', 'h', '3', 'Right', 'x', 'g', '1'];   // Right = a right click (aim / the left pistol)
+// every run hands the trooper all of its powers (data/trooper-progression.js) so each is cast: the campaign run takes
+// the breach charge on F, the rest the ion grenade
 const RUNS = (process.env.RUNS || 'campaign,endless,mission:strike,sandbox,training').split(',');
 
 if (!existsSync(path.join(root, 'dist/index.html'))){ console.error('dist/index.html missing: run `npm run build` first'); process.exit(1); }
@@ -58,6 +60,9 @@ for (const run of RUNS){
       await page.click('#sbsquadadd').catch(() => {});
       await page.click('#sbdone').catch(() => {});
     }
+    await page.evaluate(breach => { const { G } = GAME;
+      for (const k of ['scan', 'bshield', 'medic', 'artillery', 'launcher', 'strafe', breach ? 'breach' : 'ion']) G.unlocked[k] = true;
+    }, mode === 'campaign');
     await page.evaluate(() => { window.__frames = 0; const f = () => { window.__frames++; requestAnimationFrame(f); }; requestAnimationFrame(f); });
     const startGt = await page.evaluate(() => GAME.G.gt);
     await page.keyboard.down('w');
@@ -65,7 +70,7 @@ for (const run of RUNS){
     for (;;){
       const s = await page.evaluate(() => {
         const { G, player, enemies } = GAME;
-        player.hp = Math.max(player.hp, 1e3);
+        player.hp = Math.max(player.hp, 1e3); player.force = 100;
         const card = document.querySelector('#chapcard.open [data-go]'); if (card) card.click();
         if (G.cutscene) GAME.cutscene.skipScene();
         if (G.skillSelect){ const b = document.getElementById('continueBtn'); if (b) b.click(); }
