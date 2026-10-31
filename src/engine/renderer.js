@@ -208,6 +208,9 @@ export function compileLive(){
   if (!fog) scene.fog = _compileFog;
   try {
     renderer.compile(scene, camera);
+    // compile only queues the links; a program's first DRAW is what waits on its link and the driver's first-use work.
+    // Draw the live scene once here (into the spare buffer) so that wait is paid now, not on the first spark or ring of a fight
+    renderer.render(scene, camera);
     // the AO pass's own programs (its depth/normal override, the AO, denoise and blend shaders) would otherwise
     // compile on the first frame it runs: run it once here into the composer's spare buffer
     if (aoPass.enabled) aoPass.render(renderer, composer.writeBuffer, composer.readBuffer);
