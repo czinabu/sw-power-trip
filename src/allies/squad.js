@@ -16,7 +16,7 @@ import { burst } from '../fx/particles.js';
 import { groundRing } from '../fx/ink.js';
 import { floater } from '../fx/floaters.js';
 import { shared, G, enemies, bolts, player, isGunner, isMando, heroKey, isTrooper } from '../state.js';
-import { playerPos } from '../player/helpers.js';
+import { playerPos, maxHp } from '../player/helpers.js';
 import { SCALE } from '../data/coop.js';
 import { heroesHere } from '../player/players.js';
 import { buildEnemyMesh } from '../enemies/mesh.js';
@@ -66,7 +66,7 @@ export const squadIn = (x, z, r) => allies.filter(a => standing(a) && Math.hypot
 export function addSquadmate(at){
   if (allies.length >= SQUAD.max) return null;
   if (guest()){ squadLink.add(); return null; }   // co-op guest: the host's browser runs the squad
-  const roster = heroKey(SQUAD.roster) || SQUAD.roster.jedi;
+  const roster = (heroKey(SQUAD.roster) || SQUAD.roster.jedi).filter(d => !d.need || G.unlocked[d.need]);   // (a specialist the run hasn't earned yet waits)
   const def = roster.find(d => !allies.some(a => a.def === d)) || roster[allies.length % roster.length];
   const role = SQUAD.roles[def.role];
   const t = { model: def.model, color: def.color, eye: def.eye, cloth: def.cloth, scale: def.scale || 1, ranged: true };
@@ -443,8 +443,8 @@ function pickTarget(a){
     if (e.dead || e.state === 'spawn' || !isFodder(e)) continue;
     const d = Math.hypot(e.group.position.x - g.x, e.group.position.z - g.z);
     if (d > a.role.range) continue;
-    // nearest first; the trooper you're fighting, one shooting at this squadmate, or one close to you jump the queue
-    const s = d - (e === focus ? 10 : 0) - (e.allyTgt === a ? 4 : 0) - (Math.hypot(e.group.position.x - pp.x, e.group.position.z - pp.z) < 6 ? 3 : 0)
+    // nearest first (the trooper's SCOUT: furthest first, the far line); the trooper you're fighting, one shooting at this squadmate, or one close to you jump the queue
+    const s = (a.role.far ? -d : d) - (e === focus ? 10 : 0) - (e.allyTgt === a ? 4 : 0) - (Math.hypot(e.group.position.x - pp.x, e.group.position.z - pp.z) < 6 ? 3 : 0)
       - (sup && Math.hypot(e.group.position.x - sup.x, e.group.position.z - sup.z) < sup.r ? TROOPER.command.suppress.prefer : 0);
     if (s >= bs) continue;
     if (segBlockedBySolids(g.x, g.z, e.group.position.x, e.group.position.z)) continue;
@@ -593,6 +593,21 @@ function updateAllyBar(a){
   const f = bar.userData.fill; f.scale.x = Math.max(0.01, frac * 0.96); f.position.x = -(1 - frac * 0.96) * 0.5;
   f.material.color.setHex(frac > 0.5 ? 0x7bffae : frac > 0.25 ? 0xffd24a : 0xff5a4a);
 }
+/* the MEDIC specialist (PATCH): out of a hit for a moment, it patches the hero and the squad around it; and a squadmate
+   down with no one on the way gets the medic, on its own */
+function medicTend(a, dt, pp){
+  const R = a.role, p = a.group.position;
+  if (G.gt - a.hitAt < R.healDelay) return;
+  if (player.hp > 0 && !player.downed && player.hp < maxHp() && Math.hypot(pp.x - p.x, pp.z - p.z) < R.healR){
+    player.hp = Math.min(maxHp(), player.hp + R.heal * dt);
+    if ((a.healFx = (a.healFx || 0) - dt) <= 0){ a.healFx = 0.6; burst(V3(pp.x, 1.3, pp.z), 0x7bffae, 3, 2, 1.5, 0.5); }
+  }
+  for (const o of allies) if (o !== a && standing(o) && !o.net && o.hp < o.maxHp && o.group.position.distanceTo(p) < R.healR) o.hp = Math.min(o.maxHp, o.hp + R.heal * dt);
+  if (a.ord.kind !== 'revive' && !player.downed){
+    const v = allies.find(o => !standing(o) && o.body && !allies.some(r => r.ord.kind === 'revive' && r.ord.who === o));
+    if (v){ a.prevOrd = a.ord; a.ord = { kind: 'revive', who: v }; say(a, 'MEDIC ON THE WAY, ' + v.name + '!', 'MEDIC ON THE WAY.'); }
+  }
+}
 function updateAlly(a, dt, medic, pp){
   const g = a.group, u = g.userData, p = g.position;
   // the hit flash
@@ -611,6 +626,7 @@ function updateAlly(a, dt, medic, pp){
   if (g.rotation.x !== 0) g.rotation.x += (0 - g.rotation.x) * Math.min(1, dt * 8);
   // recover out of the fight
   if (G.gt - a.hitAt > SQUAD.regenDelay) a.hp = Math.min(a.maxHp, a.hp + SQUAD.regen * dt);
+  if (a.role.heal) medicTend(a, dt, pp);   // the ARC trooper's MEDIC patches whoever is near
 
   // MOVE — toward its spot (or the downed hero), straight when the way is open, round cover when it isn't
   // GET THEM UP: done when they're up (or gone), then back to what it was doing
@@ -800,7 +816,7 @@ export function updateSquadHud(){
     lastKey = key;
     hud.innerHTML = '<div class="sq-head"><span>SQUAD · ' + (SQ.formation === 'wide' ? 'SPREAD' : 'STACKED') + '</span><span class="sq-ord">ORDERS <kbd>H</kbd></span></div>' +
       (cp >= 0 ? '<div class="sq-cp"><span>CP ' + cp + '</span><span class="sq-cpbar"><i style="width:' + cp + '%"></i></span><span class="sq-ord">CALL <kbd>T</kbd></span></div>' : '') +
-      allies.map(a => '<div class="sq-row"><span class="sq-n">' + a.name + '</span><span class="sq-o">' + orderLabel(a) + '</span><span class="sq-bar"><i></i></span></div>').join('') +
+      allies.map(a => '<div class="sq-row"><span class="sq-n">' + (a.def.tag ? '<b class="sq-tag">' + a.def.tag + '</b>' : '') + a.name + '</span><span class="sq-o">' + orderLabel(a) + '</span><span class="sq-bar"><i></i></span></div>').join('') +
       '<div class="sq-gr' + (gl > 0 ? '' : ' ready') + '">GRENADE ' + (gl > 0 ? Math.ceil(gl) + 'S' : 'READY') + '</div>' +
       '<div class="sq-rev">' + (G.reviveLeft > 0 ? 'THEY CAN GET YOU UP ×' + G.reviveLeft : 'NO SECOND CHANCE LEFT THIS WAVE') + '</div>';
   }

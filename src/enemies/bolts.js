@@ -241,7 +241,7 @@ export function updateBolts(dt){
         b.mesh.position.lerpVectors(PREV, b.mesh.position, hit.t);   // the impact shows where it struck
         if (b.ally){
           // a squadmate's bolt: plain damage, a small rock, nothing for the hero's streak or Focus (enemies/damage.js)
-          damageEnemy(e, b.dmg, b.dir, 3, false, false, { ally: true }); kill = true;
+          damageEnemy(e, b.dmg, b.dir, 3, false, false, { ally: true, pin: !!(b.ally && b.ally.def && b.ally.def.pins) }); kill = true;   // (pin: the ARC trooper's heavy)
           markHit(e.group, b.mesh.position, b.dir, 'scorch');   // the bolt leaves its scorch (enemies/scars.js)
           if (b.src && b.src.group && !e.dead){ e.avenge = b.src; e.avengeT = G.gt + SQUAD.avengeFor; e.allyCheck = 0; }   // the trooper it hit may turn on whoever shot it (allies/squad.js foeAllyTarget)
           boltImpact(b.mesh.position, b.mesh.material.color.getHex(), b.dir);

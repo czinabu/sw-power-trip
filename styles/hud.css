@@ -361,7 +361,8 @@ body.sandbox #xpmeter,body.sandbox #xphud{display:none !important}   /* the sand
 #squadhud .sq-ord{color:var(--accent)}
 #squadhud .sq-ord kbd{font:700 9px/1 var(--font-ui);padding:1px 4px;border:1px solid currentColor;border-radius:3px;margin-left:3px}
 #squadhud .sq-row{display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:1px;color:var(--ink-soft)}
-#squadhud .sq-n{width:74px;white-space:nowrap;overflow:hidden}
+#squadhud .sq-n{width:84px;white-space:nowrap;overflow:hidden}
+#squadhud .sq-tag{font-weight:700;color:#ffd35a;margin-right:4px}
 #squadhud .sq-bar{flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.14);overflow:hidden}
 #squadhud .sq-bar i{display:block;height:100%;background:var(--accent);transition:width .15s linear}
 #squadhud .sq-row.down{color:#ff9a8a}

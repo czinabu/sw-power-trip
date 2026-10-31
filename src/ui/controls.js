@@ -155,6 +155,7 @@ const TIPS = {
     '<b>Pause</b> with TAB (or ESC); TAB or ENTER resumes.',
     '<b>Heat</b> is the gauge beside your reticle. Overheat, and R pressed in the beat clears it at once.',
     'Your squad of clones holds ground while you lead: tap <b>H</b> on a foe to focus it, hold H for every order.',
+    '<b>Specialists:</b> Hammer\'s rotary pins whatever it hits, Patch the medic (with Field Medic) patches you and gets the downed up, and Tally the scout picks off the far line.',
     '<b>Command points</b> (the gold bar over your squad) come from kills. Spend them on the orders that matter and on <b>T</b>: reinforcements or a supply drop.',
   ],
 };

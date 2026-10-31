@@ -49,7 +49,8 @@ export function damageEnemy(e, dmg, knockDir, knockPow, isFinisher, tick, opts){
   if (e.scanT > G.gt && dmg > 0) dmg *= e.scanMul || 1;   // marked by the ARC trooper's recon scan (player/trooper/abilities.js)
   // the ARC trooper's SUPPRESS order (allies/squad.js): a squad bolt that lands in the zone PINS its foe (enemies/ai.js)
   const sup = G.suppress;
-  if (byAlly && dmg > 0 && sup && sup.until > G.gt && Math.hypot(e.group.position.x - sup.x, e.group.position.z - sup.z) < sup.r + 2){
+  // (and the trooper's heavy, HAMMER, pins whatever its rotary hits: data/allies.js `pins`)
+  if (byAlly && dmg > 0 && ((opts && opts.pin) || (sup && sup.until > G.gt && Math.hypot(e.group.position.x - sup.x, e.group.position.z - sup.z) < sup.r + 2))){
     if (!(e.suppT > G.gt)) floater(V3(e.group.position.x, e.group.position.y + 2.2, e.group.position.z), 'PINNED', '#ffd35a');
     e.suppT = G.gt + TROOPER.command.suppress.pin;
   }

@@ -23,6 +23,11 @@ export const SQUAD = {
   roles: {
     rifle: { hp: 110, speed: 6.0, dmg: 9, range: 20, every: [1.5, 2.3], spread: 0.045, burst: 1, burstGap: 0, boltSpeed: 30 },
     heavy: { hp: 150, speed: 5.3, dmg: 5, range: 17, every: [2.8, 3.6], spread: 0.07, burst: 3, burstGap: 0.13, boltSpeed: 28 },
+    /* the ARC trooper's SPECIALISTS (testing). MEDIC: patches the hero and the squad within `healR` (`heal` hp a second,
+       once clear of a hit for `healDelay` s) and runs to get a downed squadmate up on its own. SCOUT: a long rifle that
+       picks off the far line first (`far`) */
+    medic: { hp: 100, speed: 6.2, dmg: 6, range: 16, every: [1.8, 2.6], spread: 0.05, burst: 1, burstGap: 0, boltSpeed: 30, heal: 4, healR: 7, healDelay: 2 },
+    scout: { hp: 90, speed: 6.4, dmg: 20, range: 32, every: [2.6, 3.4], spread: 0.012, burst: 1, burstGap: 0, boltSpeed: 46, far: true },
   },
   // who comes when the hero calls: in this order (looks: enemies/mesh.js MODELS · cloth = the unit markings)
   roster: {
@@ -40,11 +45,14 @@ export const SQUAD = {
     ],
     // the clone trooper's own fire team (testing): the same brothers who fight beside the Jedi, in the legion's blue,
     // now the trooper's band of deserters
+    // Specialists: HAMMER's rotary PINS whatever it hits (as SUPPRESS does), PATCH the medic comes with the FIELD MEDIC
+    // pick (`need`), TALLY is the scout. `tag` is the mark by the name in the squad panel
     trooper: [
       { name: 'SGT. VANT', role: 'rifle', model: 'clone', color: 0xe4e7ea, eye: 0x5ab8ff, cloth: 0x2f7fd6 },
       { name: 'BRISK',   role: 'rifle', model: 'clone', color: 0xe4e7ea, eye: 0x5ab8ff, cloth: 0x2f7fd6 },
-      { name: 'HAMMER', role: 'heavy', model: 'clone', color: 0xe4e7ea, eye: 0x5ab8ff, cloth: 0x2f7fd6, scale: 1.06 },
-      { name: 'TALLY',   role: 'rifle', model: 'clone', color: 0xe4e7ea, eye: 0x5ab8ff, cloth: 0x2f7fd6 },
+      { name: 'HAMMER', role: 'heavy', model: 'clone', color: 0xe4e7ea, eye: 0x5ab8ff, cloth: 0x2f7fd6, scale: 1.06, pins: true, tag: '▮' },
+      { name: 'PATCH',  role: 'medic', model: 'clone', color: 0xe4e7ea, eye: 0x5ab8ff, cloth: 0xc8402e, need: 'medic', tag: '✚' },
+      { name: 'TALLY',   role: 'scout', model: 'clone', color: 0xe4e7ea, eye: 0x5ab8ff, cloth: 0x2f7fd6, tag: '⌖' },
     ],
   },
   dmg: { padawan: 1.25, knight: 1, master: 0.8 },   // squad bolt damage by difficulty
