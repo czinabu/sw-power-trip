@@ -100,6 +100,9 @@ export function updateMovement(dt, pp, st, f, r){
     }
     player.moveVel.multiplyScalar(Math.max(0, 1 - dt * (G.hero === 'mando' ? SL.drag : MOVE.forceSlideDrag)));
     pp.addScaledVector(player.moveVel, dt);
+    // dust thrown up off the floor by the hip and the lead heel, thinning as the skid slows
+    const ssp = Math.hypot(player.moveVel.x, player.moveVel.z);
+    if (Math.random() < dt * ssp * 2.2) burst(V3(pp.x + rand(-0.25, 0.25), 0.08, pp.z + rand(-0.25, 0.25)), G.hero === 'mando' ? 0x9a9288 : 0xa89a86, 1, 1.6, 0.5, 0.7);
     updateForceSlide(pp);
   } else {
     // GROUND (or Jedi): steer toward the input direction at the stance's acceleration. Speed BUILDS, and planting to

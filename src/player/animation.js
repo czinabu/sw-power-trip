@@ -145,7 +145,7 @@ function poseBody(dt, dr, vis, planted, POSE, moving){
     // WALL-RUN — feet on the wall, the body rolled out away from it and pitched a little into the run (anim/agility.js
     // wallState: eased on at the catch and off at the drop, kept a moment after the run ends)
     const W = player._wall, ww = W ? W.w : 0;
-    const wallLean = W ? 0.7 * W.wx * ww : 0;
+    const wallLean = W ? 0.82 * W.wx * ww : 0;
     vis.rotation.z = dr(vis.rotation.z, W ? wallLean : lr*0.018*leanG + ar + reelSide, W ? 12 : reelSide ? 22 : 9);   // bank INTO the strafe (was inverted — leaned the wrong way)
     vis.position.y = dr(vis.position.y, 0, 10);
   }
