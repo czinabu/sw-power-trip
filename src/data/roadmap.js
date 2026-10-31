@@ -156,6 +156,7 @@ export const ROADMAP = [
             'Form VII: Juyo burns Force with every swing and builds fury from hits, Vaapad builds fury from blocks and finds the Shatterpoint with a parry; both take more damage, and you can only hold one',
             'Done: a run learns the forms in the tiers the Order teaches them: Shii-Cho from the start; Soresu at the Wall and Ataru from the Acrobat; Djem So and Shien from the Knight, Makashi on Jakku, Niman at Mustafar; Form VII after the chase',
             'Done: Before the Fight is one screen: your three, a compact grid of forms (name, numeral, best against) and a side panel with the pros and cons of the one you click; missions and the sandbox choose their three there',
+            'Done: Training and any run with only one form learned skip Before the Fight and go straight in; training lessons still pick their form between lessons',
             'Done: the pause screen\'s Lightsaber Forms page keeps the full cards with lore and famous users',
             'Done: after each new form, a meditation screen lets you choose the three forms you carry · after the chase, choose Juyo or Vaapad for the rest of the run',
             'Done: only Shien holds a reverse grip, and Niman can take one (G); the other forms keep a forward grip, as in canon',
