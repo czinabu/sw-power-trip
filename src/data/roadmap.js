@@ -6,6 +6,8 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'Objectives you can\'t miss', status: 'done',
+    items: ['A new objective now shows a centred banner for a few seconds with the task under it', 'The objectives list is bigger and brighter, and flashes when the objective changes', 'A gold waypoint with a distance floats over the objective spot, and slides to the screen edge when it is off-screen or behind you'] },
   { title: 'Powers that follow the story', status: 'done',
     items: ['In the campaign, new powers open at the chapter that fits them, not by wave count',
             'Jedi: Barrier or Throw with Soresu\'s trial, Jump Attack or Mend with Ataru\'s, Judgement or Repulse once Niman joins the forms at Mustafar, the Dark Lord\'s Grip with Form VII',

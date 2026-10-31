@@ -841,7 +841,7 @@ function startPost(o, s){
 function beginObjective(){
   const o = forHero(M.def.objectives[M.i]);
   M.o = o; M.s = {};
-  showBanner(o.title, '', 2.0, { kicker: 'OBJECTIVE ' + (M.i + 1) + ' / ' + M.def.objectives.length });
+  showBanner(o.title, (o.task && o.task[G.hero]) || '', 4.5, { kicker: 'OBJECTIVE ' + (M.i + 1) + ' / ' + M.def.objectives.length });   // long enough to read mid-fight; the checklist flashes with it (ui/hud.js)
   say(o);
   KINDS[o.kind].begin(o, M.s);
 }
@@ -919,6 +919,12 @@ export function skipObjective(){
   return true;
 }
 // the on-screen checklist: the mission's objectives, ticked off as they fall
+// where the live objective is (its first shown marker), for the HUD's waypoint arrow (ui/hud.js); null when there's no spot to point at
+export function objectiveTarget(){
+  if (!M.on || !M.o || M.won) return null;
+  const m = M.markers.find(k => k && k.visible !== false && k.userData && k.userData.ring);
+  return m ? m.position : null;
+}
 export function missionChecklist(){
   if (!M.on) return null;
   const objs = M.def.objectives.map(forHero), live = objectiveHud();
