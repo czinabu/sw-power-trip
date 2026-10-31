@@ -11,9 +11,9 @@ import { applySaberGrip } from '../player/model/weapons.js';
 import { settleCloth, stepCloth } from '../player/model/cloth.js';
 import { blink } from '../player/model/life.js';
 import { lookOf, loadPicks, disposeTree } from '../player/mesh.js';
-import { STANCES, SWING_PATTERNS } from '../data/stances.js';
-import { FORM_OF, FOOTWORK } from '../data/poses.js';
-import { formGrip } from '../data/forms.js';
+import { STANCES, SWING_PATTERNS, stanceUnlocked } from '../data/stances.js';
+import { FORM_OF, FOOTWORK, FOOTWORK_GRIP } from '../data/poses.js';
+import { FORMS, formGrip, forkClosed } from '../data/forms.js';
 import { guardPose, swingPose, applySaberPose, releaseSaberPose, saberPose } from '../player/anim/saber.js';
 
 const HERO_X = 0.72;     // where the figure stands across the screen (0 = left edge, 1 = right)
@@ -202,6 +202,7 @@ function build(picks){
 build(loadPicks());
 // the customizer restyles the figure on the stand as each option is picked
 export function restyleShowcase(picks){
+  rot.on = false; saberPose.live = false;   // the new figure starts its rotation afresh
   build(picks);
   if (shown) dress(shown);
 }
@@ -366,6 +367,7 @@ export function previewStance(id){
     document.body.classList.remove('stance-preview');
     return;
   }
+  rot.on = false;
   if (!pv.id) pv.vy = fig.vis.position.y;
   Object.assign(pv, { id, t: 0, phase: 0, sw: null });
   dress('jedi'); setTheme('jedi', true);
@@ -412,6 +414,51 @@ function previewPose(dt){
   R.legL.knee.rotation.x = R.legR.knee.rotation.x = 0.25 - F.crouch * 1.4;
 }
 
+/* ---------- the FORM ROTATION: the Jedi on the stand cycles through the forms the save has unlocked, each in its own
+   ready guard (read from data/poses.js through the game's guardPose, so a retuned guard shows here too) and its own
+   footing, blending from one to the next every few seconds ---------- */
+const ROT_EVERY = 4.6;   // seconds on each form
+const rot = { on: false, id: null, t: 0, crouch: 0, splay: 0, vy: 0 };
+const rotForms = () => Object.keys(FORMS).filter(id => FORMS[id].ready && stanceUnlocked(id) && !forkClosed(id, G.formFork));
+function rotPick(id){
+  rot.id = id; rot.t = 0;
+  const grip = formGrip(id, G.saberGrip);
+  applySaberGrip(fig, grip, false);   // the hilt turns over in the hand if the grip changes
+  const st = STANCES[id], crystal = fig.look.jedi.saber != null ? fig.look.jedi.saber : st && st.blade;   // the customizer's blade colour wins
+  if (crystal != null){ fig.blade.glow.material.color.setHex(crystal); fig.blade.light.color.setHex(crystal); }
+}
+function rotStart(){
+  const list = rotForms();
+  rot.on = true; rot.vy = fig.vis.position.y;
+  const F = FOOTWORK[FORM_OF[list[0]]] || FOOTWORK.niman;
+  rot.crouch = F.crouch; rot.splay = F.splay;
+  releaseSaberPose(R, 1);   // the first guard seeds from the figure's own arm
+  applySaberGrip(fig, formGrip(list[0], G.saberGrip), true);
+  rotPick(list[0]);
+}
+function rotStop(){
+  if (!rot.on) return;
+  rot.on = false;
+  releaseSaberPose(R, 1); R.chest.rotation.y = 0; fig.vis.rotation.y = 0;
+  applySaberGrip(fig, G.saberGrip, true);
+}
+function rotPose(dt){
+  const list = rotForms();
+  if (!list.includes(rot.id)) rotPick(list[0]);
+  else if (list.length > 1 && (rot.t += dt) > ROT_EVERY) rotPick(list[(list.indexOf(rot.id) + 1) % list.length]);
+  const id = rot.id, form = FORM_OF[id], grip = formGrip(id, G.saberGrip);
+  const held = { node: fig.saberHand, root: fig.saberBladeRoot };
+  guardPose(dt, R, held, grip, form, false, SWAY);
+  applySaberPose(R, held, true, dt);
+  R.head.rotation.y -= saberPose.gaze * R.chest.rotation.y;   // a side-on guard (Soresu) keeps its eyes on the foe
+  // the footing eases from one form's to the next (reverse-grip Niman stands on Djem So's feet)
+  const F = FOOTWORK[(FOOTWORK_GRIP[grip] || {})[form] || form] || FOOTWORK.niman, k = Math.min(1, dt * 4);
+  rot.crouch += (F.crouch - rot.crouch) * k; rot.splay += (F.splay - rot.splay) * k;
+  R.hips.position.y += rot.crouch * 0.5;
+  R.legL.hip.rotation.z = -0.05 - rot.splay * 0.32; R.legR.hip.rotation.z = 0.05 + rot.splay * 0.32;
+  R.legL.knee.rotation.x = R.legR.knee.rotation.x = 0.25 - rot.crouch * 1.4;
+}
+
 // TEMPORARY flicker hunt: ?dbg=noink,noskin,noblade,nolight,nocull hides parts of the figure (not for merging)
 const DBG = new Set((new URLSearchParams(location.search).get('dbg') || '').split(','));
 let dbgDone = false;
@@ -430,7 +477,7 @@ export function renderShowcase(dt){
   if (!warm){ warm = true; compileLive(); prewarmJudgeFX(); }   // keep the arena's shaders ready, so BEGIN doesn't hitch
   if (!shown){ dress(G.hero); setTheme(G.hero, true); }
   // hero picked → spin the stand once, swapping the figure at the brightest point of the beam
-  if (G.hero !== shown && swapT < 0){ swapT = 0; nextHero = G.hero; setTheme(nextHero, false); bgMat.uniforms.b.value = textures[nextHero]; }
+  if (G.hero !== shown && swapT < 0){ rotStop(); swapT = 0; nextHero = G.hero; setTheme(nextHero, false); bgMat.uniforms.b.value = textures[nextHero]; }
   let flare = 0, boost = 0;
   if (swapT >= 0){
     swapT += dt / SWAP;
@@ -457,6 +504,7 @@ export function renderShowcase(dt){
   R.head.rotation.y = P.head[1] + Math.sin(t * 0.6) * 0.08;
   R.hips.position.y = hipsY + (P.drop || 0) + Math.sin(t * 1.7) * 0.008;
   if (pv.id) previewPose(dt);
+  else if (shown === 'jedi' && swapT < 0){ if (!rot.on) rotStart(); rotPose(dt); }
   stepCloth(fig, dt, PED_H);
   blink(fig, dt);   // and a blink now and then (model/life.js)
   updateCpuSkin();
