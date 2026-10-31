@@ -7,6 +7,7 @@
 //   pole  — which way the elbow points (default down & out)    two   — the off hand closes on the hilt
 //   off   — { hand, pole } for a free off hand (a Force palm, balance) when not two-handed
 //   twist — upper-body turn (+ = weapon side back→front)      torso — hip-to-ribs turn   lean — whole-body pitch
+//   gaze  — how much of that turn the head undoes, so a side-on guard still looks at the foe (0 = head turns with the chest)
 // Pose sets key off hold + grip + form (docs/animation-guidelines.md), so a new weapon or form is new data here.
 
 /* each stance in data/stances.js names its form; the darksaber is its own (Mando) form */
@@ -17,7 +18,7 @@ export const FORM_OF = { shiicho: 'shiicho', makashi: 'makashi', soresu: 'soresu
 export const FOOTWORK = {
   shiicho:   { crouch: -0.16, splay: 0.36, lead: 0.2,  lean: 0.08, width: 1.1 },    // square and athletic, feet under the shoulders
   makashi:   { crouch: -0.1,  splay: 0.1,  lead: 0.3,  lean: 0.0,  width: 0.9 },    // a fencer's line: feet narrow and close, upright
-  soresu:    { crouch: -0.2,  splay: 0.44, lead: 0.34, lean: 0.05, width: 1.25 },   // Obi-Wan's deep, wide, side-on stance
+  soresu:    { crouch: -0.22, splay: 0.5,  lead: 0.56, lean: 0.0,  width: 1.25 },   // Obi-Wan's wide, low, side-on stance, upright over it
   ataru:     { crouch: -0.24, splay: 0.12, lead: 0.42, lean: 0.16, width: 0.86 },   // coiled, on the balls of the feet
   niman:     { crouch: -0.17, splay: 0.34, lead: 0.28, lean: 0.06, width: 1.15 },   // balanced and easy, ready to move or cast
   djemso:    { crouch: -0.17, splay: 0.52, lead: 0.08, lean: 0.12, width: 1.3 },   // wide, rooted, square to the foe
@@ -69,12 +70,13 @@ export const SABER_GUARDS = {
       block2: { hand: [0.42, 0.42, 0.3], blade: [-0.82, 0.5, 0.15], twist: 0.04, lean: 0.02, pole: [0.8, -0.3, -0.3],
                 off: { hand: [-0.2, -0.02, -0.27], pole: [-1, 0, -0.1] } },
     },
-    // FORM III SORESU — Obi-Wan's signature guard: sunk into a deep, wide stance and turned side-on, the saber raised high
-    // over and behind the head with the blade laid level and pointing on at the foe, the off arm thrown out long toward
-    // them with the fingers open. The Force hand leads and the blade waits above it.
+    // FORM III SORESU — Obi-Wan's signature guard: a wide, low stance turned fully side-on, the chest open to the side and
+    // the head turned back to the foe (gaze). The saber fist sits above and just behind the crown, the elbow bent and
+    // flared out to the weapon side, the blade laid over the top of the head and on at the foe, tip a touch up; the off
+    // arm reaches out long toward them, palm forward and fingers open. Both hands sit inside arm's reach (bent elbows).
     soresu: {
-      ready: { hand: [0.26, 0.7, -0.1], blade: [-0.56, 0.08, 0.83], twist: 0.45, torso: 0.14, lean: 0.04, pole: [0.9, 0.35, -0.25], palm: 1,
-               off: { hand: [-0.57, 0.36, 0.55], pole: [-0.5, -0.85, 0.15] },
+      ready: { hand: [0.24, 0.74, -0.2], blade: [-0.84, 0.2, 0.5], twist: 0.85, torso: 0.3, lean: 0.0, pole: [1, -0.05, 0.2], palm: 1, gaze: 0.7,
+               off: { hand: [-0.83, 0.35, 0.25], pole: [-0.7, -0.7, 0] },
                offMove: { hand: [-0.3, -0.1, 0.34], pole: OFF_POLE } },   // walking, the reaching hand drops to a loose carry
       // blade upright before the face, the off palm braced behind it — a Force-backed wall
       block: { hand: [0.1, 0.02, 0.42], blade: [-0.12, 1, 0.12], twist: 0, lean: 0.06, pole: POLE,
