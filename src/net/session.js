@@ -1,18 +1,28 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
-// Online co-op connection: one browser hosts under a short room code, the other joins with it. A WebRTC data channel
-// (PeerJS: its free broker only introduces the two browsers, then they talk directly) carries small JSON messages.
-// This file knows nothing about the game: partner.js and coop-ui.js listen to it through on().
+// Online co-op connection: one browser hosts under a short room code and up to three others join with it. A WebRTC data
+// channel per player (PeerJS: its free broker only introduces the browsers, then they talk directly) carries small JSON
+// messages. The host is the middle of a star: every guest talks to the host, and the host passes on what the others
+// need to see of each other (RELAY). Slot 0 is the host; guests take slots 1 to 3. This file knows nothing about the
+// game: partner.js and coop-ui.js listen to it through on().
 
 const ID_PREFIX = 'swpt-';
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';   // no 0/O/1/I: easy to read out over voice chat
 const CODE_LEN = 5;
+export const MAX_GUESTS = 3;
+// what the host passes on from one guest to the rest, stamped with the sender's slot: poses, their shots and powers
+const RELAY = { s: 1, hello: 1, pb: 1, pw: 1, bx: 1 };
 
 /* the session, shared by everything that reads it: status is idle | hosting | joining | connected | failed */
 export const net = {
   status: 'idle', role: null, code: '', error: '', ping: 0, peerPlays: false,
+  slot: 0,        // this browser's seat: 0 the host, 1 to 3 the guests
+  guests: 0,      // host: how many guests are connected
 };
 
-let peer = null, conn = null, pingTimer = 0, sendAt = 0;
+let peer = null, conn = null, sendAt = 0;
+const conns = new Map();   // host: slot -> that guest's connection
+const hellos = new Map();  // host: slot -> that guest's last hello, handed to guests who join later
+const pings = new Map(), pingTimers = new Map();
 const listeners = {};
 export function on(event, fn){ (listeners[event] ||= []).push(fn); }
 function emit(event, ...args){ for (const fn of listeners[event] || []) fn(...args); }
@@ -46,13 +56,18 @@ async function makePeer(id){
 
 export async function host(attempt = 0){
   leave(true);
-  net.role = 'host'; net.code = newCode(); setStatus('hosting');
+  net.role = 'host'; net.slot = 0; net.code = newCode(); setStatus('hosting');
   try { peer = await makePeer(ID_PREFIX + net.code); } catch(e){ return fail('Could not start the connection.'); }
   const mine = peer;
   peer.on('open', () => emit('status', net));
   peer.on('connection', (c) => {
-    if (conn){ c.on('open', () => c.close()); return; }   // two players for now: a third is turned away
-    attach(c);
+    let slot = 1; while (conns.has(slot)) slot++;
+    if (slot > MAX_GUESTS){   // the room is full: tell them, then turn them away
+      c.on('open', () => { try { c.send({ t: 'full' }); } catch(e){} setTimeout(() => c.close(), 300); });
+      return;
+    }
+    conns.set(slot, c);   // taken now, even before the channel opens
+    attach(c, slot);
   });
   peer.on('error', (err) => {
     if (mine !== peer) return;
@@ -65,13 +80,13 @@ export async function join(code){
   code = cleanCode(code);
   if (code.length !== CODE_LEN) return fail('Enter the 5-letter room code.');
   leave(true);
-  net.role = 'guest'; net.code = code; setStatus('joining');
+  net.role = 'guest'; net.code = code; net.slot = 0; setStatus('joining');
   try { peer = await makePeer(); } catch(e){ return fail('Could not start the connection.'); }
   const mine = peer;
   peer.on('error', (err) => { if (mine === peer) fail(err.type === 'peer-unavailable' ? 'No room with that code.' : describe(err)); });
   peer.on('open', () => {
     const c = peer.connect(ID_PREFIX + code, { serialization: 'json' });
-    attach(c);
+    attach(c, 0);
     setTimeout(() => { if (net.status === 'joining' && mine === peer) fail('Timed out. Check the code, or try again.'); }, 15000);
   });
 }
@@ -82,25 +97,59 @@ function describe(err){
 }
 function fail(message){ leave(true); setStatus('failed', message); }
 
-function attach(c){
-  conn = c;
+// one connection: slot is the guest's seat on the host's side, 0 on a guest's (its only connection is the host)
+function attach(c, slot){
+  if (net.role === 'guest') conn = c;
   c.on('open', () => {
+    pingTimers.set(slot, setInterval(() => { if (c.open) c.send({ t: 'ping', at: performance.now() }); }, 2000));
+    if (net.role === 'host'){
+      net.guests = conns.size;
+      c.send({ t: 'welcome', slot });
+      for (const [k, h] of hellos) if (k !== slot) c.send({ ...h, from: k });   // the guests already here
+    }
     setStatus('connected');
-    emit('open');
-    pingTimer = setInterval(() => send({ t: 'ping', at: performance.now() }), 2000);
+    emit('open', slot);
   });
   c.on('data', (m) => {
     if (!m || typeof m !== 'object') return;
-    if (m.t === 'ping') return void send({ t: 'pong', at: m.at });
-    if (m.t === 'pong'){ net.ping = Math.round(performance.now() - m.at); emit('ping', net.ping); return; }
+    if (m.t === 'ping') return void c.send({ t: 'pong', at: m.at });
+    if (m.t === 'pong'){ pings.set(slot, Math.round(performance.now() - m.at)); net.ping = Math.max(0, ...pings.values()); emit('ping', net.ping); return; }
+    if (m.t === 'welcome'){ net.slot = m.slot; emit('welcome', m.slot); return; }
+    if (m.t === 'full') return void leave(false, 'That room is full (4 players).');
+    if (net.role === 'host'){
+      m.from = slot;   // never trust a guest to say who they are
+      if (m.t === 'hello') hellos.set(slot, m);
+      if (RELAY[m.t]) for (const [k, o] of conns) if (k !== slot && o.open) o.send(m);
+    }
     emit(m.t, m);
   });
-  c.on('close', () => { if (conn === c){ conn = null; clearInterval(pingTimer); emit('closed'); if (net.role === 'host' && peer){ setStatus('hosting'); } else leave(false, 'The host left the game.'); } });
+  c.on('close', () => {
+    clearInterval(pingTimers.get(slot)); pingTimers.delete(slot); pings.delete(slot);
+    if (net.role === 'host'){
+      if (conns.get(slot) !== c) return;
+      conns.delete(slot); hellos.delete(slot);
+      net.guests = conns.size;
+      for (const o of conns.values()) if (o.open) o.send({ t: 'bye', slot });
+      emit('closed', slot);
+      if (peer) setStatus(conns.size ? 'connected' : 'hosting');
+    } else if (conn === c){
+      conn = null; emit('closed', 0); leave(false, 'The host left the game.');
+    }
+  });
   c.on('error', () => {});
 }
 
-export const connected = () => !!conn && conn.open;
-export function send(msg){ if (conn && conn.open) conn.send(msg); }
+// host: any guest is connected · guest: the host is
+export const connected = () => net.role === 'host' ? [...conns.values()].some(c => c.open) : !!conn && conn.open;
+// host: to every guest · guest: to the host
+export function send(msg){
+  if (net.role === 'host'){ for (const c of conns.values()) if (c.open) c.send(msg); }
+  else if (conn && conn.open) conn.send(msg);
+}
+// host: to one guest only (a blow meant for them)
+export function sendTo(slot, msg){ const c = conns.get(slot); if (c && c.open) c.send(msg); }
+// host: the seats of the guests connected now
+export const guestSlots = () => [...conns].filter(([, c]) => c.open).map(([k]) => k);
 
 /* state at ~15 per second: callers pass a function so the message is only built when it is due */
 export function sendEvery(ms, build){
@@ -110,9 +159,12 @@ export function sendEvery(ms, build){
 }
 
 export function leave(quiet, message = ''){
-  clearInterval(pingTimer);
+  for (const t of pingTimers.values()) clearInterval(t);
+  pingTimers.clear(); pings.clear(); hellos.clear();
+  for (const c of conns.values()) try { c.close(); } catch(e){}
+  conns.clear();
   if (conn){ try { conn.close(); } catch(e){} conn = null; }
   if (peer){ try { peer.destroy(); } catch(e){} peer = null; }
-  net.role = null; net.ping = 0; net.peerPlays = false;
-  if (!quiet){ net.code = ''; setStatus(message ? 'failed' : 'idle', message); emit('closed'); }
+  net.role = null; net.ping = 0; net.peerPlays = false; net.slot = 0; net.guests = 0;
+  if (!quiet){ net.code = ''; setStatus(message ? 'failed' : 'idle', message); emit('closed', -1); }
 }

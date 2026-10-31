@@ -334,11 +334,14 @@ export function updateFoes(){
   } else if (!connected()) hitQueue.length = 0;
 }
 
-on('pick', (m) => { if (net.role === 'host') coopRun.guestPicking = !!m.o; });
+// which guests have their upgrade screen open (the next wave waits for all of them)
+const picking = new Set();
+on('pick', (m) => { if (net.role !== 'host') return; if (m.o) picking.add(m.from); else picking.delete(m.from); coopRun.guestPicking = picking.size > 0; });
+on('closed', (slot) => { if (slot < 0) picking.clear(); else picking.delete(slot); coopRun.guestPicking = picking.size > 0; });
 
 on('status', (n) => {
   if (n.status === 'connected') return;
-  coopRun.on = false; coopRun.guestPicking = false; coopRun.live = false; G.coopWasGuest = false; runChanged();
+  coopRun.on = false; picking.clear(); coopRun.guestPicking = false; coopRun.live = false; G.coopWasGuest = false; runChanged();
   if (G.coopGuest) endGuest();
   hostSent = false;
 });

@@ -437,7 +437,7 @@ function findCover(a){
 }
 // who a following squadmate forms up on: the hero here, or (told ON ME by them) the co-op partner while they're about
 function leader(a){
-  const pt = a.ord.partner && squadLink.partner ? squadLink.partner() : null;
+  const pt = a.ord.partner && squadLink.partner ? squadLink.partner(a.ord.partner === true ? 0 : a.ord.partner) : null;
   return pt ? pt : { pos: playerPos(), yaw: SQ.fYaw };
 }
 // the spot this squadmate is making for, and whether it's on revive duty

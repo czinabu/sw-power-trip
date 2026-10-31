@@ -26,14 +26,14 @@ import { showBanner } from '../ui/banners.js';
 import { remoteComms } from '../game/story.js';
 import { blockedOnBlade } from '../player/jedi/clash.js';
 import { playerPos } from '../player/helpers.js';
-import { players } from '../player/players.js';
 import { tellFx } from '../fx/tells.js';
 import { burst } from '../fx/particles.js';
 import { spawnGroundShock } from '../fx/vfx.js';
 import { castHands } from '../fx/palms.js';
 import { partnerPower } from './partner-fx.js';
+import { partnerPuppet, partnerMate } from './partner.js';
 import { S } from '../audio/sfx.js';
-import { net, on, send, connected } from './session.js';
+import { net, on, send, sendTo, guestSlots, connected } from './session.js';
 import { hooks } from './run.js';
 import { puppetOf, runKind } from './foes.js';
 
@@ -46,7 +46,9 @@ let bidN = 0;
 // host: a blow from foe `e` lands on the partner's hero. Returns true when it was sent (so the host does no damage itself)
 hooks.hurt = (e, dmg, pos, kind, unblockable, dx, dz) => {
   if (!asHost()) return false;
-  send({ t: 'hurt', n: e.nid, d: r2(dmg), x: r2(pos.x), y: r2(pos.y), z: r2(pos.z), k: kind, u: unblockable ? 1 : 0, dx: dx ? r2(dx) : 0, dz: dz ? r2(dz) : 0 });
+  const victim = (e === shared.boss ? shared.boss.hero : e.hero), slot = victim && victim.slot || guestSlots()[0];   // the guest this blow is for
+  if (!slot) return false;
+  sendTo(slot, { t: 'hurt', n: e.nid, d: r2(dmg), x: r2(pos.x), y: r2(pos.y), z: r2(pos.z), k: kind, u: unblockable ? 1 : 0, dx: dx ? r2(dx) : 0, dz: dz ? r2(dz) : 0 });
   return true;
 };
 
@@ -61,7 +63,7 @@ on('hurt', (m) => {
 
 on('hres', (m) => {
   if (net.role !== 'host') return;
-  const mate = players.find(p => !p.local);
+  const mate = partnerMate(m.from);   // whoever took the blow
   if (m.n === 'B'){   // the boss's blow: a parry or clash opens him up
     const bp = shared.boss && !shared.boss.net ? shared.boss.group.position : null;
     if (!bp) return;
@@ -160,7 +162,7 @@ hooks.power = (k, color, r) => {
 };
 on('pw', (m) => {
   if (!asHost() && !asGuest()) return;
-  partnerPower(m.k, m.c, m.r, m.h || 1, m.x, m.z);
+  partnerPower(partnerPuppet(m.from), m.k, m.c, m.r, m.h || 1, m.x, m.z);
 });
 
 /* ---------------- shared XP: a kill pays both heroes ---------------- */

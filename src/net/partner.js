@@ -1,5 +1,5 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
-// The partner in online co-op: a second hero model, dressed in their own customizer picks, standing where their browser
+// The partners in online co-op (one per other player, up to three): a hero model each, dressed in their own customizer picks, standing where their browser
 // says they are and posed exactly as their screen draws them (net/pose.js). It joins the players list
 // (player/players.js) as a hero the enemies can pick, while both of you are in the same arena. Each browser still runs
 // its own enemies for now: fighting the same ones together is co-op phase 2.
@@ -18,76 +18,96 @@ import { addPlayer, removePlayer, worldKey } from '../player/players.js';
 import { addHeroReviver, addReviverSource } from '../game/revive.js';
 import { refill } from '../allies/squad.js';
 import { readPose, makePoseTrack, pushPose, stepPose } from './pose.js';
-import { on, send, sendEvery, connected } from './session.js';
-import { fxOut, setPartnerFx, updatePartnerFx } from './partner-fx.js';
+import { on, send, sendEvery, connected, net } from './session.js';
+import { fxOut, makePartnerFx, updatePartnerFx } from './partner-fx.js';
 
-const puppet = { group: new THREE.Group() };
-const track = makePoseTrack();
-let built = false, picksKey = '', hero = 'jedi', playing = false, world = '', sent = 0;
-const want = { pos: new THREE.Vector3(), yaw: 0, ap: 0 };
-let tag = null;
-
-/* this partner in the players list: `pos` is where the puppet stands on this screen, so what enemies chase is what
-   you see them chase */
-const mate = { id: 'partner', local: false, name: 'PARTNER', pos: puppet.group.position, vel: new THREE.Vector3(), down: false, here: false };
-
+const partners = new Map();   // slot -> that player's puppet, pose track and entry in the players list
 const keyOf = (picks) => JSON.stringify(picks || {});
+let sent = 0;
 
-function build(picks, heroName){
+function partnerOf(slot){
+  let P = partners.get(slot);
+  if (P) return P;
+  const puppet = { group: new THREE.Group() };
+  P = { slot, puppet, track: makePoseTrack(), fx: makePartnerFx(), built: false, picksKey: '', hero: 'jedi', playing: false, world: '', tag: null,
+        want: { pos: new THREE.Vector3(), yaw: 0, ap: 0 } };
+  /* this partner in the players list: `pos` is where the puppet stands on this screen, so what enemies chase is what
+     you see them chase */
+  P.mate = { id: 'partner' + slot, slot, local: false, name: 'PLAYER ' + (slot + 1), pos: puppet.group.position, vel: new THREE.Vector3(), down: false, here: false };
+  addHeroReviver(() => standing(P));
+  addReviverSource(() => standing(P) ? { kind: 'partner', pos: puppet.group.position, hitAt: null } : null);
+  partners.set(slot, P);
+  return P;
+}
+
+function build(P, picks, heroName){
+  const { puppet } = P;
   if (puppet.vis){ puppet.group.remove(puppet.vis); disposeTree(puppet.vis); }
   puppet.group.add(buildHeroModel(puppet, lookOf(picks)));
-  picksKey = keyOf(picks);
-  track.to = track.from = null;   // a fresh rig: the next pose snaps on
-  dress(heroName);
-  if (!built){ scene.add(puppet.group); built = true; }
+  P.picksKey = keyOf(picks);
+  P.track.to = P.track.from = null;   // a fresh rig: the next pose snaps on
+  dress(P, heroName);
+  if (!P.built){ scene.add(puppet.group); P.built = true; }
 }
 
 /* show only the parts of the chosen hero (the same switch player/hero.js makes for the local player); which weapon is
    out, and where, comes with every pose */
-function dress(heroName){
-  hero = heroName === 'mando' ? 'mando' : 'jedi';
-  const mando = hero === 'mando';
+function dress(P, heroName){
+  const { puppet } = P;
+  P.hero = heroName === 'mando' ? 'mando' : 'jedi';
+  const mando = P.hero === 'mando';
   for (const m of puppet.mandoParts) m.visible = mando;
   for (const m of puppet.headBare) m.visible = !mando;
   puppet.rig.skirt.visible = !mando;
   puppet.saberHand.visible = !mando;
 }
 
-function nameTag(){
-  if (tag) return tag;
-  tag = document.createElement('div');
-  tag.id = 'partnertag'; tag.textContent = 'PARTNER';
-  document.getElementById('hud').appendChild(tag);
-  return tag;
+// "PARTNER" with one other player, "PLAYER 3" and so on with more
+const label = (P) => partners.size > 1 ? 'PLAYER ' + (P.slot + 1) : 'PARTNER';
+function nameTag(P){
+  if (P.tag) return P.tag;
+  P.tag = document.createElement('div');
+  P.tag.className = 'partnertag'; P.tag.textContent = label(P);
+  document.getElementById('hud').appendChild(P.tag);
+  return P.tag;
 }
 
 // a standing partner can get you up when you go down, and earns you a second chance each wave (game/revive.js)
-const standing = () => mate.here && !mate.down;
-addHeroReviver(standing);
-addReviverSource(() => standing() ? { kind: 'partner', pos: puppet.group.position, hitAt: null } : null);
+const standing = (P) => P.mate.here && !P.mate.down;
+const anyStanding = () => { for (const P of partners.values()) if (standing(P)) return true; return false; };
 let reviveWave = -1;
 function coopRevives(){
-  G.coopRevive = standing() && G.mode === 'play';   // keeps the revive channel running when the squad isn't
-  if (!standing() || G.mode !== 'play') return;
+  const up = anyStanding();
+  G.coopRevive = up && G.mode === 'play';   // keeps the revive channel running when the squad isn't
+  if (!up || G.mode !== 'play') return;
   const key = G.endless ? G.endlessWave : G.levelIdx * 100 + G.wave;
   if (G.reviveLeft == null || key !== reviveWave){ reviveWave = key; refill(); }
 }
 
-on('hello', (m) => { build(m.picks, m.hero); });
+on('hello', (m) => { const P = partnerOf(m.from || 0); build(P, m.picks, m.hero); addPlayer(P.mate); });
 on('s', (m) => {
-  if (!built) build(m.picks, m.hero);
-  if (m.picks && keyOf(m.picks) !== picksKey) build(m.picks, m.hero);
-  if (m.hero !== hero) dress(m.hero);
-  if (!playing) puppet.group.position.set(m.x, m.y, m.z);   // first sight, or back from the menu: snap
+  const P = partnerOf(m.from || 0), { want, mate, puppet, track } = P;
+  if (!P.built) build(P, m.picks, m.hero);
+  if (m.picks && keyOf(m.picks) !== P.picksKey) build(P, m.picks, m.hero);
+  if (m.hero !== P.hero) dress(P, m.hero);
+  addPlayer(mate);
+  if (!P.playing) puppet.group.position.set(m.x, m.y, m.z);   // first sight, or back from the menu: snap
   want.pos.set(m.x, m.y, m.z); want.yaw = m.yaw; want.ap = +m.ap || 0;
   mate.vel.set(m.vx || 0, 0, m.vz || 0);
   mate.down = !!m.down;
-  playing = !!m.play; world = m.w || '';
+  P.playing = !!m.play; P.world = m.w || '';
   if (m.pose) pushPose(track, puppet, m.pose, performance.now());
-  setPartnerFx(m.fx);
+  P.fx.cur = m.fx || null; P.fx.curAt = performance.now();
 });
-on('open', () => { sent = 0; send({ t: 'hello', hero: G.hero, picks: loadPicks() }); addPlayer(mate); });
-on('closed', () => { playing = false; removePlayer(mate); });
+// a player came in: say hello to them (the host's hello reaches every guest, and each guest's reaches the host and, through it, the rest)
+on('open', () => { sent = 0; send({ t: 'hello', hero: G.hero, picks: loadPicks() }); });
+function leaves(slot){
+  const P = partners.get(slot);
+  if (!P) return;
+  dropPartner(P); removePlayer(P.mate);
+}
+on('closed', (slot) => { if (slot < 0) for (const k of [...partners.keys()]) leaves(k); else leaves(slot); });
+on('bye', (m) => leaves(m.slot));   // another guest left (the host tells the rest)
 
 const damp = (a, b, k, dt) => a + (b - a) * (1 - Math.exp(-k * dt));
 const angDiff = (a, b) => Math.atan2(Math.sin(b - a), Math.cos(b - a));
@@ -105,12 +125,17 @@ export function updateCoop(dt){
       return m;
     });
   }
-  const show = built && connected() && playing && G.mode !== 'menu';
-  puppet.group.visible = show;
-  mate.here = show && G.mode === 'play' && world === worldKey();
   coopRevives();
-  if (tag) tag.style.display = show ? 'block' : 'none';
-  updatePartnerFx(dt, puppet.group, show, puppet);
+  for (const P of partners.values()) stepPartner(P, dt);
+}
+
+function stepPartner(P, dt){
+  const { puppet, mate, want, track } = P;
+  const show = P.built && connected() && P.playing && G.mode !== 'menu';
+  puppet.group.visible = show;
+  mate.here = show && G.mode === 'play' && P.world === worldKey();
+  if (P.tag) P.tag.style.display = show ? 'block' : 'none';
+  updatePartnerFx(P.fx, dt, puppet.group, show, puppet);
   if (!show) return;
   const g = puppet.group;
   g.position.x = damp(g.position.x, want.pos.x, 14, dt);
@@ -121,25 +146,42 @@ export function updateCoop(dt){
   stepCloth(puppet, dt, g.position.y + 0.02);   // their robe and cape swing here too, after the pose
   blink(puppet, dt);   // and they blink (model/life.js); their hands keep the grip they were built with
   // the name tag follows the head on screen
-  const t = nameTag();
-  t.textContent = mate.down ? 'PARTNER DOWN: STAND NEXT TO THEM' : 'PARTNER';
+  const t = nameTag(P);
+  t.textContent = mate.down ? label(P) + ' DOWN: STAND NEXT TO THEM' : label(P);
   const v = new THREE.Vector3(g.position.x, g.position.y + 2.6, g.position.z).project(camera);
   if (v.z > 1){ t.style.display = 'none'; return; }
   t.style.left = ((v.x * 0.5 + 0.5) * innerWidth) + 'px';
   t.style.top = ((-v.y * 0.5 + 0.5) * innerHeight) + 'px';
 }
 
-// for the co-op smoke test: is the partner on screen, posed from the network, and something enemies can go after?
-export const partnerShown = () => puppet.group.visible;
-export const partnerInfo = () => ({ shown: puppet.group.visible, here: mate.here, posed: !!track.to, hero,
-  armR: puppet.rig ? puppet.rig.armR.sh.quaternion.toArray().map(n => +n.toFixed(3)) : null,
-  hunters: enemies.filter(e => !e.dead && e.hero === mate).length });
-// the partner's aim: the unit direction their powers point, pitch included (a thrown saber, the flame, lightning)
-export function partnerAim(out = new THREE.Vector3()){
-  const y = Math.max(-1, Math.min(1, want.ap)), h = Math.sqrt(1 - y * y);
-  return out.set(Math.sin(want.yaw) * h, y, Math.cos(want.yaw) * h);
+// for the co-op smoke test: is a partner on screen, posed from the network, and something enemies can go after?
+const first = () => partners.values().next().value;
+export const partnerShown = () => [...partners.values()].some(P => P.puppet.group.visible);
+const infoOf = (P) => ({ slot: P.slot, shown: P.puppet.group.visible, here: P.mate.here, posed: !!P.track.to, hero: P.hero, down: P.mate.down,
+  armR: P.puppet.rig ? P.puppet.rig.armR.sh.quaternion.toArray().map(n => +n.toFixed(3)) : null,
+  hunters: enemies.filter(e => !e.dead && e.hero === P.mate).length });
+export const partnerInfo = () => {
+  const P = first();
+  return { ...(P ? infoOf(P) : { shown: false, here: false, posed: false, hero: 'jedi', armR: null, hunters: 0 }), all: [...partners.values()].map(infoOf) };
+};
+// the partner's puppet (net/foefire.js draws their powers from it)
+export const partnerPuppet = (slot) => { const P = partners.get(slot || 0); return P ? P.puppet : null; };
+// the aim of a partner: the unit direction their powers point, pitch included (a thrown saber, the flame, lightning)
+export function partnerAim(out = new THREE.Vector3(), slot = 0){
+  const P = partners.get(slot), w = P ? P.want : { ap: 0, yaw: 0 };
+  const y = Math.max(-1, Math.min(1, w.ap)), h = Math.sqrt(1 - y * y);
+  return out.set(Math.sin(w.yaw) * h, y, Math.cos(w.yaw) * h);
 }
-// for the squad (allies/squad.js via net/squad.js): where the partner stands and faces, and whether they're down, or null
-export const partnerSpot = () => mate.here ? { pos: puppet.group.position, yaw: want.yaw, down: mate.down } : null;
-export function dropPartner(){ puppet.group.visible = false; playing = false; mate.here = false; if (tag) tag.style.display = 'none'; }
-on('status', (n) => { if (n.status !== 'connected'){ dropPartner(); removePlayer(mate); } });
+// the hero object of a partner by seat (who a foe is going after)
+export const partnerMate = (slot) => { const P = partners.get(slot); return P ? P.mate : null; };
+// for the squad (allies/squad.js via net/squad.js): where a partner stands and faces, and whether they're down, or null.
+// Told a seat, that player; else a downed partner first, then any who is here
+export function partnerSpot(slot){
+  const spot = (P) => P && P.mate.here ? { pos: P.puppet.group.position, yaw: P.want.yaw, down: P.mate.down } : null;
+  if (slot) return spot(partners.get(slot));
+  let any = null;
+  for (const P of partners.values()){ const s = spot(P); if (s && s.down) return s; if (s && !any) any = s; }
+  return any;
+}
+export function dropPartner(P){ P.puppet.group.visible = false; P.playing = false; P.mate.here = false; if (P.tag) P.tag.style.display = 'none'; }
+on('status', (n) => { if (n.status !== 'connected'){ for (const P of partners.values()){ dropPartner(P); removePlayer(P.mate); } } });

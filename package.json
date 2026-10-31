@@ -17,7 +17,8 @@
     "smoke:coop-mission": "node tools/smoke/coop-mission.mjs",
     "smoke:cutscenes": "node tools/smoke/cutscenes.mjs",
     "smoke:training": "node tools/smoke/training.mjs",
-    "perf": "node tools/smoke/perf.mjs"
+    "perf": "node tools/smoke/perf.mjs",
+    "smoke:coop-four": "node tools/smoke/coop-four.mjs"
   },
   "dependencies": {
     "peerjs": "^1.5.5",
