@@ -622,3 +622,8 @@ body.pad .kbonly{display:none}
 #abilitycard .ac-key{display:inline-block;margin-top:8px;padding:2px 8px;font:700 12px/1.4 var(--font-ui);letter-spacing:1.6px;color:var(--ink);border:1px solid var(--edge-mid);border-radius:var(--r-chip)}
 #abilitycard p{margin:10px 0 0;font:500 15px/1.45 var(--font-body);color:var(--ink-soft)}
 #abilitycard .cc-btns{margin-top:16px;display:flex;gap:12px}
+
+/* Subtle fan-game disclaimer, main menu only */
+.fan-note{display:none;position:fixed;left:0;right:0;bottom:8px;z-index:21;text-align:center;pointer-events:none;
+  font:500 11px/1.2 var(--font-ui);letter-spacing:.06em;color:var(--ink-dim);opacity:.55}
+#overlay.st-menu .fan-note{display:block}
