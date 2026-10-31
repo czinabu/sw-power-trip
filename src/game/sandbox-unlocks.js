@@ -8,7 +8,7 @@
 // the other sw_camp_ keys). The sandbox offers what either hero has reached.
 
 import { G, isGunner } from '../state.js';
-import { CHAPTERS, chapterOrder } from '../data/campaign.js';
+import { CHAPTERS, chapterOrder, storyMissions } from '../data/campaign.js';
 import { LEVELS } from '../data/levels.js';
 import { MISSIONS } from '../data/missions.js';
 import { ENEMY_TYPES } from '../data/enemies.js';
@@ -48,7 +48,8 @@ export function recordChapters(pos, onlyLast){
 // the Missions list keeps a mission locked (and unspoiled) until a hero has cleared it in the campaign: its chapter is
 // in the cleared set, or either hero has won it (the campaign marks that, game/mission.js), or the campaign is beaten
 // the chapter that opens a mission on the Missions list: the one that plays it, or one that plays its story version (`opens`)
-const playsMission = (c, id) => c.mission === id || (c.opens || []).includes(id);
+// (in any hero's story: the Mando's plays its own missions in some chapters, data/campaign-mando.js)
+const playsMission = (c, id) => storyMissions(c).includes(id) || (c.opens || []).includes(id);
 export function missionUnlocked(id){
   const m = MISSIONS[id]; if (!m) return false;
   if (sandboxFull()) return true;
@@ -93,9 +94,11 @@ export function refreshSandboxScope(){
       depth += to - from;
       reachedWaves.push([c.level, to - 1]);
     } else {
-      const m = MISSIONS[c.mission]; if (!m) continue;
-      missionFoes(m.objectives, foes);
-      for (const id in BATTLE_MAPS) if (m.level && m.level.layout === BATTLE_MAPS[id].level.layout) maps.add(id);
+      const ms = storyMissions(c).map(id => MISSIONS[id]).filter(Boolean); if (!ms.length) continue;
+      for (const m of ms){
+        missionFoes(m.objectives, foes);
+        for (const id in BATTLE_MAPS) if (m.level && m.level.layout === BATTLE_MAPS[id].level.layout) maps.add(id);
+      }
       depth += c.steps || 1;
       if (c.level != null && c.waves) reachedWaves.push([c.level, c.waves[1] - 1]);   // a mission standing in for a level's waves
     }

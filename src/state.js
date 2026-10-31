@@ -70,6 +70,7 @@ export const G = {
   hero: 'jedi',          // 'jedi' (saber/Force), 'mando' (jetpack/blasters) or 'trooper' (clone ARC trooper, testing only) — chosen on the menu
   // SURVIVAL / ENDLESS mode
   modeSel: 'campaign',   // menu pick: 'campaign' | 'endless' | 'training' | 'mission' | 'sandbox'
+  storyHero: null,      // whose story a campaign run tells (data/campaign.js storyHero): null is the hero's own; a co-op guest takes the host's
   missionId: 'refuge',   // which story mission (data/missions.js) the menu's MISSIONS list has picked
   endless: false,        // true while a survival run is active
   training: false,       // true while the tutorial runs (game/tutorial.js)

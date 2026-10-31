@@ -725,7 +725,7 @@ function escapeDuel(o, e){
   G.shake = Math.max(G.shake, 0.8);
   S.roar(p);
   showBanner(o.name + ' ESCAPES', heroText(o.escapeLine) || '', 3.0);
-  playScene('inq-escape', { mark: [p.x, p.z] });   // its parting words, where it stood (game/cutscene.js)
+  playScene(o.escapeScene || 'inq-escape', { mark: [p.x, p.z] });   // its parting words, where it stood (game/cutscene.js)
   storyBeat('escape', { name: o.name });
 }
 function quarryEscaped(){

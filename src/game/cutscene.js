@@ -10,7 +10,8 @@
 import * as THREE from 'three';
 import { camera, scene } from '../engine/renderer.js';
 import { G, shared, player, isGunner } from '../state.js';
-import { VOICE } from '../data/campaign.js';
+import { VOICE, storyHero } from '../data/campaign.js';
+import { MANDO_BOSS } from '../data/campaign-mando.js';
 import { playerPos, stance, fwd, rightV } from '../player/helpers.js';
 import { animatePlayer } from '../player/animation.js';
 import { cameraClearance, sightClear, updatePropFade } from '../world/camblock.js';
@@ -292,9 +293,11 @@ function watchSpot(pp){
   return { ...c, yaw: G.yaw };
 }
 
-// a chapter's opening (game/campaign.js, when its card closes): the place, its title, then the hero and the voice
-export function playOpening(id, title){
-  const o = OPENINGS[id];
+// a chapter's opening (game/campaign.js, when its card closes): the place, its title, then the hero and the voice.
+// own: a story's own opening for the chapter (data/campaign-mando.js `opening`: plain lines, whoever is playing)
+const everyHero = (v) => ({ jedi: v, mando: v });
+export function playOpening(id, title, own){
+  const o = own ? { ...everyHero(own.lines), rival: own.rival && { ...everyHero(own.rival), line: own.rival.line }, quarry: own.quarry } : OPENINGS[id];
   if (!o) return false;
   let lines = (pick(o) || []).slice();
   const shots = [wide(3.4, title)], actors = [];
@@ -351,7 +354,8 @@ export function playBossIntro(share = true){
   const b = boundActor('boss');
   if (!b) return false;
   b.scale = 1.4;
-  const lines = pick(BOSS).slice(), [name, epithet] = (isGunner() ? BOSS_MANDO.name : BOSS_CFG.name).split(' — ');
+  const lines = (G.chapter >= 0 && storyHero() === 'mando' ? MANDO_BOSS : pick(BOSS)).slice(),   // (the Mando's own story: data/campaign-mando.js)
+        [name, epithet] = (isGunner() ? BOSS_MANDO.name : BOSS_CFG.name).split(' — ');
   const first = shot('actor', [0.6, 5, 0.9], [0.4, 4.4, 1.3], lineTime(lines[0]), { on: 'actor', h: 2.2 },
                      { line: lines[0], title: { k: 'EXEGOL', h: name, p: epithet || '' }, mirror: true });
   const g = b.g.position;

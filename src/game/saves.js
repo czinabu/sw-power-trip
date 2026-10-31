@@ -93,7 +93,7 @@ export function resumeRun(){
 }
 // 'CHAPTER 3 · THE LAST EVACUATION' for a saved run, without starting it
 function savedChapter(run, hero){
-  const pos = run.chapter != null && run.chapter >= 0 ? run.chapter : CHAPTER_OF_LEVEL[run.idx] || 0, c = chapterOrder(run.actTwo)[pos];
+  const pos = run.chapter != null && run.chapter >= 0 ? run.chapter : CHAPTER_OF_LEVEL[run.idx] || 0, c = chapterOrder(run.actTwo, hero)[pos];
   return c ? 'CHAPTER ' + (pos + 1) + ' · ' + forHero(c.title, hero) : 'LEVEL ' + (run.idx + 1) + ' · ' + placeOf(LEVELS[run.idx]);
 }
 
