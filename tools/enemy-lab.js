@@ -12,6 +12,7 @@ import { ENEMY_TYPES } from '../src/data/enemies.js';
 import { buildEnemyMesh } from '../src/enemies/mesh.js';
 import { buildBoss } from '../src/boss/mesh.js';
 import { updateUpper } from '../src/enemies/upper.js';
+import { markHit } from '../src/enemies/marks.js';
 import { ELITES } from '../src/data/enemies.js';
 import { SQUAD } from '../src/data/allies.js';
 import { GUARD_POSE, BLOCK_POSE, WIND, FOE_CUTS } from '../src/data/duel.js';
@@ -158,6 +159,20 @@ function playCuts(ms){
   cutTag.textContent = id + (FOE_CUTS[id].fin ? ' · finisher' : '') + ' · line ' + FOE_CUTS[id].line;
 }
 
+// &hits=1: every kind of hit mark on each figure (enemies/scars.js markHit): scorches on the chest, a dent and a torn
+// plate on the belly and shoulder, a cracked helm
+if (q.get('hits')) setTimeout(() => {
+  for (const f of figs){
+    const g = f.g, s = g.scale.x, fr = new THREE.Vector3(Math.sin(g.rotation.y), 0, Math.cos(g.rotation.y));
+    const at = (x, y, z) => new THREE.Vector3(x, y * s, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), g.rotation.y).add(g.position).addScaledVector(fr, z * s);
+    const back = fr.clone().negate();
+    markHit(g, at(-0.08, 1.62, 0.2), back, 'scorch');
+    markHit(g, at(0.12, 1.5, 0.2), back, 'scorch');
+    markHit(g, at(0.06, 1.25, 0.15), back, 'dent', { heavy: true });
+    markHit(g, at(-0.3, 1.76, 0.1), back, 'tear', { heavy: true });
+    markHit(g, at(0.05, 2.18, 0.16), back, 'crack');
+  }
+}, 300);
 const stats = document.getElementById('stats');
 const orbit = q.get('orbit') === '1';
 renderer.info.autoReset = false;
