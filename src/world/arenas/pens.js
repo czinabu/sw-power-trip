@@ -47,8 +47,8 @@ export function buildPensArena(L){
   K.deco(new THREE.RingGeometry(4.6, 4.9, 40), new THREE.MeshBasicMaterial({ color: 0xd9a43a, transparent: true, opacity: 0.6, side: THREE.DoubleSide }), 0, 0.2, 25, -Math.PI/2);
   for (let k = 0; k < 8; k++){ const a = k / 8 * Math.PI*2; glow(K.deco(new THREE.BoxGeometry(0.4, 0.1, 0.4), guide, Math.cos(a)*5.6, 0.22, 25 + Math.sin(a)*5.6)); }
 
-  // ---- the ROCK SPINE, east of the middle: the way in bends west round it ----
-  for (const [x, z, r, h] of [[10, 10, 3.2, 5.5], [13, 5, 3.6, 7], [15, -1, 3.0, 6], [19, 7, 2.8, 4.5], [11, 1, 2.0, 3.2], [22, 1, 3.4, 8], [25, 9, 2.6, 5]]) boulder(x, z, r, h, R() < 0.5 ? rock : rockD);
+  // ---- the ROCK SPINE, east of the middle: the way in bends west round it (one solid mass: no pocket between the rocks to hide in) ----
+  for (const [x, z, r, h] of [[10, 10, 3.2, 5.5], [13, 5, 3.6, 7], [15, -1, 3.0, 6], [19, 7, 2.8, 4.5], [11, 1, 2.0, 3.2], [22, 1, 3.4, 8], [25, 9, 2.6, 5], [18, 3, 2.0, 4]]) boulder(x, z, r, h, R() < 0.5 ? rock : rockD);
   // and scattered rocks: cover in the open, low ones to vault
   for (const [x, z, r, h] of [[-22, 18, 2.2, 3.4], [-26, 4, 2.6, 4.2], [-6, 4, 1.1, 1.6], [6, 16, 1.2, 1.8], [-14, -4, 1.0, 1.4], [26, 22, 2.8, 5], [-27, -6, 1.6, 2.4], [4, -4, 0.9, 1.3]]) boulder(x, z, r, h, R() < 0.5 ? rock : rockD);
 
