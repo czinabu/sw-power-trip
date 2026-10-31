@@ -158,8 +158,8 @@ function buildTransport(){
    jumpsuit (the Lothal breakout). Live, not baked. */
 export function makeEvacuee(kind, seed){
   const g = new THREE.Group();
-  if (kind === 'prisoner'){
-    const suit = toon([0xc86a2a, 0x8a8a84, 0xb05a24][seed % 3]), skin = toon([0xe8c0a0, 0xb07a58, 0x7a5038, 0xd8a888, 0x8ab070][seed % 5]);
+  if (kind === 'prisoner' || kind === 'archivist'){   // grown-ups: a prisoner's jumpsuit, or an archivist's robe (the Jedi's Burning Archive)
+    const suit = toon(kind === 'archivist' ? [0xd8c8a0, 0xa8946a, 0x8a7a5a][seed % 3] : [0xc86a2a, 0x8a8a84, 0xb05a24][seed % 3]), skin = toon([0xe8c0a0, 0xb07a58, 0x7a5038, 0xd8a888, 0x8ab070][seed % 5]);
     const body = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.3, 1.0, 10), suit); body.position.y = 1.0;
     const legs = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.2, 0.55, 8), suit); legs.position.y = 0.28;
     const head = new THREE.Mesh(new THREE.SphereGeometry(0.17, 12, 10), skin); head.position.y = 1.68;

@@ -29,21 +29,22 @@ export const JEDI_ACTS = [
     open: 'The temple has kept the Ledger of Names for twenty years. Tonight the Empire comes for it, and someone has opened the gate.' },
   { title: 'THE SCATTERED MASTERS',
     open: { by: 'ledger',
-      saved: 'The Ledger knows where the last masters went: Sera Quill to a cell on Lothal, Rhenna Kast to the trenches of Hoth. Find them before Vexis reads it too.',
-      burned: 'The Ledger is ash, and so is every road it knew. Tarn has heard rumours: a Jedi in a cell on Lothal, a Jedi general on Hoth. Find them.' } },
+      saved: 'The Ledger knows where the last masters went: Sera Quill to the Inquisitors\' prison moon, Tessaril, Rhenna Kast to the trenches of Hoth. Find them before Vexis reads it too.',
+      burned: 'The Ledger is ash, and so is every road it knew. Tarn has heard rumours: a Jedi in a cell on some Imperial prison moon, a Jedi general on Hoth. Find them.' } },
   { title: 'THE SEVENTH BLADE',
     open: 'Vexis has Master Vael. Ilsa is running to him with the last thing he needs. This is Rhenna Kast. I have the comms now. Let us end this together.' },
 ];
 export const JEDI_ACT_TWO = {
-  lothal: 'Free Sera Quill from the outpost prison. Hoth will have to hold without you for a while',
-  hoth: 'Join Rhenna Kast in the trenches. Lothal will have to wait for you',
+  lothal: 'Empty the pens on Tessaril and free Sera Quill. Hoth will have to hold without you for a while',
+  hoth: 'Join Rhenna Kast in the trenches. The pens will have to wait for you',
 };
 
 // before the act's pick: the voice's line under the choice (the consequence, said plainly)
-export const JEDI_ACT_TWO_WARN = 'Whichever you leave for second will not wait well. Lothal will move its prisoners. Hoth will lose its forward trench.';
+export const JEDI_ACT_TWO_WARN = 'Whichever you leave for second will not wait well. The pens will ship their children off. Hoth will lose its forward trench.';
 
 // per chapter id, laid over the shared slot (data/campaign.js storyChapter; the fields are listed in data/campaign-mando.js).
-// Besides those: `says` replaces the voice's line on a mission chapter's objectives, by objective (null keeps the mission's),
+// Besides those: `guests` fight beside you for the chapter (squadmates of the story's own: allies/squad.js addSquadmate),
+// `evacuees` retells who a hold's evacuees are ({ kind, name }: game/mission.js), `says` replaces the voice's line on a mission chapter's objectives, by objective (null keeps the mission's),
 // and `escapeLines` are the words of its duel foe's escape scene (data/cutscenes.js SCENES).
 export const JEDI_CHAPTERS = {
   // ---------------- ACT I: THE FALL OF JEDHA ----------------
@@ -64,19 +65,18 @@ export const JEDI_CHAPTERS = {
         ['Heavier troops behind the first line. Do not let them reach the doors.', 'The archivists are carrying out the Ledger\'s vault. Keep the steps clear.'] ],
       clear: ['The steps are ours, for now.', 'Smoke over the east wing. The archive is burning, and the Ledger is still inside.'] } },
   archive: {
-    title: 'THE BURNING ARCHIVE',
+    // a mission of its own in the Jedi's story (data/missions.js vault), standing in for the level's last two waves
+    title: 'THE BURNING ARCHIVE', kind: 'mission', mission: 'vault', steps: 2,
     brief: ['The archive is burning. The Ledger of Names is in the vault below it.',
-            'Twenty years of hidden children, written down in one place. If the Empire reads it, none of them are hidden any more.'],
+            'Twenty years of hidden children, written down in one place. Get the archivists out, then get to the vault before anyone else does.'],
     opening: { lines: [[VAEL, 'Smoke in the archive. And there, above the stair. An Inquisitor.']],
-               rival: { ...INQ, line: ['THE INQUISITOR', 'Hold the stair if you like, Knight. I already know the way down.'] } },
+               rival: { ...INQ, line: ['THE INQUISITOR', 'Hold the hall if you like, Knight. I already know the way down.'] } },
+    escapeLines: [[ILSA, 'Do not look at me like that. Somebody had to stop hiding.'], [VAEL, 'Ilsa. No.']],
     lines: {
-      wave: [
-        ['Keep them off the archivists.', rival('THE INQUISITOR', 'You still lean left when you parry. I always told you so.')],
-        ['It knows how you fight. It knows the vault. I do not like what that means. Hold.'] ],
-      clear: ['The archivists are out. The Inquisitor is in the vault.',
-              rival('THE INQUISITOR', 'You should not have followed me down here.'),
-              'That voice. Knight, wait.',
-              say(ILSA, 'Do not look at me like that. Somebody had to stop hiding.')] } },
+      chapter: ['Keep them off the archivists.', rival('THE INQUISITOR', 'You still lean left when you parry. I always told you so.')],
+      duel: [rival('THE INQUISITOR', 'You should not have followed me down here.'), 'It knows how you fight. It knows the vault. I do not like what that means.'],
+      escape: ['Let her go. Knight, let her go. The Ledger is still down there.'],
+      clear: ['The archivists are out. The vault roof is coming down, and the Ledger is in your hands.'] } },
   refuge: {
     brief: { by: 'ledger',
       saved: ['The younglings reached the refuge. So did Ilsa, and she has seen the Ledger in your hands.', 'The last transport is still loading. Hold the ramp. If she comes for it, meet her.'],
@@ -105,77 +105,84 @@ export const JEDI_CHAPTERS = {
 
   // ---------------- ACT II: THE SCATTERED MASTERS ----------------
   lothal: {
-    title: 'THE LOTHAL BREAKOUT',
+    title: 'THE PENS', world: 'TESSARIL, THE INQUISITORS\' PRISON MOON', mission: 'pens',
     brief: { by: 'actTwo',
-      lothal: ['Sera Quill is held in the outpost on Lothal. A slicer droid, RX-4, carries the codes to her cell.', 'Walk the droid in through the gate, open the cells, and hold the way out until every prisoner is through it.'],
-      hoth: ['We are late. The outpost heard about Hoth and moved half its prisoners off-world. Sera is still there, and she has been fighting her guards.', 'Walk RX-4 in, open what is left of the cells, and get her out.'] },
-    opening: { lines: [[VAEL, 'Lothal. Grass to the horizon, and somewhere under it, Sera Quill in a cell for a year.']] },
-    says: [null, null, 'The prisoners are running for the middle gate. Hold it until the last of them is out. Sera is among them.'],
+      lothal: [{ by: 'ledger', saved: 'The Ledger marks a moon called Tessaril: the pens, where the Inquisitors keep the children they catch until the ships come for them.', burned: 'Tarn has heard of a moon called Tessaril: the pens, where the Inquisitors keep the children they catch until the ships come for them.' },
+               'A year ago Sera Quill tried to empty it, and they caught her. RX-4 has the cell codes. Walk it in, open the pens, and finish what she started.'],
+      hoth: ['We are late. A ship came for half the children while we were on Hoth. The rest are still in the pens, and so is Sera.', 'Walk RX-4 in, open what is left of the cells, and get every one of them out.'] },
+    opening: { lines: [[VAEL, 'Tessaril. No sun, no grass, rain that never stops. They chose a moon where nobody would hear the children cry.']] },
+    says: [null, null, 'The children are running for the ship. Hold the gate until the last of them is past you. Sera is with them. She will not leave until they are clear.',
+           'The Warden of the pens. It never hunted a Jedi in its life: it only kept what the others caught. It wants its list back.'],
     lines: {
-      chapter: ['RX-4 has sliced the outpost\'s cell codes. Walk it to the gate and every door opens.'],
-      duel: ['The captain who holds the keys. Finish this, and Sera walks free.'],
-      clear: [say(SERA, 'A year. A whole year, and the Order sends one Knight and a droid.'), 'She is free, and furious. Let her be furious at you for a while. It will pass.'] } },
+      chapter: ['RX-4 has sliced the prison\'s cell codes. Walk it to the gate and every pen opens.'],
+      duel: ['The Warden who keeps the keys. Finish this, and the children walk free.'],
+      clear: [say(SERA, 'A year in that cell, listening to them cry at night. A whole year, and the Order sends one Knight and a droid.'), 'She is free, and furious. Let her be furious at you for a while. It will pass.'] } },
   'trial-acrobat': {
-    title: 'TRIAL OF SERA QUILL',
+    title: 'TRIAL OF SERA QUILL', mission: 'trial-sera',
     brief: { by: 'actTwo',
       lothal: ['Sera wants to know who came for her before she follows anyone anywhere.', 'She will not stand still. Neither should you.'],
-      hoth: ['Sera is hurt, and she is angrier for it. She still wants to see what you are.', 'She will not stand still. Neither should you.'] },
+      hoth: ['Sera is hurt, and angrier for every child that ship took. She still wants to see what you are.', 'She will not stand still. Neither should you.'] },
     opening: { lines: [[VAEL, 'She has been caged a long time. Expect her to want to stretch.']] },
     says: ['Sera strikes from the air and is gone before you answer. Catch the landing, then punish her while she breathes.'],
-    talk: { where: 'LOTHAL, OUTSIDE THE PRISON WALLS',
-      lines: [[SERA, 'Vael sent you? Vael, who told us all to hide and wait? I waited a year in that cell.'],
+    talk: { where: 'TESSARIL, IN THE RAIN BY THE SHIP',
+      lines: [[SERA, 'Vael sent you? Vael, who told us all to hide and wait? Those children waited too. Look where it got them.'],
            [HERO, 'Ilsa did not wait. She opened the temple gate for the Empire.'],
            [SERA, 'Ilsa did? Then the Order is worse off than I thought. Come on. Show me you can keep up.']] },
     lines: {
       clear: ['Sera laughs for the first time in a year. She teaches you Ataru the only way she knows: at full speed.', say(SERA, 'I will fly with you. Not for Vael. For the kids in that Ledger.')] } },
   hoth: {
-    title: 'THE TRENCH LINE',
+    title: 'THE LAST ENCLAVE', world: 'HOTH, AN ENCLAVE UNDER THE ICE',
     brief: { by: 'actTwo',
-      hoth: ['General Rhenna Kast is holding Hoth\'s trenches with a rebel company and a band of clones who never followed the order.', 'Fight beside her. A general judges you by the line you hold.'],
-      lothal: ['We are late. Hoth\'s forward trench fell two days ago, and Kast has pulled back to the rear line.', 'Win the trench back beside her, and she might forgive us for taking so long.'] },
-    opening: { lines: [[VAEL, 'Cold enough to stop a heart. Kast\'s line has held for nine days. Help it hold a tenth.']] },
+      hoth: [{ by: 'ledger', saved: 'The Ledger lists an enclave under the ice on Hoth: forty children, hidden there since the Purge.', burned: 'Tarn says there is an enclave under the ice on Hoth: forty children, hidden there since the Purge.' },
+             'The Empire has found it. General Rhenna Kast and her clones are holding the trenches until the transports carrying them clear the shield. Fight beside her.'],
+      lothal: ['We are late. Hoth\'s forward trench fell two days ago, and Kast has pulled back to the rear line with the last of the children behind her.', 'Win the trench back beside her, and she might forgive us for taking so long.'] },
+    opening: { lines: [[VAEL, 'Cold enough to stop a heart. Kast\'s line has held for nine days so the children could stay hidden. Help it hold a tenth.']] },
     talk: { where: 'HOTH, THE COMMAND TRENCH',
-      lines: [[KAST, 'You are Vael\'s? Then you are late, and so is he. Hold the forward trench, and we will talk after.'],
+      lines: [[KAST, 'You are Vael\'s? Then you are late, and so is he. Hold the forward trench until the transports are away, and we will talk after.'],
            [HERO, 'Those clones fight for you.'],
-           [KAST, 'They got me out on the night the order came. I have been trying to deserve that since.']] },
+           [KAST, 'They got me out on the night the order came. Now they keep forty children alive with me. I have been trying to deserve them since.']] },
+    says: [null, null, 'The transports with the children are launching. Fall back to the rear trench and hold it until the last one clears the shield.'],
     lines: {
       chapter: [say(KAST, 'Clones on the left, rebels on the right. You take the middle, Knight.')],
       duel: [say(KAST, 'Their siege trooper. I have the left. Take it, and I will see how you fight.')],
-      clear: ['The line held, and Kast saw it.', say(KAST, 'Meet me in the hangar when the last transport is loading. Bring your blade.')] } },
+      clear: ['The line held, and every transport cleared the shield. Kast saw you hold it.', say(KAST, 'Meet me in the hangar. There is one more ship to load, and I want to see your blade first.')] } },
   'trial-knight': {
     title: 'TRIAL OF GENERAL KAST',
     brief: ['Kast has buried too many soldiers for an Order that no longer exists.', 'She fights blade to blade, and she punishes a careless block.'],
     opening: { lines: [[VAEL, 'Kast fought in the war before the war. Listen to her blade. It is teaching.']] },
     says: ['Kast meets every careless block with a riposte. Parry, do not block, and answer her in kind.'],
-    talk: { where: 'HOTH, THE HANGAR',
+    talk: { where: 'HOTH, THE ENCLAVE\'S HANGAR',
       lines: [[KAST, 'Vael wants the masters back together. Why? So we can hide better?'],
-           [HERO, 'So Vexis does not find the children before we do.'],
+           [HERO, 'So Vexis does not find the rest of the children before we do.'],
            [KAST, 'That is a reason. Let us see if you are one.']] },
     lines: {
       clear: ['Kast lowers her blade, and teaches you her two edges: Djem So to break a blade, Shien to send a bolt home.',
               say(KAST, 'My troopers come with me. Where I go, they go. Tell Vael that.')] } },
   jakku: {
-    title: 'SALVAGE RIGHTS',
-    brief: ['Vexis is building something. The nav cores in Jakku\'s wrecks remember where his ships go.',
-            'Pull the cores before his salvage crews burn them. And be careful: we are not the only ones here for them.'],
-    opening: { lines: [[VAEL, 'A graveyard of ships, and every one of them remembers where it was going.'],
+    title: 'SALVAGE RIGHTS', world: 'JAKKU, THE WRECK OF A CHILD TRANSPORT',
+    brief: ['The ship that took children from the pens went down on Jakku. Its nav cores know where it was taking them.',
+            'Pull the cores before Vexis\'s salvage crews burn them. And be careful: we are not the only ones here for them.'],
+    // the Mandalorian fights beside you here (a squadmate for the chapter: allies/squad.js); their own story has this meeting too
+    says: ['The transport broke apart over four wrecks, and each still holds a nav core. Pull every one before the salvage crews burn them. Mind the snipers on the hulls.'],
+    guests: [{ name: 'THE MANDALORIAN', role: 'heavy', model: 'mandalorian', color: 0x8c8f94, eye: 0xffa040, cloth: 0x3a3a3a, scale: 1.04 }],
+    opening: { lines: [[VAEL, 'A graveyard of ships, and one of them was carrying children.'],
               [MANDO, 'Jedi. You are on my salvage.'],
-              [VAEL, 'A Mandalorian. Vexis has been taking from the clans as well. Talk first, Knight.']] },
+              [VAEL, 'A Mandalorian. The clans have been losing their foundlings down the same road. Talk first, Knight.']] },
     lines: {
-      chapter: [say(MANDO, 'The cores tell me where my clan\'s beskar went. You want them for something else. We can both have that.')],
+      chapter: [say(MANDO, 'Those cores tell me where my clan\'s foundlings went. Yours too, by the look of you. We can both have that.')],
       clear: ['The cores are clean. Every route ends in the same place: Mustafar.',
-              say(MANDO, 'Mustafar, then. Our roads split here, Jedi. Do not make me regret this.'),
-              'And in the wreck of a Republic cruiser, a holocron. Captain Aurel Dace, a duellist. Makashi: precision over power.'] } },
+              say(MANDO, 'Mustafar, then. Our roads split here, Jedi. If you find any of ours there, send them home.'),
+              'And in the wreck, a holocron the crew had stolen: Captain Aurel Dace, a duellist. Makashi: precision over power.'] } },
   mustafar: {
-    title: 'THE MUSTAFAR FORGE',
-    brief: ['The cores point to Mustafar. Vexis\'s war machines are forged here.',
-            'I am coming with you this time. Whatever he is building, I made him, and I will see it with my own eyes.'],
-    opening: { lines: [[VAEL, 'Feel that heat. That is his army being born.'],
+    title: 'THE EMBER ACADEMY', world: 'MUSTAFAR, VEXIS\'S ACADEMY', mission: 'academy',   // (the forge's own mission is the Missions list's)
+    brief: ['It is not only a forge. Vexis trains the children he has taken here: an academy, built around the fire.',
+            'I am coming with you this time. Whatever he is making of them, I made him first, and I will see it with my own eyes.'],
+    opening: { lines: [[VAEL, 'Feel that heat. He teaches them in that.'],
               [VAEL, 'And something else. He knows we are here.']] },
     lines: {
-      chapter: ['The forge is guarded by its own workers. Do not let the heat drive you into the channels.'],
-      duel: [rival(VEXIS, 'Oren. You came yourself. I knew the forge would bring you.'), 'Knight, finish the forgemaster. I will deal with him. I should have dealt with him years ago.'],
-      clear: ['The forge is ash.', say(KAST, 'Knight, this is Kast. Vael\'s signal is gone. Vexis took him. The forge was a lure, and Vael was the catch.'),
+      chapter: ['The academy is guarded by its own overseers. Do not let the heat drive you into the channels.', rival(VEXIS, 'Oren. You came yourself. I knew the children would bring you.')],
+      duel: ['Knight, finish the overseer. I am going after him. I should have dealt with him years ago.', rival(VEXIS, 'Come then, old man. I have kept a place for you.')],
+      clear: ['The academy is ash, and its children are on our ships.', say(KAST, 'Knight, this is Kast. Vael\'s signal is gone. Vexis took him. The academy was a lure, and Vael was the catch.'),
               say(KAST, 'Sit with what you have learned. You will need all of it now.'), 'The forms come together in you: Niman.'] } },
 
   // ---------------- ACT III: THE SEVENTH BLADE ----------------
@@ -247,7 +254,10 @@ export const JEDI_CHOICES = [
       { key: 'ended', label: 'END IT', line: 'Vexis falls here, on his own throne.' } ] },
 ];
 
-/* THE ENDINGS — picked by Ilsa (spared / struck) and Vexis (vael / ended). The Ledger changes the last line. */
+/* THE ENDINGS — picked by Ilsa (spared / struck) and Vexis (vael / ended). The Ledger changes a line, and every ending
+   closes on the same warning: the gate under Jedha has opened on something far worse than Vexis (the threat all three
+   heroes will one day face together). */
+const GATE_LINE = 'And under the temple, the old Sith gate has not gone quiet since Exegol. Something on the other side of it heard us. Vexis was only ever the one at the door.';
 const LEDGER_LINE = { by: 'ledger',
   saved: 'The Ledger is safe in Tarn\'s keeping. One by one, we will find the children in it, before anyone else can.',
   burned: 'The Ledger is ash. Somewhere out there are children nobody will ever come for. I hope they never need us.' };
@@ -255,19 +265,19 @@ export const JEDI_ENDINGS = {
   'spared-vael': { title: 'THE LONG ROAD HOME', world: 'JEDHA, ONE YEAR LATER',
     lines: ['Vexis sits in a cell under the temple, and every evening Oren Vael sits outside it and talks. Some nights Vexis answers.',
             'Ilsa teaches the younglings what the Order got wrong. Tarn teaches them to hold. Sera teaches them to fall and get up again.',
-            LEDGER_LINE] },
+            LEDGER_LINE, GATE_LINE] },
   'spared-ended': { title: 'THE ORDER ENDURES', world: 'JEDHA, ONE YEAR LATER',
     lines: ['Vexis is gone. Vael mourns him anyway. That is the difference between them.',
             'Ilsa stands beside you on the temple steps, where she opened the gate. She has not asked to be forgiven. She has earned some of it.',
-            LEDGER_LINE] },
+            LEDGER_LINE, GATE_LINE] },
   'struck-vael': { title: 'WHAT IS LEFT', world: 'JEDHA, ONE YEAR LATER',
     lines: ['Vael took Vexis away on the night of Exegol, and has not come back. Kast says he is trying to save one student, since he could not save the other.',
             'You lead what is left of the Order now. The younglings ask about Ilsa. You have not found the words yet.',
-            LEDGER_LINE] },
+            LEDGER_LINE, GATE_LINE] },
   'struck-ended': { title: 'THE SEVENTH BLADE', world: 'EXEGOL, ONE YEAR LATER',
     lines: ['You won. Vexis is dead, and so is Ilsa, and the Order has a champion who does not hesitate.',
             'Vael watches you train the younglings and says nothing. He said nothing once before, too.',
-            LEDGER_LINE] },
+            LEDGER_LINE, GATE_LINE] },
 };
 
 // the Form VII pick right after the chase (game/meditation.js): a word on what you just did

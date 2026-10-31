@@ -214,7 +214,7 @@ export function chapterNo(pos, list = chapterOrder()){
 export const jediEnding = () => (answer('ilsa') || 'spared') + '-' + (answer('vexis') || 'ended');
 const OWN_WORDS = {
   mando: { voice: MANDO_VOICE, acts: MANDO_ACTS, actTwo: MANDO_ACT_TWO, epilogue: () => MANDO_EPILOGUE },
-  jedi:  { voice: JEDI_VOICE, acts: JEDI_ACTS, actTwo: JEDI_ACT_TWO, epilogue: () => JEDI_ENDINGS[jediEnding()] },
+  jedi:  { voice: JEDI_VOICE, acts: JEDI_ACTS, actTwo: JEDI_ACT_TWO, actTwoLabel: { lothal: 'THE PENS FIRST' }, epilogue: () => JEDI_ENDINGS[jediEnding()] },
 };
 const own = (story) => OWN_WORDS[story];
 // (a chapter's own `voice` speaks for it instead: a story can hand the comms to someone else partway through)
@@ -222,6 +222,8 @@ export const storyVoice = (story = storyHero(), c = null) => (c && c.voice) || (
 export const actTitle = (i, story = storyHero()) => own(story) ? storyWords(own(story).acts[i].title) : forHero(ACTS[i].title, G.hero);
 export const actOpen = (i, story = storyHero()) => own(story) ? storyWords(own(story).acts[i].open) : forHero(ACTS[i].open, G.hero);
 export const actTwoLine = (k, story = storyHero()) => own(story) ? own(story).actTwo[k] : forHero(ACT_TWO[k].line, G.hero);
+// the pick's button: a story can rename a pair whose first world it moved (the Jedi's pens are on Tessaril, not Lothal)
+export const actTwoLabel = (k, story = storyHero()) => (own(story) && own(story).actTwoLabel && own(story).actTwoLabel[k]) || ACT_TWO[k].label;
 export const epilogueText = (key, story = storyHero()) => own(story) ? storyWords(own(story).epilogue()[key]) : forHero(EPILOGUE[key], G.hero);
 // where the pick is made: the first chapter of Act II, in this story's order (a story's own prologue comes before it)
 export const actTwoAt = (story = storyHero()) => chapterOrder(null, story).findIndex(c => c.pair);

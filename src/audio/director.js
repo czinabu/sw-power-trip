@@ -76,6 +76,8 @@ const KIND_BEDS = {
          { base: 1, layers: [{ noise: 'brown' }], filt: { f: 220 }, lfo: { r: 0.08, d: 80 }, lvl: 0.05 }],
   dust: [{ base: 1, layers: [{ noise: 'white' }], filt: { type: 'highpass', f: 4200 }, lfo: { r: 0.15, d: 1200 }, lvl: 0.006 }],
   ash:  [{ base: 1, layers: [{ noise: 'brown' }], filt: { f: 300 }, lfo: { r: 0.07, d: 100 }, lvl: 0.04 }],
+  rain: [{ base: 1, layers: [{ noise: 'white' }], filt: { type: 'bandpass', f: 2600, q: 0.5 }, lfo: { r: 0.09, d: 500 }, lvl: 0.03 },   // the hiss of rain on rock
+         { base: 1, layers: [{ noise: 'pink' }], filt: { f: 700 }, lvl: 0.035 }],
 };
 function setAmbience(layout, kind){
   const key = layout + ':' + (kind || '');
