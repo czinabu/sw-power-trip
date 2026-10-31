@@ -7,6 +7,8 @@ import { G, player } from '../state.js';
 import { maxHp } from '../player/helpers.js';
 import { setStanceHud } from '../player/jedi/stance.js';
 import { switchWeapon } from '../player/mando/weapons.js';
+import { ARMORY_PATH, MANDO_WEAPONS } from './mando.js';
+import { grantGun } from '../game/armory.js';
 import { applyJetTier, applyCellTier } from '../game/progression.js';
 import { addSquadmate, squadSize } from '../allies/squad.js';
 import { SQUAD } from './allies.js';
@@ -33,8 +35,10 @@ export const MANDO_AUTO = [
   { key:'flame',  stage:2, chapter:'archive', hud:'F', name:'FLAMETHROWER',
     has:()=>!!G.unlocked.flame,          grant(){ G.unlocked.flame = true; } },
   // weapon + jetpack — automatic
-  { key:'dual', stage:1, chapter:'siege', hud:'2',   name:'DUAL BLASTERS',
-    has:()=>!!G.unlocked.dual,           grant(){ G.unlocked.dual = true; if (player.weapon === 'single') switchWeapon('dual'); } },
+  // THE GUNS — handed out along ARMORY_PATH (data/mando.js): a gun for an empty slot goes in, one for a full slot opens
+  // the armory to choose which to carry (game/armory.js)
+  ...ARMORY_PATH.map(p => ({ key: p.weapon, gun: true, stage: p.stage, chapter: p.chapter, hud: MANDO_WEAPONS[p.weapon].slot === 'primary' ? '2' : '1',
+    name: MANDO_WEAPONS[p.weapon].name, has: () => !!G.unlocked[p.weapon], grant(){ grantGun(p.weapon); } })),
   { key:'jet1', stage:3, chapter:'trial-first', hud:'SPACE', name:'JETPACK BOOSTER I',
     has:()=>(player.up.jetTier||0) >= 1, grant(){ player.up.jetTier = 1; applyJetTier(); } },
   { key:'jet2', stage:8, chapter:'trial-acrobat', hud:'SPACE', name:'JETPACK BOOSTER II',

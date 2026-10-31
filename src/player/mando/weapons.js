@@ -9,9 +9,11 @@ import { V3, rand, clamp, TMP } from '../../utils.js';
 import { acquireParticle, burst } from '../../fx/particles.js';
 import { floater, screenFlash } from '../../fx/floaters.js';
 import { shared, G, enemies, bolts, vfx, keys, player } from '../../state.js';
-import { MANDO, MANDO_WEAPONS, weaponUnlocked } from '../../data/mando.js';
+import { MANDO, MANDO_WEAPONS, weaponUnlocked, BESKAR_PARRY } from '../../data/mando.js';
+import { setLongGun, longMuzzle } from '../model/weapons.js';
+import { diffWindow } from '../../data/difficulty.js';
 import { abil } from '../../data/mastery.js';
-import { fwd, rightV, playerPos } from '../helpers.js';
+import { fwd, rightV, playerPos, maxStam } from '../helpers.js';
 import { crosshairPoint, crosshairRay, lastAim, aimFrom, inAim, bossInAim } from '../aim.js';
 import { inReach, bodyRadius, sweepHit } from '../../enemies/bodyshape.js';
 import { damageEnemy } from '../../enemies/damage.js';
@@ -50,7 +52,8 @@ export function mandoWeapon(){ return MANDO_WEAPONS[player.weapon] || MANDO_WEAP
 export function syncWeaponMesh(){   // show only the equipped weapon's mesh (or none, off-hero); holstered, the one put away
   const m = G.hero === 'mando', w = player.weapon === 'fists' ? player.drawnWeapon : player.weapon;
   if (player.pistols){ player.pistols.R.visible = m && (w === 'single' || w === 'dual'); player.pistols.L.visible = m && w === 'dual'; }
-  if (player.rifleMesh) player.rifleMesh.visible = m && w === 'disruptor';
+  const LW = MANDO_WEAPONS[w];
+  if (player.rifleMesh){ player.rifleMesh.visible = m && !!(LW && LW.twoHand); if (LW && LW.twoHand) setLongGun(player, w); }   // one long-gun mount, the drawn gun's model on it
   if (player.darksaberMesh) player.darksaberMesh.visible = (m && w === 'darksaber') || !!shared.darkProj;   // a thrown blade stays seen until it's caught
   syncHolster();   // in the hand, or on the belt / thighs / pack (player/holster.js)
 }
@@ -60,16 +63,25 @@ export function switchWeapon(name){
   const W = MANDO_WEAPONS[name];
   player.weapon = name; player.zoom = false;
   player.heat = 0; player.overheat = false; player.ventT = 0; player.fireCd = 0.12;
+  player.spin = 0; player.burstLeft = 0; player.burstQ = false; player.gunSlow = 1;
   syncWeaponMesh();
   floater(playerPos(), W.name, '#bfe8ff');
   sfx(420, 0.07, 'square', 0.05, 240); sfx(220, 0.08, 'triangle', 0.04, 110);
 }
 // MANUAL VENT (R) — dump heat fast for a clean weapon, at the cost of a short fire lockout (a BF2 active-cooldown beat)
 export function startReload(){
-  if (mandoWeapon().melee || player.heat <= 0.02 || player.overheat) return;
-  player.heat = 0; player.ventT = 0.45; player.fireCd = Math.max(player.fireCd, 0.45);
+  const W = mandoWeapon();
+  if (W.melee || player.heat <= 0.02 || player.overheat) return;
+  // each gun vents in its own time (W.vent): the pistol flicks its heat off, the repeater dumps a cloud of coolant
+  const t = W.vent || 0.45;
+  player.heat = 0; player.ventT = t; player.fireCd = Math.max(player.fireCd, t); player.burstLeft = 0; player.spin = 0;
   tutEvent('vent');
   sfx(300, 0.12, 'square', 0.05, 90); sfx(140, 0.1, 'triangle', 0.05, 60); floater(playerPos(), 'VENT', '#9cc8e8');
+  if (t >= 0.9){   // the heavy dump: a hiss and a cloud off the gun
+    sfx(1800, t * 0.6, 'sawtooth', 0.02, 300);
+    const g = gunMuzzle(muzzleOrigin(0.06));
+    for (let i = 0; i < 6; i++) puff(V3(g.x, g.y, g.z), 0xdfe8f0, rand(0.5, 0.9), rand(0.5, 0.8), V3(rand(-1.2, 1.2), rand(1, 2.4), rand(-1.2, 1.2)), { drag: 2.5, grav: -1.5, grow0: 0.3 });
+  }
 }
 // HEAT — fired shots add heat; it only starts bleeding off after a short COOL-DELAY (so spraying climbs
 // fast and you must pace your fire). Cap it → OVERHEAT lock until fully vented.
@@ -110,6 +122,7 @@ export function spawnBlasterBolt(origin, dir, dmg, color, scale, W, opts){
     b.origin = origin.clone(); b.foStart = W.foStart; b.foEnd = W.foEnd;
     b.foMin = opts.foMin != null ? opts.foMin : W.foMin;   // for range damage falloff (bracing lifts the floor)
     b.playerShot = true;   // tag for accuracy tracking
+    if (W.flinch != null) b.flinch = W.flinch;   // how hard it rocks the foe it hits (enemies/bolts.js)
     if (hooks.pbolt) hooks.pbolt(b, color, scale); }   // co-op: the partner sees it fly
   if (G.stats) G.stats.shotsFired++;
   // muzzle flash fires every shot, drawn at the barrel of whichever gun is nearest the bolt's origin — pooled Ink
@@ -117,7 +130,7 @@ export function spawnBlasterBolt(origin, dir, dmg, color, scale, W, opts){
   muzzleFlash(gunMuzzle(origin), dir, color, 0.55 + scale * 0.25);
 }
 // the world-space barrel tip of the visible gun closest to `near` (falls back to `near` itself)
-const MUZZLES = [['pistols', 'R', [0, 0.115, 0.38]], ['pistols', 'L', [0, 0.115, 0.38]], ['rifleMesh', null, [0, 0.11, 0.96]]];
+const MUZZLES = [['pistols', 'R', [0, 0.115, 0.38]], ['pistols', 'L', [0, 0.115, 0.38]], ['rifleMesh', null, null]];   // (the long gun's muzzle is the drawn model's)
 const _mz = new THREE.Vector3(), _mzBest = new THREE.Vector3();
 function gunMuzzle(near){
   let best = 1.2;   // only snap to a gun that's actually by the shot
@@ -126,7 +139,8 @@ function gunMuzzle(near){
     const g = side ? (player[key] && player[key][side]) : player[key];
     if (!g || !g.visible) continue;
     g.updateWorldMatrix(true, false);
-    _mz.set(at[0], at[1], at[2]); g.localToWorld(_mz);
+    const a = at || longMuzzle(player);
+    _mz.set(a[0], a[1], a[2]); g.localToWorld(_mz);
     const d = _mz.distanceTo(near);
     if (d < best){ best = d; _mzBest.copy(_mz); }
   }
@@ -154,6 +168,11 @@ export function hitMarker(kind){
 export function firePistols(){
   if (mandoWeapon().fire === 'auto') fireTrigger();
 }
+// the gap to the next shot: a spinning gun's shrinks as it winds up (W.spin), and fire-rate upgrades shorten every gun's
+function shotGap(W){
+  const g = W.spin ? W.spin.from + (W.spin.to - W.spin.from) * player.spin : W.fireCd;
+  return g / (player.up.fireRate || 1);
+}
 // a trigger pull — dispatches by the equipped weapon's mode
 export function fireTrigger(){
   if (G.mode !== 'play' || player.darkT > 0 || player.flaming) return;   // the flamethrower is used by itself: no shooting while it burns
@@ -172,8 +191,21 @@ export function fireTrigger(){
     return;
   }
   if (player.overheat){ if ((player.dryT || 0) <= 0){ player.dryT = 0.25; sfx(120, 0.04, 'square', 0.04, 80); } return; }   // dry-fire CLICK while overheated
-  if (player.fireCd > 0) return;   // energy cap reached → wait for the vent
+  if (player.fireCd > 0 || player.burstLeft > 0){   // not ready yet (or a burst still firing)
+    if (W.fire === 'burst' && player.ventT <= 0 && player.fireCd + player.burstLeft * (W.burstGap || 0) < 0.16) player.burstQ = true;   // a click just early queues the next burst
+    return;
+  }
+  player.burstQ = false;
+  if (W.fire === 'burst'){ player.burstLeft = W.burst; player.burstT = 0; burstRound(W); return; }   // the rest of the burst: updateMandoCombat
   fireBlaster(W);
+}
+// one round of a CARBINE burst; the burst stops early if the gun overheats or the hero stops being able to shoot
+function burstRound(W){
+  player.burstLeft--;
+  fireBlaster(W);
+  if (player.overheat) player.burstLeft = 0;
+  if (player.burstLeft > 0){ player.burstT = W.burstGap; player.fireCd = Math.max(player.fireCd, W.burstGap); }
+  else player.fireCd = shotGap(W);
 }
 // is the Mando BRACING (hold RMB) — the stance that tightens the cone & boosts blaster damage
 function mandoBraced(){ return G.hero === 'mando' && player.blockHeld; }
@@ -205,7 +237,7 @@ function fireBlaster(W){
   const baseSpread = steadyAim ? W.braceSpread : W.hipSpread;
   const spread = baseSpread + (steadyAim ? inacc * 0.003 : inacc * 0.028);   // boosting blooms the cone hard
   const opts = { spread, foMin, to: aim };
-  const col = steadyAim ? 0xffd24a : 0xffb84a;   // braced bolts glint hotter
+  const col = W.col || (steadyAim ? 0xffd24a : 0xffb84a);   // braced bolts glint hotter (a long gun fires its own colour)
   if (W.dual && player.backRun){
     // running away: one hand fires back over his shoulder (he faces the camera, so his gun hand is on screen-left;
     // anim/guns.js switches to the left hand, screen-right, when the target is round on that side)
@@ -217,13 +249,18 @@ function fireBlaster(W){
     spawnBlasterBolt(o, V3(aim.x-o.x, aim.y-o.y, aim.z-o.z).normalize(), dmg, col, 1.1, W, opts);
   } else {
     const o = muzzleOrigin(0.06);
-    spawnBlasterBolt(o, V3(aim.x-o.x, aim.y-o.y, aim.z-o.z).normalize(), dmg, col, 1.5, W, opts);
+    spawnBlasterBolt(o, V3(aim.x-o.x, aim.y-o.y, aim.z-o.z).normalize(), dmg, col, W.size || 1.5, W, opts);
   }
-  const kick = (W.dual ? 0.18 : 0.3) * (steadyAim ? 0.55 : 1) * (1 + inacc * 1.3);   // recoil grows with speed & boost
+  const kick = (W.kick || 0.3) * (steadyAim ? 0.55 : 1) * (1 + inacc * 1.3);   // recoil grows with speed & boost
   player.recoil = kick; player.recoilKick = kick;
-  G.shake = Math.max(G.shake, W.dual ? 0.06 : 0.15);
-  if (W.dual) S.blasterDual(); else S.blaster();
-  player.fireCd = W.fireCd / (player.up.fireRate || 1);
+  // CLIMB: each shot walks the reticle (and so the next bolt) up; it settles back on its own (updateMandoCombat),
+  // so a burst lands high unless you pull it down. Bracing halves it.
+  if (W.climb) player.aimOff.y -= W.climb * (steadyAim ? 0.5 : 1) * (1 + inacc);
+  G.shake = Math.max(G.shake, W.dual ? 0.06 : W.slow ? 0.08 : 0.15);
+  if (W.dual) S.blasterDual();
+  else if (W.slow){ S.blasterDual(); sfx(70, 0.07, 'square', 0.05, 40); }   // the repeater: a heavier chug under each shot
+  else S.blaster();
+  player.fireCd = shotGap(W);
   if (player.weapon === 'single') player.shieldDropT = SHIELD_RETURN;   // a shot drops the shield (see mandoShielding)
   addHeat(W);   // energy cap — overheats if you don't pace your fire
 }
@@ -355,12 +392,30 @@ export function updateFlame(dt){
 // Mando per-frame weapon upkeep: timers, free-aim drift + sway, reload, held auto-fire, flamethrower, darksaber.
 export function updateMandoCombat(dt, f, r){
   if (player.fireCd > 0) player.fireCd -= dt;
+  const CW = mandoWeapon();
+  // a CARBINE burst: the next round when its gap is up
+  if (player.burstLeft > 0){
+    player.burstT -= dt;
+    if (CW.fire !== 'burst' || G.mode !== 'play' || player.flaming || player.overheat) player.burstLeft = 0;
+    else if (player.burstT <= 0) burstRound(CW);
+  }
+  if (player.burstQ && player.burstLeft <= 0 && player.fireCd <= 0){ player.burstQ = false; if (CW.fire === 'burst') fireTrigger(); }
+  // the REPEATER's spin: winds up while the trigger is held (and the gun can fire), winds down once it's let go; the
+  // barrels turn with it, and he walks slower while it's firing
+  if (CW.spin){
+    const on = player.firing && !player.overheat && player.ventT <= 0 && G.mode === 'play' && !player.flaming;
+    player.spin = clamp(player.spin + (on ? dt / CW.spin.up : -dt / CW.spin.down), 0, 1);
+    if (on && player.spin < 1 && Math.random() < dt * 12) sfx(180 + player.spin * 500, 0.05, 'sawtooth', 0.015, 120 + player.spin * 400);   // the motor whine climbing
+  } else player.spin = Math.max(0, player.spin - dt * 2);
+  if (player.repeaterSpin) player.repeaterSpin.rotation.z += dt * player.spin * 40;
+  player.gunSlow = CW.slow && player.firing && !player.overheat ? CW.slow : 1;
+  updateBeskar(dt);
   if (player.stabCdT > 0) player.stabCdT -= dt;
   if (player.missileT > 0) player.missileT -= dt;
   if (player.stabT > 0){
     player.stabT -= dt;
     const W = MANDO_WEAPONS.disruptor;
-    if (player.weapon !== 'disruptor' || player.zoom) player.stabT = 0;
+    if (player.weapon !== 'disruptor' || player.zoom) player.stabT = 0;   // (the spear is the disruptor's alone)
     else if (!player.stabHit && 1 - player.stabT / W.stabTime >= W.stabHit) stabStrike(W);
   }
   if (player.stabQ && player.stabT <= 0 && !(player.stabCdT > 0)){
@@ -393,4 +448,41 @@ export function updateMandoCombat(dt, f, r){
   if (player.firing && player.darkT <= 0) firePistols();   // auto weapons spray while held
   updateFlame(dt);
   updateDark(dt);
+}
+
+/* ===== BESKAR PARRY (data/mando.js BESKAR_PARRY) =====
+   TAP RMB as a bolt arrives: the vambrace comes up across the body and the bolt RICOCHETS straight back at whoever
+   fired it (enemies/bolts.js beskarCatch). A press opens a short window; one that catches nothing leaves a lockout, so
+   it is timing, not mashing. Any gun but the Darksaber (that parries like a lightsaber), and in the air too. */
+export function beskarPress(){
+  if (G.hero !== 'mando' || G.mode !== 'play' || player.weapon === 'darksaber' || player.flaming) return;
+  if (player.beskarLockT > 0){ sfx(260, 0.05, 'triangle', 0.025, 200); return; }   // the last one whiffed: this press only braces
+  player.beskarT = BESKAR_PARRY.window + diffWindow();
+  player.beskarHit = false;
+  player.beskarPose = Math.max(player.beskarPose, player.beskarT);   // the arm comes up for the window (player/animation.js)
+}
+function updateBeskar(dt){
+  if (player.beskarLockT > 0) player.beskarLockT -= dt;
+  if (player.beskarPose > 0) player.beskarPose -= dt;
+  if (player.beskarT > 0){
+    player.beskarT -= dt;
+    if (player.beskarT <= 0 && !player.beskarHit) player.beskarLockT = BESKAR_PARRY.lock;   // a whiff: no second try for a beat
+  }
+}
+// a bolt met the raised vambrace: called by enemies/bolts.js. Sends it home and pays the hero back.
+export function beskarCatch(b){
+  const P = BESKAR_PARRY;
+  player.beskarHit = true; player.beskarT = 0; player.beskarLockT = 0;
+  player.beskarPose = P.pose;
+  // a clean ricochet bleeds heat off the gun and gives the shield arm its breath back
+  if (!mandoWeapon().melee){ player.heat = Math.max(0, player.heat * (1 - P.vent)); if (player.overheat && player.heat <= 0.02) player.overheat = false; }
+  player.stam = Math.min(maxStam(), player.stam + P.stam);
+  const at = gauntletPoint();
+  sparks(at, 0xffd08a, 12, 12, { life: 0.3, size: 0.5 });
+  inkSprite({ pos: at, shape: 'star', points: 8, sharp: 0.18, color: 0xfff1c8, size: [0.4, 1.1], life: 0.16, steps: 3, coreW: 0.4 });
+  inkSprite({ pos: at, shape: 'ring', inner: 0.75, color: 0xffc56a, size: [0.3, 1.4], life: 0.22, fadeAt: 0.3, coreW: 0.3, inkW: 0.2 });
+  G.hitstop = Math.max(G.hitstop, 0.06); G.shake = Math.max(G.shake, 0.18);
+  screenFlash('radial-gradient(ellipse at center, rgba(255,214,150,.12), transparent 42%)', 0.3, 0.12);
+  sfx(2300, 0.09, 'square', 0.05, 1200); sfx(900, 0.14, 'triangle', 0.06, 520);
+  tutEvent('beskarParry');
 }

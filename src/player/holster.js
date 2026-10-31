@@ -6,7 +6,7 @@ import { sfx } from '../audio/sfx.js';
 import { floater } from '../fx/floaters.js';
 import { reigniteBlade } from '../fx/trail.js';
 import { showBanner } from '../ui/banners.js';
-import { weaponUnlocked } from '../data/mando.js';
+import { weaponUnlocked, MANDO_WEAPONS } from '../data/mando.js';
 import { playerPos } from './helpers.js';
 import { cancelSwing } from './jedi/combat.js';
 import { switchWeapon } from './mando/weapons.js';
@@ -55,7 +55,7 @@ export function syncHolster(){
     place(player.pistols.R, away && (w === 'single' || w === 'dual') ? 'pistolR' : null);
     place(player.pistols.L, away && w === 'dual' ? 'pistolL' : null);
   }
-  place(player.rifleMesh, away && w === 'disruptor' ? 'rifle' : null);
+  place(player.rifleMesh, away && MANDO_WEAPONS[w] && MANDO_WEAPONS[w].twoHand ? 'rifle' : null);   // any long gun rides the pack
   place(player.darksaberMesh, away && w === 'darksaber' ? 'darksaber' : null);
   if (player.darkBlades) for (const b of player.darkBlades) b.visible = !away;
 }

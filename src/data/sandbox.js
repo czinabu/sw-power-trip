@@ -5,6 +5,8 @@
 import { ENEMY_TYPES } from './enemies.js';
 import { G, player } from '../state.js';
 import { switchWeapon } from '../player/mando/weapons.js';
+import { MANDO_WEAPONS, kitOf } from './mando.js';
+import { setKit } from '../game/armory.js';
 import { applyJetTier, applyCellTier } from '../game/progression.js';
 import { BATTLE_MAPS } from './battlemaps.js';
 import { kitTier } from '../game/sandbox-unlocks.js';
@@ -52,6 +54,16 @@ const weapon = (id, k) => ({ has: () => id === 'darksaber' ? !!player.up.darksab
     if (on) switchWeapon(id); else if (player.weapon === id) switchWeapon('single');
   } });
 
+// a loadout gun: on = owned and carried in its slot (it comes out to try); off = back to the pistol / no primary
+const gun = (id) => ({ has: () => kitOf()[MANDO_WEAPONS[id].slot] === id,
+  set: (on) => {
+    const slot = MANDO_WEAPONS[id].slot, kit = { ...kitOf() };
+    G.unlocked[id] = on;
+    if (on) kit[slot] = id; else if (kit[slot] === id) kit[slot] = null;
+    setKit(kit);
+    if (on && G.mode === 'play') switchWeapon(id);
+  } });
+
 export const SANDBOX_KIT = {
   jedi: [
     { id: 'fj',        nm: tiered('FORCE JUMP'), key: 'HOLD SPACE', tiers: ['fj1', 'fj2'],
@@ -71,7 +83,10 @@ export const SANDBOX_KIT = {
       has: () => !!player.up.repulseUp, set: (on) => { player.up.repulseUp = on; } },
   ],
   mando: [
-    { id: 'dual',       nm: 'DUAL BLASTERS',   key: '2',        ...weapon('dual', 'dual') },
+    // THE LOADOUT (data/mando.js): the sidearm on 1 (the pistol unless DUAL is on), one primary on 2
+    { id: 'dual',       nm: 'DUAL BLASTERS',   key: '1',        ...gun('dual') },
+    { id: 'carbine',    nm: 'PULSE CARBINE',   key: '2', slot: 'prim', ...gun('carbine') },
+    { id: 'repeater',   nm: 'HEAVY REPEATER',  key: '2', slot: 'prim', ...gun('repeater') },
     { id: 'disruptor',  nm: 'DISRUPTOR RIFLE', key: '3', slot: 'wpn', ...weapon('disruptor', 'disruptor') },
     { id: 'darksaber',  nm: 'THE DARKSABER',   key: '3', slot: 'wpn', ...weapon('darksaber') },
     { id: 'jet',        nm: tiered('JETPACK BOOSTER'), key: 'SPACE', tiers: ['jet1', 'jet2'], has: () => (player.up.jetTier || 0) >= 1,

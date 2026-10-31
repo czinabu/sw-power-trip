@@ -6,7 +6,7 @@ import { CFG } from '../data/config.js';
 import { LEVELS } from '../data/levels.js';
 import { clamp } from '../utils.js';
 import { shared, G, enemies, player } from '../state.js';
-import { MANDO, MANDO_WEAPONS, weaponUnlocked } from '../data/mando.js';
+import { MANDO, MANDO_WEAPONS, weaponUnlocked, kitOf, signatureWeapon } from '../data/mando.js';
 import { abil } from '../data/mastery.js';
 import { maxHp, maxStam } from '../player/helpers.js';
 import { FOCUS, focusTier } from '../player/jedi/focus.js';
@@ -90,16 +90,17 @@ function cdSlot(id, key, cost){
   if (cost != null) el.classList.toggle('nofp', left <= 0 && player.force < cost * (player.up.abilityCostMul || 1));   // the price the cast actually charges
 }
 
-// MANDO weapon slots: 1 blaster · 2 dual · 3 the signature weapon (Disruptor or Darksaber, whichever you took) · 4 holstered
+// MANDO weapon slots: 1 the sidearm · 2 the primary (the loadout: data/mando.js) · 3 the signature weapon (Disruptor or
+// Darksaber, whichever you took) · 4 holstered
 function renderWeaponSlots(){
-  const sig = player.up.darksaber ? 'darksaber' : 'disruptor';
-  const slots = [['1','single'],['2','dual'],['3',sig],['4','fists']];
-  let key = player.weapon;
-  for (const [, w] of slots) key += weaponUnlocked(w) ? '1' : '0';
-  const wrap = $('wslots'); if (wrap._k === key + sig) return;
-  wrap._k = key + sig;
-  wrap.innerHTML = slots.map(([k, w]) => {
-    const own = weaponUnlocked(w), nm = own ? (w === 'fists' ? 'HOLSTER' : MANDO_WEAPONS[w].name) : 'LOCKED';
+  const sig = signatureWeapon(), kit = kitOf();
+  const slots = [['1', kit.sidearm, 'SIDEARM'], ['2', kit.primary, 'PRIMARY'], ['3', sig, ''], ['4', 'fists', '']];
+  let key = player.weapon + sig;
+  for (const [, w] of slots) key += (w || '-') + (w && weaponUnlocked(w) ? '1' : '0');
+  const wrap = $('wslots'); if (wrap._k === key) return;
+  wrap._k = key;
+  wrap.innerHTML = slots.map(([k, w, empty]) => {
+    const own = !!w && weaponUnlocked(w), nm = own ? (w === 'fists' ? 'HOLSTER' : MANDO_WEAPONS[w].short || MANDO_WEAPONS[w].name) : (w ? 'LOCKED' : 'NO ' + (empty || 'WEAPON'));
     return '<span class="wslot' + (player.weapon === w ? ' on' : '') + (own ? '' : ' lock') + '"><span class="kc">' + k + '</span>' + nm + '</span>';
   }).join('');
 }
@@ -233,6 +234,7 @@ export function updateHud(){
     // weapon + ammo readout
     const W = mandoWeapon();
     renderWeaponSlots();
+    setText($('wpnLabel'), W.short || W.name);
     const ammoEl = document.getElementById('ammoLabel');
     ammoEl.textContent = W.melee ? '— —' : (W.fire === 'rifle' && !player.zoom) ? 'SPEAR' : (player.overheat ? 'OVERHEAT' : Math.round((1 - player.heat) * 100) + '%');
     document.getElementById('ab-blaster').classList.toggle('reloading', player.overheat);
@@ -243,8 +245,9 @@ export function updateHud(){
     // offensive brace; the Darksaber GUARDS; the Disruptor SCOPES. Flag the shield when it's out of stamina to deflect.
     const braceEl = document.getElementById('ab-brace');
     if (braceEl){
-      setText(braceEl.querySelector('.an'), W.fire === 'fists' ? 'SHIELD' : W.melee ? 'GUARD' : W.twoHand ? 'SCOPE' : player.weapon === 'single' ? 'SHIELD' : 'BRACE');
+      setText(braceEl.querySelector('.an'), W.fire === 'fists' ? 'SHIELD' : W.melee ? 'GUARD' : W.scope ? 'SCOPE' : player.weapon === 'single' ? 'SHIELD' : 'BRACE');
       braceEl.classList.toggle('nofp', player.weapon === 'single' && player.blockHeld && player.stam <= 0);
+      braceEl.classList.toggle('cool', player.beskarLockT > 0);   // a whiffed beskar parry: no new window for a beat
     }
     // E chip: behind the raised shield, E cuts with the vibroblade instead of punching
     const meleeEl = document.getElementById('ab-melee');
@@ -269,7 +272,7 @@ export function updateHud(){
       let gap = 4 + Math.min(8, spd * 0.55) + (player.boosting ? 7 : 0) + player.recoilKick * 16;
       // BRACING steadies the aim — SINGLE's beskar shield-brace snaps the cone in HARD (good ADS); DUAL's offensive
       // brace only tightens a little (minor ADS — it's an aggressive stance, not a marksman's perch).
-      if (player.blockHeld && !mandoWeapon().melee) gap *= (player.weapon === 'dual' ? 0.72 : 0.45);
+      if (player.blockHeld && !mandoWeapon().melee) gap *= (player.weapon === 'repeater' ? 0.8 : player.weapon === 'dual' ? 0.72 : player.weapon === 'carbine' ? 0.55 : 0.45);
       if (player.zoom) gap = 1.5;                                  // ADS pulls it in tight for precision
       gap = clamp(gap, 1.5, 24);
       let col = '120,210,255', ringOp = 0.24, dotOp = 0.9;

@@ -15,7 +15,9 @@ import { V3 } from '../utils.js';
 import { burst } from '../fx/particles.js';
 import { floater } from '../fx/floaters.js';
 import { shared, G, rockets, birds, detos, enemies, bolts, orbs, rings, vfx, player } from '../state.js';
-import { weaponUnlocked } from '../data/mando.js';
+import { weaponUnlocked, RUN_KIT } from '../data/mando.js';
+import { missionKit } from './armory.js';
+import { tickArmory, clearArmory } from '../ui/armory-ui.js';
 import { setHero } from '../player/hero.js';
 import { playerPos, maxHp, maxStam } from '../player/helpers.js';
 import { setStanceHud, switchStance, setLoadout } from '../player/jedi/stance.js';
@@ -111,6 +113,7 @@ export function startLevel(idx, opts){
   catchDarksaber(true);   // a thrown Darksaber goes back in the hand before the next fight
   player.darkT = 0; player.darkApplied = false; if (player.darksaberMesh) player.darksaberMesh.visible = false;
   player.zoom = false; player.aiming = 0; player.recoilKick = 0; player.stabT = 0; player.stabQ = false; player.stabCdT = 0; player.missileT = 0; player.heat = 0; player.overheat = false; player.ventT = 0;
+  player.spin = 0; player.burstLeft = 0; player.burstQ = false; player.gunSlow = 1; player.beskarT = 0; player.beskarLockT = 0; player.beskarPose = 0;   // the repeater's spin, a carbine burst, the beskar parry
   player.jet = player.jetMax;
   // a fresh campaign starts with the basic blasters; mid-campaign keep the equipped (if still unlocked)
   if (fresh || !weaponUnlocked(player.weapon)) player.weapon = 'single';
@@ -163,7 +166,8 @@ export function startLevel(idx, opts){
     //  Brace (RMB) + Rocket (Dual auto-unlocks after wave 1, Flame after wave 2).
     G.unlocked = G.hero === 'jedi' ? { push: true, dash: true } : { rocket: true };
     G.stanceUnlocked = {};   // SHII-CHO is known from the start; the rest is learned (data/forms.js FORM_PATH). The training grounds add what the story has taught (game/tutorial.js)
-    G.formFork = null; clearMeditation(); clearAbilityCards();   // the run's Form VII choice; nothing left waiting from the last run
+    G.formFork = null; clearMeditation(); clearAbilityCards(); clearArmory();
+    G.mandoKit = { ...RUN_KIT };   // the Mando's guns on 1 / 2: the blaster pistol alone, until the run hands out more (data/mando.js ARMORY_PATH)   // the run's Form VII choice; nothing left waiting from the last run
     // a run (campaign or survival) and the training grounds start on the forms the hero knows and grow (each lesson slots
     // its own: game/tutorial.js); the missions keep the old three (a mission then slots what its kit teaches)
     G.loadout = [...(G.mission || G.sandbox ? DEFAULT_LOADOUT : RUN_LOADOUT)];
@@ -249,6 +253,8 @@ export function checkUnlocks(bannerDelay){
     syncJediChips();
     setStanceHud();
   }
+  // a Mando mission: the guns picked before the fight, else the best of what its kit hands out (game/armory.js)
+  if (G.hero === 'mando' && G.mission && G.chapter < 0) missionKit();
   // a mission's forms come with its kit, already in hand: slot the best of them (no meditation, no fanfare)
   if (G.hero !== 'mando' && G.mission && G.chapter < 0){
     if (G.missionForms){   // chosen before the fight (ui/forms-ui.js): the mission hands them over
@@ -379,6 +385,7 @@ export function coopCampaignCleared(){
 export function updateFlow(dt){
   tickMeditation();   // a learned form waits for the screens in front of it to close (meditation.js)
   tickAbilityCards();   // so does a new ability's card (ui/ability-card.js)
+  tickArmory();   // a new gun for a full slot: choose which to carry, after its card (ui/armory-ui.js)
   if (G.coopGuest) return;   // the host runs this run's spawns and waves: net/foes.js tells this browser what they did
   // the lull: once the first half of a long wave is down, hold the rest behind a short beat, then release it
   const bar = G.spawnQueue.find(s => s.barrier);
