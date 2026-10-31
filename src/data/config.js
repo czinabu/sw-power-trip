@@ -36,8 +36,9 @@ export const CFG = {
     swingArc: { cut: 0.34, sweep: 0.17, finisher: -0.1 },
     // HIT REACTIONS — a blow that lands staggers you: the swing is knocked loose and your feet slow
     flinch: { light: 0.2, heavy: 0.42, heavyDmg: 20, ranged: 0.1, move: 0.25, knock: 4.5, immune: 0.6 },
-    // PERFECT DODGE — a dash that starts within `window` s of a blow landing slows time and arms a counter
-    perfectDodge: { window: 0.16, slowmo: 0.3, slowT: 0.5, refund: 1, cd: 1.0 },
+    // PERFECT DODGE — a blow that lands within the PARRY window (parryWindow + form/skill/difficulty bonuses, + `bonus`) of the
+    // dash/roll/dive starting slows time and arms a counter; later in the i-frames it's an ordinary dodge
+    perfectDodge: { bonus: 0.02, slowmo: 0.3, slowT: 0.5, refund: 1, cd: 1.0 },
     // BLADE CLASH — your cut meets a foe's strike mid-arc: neither lands, both recoil
     clash: { from: 0.15, to: 0.75, knock: 9, push: 5, stam: 6 },
     // SOFT LOCK-ON (T / middle mouse) — the camera keeps one foe framed
