@@ -144,7 +144,8 @@ export function updateHud(){
   document.body.classList.toggle('sandbox', !!G.sandbox);
   if (G.training){
     const tp = trainingProgress();
-    setHtml($('waveinfo'), '<span class="wi-l">TRAINING · ' + tp.place + '</span><span class="wi-w">LESSON ' + tp.lesson + ' / ' + tp.total + '</span>');
+    setHtml($('waveinfo'), '<span class="wi-l">TRAINING · ' + tp.place + '</span><span class="wi-w">' + tp.name + '</span>' +
+      (tp.total ? '<span class="wi-h">STEP ' + tp.lesson + ' / ' + tp.total + '</span><span class="wi-bar"><i style="width:' + ((tp.lesson - 1) / tp.total * 100).toFixed(1) + '%"></i></span>' : ''));
   } else if (G.mission){
     const o = objectiveHud();
     if (o) setHtml($('waveinfo'), '<span class="wi-l">' + o.kicker + '</span><span class="wi-w">' + o.title + '</span>' +

@@ -67,7 +67,49 @@ export function arenaKit(){
     for (const s of [-1, 1]) column(x, z + s * span, 0.18, 1.7, post, { wallKick: false, seg: 8, taper: 1 });
     deco(new THREE.BoxGeometry(0.22, 0.22, span * 2), bar, x, 1.15, z).userData.passThrough = true;   // (the collision audit skips it)
   };
-  return { box, column, slab, deco, gantry, rubble, slideGate };
+  /* a STATION SIGN for the training grounds: a lit plate with a name on it, standing over (or flush against) the station
+     it names, facing `ry`. Only a picture (the collision audit skips it): it hangs high or lies flat on a face. */
+  const sign = (text, x, y, z, ry, o = {}) => {
+    const W = 512, H = 128, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    const c = cv.getContext('2d'), ink = o.ink || '#ffe2a0', edge = o.edge || 'rgba(255,214,130,.85)';
+    c.fillStyle = o.plate || 'rgba(8,16,28,.82)'; c.fillRect(0, 0, W, H);
+    c.strokeStyle = edge; c.lineWidth = 6; c.strokeRect(9, 9, W - 18, H - 18);
+    c.fillStyle = edge; for (const sx of [24, W - 24]) c.fillRect(sx - 4, H / 2 - 4, 8, 8);
+    let px = o.size || 58;
+    const font = () => '700 ' + px + 'px "Barlow Condensed", "Arial Narrow", Arial, sans-serif';
+    c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = ink;
+    if ('letterSpacing' in c) c.letterSpacing = '6px';
+    c.font = font();
+    while (px > 24 && c.measureText(text).width > W - 84){ px -= 2; c.font = font(); }   // shrink a long name to fit the plate
+    c.fillText(text, W / 2, H / 2 + 3);
+    const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
+    const w = o.w || 3.2;
+    const geo = new THREE.PlaneGeometry(w, w * H / W);
+    const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: tex, transparent: true, toneMapped: false, fog: o.fog ?? true }));
+    const back = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0x0a121c, transparent: true, opacity: 0.85, fog: o.fog ?? true }));
+    back.rotation.y = Math.PI; back.userData.passThrough = true; back.userData.noBake = true; m.add(back);   // seen from behind: just the plate
+    m.position.set(x, y, z); m.rotation.y = ry || 0; m.userData.passThrough = true; m.userData.noBake = true;
+    g.add(m); return m;
+  };
+  /* a BANNER hung flat against a face (or from a beam): cloth, a hem, and an emblem disc. Only a picture, like a sign */
+  const banner = (x, y, z, ry, w, h, cloth, hem, mark) => {
+    const grp = new THREE.Group(); grp.position.set(x, y, z); grp.rotation.y = ry || 0;
+    const mk = (geo, mat, px, py, pz) => { const m = new THREE.Mesh(geo, mat); m.position.set(px, py, pz); m.userData.passThrough = true; grp.add(m); return m; };
+    mk(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ color: cloth, roughness: 0.9, side: THREE.DoubleSide }), 0, 0, 0);
+    mk(new THREE.PlaneGeometry(w, h * 0.08), new THREE.MeshStandardMaterial({ color: hem, roughness: 0.5, metalness: 0.5, side: THREE.DoubleSide }), 0, -h * 0.46, 0.01);
+    mk(new THREE.PlaneGeometry(w, h * 0.05), new THREE.MeshStandardMaterial({ color: hem, roughness: 0.5, metalness: 0.5, side: THREE.DoubleSide }), 0, h * 0.47, 0.01);
+    if (mark != null) mk(new THREE.RingGeometry(w * 0.16, w * 0.24, 20), new THREE.MeshBasicMaterial({ color: mark, side: THREE.DoubleSide }), 0, h * 0.18, 0.015);
+    g.add(grp); return grp;
+  };
+  /* a lit strip set flush into the floor: the lanes that lead from the spawn to each station */
+  const strip = (x0, z0, x1, z1, wdt, color, op = 0.4) => {
+    const len = Math.hypot(x1 - x0, z1 - z0);
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(wdt, len), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: op, depthWrite: false, toneMapped: false }));
+    m.rotation.x = -Math.PI / 2; m.rotation.z = Math.atan2(x1 - x0, z1 - z0);
+    m.position.set((x0 + x1) / 2, 0.025, (z0 + z1) / 2); m.userData.passThrough = true; m.receiveShadow = false;
+    g.add(m); return m;
+  };
+  return { box, column, slab, deco, gantry, rubble, slideGate, sign, banner, strip };
 }
 
 /* polar → x,z (angle 0 = +x, π/2 = +z, the side the player spawns on) */

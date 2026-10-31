@@ -228,6 +228,7 @@ function landStrike(P){
   if (B.charge){ G.shake = Math.max(G.shake, 0.3 + 0.5 * (B.range / 9)); S.push(); }
   const fin = big || B.lunge || B.sweep || B.launch;
   landed(hit, fin, fin ? 0.06 : 0.03, fin ? 0.35 : 0.18);
+  if (hit) tutEvent('palmHit');
   if (hit){ if (big) S.push(); else S.punch(ip, B.lunge ? 1.1 : 0.8); }
   if (hooks.power && big) hooks.power('push', col, B.range * 0.5);
 }

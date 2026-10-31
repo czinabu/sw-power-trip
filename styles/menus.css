@@ -266,7 +266,7 @@ body.fovpreview #fovpill{background:rgba(1,4,10,.82)}
   border:1px solid rgba(255,210,74,.45);border-radius:var(--r-lg);background:rgba(30,24,8,.72);animation:rise .2s var(--ease)}
 #overlay.asktrain #trainconfirm{display:flex}
 #overlay.asktrain .ov-actions{display:none}
-#skipBtn{display:none}
+#skipBtn,#lessonsBtn{display:none}
 #fsBtn .fsval{color:var(--accent);margin-left:4px}
 #overlay.st-dead #fsBtn, #overlay.st-victory #fsBtn{display:none}   /* main menu and pause only; Settings has it everywhere */
 
@@ -370,9 +370,9 @@ body.fovpreview #fovpill{background:rgba(1,4,10,.82)}
 #overlay.st-pause .ov-actions{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:26px;justify-content:stretch}
 #overlay.st-pause .ov-actions .btn{box-sizing:border-box;width:100%;padding:13px 12px;white-space:nowrap}
 #overlay.st-pause .ov-actions .go{grid-column:1/-1;margin-bottom:6px;width:100%}
-#overlay.st-pause #skipBtn{grid-column:1/-1}
+#overlay.st-pause #skipBtn,#overlay.st-pause #lessonsBtn{grid-column:span 3}
 /* pause groups, top to bottom: resume · this run (save / load / restart) · options (settings / fullscreen / help / co-op) · leave */
-#overlay.st-pause #skipBtn{order:1}
+#overlay.st-pause #skipBtn,#overlay.st-pause #lessonsBtn{order:1}
 #overlay.st-pause #saveBtn,#overlay.st-pause #loadBtn,#overlay.st-pause #restartBtn{grid-column:span 2;order:2}
 #overlay.st-pause #saveBtn{margin-top:10px} #overlay.st-pause #loadBtn{margin-top:10px} #overlay.st-pause #restartBtn{margin-top:10px}
 #overlay.st-pause #settoggle,#overlay.st-pause #fsBtn,#overlay.st-pause #ctltoggle,#overlay.st-pause #coopBtn{grid-column:span 3;order:3}
@@ -424,31 +424,31 @@ body.fovpreview #fovpill{background:rgba(1,4,10,.82)}
 @media (max-width:720px){.ctl .tells{grid-template-columns:1fr}}
 
 /* ---------- the campaign's chapter card (game/campaign.js): where you are in the story, before each chapter ---------- */
-:is(#chapcard,#meditate){position:fixed;inset:0;z-index:19;display:none;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;overflow-y:auto;
+:is(#chapcard,#meditate,#lessonboard){position:fixed;inset:0;z-index:19;display:none;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;overflow-y:auto;
   background:radial-gradient(ellipse 80% 70% at 50% 40%,rgba(6,14,28,.78),rgba(1,3,8,.94))}
-:is(#chapcard,#meditate).open{display:flex}
-:is(#chapcard,#meditate) .cc-inner{width:min(720px,100%);text-align:left;animation:rise .35s var(--ease);--cc:var(--accent)}
-:is(#chapcard,#meditate) .cc-inner.hero-mando{--cc:#ffa040}
-:is(#chapcard,#meditate) .cc-act{font-size:13px;letter-spacing:3px;color:var(--cc)}
-:is(#chapcard,#meditate) .cc-num{margin-top:14px;font-size:14px;letter-spacing:2.4px;color:var(--ink-dim)}
-:is(#chapcard,#meditate) .cc-title{margin:4px 0 0;font:700 52px/1 var(--font-display);letter-spacing:4px;color:#f2f8ff;text-shadow:0 0 30px rgba(42,169,255,.25)}
-:is(#chapcard,#meditate) .cc-world{margin-top:6px;font-size:15px;letter-spacing:2.4px;color:var(--ink-soft)}
-:is(#chapcard,#meditate) .cc-voice{margin:22px 0 0;padding:12px 16px;border-left:2px solid var(--cc);background:var(--panel)}
-:is(#chapcard,#meditate) .cc-who{font-size:12px;letter-spacing:2.2px;color:var(--cc);margin-bottom:6px}
-:is(#chapcard,#meditate) .cc-voice p{margin:6px 0 0;font:500 17px/1.45 var(--font-body);color:var(--ink)}
-:is(#chapcard,#meditate) .cc-roster{list-style:none;margin:20px 0 0;padding:0;display:grid;gap:4px}
-:is(#chapcard,#meditate) .cc-roster li{display:flex;align-items:center;gap:10px;padding:6px 10px;font-size:15px;letter-spacing:1.4px;color:var(--ink-dim);
+:is(#chapcard,#meditate,#lessonboard).open{display:flex}
+:is(#chapcard,#meditate,#lessonboard) .cc-inner{width:min(720px,100%);text-align:left;animation:rise .35s var(--ease);--cc:var(--accent)}
+:is(#chapcard,#meditate,#lessonboard) .cc-inner.hero-mando{--cc:#ffa040}
+:is(#chapcard,#meditate,#lessonboard) .cc-act{font-size:13px;letter-spacing:3px;color:var(--cc)}
+:is(#chapcard,#meditate,#lessonboard) .cc-num{margin-top:14px;font-size:14px;letter-spacing:2.4px;color:var(--ink-dim)}
+:is(#chapcard,#meditate,#lessonboard) .cc-title{margin:4px 0 0;font:700 52px/1 var(--font-display);letter-spacing:4px;color:#f2f8ff;text-shadow:0 0 30px rgba(42,169,255,.25)}
+:is(#chapcard,#meditate,#lessonboard) .cc-world{margin-top:6px;font-size:15px;letter-spacing:2.4px;color:var(--ink-soft)}
+:is(#chapcard,#meditate,#lessonboard) .cc-voice{margin:22px 0 0;padding:12px 16px;border-left:2px solid var(--cc);background:var(--panel)}
+:is(#chapcard,#meditate,#lessonboard) .cc-who{font-size:12px;letter-spacing:2.2px;color:var(--cc);margin-bottom:6px}
+:is(#chapcard,#meditate,#lessonboard) .cc-voice p{margin:6px 0 0;font:500 17px/1.45 var(--font-body);color:var(--ink)}
+:is(#chapcard,#meditate,#lessonboard) .cc-roster{list-style:none;margin:20px 0 0;padding:0;display:grid;gap:4px}
+:is(#chapcard,#meditate,#lessonboard) .cc-roster li{display:flex;align-items:center;gap:10px;padding:6px 10px;font-size:15px;letter-spacing:1.4px;color:var(--ink-dim);
   border:1px solid transparent;border-radius:var(--r-chip)}
-:is(#chapcard,#meditate) .cc-roster li .n{width:22px;text-align:right;color:var(--ink-faint)}
-:is(#chapcard,#meditate) .cc-roster li .w{margin-left:auto;font-size:12px;letter-spacing:1.6px;color:var(--ink-faint)}
-:is(#chapcard,#meditate) .cc-roster li .tag{font-size:10px;letter-spacing:1.5px;padding:1px 6px;border:1px solid currentColor;border-radius:var(--r-chip)}
-:is(#chapcard,#meditate) .cc-roster li.done{color:var(--ink-soft)}
-:is(#chapcard,#meditate) .cc-roster li.done .n::before{content:'✓ ';color:var(--xp)}
-:is(#chapcard,#meditate) .cc-roster li.now{color:var(--ink);border-color:var(--edge-mid);background:var(--panel-hi)}
-:is(#chapcard,#meditate) .cc-roster li.now .n{color:var(--cc)}
-:is(#chapcard,#meditate) .cc-btns{margin-top:22px;display:flex;gap:12px}
-:is(#chapcard,#meditate) .cc-hint{margin-top:10px;font-size:12px;letter-spacing:1.6px;color:var(--ink-faint)}
-:is(#chapcard,#meditate) .cc-unlock{margin-top:18px;font:600 13px/1.4 var(--font-ui);letter-spacing:1.5px;color:var(--gold)}
+:is(#chapcard,#meditate,#lessonboard) .cc-roster li .n{width:22px;text-align:right;color:var(--ink-faint)}
+:is(#chapcard,#meditate,#lessonboard) .cc-roster li .w{margin-left:auto;font-size:12px;letter-spacing:1.6px;color:var(--ink-faint)}
+:is(#chapcard,#meditate,#lessonboard) .cc-roster li .tag{font-size:10px;letter-spacing:1.5px;padding:1px 6px;border:1px solid currentColor;border-radius:var(--r-chip)}
+:is(#chapcard,#meditate,#lessonboard) .cc-roster li.done{color:var(--ink-soft)}
+:is(#chapcard,#meditate,#lessonboard) .cc-roster li.done .n::before{content:'✓ ';color:var(--xp)}
+:is(#chapcard,#meditate,#lessonboard) .cc-roster li.now{color:var(--ink);border-color:var(--edge-mid);background:var(--panel-hi)}
+:is(#chapcard,#meditate,#lessonboard) .cc-roster li.now .n{color:var(--cc)}
+:is(#chapcard,#meditate,#lessonboard) .cc-btns{margin-top:22px;display:flex;gap:12px}
+:is(#chapcard,#meditate,#lessonboard) .cc-hint{margin-top:10px;font-size:12px;letter-spacing:1.6px;color:var(--ink-faint)}
+:is(#chapcard,#meditate,#lessonboard) .cc-unlock{margin-top:18px;font:600 13px/1.4 var(--font-ui);letter-spacing:1.5px;color:var(--gold)}
 #meditate .md-slots{margin-top:20px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 #meditate .md-slot{cursor:pointer;display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--edge-mid);border-radius:var(--r);background:var(--panel-solid);
   font:700 18px/1 var(--font-display);letter-spacing:2.4px;color:var(--ink);border-left:3px solid var(--c,var(--edge-mid))}
@@ -464,13 +464,13 @@ body.fovpreview #fovpill{background:rgba(1,4,10,.82)}
 #meditate .md-form.new b::after{content:' NEW';font-size:11px;letter-spacing:1.5px;color:var(--gold)}
 #meditate .cc-opt{border-left:3px solid var(--c,var(--edge-mid))}
 @media (max-width:620px){ #meditate .md-slots{grid-template-columns:1fr} }
-:is(#chapcard,#meditate) .cc-pick{margin-top:22px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
-:is(#chapcard,#meditate) .cc-opt{position:relative;cursor:pointer;padding:16px;border:1px solid var(--edge-mid);border-radius:var(--r);background:var(--panel-solid);
+:is(#chapcard,#meditate,#lessonboard) .cc-pick{margin-top:22px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+:is(#chapcard,#meditate,#lessonboard) .cc-opt{position:relative;cursor:pointer;padding:16px;border:1px solid var(--edge-mid);border-radius:var(--r);background:var(--panel-solid);
   --bc:var(--cc);transition:border-color .15s,background .15s}
-:is(#chapcard,#meditate) .cc-opt:hover{border-color:var(--cc);background:var(--panel-hi)}
-:is(#chapcard,#meditate) .cc-opt b{display:block;font:700 22px/1 var(--font-display);letter-spacing:3px;color:var(--ink)}
-:is(#chapcard,#meditate) .cc-opt span{display:block;margin-top:8px;font:500 15px/1.4 var(--font-body);color:var(--ink-soft)}
-@media (max-width:620px){ :is(#chapcard,#meditate) .cc-title{font-size:36px} :is(#chapcard,#meditate) .cc-pick{grid-template-columns:1fr} }
+:is(#chapcard,#meditate,#lessonboard) .cc-opt:hover{border-color:var(--cc);background:var(--panel-hi)}
+:is(#chapcard,#meditate,#lessonboard) .cc-opt b{display:block;font:700 22px/1 var(--font-display);letter-spacing:3px;color:var(--ink)}
+:is(#chapcard,#meditate,#lessonboard) .cc-opt span{display:block;margin-top:8px;font:500 15px/1.4 var(--font-body);color:var(--ink-soft)}
+@media (max-width:620px){ :is(#chapcard,#meditate,#lessonboard) .cc-title{font-size:36px} :is(#chapcard,#meditate,#lessonboard) .cc-pick{grid-template-columns:1fr} }
 
 /* ---------- CONTROLLER (engine/gamepad.js): the focus ring a pad moves round the menus, and pad-only prompts ---------- */
 .padfocus{outline:2px solid var(--accent)!important;outline-offset:3px;box-shadow:0 0 0 5px rgba(92,198,255,.18),0 0 18px rgba(92,198,255,.35)!important}
@@ -536,3 +536,32 @@ body.pad .kbonly{display:none}
 .fm-compact .fm-actions{position:static;margin:12px 0 0;padding:0}
 @media (max-width:760px){ .fm-compact .fm-body{grid-template-columns:1fr;overflow-y:auto} .fm-tiles{grid-template-columns:repeat(2,1fr)} }
 @media (max-width:620px){ .fm-slots{grid-template-columns:1fr} }
+
+/* ---------- the training's LESSON BOARD (game/tutorial.js): the basics, then what the story has opened ---------- */
+#lessonboard .cc-inner{width:min(860px,100%)}
+#lessonboard .lb-sec{display:flex;align-items:baseline;gap:12px;margin:22px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--edge);
+  font:700 13px/1 var(--font-ui);letter-spacing:2.6px;color:var(--cc)}
+#lessonboard .lb-sec span{margin-left:auto;font-size:12px;letter-spacing:1.6px;color:var(--ink-dim)}
+#lessonboard .lb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px}
+#lessonboard .lb-card{position:relative;cursor:pointer;display:flex;flex-direction:column;gap:5px;padding:11px 13px 10px;border:1px solid var(--edge-mid);
+  border-left:3px solid var(--cc);border-radius:var(--r);background:var(--panel-solid);transition:border-color .15s,background .15s,transform .15s}
+#lessonboard .lb-card:hover{background:var(--panel-hi);border-color:var(--cc);transform:translateY(-1px)}
+#lessonboard .lb-card b{font:700 15px/1.1 var(--font-display);letter-spacing:1.8px;color:var(--ink)}
+#lessonboard .lb-card span{font:500 13px/1.3 var(--font-body);color:var(--ink-soft)}
+#lessonboard .lb-card em{margin-top:auto;font:600 11px/1 var(--font-ui);font-style:normal;letter-spacing:1.4px;color:var(--ink-faint)}
+#lessonboard .lb-card.done{border-left-color:var(--xp)}
+#lessonboard .lb-card.done b::before{content:'✓ ';color:var(--xp)}
+#lessonboard .lb-card.sel{border-color:var(--cc);background:var(--panel-hi);box-shadow:0 0 0 1px var(--cc),0 0 22px rgba(90,210,255,.18)}
+#lessonboard .lb-card .lb-new{position:absolute;top:9px;right:10px;font:700 10px/1 var(--font-ui);font-style:normal;letter-spacing:1.5px;color:var(--gold);
+  padding:2px 6px;border:1px solid currentColor;border-radius:var(--r-chip)}
+#lessonboard .lb-card.sealed{cursor:default;border-left-color:var(--edge-mid);background:repeating-linear-gradient(135deg,rgba(255,255,255,.025) 0 8px,transparent 8px 16px),var(--panel);opacity:.7}
+#lessonboard .lb-card.sealed:hover{transform:none;border-color:var(--edge-mid);background:repeating-linear-gradient(135deg,rgba(255,255,255,.025) 0 8px,transparent 8px 16px),var(--panel)}
+#lessonboard .lb-card.sealed b{color:var(--ink-dim)}
+#lessonboard .lb-card.sealed b::before{content:'◇ ';color:var(--ink-faint)}
+@media (max-width:620px){ #lessonboard .lb-grid{grid-template-columns:1fr} #lessonboard .cc-title{font-size:38px} }
+#lessonboard{align-items:flex-start}
+#lessonboard .cc-inner{margin:auto 0}
+#lessonboard .cc-title{font-size:40px}
+#lessonboard .cc-voice{margin-top:14px}
+#lessonboard .lb-card b{padding-right:40px}
+#lessonboard .lb-card.done b,#lessonboard .lb-card.sealed b{padding-right:0}

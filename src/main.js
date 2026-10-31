@@ -63,7 +63,7 @@ import './world/arenas/temple.js';
 import './world/arenas/foundry.js';
 import './world/arenas/plains.js';
 import { queueSpawn, startLevel, checkUnlocks, startWave, updateFlow } from './game/flow.js';
-import { startTutorial, updateTutorial, skipStep, trainingProgress } from './game/tutorial.js';
+import { startTutorial, updateTutorial, skipStep, trainingProgress, lessonList, openLessonBoard } from './game/tutorial.js';
 import { startCampaign, startChapter, nextChapter, chapters } from './game/campaign.js';
 import { startMission, updateMission, skipObjective, missionState } from './game/mission.js';
 import { startSandbox, updateSandbox, sandboxSpawn, sandboxClear, setSandboxKit, sandboxKitAll } from './game/sandbox.js';
@@ -181,7 +181,7 @@ tick();
 
 /* expose configs + API for live tweaking and future edits (dev console) */
 window.GAME = { shared, coopRun, coopHooks, partnerShown, partnerInfo, CFG, ENEMY_TYPES, LEVELS, BOSS_CFG, BOSS_MANDO, STANCES, SKILLS, MANDO, MANDO_WEAPONS, G, enemies, player, pillars, solids, rockets, bolts,
-  startLevel, startWave, spawnEnemy, startTutorial, startMission, skipObjective, startSandbox, sandboxSpawn, sandboxClear, setSandboxKit, sandboxKitAll, missionState, skipStep, trainingProgress, spawnBoss, queueSpawn, checkUnlocks, switchStance, setHero,
+  startLevel, startWave, spawnEnemy, startTutorial, startMission, skipObjective, startSandbox, sandboxSpawn, sandboxClear, setSandboxKit, sandboxKitAll, missionState, skipStep, trainingProgress, lessonList, openLessonBoard, spawnBoss, queueSpawn, checkUnlocks, switchStance, setHero,
   openSkillTree, damageEnemy, damageBoss, updateHud, nextStoreGoal, enemyHpScale, eliteChance, ELITES, cycleQuality, forceBarrier, forceMend, updatePlayer, updateEnemies, updateBolts, fireBolt, endRun, updateFlow, startEndless, startEndlessWave, genEndlessWave, MUTATORS, ENDLESS_POWERS, buyPower, keys, camera, SEE,
   tryAttack, castGesture, saberThrow, forcePush, forceSlam, forceRepulse, stance, applySwingDamage, spawnChampion, startWave, bomberExplode, MUSIC, audioInit,
   spawnBoss, updateBoss, bossStagger, BOSS_CFG, BOSS_MANDO, rings,

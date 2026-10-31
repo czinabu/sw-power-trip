@@ -16,6 +16,7 @@
     "smoke:collision": "node tools/smoke/collision.mjs",
     "smoke:coop-mission": "node tools/smoke/coop-mission.mjs",
     "smoke:cutscenes": "node tools/smoke/cutscenes.mjs",
+    "smoke:training": "node tools/smoke/training.mjs",
     "perf": "node tools/smoke/perf.mjs"
   },
   "dependencies": {

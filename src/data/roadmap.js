@@ -6,6 +6,13 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'Training rebuilt', status: 'done',
+    items: ['Training is short lessons picked from a lesson board between them: the basics first, in Shii-Cho alone',
+            'Every form the story teaches opens its own lesson: Soresu, Ataru, Djem So and Shien, Makashi, Niman, Form VII',
+            'Lessons for reverse grip (Shien always, Niman on G), fighting holstered with the Force, and how powers grow by use',
+            'The Mando\'s matching arsenal lessons: two blasters, the flamethrower, forged gear, the disruptor and the Darksaber',
+            'No spoilers: a lesson, form or tip you haven\'t reached stays sealed, on Before the Fight, the forms page and How to Play',
+            'Both training grounds rebuilt: stations with signs and lit lanes, the temple gate, bolt range and garden, the covert door, the range and armoury'] },
   { title: 'Upgrades without the menus', status: 'done',
     items: ['No upgrade screen between waves: a clear earns a skill point and a small note in the corner, and the fight goes on',
             'Powers master themselves as you use them: Push that you lean on grows into rank I and II, no XP spent',
@@ -141,9 +148,6 @@ export const ROADMAP = [
             'E mid-string spins a kick round the ring, in the air stomps down · every blow landed feeds the Force back',
             'Push or Pull straight after a blow flows out of it: a cheap Palm Push, or a Pull that drags them onto the next strike',
             'Every mode, co-op included: the partner sees the strikes and the glowing hands'] },
-  { title: 'Combat tutorial rework', status: 'next',
-    items: ['Teach the new combat in training: forms, holstered Force strikes, charged palm, spin kick and stomp, strike-into-power',
-            'Teach how upgrades come: powers grow with use, skill points from clears and good defence, spent at the chapter\'s end'] },
   { title: 'Balance, round two', status: 'next',
     items: ['Survival scaling and mission pulses, from real playtest notes'] },
   { title: 'Co-op, fully', status: 'later',

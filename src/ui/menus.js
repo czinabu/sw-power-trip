@@ -11,7 +11,7 @@ import { setHero } from '../player/hero.js';
 import { startLevel, retryLevel, retryIsBoss, startCoopCampaign } from '../game/flow.js';
 import { coopRun } from '../net/run.js';
 import { startEndless } from '../game/survival.js';
-import { startTutorial, skipStep, setTrainingExit, trainingDone } from '../game/tutorial.js';
+import { startTutorial, retryTutorial, skipStep, setTrainingExit, trainingDone, openLessonBoard } from '../game/tutorial.js';
 import { startMission, startCoopMission, retryMission, missionDone, missionTitle } from '../game/mission.js';
 import { startSandbox, sandboxUnlocked } from '../game/sandbox.js';
 import { sandboxFull, sandboxProgress, missionUnlocked, missionChapterNo } from '../game/sandbox-unlocks.js';
@@ -51,6 +51,7 @@ export function setOverlayState(state){
   document.getElementById('restartBtn').style.display = state === 'menu' ? 'none' : 'inline-flex';
   document.getElementById('restartBtn').textContent = G.training ? '↻ RESTART TRAINING' : G.mission && G.chapter < 0 ? '↻ RESTART MISSION' : '↻ RESTART RUN';
   document.getElementById('skipBtn').style.display = state === 'pause' && G.training ? 'inline-flex' : 'none';
+  document.getElementById('lessonsBtn').style.display = state === 'pause' && G.training ? 'inline-flex' : 'none';
   document.getElementById('formsBtn').style.display = G.hero === 'mando' ? 'none' : '';   // the Jedi's forms page (ui/forms-ui.js)
   const go = document.getElementById('goText'), sub = document.getElementById('ovsub');
   if (state === 'menu' && G.modeSel === 'campaign' && canResume()){   // a loaded save picks the campaign up where it was
@@ -104,7 +105,7 @@ function beginPlay(){
     else if (G.modeSel === 'endless') startEndless(); else if (G.modeSel === 'training') startTutorial(); else if (G.modeSel === 'mission') startMission(G.missionId); else if (G.modeSel === 'sandbox') startSandbox(); else if (canResume()) resumeRun(); else startCampaign();
   } else if (G.mode === 'dead'){
     G.mode = 'play'; G.slowmo = 1;
-    if (G.endless) startEndless(); else if (G.training) startTutorial(); else if (G.mission) retryMission(); else if (G.sandbox) startSandbox(); else retryLevel();   // survival retry = a fresh survival run
+    if (G.endless) startEndless(); else if (G.training) retryTutorial(); else if (G.mission) retryMission(); else if (G.sandbox) startSandbox(); else retryLevel();   // survival retry = a fresh survival run
   } else if (G.mode === 'play'){
     overlay.style.display = 'none';  // resume from pause
   }
@@ -533,7 +534,9 @@ setTrainingExit(() => {
   setModeSel('campaign');
   goHome();
 });
-document.getElementById('skipBtn').addEventListener('click', () => skipStep());   
+document.getElementById('skipBtn').addEventListener('click', () => skipStep());
+// LESSON BOARD: back into the fight's frame, then the board over it (game/tutorial.js)
+document.getElementById('lessonsBtn').addEventListener('click', (e) => { e.stopPropagation(); audioInit(); document.getElementById('goText').click(); openLessonBoard(); });
 document.getElementById('homeBtn').addEventListener('click', (e) => {
   e.stopPropagation(); audioInit();
   if (_ovState === 'pause') overlay.classList.add('confirming'); else goHome();

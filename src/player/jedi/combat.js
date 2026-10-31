@@ -113,6 +113,7 @@ export function tryAttack(flow = false){
   if (mom === 'swoop'){
     lunge *= 2; player.vy = Math.max(player.vy, 4.5); player.grounded = false;
     floater(playerPos(), 'HAWK-BAT SWOOP', '#7fe0ff');
+    tutEvent('swoop');
   }
   const tgt = backStrike ? nearestEnemyInCone(CFG.player.comboRange, -0.35, true)
                          : nearestEnemyInCone(st.reach?.range ?? CFG.player.comboRange, 0.6);
@@ -233,6 +234,7 @@ export function applySwingDamage(step, only){
   if (riposte && !sw0.ripFx && !rallied){
     sw0.ripFx = true;   // the flash and the sting play once, on the first thing the riposte meets
     masteryXp('riposte');
+    tutEvent('riposte');
     const cancelRip = !!sw0.cancelRip;
     const rp = playerPos();
     floater(rp, cancelRip ? 'COUNTER-RIPOSTE!' : 'RIPOSTE!', '#ffd24a');
@@ -291,7 +293,7 @@ export function applySwingDamage(step, only){
       }
       // VAAPAD — SHATTERPOINT: the foe whose attack you parried takes the next cut ×2, and it floors it
       const shat = !!(st.shatter && e.shatterUntil > G.gt);
-      if (shat){ e.shatterUntil = 0; floater(e.group.position, 'SHATTERPOINT', '#d08bff'); G.hitstop = Math.max(G.hitstop, 0.1); }
+      if (shat){ e.shatterUntil = 0; floater(e.group.position, 'SHATTERPOINT', '#d08bff'); G.hitstop = Math.max(G.hitstop, 0.1); tutEvent('shatter'); }
       damageEnemy(e, dmg * (e.t.heavy ? st.heavyDmg : 1) * backLineMul(st, e) * swordMul(st, e) * (shat ? st.shatter : 1), f.clone(), knock, finisher, false, sw0 && sw0.hitAt && sw0.hitAt.get(e));   // (where the blade met it: bladehit.js)
       foesHit++;
       addFury(st.furyHit);   // JUYO (and a little VAAPAD): every cut that lands feeds the fury
@@ -397,6 +399,7 @@ export function forceKick(){
   if (shared.boss && shared.boss.hp > 0 && shared.boss.group.position.distanceTo(pp) < A.reach + 1.2) damageBoss(A.dmg * 0.5);
   const ip = V3(pp.x + f.x*1.3, 1.0, pp.z + f.z*1.3);
   if (hit){
+    tutEvent('kick');
     G.hitstop = Math.max(G.hitstop, 0.05); G.shake = Math.max(G.shake, 0.3);
     burst(ip, 0xbfe8ff, 7, 8, 4, 0.8); spawnHitSpark(ip, 0xcfe0ec, 1.0);
   } else burst(ip, 0xcfe0ec, 3, 5, 3);

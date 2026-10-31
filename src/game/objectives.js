@@ -20,9 +20,10 @@ function keycaps(keys){
   return keys.split(' · ').map(g => g.split(' ').map(k => (k === '/' || k === '+') ? '<span>' + k + '</span>' : '<kbd>' + k + '</kbd>').join(''))
     .join('<span class="then">then</span>');
 }
-// opts.drill drops the panel low on the screen, out of the fight's way
+// opts.drill drops the panel low on the screen, out of the fight's way · opts.step: where you are (the lesson and step)
 export function showPanel(who, say, keys, task, opts = {}){
   el('.tt-who').textContent = who;
+  el('.tt-step').textContent = opts.step || '';
   el('.tt-say').textContent = say;
   el('.tt-keys').innerHTML = keycaps(keys && pad.active ? padKeys(keys) : keys);   // a pad shows its own buttons (engine/gamepad.js)
   el('.tt-task').textContent = task || '';

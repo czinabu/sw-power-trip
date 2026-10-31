@@ -10,7 +10,7 @@ const CONTROLS = {
       ['MOUSE', 'Look'],
       ['SPACE', 'Jump', 'Tap again in the air to double-jump'],
       ['HOLD SPACE', 'Force leap and glide', 'Spends Force'],
-      ['SHIFT', 'Roll / dash', 'In a fight, SHIFT on the ground is a quick roll any way you press: it costs some stamina (Ataru least, Djem So most), with a moment of invulnerability · tap it again mid-roll (or press it in the air) to Force dash, which spends a charge (the pips on the slot) and some Force · out of a fight it just dashes, free · roll or dash just as a blow lands for a perfect dodge'],
+      ['SHIFT', 'Roll / dash', 'In a fight, SHIFT on the ground is a quick roll any way you press: it costs some stamina (each form spends its own share), with a moment of invulnerability · tap it again mid-roll (or press it in the air) to Force dash, which spends a charge (the pips on the slot) and some Force · out of a fight it just dashes, free · roll or dash just as a blow lands for a perfect dodge'],
       ['Q', 'Run / walk', 'Switches between run (the default; forward sprints) and walk; the sprint turns wide, and in a fight it burns stamina (it gives out before your guard does), the walk is a brisk, menacing pace, fights included'],
       ['HOLD ALT', 'Strafe', 'Keeps you facing the crosshair while you move: sidestep, backpedal and circle a foe without turning your back · no sprint while it is held'],
       ['Z', 'Force slide', 'Out of a sprint: a long skid forward that ducks blaster fire and bowls troops over · attack out of it to sweep', 1],
@@ -27,12 +27,12 @@ const CONTROLS = {
       ['HOLD RMB', 'Block', 'Soaks most of a blow; heavy hits drain stamina'],
       ['TAP RMB', 'Parry and deflect', 'Time it as a blow or bolt lands; a missed parry can\'t be retried for a moment'],
       ['E', 'Kick', 'Shoves a foe back and cracks a duellist\'s guard'],
-      ['IN THE AIR', 'A leap is a commitment', 'Mid-fight you steer less, can\'t hold a guard, and a blow that lands hits harder and drops you · Ataru keeps its timed parry and its control up there', 1],
+      ['IN THE AIR', 'A leap is a commitment', 'Mid-fight you steer less, can\'t hold a guard, and a blow that lands hits harder and drops you', 1],
       ['W + AIR + LMB', 'Aerial cut', 'Leaping forward: a short lunge and a cut at the foe ahead · costs Force, 3s cooldown · a standing jump just swings', 1],
       ['LMB', 'Saber lock', 'Blades bound: mash to drive through · E kicks out · F shoves', 1],
       ['T / MMB', 'Lock on', 'Keeps one foe framed; press again to release', 1],
       ['1 / 2 / 3', 'Saber form', 'The three forms in your loadout, or the mouse wheel'],
-      ['G', 'Switch grip', 'In Niman, regular or reverse (swings hit the same either way) · in Djem So or Shien (Form V) it swaps to the other one if you know it · Shien always holds a reverse grip, every other form a forward one', 1],
+      ['G', 'Switch grip', 'In Niman, regular or reverse (swings hit the same either way) · in Djem So or Shien (Form V) it swaps to the other one if you know it · Shien always holds a reverse grip, every other form a forward one', 1, ['niman', 'djemso', 'shien']],
       ['4', 'Holster saber', 'Fight with the Force alone, both hands free: RMB wards, Force powers hit 20% harder, Force refills faster and every blow you land gives a little back · 4 again draws', 1],
       ['HOLSTERED LMB', 'Force-imbued strikes', 'Jab, cross, then a finisher the key you hold picks: nothing a two-palm burst that turns bolts, W a driving lunge palm, A / D a wide backhand sweep, S a rising palm that throws light foes up · HOLD LMB to gather a charged palm and let go to fire it: a full charge breaks guards, staggers elites and bosses and turns grenades back', 1],
       ['HOLSTERED E', 'Force kicks', 'Mid-string: a spin kick that clears the ring round you · in the air: a Force stomp straight down · otherwise the front kick', 1],
@@ -94,11 +94,13 @@ const TIPS = {
     '<b>Stamina</b> is the violet gauge beside your crosshair. Swings and blocks spend it; run dry and your guard breaks.',
     '<b>Force</b> (bottom-left bar) powers your abilities and refills over time.',
     '<b>Focus</b> builds with clean hits and parries and boosts your damage. Taking a hit breaks it.',
-    '<b>Forms:</b> a campaign run starts on Shii-Cho and learns the other forms as the Order teaches them: Soresu and Ataru first, then Djem So, Shien, Makashi and Niman, and Form VII last. Each time you learn one you meditate and choose the three you carry on 1 / 2 / 3; that is the only time they change, so pick for the fights ahead.',
-    '<b>Sandbox forms:</b> Shii-Cho sweeps crowds and its finisher disarms blaster troopers; Makashi beats other blades but bolts cost it; Soresu holds its guard and sends bolts home. Pick yours in the sandbox panel (B).',
-    'A swing turns blaster bolts back down the line they came from: Shien sends them home to the shooter harder, Ataru sprays them. A timed parry (tap RMB) always sends a bolt straight back.',
-    '<b>Djem So</b> answers a blow taken on the held guard with a <b>Fluid Riposte</b>; <b>Ataru</b> cuts harder in the air, and a cut out of a Force dash is the <b>Hawk-Bat Swoop</b>. In Djem So, G swaps to Shien once you know it.',
-    '<b>Form VII:</b> Juyo burns Force with each swing and every hit feeds its fury; Vaapad feeds on blocks and parries, and a parry finds the attacker\'s Shatterpoint (your next cut on it lands double). Both take extra damage, and a loadout holds only one.',
+    '<b>Forms:</b> a campaign run starts on Shii-Cho, the first form every Jedi learns, and the masters you meet teach you the others. Each time you learn one you meditate and choose the three you carry on 1 / 2 / 3; that is the only time they change, so pick for the fights ahead. Each form you learn also opens its own lesson in Training.',
+    { forms: ['makashi', 'soresu'], t: '<b>Sandbox forms:</b> Shii-Cho sweeps crowds and its finisher disarms blaster troopers; Makashi beats other blades but bolts cost it; Soresu holds its guard and sends bolts home. Pick yours in the sandbox panel (B).' },
+    'A swing turns blaster bolts back down the line they came from. A timed parry (tap RMB) always sends a bolt straight back.',
+    { forms: ['shien'], t: '<b>Shien</b> sends deflected bolts home to the shooter harder; in Djem So, G swaps to Shien.' },
+    { forms: ['ataru'], t: '<b>Ataru</b> cuts harder in the air, keeps its timed parry up there, and a cut out of a Force dash is the <b>Hawk-Bat Swoop</b>. It sprays the bolts it deflects.' },
+    { forms: ['djemso'], t: '<b>Djem So</b> answers a blow taken on the held guard with a <b>Fluid Riposte</b>.' },
+    { forms: ['juyo'], t: '<b>Form VII:</b> Juyo burns Force with each swing and every hit feeds its fury; Vaapad feeds on blocks and parries, and a parry finds the attacker\'s Shatterpoint (your next cut on it lands double). Both take extra damage, and a loadout holds only one.' },
     'Any swing can be cancelled into a block, a Force power or a dash.',
     'Getting hit knocks your swing loose. Cut into a foe\'s strike mid-swing and the blades clash: nobody is hurt and you both reel. Bosses clash too.',
     '<b>Duellists</b> (Magnaguards, Sith acolytes) hold a guard: the pale arc beside them shows the line it covers (left, right, high, or low across the knees). They read your cut as you wind up and swing their weapon onto its line to meet it. A cut that meets a guard that holds stops dead on the blade and bounces back. Cut in past the edge of the arc (aim the angle with a flick, high or low too), kick to break it, and don\'t throw the same angle twice: they read it.',
@@ -118,6 +120,7 @@ const TIPS = {
 };
 
 import { TELLS, tellCss } from '../fx/tells.js';
+import { formOffered, refreshSandboxScope } from '../game/sandbox-unlocks.js';
 import { PAD_BINDS, PAD_GLYPHS, PAD_MENU } from '../data/gamepad.js';
 import { pad } from '../engine/gamepad.js';
 
@@ -145,14 +148,19 @@ function keycaps(keys){
 export function renderControls(hero){
   const el = document.getElementById('ctl'); if (!el) return;
   const groups = device === 'pad' ? padGroups(hero) : CONTROLS[hero] || CONTROLS.jedi;
+  // no spoilers: a row or tip about a form shows once the story has taught it (a row's 5th entry: any of these forms;
+  // a tip's `forms`: all of them)
+  refreshSandboxScope();
+  const knows = (ids, any) => !ids || (any ? ids.some(formOffered) : ids.every(formOffered));
+  const tips = TIPS[hero].filter(t => typeof t === 'string' || knows(t.forms)).map(t => typeof t === 'string' ? t : t.t);
   let html = '';
   for (const g of groups){
     html += '<div class="cg"><h4>' + g.title + '</h4>';
-    for (const [keys, action, note, adv] of g.rows)
+    for (const [keys, action, note, adv, forms] of g.rows) if (knows(forms, true))
       html += '<div class="cr' + (adv ? ' adv' : '') + '" tabindex="0"><div class="ck">' + keycaps(keys) + '</div><div class="ca">' + action + (note ? '<small>' + note + '</small>' : '') + '</div></div>';
     html += '</div>';
   }
-  html += '<div class="cg wide adv"><h4>GOOD TO KNOW</h4><ul class="tips">' + TIPS[hero].map(t => '<li>' + t + '</li>').join('') + '</ul></div>';
+  html += '<div class="cg wide adv"><h4>GOOD TO KNOW</h4><ul class="tips">' + tips.map(t => '<li>' + t + '</li>').join('') + '</ul></div>';
   html += '<div class="cg wide"><h4>ATTACK TELLS</h4><ul class="tells">' + Object.keys(TELLS).map(k =>
     '<li><i style="background:' + tellCss(k) + '"></i><b>' + TELLS[k].name + '</b><span>' + TELLS[k].note + '</span></li>').join('') + '</ul></div>';
   el.innerHTML = html;

@@ -3,7 +3,8 @@
 // (data/forms.js FORM_CODEX). Forms not learned yet show as locked. It opens two ways:
 //   · BEFORE THE FIGHT — BEGIN on the main menu (Jedi) opens it first. A mission or the sandbox lets the player choose the
 //     three forms to carry; a campaign or survival run shows the three it has (they change only when the run learns a
-//     form: game/meditation.js), and the training grounds the three they teach with. FIGHT starts the mode.
+//     form: game/meditation.js), and the training grounds the three they start on. FIGHT starts the mode.
+// Neither names a form the hero hasn't learned: the forms still to come stand as one sealed card.
 //   · FORMS on the pause screen — the same page, read only, for the run in progress.
 
 import { G } from '../state.js';
@@ -11,6 +12,7 @@ import { FORMS, FORM_CODEX, LOADOUT_SLOTS, DEFAULT_LOADOUT, RUN_LOADOUT, STARTIN
 import { STANCES, stanceUnlocked } from '../data/stances.js';
 import { formOffered, refreshSandboxScope } from '../game/sandbox-unlocks.js';
 import { canResume } from '../game/saves.js';
+import { trainingLoadout } from '../game/tutorial.js';
 import { audioInit } from '../audio/sfx.js';
 
 const panel = document.getElementById('forms');
@@ -39,8 +41,8 @@ function prefightContext(){
     note: 'Choose the three forms you carry into this mission. 1 / 2 / 3 switch between them in the fight.' };
   if (m === 'sandbox') return { edit: true, known: story, loadout: savedPick('sw_sandbox_forms', DEFAULT_LOADOUT, story), key: 'sw_sandbox_forms',
     note: 'Choose the three forms you start with. You can change them any time in the sandbox panel (B).' };
-  if (m === 'training') return { edit: false, known: [...new Set([...story, ...DEFAULT_LOADOUT])], loadout: DEFAULT_LOADOUT.slice(),
-    note: 'The training grounds teach with these three forms.' };
+  if (m === 'training') return { edit: false, known: story, loadout: trainingLoadout(),
+    note: 'Training starts with the basics in Shii-Cho. Each form you learn in the story opens its own lesson here, picked between lessons.' };
   if (m === 'campaign' && canResume()){
     const run = G.resumeRun, su = run.stanceUnlocked || {};
     const known = ORDER.filter(id => (STARTING_FORMS.includes(id) || su[id] || (id === 'niman' && (run.loadout || []).includes('niman'))) && !forkClosed(id, run.formFork));
@@ -95,24 +97,28 @@ function detail(){
     '<ul class="fm-pros">' + (C.pros || []).map(t => '<li>' + esc(t) + '</li>').join('') + '</ul>' +
     '<ul class="fm-cons">' + (C.cons || []).map(t => '<li>' + esc(t) + '</li>').join('') + '</ul></div>';
 }
+// the forms shown: the ones learned (and a Form VII closed for this run, by name); the rest are one sealed card
+const shown = () => ORDER.filter(id => ctx.known.includes(id) || (FORMS[id].fork && ctx.closed && ctx.closed !== id && ctx.known.includes(ctx.closed)));
+const sealed = (cls) => ORDER.some(id => !shown().includes(id))
+  ? '<div class="' + cls + ' locked sealed"><div class="fm-no">MORE TO LEARN</div><b>? ? ?</b>' + (cls === 'fm-card' ? '<p class="fm-lock">The masters you meet in the story teach the other forms.</p>' : '') + '</div>' : '';
 function render(){
-  const n = ctx.known.length;
+  const n = ctx.known.length, head = n + (n === 1 ? ' form' : ' forms') + ' learned';
   if (ctx.prefight){
     panel.innerHTML = '<div class="howto-panel fm-compact">' +
       '<div class="howto-head"><div class="howto-title">BEFORE THE FIGHT</div>' +
-      '<div class="rm-sub">' + n + ' of ' + ORDER.length + ' forms learned</div><div class="howto-x" data-x="1">✕</div></div>' +
+      '<div class="rm-sub">' + head + '</div><div class="howto-x" data-x="1">✕</div></div>' +
       '<div class="fm-sec">YOUR THREE</div>' + slotRow() +
       (ctx.note ? '<div class="fm-note">' + esc(ctx.note) + (ctx.edit ? ' Pick a slot, then a form for it.' : '') + '</div>' : '') +
-      '<div class="fm-sec">THE FORMS</div><div class="fm-body"><div class="fm-tiles">' + ORDER.map(tile).join('') + '</div>' + detail() + '</div>' +
+      '<div class="fm-sec">THE FORMS</div><div class="fm-body"><div class="fm-tiles">' + shown().map(tile).join('') + sealed('fm-tile') + '</div>' + detail() + '</div>' +
       '<div class="fm-actions"><div class="btn" data-x="1">BACK</div><div class="btn primary go" data-go="1">FIGHT</div></div></div>';
     return;
   }
   panel.innerHTML = '<div class="howto-panel">' +
     '<div class="howto-head"><div class="howto-title">' + (ctx.prefight ? 'BEFORE THE FIGHT' : 'LIGHTSABER FORMS') + '</div>' +
-    '<div class="rm-sub">' + n + ' of ' + ORDER.length + ' forms learned</div><div class="howto-x" data-x="1">✕</div></div>' +
+    '<div class="rm-sub">' + head + '</div><div class="howto-x" data-x="1">✕</div></div>' +
     '<div class="fm-sec">YOUR THREE</div>' + slotRow() +
     (ctx.note ? '<div class="fm-note">' + esc(ctx.note) + (ctx.edit ? ' Pick a slot, then a form for it.' : '') + '</div>' : '') +
-    '<div class="fm-sec">THE FORMS</div><div class="fm-grid">' + ORDER.map(card).join('') + '</div>' +
+    '<div class="fm-sec">THE FORMS</div><div class="fm-grid">' + shown().map(card).join('') + sealed('fm-card') + '</div>' +
     (ctx.prefight ? '<div class="fm-actions"><div class="btn" data-x="1">BACK</div><div class="btn primary go" data-go="1">FIGHT</div></div>' : '') +
     '</div>';
 }
