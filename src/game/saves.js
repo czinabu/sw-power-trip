@@ -33,7 +33,7 @@ const clone = (v) => v == null ? v : JSON.parse(JSON.stringify(v));
 export function inCampaignRun(){ return G.mode === 'play' && (G.chapter >= 0 || (!G.endless && !G.training && !G.mission && !G.sandbox)); }
 function snapshotRun(){
   return {
-    idx: G.levelIdx, chapter: G.chapter, actTwo: G.actTwo, prologue: !!G.prologue, checkpoint: clone(G.checkpoint), stance: G.stance, loadout: [...G.loadout], mandoKit: { ...(G.mandoKit || RUN_KIT) }, weapon: player.weapon,
+    idx: G.levelIdx, chapter: G.chapter, actTwo: G.actTwo, prologue: !!G.prologue, checkpoint: clone(G.checkpoint), stance: G.stance, loadout: [...G.loadout], mandoKit: { ...(G.mandoKit || RUN_KIT) }, weapon: player.weapon, rifleMod: player.rifleMod || 'burst',
     unlocked: clone(G.unlocked), stanceUnlocked: clone(G.stanceUnlocked), formFork: G.formFork || null, mandoChoiceShown: G.mandoChoiceShown,
     xp: G.xp, xpEarned: G.xpEarned, skillPoints: G.skillPoints, skillSpent: G.skillSpent,
     powerLv: clone(G.powerLv), mastery: clone(G.mastery), masteryUse: clone(G.masteryUse), xpPoints: G.xpPoints, seenTypes: clone(G.seenTypes),
@@ -49,6 +49,7 @@ export function restoreRun(run){
   G.levelIdx = run.idx; G.checkpoint = clone(run.checkpoint) || { idx: run.idx, waveTotal: -1, boss: false };
   G.waveTotal = G.checkpoint.waveTotal;
   player.weapon = run.weapon || (run.hero === 'trooper' ? 'rifle' : 'single');
+  player.rifleMod = run.rifleMod || 'burst';   // the DC-15's fitted module (data/trooper.js RIFLE_MODS)
   G.unlocked = clone(run.unlocked) || {}; G.stanceUnlocked = migrateUnlocked(run.stanceUnlocked);
   if ((run.loadout || []).includes('niman') || run.stance === 'niman') G.stanceUnlocked.niman = true;   // a run saved when every hero started on Niman keeps it
   G.loadout = cleanLoadout(run.loadout || DEFAULT_LOADOUT); G.mandoChoiceShown = !!run.mandoChoiceShown;

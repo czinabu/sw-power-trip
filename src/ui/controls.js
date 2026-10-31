@@ -106,6 +106,7 @@ const CONTROLS = {
       ['HOLD RMB', 'Aim', 'Up to the eye: a tight cone and a steady reticle, with either gun'],
       ['R', 'Vent', 'Overheated: press R in the beat (a moment after the overheat) for a perfect vent that clears the gun at once · too early or late and it jams · not overheated: a plain vent'],
       ['1 / 2', 'Switch gun', 'DC-15 rifle or the twin DC-17s · or the mouse wheel'],
+      ['1 (again)', 'Rifle module', 'With the DC-15 in hand: swap its module · BURST · AUTO BARREL (hold LMB) · MARKSMAN SCOPE (one heavy shot, RMB raises the scope) · the run hands them over'],
       ['G', 'Frag grenade', 'Thrown onto the crosshair · two charges that refill one at a time'],
       ['E', 'Rifle bash', 'A shove with the stock: staggers whoever is right in front and cracks a duellist\'s guard'],
       ['Q', 'Recon scan', 'A pulse that marks every foe nearby: marked foes take more damage from you and the squad', 1],

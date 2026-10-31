@@ -107,6 +107,8 @@ export const SANDBOX_KIT = {
   ],
   // the ARC trooper (testing): its powers (data/trooper-progression.js); the guns and frags are always in hand
   trooper: [
+    { id: 'modAuto',   nm: 'DC-15 AUTO BARREL', key: '1',       ...flag('modAuto') },
+    { id: 'modScope',  nm: 'DC-15 MARKSMAN SCOPE', key: '1',    ...flag('modScope') },
     { id: 'scan',      nm: 'RECON SCAN',       key: 'Q',        ...flag('scan') },
     { id: 'bshield',   nm: 'BUBBLE SHIELD',    key: 'V',        ...flag('bshield') },
     { id: 'medic',     nm: 'FIELD MEDIC',      key: '',         ...flag('medic') },

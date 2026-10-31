@@ -27,6 +27,11 @@ export const TROOPER_AUTO = [
     has:()=>(player.up.cellTier||0) >= 2, grant(){ player.up.cellTier = 2; applyCellTier(); } },
   { key:'cells3', stage:8, chapter:'chase', hud:'HOLD LMB', name:'POWER CELLS III',
     has:()=>(player.up.cellTier||0) >= 3, grant(){ player.up.cellTier = 3; applyCellTier(); } },
+  // THE MODULAR DC-15 (data/trooper.js RIFLE_MODS): press 1 again with the rifle in hand to swap
+  { key:'modAuto', stage:2, chapter:'refuge', hud:'1', name:'DC-15 AUTO BARREL · 1 AGAIN TO SWAP',
+    has:()=>!!G.unlocked.modAuto, grant(){ G.unlocked.modAuto = true; } },
+  { key:'modScope', stage:4, chapter:'lothal', hud:'1', name:'DC-15 MARKSMAN SCOPE · 1 AGAIN TO SWAP',
+    has:()=>!!G.unlocked.modScope, grant(){ G.unlocked.modScope = true; } },
   // the company finds him: one more clone on the line from here on (allies/squad.js trooperSquad)
   { key:'squad3', stage:4, chapter:'hoth', hud:'H', name:'HAMMER JOINS · SQUAD OF 3',
     has:()=>(player.up.squadExtra || 0) >= 1, grant(){ player.up.squadExtra = 1; if (squadSize() < SQUAD.max) addSquadmate(); } },
