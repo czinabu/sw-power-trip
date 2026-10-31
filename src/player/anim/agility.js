@@ -107,7 +107,7 @@ export function flipBody(dt, vis, fl){
   const rz = (fl.roll || 0) * s * TAU * e + ((fl.tilt || 0) + (fl.bank || 0)) * s * hold;
   vis.rotation.set(rx, ry, rz);
   // turning in place about the hips means moving the feet: rotate the centre of mass back to where it started
-  const piv = (fl.somer || fl.roll) ? COM : fl.spin ? COM * 0.55 : 0;
+  const piv = (fl.somer || fl.roll || fl.legs === 'kneeslide') ? COM : fl.spin ? COM * 0.55 : 0;
   _v.set(0, piv, 0).applyEuler(_e.set(rx, ry, rz));
   vis.position.set(-_v.x, piv - _v.y + (fl.lift || 0) * arc, -_v.z);
   if (fl.from){   // the flip this one cut short, easing out over its first fifth
@@ -377,6 +377,7 @@ function mandoBody(dt, dr, vis, R, fl){
     if (sp > 1) fl.face = Math.atan2(player.moveVel.x, player.moveVel.z);   // the skid steers: keep facing it
     const hold = smooth(p / 0.2) * (1 - smooth((p - 0.66) / 0.34));
     pitch = -S.lean * hold;
+    bank = -S.roll * hold;   // onto the left hip, the free side, the way a runner slides into base
     low = hold; drop = COM - S.hips;
     slideLegs(R, dr, p, hold, BASE_LEGS);
   }
