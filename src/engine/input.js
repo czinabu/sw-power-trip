@@ -39,12 +39,13 @@ import { tutEvent } from '../game/tutor-bus.js';
 import { diffWindow } from '../data/difficulty.js';
 import { toggleHolster } from '../player/holster.js';
 import { strikePress, strikeRelease, holsteredKick } from '../player/jedi/palm.js';
-import { squadOrder } from '../allies/squad.js';
+import { wheelKeyDown, wheelKeyUp, wheelLook, wheelPickMate, wheelCancel, wheelOpen } from '../allies/wheel.js';
 import { noteFlick } from '../player/jedi/cutaim.js';
 
 const inputActive = () => !G.cutscene && (document.pointerLockElement === renderer.domElement || (shared.lockFallback && G.mode === 'play'));   // (a cutscene takes no fight input)
 document.addEventListener('mousemove', (e) => {
   if (!inputActive()) return;
+  if (wheelLook(e.movementX, e.movementY)) return;   // the squad's command wheel is up: the mouse points at an order (allies/wheel.js)
   // scoped in (the disruptor's 30° zoom) the look slows to the SCOPE SENS setting, or the reticle flies off the target
   const sens = G.mouseSens * (G.hero === 'mando' && player.zoom ? G.adsSens : 1);
   G.yaw -= e.movementX * 0.0023 * sens;
@@ -55,6 +56,7 @@ document.addEventListener('mousemove', (e) => {
 document.addEventListener('mousedown', (e) => {
   if (!inputActive()) return;
   if (player.downed) return;   // down: nothing to fight with until you're back up (game/revive.js)
+  if (wheelOpen()){ if (e.button === 2) wheelCancel(); else if (e.button === 0) wheelKeyUp(); return; }   // the command wheel: click gives the order, right click puts it away
   if (player.saberLock){ if (e.button === 0) lockPress(); return; }   // blades bound: LMB drives (enemies/duel.js)
   if (e.button === 2 && (player.judgeT > 0 || player.flaming || player.mendT > 0)) return;   // mid-channel (lightning / flame / mend): no bracing
   if (G.hero === 'mando'){
@@ -148,13 +150,18 @@ document.addEventListener('keydown', (e) => {
   const k = e.key.toLowerCase();
   if (G.cutscene && G.mode === 'play' && k !== 'p' && k !== 'm') return;   // a cutscene: only its skip keys (game/cutscene.js), quality and music
   if (player.downed && G.mode === 'play' && k !== 'p' && k !== 'm' && k !== 'escape') return;   // down: wait for your squad
+  if (wheelOpen()){   // the squad's command wheel is up: 1-4 pick a squadmate, Esc puts it away; you can still move, but nothing else fires
+    if (k.length === 1 && '1234'.includes(k)){ wheelPickMate(+k - 1); return; }
+    if (k === 'escape'){ wheelCancel(); return; }
+    if (k !== 'tab'){ if (k.length === 1 && 'wasd'.includes(k)) keys[k] = true; return; }
+  }
   keys[k] = true;
   if (k === 'alt') e.preventDefault();   // ALT is the STRAFE hold (player/animation.js): keep the browser from grabbing it for its menu bar
   if (k === 'p' && !e.repeat){ cycleQuality(); return; }   // graphics quality — works anywhere
   if (k === 'm' && !e.repeat){ audioInit(); const on = MUSIC.toggle(); showBanner('', '♪ MUSIC ' + (on ? 'ON' : 'OFF'), 1.0); return; }   // music on/off (persists)
   if (k === ' ' && !e.repeat) doJump();
-  if (k === '4' && !e.repeat) toggleHolster();
-  if (k === 'h' && !e.repeat) squadOrder();   // SQUAD: hold the spot under the crosshair, or on me (allies/squad.js)   // HOLSTER: the Jedi fights with the Force alone, the Mando with fists and gadgets (player/holster.js)
+  if (k === '4' && !e.repeat) toggleHolster();   // HOLSTER: the Jedi fights with the Force alone, the Mando with fists and gadgets (player/holster.js)
+  if (k === 'h' && !e.repeat) wheelKeyDown();   // SQUAD ORDERS: tap for the smart order, hold for the command wheel (allies/wheel.js)
   if (G.hero === 'mando'){
     if (k === 'shift' && !e.repeat) mandoShift();        // combat roll / rocket boost / air dodge (mando/mobility.js); held in the air it boosts
     if (G.mode === 'play'){
@@ -216,7 +223,7 @@ document.addEventListener('keydown', (e) => {
     try { const p = renderer.domElement.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch(e){}
   }
 });
-document.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; if (e.key.toLowerCase() === 'c' && G.hero !== 'mando') pullRelease(); if (e.key === 'Alt') e.preventDefault(); });
+document.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; if (e.key.toLowerCase() === 'h') wheelKeyUp(); if (e.key.toLowerCase() === 'c' && G.hero !== 'mando') pullRelease(); if (e.key === 'Alt') e.preventDefault(); });
 // A held key whose keyup never arrives (ALT-TAB, ALT+click, a browser menu, focus lost) would stay down forever: strafe stuck
 // on, and no sprint or slide. Losing focus releases everything; any key event that says ALT is up releases ALT.
 window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; });

@@ -99,7 +99,8 @@ import { DUEL, DUEL_PROFILES, MANDO_MELEE } from './data/duel.js';
 import { LOCK, startLock, endLock, duelDefend, eliteRamp } from './enemies/duel.js';
 import { foeBlade, bossBlade, contactPoint } from './player/jedi/clash.js';
 import { updateCoop, partnerShown, partnerInfo } from './net/partner.js';
-import { allies, updateSquad, updateSquadHud, spawnSquad, addSquadmate, squadOrder } from './allies/squad.js';
+import { allies, updateSquad, updateSquadHud, spawnSquad, addSquadmate, squadOrder, hurtAlly, giveOrder, squadOrderName, squadFormation, grenadeLeft } from './allies/squad.js';
+import { updateWheel, wheelOpen } from './allies/wheel.js';
 import { downed } from './game/revive.js';
 import { updateComms, clearComms, commsBusy, storyBeat } from './game/story.js';
 import './ui/coop-ui.js';
@@ -118,6 +119,7 @@ function tick(){
   requestAnimationFrame(tick);
   const rawDt = Math.min(clock.getDelta(), 0.05);
   let dt = rawDt;
+  updateWheel();   // the squad's command wheel: opens on a held H and slows the world while it's up (allies/wheel.js)
   if (G.slowmoT > 0){
     G.slowmoT -= rawDt;
     if (G.slowmoT <= 0 && (!shared.boss || shared.boss.state !== 'dying')) G.slowmo = 1;
@@ -192,7 +194,7 @@ window.GAME = { shared, coopRun, coopHooks, partnerShown, partnerInfo, CFG, ENEM
   duel: { DUEL, DUEL_PROFILES, MANDO_MELEE, LOCK, startLock, endLock, duelDefend, eliteRamp, foeBlade, bossBlade, contactPoint },
   scars: { scarBody, severArm },
   tactics: { RAMP, TROOP_MELEE, TROOP_FIRE, PINCER, ORDERS, GRENADE, LUNGE, tacticsRamp, grenades, pushGrenades },
-  squad: { allies, spawnSquad, addSquadmate, squadOrder, downed },
+  squad: { allies, spawnSquad, addSquadmate, squadOrder, hurtAlly, giveOrder, squadOrderName, squadFormation, grenadeLeft, wheelOpen, downed },
   aim: { heroAim, aimFrom, crosshairPoint, inAim, bossInAim, lastAim },
   get boss(){ return shared.boss; }, get saberProj(){ return shared.saberProj; }, get darkProj(){ return shared.darkProj; } };
 

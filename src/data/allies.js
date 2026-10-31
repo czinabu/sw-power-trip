@@ -51,9 +51,40 @@ export const SQUAD = {
   slots: [[-3.4, 0.6], [3.4, 0.6], [-5.8, -1.2], [5.8, -1.2]],
   holdSlots: [[-1.8, 0.4], [1.8, 0.4], [-0.9, -1.6], [0.9, -1.6]],
   leash: 3.0,                // further than this from its spot and it moves
+  tightSlots: [[-1.7, 0.2], [1.7, 0.2], [-2.6, -1.4], [2.6, -1.4]],   // STACK UP: the same spots, pulled in close
   holdReach: 32,             // how far ahead H can point the hold spot (m)
+  moveSpread: { wide: 1, tight: 0.45 },     // MOVE THERE: how far apart they stand round the point (× holdSlots), by formation
   downTime: { padawan: 9, knight: 13, master: 18 },   // a downed squadmate gets up on its own after this
   getUpHp: 0.5,              // ...with this share of its health
+};
+
+/* ORDERS — tap H for the smart order (on a trooper: attack it · on open ground: move there · away from you: on me);
+   hold H for the command wheel (allies/wheel.js): the world slows, point at an order and let go. While the wheel is open,
+   1-4 (the D-pad on a pad) picks one squadmate instead of the whole squad. `at` is the wheel's clock position. */
+export const ORDERS = [
+  { id: 'follow',    name: 'ON ME',          note: 'Form up on you',                              icon: '◎' },
+  { id: 'move',      name: 'MOVE THERE',     note: 'Go to the crosshair and hold it',             icon: '➤' },
+  { id: 'attack',    name: 'ATTACK TARGET',  note: 'Everyone fires on the foe under the crosshair', icon: '✛' },
+  { id: 'grenade',   name: 'GRENADE',        note: 'A detonator onto the crosshair',              icon: '✸' },
+  { id: 'revive',    name: 'GET THEM UP',    note: 'The nearest squadmate revives a downed one',  icon: '✚' },
+  { id: 'formation', name: 'SPREAD / STACK', note: 'Wide formation, or tight on you',             icon: '⇔' },
+  { id: 'cover',     name: 'TAKE COVER',     note: 'Behind the nearest wall: hit less, fire slower', icon: '▙' },
+  { id: 'hold',      name: 'HOLD HERE',      note: 'Stop where they stand',                       icon: '■' },
+];
+export const COMMAND = {
+  tapTime: 0.22,             // H held longer than this (real seconds) opens the wheel
+  slowmo: 0.3,               // the world's speed while the wheel is open (your own; a co-op partner plays on)
+  markElites: true,          // ATTACK TARGET on a duellist or brute: the squad chips at it (bosses stay yours)
+  markEliteDmg: 0.35,        // ...at this share of their bolt damage
+  markFor: 12,               // an attack order lasts this long, or until the target falls (s)
+  markChase: 0.8,            // out of reach or sight of the mark: close to this share of their range
+  grenadeCd: 20,             // GRENADE cooldown (s), shared by the squad
+  grenadeReach: 24,          // the furthest a squadmate throws (m)
+  grenade: { blastR: 4.2, fuse: 1.0, dmg: 0 },   // the throw (enemies/grenades.js; friendly: foes only)
+  coverTake: 0.5,            // TAKE COVER: share of damage a squadmate in cover takes
+  coverFire: 1.35,           // ...and its time between shots, stretched
+  coverSearch: 9,            // how far from where it stands it looks for cover (m)
+  coverEvery: 2.5,           // it re-checks its cover this often, as the fight moves (s)
 };
 
 // the revive rules (game/revive.js): who can be downed instead of dying, and how getting up works

@@ -203,7 +203,7 @@ export function updateBolts(dt){
       let foe = null, hit = null;
       for (const e of enemies){
         if (e.dead || e.converted) continue;
-        if (b.ally && !isFodder(e)) continue;   // a squadmate's fire leaves the duellists to you (data/allies.js)
+        if (b.ally && !isFodder(e) && b.mark !== e) continue;   // a squadmate's fire leaves the duellists to you, unless you ordered it on one (data/allies.js)
         const h = sweepHit(e, PREV, b.mesh.position, BOLT_R);
         if (h && (!hit || h.t < hit.t)){ hit = h; foe = e; }
       }
