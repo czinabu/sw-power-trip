@@ -69,7 +69,7 @@ for (const form of FORMS){
   await page.evaluate(f => { GAME.setLoadout([f, null, null]); GAME.switchStance(f, true); GAME.G.stanceCd = 0; }, form);
   for (const move of MOVES){
     // reset: on the ground, standing still, a fresh charge of everything
-    await page.evaluate(() => { const p = GAME.player; p.vel.set(0, 0, 0); p.moveVel.set(0, 0, 0); p.force = p.maxForce || 100; p.cds.dash = 0; p.airLeft = 1; p.dashCharges = 9; GAME.G.yaw = 0; });
+    await page.evaluate(() => { const p = GAME.player; p.group.position.set(0, 0, -10); p.vel.set(0, 0, 0); p.moveVel.set(0, 0, 0); p.force = p.maxForce || 100; p.cds.dash = 0; p.airLeft = 1; p.dashCharges = 9; GAME.G.yaw = 0; });
     for (let i = 0; i < 20; i++) await frame();
     const dir = path.join(out, `${form}-${move}`); mkdirSync(dir, { recursive: true });
     let n = 0; const shot = () => frame(path.join(dir, String(n++).padStart(3, '0') + '.jpg'));
