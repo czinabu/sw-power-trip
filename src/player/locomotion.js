@@ -25,7 +25,7 @@ import { padMove } from '../engine/gamepad.js';
 // Returns whether there is movement input this frame (the pose code reads it).
 export function updateMovement(dt, pp, st, f, r){
   // --- movement with momentum; blocking and channeling root you in ---
-  const speedMul = (st.move || 1) * player.up.move * (player.blockHeld ? 0.5 : 1) * (player.zoom ? 0.4 : 1) * (player.judgeT > 0 ? 0.45 : 1)
+  const speedMul = (st.move || 1) * player.up.move * (player.blockHeld ? 0.5 : 1) * (player.zoom ? 0.4 : 1) * (player.judgeT > 0 ? 0.45 : 1) * (player.clinch ? player.clinch.move : 1)   // a foe held in the Mando's clinch drags his feet (mando/melee.js)
                    * (player.atkT > 0 && st.moveAtk ? st.moveAtk : 1)              // ATARU keeps its feet moving mid-swing
                    * (player.atkT > 0 && st.moveAtkPenalty ? st.moveAtkPenalty : 1)    // DARKSABER crawls while committed to a swing
                    * (1 + (player.momentumStacks || 0) * 0.06)                          // MOMENTUM boon — kills build speed

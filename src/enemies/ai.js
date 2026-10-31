@@ -87,7 +87,7 @@ export function updateEnemies(dt){
       e.flash -= dt;
       g.userData.bodyMat.emissive.setHex(0x66aaff);
       g.userData.bodyMat.emissiveIntensity = 2;
-    } else if (e.state === 'stasis' || e.state === 'grasped'){   // held in the Force (grasped: player/jedi/grasp.js drives the body)
+    } else if (e.state === 'stasis' || (e.state === 'grasped' && !e.clinched)){   // (a Mando's clinch is a hand, not the Force: no glow)   // held in the Force (grasped: player/jedi/grasp.js drives the body)
       g.userData.bodyMat.emissive.setHex(0x2288ff);
       g.userData.bodyMat.emissiveIntensity = 0.9 + Math.sin(G.gt*10)*0.3;
     } else if (e.state !== 'windup') g.userData.bodyMat.emissiveIntensity = 0;

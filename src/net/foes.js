@@ -116,7 +116,7 @@ on('gp', (m) => {
   const e = enemies.find(o => o.nid === m.n);
   if (!e || e.dead || !HELD[e.state]) return;
   e.group.position.set(m.p[0], m.p[1], m.p[2]); e.group.rotation.set(m.r[0], m.r[1], m.r[2]);
-  e.vel.set(0, 0, 0); e.heldAt = performance.now();
+  e.vel.set(0, 0, 0); e.heldAt = performance.now(); e.clinched = !!m.c;
 });
 
 /* ---------------- guest: puppets ---------------- */
@@ -272,7 +272,7 @@ function sendCtl(e){
     else if (connected() && performance.now() - (e.heldSent || 0) >= NET.sendMs){
       e.heldSent = performance.now();
       const gp = e.group.position, gr = e.group.rotation;
-      send({ t: 'gp', n: e.nid, p: [r2(gp.x), r2(gp.y), r2(gp.z)], r: [r2(gr.x), r2(gr.y), r2(gr.z)] });
+      send({ t: 'gp', n: e.nid, p: [r2(gp.x), r2(gp.y), r2(gp.z)], r: [r2(gr.x), r2(gr.y), r2(gr.z)], c: e.clinched ? 1 : 0 });   // c: a Mando's hand, not the Force (no glow)
     }
   }
   if (e.state === e.netState) return;
@@ -329,7 +329,7 @@ export function updateFoes(){
   if (net.role === 'host'){
     // a grasp whose holder went quiet (left, froze) lets go
     for (const e of enemies){
-      if (!HELD[e.state]){ e.heldAt = null; continue; }   // (this host's own grasps and locks carry no stamp: they are never let go here)
+      if (!HELD[e.state]){ e.heldAt = null; e.clinched = false; continue; }   // (this host's own grasps and locks carry no stamp: they are never let go here)
       if (e.heldAt != null && !e.dead && performance.now() - e.heldAt > 1500){ e.state = e.state === 'lock' ? 'recover' : 'knockdown'; e.st = 0.5; e.heldAt = null; }
     }
     const waiting = coopRun.live && coopRun.guestPicking && shared.levelPhase === 'between' && !G.skillSelect;

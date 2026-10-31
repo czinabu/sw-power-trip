@@ -23,7 +23,7 @@
 //   needs  the step only runs once the story has reached this form or unlock (else the lesson skips it)
 //   ev     a training event to count (game/tutor-bus.js): doubleJump dash slide vault climb roll wallrun finisher parry
 //          deflect perfectDodge cancel pushHit kill headshot vent shieldReflect catch charge takedown bash rocketHit
-//          kick riposte swoop shatter palmHit chargedPalm palmPush pullStrike
+//          kick riposte swoop shatter palmHit chargedPalm palmPush pullStrike grab headbutt throw
 //          cutHit (data.dir: which key picked a cut that landed) cutHeight (data.h: high / mid / low, where it was aimed)
 //          guardBreak (a duellist's guard shattered)
 //   alt    a second event that also passes the step (sparDown: a sparring partner beaten to its last sliver)
@@ -337,7 +337,7 @@ export const LESSONS = {
         { say: 'It is timing, not luck. Raise it too early and you will not raise it again in time. Any gun, even in the air: the armour is always with you.',
           keys: 'HOLD SPACE · TAP RMB', do: 'Ricochet 2 more (try one from the air)', ev: 'beskarParry', need: 2, spawn: shooter([0, -9]) },
       ] },
-    { id: 'close', group: 'basics', name: 'CLOSE QUARTERS', sub: 'Catch, charge, takedown, the shield bash, your fists',
+    { id: 'close', group: 'basics', name: 'CLOSE QUARTERS', sub: 'Catch, charge, takedown, the shield bash, the clinch, your fists',
       done: 'Your armour is a weapon. Never forget it.',
       steps: [
         { sec: 'CLOSE QUARTERS', say: 'When they come close, your armour is a weapon. Catch the blow on your vambrace.',
@@ -350,6 +350,13 @@ export const LESSONS = {
         { say: 'Keep the shield up and the blade does the work. Cut, cut, then drive the beskar into them.',
           keys: 'HOLD RMB + E · E · E', do: 'Behind the shield, cut twice and land the shield bash', ev: 'bash', need: 1, respawn: true,
           spawn: dummies([[-0.8, -5], [0.8, -5]], { sparring: true }) },
+        { say: 'Close enough to touch is close enough to hold. Keep the button down as you strike and take it by the collar.',
+          keys: 'HOLD E', do: 'Grab the target', ev: 'grab', need: 1, respawn: true, spawn: dummies([[0, -3]], { sparring: true }) },
+        { say: 'Beskar is harder than whatever they wear. Use your head.',
+          keys: 'HOLD E · E', do: 'Headbutt the target you hold', ev: 'headbutt', need: 2, respawn: true, spawn: dummies([[0, -3]], { sparring: true }) },
+        { say: 'Then put it somewhere useful. Throw it into its friend.',
+          keys: 'HOLD E · LMB', do: 'Grab the near target and throw it', ev: 'throw', need: 1, respawn: true,
+          spawn: dummies([[0, -3], [0, -8]], { sparring: true }) },
         { say: 'Sometimes the blaster is in the way. Put it up and fight with your fists and your gadgets.',
           keys: '4 · E E E E · E', do: 'Holstered, take the target down with your fists', ev: 'takedown', weapon: 'fists', need: 1, respawn: true,
           spawn: dummies([[0, -4]], { sparring: true }) },
