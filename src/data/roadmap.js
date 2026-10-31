@@ -6,6 +6,10 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'Fury and Control bars', status: 'done',
+    items: ['Juyo and Vaapad now show their fury on the HUD: a red FURY bar for Juyo, a violet CONTROL bar for Vaapad, above Focus at the bottom left, only while that form is active',
+            'The bar fills as fury builds (Juyo: cuts that land · Vaapad: blocks and parries), pulses and reads FULL at max, when fury is giving its full bonus damage',
+            'Same in every mode: story, missions, training, survival, sandbox and co-op'] },
   { title: 'Stance unlock screen', status: 'done',
     items: ['Each lightsaber stance you earn (after a trial in the campaign, and as survival waves climb) opens an unlock screen: its name, what it is good and bad at, and the hero performing it live on the stand, looping its guard, three-cut string and block',
             'TRAIN IN [STANCE] saves your run and opens that stance\'s lesson in Training; leaving training puts CONTINUE CAMPAIGN back where you were. CONTINUE goes on to choose your three forms',
