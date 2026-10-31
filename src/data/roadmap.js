@@ -6,6 +6,8 @@
 // status is 'done' (shipped), 'now' (in progress), 'next' (planned) or 'later' (an idea for down the road).
 
 export const ROADMAP = [
+  { title: 'Tidier Lightsaber Forms page', status: 'done',
+    items: ['Cards show just the basics: name, best against, pros and cons; the quote and history sit behind a small i', 'Forms you have not learned are small chips (Form V-a / V-b, VII-a / VII-b) instead of big blank tiles', 'An empty slot shows a lock until your next form'] },
   { title: 'Upgrades without the menus', status: 'done',
     items: ['No upgrade screen between waves: a clear earns a skill point and a small note in the corner, and the fight goes on',
             'Powers master themselves as you use them: Push that you lean on grows into rank I and II, no XP spent',

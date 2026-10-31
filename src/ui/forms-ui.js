@@ -18,6 +18,17 @@ const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 const hex = (c) => '#' + ('000000' + c.toString(16)).slice(-6);
 const ORDER = Object.keys(FORMS).filter(id => FORMS[id].ready);
 
+const LOCK = '<svg class="fm-lock-ic" viewBox="0 0 16 16" width="14" height="14" role="img" aria-label="Locked: unlocks with your next form"><title>Unlocks with your next form</title><rect x="3" y="7" width="10" height="7" rx="1.5" fill="currentColor"/><path d="M5.2 7V5a2.8 2.8 0 0 1 5.6 0v2" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>';
+// the lore behind a small "i" (hover, focus or click), like the notes on How to Play
+const loreInfo = (C) => (C.lore || C.who) ? '<span class="fm-i" tabindex="0" role="button" aria-label="Lore">i</span><div class="fm-lorepop">' + esc(C.lore || '') + (C.who ? ' <i>' + esc(C.who) + '</i>' : '') + '</div>' : '';
+// locked forms: Form V and VII have two variants each, so a chip reads V-a / V-b without naming either
+const lockedNo = (id) => { const same = ORDER.filter(x => FORMS[x].no === FORMS[id].no); return FORMS[id].no + (same.length > 1 ? '-' + 'ab'[same.indexOf(id)] : ''); };
+const lockedChip = (id) => {
+  const closed = FORMS[id].fork && ctx.closed && ctx.closed !== id;
+  return '<div class="fm-chip" title="' + (closed ? 'Closed for this run: you chose ' + esc(FORMS[ctx.closed].name) : 'Not learned yet') + '"><span>FORM ' + lockedNo(id) + '</span>' + (closed ? esc(FORMS[id].name) : LOCK) + '</div>';
+};
+const lockedRow = () => { const l = ORDER.filter(id => !ctx.known.includes(id)); return l.length ? '<div class="fm-sec">NOT LEARNED YET</div><div class="fm-chips">' + l.map(lockedChip).join('') + '</div>' : ''; };
+
 let ctx = null;   // { prefight, edit, known: Set, loadout, slot, focus, note, closed: Set, onGo }
 
 /* ---------- what the page shows ---------- */
@@ -61,27 +72,22 @@ function slotRow(){
   return '<div class="fm-slots">' + Array.from({ length: LOADOUT_SLOTS }, (_, i) => {
     const id = ctx.loadout[i];
     return '<div class="fm-slot' + (ctx.edit ? ' edit' : '') + (ctx.edit && i === ctx.slot ? ' sel' : '') + (id ? '' : ' empty') + '" data-slot="' + i + '"' +
-      (id ? ' style="--c:' + hex(STANCES[id].blade) + '"' : '') + '><span class="n">' + (i + 1) + '</span>' + (id ? esc(FORMS[id].name) : 'EMPTY') + '</div>';
+      (id ? ' style="--c:' + hex(STANCES[id].blade) + '"' : '') + '><span class="n">' + (i + 1) + '</span>' + (id ? esc(FORMS[id].name) : (!ctx.edit || ctx.known.length <= i ? LOCK : 'EMPTY')) + '</div>';
   }).join('') + '</div>';
 }
 function card(id){
-  const F = FORMS[id], C = FORM_CODEX[id] || {}, known = ctx.known.includes(id);
-  const closed = !known && FORMS[id].fork && ctx.closed && ctx.closed !== id;
-  if (!known) return '<div class="fm-card locked"><div class="fm-no">FORM ' + F.no + '</div><b>' + (closed ? esc(F.name) : '? ? ?') + '</b>' +
-    '<p class="fm-lock">' + (closed ? 'Closed for this run: you chose ' + esc(FORMS[ctx.closed].name) + '.' : 'Not learned yet.') + '</p></div>';
+  const F = FORMS[id], C = FORM_CODEX[id] || {};
   const slotted = ctx.loadout.indexOf(id);
   return '<div class="fm-card' + (ctx.edit ? ' pick' : '') + (slotted >= 0 ? ' in' : '') + '" data-form="' + id + '" style="--c:' + hex(STANCES[id].blade) + '">' +
-    '<div class="fm-no">FORM ' + F.no + ' · ' + esc(F.tag) + (slotted >= 0 ? '<span class="fm-in">SLOT ' + (slotted + 1) + '</span>' : '') + '</div>' +
+    '<div class="fm-no">FORM ' + F.no + ' · ' + esc(F.tag) + (slotted >= 0 ? '<span class="fm-in">SLOT ' + (slotted + 1) + '</span>' : '') + loreInfo(C) + '</div>' +
     '<b>' + esc(F.name) + '</b>' +
-    '<p class="fm-lore">' + esc(C.lore || '') + (C.who ? ' <i>' + esc(C.who) + '</i>' : '') + '</p>' +
     (C.best ? '<div class="fm-best">BEST AGAINST · ' + esc(C.best) + '</div>' : '') +
     '<ul class="fm-pros">' + (C.pros || []).map(t => '<li>' + esc(t) + '</li>').join('') + '</ul>' +
     '<ul class="fm-cons">' + (C.cons || []).map(t => '<li>' + esc(t) + '</li>').join('') + '</ul></div>';
 }
 // BEFORE THE FIGHT shows small tiles and one form's detail beside them; the full cards stay on the pause page
 function tile(id){
-  const F = FORMS[id], C = FORM_CODEX[id] || {}, known = ctx.known.includes(id), slotted = ctx.loadout.indexOf(id);
-  if (!known) return '<div class="fm-tile locked"><div class="fm-no">' + F.no + '</div><b>? ? ?</b></div>';
+  const F = FORMS[id], C = FORM_CODEX[id] || {}, slotted = ctx.loadout.indexOf(id);
   return '<div class="fm-tile' + (ctx.edit ? ' pick' : '') + (slotted >= 0 ? ' in' : '') + (id === ctx.focus ? ' sel' : '') + '" data-form="' + id + '" style="--c:' + hex(STANCES[id].blade) + '">' +
     '<div class="fm-no">FORM ' + F.no + (slotted >= 0 ? '<span class="fm-in">SLOT ' + (slotted + 1) + '</span>' : '') + '</div>' +
     '<b>' + esc(F.name) + '</b>' + (C.best ? '<div class="fm-best">' + esc(C.best) + '</div>' : '') + '</div>';
@@ -90,7 +96,7 @@ function detail(){
   const id = ctx.focus;
   if (!id || !ctx.known.includes(id)) return '<div class="fm-detail empty">Select a form to see what it is good and bad at.</div>';
   const F = FORMS[id], C = FORM_CODEX[id] || {};
-  return '<div class="fm-detail" style="--c:' + hex(STANCES[id].blade) + '"><div class="fm-no">FORM ' + F.no + ' · ' + esc(F.tag) + '</div><b>' + esc(F.name) + '</b>' +
+  return '<div class="fm-detail" style="--c:' + hex(STANCES[id].blade) + '"><div class="fm-no">FORM ' + F.no + ' · ' + esc(F.tag) + loreInfo(C) + '</div><b>' + esc(F.name) + '</b>' +
     (C.best ? '<div class="fm-best">BEST AGAINST · ' + esc(C.best) + '</div>' : '') +
     '<ul class="fm-pros">' + (C.pros || []).map(t => '<li>' + esc(t) + '</li>').join('') + '</ul>' +
     '<ul class="fm-cons">' + (C.cons || []).map(t => '<li>' + esc(t) + '</li>').join('') + '</ul></div>';
@@ -103,7 +109,7 @@ function render(){
       '<div class="rm-sub">' + n + ' of ' + ORDER.length + ' forms learned</div><div class="howto-x" data-x="1">✕</div></div>' +
       '<div class="fm-sec">YOUR THREE</div>' + slotRow() +
       (ctx.note ? '<div class="fm-note">' + esc(ctx.note) + (ctx.edit ? ' Pick a slot, then a form for it.' : '') + '</div>' : '') +
-      '<div class="fm-sec">THE FORMS</div><div class="fm-body"><div class="fm-tiles">' + ORDER.map(tile).join('') + '</div>' + detail() + '</div>' +
+      '<div class="fm-sec">THE FORMS</div><div class="fm-body"><div class="fm-tiles">' + ORDER.filter(id => ctx.known.includes(id)).map(tile).join('') + '</div>' + detail() + '</div>' + lockedRow() +
       '<div class="fm-actions"><div class="btn" data-x="1">BACK</div><div class="btn primary go" data-go="1">FIGHT</div></div></div>';
     return;
   }
@@ -112,7 +118,7 @@ function render(){
     '<div class="rm-sub">' + n + ' of ' + ORDER.length + ' forms learned</div><div class="howto-x" data-x="1">✕</div></div>' +
     '<div class="fm-sec">YOUR THREE</div>' + slotRow() +
     (ctx.note ? '<div class="fm-note">' + esc(ctx.note) + (ctx.edit ? ' Pick a slot, then a form for it.' : '') + '</div>' : '') +
-    '<div class="fm-sec">THE FORMS</div><div class="fm-grid">' + ORDER.map(card).join('') + '</div>' +
+    '<div class="fm-sec">THE FORMS</div><div class="fm-grid">' + ORDER.filter(id => ctx.known.includes(id)).map(card).join('') + '</div>' + lockedRow() +
     (ctx.prefight ? '<div class="fm-actions"><div class="btn" data-x="1">BACK</div><div class="btn primary go" data-go="1">FIGHT</div></div>' : '') +
     '</div>';
 }
@@ -157,6 +163,8 @@ panel.addEventListener('click', (e) => {
   const t = e.target;
   if (t === panel || t.closest('[data-x]')){ close(); return; }
   if (t.closest('[data-go]')){ fight(); return; }
+  const i = t.closest('.fm-i');
+  if (i){ i.classList.toggle('on'); return; }   // the lore note: never picks the form behind it
   const s = t.closest('[data-slot]'), f = t.closest('[data-form]');
   if (!ctx.edit){   // show-only: a tile just shows its detail
     if (ctx.prefight && f){ ctx.focus = f.dataset.form; render(); }
