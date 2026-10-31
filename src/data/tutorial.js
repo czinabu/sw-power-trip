@@ -14,6 +14,7 @@
 //   kit / any   a gear or power lesson: it opens once the story has reached that unlock (an auto-unlock key or a store
 //            id from data/store.js), or any of the ids in `any`
 //   loadout  the three forms on 1 / 2 / 3 while it runs (Jedi). The basics teach in Shii-Cho alone
+//   holstered  (Jedi) the saber starts on the belt, unignited; lessons without it start with the blade drawn
 //   done     the teacher's line when it's passed
 //
 // Step fields
@@ -76,7 +77,7 @@ const BASE = ['shiicho', null, null];   // the basics teach in Shii-Cho, Form I,
 export const LESSONS = {
   jedi: [
     /* ---------------- THE BASICS ---------------- */
-    { id: 'steps', group: 'basics', name: 'FIRST STEPS', sub: 'Walk, jump, dash, sprint, slide and glide', loadout: BASE,
+    { id: 'steps', group: 'basics', name: 'FIRST STEPS', sub: 'Walk, jump, dash, sprint, slide and glide', loadout: BASE, holstered: true,
       done: 'Good. Your feet know the Force now. Next, the lanes.',
       steps: [
         { sec: 'THE TERRACE', say: 'Every lesson begins with a single step. Come to the circle.',
@@ -92,7 +93,7 @@ export const LESSONS = {
         { say: 'Reach for the Force as you leave the ground, and it will hold you.',
           keys: 'HOLD SPACE', do: 'Force-leap and glide', poll: 'glide', need: 1.2 },
       ] },
-    { id: 'lanes', group: 'basics', name: 'THE LANES', sub: 'Vault, climb, roll, run the wall, then the gauntlet', loadout: BASE,
+    { id: 'lanes', group: 'basics', name: 'THE LANES', sub: 'Vault, climb, roll, run the wall, then the gauntlet', loadout: BASE, holstered: true,
       done: 'You flow over the ground like water. Now, the blade.',
       steps: [
         { sec: 'THE LANES', say: 'Stones in your path are only stones. Do not jump them: run straight at one and flow over it without breaking stride.',
