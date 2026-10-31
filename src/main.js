@@ -2,6 +2,8 @@
 // Entry point: imports every module in the original load order, then runs the main loop (tick) and exposes window.GAME.
 
 import * as THREE from 'three';
+import { switchWeapon, beskarPress } from './player/mando/weapons.js';
+import { setKit, grantGun } from './game/armory.js';
 import { heroAim, aimFrom, crosshairPoint, inAim, bossInAim, lastAim } from './player/aim.js';
 import { CFG } from './data/config.js';
 import { STANCES } from './data/stances.js';
@@ -209,7 +211,8 @@ import { ENDLESS_ARENAS } from './game/survival.js';
 import { BATTLE_MAPS } from './data/battlemaps.js';
 import { setSandboxMap } from './game/sandbox.js';
 Object.assign(window.GAME, { pingHere, pingInfo, coopDrop, coopNet, arena: arenaInfo, ENDLESS_ARENAS, BATTLE_MAPS, setSandboxMap, gfx: { renderer, composer, scene } });
-Object.assign(window.GAME, { startCampaign, startChapter, nextChapter, chapters });   // the campaign's chapters (game/campaign.js), for tests
+Object.assign(window.GAME, { startCampaign, startChapter, nextChapter, chapters });
+Object.assign(window.GAME, { switchWeapon, setKit, grantGun, beskarPress });   // the Mando's loadout and beskar parry (game/armory.js, mando/weapons.js), for tests   // the campaign's chapters (game/campaign.js), for tests
 Object.assign(window.GAME, { clearComms, commsBusy, storyBeat });   // the story's voice lines (game/story.js), for tests
 import { playScene, playOpening, playDuelIntro, playBossIntro, skipScene, sceneOn } from './game/cutscene.js';
 Object.assign(window.GAME, { cutscene: { playScene, playOpening, playDuelIntro, playBossIntro, skipScene, sceneOn } });   // the cutscenes (game/cutscene.js), for tests

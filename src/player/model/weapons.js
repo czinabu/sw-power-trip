@@ -54,7 +54,7 @@ export const WEAPON_MODELS = {
   },
 
   disruptor: {
-    hold: 'rifle-2h', socket: 'handR', grip: { pos: [0, GRIP_Y, 0], rot: [1.15, 0, 0] },
+    hold: 'rifle-2h', socket: 'handR', grip: { pos: [0, GRIP_Y, 0], rot: [1.15, 0, 0] }, muzzle: [0, 0.11, 0.96],
     build(S){
       const g = new THREE.Group();
       S.add(block(0.06, 0.1, 0.18, 0.3), 'gunDark', g, [0, 0.06, -0.14]);
@@ -67,6 +67,52 @@ export const WEAPON_MODELS = {
       lens.rotation.x = Math.PI/2; lens.position.set(0, 0.185, 0.055); g.add(lens);
       S.add(block(0.05, 0.12, 0.06, 0.3), 'gunDark', g, [0, 0, 0.04], [0.3, 0, 0]);
       return { group: g, prongGlow };
+    },
+  },
+
+  // PULSE CARBINE — a compact shouldered carbine: boxy receiver, short shrouded barrel, a power cell under the grip,
+  // folding stock and a reflex sight. Muzzle at z 0.74 (muzzle below).
+  carbine: {
+    hold: 'rifle-2h', socket: 'handR', grip: { pos: [0, GRIP_Y, 0], rot: [1.15, 0, 0] }, muzzle: [0, 0.11, 0.76],
+    build(S){
+      const g = new THREE.Group();
+      S.add(block(0.05, 0.08, 0.26, 0.3), 'gunDark', g, [0, 0.07, -0.2]);                     // stock
+      S.add(block(0.07, 0.11, 0.36, 0.3), 'gunMetal', g, [0, 0.1, 0.12]);                    // receiver
+      S.add(loft([{ y:-0.15, w:0.07, d:0.07 }, { y:0.15, w:0.066, d:0.066 }], ngon(8, Math.PI/8)), 'gunDark', g, [0, 0.11, 0.44], [Math.PI/2, 0, 0]);   // barrel shroud
+      for (let i = 0; i < 3; i++) S.add(block(0.074, 0.012, 0.03, 0.2), 'gunMetal', g, [0, 0.148, 0.36 + i*0.07], [0,0,0], { outline: false });   // vent slots
+      S.add(loft([{ y:-0.06, w:0.036, d:0.036 }, { y:0.06, w:0.032, d:0.032 }], ngon(6)), 'gunMetal', g, [0, 0.11, 0.66], [Math.PI/2, 0, 0]);     // muzzle
+      S.add(block(0.05, 0.13, 0.07, 0.3), 'gunDark', g, [0, -0.02, 0.2], [-0.12, 0, 0]);      // power cell
+      const cell = new THREE.Mesh(new THREE.BoxGeometry(0.052, 0.03, 0.05), new THREE.MeshBasicMaterial({ color: 0x8fe8ff })); cell.position.set(0, -0.06, 0.205); g.add(cell);
+      S.add(block(0.04, 0.05, 0.08, 0.2), 'gunDark', g, [0, 0.185, 0.08]);                    // reflex sight
+      S.add(block(0.05, 0.12, 0.06, 0.3), 'gunDark', g, [0, 0, 0.0], [0.3, 0, 0]);            // grip
+      S.add(block(0.074, 0.02, 0.06, 0.2), 'accent', g, [0, 0.1, -0.02], [0,0,0], { outline: false });
+      return { group: g };
+    },
+  },
+
+  // HEAVY REPEATER — a squat, heavy gun: a fat receiver with heat-sink fins, a drum cell slung underneath, a carry
+  // handle, and a three-barrel cluster that SPINS with the spin-up (the `spinner` hook, turned in anim). Muzzle at z 0.86.
+  repeater: {
+    hold: 'rifle-2h', socket: 'handR', grip: { pos: [0, GRIP_Y, 0], rot: [1.15, 0, 0] }, muzzle: [0, 0.1, 0.88],
+    build(S){
+      const g = new THREE.Group();
+      S.add(block(0.09, 0.14, 0.42, 0.3), 'gunMetal', g, [0, 0.1, 0.1]);                     // receiver
+      for (let i = 0; i < 4; i++) S.add(block(0.12, 0.012, 0.03, 0.2), 'gunDark', g, [0, 0.1 + (i - 1.5)*0.032, 0.36], [0,0,0], { outline: false });   // heat fins
+      S.add(block(0.06, 0.09, 0.2, 0.3), 'gunDark', g, [0, 0.08, -0.2]);                      // short butt
+      const spinner = new THREE.Group(); spinner.position.set(0, 0.1, 0.36); g.add(spinner);
+      for (let i = 0; i < 3; i++){
+        const a = i * Math.PI * 2 / 3;
+        S.add(loft([{ y:0, w:0.03, d:0.03 }, { y:0.5, w:0.028, d:0.028 }], ngon(6)), 'gunMetal', spinner, [Math.cos(a)*0.032, Math.sin(a)*0.032, 0], [Math.PI/2, 0, 0]);
+      }
+      S.add(loft([{ y:-0.02, w:0.1, d:0.1 }, { y:0.02, w:0.1, d:0.1 }], ngon(8, Math.PI/8)), 'gunDark', spinner, [0, 0, 0.42], [Math.PI/2, 0, 0]);   // barrel clamp
+      S.add(loft([{ y:-0.08, w:0.12, d:0.12 }, { y:0.08, w:0.12, d:0.12 }], ngon(10)), 'gunDark', g, [0, -0.04, 0.16], [0, 0, Math.PI/2]);   // drum cell
+      const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.17, 10), new THREE.MeshBasicMaterial({ color: 0xff8a4a }));
+      drum.rotation.z = Math.PI/2; drum.position.set(0, -0.04, 0.16); g.add(drum);
+      S.add(block(0.03, 0.03, 0.22, 0.2), 'gunDark', g, [0, 0.215, 0.1]);                     // carry handle
+      for (const z of [0.0, 0.2]) S.add(block(0.03, 0.06, 0.03, 0.2), 'gunDark', g, [0, 0.185, z]);
+      S.add(block(0.05, 0.12, 0.06, 0.3), 'gunDark', g, [0, 0, -0.02], [0.3, 0, 0]);          // grip
+      S.add(block(0.094, 0.02, 0.08, 0.2), 'accent', g, [0, 0.172, -0.06], [0,0,0], { outline: false });
+      return { group: g, spinner, drum };
     },
   },
 
@@ -125,10 +171,41 @@ export function mountLoadout(R, S, player){
 
   player.pistols = { L: mountWeapon(R, S, 'pistol', 'handL').group, R: mountWeapon(R, S, 'pistol', 'handR').group };
 
-  const rifle = mountWeapon(R, S, 'disruptor');
-  player.rifleMesh = rifle.group; player.rifleProngGlow = rifle.prongGlow;
+  mountLongGuns(R, S, player);
 
   const dark = mountWeapon(R, S, 'darksaber');
   dark.group.visible = false;
   player.darksaberMesh = dark.group; player.darkLight = dark.light; player.darkBlades = dark.blades;
 }
+
+/* THE LONG GUNS — the disruptor, the pulse carbine and the heavy repeater share ONE mount in the right hand
+   (player.rifleMesh), holding all three models; only the drawn one shows (setLongGun). Every pose, the holster and the
+   co-op pose sync keep working on player.rifleMesh whichever long gun it is. */
+export const LONG_GUNS = ['disruptor', 'carbine', 'repeater'];
+function mountLongGuns(R, S, player){
+  const def = WEAPON_MODELS.disruptor, mount = new THREE.Group();
+  mount.position.set(...def.grip.pos); mount.rotation.set(...def.grip.rot);
+  mount.userData.weapon = { id: 'long', hold: 'rifle-2h' };
+  mount.userData.restQ = mount.quaternion.clone();
+  R.sockets[def.socket].add(mount);
+  player.longGuns = {};
+  for (const id of LONG_GUNS){
+    const w = WEAPON_MODELS[id].build(S);
+    w.group.userData.muzzle = WEAPON_MODELS[id].muzzle;
+    w.group.visible = id === 'disruptor';
+    mount.add(w.group);
+    player.longGuns[id] = w;
+  }
+  player.rifleMesh = mount; player.rifleProngGlow = player.longGuns.disruptor.prongGlow;
+  player.repeaterSpin = player.longGuns.repeater.spinner;
+  mount.userData.long = 'disruptor';
+}
+// show the long gun `id` on the mount (a sidearm or anything else leaves it as it was)
+export function setLongGun(player, id){
+  const m = player.rifleMesh;
+  if (!m || !player.longGuns || !player.longGuns[id] || m.userData.long === id) return;
+  for (const k of LONG_GUNS) player.longGuns[k].group.visible = k === id;
+  m.userData.long = id;
+}
+// the drawn long gun's muzzle point in the mount's space
+export const longMuzzle = (player) => (player.longGuns && player.longGuns[player.rifleMesh.userData.long] || {}).group?.userData.muzzle || [0, 0.11, 0.96];

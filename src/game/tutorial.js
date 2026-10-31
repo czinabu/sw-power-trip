@@ -13,6 +13,8 @@ import { CFG } from '../data/config.js';
 import { floater } from '../fx/floaters.js';
 import { setStanceHud, setLoadout, switchStance } from '../player/jedi/stance.js';
 import { switchWeapon } from '../player/mando/weapons.js';
+import { setKit } from './armory.js';
+import { kitOf } from '../data/mando.js';
 import { toggleHolster } from '../player/holster.js';
 import { spawnEnemy } from '../enemies/spawn.js';
 import { removeEnemy } from '../enemies/cleanup.js';
@@ -74,8 +76,9 @@ export function trainingLoadout(){ const k = storyForms().filter(id => id !== 's
 // the kit the training starts every lesson on: the starting kit, plus what the story hands out on its own along the way
 function baseKit(){
   if (T.hero === 'mando'){
-    G.unlocked = { rocket: true, dual: storyReached('dual'), flame: storyReached('flame') };
+    G.unlocked = { rocket: true, dual: storyReached('dual'), carbine: storyReached('carbine'), repeater: storyReached('repeater'), flame: storyReached('flame') };
     player.up.darksaber = false;
+    setKit({ sidearm: 'single', primary: storyReached('carbine') ? 'carbine' : null });   // the pistol, and the first primary once the story has handed it out
     if (player.weapon !== 'single' && player.weapon !== 'fists') switchWeapon('single');
   } else {
     G.unlocked = { push: true, dash: true, pull: storyReached('pull') };
@@ -183,6 +186,10 @@ function beginStep(i){
   }
   if (s.grant === 'jet1' && !(player.up.jetTier >= 1)){ player.up.jetTier = 1; applyJetTier(); player.jet = player.jetMax; }
   if (s.grant === 'dual') G.unlocked = { ...(G.unlocked || {}), dual: true };
+  if (s.kit && T.hero === 'mando'){   // the guns the step is about go on 1 / 2 (data/mando.js), handed over for it
+    for (const slot in s.kit) if (s.kit[slot]) G.unlocked = { ...(G.unlocked || {}), [s.kit[slot]]: true };
+    setKit({ ...kitOf(), ...s.kit });
+  }
   // a fresh start for the trial: full health, Force and fuel
   if (s.heal){ player.hp = maxHp(); player.force = CFG.player.maxForce; player.stam = maxStam(); if (G.hero === 'mando') player.jet = player.jetMax; }
   if (s.use){ for (const k in player.cds) if (s.use[0] === 'cd' && k === s.use[1]) player.cds[k] = 0; T.was = used(s.use); }
