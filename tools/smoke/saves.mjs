@@ -68,6 +68,7 @@ check(await page.evaluate(() => GAME.G.levelIdx === 1 && GAME.G.xp === 777 && GA
 
 // a STORY MISSION save loads back onto that mission
 await pause(); await page.click('#homeBtn'); await page.click('#homeYes');
+await page.evaluate(() => localStorage.setItem('sw_mission_pursuit_jedi', '1'));   // missions stay locked until the campaign clears them
 await page.click('#hero-jedi'); await page.click('#mode-mission'); await page.click('#msn-pursuit'); await page.click('#goText');
 if (await page.isVisible('#forms [data-go]')) await page.click('#forms [data-go]', { timeout: 2000 }).catch(() => {});   // the Jedi's forms page before the fight: FIGHT
 await playing();
