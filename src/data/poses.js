@@ -56,7 +56,7 @@ export const SABER_GUARDS = {
     // behind (off, the stage Dooku) or clasped at the small of the back (offAlt, the Clone Wars Dooku). Walking and blocking
     // always keep it behind the back; a cut flings it out for balance (SWING_STYLE.makashi.offKeys)
     makashi: {
-      ready: { hand: [0.68, 0.1, 0.5], blade: [0.5, -0.42, 0.76], twist: 0.12, torso: 0.04, lean: 0.0, pole: [0.3, -1, 0], palm: 1,
+      ready: { hand: [0.66, -0.12, 0.12], blade: [0.66, -0.68, 0.3], twist: 0.04, torso: 0.0, lean: 0.0, pole: [0.3, -1, 0], palm: 1,
                off: { hand: [-0.52, -0.08, -0.14], pole: [-0.5, -0.85, -0.3] },
                offAlt: { hand: [-0.02, -0.28, -0.36], pole: [-1, 0.2, -0.2] },
                offMove: { hand: [-0.02, -0.28, -0.36], pole: [-1, 0.2, -0.2] } },

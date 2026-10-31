@@ -289,7 +289,7 @@ export const AIR_GUARDS = {
     },
     // Makashi runs like a fencer on the advance: the saber low and forward with the blade angled down at the foe, the free hand clasped behind the back
     makashi: {
-      run:    { hand: [0.66, 0.06, 0.46], blade: [0.5, -0.45, 0.74], twist: 0.1, pole: [0.3, -1, 0], off: { hand: [-0.02, -0.28, -0.36], pole: [-1, 0.2, -0.2] } },
+      run:    { hand: [0.64, -0.1, 0.16], blade: [0.62, -0.66, 0.4], twist: 0.04, pole: [0.3, -1, 0], off: { hand: [-0.02, -0.28, -0.36], pole: [-1, 0.2, -0.2] } },
     },
     niman: {
       hang:   { hand: [0.16, 0.78, 0.3], blade: [0.35, 0.25, -0.9], twist: 0, off: { hand: [-0.18, 0.78, 0.3], pole: [-0.6, -0.3, -0.5] } },   // hands up on the ledge lip
