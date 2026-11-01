@@ -10,7 +10,7 @@ import { shared } from '../state.js';
 import { puff } from './ink.js';
 import { rand } from '../utils.js';
 
-const NO_DUST = new Set(['foundry']);   // metal grating
+const NO_DUST = new Set(['foundry', 'meltworks', 'barge']);   // metal grating
 const DUST = new THREE.Color(0x9a8c78), _c = new THREE.Color(), _v = new THREE.Vector3(), _d = new THREE.Vector3();
 let budget = 0, last = 0;
 

@@ -604,7 +604,79 @@ export const MISSION_WORLDS = {
     hazards: { barrel: 0xa33820 },
     sound: 'foundry',
   },
+  barge: {   // the Gallows, the Magistrate's prison barge on the storm sea of Vell: night, rain, floodlights on a wet deck
+    sky: { top: 0x060a10, horizon: 0x2a3a48, below: 0x0a1218, bands: 6, stars: 0,
+      clouds: { color: 0x3a4a58, under: 0x141c24, count: 34, lo: 0.2, hi: 0.95 },
+      ridges: [{ color: 0x101a22, h: 0.035, rough: 0.05, seed: 21 }] },
+    fog: 0x22303c, fogStart: 0.55, fogEnd: 2.4,
+    // a cold key from the floodlights, a warm rim from the alarm lamps so the armour reads against the steel
+    light: { sun: 0xd8e4f4, sunI: 1.55, dir: [10, 44, 26], hemiSky: 0x7a8ca8, hemiGround: 0x1a2028, fill: 0.92, rim: 0xff8a6a, rimI: 0.5 },
+    floor: { kind: 'deck', base: 0x4a545e, stripe: 0xd9a43a, seed: 23 },
+    outer: 0x0e1a22,
+    pal: { metal: 0x5a646e, metalD: 0x2e343c, rust: 0x6a4a3a, hullM: 0x3a4450, stripe: 0xd9a43a, crate: 0x4a5a5a, bar: 0x1e2228,
+           lamp: 0xe8f0ff, alarm: 0xff3a2a, cell: 0x6a8aa0, lane: 0xd9a43a, hull: 0x8a6a4a, skye: 0x3aa8d8 },
+    backdrop: [
+      { kind: 'dunes', count: 22, r: [1.15, 1.6], h: 3, color: 0x14222c },   // the swell
+      { kind: 'cliffs', count: 7, r: [2.0, 2.6], h: [14, 26], w: 0.2, color: 0x1a242c, color2: 0x141c24 },   // sea stacks
+      { kind: 'stacks', count: 2, r: [1.6, 1.9], h: [14, 18], color: 0x2a3038, band: 0xd9a43a, glow: 0xff3a2a, smoke: 0x2a3038 },   // the barge's own funnels
+    ],
+    ambient: { kind: 'snow', color: 0xb8c8d8, count: 320, size: 0.16, opacity: 0.6 },   // rain and spray
+    mist: { color: 0x5a6a7a, count: 40, size: 12, opacity: 0.15 },
+    warfront: { flyers: [{ kind: 'dropship', count: 1, alt: [35, 60], speed: [20, 30], every: [9, 15] }],
+      blasts: 0.15, tracers: { rate: 0.3, colors: [0xff3a2a, 0xff7a3a] }, columns: 0, smoke: 0x2a3038 },
+    storm: { every: [4, 9], fill: 1.7, sky: 1.4, ramp: 2, fogFlash: 0.5, color: 0xdce6ff },
+    beats: { fog: 0x1a2430, fill: 1.06, tint: 0x9ab8e0 },
+    hazards: { barrel: 0xa33820 },
+    sound: 'foundry',
+  },
+  holdfast: {   // the old holdfast in the cedar forest of Thane: a misty dawn, gold light through the trees
+    sky: { top: 0x5a86b0, horizon: 0xf0d8a8, below: 0x9aa880, bands: 7, stars: 0,
+      sun: { el: 0.12, color: 0xffe4b0, halo: 0xffd090, size: 26 },
+      clouds: { color: 0xf4ead8, under: 0xb0a890, count: 10, lo: 0.4, hi: 0.85 },
+      ridges: [{ color: 0x2e4430, h: 0.14, rough: 0.12, spiky: 0.9, seed: 9 }, { color: 0x3e5a3e, h: 0.08, rough: 0.1, spiky: 0.8, seed: 3 }] },
+    fog: 0xa8b49a, fogStart: 0.6, fogEnd: 2.6,
+    light: { sun: 0xffe8c0, sunI: 1.7, dir: [-30, 24, 30], hemiSky: 0xc8d8e8, hemiGround: 0x3a4a2a, fill: 0.84, rim: 0xffd8a0, rimI: 0.5 },
+    floor: { kind: 'grass', base: 0x5a7040, seed: 33 },
+    outer: 0x3e5434,
+    pal: { stone: 0x8a8a7a, stoneD: 0x5e604e, moss: 0x4a6a32, bark: 0x4a3424, leaf: 0x2e4a2a, leafL: 0x3e5e32, wood: 0x6a4e34,
+           beskar: 0xa8b0b8, imperial: 0x3a3e46, fire: 0xff8a3a, ember: 0xffc060, water: 0x1e3a3a },
+    backdrop: [
+      { kind: 'spires', count: 40, r: [1.25, 1.9], h: [14, 26], w: [2, 3.5], color: 0x22361f, color2: 0x2c4228 },   // the cedars past the clearing
+      { kind: 'cliffs', count: 10, r: [2.0, 2.6], h: [18, 30], w: 0.3, color: 0x4a5a4a, color2: 0x3e4e40 },
+    ],
+    ambient: { kind: 'dust', color: 0xfff0c0, count: 140, size: 0.2 },
+    mist: { color: 0xd8dcc8, count: 50, size: 12, opacity: 0.2 },
+    warfront: { flyers: [{ kind: 'dropship', count: 1, alt: [40, 70], speed: [18, 28], every: [10, 16] }],
+      blasts: 0.1, tracers: { rate: 0.3, colors: [0xff3a2a, 0xff7a3a] }, columns: 1, smoke: 0x6a6a5a },
+    beats: { fog: 0xb8a888, fill: 1.05, tint: 0xffe0a8 },
+    hazards: { barrel: 0xa33820 },
+    sound: 'plains',
+  },
+  citadel: {   // the Iron Citadel on Duren: an iron yard under a sky of foundry smoke, the furnace glowing behind the throne
+    sky: { top: 0x1a1414, horizon: 0x8a4a30, below: 0x2a1c18, bands: 6, stars: 0,
+      sun: { el: 0.08, color: 0xff9a5a, halo: 0xff6a3a, size: 34 },
+      clouds: { color: 0x4a3a36, under: 0x1e1614, count: 30, lo: 0.25, hi: 0.95 },
+      ridges: [{ color: 0x221816, h: 0.1, rough: 0.08, seed: 15 }] },
+    fog: 0x4a3430, fogStart: 0.65, fogEnd: 2.7,
+    light: { sun: 0xffb890, sunI: 1.65, dir: [-20, 30, 34], hemiSky: 0x9a8aa0, hemiGround: 0x2a1c18, fill: 0.88, rim: 0x8ea4e8, rimI: 0.6 },
+    floor: { kind: 'flagstone', base: 0x4e4a4c, seed: 37 },
+    outer: 0x2a2224,
+    pal: { iron: 0x4a4c54, ironD: 0x2a2c32, rivet: 0x6a6e78, beskar: 0xa8b0b8, rust: 0x6a3e2a, cloth: 0x4a1a18,
+           fire: 0xff7a2a, ember: 0xffc060, molten: 0xff6a1a },
+    backdrop: [
+      { kind: 'stacks', count: 8, r: [1.4, 2.0], h: [24, 38], color: 0x2a2426, band: 0x8a8e96, glow: 0xff7a2a, smoke: 0x3a2e2c },
+      { kind: 'towers', count: 24, r: [1.6, 2.6], h: [14, 34], color: 0x2a2628, color2: 0x342e30, windows: 0xff7a3a },
+    ],
+    ambient: { kind: 'ash', color: 0xc8a898, count: 160, size: 0.22, opacity: 0.5 },
+    warfront: { flyers: [{ kind: 'dropship', count: 2, alt: [45, 80], speed: [20, 32], every: [7, 12] }],
+      blasts: 0.35, tracers: { rate: 0.6, colors: [0xff3a2a, 0x5ab0ff] }, columns: 3, smoke: 0x2a2220 },
+    beats: { fog: 0x5a2a20, fill: 1.08, tint: 0xff9a60 },
+    hazards: { barrel: 0xa33820 },
+    sound: 'foundry',
+  },
 };
+// THE MELTWORKS on Caldus (the Mando's story): the foundry's plan cut into a frozen moon, the frozen front's foundry look
+MISSION_WORLDS.meltworks = { ...WORLD_DIRECTIONS.frozen.foundry, sound: 'foundry', hazards: { barrel: 0xa33820 } };
 
 /* BATTLE MAPS — the large open fields for big squad battles (data/battlemaps.js) keep one look whatever WORLD is picked.
    They are two to three times the size of a campaign arena, so fog starts nearer (as a share of the arena) and the
@@ -711,6 +783,32 @@ export const BATTLE_WORLDS = {
       blasts: 0.7, flash: 0xc8d4ff, tracers: { rate: 1.2, colors: [0xff3a2a, 0x5aff6a] }, columns: 4, smoke: 0x1e1a24 },
     storm: { every: [2.5, 6], fill: 1.9, sky: 1.4, ramp: 2, fogFlash: 0.55, color: 0xdce6ff },
     beats: { fog: 0x232a40, fill: 1.08, tint: 0x8fa0e0 },
+    hazards: { barrel: 0x8a2a30 },
+    sound: 'plains',
+  },
+  ironroad: {   // the iron road on Duren (the Mando's story): the Grass Sea's battle plan on a slag plain under foundry smoke and
+                // falling grey snow, the Iron Citadel's stacks on the horizon
+    sky: { top: 0x1e1c22, horizon: 0x8a6a5a, below: 0x2a2428, bands: 6, stars: 0,
+      sun: { el: 0.1, color: 0xffa070, halo: 0xff7a4a, size: 30 },
+      clouds: { color: 0x5a5054, under: 0x2a2428, count: 30, lo: 0.25, hi: 0.95 },
+      ridges: [{ color: 0x2a2428, h: 0.08, rough: 0.1, seed: 19 }] },
+    fog: 0x5a4e50, fogStart: 0.14, fogEnd: 0.85, haze: { len: 40, max: 0.8 },
+    light: { sun: 0xffc8a0, sunI: 1.4, dir: [14, 46, 40], hemiSky: 0xa898a8, hemiGround: 0x2e2628, fill: 0.88, rim: 0x8ea4e8, rimI: 0.65 },
+    floor: { kind: 'ash', base: 0x6a6266, seed: 41 },
+    outer: 0x3a3234,
+    pal: { stone: 0x5e5658, stoneD: 0x403a3c, bag: 0x6a6258, metal: 0x6e6a70, imperial: 0x2e2a2e, crate: 0x5a4e46,
+           stripe: 0xd9a43a, lamp: 0xffc080, scorch: 0x1e1a1c, blast: 0xffb080, beacon: 0xff7a2a },
+    backdrop: [
+      { kind: 'stacks', count: 7, r: [1.8, 2.4], h: [26, 44], color: 0x2a2426, band: 0x8a8e96, glow: 0xff7a2a, smoke: 0x3a3032 },
+      { kind: 'ramparts', r: 2.4, segments: 26, h: 12, color: 0x342e30, color2: 0x2a2426, roof: 0x1e1a1c, gaps: [] },
+      { kind: 'dunes', count: 14, r: [1.08, 1.3], h: 4, color: 0x3a3234 },
+    ],
+    ambient: { kind: 'snow', color: 0xc8c0c0, count: 200, size: 0.22, opacity: 0.6 },
+    mist: { color: 0x8a7e80, count: 50, size: 12, opacity: 0.15 },
+    warfront: { flyers: [{ kind: 'dropship', count: 2, alt: [40, 90], speed: [20, 32], every: [5, 9] },
+      { kind: 'tie', count: 1, wing: 2, alt: [40, 110], speed: [80, 120], every: [4, 8], fire: 0x5aff6a }],
+      blasts: 0.7, flash: 0xffd0a0, tracers: { rate: 1.2, colors: [0xff3a2a, 0x5ab0ff] }, columns: 4, smoke: 0x2a2224 },
+    beats: { fog: 0x4a2a24, fill: 1.08, tint: 0xffa070 },
     hazards: { barrel: 0x8a2a30 },
     sound: 'plains',
   },
