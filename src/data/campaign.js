@@ -1,6 +1,6 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
 import { G, heroKey } from '../state.js';
-import { TROOPER_VOICE, TROOPER_ACTS, TROOPER_ACT_TWO, TROOPER_CHAPTERS, TROOPER_EPILOGUE } from './campaign-trooper.js';
+import { TROOPER_VOICE, TROOPER_ACTS, TROOPER_ACT_TWO, TROOPER_ACT_TWO_LABEL, TROOPER_CHAPTERS, TROOPER_EPILOGUE } from './campaign-trooper.js';
 import { MANDO_VOICE, MANDO_ACTS, MANDO_ACT_TWO, MANDO_CHAPTERS, MANDO_EPILOGUE } from './campaign-mando.js';
 import { JEDI_VOICE, JEDI_ACTS, JEDI_ACT_TWO, JEDI_CHAPTERS, JEDI_ENDINGS } from './campaign-jedi.js';
 import { storyWords, answer } from '../game/choices.js';
@@ -227,7 +227,7 @@ export const jediEnding = () => (answer('ilsa') || 'spared') + '-' + (answer('ve
 const OWN_WORDS = {
   mando: { voice: MANDO_VOICE, acts: MANDO_ACTS, actTwo: MANDO_ACT_TWO, epilogue: () => MANDO_EPILOGUE },
   jedi:  { voice: JEDI_VOICE, acts: JEDI_ACTS, actTwo: JEDI_ACT_TWO, actTwoLabel: { lothal: 'THE PENS FIRST' }, epilogue: () => JEDI_ENDINGS[jediEnding()] },
-  trooper: { voice: TROOPER_VOICE, acts: TROOPER_ACTS, actTwo: TROOPER_ACT_TWO, epilogue: () => TROOPER_EPILOGUE },
+  trooper: { voice: TROOPER_VOICE, acts: TROOPER_ACTS, actTwo: TROOPER_ACT_TWO, actTwoLabel: TROOPER_ACT_TWO_LABEL, epilogue: () => TROOPER_EPILOGUE },
 };
 const own = (story) => OWN_WORDS[story];
 // (a chapter's own `voice` speaks for it instead: a story can hand the comms to someone else partway through)

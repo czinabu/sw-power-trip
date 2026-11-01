@@ -16,8 +16,9 @@
 // failed: somebody switched it off. Act II goes back to where you were made and to Kast; Act III to the relay spire,
 // where the Marshal means to give the order again, and where you learn the order was never only the Empire's.
 //
-// Built so far: the prologue and Act I (the yards, the garrison, the frigate, the Captain's drill). Act II and III
-// still play the first draft's chapters (below) on the shared maps, until they're rebuilt.
+// Built so far: the prologue, Act I (the yards, the garrison, the frigate, the Captain's drill) and Act II (Kamino,
+// Kast's line on Hoth, the chip foundry, the Marshal's war camp). Act III still plays the first draft's chapters
+// (below) on the shared maps, until it's rebuilt.
 
 import { PURGE } from './allies.js';
 
@@ -34,11 +35,12 @@ export const TROOPER_ACTS = [
   { title: 'NO MORE ORDERS',
     open: 'The Marshal is getting ready to send something. Every clone with a chip still in his head will hear it. We end this before he does.' },
 ];
-// Act II's pick (the pairs as they stand, until Kamino replaces Lothal)
+// Act II's pick: Kamino (the Lothal pair's slots) or Hoth first
 export const TROOPER_ACT_TWO = {
-  lothal: 'Break our brothers out of the Lothal prison',
-  hoth: 'Join General Kast in the trenches on Hoth',
+  lothal: 'Go back to Kamino for the Marshal\'s batch file',
+  hoth: 'Find General Kast in the trenches on Hoth',
 };
+export const TROOPER_ACT_TWO_LABEL = { lothal: 'KAMINO FIRST' };
 
 // per chapter id: the trooper's story laid over that slot
 export const TROOPER_CHAPTERS = {
@@ -121,51 +123,73 @@ export const TROOPER_CHAPTERS = {
               'One more thing in those files. The officer who switched our chips off signed it: General Rhenna Kast. She knew, brother. She always knew.'],
     } },
 
-  // ---------------- ACT II: WHERE WE WERE MADE (the first draft's chapters, until Kamino, Hoth and the foundry are rebuilt) ----------------
+  // ---------------- ACT II: WHERE WE WERE MADE ----------------
+  // Kamino (the Lothal pair's slots) and Hoth (Kast's line, the shared meeting point with the Jedi's story), in the
+  // order the player picks; then the chip foundry and the Marshal's war camp.
   lothal: {
-    brief: ['Three of ours were taken on Lothal, Patch our medic among them. The outpost is holding them for reconditioning.',
-            'A slicer droid has the cell codes. Walk it in, open every door, and bring our brothers out.'],
+    title: 'THE DROWNED CITY', world: 'KAMINO, TIPOCA CITY\'S LOWER LEVELS',
+    mission: 'drowned',
+    brief: ['Somebody switched the Marshal\'s chip on. Kamino kept a file on every batch it grew, and ours is down in the lower levels.',
+            'The city has been drowning since the Empire stopped buying clones. Get the file before the sea does.'],
+    talk: { where: 'THE GUNSHIP, OVER THE KAMINO SEA',
+      lines: [[BRISK, 'I never thought I would come back here. I used to dream about the rain.'],
+              [VANT, 'You used to complain about the rain.'],
+              [CAPT, 'Both of you, eyes up. The Marshal\'s men landed an hour ago.']] },
     lines: {
-      chapter: ['The droid is RX-4. It knows the codes. Keep it breathing and it opens the cells.'],
-      duel: ['The captain who held the keys. Put it down and our brothers walk.'],
-      clear: ['The cells are empty. Patch is with us, and he has already started on the squad\'s wounds.'],
+      chapter: ['The pods are empty. Every one of them. Stay sharp, the Marshal\'s men are in the archive.'],
+      clear: ['The gunship climbs out of the storm with the file aboard.', 'Somebody switched his chip on by hand. Somebody with the code.'],
     } },
   'trial-acrobat': {
-    title: 'THE ACROBAT',
-    brief: ['The prison held more than ours: the Acrobat, a Jedi the Empire never broke.',
-            'It wants to see whether the clone who freed it can keep up. Keep up.'],
+    title: 'THE OLD KILL HOUSE', world: 'KAMINO, THE TRAINING LEVEL',
+    mission: 'oldkillhouse',
+    brief: ['Before we go, the Captain wants one more run on the course where you and the Marshal learned to fight.',
+            'The droids are running his old records. Learn how he fights, before you have to.'],
     lines: {
-      clear: ['The Acrobat laughs. It has not fought beside a clone since the war. It will fly with us.'],
+      clear: ['Two seconds under his best time.', 'He was always first in line, brother. That is why they switched his chip on first.'],
     } },
   hoth: {
-    brief: ['General Kast is on Hoth, holding a trench line while the rebels evacuate. She switched our chips off, brother. Time we asked her why.',
-            'Eight years, brother. Go and stand in the trench beside them.'],
+    title: 'THE GENERAL\'S LINE', world: 'HOTH, AN ENCLAVE UNDER THE ICE',
+    brief: ['General Kast is on Hoth, holding a trench line while transports carry hidden children off the ice. She is the one who switched our chips off.',
+            'Hold the line beside her clones first. Then ask her why.'],
+    talk: { where: 'HOTH, THE COMMAND TRENCH',
+      lines: [[KAST, 'I would know that armour anywhere. Eight years, trooper.'],
+              [YOU, 'You switched our chips off, General. The night before the order.'],
+              [KAST, 'I did. Hold the forward trench with me, and I will tell you why. There is a Jedi on the right flank. Do not shoot it.']] },
     lines: {
-      chapter: [{ who: KAST, say: 'I would know that armour anywhere. Hold the forward trench with me, trooper, and we will talk after.' }],
-      duel: [{ who: KAST, say: 'Their siege trooper. I have the left. Just like old times.' }],
-      clear: ['The line held, and the General saw you hold it.', { who: KAST, say: 'The hangar, when the last transport loads. There is a Jedi gathering the masters, and I want you to meet them.' }],
+      chapter: [say(KAST, 'Clones on the left, rebels on the right. You take the middle, trooper. Just like old times.')],
+      duel: [say(KAST, 'Their siege trooper. I have the left. Take it.')],
+      clear: ['The line held, and every transport cleared the shield.', say(KAST, 'The hangar, when the last ship is loading. I will answer you there, but you will have to earn it.')],
     } },
   'trial-knight': {
-    title: 'THE GENERAL',
-    brief: ['The General wants to see what eight years did to you.',
-            'It fights the way it taught you to. Do not hold back. It will know.'],
+    title: 'THE GENERAL', world: 'HOTH, THE ENCLAVE\'S HANGAR',
+    brief: ['Kast wants to know whether eight years taught you to think for yourself, or only to follow someone new.',
+            'She fights the way she taught you to. Do not hold back. She will know.'],
+    talk: { where: 'HOTH, THE ENCLAVE\'S HANGAR',
+      lines: [[KAST, 'I found the chip code in a Separatist lab. I could switch off three chips before they caught me. I chose the three of you.'],
+              [YOU, 'Why us?'],
+              [KAST, 'Because you three asked questions. Show me you still do.']] },
     lines: {
-      clear: ['The General lowers its blade, and laughs. Hammer joins the squad: he followed the General out of the order too.',
-              'The company is nearly whole.'],
+      clear: ['Kast lowers her blade, and laughs.', say(KAST, 'Someone else had the code, trooper. He used it the other way. Find out who switched the Marshal on, and you will find out who wants the order given again.'),
+              'Hammer joins the squad. He held Kast\'s line for eight years. He says he is owed a better war.'],
     } },
   jakku: {
-    brief: ['The Marshal\'s purge troopers are forged somewhere. The nav cores in Jakku\'s wrecks remember the route.',
-            'And there is an old Republic gunship out in those dunes. Tally swears she can make it fly.'],
+    title: 'THE CHIP FOUNDRY', world: 'THE FOUNDRY UNDER A DEAD VOLCANO',
+    mission: 'chipworks',
+    brief: ['The order list names a foundry in a dead volcano\'s shadow. The Empire said it stopped making chips when it stopped making clones.',
+            'Go and see what it makes now.'],
     lines: {
-      clear: ['The cores give up the route: Mustafar.', 'And Tally has the gunship running. It is not pretty, but it will strafe.'],
+      chapter: ['Those are chips on the line. New ones. They never stopped, brother.'],
+      clear: ['The foundry burns, and its last shipment went to the Marshal.', 'He is not making soldiers. He is making a signal.'],
     } },
   mustafar: {
-    brief: ['The cores point to Mustafar. Every purge trooper the Marshal fields is forged there.',
-            'Break the forge, and his army breaks with it.'],
+    title: 'THE MARSHAL\'S GARRISON', world: 'THE MARSHAL\'S WAR CAMP',
+    mission: 'warcamp', steps: 4,   // (it stands for the shared slot's four waves)
+    brief: ['The shipment went to the Marshal\'s war camp, on a plateau at the edge of nowhere. His whole company is there.',
+            'Take his gate, hold it, and get to his command post. Whatever he is planning, it is written down up there.'],
     lines: {
-      chapter: ['They are pouring purge armour here. Our old armour, painted black.'],
-      duel: [{ who: 'THE MARSHAL', rival: true, say: 'You are walking into his trap, brother. I am only sorry I did not build it.' }, 'Ignore him. Finish the forgemaster.'],
-      clear: ['The forge is ash, and it was too easy.', 'It was bait. The Marshal has the band\'s trail, and he is taking it to whoever switched his chip on.'],
+      chapter: ['His company is forming up. Our old company, brother, painted black.'],
+      duel: [rival(MARSHAL, 'You were always a step behind me, brother. Today too.')],
+      clear: ['He has the Captain.', 'His orders name a relay spire. He means to give the order again, to every clone with a chip still in his head.'],
     } },
 
   // ---------------- ACT III: NO MORE ORDERS (the first draft's, until the hunt and the relay spire are built) ----------------
