@@ -57,7 +57,7 @@ export function updateComms(dt){
 export const commsBusy = () => !!cur || queue.length > 0;
 
 /* ---------- beats ---------- */
-const CUT_IN = new Set(['duel', 'escape', 'boss']);   // these speak over whatever's still queued: they're about what's in front of you
+const CUT_IN = new Set(['duel', 'escape', 'boss', 'breach']);   // these speak over whatever's still queued: they're about what's in front of you
 const listeners = {};
 export function onStory(beat, fn){ (listeners[beat] = listeners[beat] || []).push(fn); }
 export function storyBeat(beat, info = {}){
@@ -72,5 +72,5 @@ export function storyBeat(beat, info = {}){
 function linesFor(c, beat, info){
   const L = c.lines && c.lines[beat];
   if (!L) return null;
-  return forHero(beat === 'wave' ? L[info.n] : L, G.hero) || null;
+  return forHero(beat === 'wave' ? L[info.n] : beat === 'breach' ? L[info.door] : L, G.hero) || null;   // (a breach's lines: one entry per door)
 }

@@ -35,8 +35,12 @@ import { buildArchiveArena } from '../src/world/arenas/archive.js';
 import { buildPrisonArena } from '../src/world/arenas/prison.js';
 import { buildHangarArena } from '../src/world/arenas/hangar.js';
 import { buildJungleArena } from '../src/world/arenas/jungle.js';
+import { buildShipyardArena } from '../src/world/arenas/shipyard.js';
+import { buildGarrisonArena } from '../src/world/arenas/garrison.js';
+import { buildFrigateArena } from '../src/world/arenas/frigate.js';
 import { buildSithArena } from '../src/world/arenas/sith.js';
 import { CHAPTERS } from '../src/data/campaign.js';
+import { TROOPER_CHAPTERS } from '../src/data/campaign-trooper.js';
 import { MANDO_CHAPTERS } from '../src/data/campaign-mando.js';
 import { buildOutpostArena } from '../src/world/arenas/outpost.js';
 import { buildCovertArena } from '../src/world/arenas/covert.js';
@@ -45,7 +49,7 @@ const BUILDERS = { temple: buildTempleArena, foundry: buildFoundryArena, plains:
   forge: buildForgeArena, refuge: buildRefugeArena, pursuit: buildPursuitArena, dojo: buildDojoArena, throne: buildThroneArena,
   grassland: buildGrasslandArena, icefront: buildIcefrontArena, graveyard: buildGraveyardArena,
   approach: buildGrasslandArena, archive: buildArchiveArena, prison: buildPrisonArena, hangar: buildHangarArena, sith: buildSithArena,
-  jungle: buildJungleArena, outpost: buildOutpostArena, covert: buildCovertArena };
+  jungle: buildJungleArena, outpost: buildOutpostArena, covert: buildCovertArena, shipyard: buildShipyardArena, garrison: buildGarrisonArena, frigate: buildFrigateArena };
 
 const STEP = 0.4;          // sample spacing
 const SINK = 0.45;         // a visible top this far over the collision top is a miss (thin caps and trims sit under it)
@@ -62,7 +66,7 @@ function levelsByLayout(){
     if (o.layout && typeof o.layout === 'string' && o.arena && !out[o.layout]) out[o.layout] = o;
     for (const v of Object.values(o)) walk(v, depth + 1);
   };
-  walk({ LEVELS, BATTLE_MAPS, MISSIONS, SANDBOX_LEVELS, TRAINING_LEVELS, CHAPTERS, MANDO_CHAPTERS });   // (a chapter can stage its level on its own arena)
+  walk({ LEVELS, BATTLE_MAPS, MISSIONS, SANDBOX_LEVELS, TRAINING_LEVELS, CHAPTERS, MANDO_CHAPTERS, TROOPER_CHAPTERS });   // (a chapter can stage its level on its own arena)
   return out;
 }
 
