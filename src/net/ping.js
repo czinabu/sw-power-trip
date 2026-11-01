@@ -51,10 +51,11 @@ export function pingHere(){
   const t = lastAim.target, id = t ? (t === shared.boss ? 'B' : t.nid ?? null) : null;
   const at = t && t.group ? t.group.position : p;
   place(net.slot || 0, at.x, at.y, at.z, id);
-  if (connected()) send({ t: 'ping', x: r2(at.x), y: r2(at.y), z: r2(at.z), n: id, w: worldKey() });
+  if (connected()) send({ t: 'mark', x: r2(at.x), y: r2(at.y), z: r2(at.z), n: id, w: worldKey() });
 }
 
-on('ping', (m) => {
+// (sent as 'mark': a 't: ping' message is the connection's own latency probe, which net/session.js answers and never passes on)
+on('mark', (m) => {
   if (G.mode !== 'play' || (m.w && m.w !== worldKey())) return;   // pinged in another arena: nothing to point at here
   place(m.from || 0, m.x, m.y, m.z, m.n);
 });
