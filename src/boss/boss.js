@@ -27,6 +27,7 @@ import { TELLS, tellFx } from '../fx/tells.js';
 import { clampToArena } from '../world/collision.js';
 import { hurtPlayer, perfectDodge } from '../player/damage.js';
 import { queueSpawn } from '../game/flow.js';
+import { storyBeat } from '../game/story.js';
 import { gainXp } from '../game/progression.js';
 import { victory } from '../game/summary.js';
 import { showBanner } from '../ui/banners.js';
@@ -226,6 +227,7 @@ export function updateBoss(dt){
           for (let i = 0; i < BOSS_CFG.summon[tn]; i++) queueSpawn(tn);
       }
     }
+    storyBeat('phase' + newPhase);   // a story's words for the turn of the fight (a chapter's lines.phase2 / phase3)
     G.shake = 0.8;
   }
   const speed = BOSS_CFG.speed[shared.boss.phase-1];

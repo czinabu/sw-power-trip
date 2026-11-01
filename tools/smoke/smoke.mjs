@@ -101,7 +101,7 @@ for (const [hero, mode, mission] of [['jedi', 'campaign'], ['mando', 'campaign']
     const startGt = await page.evaluate(() => GAME.G.gt);
     await page.keyboard.down('w');
     const objectives = mode === 'mission' ? await page.evaluate(() => GAME.missionState().def.objectives.length) : 0;
-    let step = 0, skips = 0, everHit = false;   // a mission skips past (and clears) earlier foes, so remember any hit
+    let step = 0, skips = 0, everHit = false, sawDuel = false;   // a mission skips past (and clears) earlier foes, so remember any hit
     for (;;){
       const s = await page.evaluate(() => {
         const { G, player, enemies } = GAME;
@@ -136,16 +136,27 @@ for (const [hero, mode, mission] of [['jedi', 'campaign'], ['mando', 'campaign']
           G.yaw += dYaw;
           G.pitch = Math.max(-0.62, Math.min(1.2, G.pitch - dEl));   // (+ pitch looks down)
         }
-        return { gt: G.gt, mode: G.mode, near: bd, enemies: enemies.length,
+        return { gt: G.gt, mode: G.mode, near: bd, enemies: enemies.length, hud: document.getElementById('waveinfo').textContent,
                  hit: (G.stats && G.stats.kills) > 0 || enemies.some(e => e.maxHp && e.hp < e.maxHp) };
       });
       everHit = everHit || s.hit;
+      // the duel is reached once its foe is named on the HUD (a quick hero can win it before the run ends, and the line goes)
+      if (mode === 'mission' && DUEL_LINE[mission].test(s.hud || '')) sawDuel = true;
       if (s.gt - startGt >= GAME_SECONDS || s.mode !== 'play' || Date.now() - t0 > REAL_LIMIT_MS) break;
       // a mission: a few seconds of each objective, then on to the next (the duel plays out to the end of the run, so it
       // gets the bigger share: on a slow runner it takes a while for the duellist to arrive and close in)
       const every = Math.min(0.18, 0.54 / Math.max(1, objectives - 1));
       if (mode === 'mission' && skips < objectives - 1 && s.gt - startGt > GAME_SECONDS * every * (skips + 1)){
-        if (await page.evaluate(() => GAME.skipObjective())) skips++;
+        // and the hero is put where that objective starts, as a retry from it would: the bot only ever walks forward,
+        // and by the duel it is far up the map, so the foe would spend the run crossing the field to reach it
+        if (await page.evaluate(() => {
+          if (!GAME.skipObjective()) return false;
+          // (a duel with no start of its own: a few strides short of where its foe comes in, facing it)
+          const M = GAME.missionState(), o = M.def.objectives[M.i] || {};
+          const st = o.start || (o.kind === 'duel' && Array.isArray(o.at) && [o.at[0], o.at[1] + 12, Math.PI]);
+          if (st && !M.won){ GAME.player.group.position.set(st[0], 0, st[1]); GAME.G.yaw = GAME.player.faceYaw = st[2] || 0; }
+          return true;
+        })) skips++;
       }
       // attack: a click (saber swing / blaster shot), and a move every few steps
       await page.mouse.down(); await page.waitForTimeout(60); await page.mouse.up();
@@ -165,7 +176,7 @@ for (const [hero, mode, mission] of [['jedi', 'campaign'], ['mando', 'campaign']
                objective: document.getElementById('waveinfo').textContent, squad: GAME.squad.allies.length };
     }, startGt);
     if (mode === 'mission') result.skips = skips;
-    result.everHit = everHit;
+    result.everHit = everHit; result.sawDuel = sawDuel;
   } catch (e){
     errors.push('script: ' + e.message);
   }
@@ -179,7 +190,7 @@ for (const [hero, mode, mission] of [['jedi', 'campaign'], ['mando', 'campaign']
     if (result.frames < 30) problems.push(`only ${result.frames} frames rendered`);
     if (result.gameSeconds < GAME_SECONDS * 0.5) problems.push(`game only advanced ${result.gameSeconds}s`);
     if (result.mode !== 'play' && !(mode === 'mission' && result.mode === 'victory')) problems.push(`left play mode (mode: ${result.mode})`);
-    if (mode === 'mission' && !DUEL_LINE[mission].test(result.objective)) problems.push('the mission never reached its duel');
+    if (mode === 'mission' && !result.sawDuel && !DUEL_LINE[mission].test(result.objective)) problems.push('the mission never reached its duel');
     if (!result.enemies && !result.kills) problems.push('no enemies ever spawned');
     if ((mission === 'strike' || mode === 'sandbox') && !result.squad) problems.push('the squad never formed up');
     if (!result.kills && !result.hurt && !result.everHit) problems.push('the hero never hit anything');

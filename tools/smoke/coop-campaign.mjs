@@ -49,6 +49,8 @@ try {
   }
   const begin = (page) => page.evaluate(() => { const b = document.querySelector('#chapcard.open [data-go]'); if (b) b.click(); GAME.cutscene.skipScene(); });   // the chapter card, and its opening scene (tools/smoke/cutscenes.mjs tests those)
   await host.waitForFunction(() => document.querySelector('#chapcard.open'), null, poll); await begin(host);
+  // the Jedi's story opens on its prologue, a one-on-one sparring duel: go on to chapter 1, the siege's waves
+  await host.evaluate(() => GAME.startChapter(1)); await begin(host);
   // the guest sees the run and joins it
   await guest.waitForFunction(() => document.getElementById('coopjoinrun').style.display !== 'none', null, poll);
   await guest.click('#coopclose'); await guest.click('#hero-mando');
@@ -59,7 +61,7 @@ try {
     await guest.waitForTimeout(800);
   }
   if (!(await guest.evaluate(() => GAME.G.coopGuest))) throw new Error('the guest did not join the host\'s run');
-  if (!(await guest.evaluate(() => GAME.G.chapter === 0 && document.querySelector('#chapcard.open')))) throw new Error('the guest did not join the host\'s chapter');
+  if (!(await guest.evaluate(() => GAME.G.chapter === 1 && document.querySelector('#chapcard.open')))) throw new Error('the guest did not join the host\'s chapter');
   await begin(guest);
   if (!(await guest.evaluate(() => GAME.G.coopGuest))) throw new Error('the guest did not join the host\'s campaign');
   if (await guest.evaluate(() => GAME.G.endless)) throw new Error('the guest joined Survival, not the campaign');
@@ -74,8 +76,8 @@ try {
   if (await guest.evaluate(() => GAME.G.skillSelect)) throw new Error('the guest\'s upgrade screen opened mid-chapter');
   // the host moves on to a mission chapter: the guest follows it there, shown the host's objectives
   await guest.evaluate(() => { document.getElementById('skilltree').style.display = 'none'; GAME.G.skillSelect = false; });
-  await host.evaluate(() => GAME.startChapter(2)); await begin(host);
-  await guest.waitForFunction(() => GAME.G.chapter === 2 && GAME.G.mission && GAME.G.coopGuest && GAME.missionState().def.id === 'refuge', null, poll);
+  await host.evaluate(() => GAME.startChapter(3)); await begin(host);
+  await guest.waitForFunction(() => GAME.G.chapter === 3 && GAME.G.mission && GAME.G.coopGuest && GAME.missionState().def.id === 'refuge', null, poll);
   await begin(guest);
   // the story's voice lines: what the host's chapter says, the guest hears too (game/story.js comms)
   await host.evaluate(() => GAME.storyBeat('escape'));
