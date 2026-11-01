@@ -82,6 +82,9 @@ try {
   const hp1 = await guest.evaluate(() => GAME.player.hp);
   await host.evaluate(([x, y, z, n]) => { const e = GAME.enemies.find(o => o.nid === n); GAME.coopHooks.hurt(e, 6, { x: x + 1, y, z }, 'melee', true); }, [...gp.slice(0, 3), target]);
   await guest.waitForFunction((hp) => GAME.player.hp < hp, hp1, poll);
+  // from here on the guest only has to stay standing: a long run of checks in a live Survival fight (wave 4 by the end) can
+  // otherwise kill it, and a dead guest fails everything after (coop-four.mjs keeps its heroes up the same way)
+  for (const page of [host, guest]) await page.evaluate(() => { setInterval(() => { if (GAME.G.mode === 'play' && !GAME.player.downed && GAME.player.hp < 50) GAME.player.hp = 100; }, 100); });
   // a power on the guest's side (a foe floored there) lands on the host's real foe
   const t2 = shared[1];
   await guest.evaluate((n) => { const e = GAME.enemies.find(o => o.nid === n); e.state = 'knockdown'; e.st = 3; }, t2);
@@ -105,7 +108,8 @@ try {
     const e = GAME.enemies.find(o => o.nid === n), p = GAME.player.group.position, g = e.group;
     e.ng[1] = 1; e.ng[6] = 0;   // guard up on its line, squared up to the guest
     g.rotation.y = Math.atan2(p.x - g.position.x, p.z - g.position.z);
-    return GAME.duel.duelDefend(e, ['L', 'R', 'H', 'Lo'][e.ng[0]], 'punch', false);
+    e.dp.dodge = 0; e.dp.parry = 0;   // (no dice: an agile duellist may otherwise slip the blow before its guard turns it)
+    const r = GAME.duel.duelDefend(e, ['L', 'R', 'H', 'Lo'][e.ng[0]], 'punch', false); e.dpKey = ''; return r;
   }, dn);
   if (turned !== 'block') throw new Error('the guest\'s blow on the duellist\'s guarded line was not turned: ' + turned);
   await host.waitForFunction(([n, p0]) => { const e = GAME.enemies.find(o => o.nid === n); return !e || e.dead || e.posture > p0 || e.state === 'stagger'; }, [dn, post0], poll);
@@ -113,7 +117,8 @@ try {
   const slipped = await guest.evaluate((n) => {
     const e = GAME.enemies.find(o => o.nid === n), p = GAME.player.group.position, g = e.group;
     e.ng[1] = 1; e.ng[7] = 0; e.dp.dodge = 1; g.rotation.y = Math.atan2(p.x - g.position.x, p.z - g.position.z);
-    const r = GAME.duel.duelDefend(e, 'L', 'cut', false); e.dpKey = ''; return r;
+    const rnd = Math.random; Math.random = () => 0;   // (no dice: the slip is a roll against the difficulty, which can miss)
+    try { const r = GAME.duel.duelDefend(e, 'L', 'cut', false); e.dpKey = ''; return r; } finally { Math.random = rnd; }
   }, dn);
   if (slipped !== 'dodge') throw new Error('the duellist did not slip the guest\'s cut: ' + slipped);
   await host.waitForFunction((n) => { const e = GAME.enemies.find(o => o.nid === n); return !e || e.dead || e.dodgeT > 0 || e.state === 'recover'; }, dn, poll);
@@ -122,12 +127,13 @@ try {
   const bound = await guest.evaluate((n) => { const e = GAME.enemies.find(o => o.nid === n); return e.dp && e.dp.lock ? GAME.duel.startLock(e, 'mid') : 'no lock in its profile'; }, dn);
   if (bound !== true) throw new Error('the guest could not lock blades with the duellist: ' + bound);
   await host.waitForFunction((n) => { const e = GAME.enemies.find(o => o.nid === n); return !e || e.dead || e.state === 'lock'; }, dn, poll);
-  await guest.evaluate(() => { GAME.duel.LOCK.bal = 1; });
+  await guest.evaluate(() => { GAME.duel.LOCK.bal = 2; });   // won outright (at exactly 1, its own push that frame takes it back under before the check)
   await guest.waitForFunction(() => !GAME.duel.LOCK.foe, null, poll);
   await host.waitForFunction((n) => { const e = GAME.enemies.find(o => o.nid === n); return !e || e.dead || e.state === 'stagger' || e.state === 'recover'; }, dn, poll);
   // a kill on the host pays the guest XP too
   const xp0 = await guest.evaluate(() => GAME.G.xp || 0);
-  await host.evaluate((n) => { const e = GAME.enemies.find(o => o.nid === n); if (e) GAME.damageEnemy(e, 99999, null, 0, false, false); }, t2);
+  const killed = await host.evaluate(() => { const e = GAME.enemies.find(o => !o.dead); if (e) GAME.damageEnemy(e, 99999, null, 0, false, false); return !!e; });   // any foe still up (the earlier ones may be dead by now)
+  if (!killed) throw new Error('no foe left up on the host to kill');
   await guest.waitForFunction((x) => (GAME.G.xp || 0) > x, xp0, poll);
   // the host waits in the lull while the guest's upgrade screen is open, and goes on a moment after it closes
   // (the upgrade page opens every third wave in survival: make this the host's third)
@@ -164,7 +170,7 @@ try {
   await guest.waitForFunction(() => GAME.coopNet.status === 'connected' && GAME.G.coopGuest && GAME.enemies.some(e => e.net), null, { ...poll, timeout: 45000 });
   ok = true;
   console.log('ok   co-op run: the guest joined the host\'s Survival run, shows ' + shared.length + '+ of its foes as puppets, a blow on one reached the host, and a shot and a blow from one hurt the guest, a power, the partner shots and shared XP work');
-} catch(e){ errors.push(e.message); for (const p of browser.contexts().flatMap(c => c.pages())) errors.push(JSON.stringify(await p.evaluate(() => ({ mode: GAME.G.mode, guest: GAME.G.coopGuest, foes: GAME.enemies.map(e => [e.nid, !!e.net]), status: document.getElementById('coopstatus').textContent })).catch(x => x.message))); }
+} catch(e){ errors.push(e.message + ' (at ' + ((e.stack || '').match(/coop-run\.mjs:\d+/) || ['an unknown step'])[0] + ')'); for (const p of browser.contexts().flatMap(c => c.pages())) errors.push(JSON.stringify(await p.evaluate(() => ({ mode: GAME.G.mode, guest: GAME.G.coopGuest, foes: GAME.enemies.map(e => [e.nid, !!e.net]), status: document.getElementById('coopstatus').textContent })).catch(x => x.message))); }
 await browser.close(); server.close?.();
 if (!ok || errors.length){ console.error('FAIL co-op run\n' + errors.join('\n')); process.exit(1); }
 process.exit(0);
