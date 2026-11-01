@@ -82,6 +82,9 @@ try {
   const hp1 = await guest.evaluate(() => GAME.player.hp);
   await host.evaluate(([x, y, z, n]) => { const e = GAME.enemies.find(o => o.nid === n); GAME.coopHooks.hurt(e, 6, { x: x + 1, y, z }, 'melee', true); }, [...gp.slice(0, 3), target]);
   await guest.waitForFunction((hp) => GAME.player.hp < hp, hp1, poll);
+  // from here on the guest only has to stay standing: a long run of checks in a live Survival fight (wave 4 by the end) can
+  // otherwise kill it, and a dead guest fails everything after (coop-four.mjs keeps its heroes up the same way)
+  for (const page of [host, guest]) await page.evaluate(() => { setInterval(() => { if (GAME.G.mode === 'play' && !GAME.player.downed && GAME.player.hp < 50) GAME.player.hp = 100; }, 100); });
   // a power on the guest's side (a foe floored there) lands on the host's real foe
   const t2 = shared[1];
   await guest.evaluate((n) => { const e = GAME.enemies.find(o => o.nid === n); e.state = 'knockdown'; e.st = 3; }, t2);
