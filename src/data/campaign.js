@@ -167,6 +167,11 @@ export const CHAPTERS = [
              mando: ['The clan rides together again.', 'Take their line, take their gate. The Magistrate is behind it.'] },
     lines: {
     clear: { jedi: ['The gate is open. Gather the masters.'], mando: ['The gate is down. The clan rides in together.'] } } },
+  // the Jedi's own (data/campaign-jedi.js has its words): free Master Vael and the children before the throne
+  { id: 'chains', act: 2, kind: 'mission', mission: 'chains', world: 'EXEGOL, THE CITADEL', story: 'jedi',
+    title: 'VAEL\'S CHAINS',
+    brief: { jedi: ['Vael is chained before the throne.', 'Get him out.'], mando: ['Vael is chained before the throne.', 'Get him out.'] },
+    lines: { clear: { jedi: ['Vael is free.'], mando: ['Vael is free.'] } } },
   { id: 'exegol', act: 2, kind: 'waves', level: 2, waves: [0, 4], world: 'EXEGOL',
     title: 'THRONE OF EXEGOL', arena: { layout: 'sith', arena: 64 },
     brief: { jedi: ['An army stands before you, and Vexis stands behind it.', 'Whatever waits on that throne, you are not facing it alone.'],

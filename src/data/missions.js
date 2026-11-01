@@ -751,6 +751,51 @@ export const MISSIONS = {
     ],
     done: 'The echo is gone. The gate under Jedha stands open, and on the other side of it is Exegol.',
   },
+  // VAEL'S CHAINS (the Jedi's Act III, before the throne): the Citadel's amphitheatre on Exegol. Break the chains holding
+  // Master Vael, hold the floor while the children Vexis took from the Ember Academy run for the gate, then his Grand
+  // Inquisitor. With Ilsa spared she breaks one chain herself ('chains'); without her it is all yours ('chains-alone').
+  chains: {
+    id: 'chains',
+    title: 'VAEL\'S CHAINS',
+    campaignOnly: true, heroes: ['jedi'],
+    blurb: 'free Master Vael and the children before the throne',
+    level: { name: 'MISSION — THE CITADEL ON EXEGOL', sub: 'Vael is chained before the throne. The children are in the stands.',
+             arena: 64, floor: 0x3b2f31, fog: 0x401a22, sky: 0x1a080c, layout: 'sith', waves: [], hazards: {} },
+    start: [0, 16, Math.PI],   // in at the south gate, looking north at the throne
+    kit: 7,
+    grant: { jedi: ['throw', 'slam'], mando: ['grapple', 'birds'] },
+    squad: 2,
+    objectives: [
+      { kind: 'sabotage', title: 'BREAK VAEL\'S CHAINS', consoleName: 'CHAIN', consoleDone: 'BROKEN', doneLine: 'VAEL IS FREE', doneSub: 'He can barely stand. He stands anyway.', music: 'battle',
+        say: 'Ilsa has the left chain. Break the other two. Stand at each anchor until it gives.',
+        task: 'Stand at each chain anchor to break it',
+        consoles: [ { at: [10, -22], guards: { grunt: 2, lancer: 1, blaster: 1 } },
+                    { at: [0, -21], guards: { phalanx: 1, grunt: 2, officer: 1 } } ],
+        time: 4.5, r: 2.4, hitLoss: 1.2,
+        trickle: { every: 14, cap: 7, group: { grunt: 1, blaster: 1 } }, from: [-Math.PI + 0.3, -0.3] },
+
+      { kind: 'hold', title: 'GET THE CHILDREN OUT', music: 'defend', start: [0, -4, Math.PI],
+        say: 'The children Vexis took from the academy are running for the gate. Hold the floor until the last one is past you.',
+        task: 'Hold the floor until every child is out',
+        at: [0, -6], r: 7, time: 45, awayRate: 0.35, squadRate: 0.55,
+        evacuees: { kind: 'youngling', count: 14, spacing: 1.5, speed: 2.6, ramp: false, verb: 'OUT', name: { jedi: 'CHILDREN', mando: 'CHILDREN' },
+                    path: [[0, -22], [0, -12], [0, -2], [0, 8]] },
+        overrun: 'CLEAR THE FLOOR', unguarded: 'FLOOR UNGUARDED', doneLine: 'THE CHILDREN ARE OUT', doneSub: 'Kast\'s troopers have them at the gate.',
+        pulses: [ { grunt: 2, blaster: 2 }, { grunt: 2, lancer: 1, grenadier: 1 }, { grunt: 2, officer: 1, flyer: 1 }, { grunt: 2, phalanx: 1, sniper: 1 } ],
+        every: [8, 12], cap: 9, from: [-Math.PI + 0.3, -0.3], aggro: 8 },
+
+      { kind: 'duel', title: 'DEFEAT THE GRAND INQUISITOR', music: 'duel', start: [0, -4, Math.PI],
+        say: 'His Grand Inquisitor. Every hunter who came for the children answered to it. It answers to you now.',
+        task: 'Win the duel while the squad holds',
+        enter: 'The Grand Inquisitor comes down off the dais, both blades spinning.', kicker: 'THE CITADEL',
+        line: 'Every name in that Ledger was mine to collect.',
+        foe: 'acolyte', form: 'djemso', name: 'THE GRAND INQUISITOR', hp: 4.5, dmg: 1.2, scale: 1.22, tint: 0x8a1a22, at: [0, -18],
+        duel: { posture: 170, feint: 0.35, chain: 3, counter: 0.5 },
+        rage: 0.5, rageDuel: { feint: 0.5, delay: 0.3, chain: 4 },
+        trickle: { every: 14, cap: 3, group: { grunt: 2 } }, from: [-Math.PI + 0.4, -0.4] },
+    ],
+    done: 'Vael is free and the children are out. Only Vexis is left.',
+  },
   // THE MUSTAFAR FORGE: the forge floor of the second campaign level, broken for good. Charges on its three feeds,
   // hold the lane out while they burn, then the forge's master comes for whoever lit them.
   forge: {
@@ -951,4 +996,18 @@ export const MISSIONS = {
     ],
     done: { jedi: 'The road is open and the gate is ours. Vexis is waiting inside.',
             mando: 'The gate is down. The Magistrate is inside. This is the Way.' } };
+}
+
+// VAEL'S CHAINS without Ilsa (the Jedi struck her down at Khel Dar): nobody takes the third chain, and with no one
+// reading the Citadel's guard rota the hold runs longer under heavier pulses.
+{
+  const C = MISSIONS.chains, [chain, hold, duel] = C.objectives;
+  MISSIONS['chains-alone'] = { ...C, id: 'chains-alone',
+    objectives: [
+      { ...chain, say: 'Three chains, and nobody left who knows them. Stand at each anchor until it gives.',
+        consoles: [ { at: [-10, -22], guards: { grunt: 2, blaster: 1, grenadier: 1 } }, ...chain.consoles ] },
+      { ...hold, time: 55, cap: 10,
+        pulses: [ ...hold.pulses, { grunt: 2, lancer: 1, phalanx: 1 } ] },
+      duel,
+    ] };
 }

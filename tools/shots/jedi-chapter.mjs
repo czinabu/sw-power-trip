@@ -1,6 +1,6 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
 // A JEDI STORY CHAPTER, shot by shot (its card, then each objective in turn, skipped along), on the BUILT game:
-// node tools/shots/jedi-chapter.mjs <out dir> [chapter id: archive] [objectives to skip through: 2]  (CHROME=<path> to use another Chromium)
+// node tools/shots/jedi-chapter.mjs <out dir> [chapter id: archive] [objectives to skip through: 2]   (STORY='{"ilsa":"struck"}' sets the choices)  (CHROME=<path> to use another Chromium)
 import { chromium } from 'playwright';
 import path from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
@@ -22,6 +22,7 @@ for (let i = 0; i < 8 && !(await page.evaluate(() => GAME.G.mode === 'play')); i
 }
 await page.waitForSelector('#chapcard.open', { timeout: 30000 });
 // on to the archive chapter
+await page.evaluate((st) => { if (st) GAME.G.story = JSON.parse(st); }, process.env.STORY || '');   // STORY='{"ilsa":"struck"}': the run's choices so far
 await page.evaluate((ch) => { document.getElementById('chapcard').classList.remove('open'); GAME.G.cardUp = false; GAME.startChapter(GAME.chapters().findIndex(c => c.id === ch)); }, ch);
 await page.waitForTimeout(3000);
 await page.screenshot({ path: out + '/' + ch + '-v1-card.png' });
