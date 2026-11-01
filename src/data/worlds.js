@@ -431,6 +431,30 @@ export const MISSION_WORLDS = {
     hazards: { barrel: 0xa33820 },
     sound: 'plains',
   },
+  jedhaNight: {   // the temple on Jedha, burned and empty at night (Return to Jedha): cold moonlight, the holy city dark, the gate's violet
+    sky: { top: 0x06081a, horizon: 0x2a2a48, below: 0x141220, bands: 6, stars: 120,
+      sun: { el: 0.5, az: -2.0, color: 0xd8dce8, halo: 0x6a7090, size: 16, kind: 'moon' },
+      clouds: { color: 0x3a3c58, under: 0x1a1a2a, count: 10, lo: 0.5, hi: 0.9 },
+      ridges: [{ color: 0x1e1c2a, h: 0.1, rough: 0.04, seed: 3 }, { color: 0x181622, h: 0.06, rough: 0.06, seed: 8 }] },
+    fog: 0x1e1e34, fogStart: 0.6, fogEnd: 2.6,
+    light: { sun: 0xb8c4f0, sunI: 1.2, dir: [-18, 40, 30], hemiSky: 0x6a74a8, hemiGround: 0x2a2230, fill: 0.92, rim: 0xa07aff, rimI: 0.6 },
+    floor: { kind: 'flagstone', base: 0x4a4450, seed: 4 },
+    outer: 0x2a2632,
+    pal: { stone: 0x5e5866, stoneD: 0x3e3846, trim: 0x8a7a9a, banner: 0x3a2a4a, brazier: 0x9a6aff, inlay: 0x6a4aa8, gate: 0x9a6aff, seal: 0xff3a2a },
+    backdrop: [
+      // the holy city, dark: the same streets and walls as the siege, a few windows still lit
+      { kind: 'district', h: [12, 24], w: [7, 13], color: 0x2e2a38, color2: 0x26222e, trim: 0x1e1a26, roof: 0x221e2a, domes: 0.3, spires: 0.12, setback: 0.3, gap: 9 },
+      { kind: 'ramparts', r: 2.3, segments: 30, h: 9, color: 0x2a2634, color2: 0x24202c, roof: 0x1a1622, gaps: [-2.4] },
+      { kind: 'statue', az: -2.4, r: 2.1, scale: 1.3, color: 0x34303e, color2: 0x2a2634, dark: 0x16121c, metal: 0x3a3844 },
+      { kind: 'towers', count: 30, r: [1.75, 2.6], h: [10, 22], color: 0x24202c, color2: 0x2a2632, windows: 0xffc070, skip: [[-2.4, 0.35], [-1.8, 0.2]] },
+      { kind: 'mesas', count: 9, r: [2.2, 2.7], h: [20, 36], w: [18, 34], color: 0x221e2a, color2: 0x1e1a26, skip: [[-2.4, 0.45]] },
+    ],
+    hazards: { vent: 0x3a2a4a, ventIdle: 0x1a1222, barrel: 0x8a2a30 },
+    ambient: { kind: 'ash', color: 0xb8a8d8, count: 110, size: 0.22, opacity: 0.4 },
+      mist: { color: 0x4a3a6a, count: 30, size: 9, opacity: 0.14 },
+    beats: { fog: 0x2a2440, fill: 1.06, tint: 0xb090ff },
+    sound: 'plains',
+  },
   pens: {   // the Inquisitor prison moon Tessaril: black wet rock at night under a gas giant, rain, a storm over the spire
     sky: { top: 0x05070e, horizon: 0x2a3048, below: 0x10121a, bands: 6, stars: 60,
       sun: { el: 0.42, az: 2.2, color: 0x8a7aa8, halo: 0x4a4466, size: 70, kind: 'moon' },   // the gas giant Tessaril circles

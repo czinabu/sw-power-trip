@@ -775,6 +775,72 @@ export const MISSIONS = {
     ],
     done: 'Sera laughs for the first time in a year. She will come.',
   },
+  // THE LAST LESSON (the Jedi's prologue): the temple dojo on Jedha, the night before the siege. A practice duel with
+  // Ilsa Venn, who will open the temple gate to the Empire before morning. Short, low stakes, and it teaches the duel.
+  'last-lesson': {
+    id: 'last-lesson',
+    title: 'THE LAST LESSON',
+    campaignOnly: true, heroes: ['jedi'],
+    blurb: 'spar with Ilsa the night before the siege',
+    level: { name: 'PROLOGUE — THE TEMPLE DOJO', sub: 'Jedha. The night before.',
+             arena: 48, floor: 0x6a3020, fog: 0x2a1a14, sky: 0x1a0e0a, layout: 'dojo', waves: [], hazards: {} },
+    start: [0, 8, Math.PI],
+    kit: 1,
+    grant: { jedi: [], mando: [] },
+    objectives: [
+      { kind: 'duel', title: 'SPAR WITH ILSA', music: 'duel',
+        say: 'Training blades, first to yield. Ilsa is faster than you and knows it. Block her chain, then answer when she overreaches.',
+        task: 'Win the sparring match',
+        enter: 'Ilsa thumbs her training blade to life.', kicker: 'SPARRING',
+        line: 'Guard up. You always drop it when you are tired.',
+        foe: 'acolyte', form: 'djemso', name: 'ILSA VENN', hp: 2, dmg: 0.45, scale: 1.0, tint: 0x4a7ad2, at: [0, -4],
+        duel: { feint: 0.25, chain: 2, counter: 0.3 } },
+    ],
+    done: 'Ilsa yields, laughing. It is the last time you will hear her laugh for a long while.',
+  },
+  // RETURN TO JEDHA (the Jedi's Act III): the burned temple at night. Under the dais is an old Sith gate, Vexis's own road
+  // to Exegol. Break the Inquisitors' seals on it, hold the dais while it wakes, then face what it shows you.
+  'jedha-night': {
+    id: 'jedha-night',
+    title: 'RETURN TO JEDHA',
+    campaignOnly: true, heroes: ['jedi'],
+    blurb: 'open the old Sith gate under the burned temple',
+    level: { name: 'MISSION — RETURN TO JEDHA', sub: 'The temple, burned and empty. Something under it is awake.',
+             arena: 56, floor: 0x3a3440, fog: 0x1a1626, sky: 0x08060e, layout: 'jedhaNight', waves: [], hazards: {} },
+    start: [0, 18, Math.PI],   // up the pilgrim steps, looking north at the dais
+    kit: 6,
+    grant: { jedi: ['throw', 'slam'], mando: ['grapple', 'birds'] },
+    squad: 2,
+    objectives: [
+      { kind: 'sabotage', title: 'BREAK THE SEALS', consoleName: 'SEAL', consoleDone: 'BROKEN', doneLine: 'THE SEALS ARE BROKEN', doneSub: 'The dais is opening.', music: 'battle',
+        say: 'The Inquisitors left three seals round the dais and a garrison to keep them. Stand at each seal until it breaks.',
+        task: 'Stand at each seal to break it',
+        consoles: [ { at: [-9, 6], guards: { grunt: 2, blaster: 1 } },
+                    { at: [9, 6], guards: { grunt: 2, lancer: 1 } },
+                    { at: [0, -10], guards: { phalanx: 1, grunt: 1, officer: 1 } } ],
+        time: 4.5, r: 2.4, hitLoss: 1.2,
+        trickle: { every: 15, cap: 6, group: { grunt: 1, blaster: 1 } }, from: [-Math.PI + 0.3, -0.3] },
+
+      { kind: 'hold', title: 'HOLD THE DAIS', music: 'defend', holding: 'THE GATE IS WAKING',
+        say: 'The gate is waking. Hold the dais until it opens, and keep off the summit while it burns.',
+        task: 'Stay by the dais until the gate opens',
+        at: [0, 0], r: 7, time: 40, awayRate: 0.35, squadRate: 0.55,
+        overrun: 'CLEAR THE DAIS', unguarded: 'DAIS UNGUARDED', doneLine: 'THE GATE IS OPEN', doneSub: 'Something steps out of it.',
+        pulses: [ { grunt: 2, blaster: 2 }, { grunt: 2, lancer: 1, grenadier: 1 }, { grunt: 2, officer: 1, flyer: 1 }, { grunt: 2, phalanx: 1, sniper: 1 } ],
+        every: [8, 12], cap: 8, from: [-Math.PI, Math.PI], aggro: 8 },
+
+      { kind: 'duel', title: 'FACE THE ECHO', music: 'duel',
+        say: 'The gate shows you something with a blade. It is not real. Its strikes are.',
+        task: 'Win the duel',
+        enter: 'A shape of violet light steps down from the dais.', kicker: 'THE GATE',
+        line: 'You came back to where it started. So did I.',
+        foe: 'acolyte', form: 'djemso', name: 'THE ECHO', hp: 4, dmg: 1.15, scale: 1.1, tint: 0x6a4ad2, at: [0, -6],
+        duel: { posture: 150, feint: 0.35, chain: 3, counter: 0.45 },
+        rage: 0.5, rageDuel: { feint: 0.5, delay: 0.35, chain: 4 },
+        trickle: { every: 14, cap: 3, group: { grunt: 2 } }, from: [-Math.PI + 0.4, -0.4] },
+    ],
+    done: 'The echo is gone. The gate under Jedha stands open, and on the other side of it is Exegol.',
+  },
   // THE MUSTAFAR FORGE: the forge floor of the second campaign level, broken for good. Charges on its three feeds,
   // hold the lane out while they burn, then the forge's master comes for whoever lit them.
   forge: {

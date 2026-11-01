@@ -33,7 +33,7 @@ const clone = (v) => v == null ? v : JSON.parse(JSON.stringify(v));
 export function inCampaignRun(){ return G.mode === 'play' && (G.chapter >= 0 || (!G.endless && !G.training && !G.mission && !G.sandbox)); }
 function snapshotRun(){
   return {
-    idx: G.levelIdx, chapter: G.chapter, actTwo: G.actTwo, story: clone(G.story) || {}, checkpoint: clone(G.checkpoint), stance: G.stance, loadout: [...G.loadout], mandoKit: { ...(G.mandoKit || RUN_KIT) }, weapon: player.weapon, rifleMod: player.rifleMod || 'burst',
+    idx: G.levelIdx, chapter: G.chapter, chapterId: G.chapter >= 0 ? (chapterOrder(G.actTwo)[G.chapter] || {}).id : null, actTwo: G.actTwo, story: clone(G.story) || {}, checkpoint: clone(G.checkpoint), stance: G.stance, loadout: [...G.loadout], mandoKit: { ...(G.mandoKit || RUN_KIT) }, weapon: player.weapon, rifleMod: player.rifleMod || 'burst',
     unlocked: clone(G.unlocked), stanceUnlocked: clone(G.stanceUnlocked), formFork: G.formFork || null, mandoChoiceShown: G.mandoChoiceShown,
     xp: G.xp, xpEarned: G.xpEarned, skillPoints: G.skillPoints, skillSpent: G.skillSpent,
     powerLv: clone(G.powerLv), mastery: clone(G.mastery), masteryUse: clone(G.masteryUse), xpPoints: G.xpPoints, seenTypes: clone(G.seenTypes),
@@ -77,25 +77,39 @@ function migrateUnlocked(su){
   return out;
 }
 
+// where a saved run's chapter is now: by its id (chapters a story adds later shift the positions), else by its place.
+// A save from before the Jedi's own chapters (the prologue, Return to Jedha) counted only the shared ones.
+function runPos(run, hero = run.hero){
+  if (!(run.chapter != null && run.chapter >= 0)) return CHAPTER_OF_LEVEL[run.idx] || 0;
+  const list = chapterOrder(run.actTwo, hero);
+  let i = -1;
+  if (run.chapterId) i = list.findIndex(c => c.id === run.chapterId);
+  else if (hero === 'jedi'){ const old = list.filter(c => !c.story)[run.chapter]; i = old ? list.indexOf(old) : -1; }
+  return i >= 0 ? i : run.chapter;
+}
 // a loaded save's run waits on the menu (G.resumeRun) until BEGIN picks it up, as long as the same hero is picked
 export function canResume(){ return !!(G.resumeRun && G.resumeRun.hero === G.hero); }   // (a declaration: menus.js can call it while modules are still loading)
 export const resumeLabel = () => savedChapter(G.resumeRun, G.hero);
 // 'ACT II · CH 6' for the saved run the menu would continue (the campaign tile)
 export function resumeProgress(){
   const run = G.resumeRun; if (!run) return '';
-  const pos = run.chapter != null && run.chapter >= 0 ? run.chapter : CHAPTER_OF_LEVEL[run.idx] || 0, list = chapterOrder(run.actTwo, run.hero), c = list[pos];
+  const pos = runPos(run), list = chapterOrder(run.actTwo, run.hero), c = list[pos];
   return c ? 'ACT ' + ['I', 'II', 'III'][c.act] + ' · ' + chapterNo(pos, list).replace('CHAPTER', 'CH') : '';
 }
 export const hasSaves = () => { for (const i of [0, 1, 2, AUTO]) if (readSlot(i)) return true; return false; };
 export function resumeRun(){
   const run = G.resumeRun; G.resumeRun = null;
+  if (run.chapter != null && run.chapter >= 0){
+    const was = run.chapter; run.chapter = runPos(run);
+    if (run.checkpoint && run.checkpoint.ch === was) run.checkpoint.ch = run.chapter;   // (its checkpoint is that chapter's)
+  }
   restoreRun(run);
   resumeChapter(run);   // (a save from before the chapters picks up on the chapter that opens its level)
   switchStance(migrateForm(run.stance) || 'shiicho', true);
 }
 // 'CHAPTER 3 · THE LAST EVACUATION' for a saved run, without starting it
 function savedChapter(run, hero){
-  const pos = run.chapter != null && run.chapter >= 0 ? run.chapter : CHAPTER_OF_LEVEL[run.idx] || 0, list = chapterOrder(run.actTwo, hero), c = list[pos];
+  const pos = runPos(run, hero), list = chapterOrder(run.actTwo, hero), c = list[pos];
   return c ? chapterNo(pos, list) + ' · ' + forHero(c.title, hero) : 'LEVEL ' + (run.idx + 1) + ' · ' + placeOf(LEVELS[run.idx]);
 }
 

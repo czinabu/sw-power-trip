@@ -33,6 +33,7 @@ import { buildPensArena } from './arenas/pens.js';
 import { buildBargeArena } from './arenas/barge.js';
 import { buildHoldfastArena } from './arenas/holdfast.js';
 import { buildCitadelArena } from './arenas/citadel.js';
+import { buildJedhaNightArena } from './arenas/jedha-night.js';
 import { buildPrisonArena } from './arenas/prison.js';
 import { buildHangarArena } from './arenas/hangar.js';
 import { buildSithArena } from './arenas/sith.js';
@@ -146,6 +147,7 @@ export function buildArena(L){
   else if (L.layout === 'ironroad'){ buildGrasslandArena(LP); } // the Mando's story: the Grass Sea's plan, on Duren's iron plain
   else if (L.layout === 'prison'){ buildPrisonArena(LP); }
   else if (L.layout === 'pens'){ buildPensArena(LP); }
+  else if (L.layout === 'jedhaNight'){ buildJedhaNightArena(LP); }
   else if (L.layout === 'hangar'){ buildHangarArena(LP); }
   else if (L.layout === 'sith'){ buildSithArena(LP); }
   else if (L.layout === 'jungle'){ buildJungleArena(LP); }

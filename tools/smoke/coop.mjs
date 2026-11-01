@@ -1,7 +1,7 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
 // CO-OP SMOKE TEST — runs a local PeerServer, opens two browsers on the BUILT game (dist/index.html), hosts in one,
-// joins from the other with the room code, starts play in both and checks each sees the other's hero, posed from the
-// network, and that enemies go after both heroes.
+// joins from the other with the room code, has the guest join the host's campaign run from the co-op panel and checks
+// each sees the other's hero, posed from the network, and that enemies go after both heroes.
 //   npm run build && npm run smoke:coop
 
 import { chromium } from 'playwright';
@@ -44,16 +44,27 @@ try {
   await guest.waitForFunction(() => /KIT FISTO/.test(document.getElementById('cooproster').textContent), null, { timeout: 15000, polling: 250 });
   if (process.env.SHOT) await host.screenshot({ path: process.env.SHOT });
   if (await host.evaluate(() => localStorage.getItem('sw_coop_name')) !== 'Kit Fisto') throw new Error('the name should be saved, filtered, for next time');
-  for (const [page, hero] of [[host, 'jedi'], [guest, 'mando']]){
-    await page.click('#coopclose'); await page.click('#hero-' + hero);
+  // the host starts the campaign, and the guest joins that run from its co-op panel. (Each hero opens on its own story's
+  // first chapter now, so two separate starts no longer land in the same fight: joining is the only way in.)
+  const begin = (page) => page.evaluate(() => { const b = document.querySelector('#chapcard.open [data-go]'); if (b) b.click(); GAME.cutscene.skipScene(); });   // the chapter card, and its opening scene
+  const play = async (page) => {
     for (let i = 0; i < 5; i++){
       if (await page.evaluate(() => GAME.G.mode === 'play')) break;
       if (await page.isVisible('#goText')) await page.click('#goText', { timeout: 2000 }).catch(() => {});
       if (await page.isVisible('#forms [data-go]')) await page.click('#forms [data-go]', { timeout: 2000 }).catch(() => {});   // the Jedi's forms page before the fight: FIGHT
       await page.waitForTimeout(800);
     }
-  }
-  for (const page of [host, guest]) await page.evaluate(() => { const b = document.querySelector('#chapcard.open [data-go]'); if (b) b.click(); GAME.cutscene.skipScene(); });   // the campaign's chapter card, and its opening scene
+  };
+  await host.click('#coopclose'); await host.click('#hero-jedi'); await play(host); await begin(host);
+  await guest.click('#coopclose'); await guest.click('#hero-mando');
+  await guest.click('#mode-coop');
+  await guest.waitForFunction(() => document.getElementById('coopjoinrun').style.display !== 'none', null, { timeout: 20000, polling: 250 });
+  await guest.click('#coopjoinrun'); await play(guest); await begin(guest);
+  // the Jedi's story opens on its prologue, a sparring duel with Ilsa: the guest (a Mando) joins that too
+  if (!(await guest.evaluate(() => GAME.G.coopGuest && GAME.G.chapter === 0 && GAME.missionState().def.id === 'last-lesson'))) throw new Error('the guest did not join the host\'s prologue');
+  // ...then the host goes on to the siege, a crowd for both heroes, and the guest follows
+  await host.evaluate(() => GAME.startChapter(1)); await begin(host);
+  await guest.waitForFunction(() => GAME.G.coopGuest && GAME.G.chapter === 1, null, { timeout: 60000, polling: 250 }); await begin(guest);
   await host.evaluate(() => GAME.player.group.position.set(5, 0, 3));
   await guest.waitForFunction(() => GAME.partnerShown(), null, { timeout: 15000, polling: 250 });
   await host.waitForFunction(() => GAME.partnerShown(), null, { timeout: 15000, polling: 250 });
