@@ -239,6 +239,7 @@ Object.assign(window.GAME, { buildArena, findClearSpawn, edgeSpawn, mapLevels: (
   refuge: MISSIONS.refuge.level, pursuit: MISSIONS.pursuit.level, prison: byLayout('prison'), pens: MISSIONS.pens.level, jedhaNight: MISSIONS['jedha-night'].level,
   hangar: byLayout('hangar'), approach: MISSIONS['strike-exegol'].level,
   outpost: { ...LEVELS[0], layout: 'outpost', arena: 60 }, covert: MISSIONS.covert.level,   // (the Mando's story: data/campaign-mando.js)
+  jungle: MISSIONS.order66.level, shipyard: { ...LEVELS[0], layout: 'shipyard', arena: 64 }, garrison: MISSIONS.killhouse.level, frigate: MISSIONS.chipfiles.level,   // (the ARC trooper's story: data/campaign-trooper.js)
   barge: MISSIONS.gallows.level, holdfast: MISSIONS.holdfast.level, citadel: { ...LEVELS[2], layout: 'citadel', arena: 64 },
   meltworks: MISSIONS.meltworks.level, ironroad: MISSIONS['iron-road'].level,
   grassland: BATTLE_MAPS.grassland.level, icefront: BATTLE_MAPS.icefront.level, graveyard: BATTLE_MAPS.graveyard.level,

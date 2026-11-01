@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { scene, compileLive } from './renderer.js';
 import { arenaBuilt } from '../world/arena.js';
 import { ENEMY_TYPES } from '../data/enemies.js';
-import { SQUAD, TURNED } from '../data/allies.js';
+import { SQUAD, TURNED, PURGE, DRILL } from '../data/allies.js';
 import { buildEnemyMesh, variantsOf, facesOf } from '../enemies/mesh.js';
 import { buildBoss } from '../boss/mesh.js';
 import { inkProbe } from '../fx/ink.js';
@@ -69,6 +69,7 @@ arenaBuilt.push(prewarmShaders);
 const jobs = [];
 for (const t of Object.values(ENEMY_TYPES)) for (const variant of variantsOf(t)) for (const face of facesOf(t, variant)) jobs.push(() => buildEnemyMesh(t, { variant, face }));   // every marking and face
 for (const t of Object.values(TURNED)) jobs.push(() => buildEnemyMesh({ ...ENEMY_TYPES.blaster, ...t }));   // the prologue's turned company (data/allies.js)
+for (const t of [...Object.values(PURGE), ...Object.values(DRILL)]) jobs.push(() => buildEnemyMesh({ ...ENEMY_TYPES.blaster, ...t }));   // the trooper's story: the purge companies, the drill's droids
 for (const roster of Object.values(SQUAD.roster)) for (const d of roster) jobs.push(() => buildEnemyMesh({ model: d.model, color: d.color, eye: d.eye, cloth: d.cloth, scale: d.scale || 1, ranged: true }));
 jobs.push(() => buildBoss('sith'), () => buildBoss('mando'));
 const run = job => { try { job(); } catch(e){} };

@@ -1,6 +1,6 @@
 // POWER TRIP © 2026 Caleb Zinabu. All rights reserved. See LICENSE.
 import { G, heroKey } from '../state.js';
-import { mergeTrooperStory } from './campaign-trooper.js';
+import { TROOPER_VOICE, TROOPER_ACTS, TROOPER_ACT_TWO, TROOPER_CHAPTERS, TROOPER_EPILOGUE } from './campaign-trooper.js';
 import { MANDO_VOICE, MANDO_ACTS, MANDO_ACT_TWO, MANDO_ACT_TWO_LABEL, MANDO_CHAPTERS, MANDO_EPILOGUE } from './campaign-mando.js';
 import { JEDI_VOICE, JEDI_ACTS, JEDI_ACT_TWO, JEDI_CHAPTERS, JEDI_ENDINGS } from './campaign-jedi.js';
 import { storyWords, answer } from '../game/choices.js';
@@ -51,7 +51,7 @@ export const ACT_TWO = {
 };
 
 export const CHAPTERS = [
-  // ---------------- PROLOGUE (the ARC trooper's, testing: data/campaign-trooper.js has its words) ----------------
+  // ---------------- PROLOGUE (the ARC trooper's story's own, testing: data/campaign-trooper.js has its words) ----------------
   { id: 'order', act: 0, kind: 'mission', mission: 'order66', world: 'THE NIGHT OF THE ORDER, EIGHT YEARS AGO', story: 'trooper', prologue: true, steps: 0,
     title: 'THE NIGHT OF THE ORDER',
     brief: { jedi: ['Eight years ago, in a jungle on the edge of the war, the order came.', 'Get the General out.'],
@@ -167,6 +167,11 @@ export const CHAPTERS = [
              mando: ['The clan rides together again.', 'Take their line, take their gate. The Magistrate is behind it.'] },
     lines: {
     clear: { jedi: ['The gate is open. Gather the masters.'], mando: ['The gate is down. The clan rides in together.'] } } },
+  // the Jedi's own (data/campaign-jedi.js has its words): free Master Vael and the children before the throne
+  { id: 'chains', act: 2, kind: 'mission', mission: 'chains', world: 'EXEGOL, THE CITADEL', story: 'jedi',
+    title: 'VAEL\'S CHAINS',
+    brief: { jedi: ['Vael is chained before the throne.', 'Get him out.'], mando: ['Vael is chained before the throne.', 'Get him out.'] },
+    lines: { clear: { jedi: ['Vael is free.'], mando: ['Vael is free.'] } } },
   { id: 'exegol', act: 2, kind: 'waves', level: 2, waves: [0, 4], world: 'EXEGOL',
     title: 'THRONE OF EXEGOL', arena: { layout: 'sith', arena: 64 },
     brief: { jedi: ['An army stands before you, and Vexis stands behind it.', 'Whatever waits on that throne, you are not facing it alone.'],
@@ -192,12 +197,9 @@ export const EPILOGUE = {
                    'You did not choose this clan. You kept it anyway. This is the Way.'] },
 };
 
-// the clone trooper's own words (testing, a first draft) laid over the chapters above: data/campaign-trooper.js
-mergeTrooperStory(ACTS, ACT_TWO, CHAPTERS, EPILOGUE);
-
 // whose story this run tells: the hero who began it, or (a co-op guest) the host's
 export const storyHero = () => G.storyHero || G.hero;
-const OWN = { mando: MANDO_CHAPTERS, jedi: JEDI_CHAPTERS };
+const OWN = { mando: MANDO_CHAPTERS, jedi: JEDI_CHAPTERS, trooper: TROOPER_CHAPTERS };
 // a chapter as a story tells it: the story's own version laid over the shared slot (its `story` names whose it is), with
 // the run's choices filled into its words (game/choices.js: the Jedi's story changes with what you chose)
 export function storyChapter(c, story = storyHero()){
@@ -225,6 +227,7 @@ export const jediEnding = () => (answer('ilsa') || 'spared') + '-' + (answer('ve
 const OWN_WORDS = {
   mando: { voice: MANDO_VOICE, acts: MANDO_ACTS, actTwo: MANDO_ACT_TWO, actTwoLabel: MANDO_ACT_TWO_LABEL, epilogue: () => MANDO_EPILOGUE },
   jedi:  { voice: JEDI_VOICE, acts: JEDI_ACTS, actTwo: JEDI_ACT_TWO, actTwoLabel: { lothal: 'THE PENS FIRST' }, epilogue: () => JEDI_ENDINGS[jediEnding()] },
+  trooper: { voice: TROOPER_VOICE, acts: TROOPER_ACTS, actTwo: TROOPER_ACT_TWO, epilogue: () => TROOPER_EPILOGUE },
 };
 const own = (story) => OWN_WORDS[story];
 // (a chapter's own `voice` speaks for it instead: a story can hand the comms to someone else partway through)

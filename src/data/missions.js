@@ -59,6 +59,14 @@
 //               The leg starts as soon as you reach the quarry; standing in its way on its line catches it from a few
 //               metres further off (and sooner after the last clash); running far out ahead of it (30 m, out of sight)
 //               loses it like falling behind; and it only finishes a leg once you can see it or are close.
+//   breach    stack up on one of the arena's doors (world/doors.js, in order), set the charge and clear the room behind it
+//               door: which door · stack: [x, z] where you stand to set it · time: seconds of setting it (each squadmate
+//               stacked with you speeds it up) · fuse: seconds before it blows · guards: { type: count } the room's,
+//               at spots: [[x, z]…], caught reeling for `stun` seconds as the world slows for `slow` · opens: doors
+//               open once the room is clear (a cell, the way back out) · joins / joinAt: squadmates freed in there
+//               breachLine / breachSub: the blast's banner; lines.breach in a chapter (one entry per door) on the comms
+// Any objective can set `doors`: how many of the arena's doors are open when it begins (a retry rebuilds them
+// shut), and `squad`: the squad's size by then (someone freed on the way joined it).
 // Text a kind shows can be renamed per objective: sabotage `consoleName` ('UPLINK'), `doneLine` / `doneSub` (the
 // banner when it's done; hold and capture take them too).
 // On the big battle maps an objective after the first can have `start`: [x, z, yaw], where a retry of it begins.
@@ -75,7 +83,9 @@ import { HOLDFAST_SPOTS } from '../world/arenas/holdfast.js';
 import { BATTLE_MAPS, GRASSLAND_SPOTS, ICEFRONT_SPOTS, GRAVEYARD_SPOTS } from './battlemaps.js';
 import { LEVELS } from './levels.js';
 import { JUNGLE_SPOTS } from '../world/arenas/jungle.js';
-import { TURNED } from './allies.js';
+import { GARRISON_SPOTS } from '../world/arenas/garrison.js';
+import { FRIGATE_SPOTS } from '../world/arenas/frigate.js';
+import { TURNED, PURGE, DRILL } from './allies.js';
 
 export const MISSION_VOICE = { jedi: 'MASTER VAEL', mando: 'THE ARMORER', trooper: 'THE CAPTAIN' };
 export const MISSION_COLOR = { jedi: 0x5ad2ff, mando: 0xffa040, trooper: 0x4aa8ff };
@@ -841,6 +851,51 @@ export const MISSIONS = {
     ],
     done: 'The echo is gone. The gate under Jedha stands open, and on the other side of it is Exegol.',
   },
+  // VAEL'S CHAINS (the Jedi's Act III, before the throne): the Citadel's amphitheatre on Exegol. Break the chains holding
+  // Master Vael, hold the floor while the children Vexis took from the Ember Academy run for the gate, then his Grand
+  // Inquisitor. With Ilsa spared she breaks one chain herself ('chains'); without her it is all yours ('chains-alone').
+  chains: {
+    id: 'chains',
+    title: 'VAEL\'S CHAINS',
+    campaignOnly: true, heroes: ['jedi'],
+    blurb: 'free Master Vael and the children before the throne',
+    level: { name: 'MISSION — THE CITADEL ON EXEGOL', sub: 'Vael is chained before the throne. The children are in the stands.',
+             arena: 64, floor: 0x3b2f31, fog: 0x401a22, sky: 0x1a080c, layout: 'sith', waves: [], hazards: {} },
+    start: [0, 16, Math.PI],   // in at the south gate, looking north at the throne
+    kit: 7,
+    grant: { jedi: ['throw', 'slam'], mando: ['grapple', 'birds'] },
+    squad: 2,
+    objectives: [
+      { kind: 'sabotage', title: 'BREAK VAEL\'S CHAINS', consoleName: 'CHAIN', consoleDone: 'BROKEN', doneLine: 'VAEL IS FREE', doneSub: 'He can barely stand. He stands anyway.', music: 'battle',
+        say: 'Ilsa has the left chain. Break the other two. Stand at each anchor until it gives.',
+        task: 'Stand at each chain anchor to break it',
+        consoles: [ { at: [10, -22], guards: { grunt: 2, lancer: 1, blaster: 1 } },
+                    { at: [0, -21], guards: { phalanx: 1, grunt: 2, officer: 1 } } ],
+        time: 4.5, r: 2.4, hitLoss: 1.2,
+        trickle: { every: 14, cap: 7, group: { grunt: 1, blaster: 1 } }, from: [-Math.PI + 0.3, -0.3] },
+
+      { kind: 'hold', title: 'GET THE CHILDREN OUT', music: 'defend', start: [0, -4, Math.PI],
+        say: 'The children Vexis took from the academy are running for the gate. Hold the floor until the last one is past you.',
+        task: 'Hold the floor until every child is out',
+        at: [0, -6], r: 7, time: 45, awayRate: 0.35, squadRate: 0.55,
+        evacuees: { kind: 'youngling', count: 14, spacing: 1.5, speed: 2.6, ramp: false, verb: 'OUT', name: { jedi: 'CHILDREN', mando: 'CHILDREN' },
+                    path: [[0, -22], [0, -12], [0, -2], [0, 8]] },
+        overrun: 'CLEAR THE FLOOR', unguarded: 'FLOOR UNGUARDED', doneLine: 'THE CHILDREN ARE OUT', doneSub: 'Kast\'s troopers have them at the gate.',
+        pulses: [ { grunt: 2, blaster: 2 }, { grunt: 2, lancer: 1, grenadier: 1 }, { grunt: 2, officer: 1, flyer: 1 }, { grunt: 2, phalanx: 1, sniper: 1 } ],
+        every: [8, 12], cap: 9, from: [-Math.PI + 0.3, -0.3], aggro: 8 },
+
+      { kind: 'duel', title: 'DEFEAT THE GRAND INQUISITOR', music: 'duel', start: [0, -4, Math.PI],
+        say: 'His Grand Inquisitor. Every hunter who came for the children answered to it. It answers to you now.',
+        task: 'Win the duel while the squad holds',
+        enter: 'The Grand Inquisitor comes down off the dais, both blades spinning.', kicker: 'THE CITADEL',
+        line: 'Every name in that Ledger was mine to collect.',
+        foe: 'acolyte', form: 'djemso', name: 'THE GRAND INQUISITOR', hp: 4.5, dmg: 1.2, scale: 1.22, tint: 0x8a1a22, at: [0, -18],
+        duel: { posture: 170, feint: 0.35, chain: 3, counter: 0.5 },
+        rage: 0.5, rageDuel: { feint: 0.5, delay: 0.3, chain: 4 },
+        trickle: { every: 14, cap: 3, group: { grunt: 2 } }, from: [-Math.PI + 0.4, -0.4] },
+    ],
+    done: 'Vael is free and the children are out. Only Vexis is left.',
+  },
   // THE MUSTAFAR FORGE: the forge floor of the second campaign level, broken for good. Charges on its three feeds,
   // hold the lane out while they burn, then the forge's master comes for whoever lit them.
   forge: {
@@ -942,6 +997,131 @@ export const MISSIONS = {
     done: all('The General is aboard, and the three of us with it. Nobody is coming to save the clones who refused. So we save each other. Starting tonight.'),
   },
 
+  // ---------------- THE ARC TROOPER'S OWN STORY (data/campaign-trooper.js): campaign only, one voice for every hero ----------------
+  // THE KILL HOUSE: the band's cover on the Vorran yards is blown and Brisk was taken in the raid. The Captain sends
+  // you and Vant through the garrison block for him, door by door.
+  killhouse: {
+    id: 'killhouse',
+    title: 'THE KILL HOUSE',
+    campaignOnly: true,
+    blurb: 'breach the garrison block, room by room, and bring Brisk out',
+    level: { name: 'MISSION — THE KILL HOUSE', sub: all('The garrison block at the yards. Brisk is in there.'),
+             arena: 60, floor: 0x4a4e52, fog: 0x1e242a, sky: 0x080a10, layout: 'garrison', waves: [], hazards: {} },
+    start: GARRISON_SPOTS.start,
+    kit: 3,
+    grant: all([]),
+    squad: 1, squadCap: 1,     // Vant goes in with you; Brisk joins when his cell is open
+    foeLook: PURGE,
+    objectives: [
+      { kind: 'capture', title: 'TAKE THE YARD', music: 'battle', postName: 'FRONT',
+        say: all('The yard first. Purge troopers on the door and a pair on the towers. Clear the front so we can stack up on it.'),
+        task: all('Take the front of the block'),
+        posts: [ { at: [-12, -4], guards: { grunt: 2, blaster: 2, sniper: 1 } } ],
+        r: 4.5, time: 4, squadRate: 0.6, perMate: 0.3, doneLine: 'THE FRONT IS OURS', doneSub: 'Stack up on the door.',
+        trickle: { every: 14, cap: 6, group: { grunt: 1, blaster: 1 } }, from: [-Math.PI / 2 - 0.7, -Math.PI / 2 + 0.7] },
+      { kind: 'breach', title: 'BREACH THE GUARD ROOM', start: [-14, -5, 0], doors: 0,
+        say: all('Stack up on the door, Vant on your shoulder. Charge on the lock, then in fast. They will not see straight for a second. Use it.'),
+        task: all('Stand at the door to set the charge, then clear the room'),
+        door: 0, stack: GARRISON_SPOTS.stack[0], time: 2.4, fuse: 1.1, stun: 1.5,
+        guards: { grunt: 2, blaster: 2 }, spots: GARRISON_SPOTS.rooms[0].spots, breachLine: 'BREACH', breachSub: 'Go, go, go.' },
+      { kind: 'breach', title: 'BREACH THE INTERROGATION HALL', start: [-13, 7, Math.PI / 2], doors: 1,
+        say: all('Next door, east wall. Same drill. Short bursts in there, brother; Brisk could be behind any of them.'),
+        task: all('Stack up on the next door and clear the hall'),
+        door: 1, stack: GARRISON_SPOTS.stack[1], time: 2.2, fuse: 1.0, stun: 1.4,
+        guards: { blaster: 2, grunt: 2, officer: 1 }, spots: GARRISON_SPOTS.rooms[1].spots },
+      { kind: 'breach', title: 'BREACH THE CELLS', start: [1, 7, Math.PI / 2], doors: 2,
+        say: all('The cells are through there. They will have heard us coming, so they will be ready. So are we.'),
+        task: all('Breach the cells and get Brisk out'),
+        door: 2, stack: GARRISON_SPOTS.stack[2], time: 2.2, fuse: 1.0, stun: 1.1,
+        guards: { grunt: 2, blaster: 2, grenadier: 1, officer: 1 }, spots: GARRISON_SPOTS.rooms[2].spots,
+        opens: 5, joins: 1, joinAt: GARRISON_SPOTS.cell, doneLine: 'BRISK IS OUT', doneSub: 'He has opinions about the food.' },
+      { kind: 'hold', title: 'HOLD FOR THE GUNSHIP', music: 'defend', start: [-12, -10, Math.PI], doors: 5, squad: 2,
+        say: all('Tally is bringing the gunship in over the yard, and the garrison is waking up behind us. Hold the pad.'),
+        task: all('Hold the landing pad until the gunship is down'),
+        at: GARRISON_SPOTS.pad, r: 6.5, time: 40, awayRate: 0.35, squadRate: 0.55, holding: 'GUNSHIP INBOUND',
+        overrun: 'CLEAR THE PAD', unguarded: 'PAD UNGUARDED', doneLine: 'THE GUNSHIP IS DOWN', doneSub: 'Everyone aboard.',
+        pulses: [ { grunt: 2, blaster: 1 }, { blaster: 2, grenadier: 1 }, { grunt: 3, officer: 1 }, { blaster: 2, sniper: 1 }, { grunt: 2, blaster: 2 } ],
+        every: [8, 12], cap: 8, from: [-Math.PI / 2 - 0.8, -Math.PI / 2 + 0.8], aggro: 8 },
+    ],
+    done: all('Brisk is aboard and the yards are behind us. They knew our faces, brother. Somebody gave them our names.'),
+  },
+
+  // WHAT THE CHIP SAYS: the HALCYON, the medical frigate that fitted the clones' chips, adrift in the Vorran system.
+  // Its records core still holds every chip's file, yours and the Marshal's. The Marshal wants it wiped; so does the Empire.
+  chipfiles: {
+    id: 'chipfiles',
+    title: 'WHAT THE CHIP SAYS',
+    campaignOnly: true,
+    blurb: 'restore a dead frigate\'s power and pull the chip files before the purge troopers wipe them',
+    level: { name: 'MISSION — WHAT THE CHIP SAYS', sub: all('The HALCYON. Every chip it fitted, it remembers.'),
+             arena: 56, floor: 0x8a8e92, fog: 0x1a1e26, sky: 0x020308, layout: 'frigate', waves: [], hazards: {} },
+    start: FRIGATE_SPOTS.start,
+    kit: 4,
+    grant: all([]),
+    squad: 2, squadCap: 2,
+    foeLook: PURGE,
+    objectives: [
+      { kind: 'sabotage', title: 'RESTORE POWER', consoleName: 'BREAKER', consoleDone: 'ON', music: 'infiltrate',
+        doneLine: 'POWER RESTORED', doneSub: 'The records core is waking up.',
+        say: all('The core is dead. Two breakers on the side walls bring it back. And we are not alone on this ship: there is a purge shuttle on the other airlock.'),
+        task: all('Stand at each breaker to throw it'),
+        consoles: [ { at: FRIGATE_SPOTS.breakers[0], guards: { grunt: 2, blaster: 1 } },
+                    { at: FRIGATE_SPOTS.breakers[1], guards: { blaster: 2, grenadier: 1 } } ],
+        time: 4, r: 2.6, hitLoss: 1.0,
+        trickle: { every: 15, cap: 6, group: { grunt: 1, blaster: 1 } }, from: [Math.PI / 2 - 0.6, Math.PI / 2 + 0.6] },
+      { kind: 'hold', title: 'PULL THE CHIP FILES', music: 'defend', start: [0, 4, 0],
+        say: all('Download running. Every clone it ever fitted, every chip, every order. Stay by the core; they will be coming to wipe it.'),
+        task: all('Hold the records core until the download is done'),
+        at: FRIGATE_SPOTS.core, r: 6, time: 50, awayRate: 0.3, squadRate: 0.55, holding: 'DOWNLOADING',
+        overrun: 'CLEAR THE CORE', unguarded: 'CORE UNGUARDED', doneLine: 'THE FILES ARE OURS', doneSub: 'Yours. Vant\'s. Brisk\'s. And his.',
+        pulses: [ { grunt: 2, blaster: 1 }, { blaster: 2, grenadier: 1 }, { grunt: 2, officer: 1 }, { blaster: 2, sniper: 1 }, { grunt: 3, blaster: 1 } ],
+        every: [8, 12], cap: 8, from: [Math.PI / 2 - 0.9, Math.PI / 2 + 0.9], aggro: 8 },
+      { kind: 'duel', title: 'STOP THE PURGE CAPTAIN', start: [0, 2, 0],
+        say: all('Their captain is going for the core with a wipe spike. He is the Marshal\'s own man. Put him down before he reaches it.'),
+        task: all('Beat the purge captain while the squad holds the deck'),
+        enter: all('The boarding party falls back. Their captain walks through them.'),
+        foe: 'officer', name: 'CAPTAIN VORN', kicker: 'PURGE CAPTAIN · THE MARSHAL\'S OWN', hp: 3.5, dmg: 1.05, scale: 1.1, tint: 0x8a1a1a, at: [0, 18],
+        line: all('The Marshal sends his regards, deserter. He says your chip was a factory fault.'),
+        rage: 0.5, rageDuel: {},
+        trickle: { every: 14, cap: 3, group: { grunt: 1, blaster: 1 } }, from: [Math.PI / 2 - 0.6, Math.PI / 2 + 0.6] },
+    ],
+    done: all('The files are ours. Your chip never failed, brother. Somebody switched it off, the night before the order. And the Marshal\'s was switched on.'),
+  },
+
+  // BROTHERS IN ARMS: the trooper's trial. The Captain runs a live drill on the HALCYON's empty decks, stun settings
+  // on the old training droids: take the posts with the squad, then hold the last of them.
+  drill: {
+    id: 'drill', trial: true,
+    title: 'BROTHERS IN ARMS',
+    campaignOnly: true,
+    blurb: 'the Captain\'s drill: take the posts with your squad',
+    level: { name: 'TRIAL — BROTHERS IN ARMS', sub: all('The HALCYON\'s decks, after. The Captain has set up a drill.'),
+             arena: 56, floor: 0x8a8e92, fog: 0x1a1e26, sky: 0x020308, layout: 'frigate', waves: [], hazards: {} },
+    start: FRIGATE_SPOTS.start,
+    kit: 4,
+    grant: all([]),
+    squad: 2, squadCap: 2,
+    foeLook: DRILL,
+    objectives: [
+      { kind: 'capture', title: 'TAKE THE POSTS', music: 'battle', postName: 'POST',
+        say: all('Three posts, three teams of droids. I do not want to see you take them alone. Send Vant and Brisk onto each one, and cover them while they hold it.'),
+        task: all('Take each post: send the squad onto it (H) and cover them'),
+        posts: [ { at: FRIGATE_SPOTS.hangar, guards: { blaster: 3 } },
+                 { at: FRIGATE_SPOTS.aisle, guards: { blaster: 2, grenadier: 1 } },
+                 { at: FRIGATE_SPOTS.gallery, guards: { blaster: 2, sniper: 1 } } ],
+        r: 4.5, time: 6, squadRate: 0.8, perMate: 0.4, doneLine: 'EVERY POST TAKEN', doneSub: 'Not bad. Again, harder.',
+        trickle: { every: 12, cap: 6, group: { blaster: 2 } }, from: [-Math.PI / 2 - 0.8, -Math.PI / 2 + 0.8], aggro: 9 },
+      { kind: 'hold', title: 'HOLD THE GALLERY', music: 'defend', start: [0, 14, 0],
+        say: all('Now hold it. Put the squad on the gallery and work the flanks yourself. A line holds because everyone in it trusts the next man.'),
+        task: all('Hold the gallery with the squad until the drill ends'),
+        at: FRIGATE_SPOTS.gallery, r: 6, time: 35, awayRate: 0.3, squadRate: 0.7, holding: 'DRILL CLOCK',
+        overrun: 'RETAKE THE GALLERY', unguarded: 'GALLERY UNGUARDED', doneLine: 'DRILL COMPLETE', doneSub: 'The Captain is almost smiling.',
+        pulses: [ { blaster: 3 }, { blaster: 2, grenadier: 1 }, { blaster: 2, officer: 1 }, { blaster: 3, sniper: 1 } ],
+        every: [7, 10], cap: 8, from: [-Math.PI / 2 - 0.9, -Math.PI / 2 + 0.9], aggro: 8 },
+    ],
+    done: all('That is a squad. Now we go and find out who switched your chip off, and why.'),
+  },
+
   // TRIALS: the campaign's quiet one-on-ones between the battles (data/campaign.js). A master tests the hero before
   // teaching its form; for the Mando, a rival of the old clans. Stand-ins for now: built from today's duellists until the
   // seven forms' gatekeepers land, on the arenas their chapters borrow. `trial` keeps them off the Missions list until
@@ -1041,6 +1221,20 @@ export const MISSIONS = {
     ],
     done: { jedi: 'The road is open and the gate is ours. Vexis is waiting inside.',
             mando: 'The gate is down. The Magistrate is inside. This is the Way.' } };
+}
+
+// VAEL'S CHAINS without Ilsa (the Jedi struck her down at Khel Dar): nobody takes the third chain, and with no one
+// reading the Citadel's guard rota the hold runs longer under heavier pulses.
+{
+  const C = MISSIONS.chains, [chain, hold, duel] = C.objectives;
+  MISSIONS['chains-alone'] = { ...C, id: 'chains-alone',
+    objectives: [
+      { ...chain, say: 'Three chains, and nobody left who knows them. Stand at each anchor until it gives.',
+        consoles: [ { at: [-10, -22], guards: { grunt: 2, blaster: 1, grenadier: 1 } }, ...chain.consoles ] },
+      { ...hold, time: 55, cap: 10,
+        pulses: [ ...hold.pulses, { grunt: 2, lancer: 1, phalanx: 1 } ] },
+      duel,
+    ] };
 }
 
 // THE MANDALORIAN'S STORY, re-staged on its own worlds (data/campaign-mando.js): the forge's plan and fight cut into the
