@@ -17,6 +17,8 @@ import { arenaKit, seeded, at } from './kit.js';
      · the OVERWATCH gantry in the south-east corner for the Mando (fly) and the Jedi (chained double-jumps);
      · three Imperial FUEL DRUMS beside the walls to teach Push / kick / shoot-to-detonate before the Forge;
      · low rubble you step over (climbable, never a snag).
+     · a BASTION in each corner (kit.js, level-design pass): steps up to a raised fall-back spot behind a wall, so the
+       corners past the round edge ring are a second vantage, not dead floor 18 m from cover.
    The player spawns north (0, +10.5), facing the dais; the north lane is kept clear. */
 export function buildTempleArena(L){
   const pal = L.pal || {};   // the world theme's colours (data/worlds.js); the defaults are the original look
@@ -79,6 +81,10 @@ export function buildTempleArena(L){
 
   // ---- OVERWATCH gantry — south-east, between two columns, clear of the cardinal lanes ----
   K.gantry(10*S, -12*S, { a: stoneD, b: stone, strut: trim, beacon: fireC });
+
+  // ---- a BASTION in each corner ----
+  { const c = shared.arenaHalf - 6;
+    for (const [sx, sz] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) K.bastion(sx*c, sz*c, sx, sz, { a: stoneD, b: stone }); }
 
   // ---- low RUBBLE you step over (toppled drums, all under STEP_UP) ----
   for (const [x, z, len, ax] of [[-4.5, 4.8, 1.6, true], [5.2, -5.0, 1.4, false], [-11.5, -6.5, 1.8, true], [12.0, 7.5, 1.5, false], [-2.5, -15.5, 1.7, true], [15.5, -2.5, 1.4, false]]){

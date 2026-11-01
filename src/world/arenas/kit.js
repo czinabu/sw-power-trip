@@ -109,7 +109,21 @@ export function arenaKit(){
     m.position.set((x0 + x1) / 2, 0.025, (z0 + z1) / 2); m.userData.passThrough = true; m.receiveShadow = false;
     g.add(m); return m;
   };
-  return { box, column, slab, deco, gantry, rubble, slideGate, sign, banner, strip };
+  /* a CORNER BASTION: the fall-back spot in a square arena's corner, past the round edge ring where foes arrive. Two
+     climbable steps (0.5, then 1.0) rise toward the corner, a broken wall (1.6: it stops a bolt, and it can still be
+     vaulted) guards the steps on the arena side, and a column on the corner side gives a wall-kick up. So a corner is a
+     raised position with cover facing the fight, instead of an empty patch of floor a long way from anything; it's
+     still a corner (cornered, and the steps are open to the flanks). (sx, sz) points outward, toward the corner. */
+  const bastion = (cx, cz, sx, sz, mats) => {
+    box(cx, cz, 2.3, 2.3, 0.5, mats.a, { climbable: true });
+    box(cx + sx*0.8, cz + sz*0.8, 1.4, 1.4, 1.0, mats.b, { climbable: true });
+    // the guard walls on the two inner sides: one along x (facing the arena north/south), one shorter along z
+    box(cx - sx*0.4, cz - sz*2.6, 1.9, 0.3, 1.6, mats.b);
+    box(cx - sx*2.6, cz + sz*0.3, 0.3, 1.2, 1.6, mats.a);
+    deco(new THREE.BoxGeometry(0.7, 0.3, 0.5), mats.a, cx - sx*0.9, 1.75, cz - sz*2.6, 0, 0.3, 0);   // a fallen cap stone
+    column(cx + sx*2.6, cz - sz*1.4, 0.55, 3.4, mats.b, { taper: 0.8, seg: 7 });
+  };
+  return { box, column, slab, deco, gantry, rubble, slideGate, sign, banner, strip, bastion };
 }
 
 /* polar → x,z (angle 0 = +x, π/2 = +z, the side the player spawns on) */

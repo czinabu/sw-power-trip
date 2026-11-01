@@ -30,6 +30,7 @@ the 1.93 single-jump vault), knee height is about 0.75 m.
 | No safe pockets | No floor a hero can reach that no grounded foe can (`map-audit` marks them cyan). |
 | Reinforcements | Each surge comes in from one side, a new side each time, with the odd flanker, and never on top of a hero (the spawn director, below). An off-screen surge gets a pale arrow at the screen edge. |
 | Risk and reward | Fuel drums sit where foes bunch up on their way in, not by the hero's spawn; hazards punish camping (the Jedha summit brazier), never walking through. |
+| Corners | A square arena's corners lie past the round edge ring. Give each one a **bastion** (`kit.js`): two climbable steps behind a 1.6 wall and a wall-kick column, a raised fall-back spot that is still a corner. |
 | Readability | A landmark to orient by (the brazier, the smelter, the altar); a spawn that faces the fight; one look per arena's hazards, always with the amber warning. |
 | Open space for duels | Boss floors, trials and the sandbox rooms stay open on purpose. |
 
@@ -62,24 +63,26 @@ The numbers: `exposedPct` (floor over 8 m from cover), `shelteredPct` (within 3 
 distinct standable heights: more than three or four layers means real verticality), `pocketCells`, `chokeCells`,
 `spawnCoverDist` (how far the spawn is from the nearest cover).
 
-### Audit, 31 Oct 2026
+### Audit, 31 Oct 2026 (before → after the layout pass)
 
 | Map | Exposed | Sheltered | Pockets | Notes |
 |---|---|---|---|---|
-| temple (Jedha, survival) | 35% | 28% | 0 | Good: symmetric, readable, landmark brazier, kill-zone ring. |
-| foundry (Mustafar, survival) | 44% | 19% | 0 | Good: safe cardinals, dangerous diagonals. |
-| plains (Exegol, survival) | 55% | 12% | 1 | Open centre is the boss's duelling ground (intended). |
+| temple (Jedha, survival) | 35% → 11% | 28% → 40% | 0 | Symmetric, readable, landmark brazier. Corners were dead floor 18 m from cover: now a bastion in each. |
+| foundry (Mustafar, survival) | 44% → 19% | 19% → 27% | 0 | Safe cardinals, dangerous diagonals. Corner bastions added. |
+| plains (Exegol, survival) | 55% → 33% | 12% → 22% | 1 | The duelling ground stays open; the 20 m of bare floor round it now has a middle ring of cover, the altar lane is split, and the corners have bastions. |
 | sith (Throne of Exegol) | 33% | 20% | 0 | The spawn looks straight down an open lane to the altar (a shooting gallery). |
 | archive (Burning Archive) | 20% | 33% | 0 | Good: burning shelves flare along their faces, punishing hiding there too long. |
 | hall / forge (training) | 16% / 1% | 29% / 55% | 0 | Fine for courses. |
-| dojo / throne (sandbox rooms) | 100% / 90% | 0 / 3% | 0 | Open on purpose. |
+| dojo / throne (sandbox rooms) | 100% / 61% | 0 / 12% | 0 | Open middles on purpose. The Mando's room now has planters at the three cover heights (west wall) and a jump/jetpack climb (east wall). |
 | hangar (trial, sandbox) | 28% | 25% | 0 | Spawns in the open centre lane (fine for a duel). |
 | refuge, prison | 15%, 17% | 31%, 34% | 0 | Good. |
 | pens (Tessaril) | 9% | 46% | 20 | A sealed pocket inside the rock spine (about x 18, z 3). |
 | outpost, covert (Mando) | 8%, 6% | 39%, 44% | 1, 0 | Dense; fine. |
-| grassland / icefront / graveyard | 36–47% | 17–20% | 0 | Good fronts; much of the cover is 1.0–1.4 m. |
+| grassland / icefront / graveyard | 36–47% | 17–20% | 0 | Good fronts. Ridges, barricades, scrap and debris raised from 1.2–1.5 to 1.55 m so they stop a bolt (still vaultable). |
 
-Enemy bolts fly at about 1.4–1.5 m, so cover under that doesn't stop a shot that is fired. The AI already treats any
+**Cover heights.** Enemy bolts fly at about 1.4–1.5 m, so cover under that doesn't stop a shot that is fired; the
+standard heights are now a step (0.5–0.75, walk up), waist cover (1.55–1.7: stops a bolt, still vaulted under the
+1.93 apex) and hard cover (2.4 and up). Before the pass: The AI already treats any
 non-step solid as blocking its line of fire (it repositions instead of shooting into a wall), so low cover works as
 cover in practice; new cover should still be 1.5 m or more where it's meant to stop fire.
 

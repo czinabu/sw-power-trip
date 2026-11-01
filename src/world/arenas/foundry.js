@@ -3,7 +3,7 @@
 
 import * as THREE from 'three';
 import { V3 } from '../../utils.js';
-import { hazardZones } from '../../state.js';
+import { shared, hazardZones } from '../../state.js';
 import { spawnVent, spawnBarrel } from '../hazards.js';
 import { arenaKit, seeded, at } from './kit.js';
 
@@ -20,6 +20,8 @@ const D = Math.PI / 4;   // the diagonals
        (1.4, vaultable), so foes funnel past the lava toward you;
      · six FUEL DRUMS sit on the inside of the blocks where blaster troopers take cover. Shoot the drum, not the man;
      · six support GIRDERS (r 17.5) for wall-kicks and the cavernous read, and the OVERWATCH crane in the south lane.
+     · a BASTION in each corner (kit.js, level-design pass): steps up to a raised fall-back spot behind a wall, so the
+       corners past the round edge ring are a vantage, not dead floor 20 m from cover.
    Nothing sits in the spawn ring's lanes except girders and the gantry, which spawns route around. */
 export function buildFoundryArena(L){
   const pal = L.pal || {};   // the world theme's colours (data/worlds.js); the defaults are the original look
@@ -89,4 +91,8 @@ export function buildFoundryArena(L){
 
   // ---- OVERWATCH CRANE — the gantry in the south lane, climbing toward the smelter ----
   K.gantry(-1.8, -17 * S, { a: metalD, b: metal, strut: stripe, beacon: pal.beacon ?? 0xff5040 });
+
+  // ---- a BASTION in each corner: plate steps behind a blast wall ----
+  { const c = shared.arenaHalf - 7;
+    for (const [sx, sz] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) K.bastion(sx*c, sz*c, sx, sz, { a: metalD, b: rust }); }
 }
