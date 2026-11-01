@@ -75,8 +75,10 @@ export async function host(attempt = 0){
   peer.on('error', (err) => {
     if (mine !== peer) return;
     if (err.type === 'unavailable-id' && attempt < 4) return void host(attempt + 1);   // the code was taken: draw another
+    if (SERVER_ERR[err.type] && net.status === 'connected') return void keepServer(mine);   // the game goes on without it (below)
     fail(describe(err));
   });
+  peer.on('disconnected', () => { if (mine === peer && net.status === 'connected') keepServer(mine); });
 }
 
 // retry: a guest getting back into the room it dropped out of (rejoin below), which keeps saying 'reconnecting'
@@ -91,10 +93,14 @@ export async function join(code, retry = false){
   const mine = peer;
   peer.on('error', (err) => {
     if (mine !== peer) return;
+    if (SERVER_ERR[err.type] && net.status === 'connected') return void keepServer(mine);   // the game goes on without it (below)
     if (retry) return err.type === 'peer-unavailable' ? fail('The host left the game.') : rejoin();   // no room any more: the host is gone
     fail(err.type === 'peer-unavailable' ? 'No room with that code.' : describe(err));
   });
+  let dialled = false;
   peer.on('open', () => {
+    if (dialled) return;   // the server link came back (keepServer below): the game's own link to the host is still up
+    dialled = true;
     const c = peer.connect(ID_PREFIX + code, { serialization: 'json' });
     attach(c, 0);
     setTimeout(() => {
@@ -117,6 +123,14 @@ function rejoin(){
   if (!code || ++tries > REJOIN.tries) return fail('Lost the connection to the host.');
   setStatus('reconnecting');
   rejoinTimer = setTimeout(() => { if (net.status === 'reconnecting' && net.code === code) join(code, true); }, REJOIN.wait);
+}
+
+/* THE MATCHMAKING SERVER only brings players together: once you are connected, the game runs over the links between
+   the players. Losing the server then (a hiccup, a long stall on a slow machine) must not throw anyone out of the room,
+   so it is only reconnected, quietly, for whoever joins next. */
+const SERVER_ERR = { network: 1, 'server-error': 1, 'socket-error': 1, disconnected: 1 };
+function keepServer(mine){
+  setTimeout(() => { if (mine === peer && !mine.destroyed && mine.disconnected) try { mine.reconnect(); } catch(e){} }, 2000);
 }
 
 function describe(err){
